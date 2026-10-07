@@ -17,17 +17,11 @@ SOURCE = DATA / "generation_platform" / "fastapi"
 CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
 PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
-MODEL_OPTIONS = [
-    "--target-python-version",
-    "3.11",
-    "--openapi-scopes",
-    "schemas",
-    "api",
-    "--output-model-type",
-    "pydantic_v2.BaseModel",
-    "--formatters",
-    "builtin",
-]
+PYTHON = ["--target-python-version", "3.11"]
+SCOPES = ["--openapi-scopes", "schemas", "api"]
+BACKEND = ["--output-model-type", "pydantic_v2.BaseModel"]
+FORMATTERS = ["--formatters", "builtin"]
+MODEL_OPTIONS = [*PYTHON, *SCOPES, *BACKEND, *FORMATTERS]
 OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
 SERVER = ["--generate-server", "fastapi", "--target-config", "fastapi.toml"]
 EXCLUDED = (
@@ -342,7 +336,7 @@ def test_fastapi_cli_api_scope_required(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS[:2], *OPTIONS[5:], *scopes, *SERVER],
+        extra_args=[*PYTHON, *BACKEND, *FORMATTERS, "--disable-timestamp", *scopes, *SERVER],
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
@@ -424,7 +418,9 @@ def test_fastapi_cli_disable_warnings(
         run_main_with_args(
             [
                 *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
-                *OPTIONS[:7],
+                *PYTHON,
+                *SCOPES,
+                *BACKEND,
                 "--disable-timestamp",
                 *SERVER,
                 *options,
@@ -446,7 +442,7 @@ def test_fastapi_cli_target_python(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
@@ -465,7 +461,7 @@ def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
         copy_files=[*_inputs(tmp_path), (CLI / "pyproject-target.toml", tmp_path / "pyproject.toml")],
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",

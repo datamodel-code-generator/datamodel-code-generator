@@ -16,10 +16,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --openapi-scopes schemas api --disable-timestamp --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --openapi-scopes schemas api --disable-timestamp --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 
@@ -35,6 +35,12 @@ chooses.
 The server needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version, which
 `--target-python-version` or a preset sets. On Python 3.10 the run stops with `E_PYTHON_UNSUPPORTED`, and a target
 Python version below 3.11, including the default 3.10, stops it with `E_CONFIG_VALUE`.
+
+The model options apply as they do without `--generate-server`, and the server changes none of them.
+`--openapi-scopes` must include `api`; otherwise the run stops with
+`Error: --generate-server requires --openapi-scopes to include api` and exit code 2. The models keep the generation
+timestamp unless `--disable-timestamp` or a preset that sets it leaves it out, so `--check` reports no change on
+unchanged inputs only without the timestamp.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints

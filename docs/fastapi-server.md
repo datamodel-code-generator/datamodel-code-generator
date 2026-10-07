@@ -100,9 +100,10 @@ object with the right methods works, and type checkers check it where you pass i
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
   `datamodel_code_generator.Error` with the same message.
-- The model options apply as they do without `--generate-server`, so the same options write the same model files,
-  and a model option the model generation refuses, such as `--collapse-root-models-name-strategy` without
-  `--collapse-root-models`, is refused before anything is written.
+- The model options apply as they do without `--generate-server`, so the same options write the same model files
+  (only the command `--enable-command-header` records differs), and a model option the model generation refuses,
+  such as `--collapse-root-models-name-strategy` without `--collapse-root-models`, is refused before anything is
+  written.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.

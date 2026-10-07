@@ -101,6 +101,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "templates",
         "templates-invalid",
         "templates-not-found",
+        "api-scope-required",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

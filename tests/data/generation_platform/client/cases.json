@@ -5107,5 +5107,14 @@
     "model": {
       "custom_template_dir": "templates/not-found"
     }
+  },
+  "api-scope-required": {
+    "input": "pets.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
   }
 }

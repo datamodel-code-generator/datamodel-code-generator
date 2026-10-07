@@ -203,7 +203,18 @@ def prepare_target(
         )
         raise
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
-        raise Error(requirement)
+        error = Error(requirement)
+        attach_diagnostic(
+            error,
+            Diagnostic(
+                code="E_MODEL_CONFIG",
+                severity="error",
+                stage="config",
+                message=requirement,
+                option_path="model_config.openapi_scopes",
+            ),
+        )
+        raise error
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
         raise config_error(
