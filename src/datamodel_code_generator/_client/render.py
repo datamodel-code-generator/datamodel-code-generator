@@ -1146,7 +1146,7 @@ class _Resources(_Typing):
 
     def defaults(self, module: Module) -> str:
         """Return the generated defaults of the clients."""
-        entries: list[tuple[str, Doc]] = [("user_agent=", "None")]
+        entries: list[tuple[str, Doc]] = []
         if self.plan.security_schemes:
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
@@ -1154,7 +1154,7 @@ class _Resources(_Typing):
             entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
             entries.append(("request_coding=", module.local("_runtime.client.compression", "GZIP")))
-        if len(entries) == 1 + bool(self.plan.security_schemes):
+        if len(entries) == bool(self.plan.security_schemes):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 

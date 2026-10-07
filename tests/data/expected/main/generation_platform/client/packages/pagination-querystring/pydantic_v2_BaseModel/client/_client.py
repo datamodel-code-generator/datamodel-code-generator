@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from .resources.default._sync import DefaultResource
 
 _DEFAULTS = ClientDefaults(
-    user_agent=None,
     helpers=(
         ('search.all', 'pagination'),
         ('search.fixed', 'pagination'),

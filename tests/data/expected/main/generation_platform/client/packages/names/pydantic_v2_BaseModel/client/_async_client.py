@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .resources.store._async import AsyncStoreResource
     from .resources.u30e6_u30fc_u30b6_u30fc._async import AsyncU30e6U30fcU30b6U30fcResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class AsyncClientView:

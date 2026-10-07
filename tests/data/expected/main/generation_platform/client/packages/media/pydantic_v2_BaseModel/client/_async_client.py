@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .resources.files._async import AsyncFilesResource
     from .resources.forms._async import AsyncFormsResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class AsyncClientView:

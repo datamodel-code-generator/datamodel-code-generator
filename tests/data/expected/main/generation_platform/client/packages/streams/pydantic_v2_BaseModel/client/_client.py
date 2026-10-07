@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from .resources.status._sync import StatusResource
 
 _DEFAULTS = ClientDefaults(
-    user_agent=None,
     helpers=(
         ('events.messages', 'sse'),
         ('events.typed', 'sse'),

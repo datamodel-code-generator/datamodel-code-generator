@@ -24,7 +24,7 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.pets._sync import PetsResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class ClientView:
