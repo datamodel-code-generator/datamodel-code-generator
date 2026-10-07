@@ -1,0 +1,36 @@
+"""{{ docstring }}
+
+{{ support }}
+"""
+
+{{ imports }}
+{%- for route in routes %}
+
+
+def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
+    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+{%- if route.principal %}
+
+    {{ route.principal }}
+{%- endif %}
+
+    {{ route.signature }}
+        {{ route.body }}
+
+    {{ route.registration }}
+{%- endfor %}
+
+
+LITERAL_ROUTES: {{ final }} = {{ literal }}
+TEMPLATED_ROUTES: {{ final }} = {{ templated }}
+
+
+{{ signature }}
+    """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
+    return {{ build }}(
+        (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+        services={{ services }},
+{%- for name in settings %}
+        {{ name }}={{ name }},
+{%- endfor %}
+    )

@@ -341,11 +341,14 @@ def _render_fastapi_quick_start(preset_name: str) -> str:
 datamodel-codegen \\
   --input openapi.yaml \\
   --input-file-type openapi \\
+  --openapi-scopes schemas api \\
   --output-model-type pydantic_v2.BaseModel \\
   --preset {preset_name} \\
   --output models.py \\
   --generate-server fastapi \\
-  --target-config fastapi.toml
+  --server-output server \\
+  --server-package server \\
+  --server-model-package models
 ```
 
 The preset supplies the model options, as in the model [quick start](getting-started.md).

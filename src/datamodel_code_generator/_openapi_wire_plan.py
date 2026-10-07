@@ -140,10 +140,6 @@ class WirePlan:
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
 
-    def schema_id(self, location: SourceLocation) -> str:
-        """Return the bundled schema identifier of a planned source location."""
-        return f"{dict(self.documents)[location.document]}#{quote(location.pointer, safe=_FRAGMENT_SAFE)}"
-
     def schema(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, WireValue]]:
         """Return the normalized schema object at a location, following whole-schema references."""
         value = self._node(location)

@@ -8,8 +8,6 @@ helpers:
     {kind: pagination, operation: /webhooks/userCreated/post, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
   audit.all:
     {kind: pagination, operation: /paths/~1admin~1audit/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/NamePage}, continuation: {kind: link, header: Link}}
-  audit.off:
-    {kind: pagination, enabled: false, operation: /paths/~1admin~1audit/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/NamePage}, continuation: {kind: link, header: Link}}
   users.schema:
     {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User, document: ../other.yaml}, continuation: {kind: link, header: Link}}
   users.query:

@@ -313,14 +313,13 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     package = f"{case_name.replace('-', '_')}_{backend.replace('.', '_').lower()}"
     root.mkdir(parents=True, exist_ok=True)
     _generate(case, backend, root, package)
-    paths = [str(root), str(root / package / "src")]
-    sys.path[:0] = paths
+    sys.path.insert(0, str(root))
     lines = [f"# {case_name} {backend}"]
     try:
         copied = os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1"
         scenario(importlib.import_module(package) if copied else import_generated(package), lines)
     finally:
-        del sys.path[: len(paths)]
+        sys.path.remove(str(root))
         forget_generated(package)
     return _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"
 

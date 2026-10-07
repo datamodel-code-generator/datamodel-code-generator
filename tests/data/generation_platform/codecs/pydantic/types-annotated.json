@@ -1,7 +1,7 @@
 {
   "backend": "pydantic_v2.BaseModel",
   "package": "codec_types_annotated",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"collapse_root_models": true, "enum_field_as_literal": "all", "use_annotated": true, "field_constraints": true},
   "cases": [
     {"name": "code", "use": "/paths/~1scalars/post parameter query code", "op": "decode", "value": "abc"},

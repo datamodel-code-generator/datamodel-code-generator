@@ -1,0 +1,4 @@
+{
+  "pets.yaml#/paths/~1pets/post": {"status_code": 201, "media_type": "application/json"},
+  "/paths/~1pets/get": {"status_code": 200}
+}

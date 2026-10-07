@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_UNKNOWN config targets: The target file has no setting 'targets'

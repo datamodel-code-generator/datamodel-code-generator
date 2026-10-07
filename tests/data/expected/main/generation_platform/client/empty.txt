@@ -22,11 +22,3 @@ render pydantic_v2.BaseModel
   write client/py.typed
   write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
-  S_OPERATION_EXCLUDED selection /paths/~1pets/get: GET /pets is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/get: GET /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/delete: DELETE /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/head: HEAD /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}~1photo/put: PUT /pets/{petId}/photo is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}~1files/post: POST /pets/{petId}/files is excluded by exclude_tags 'pets': No operation is needed yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}~1files/get: GET /pets/{petId}/files is excluded by exclude_tags 'pets': No operation is needed yet.

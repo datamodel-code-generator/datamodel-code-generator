@@ -81,12 +81,6 @@ FieldOwnersPostRequest: TypeAlias = Owner | None
 FieldPetsPetIdLabelsPutPathPetIdParameter: TypeAlias = int
 
 
-FieldSearchPostRequest: TypeAlias = ByName | ByKind
-
-
-FieldSearchPostResponse: TypeAlias = list[Pet]
-
-
 FieldPetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
 
 

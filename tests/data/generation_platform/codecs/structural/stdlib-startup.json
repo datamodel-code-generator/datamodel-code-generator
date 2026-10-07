@@ -1,7 +1,7 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_stdlib_startup",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_standard_primitive_types": true, "use_unique_items_as_set": true, "output_datetime_class": "datetime",
               "field_extra_keys": ["init", "kw_only"]},
   "startup": [

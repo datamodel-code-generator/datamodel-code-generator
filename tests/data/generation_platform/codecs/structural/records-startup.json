@@ -1,7 +1,7 @@
 {
   "backend": "typing.TypedDict",
   "package": "codec_records_startup",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "startup": [
     {"name": "matching", "use": "/paths/~1shelves/post request_body"},
     {"name": "not-typeddict", "use": "/paths/~1sealed/post request_body",
