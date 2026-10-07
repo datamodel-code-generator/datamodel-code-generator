@@ -1,0 +1,29 @@
+{
+  "model": {
+    "Code": ["abc", "badly", "abcdefghi"],
+    "CodeCopy": ["abc", "badly"],
+    "Codes": [["xa", "xb"], ["ya"]],
+    "Mapping": [{"k": "ab"}, {"k": "az"}],
+    "Keys": [{"ka": 1}, {"za": 1}],
+    "Either": ["yes", 1, "nope"],
+    "Holder": [
+      {"code": "abc", "codeCopy": "abc", "codes": ["xa"], "mapping": {"k": "ab"}, "keys": {"ka": 1}, "either": "yes"},
+      {"code": "badly"},
+      {"codes": ["ya"]},
+      {"keys": {"za": 1}},
+      {"either": "nope"}
+    ]
+  },
+  "collapse": {
+    "Codes": [[{"ka": 1}], [{"za": 1}], []],
+    "Holder": [
+      {"name": "abc", "codes": [{"ka": 1}], "many": [[{"kb": 2}]]},
+      {"name": "badly"},
+      {"codes": [{"za": 1}]},
+      {"many": [[{"za": 1}]]}
+    ]
+  },
+  "tree": {
+    "Code": ["abc", "badly"]
+  }
+}

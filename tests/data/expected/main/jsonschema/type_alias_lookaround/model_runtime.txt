@@ -1,0 +1,154 @@
+{
+  "Code": [
+    {
+      "payload": "abc",
+      "errors": []
+    },
+    {
+      "payload": "badly",
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": "abcdefghi",
+      "errors": [
+        "string_too_long"
+      ]
+    }
+  ],
+  "CodeCopy": [
+    {
+      "payload": "abc",
+      "errors": []
+    },
+    {
+      "payload": "badly",
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Codes": [
+    {
+      "payload": [
+        "xa",
+        "xb"
+      ],
+      "errors": []
+    },
+    {
+      "payload": [
+        "ya"
+      ],
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Mapping": [
+    {
+      "payload": {
+        "k": "ab"
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "k": "az"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Keys": [
+    {
+      "payload": {
+        "ka": 1
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "za": 1
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Either": [
+    {
+      "payload": "yes",
+      "errors": []
+    },
+    {
+      "payload": 1,
+      "errors": []
+    },
+    {
+      "payload": "nope",
+      "errors": [
+        "int_parsing",
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Holder": [
+    {
+      "payload": {
+        "code": "abc",
+        "codeCopy": "abc",
+        "codes": [
+          "xa"
+        ],
+        "mapping": {
+          "k": "ab"
+        },
+        "keys": {
+          "ka": 1
+        },
+        "either": "yes"
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "code": "badly"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "codes": [
+          "ya"
+        ]
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "keys": {
+          "za": 1
+        }
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "either": "nope"
+      },
+      "errors": [
+        "int_parsing",
+        "string_pattern_mismatch"
+      ]
+    }
+  ]
+}

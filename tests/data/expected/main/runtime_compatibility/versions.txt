@@ -8,7 +8,7 @@
       "acceptance": null,
       "round_trip": null
     },
-    "dataclass": "root pattern aliases have no consuming dataclass to carry ConfigDict(regex_engine='python-re')"
+    "dataclass": null
   },
   "jsonschema/compound_property_names/enum_oneof.json": {
     "2.0.3": {

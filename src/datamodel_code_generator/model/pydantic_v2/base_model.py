@@ -90,7 +90,7 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import chain_as_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from jinja2 import Template
     from typing_extensions import TypedDict, Unpack
@@ -475,10 +475,15 @@ else:
 
 
 def _compiled_python_pattern(
-    pattern: object, prefix: str, prepared: dict[str, PythonRuntimeExpression]
+    pattern: object, prefix: str | None, prepared: dict[str, PythonRuntimeExpression]
 ) -> PythonRuntimeExpression | None:
-    """Keep a synthesized Python pattern independent of its consuming model's config."""
-    if not isinstance(pattern, str) or not pattern.startswith(prefix):
+    """Keep a Python pattern independent of its consuming model's config.
+
+    A ``None`` prefix selects every pattern that needs Python's engine, as ``has_lookaround_pattern`` does.
+    """
+    if not isinstance(pattern, str) or not (
+        _needs_python_regex_engine(pattern) if prefix is None else pattern.startswith(prefix)
+    ):
         return None
     pattern = str(pattern)
     if compiled := prepared.get(pattern):
@@ -489,24 +494,69 @@ def _compiled_python_pattern(
     return compiled
 
 
-def _prepare_python_patterns(
-    field: DataModelFieldBase, prefix: str, prepared: dict[str, PythonRuntimeExpression]
-) -> None:
-    """Prepare selected Python patterns using the existing runtime-expression import machinery."""
-    if (
+def _prepare_field_python_pattern(
+    field: DataModelFieldBase, prefix: str | None, prepared: dict[str, PythonRuntimeExpression]
+) -> bool:
+    """Compile a selected Field() constraint pattern once and report whether it changed."""
+    if isinstance(field.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression) or not (
         isinstance(field, _PydanticBaseDataModelField)
         and isinstance(field.constraints, Constraints)
         and (pattern := _compiled_python_pattern(field.constraints.pattern, prefix, prepared))
         and not field._has_anyurl_outside_container()  # noqa: SLF001
     ):
-        field.extras[_COMPILED_PATTERN_KEY] = pattern
-        field._set_runtime_expression_imports((*field.runtime_expression_imports, pattern.import_))  # noqa: SLF001
+        return False
+    field.extras = {**field.extras, _COMPILED_PATTERN_KEY: pattern}
+    field._set_runtime_expression_imports((*field.runtime_expression_imports, pattern.import_))  # noqa: SLF001
+    return True
+
+
+def _prepare_python_patterns(
+    field: DataModelFieldBase, prefix: str, prepared: dict[str, PythonRuntimeExpression]
+) -> None:
+    """Prepare selected Python patterns using the existing runtime-expression import machinery."""
+    _prepare_field_python_pattern(field, prefix, prepared)
     for data_type in field.data_type.all_data_types:
         if data_type.kwargs and (
             pattern := _compiled_python_pattern(data_type.kwargs.get("pattern"), prefix, prepared)
         ):
             data_type.kwargs["pattern"] = pattern
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
+
+
+def _copy_with_python_patterns(data_type: DataType, prepared: dict[str, PythonRuntimeExpression]) -> DataType | None:
+    """Copy only the path to Python-only patterns; collapsed fields may share the other nodes."""
+    nested = [_copy_with_python_patterns(nested_type, prepared) for nested_type in data_type.data_types]
+    dict_key = None if data_type.dict_key is None else _copy_with_python_patterns(data_type.dict_key, prepared)
+    pattern = _compiled_python_pattern(data_type.kwargs.get("pattern"), None, prepared) if data_type.kwargs else None
+    if pattern is None and dict_key is None and not any(nested):
+        return None
+    copied = data_type.model_copy()
+    if pattern is not None:
+        copied.kwargs = {**cast("dict[str, Any]", data_type.kwargs), "pattern": pattern}
+        copied._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
+    if any(nested):
+        copied.data_types = [
+            copied_type or nested_type for copied_type, nested_type in zip(nested, data_type.data_types, strict=True)
+        ]
+    if dict_key is not None:
+        copied.dict_key = dict_key
+    for nested_type in (*nested, dict_key):
+        if nested_type is not None:
+            nested_type.parent = copied
+    return copied
+
+
+def _compile_alias_python_patterns(
+    field: DataModelFieldBase,
+    prepared: dict[str, PythonRuntimeExpression],
+    replace_data_type: Callable[[DataModelFieldBase, DataType], None],
+) -> bool:
+    """Compile a type alias's Python-only patterns, since an alias has no config to select the engine."""
+    changed = _prepare_field_python_pattern(field, None, prepared)
+    if (data_type := _copy_with_python_patterns(field.data_type, prepared)) is None:
+        return changed
+    replace_data_type(field, data_type)
+    return True
 
 
 def _remove_compiled_pattern_metadata(data: dict[str, Any]) -> None:
@@ -522,6 +572,7 @@ class DataModelField(_PydanticBaseDataModelField):
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
+    COMPILE_ALIAS_PYTHON_PATTERNS = staticmethod(_compile_alias_python_patterns)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",
@@ -811,6 +862,11 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
+def _needs_python_regex_engine(pattern: str) -> bool:
+    """Return whether a pattern needs Python's ``re`` because pydantic-core's Rust engine rejects it."""
+    return _LOOKAROUND_PATTERN.search(pattern) is not None
+
+
 if TYPE_CHECKING:
 
     class _ParserSimpleFieldData(TypedDict, total=False):
@@ -901,13 +957,13 @@ def has_lookaround_pattern(
         _visited = set()
     for field in fields:
         pattern = isinstance(field.constraints, Constraints) and field.constraints.pattern
-        if pattern and _LOOKAROUND_PATTERN.search(pattern):
+        if pattern and _needs_python_regex_engine(pattern):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern)
-            if pattern and _LOOKAROUND_PATTERN.search(pattern):
+            if pattern and _needs_python_regex_engine(pattern):
                 return True
             if not follow_references or data_type.reference is None:
                 continue

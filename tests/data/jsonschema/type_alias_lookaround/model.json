@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "code": {"$ref": "#/definitions/Code"},
+    "codeCopy": {"$ref": "#/definitions/CodeCopy"},
+    "codes": {"$ref": "#/definitions/Codes"},
+    "mapping": {"$ref": "#/definitions/Mapping"},
+    "keys": {"$ref": "#/definitions/Keys"},
+    "either": {"$ref": "#/definitions/Either"}
+  },
+  "definitions": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$", "maxLength": 8},
+    "CodeCopy": {"type": "string", "pattern": "^(?!bad)[a-z]+$", "maxLength": 8},
+    "Codes": {"type": "array", "items": {"type": "string", "pattern": "^(?=x)[a-z]+$"}},
+    "Mapping": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[a-z]+(?<!z)$"}},
+    "Keys": {"type": "object", "patternProperties": {"^(?=k)[a-z]+$": {"type": "integer"}}, "additionalProperties": false},
+    "Either": {"anyOf": [{"type": "string", "pattern": "^(?!no)[a-z]+$"}, {"type": "integer"}]}
+  }
+}

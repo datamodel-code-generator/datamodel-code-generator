@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator.format import PythonVersion
 
-from .constants import LITERAL_PATTERN_INTERSECTION_CASE_IDS, PAYLOAD_TARGET_PYTHON_VERSION
+from .constants import PAYLOAD_TARGET_PYTHON_VERSION
 from .models import PayloadBackend, SchemaCase
 
 if TYPE_CHECKING:
@@ -99,17 +99,6 @@ PYDANTIC_V2_DATACLASS_BUILTIN_NAME_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
 }
 PYDANTIC_V2_DATACLASS_REGEX_EXCLUDED_CASES: Final[dict[str, str]] = {
-    **dict.fromkeys(
-        LITERAL_PATTERN_INTERSECTION_CASE_IDS,
-        "root pattern aliases have no consuming dataclass to carry ConfigDict(regex_engine='python-re')",
-    ),
-    "jsonschema/lookaround_mixed_constraints.json": (
-        "root-level oneOf generates a bare TypeAliasType with no consuming dataclass to carry "
-        "ConfigDict(regex_engine='python-re'), so TypeAdapter construction still rejects the lookaround pattern"
-    ),
-    "jsonschema/root_alias_constraints/lookaround.json": (
-        "root pattern aliases have no consuming dataclass to carry ConfigDict(regex_engine='python-re')"
-    ),
     "openapi/pattern_lookaround.yaml::components.schemas.info": (
         "pydantic dataclass schema construction rejects lookaround regex constraints"
     ),
