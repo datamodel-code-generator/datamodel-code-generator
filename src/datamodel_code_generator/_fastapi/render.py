@@ -7,7 +7,6 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
-from datamodel_code_generator._api_types import APIGenerationError
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
@@ -17,18 +16,17 @@ from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
-from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
 from datamodel_code_generator._target_contract import ConstructorType, LiteralScalar, LiteralSequence
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
+from datamodel_code_generator._target_templates import builtin_role
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
-    from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.documentation import Documentation
     from datamodel_code_generator._fastapi.plan import (
         Argument,
@@ -43,7 +41,6 @@ if TYPE_CHECKING:
         SchemeSpec,
         ServerPlan,
     )
-    from datamodel_code_generator._fastapi.templates import TemplateSet
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -53,6 +50,7 @@ if TYPE_CHECKING:
         GeneratedTypeContractBatch,
         TypeArgument,
     )
+    from datamodel_code_generator._target_templates import Role, TemplateOverlay
 
 WIDTH: Final = 88
 _MIN_CONTENT_STATUS: Final = 200
@@ -227,21 +225,19 @@ class ServerRenderer:  # noqa: PLR0904
         plan: ServerPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
-        templates: TemplateSet | None = None,
-        context: FastAPIContext | None = None,
+        templates: TemplateOverlay | None = None,
         docs: Documentation | None = None,
     ) -> None:
         """Keep the plans.
 
-        A template set overrides builtin roles and adds extra files, which render from the context. The documentation
-        adds what FastAPI cannot derive from the routes to its own document.
+        The overrides of a custom template directory replace builtin roles. The documentation adds what FastAPI cannot
+        derive from the routes to its own document.
         """
         self.config = config
         self.package = package
         self.backend = backend
         self.plan = plan
-        self.templates = templates
-        self.context = context
+        self.role: Role = builtin_role if templates is None else templates.role
         self.docs = docs
         self.batch = batch
         self.wire = wire
@@ -252,53 +248,6 @@ class ServerRenderer:  # noqa: PLR0904
         for scheme in plan.schemes:
             taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
             self.scheme_names[scheme.name] = name
-
-    def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
-        """Return the renderer of one builtin role: the template directory's override, or the compiled builtin."""
-        if (templates := self.templates) is None:
-            return compiled
-        return templates.role(name, compiled, context=self.context, **frame)
-
-    def router_frame(self, group: GroupSpec | None) -> dict[str, object]:
-        """Return the router view and tag a router template receives."""
-        if self.context is None or group is None:
-            return {}
-        view = next(router for router in self.context.routers if router.key == group.key)
-        return {"router": view, "tag": view.primary_tag}
-
-    def extras(self) -> Iterator[RenderedFile]:
-        """Render the extra files of the template manifest, once for a project or each router or operation."""
-        if (templates := self.templates) is None or (context := self.context) is None:
-            return
-        for extra in templates.extras:
-            frames: list[tuple[str, dict[str, object]]]
-            if extra.scope == "project":
-                frames = [(extra.path, {})]
-            elif extra.scope == "router":
-                frames = [
-                    (extra.path.replace(ROUTER, view.file_stem), {"router": view, "tag": view.primary_tag})
-                    for view in context.routers
-                ]
-            else:
-                frames = [
-                    (extra.path.replace(OPERATION, view.python_name), {"operation": view})
-                    for view in context.operations
-                ]
-            for path, frame in frames:
-                text = templates.render(extra.template, {"context": context, **frame})
-                if (problem := invalid(extra.format, text)) is not None:
-                    raise APIGenerationError((templates.problem(f"{path} is not valid {extra.format}: {problem}"),))
-                yield RenderedFile(path=self.package / path, kind="template", text=text, header=extra.header)
-
-    def placed(self, files: tuple[RenderedFile, ...], extras: tuple[RenderedFile, ...]) -> None:
-        """Reject extra files that take the path of a builtin file, a runtime module, or another extra file."""
-        taken = {file.path for file in files}
-        assert self.templates is not None
-        for extra in extras:
-            if extra.path in taken:
-                message = f"Several generated files take {extra.path.as_posix()}"
-                raise APIGenerationError((self.templates.conflict(message),))
-            taken.add(extra.path)
 
     def file(self, path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one owned file of the package."""
@@ -318,11 +267,7 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             RenderedFile(path=PurePosixPath("README.md"), kind="readme", text=self.readme()),
         )
-        extras = tuple(self.extras())
-        runtime = tuple(self.runtime())
-        if extras:
-            self.placed((*files, *runtime), extras)
-        return (*files, *extras, *runtime)
+        return (*files, *self.runtime())
 
     def readme(self) -> str:
         """Return the README of the target root: the operations, how to implement and connect them, and regeneration."""
@@ -455,7 +400,7 @@ class ServerRenderer:  # noqa: PLR0904
         name = "every operation" if group is None or self.config.layout == "single" else f"the {group.stem} operations"
         router = module.name("fastapi", "APIRouter")
         final = module.name("typing", "Final")
-        return self.role("router.jinja2", router_template.render, **self.router_frame(group))(
+        return self.role("router.jinja2", router_template.render)(
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
             routes=routes,
             api_router=router,

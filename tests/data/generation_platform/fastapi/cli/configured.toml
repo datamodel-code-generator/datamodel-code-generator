@@ -7,7 +7,6 @@ handler_mode = "async"
 include_request = true
 body_mode = "request"
 router_names = { "tag:pets" = "animals" }
-templates = "templates"
 
 [[body_modes]]
 operation = "/paths/~1pets/post"
@@ -39,11 +38,3 @@ name = "trace"
 [[handler_modes]]
 operation = "/paths/~1pets/get"
 mode = "sync"
-
-[[hooks]]
-module = "tests.data.python.fastapi_hooks"
-callable = "record"
-
-[[hooks]]
-file = "hooks/tagged.py"
-callable = "annotate"

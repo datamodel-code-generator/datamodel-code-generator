@@ -619,22 +619,13 @@ def test_fastapi_cli_missing_target_config(
             None,
         ),
         (
-            "failing-hook.toml",
-            ["--diagnostics-json", "-"],
-            (
-                "E_HOOK_FAILURE error hook hooks[0]: Hook 0 raised LookupError: "
-                "The hook could not read its settings for 6 operations\n"
-            ),
-            "failing-hook-report.txt",
-        ),
-        (
             "fastapi.toml",
             ["--dependency-format", "requirements", "--diagnostics-json", "-"],
             "E_CONFIG_CONFLICT error config: --dependency-format cannot be used with --diagnostics-json -\n",
             "format-report.txt",
         ),
     ],
-    ids=["unknown", "backend", "metadata", "hook", "format"],
+    ids=["unknown", "backend", "metadata", "format"],
 )
 def test_fastapi_cli_config_errors(
     config: str,
@@ -645,7 +636,7 @@ def test_fastapi_cli_config_errors(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Report target settings, model settings, and hooks that fail before any file is written."""
+    """Report target settings and model settings that fail before any file is written."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "metadata").mkdir()
     run_main_and_assert(
@@ -663,16 +654,14 @@ def test_fastapi_cli_config_errors(
 
 
 def test_fastapi_cli_config_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Read every setting of a flat target file."""
+    """Read every setting of a flat target file, and the server templates of the custom template directory."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "templates" / "roles", tmp_path / "templates")
-    (tmp_path / "hooks").mkdir()
-    shutil.copy2(SOURCE / "hooks" / "tagged.py", tmp_path / "hooks" / "tagged.py")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server(),
+        extra_args=_server("--custom-template-dir", "templates"),
         copy_files=_inputs(tmp_path, "configured.toml"),
     )
     sources = sorted(

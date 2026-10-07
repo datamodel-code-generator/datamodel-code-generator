@@ -12,5 +12,5 @@ class ClientTemplates(TemplateOverlay):
 
     BUILTIN = Path(__file__).parent / "templates"
     ROLES = frozenset({"client.jinja2", "resource.jinja2", "types.jinja2", "readme.jinja2"})
+    SUBDIR = "client"
     INVALID = "E_TEMPLATE_INVALID"
-    OPTION = "model_config.custom_template_dir"

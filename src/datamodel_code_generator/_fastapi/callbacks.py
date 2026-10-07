@@ -16,19 +16,13 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CallbackNode:
-    """One callback operation under an operation or callback: its keys, name, expression, method, and callbacks."""
+    """One callback operation under an operation or callback: its key, name, expression, method, and callbacks."""
 
     key: str
-    parent_key: str
     name: str
     tokens: tuple[str, ...]
     operation: OperationContract
     callbacks: tuple[CallbackNode, ...]
-
-    @property
-    def expression(self) -> str:
-        """Return the runtime expression the callback operation is sent to."""
-        return self.tokens[0]
 
 
 class CallbackIndex:
@@ -68,7 +62,6 @@ class CallbackIndex:
                 nodes.append(
                     CallbackNode(
                         key=child,
-                        parent_key=key,
                         name=name,
                         tokens=tokens,
                         operation=operation,

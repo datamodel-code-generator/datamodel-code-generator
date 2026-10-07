@@ -333,11 +333,6 @@
   },
   "callbacks": {
     "input": "callbacks.yaml",
-    "config": {
-      "hooks": [
-        "record"
-      ]
-    },
     "package_snapshots": []
   },
   "scheme-names": {
@@ -370,372 +365,39 @@
     },
     "package_snapshots": []
   },
-  "hooks": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "rename",
-        "reverse",
-        "asynchronous",
-        "annotate",
-        "record"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "package_snapshots": []
+  "templates": {
+    "input": "pets.yaml",
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it.",
+          "team": "the platform team"
+        }
+      }
+    }
   },
-  "hook-file": {
-    "input": "hooks.yaml",
+  "template-invalid": {
+    "input": "pets.yaml",
+    "model": {
+      "custom_template_dir": "templates/invalid"
+    }
+  },
+  "template-missing": {
+    "input": "pets.yaml",
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
     ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        {
-          "file": "hooks/tagged.py"
-        },
-        {
-          "module": "tests.data.python.fastapi_hooks",
-          "callable": "rename"
-        },
-        {
-          "file": "hooks/tagged.py"
-        },
-        {
-          "file": "hooks/tagged.py",
-          "callable": "annotate"
-        }
-      ]
+    "runtime": [
+      "pydantic_v2.BaseModel"
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "custom_template_dir": "templates/missing"
     },
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "package_snapshots": []
-  },
-  "hook-invalid": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "invalid"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-unhashable": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "unhashable"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-untyped": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "untyped"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-collide": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "collide"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-failing": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        "failing"
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-not-callable": {
-    "input": "hooks.yaml",
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        {
-          "module": "tests.data.python.fastapi_hooks",
-          "callable": "NOT_CALLABLE"
-        }
-      ]
-    },
-    "files": [
-      "hooks-paths.yaml"
-    ]
-  },
-  "hook-broken-file": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "hooks": [
-        {
-          "file": "hooks/broken.py"
-        }
-      ]
-    }
-  },
-  "templates": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/custom"
-    },
-    "package_snapshots": []
-  },
-  "template-roles": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/roles"
-    },
-    "package_snapshots": []
-  },
-  "template-invalid": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/invalid"
-    }
-  },
-  "template-not-toml": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/not-toml"
-    }
-  },
-  "template-not-array": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/not-array"
-    }
-  },
-  "template-conflict-builtin": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/conflict-builtin"
-    }
-  },
-  "template-conflict-extras": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/conflict-extras"
-    }
-  },
-  "template-conflict-runtime": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/conflict-runtime"
-    }
-  },
-  "template-bad-json": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/bad-json"
-    }
-  },
-  "template-missing": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/missing"
-    }
-  },
-  "template-not-tables": {
-    "input": "hooks.yaml",
-    "files": [
-      "hooks-paths.yaml"
-    ],
-    "config": {
-      "include_request": true,
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "templates": "templates/not-tables"
-    }
+    "expected": "pets"
   }
 }

@@ -15,39 +15,53 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from jinja2 import Environment
+    from typing_extensions import Self
+
+    from datamodel_code_generator.config import GenerateConfig
 
 Role: TypeAlias = Callable[..., Callable[..., str]]
 
 
 class TemplateOverlay:
-    """The `subdir` of a custom template directory, whose files replace the builtin roles of the same name.
+    """A target's subdirectory of a custom template directory, whose files replace the builtin roles of that name.
 
     The directory loads before the builtin templates through the Jinja environment of the model templates, so an
     override may include or import any other builtin template. A missing directory or role falls back to the builtin
     role, as model templates do, and overrides receive the template data, as custom model templates do. A target names
-    its builtin directory, its roles, the code of a template that does not render, and the setting of the directory.
+    its builtin directory, its roles, its subdirectory, and the code of a template that does not render.
     A `Role` returns the renderer of a builtin role from its name, its compiled renderer, and the values only overrides
     receive.
     """
 
     BUILTIN: ClassVar[Path]
     ROLES: ClassVar[frozenset[str]]
+    SUBDIR: ClassVar[str]
     INVALID: ClassVar[str]
-    OPTION: ClassVar[str]
+    OPTION: ClassVar[str] = "model_config.custom_template_dir"
 
     def __init__(
         self,
         custom_template_dir: Path,
-        subdir: str,
         target_id: str,
         data: Mapping[str, object] = MappingProxyType({}),
     ) -> None:
         """Find the roles the directory overrides."""
-        self.subdir = subdir
-        self.directory = custom_template_dir / subdir
+        self.directory = custom_template_dir / self.SUBDIR
         self.target_id = target_id
         self.data = data
         self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
+
+    @classmethod
+    def custom(cls, model_config: GenerateConfig, target_id: str) -> Self | None:
+        """Return the overrides of the model configuration's custom template directory, if it sets one.
+
+        Overrides receive the `#all#` extra template data, as custom model templates do.
+        """
+        if (directory := model_config.custom_template_dir) is None:
+            return None
+        from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
+
+        return cls(directory, target_id, (model_config.extra_template_data or {}).get(ALL_MODEL, {}))
 
     @cached_property
     def environment(self) -> Environment:
@@ -72,10 +86,10 @@ class TemplateOverlay:
         try:
             return self.environment.get_template(template).render(**values)
         except TemplateNotFound as error:
-            message = f"{PurePosixPath(self.subdir, template)}: template {error.name!r} not found"
+            message = f"{PurePosixPath(self.SUBDIR, template)}: template {error.name!r} not found"
             raise APIGenerationError((self.problem(message),)) from None
         except TemplateError as error:
-            name = PurePosixPath(self.subdir, getattr(error, "name", None) or template)
+            name = PurePosixPath(self.SUBDIR, getattr(error, "name", None) or template)
             line = getattr(error, "lineno", None)
             where = name if line is None else f"{name} line {line}"
             raise APIGenerationError((self.problem(f"{where}: {error}"),)) from None
@@ -94,13 +108,9 @@ class TemplateOverlay:
         return render
 
     def problem(self, message: str) -> Diagnostic:
-        """Return a template diagnostic of this target."""
-        return self.diagnostic(self.INVALID, message)
-
-    def diagnostic(self, code: str, message: str) -> Diagnostic:
-        """Return a diagnostic of this target's templates."""
+        """Return the diagnostic of a template of this target that does not render."""
         return Diagnostic(
-            code=code,
+            code=self.INVALID,
             severity="error",
             stage="target",
             message=message,

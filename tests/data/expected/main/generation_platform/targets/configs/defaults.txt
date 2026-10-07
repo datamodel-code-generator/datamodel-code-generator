@@ -24,5 +24,3 @@ primary_responses=mappingproxy({})
 operation_names=mappingproxy({})
 router_names=mappingproxy({})
 parameter_names=mappingproxy({})
-hooks=()
-templates=None

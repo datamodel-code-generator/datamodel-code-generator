@@ -334,7 +334,7 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"render": {"config": {"hooks": ["interfere"]}}}
+      {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.interfere"]}}}
     ]
   },
   "directory": {
@@ -476,8 +476,8 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"config": {"header": "Café 漢", "encoding": "latin-1"}}},
-      {"render": {"config": {"templates": "templates/broken"}}},
-      {"render": {"config": {"templates": "templates/misplaced"}}},
+      {"render": {"model": {"custom_template_dir": "templates/broken"}}},
+      {"render": {"model": {"custom_template_dir": "templates/misplaced"}}},
       {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
@@ -497,27 +497,24 @@
   },
   "target-grammar": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
     "steps": [
       {"render": {"model": {"target_python_version": "3.11"}}}
-    ],
-    "config": {"templates": "templates/modern"}
+    ]
   },
   "target-grammar-modern": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
     "steps": [
       {"render": {"model": {"target_python_version": "3.12"}}}
-    ],
-    "config": {"templates": "templates/modern"}
+    ]
   },
   "target-grammar-misplaced": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/misplaced"},
     "steps": [
       {"render": {"model": {"target_python_version": "3.12"}}}
-    ],
-    "config": {"templates": "templates/misplaced"}
+    ]
   },
   "input-cycles": {
     "input": {

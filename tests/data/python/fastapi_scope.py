@@ -13,7 +13,6 @@ WATCHED = (
     "datamodel_code_generator._publication",
     "datamodel_code_generator._api_publication",
     "datamodel_code_generator._openapi_generation",
-    "probe_hooks",
 )
 TARGET = (
     "datamodel_code_generator._target_cli",
@@ -22,7 +21,6 @@ TARGET = (
     "datamodel_code_generator.fastapi",
     "datamodel_code_generator.api_types",
 )
-HOOKS = '[[hooks]]\nmodule = "probe_hooks"\n'
 EMPTY = 'openapi: 3.1.0\ninfo: {title: Empty, version: "1.0"}\npaths: {}\n'
 PRIMITIVE = EMPTY + "components:\n  schemas:\n    Name: {type: string}\n"
 UNSELECTED = (
@@ -33,7 +31,6 @@ SELECTION = '[selection]\nexclude_tags = ["names"]\nreason = "Nothing is selecte
 
 
 def _write(root: Path) -> None:
-    (root / "probe_hooks.py").write_text("def transform(context):\n    return context\n", encoding="utf-8")
     for name, text, extra in (
         ("primitive", PRIMITIVE, ""),
         ("empty", EMPTY, ""),
@@ -41,7 +38,7 @@ def _write(root: Path) -> None:
     ):
         (root / f"{name}.yaml").write_text(text, encoding="utf-8")
         target = 'schema_version = 1\npackage = "server"\nmodel_package = "models"\noutput = "server"\n'
-        (root / f"{name}.toml").write_text(target + extra + HOOKS, encoding="utf-8")
+        (root / f"{name}.toml").write_text(target + extra, encoding="utf-8")
 
 
 def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
@@ -49,7 +46,6 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
     from datamodel_code_generator.fastapi import (
         APIGenerationError,
         FastAPIConfig,
-        HookReference,
         generate_fastapi,
         render_fastapi,
     )
@@ -67,7 +63,6 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
         package="server",
         model_package="models",
         model_mode="verify" if mode == "verify" else "generate",
-        hooks=(HookReference(module="probe_hooks"),),
     )
     entry = render_fastapi if mode == "render" else generate_fastapi
     try:
@@ -103,7 +98,6 @@ def _ordinary(root: Path) -> str:
 
 def main(root: Path) -> None:
     """Run every entry point for each input, then print the runs, the watched modules they imported, and new files."""
-    sys.path.insert(0, str(root))
     _write(root)
     ordinary = _ordinary(root)
     import datamodel_code_generator.fastapi  # noqa: F401, PLC0415

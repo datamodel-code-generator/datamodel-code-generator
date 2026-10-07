@@ -37,6 +37,7 @@ from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
+from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -71,7 +72,6 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeUseId,
     )
-    from datamodel_code_generator._target_templates import TemplateOverlay
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
 PYDANTIC: Final = "pydantic>=2.13.5"
@@ -189,24 +189,9 @@ class ClientTarget:
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
             backend=backend,
             dependencies=(*dependencies, *(() if config.model_dependency is None else (config.model_dependency,))),
-            templates=_templates(request),
+            templates=ClientTemplates.custom(request.model_config, request.target_id),
         )
         return TargetRender(files=renderer.files(), dependencies=dependencies)
-
-
-def _templates(request: TargetRequest) -> TemplateOverlay | None:
-    """Return the client overrides of the custom template directory with the `#all#` template data, if one is set.
-
-    The overlay and the model template module are imported only for a custom template directory.
-    """
-    model_config = request.model_config
-    if (directory := model_config.custom_template_dir) is None:
-        return None
-    from datamodel_code_generator._client.templates import ClientTemplates  # noqa: PLC0415
-    from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
-
-    data = (model_config.extra_template_data or {}).get(ALL_MODEL, {})
-    return ClientTemplates(directory, "client", request.target_id, data)
 
 
 def _wire(

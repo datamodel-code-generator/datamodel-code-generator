@@ -1,0 +1,7 @@
+# {{ title }}
+
+{{ support }}
+
+{% for operation in operations -%}
+- `{{ operation.method }} {{ operation.path }}` is handled by `{{ operation.service }}.{{ operation.name }}`
+{% endfor %}

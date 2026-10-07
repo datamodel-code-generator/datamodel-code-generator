@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from enum import Enum
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
@@ -50,7 +49,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
-    from datamodel_code_generator._fastapi.context import ArgumentLocation
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -69,6 +67,9 @@ if TYPE_CHECKING:
     )
 
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
+ArgumentLocation: TypeAlias = Literal[
+    "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
+]
 Transport: TypeAlias = Literal["fastapi_native", "adapter", "raw_request"]
 Reason: TypeAlias = Literal[
     "native_supported",
@@ -303,22 +304,13 @@ class OperationSpec:
         """Return whether FastAPI's response_model sends bare primary values."""
         return self.primary is not None and self.primary.decision.transport == "fastapi_native"
 
-    def decisions(self) -> Iterator[Decision]:
-        """Yield the operation's decisions in parameter, body, and primary response order."""
-        yield from (parameter.decision for parameter in self.parameters)
-        if self.body is not None:
-            yield self.body.decision
-        if self.primary is not None:
-            yield self.primary.decision
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, name, first tag, and operations in declaration order."""
+    """One router group: its key, name, and operations in declaration order."""
 
     key: str
     stem: str
-    primary_tag: str | None
     operations: tuple[OperationSpec, ...]
 
     @property
@@ -384,19 +376,6 @@ def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Revision:
-    """Plan changes that hooks ask for, keyed by operation or group key, applied over the configuration.
-
-    An order selects and orders the planned operations; None keeps the selection's.
-    """
-
-    order: tuple[str, ...] | None = None
-    operation_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    handler_modes: Mapping[str, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
-
-
 def _encoded(media: MediaSpec) -> WireDeclaration | None:
     """Return the first form encoding that neither FastAPI's Form nor the form adapter reads."""
     return next(
@@ -424,12 +403,10 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
-        revision: Revision | None = None,
     ) -> None:
         """Index the batch, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
-        self.revision = revision or Revision()
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
@@ -451,14 +428,11 @@ class Planner:  # noqa: PLR0904
         self.schemes: dict[str, SchemeSpec] = {}
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
-        self.names = {**self.selected("operation_names", config.operation_names), **self.revision.operation_names}
+        self.names = self.selected("operation_names", config.operation_names)
         self.body_modes = self.selected("body_modes", config.body_modes)
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
-        self.modes: dict[str, HandlerMode] = {
-            **self.selected("handler_modes", config.handler_modes),
-            **self.revision.handler_modes,
-        }
+        self.modes: dict[str, HandlerMode] = self.selected("handler_modes", config.handler_modes)
         self.raise_problems()
 
     def raise_problems(self) -> None:
@@ -484,9 +458,6 @@ class Planner:  # noqa: PLR0904
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
-        if (order := self.revision.order) is not None:
-            keyed = {operation.id.use_site.pointer: operation for operation in operations}
-            operations = tuple(keyed[key] for key in order)
         names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
@@ -509,8 +480,7 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        router_names = {**self.config.router_names, **self.revision.router_names}
-        stems = {key: router_names.get(key) or group_stem(key) for key in members}
+        stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(stem_conflicts(stems.values()))
@@ -519,7 +489,6 @@ class Planner:  # noqa: PLR0904
             GroupSpec(
                 key=key,
                 stem=stems[key],
-                primary_tag=key.removeprefix("tag:") if key.startswith("tag:") else None,
                 operations=tuple(values),
             )
             for key, values in members.items()
