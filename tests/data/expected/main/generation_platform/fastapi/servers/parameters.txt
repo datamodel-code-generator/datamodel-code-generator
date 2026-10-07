@@ -36,10 +36,10 @@ service UntaggedService without its methods: TypeError
 > GET /ratios?ratios=1&limits=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limits", 0]}]
 > GET /sizes
-  get_sizes(size=10, words=['a', 'b'], one='x', least=7)
+  get_sizes(size=10, words=['a', 'b'], one='x', least=UNSET)
 < 204 - b''
 > GET /sizes?size=3&words=x&words=y
-  get_sizes(size=3, words=['x', 'y'], one='x', least=7)
+  get_sizes(size=3, words=['x', 'y'], one='x', least=UNSET)
 < 204 - b''
 > GET /sizes?size=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
