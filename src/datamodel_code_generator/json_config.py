@@ -103,15 +103,19 @@ class LegacyExtraTemplateDataConfig(RootModel[dict[str, Any]]):
 class ServerHandlerModesConfig(RootModel[dict[str, Literal["sync", "async"]]]):
     """Handler modes of server operations, keyed by operation reference."""
 
+    model_config = ConfigDict(defer_build=True)
+
 
 class ServerBodyModesConfig(RootModel[dict[str, Literal["typed", "request"]]]):
     """Request body modes of server operations, keyed by operation reference."""
+
+    model_config = ConfigDict(defer_build=True)
 
 
 class ServerPrimaryResponseConfig(BaseModel):
     """The declared response a bare server return value takes."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", defer_build=True)
 
     status_code: int = Field(strict=True, ge=100, le=599)
     media_type: str | None = None
@@ -120,9 +124,13 @@ class ServerPrimaryResponseConfig(BaseModel):
 class ServerPrimaryResponsesConfig(RootModel[dict[str, ServerPrimaryResponseConfig]]):
     """Primary responses of server operations, keyed by operation reference."""
 
+    model_config = ConfigDict(defer_build=True)
+
 
 class ServerParameterNamesConfig(RootModel[dict[str, dict[str, str]]]):
     """Server argument names keyed by operation reference, then by location and parameter name."""
+
+    model_config = ConfigDict(defer_build=True)
 
 
 JsonConfigStrictModel: TypeAlias = (
@@ -144,7 +152,7 @@ JsonConfigLegacyModel: TypeAlias = type[StringMappingConfig] | type[LegacyExtraT
 class JsonConfigSchemasPayload(BaseModel):
     """Strict JSON configuration schemas accepted by datamodel-code-generator."""
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True, protected_namespaces=())
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, protected_namespaces=(), defer_build=True)
 
     aliases: StringOrStringListMappingConfig | None = Field(default=None)
     base_class_map: StringOrStringListMappingConfig | None = Field(default=None, alias="base-class-map")

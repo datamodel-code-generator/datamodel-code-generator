@@ -380,6 +380,7 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
     ("arguments", "message"),
     [
         ([*OPTIONS, "--server-layout", "single"], "--server-layout requires --generate-server"),
+        ([*OPTIONS, "--no-server-include-request"], "--no-server-include-request requires --generate-server"),
         (
             [*OPTIONS, *PACKAGES, "--server-include-request", "--diagnostics-json", "-", "--dependency-format", "uv"],
             (
@@ -400,7 +401,14 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
             "--check cannot be used with --emit-model-metadata",
         ),
     ],
-    ids=["server-option", "server-options", "no-server-settings", "missing-server-settings", "metadata"],
+    ids=[
+        "server-option",
+        "negative-option",
+        "server-options",
+        "no-server-settings",
+        "missing-server-settings",
+        "metadata",
+    ],
 )
 def test_fastapi_cli_usage(
     arguments: list[str], message: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -414,6 +422,24 @@ def test_fastapi_cli_usage(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=f"Error: {message}\n",
+        output_should_not_exist=True,
+    )
+
+
+def test_fastapi_cli_invalid_unselected_pyproject(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse an invalid server key of pyproject.toml like an invalid model key, though no server is selected."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=OPTIONS,
+        copy_files=_inputs(tmp_path, "pyproject-bogus.toml"),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="Invalid configuration: 1 validation error for Config\nserver_layout\n",
         output_should_not_exist=True,
     )
 
@@ -726,24 +752,33 @@ def test_fastapi_cli_conflicts(
 
 
 @pytest.mark.parametrize(
-    ("arguments", "stderr"),
+    ("pyproject", "arguments", "stderr"),
     [
-        (["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
-        (["--job", "server"], f"{CONFLICT} --job\n"),
-        (["--all-jobs", "--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN),
+        ("pyproject-jobs.toml", ["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
+        ("pyproject-jobs.toml", ["--job", "server"], f"{CONFLICT} --job\n"),
+        ("pyproject-jobs.toml", ["--all-jobs", "--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN),
+        (
+            "pyproject-model-jobs.toml",
+            ["--all-jobs", "--server-layout", "single"],
+            "Error: --server-layout requires --generate-server\n",
+        ),
     ],
-    ids=["all-jobs", "job", "jobs-pyproject"],
+    ids=["all-jobs", "job", "jobs-pyproject", "model-job-server-option"],
 )
 def test_fastapi_cli_jobs(
+    pyproject: str,
     arguments: list[str],
     stderr: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse a job that selects the server, until the job runner stages target packages, writing nothing."""
+    """Refuse server jobs and server options of model-only jobs, writing nothing.
+
+    A job cannot select the server until the job runner stages target packages.
+    """
     monkeypatch.chdir(tmp_path)
-    _copy(tmp_path, "pyproject-jobs.toml")
+    _copy(tmp_path, pyproject)
     run_main_with_args(arguments, expected_exit=Exit.ERROR, capsys=capsys, expected_stderr=stderr)
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"

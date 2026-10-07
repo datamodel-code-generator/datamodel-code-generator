@@ -33,9 +33,9 @@ pyproject.toml, here as `generate-server = "fastapi"`.
 
 **Option relationships:**
 
-- **Requires:** [`--server-output`](target-generation-options.md#server-output)
-- **Requires:** [`--server-package`](target-generation-options.md#server-package)
-- **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package)
+- **Requires:** [`--server-output`](target-generation-options.md#server-output) - `--generate-server` requires `--server-output`.
+- **Requires:** [`--server-package`](target-generation-options.md#server-package) - `--generate-server` requires `--server-package`.
+- **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package) - `--generate-server` requires `--server-model-package`.
 
 !!! tip "Usage"
 
@@ -170,7 +170,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-body-mode` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -306,7 +306,7 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-body-modes` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -442,7 +442,7 @@ methods. `--server-handler-modes` overrides it for single operations.
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-handler-mode` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -579,7 +579,7 @@ pyproject.toml, `server-handler-modes` is a table, and a command-line value repl
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-handler-modes` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -714,7 +714,7 @@ Each service method takes a `request` keyword argument as well as the operation'
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-include-request` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -853,7 +853,7 @@ Choose how the server package lays out its routes (experimental).
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-layout` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1059,7 +1059,7 @@ generates.
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-model-package` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1194,7 +1194,7 @@ snake_case form of their operationId, or of their method and path.
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-operation-names` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1330,7 +1330,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-output` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1465,7 +1465,7 @@ generation prints name the package by it; the package imports its own modules re
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-package` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1600,7 +1600,7 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-parameter-names` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1736,7 +1736,7 @@ primary response from the declared success responses.
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-primary-responses` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 
@@ -1942,7 +1942,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
 
 **Option relationships:**
 
-- **Requires:** [`--generate-server`](target-generation-options.md#generate-server)
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-router-names` requires `--generate-server fastapi`.
 
 !!! tip "Usage"
 

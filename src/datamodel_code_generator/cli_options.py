@@ -981,80 +981,139 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         name="--generate-server",
         category=OptionCategory.TARGET,
         requires=(
-            CLIOptionRelation(option="--server-output"),
-            CLIOptionRelation(option="--server-package"),
-            CLIOptionRelation(option="--server-model-package"),
+            CLIOptionRelation(option="--server-output", message="`--generate-server` requires `--server-output`."),
+            CLIOptionRelation(option="--server-package", message="`--generate-server` requires `--server-package`."),
+            CLIOptionRelation(
+                option="--server-model-package", message="`--generate-server` requires `--server-model-package`."
+            ),
         ),
     ),
     "--server-output": CLIOptionMeta(
         name="--server-output",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-output` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-package": CLIOptionMeta(
         name="--server-package",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-package` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-model-package": CLIOptionMeta(
         name="--server-model-package",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-model-package` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-layout": CLIOptionMeta(
         name="--server-layout",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-layout` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-handler-mode": CLIOptionMeta(
         name="--server-handler-mode",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-handler-mode` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-handler-modes": CLIOptionMeta(
         name="--server-handler-modes",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-handler-modes` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-include-request": CLIOptionMeta(
         name="--server-include-request",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-include-request` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--no-server-include-request": CLIOptionMeta(
         name="--no-server-include-request",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server",
+                message="`--no-server-include-request` requires `--generate-server fastapi`.",
+            ),
+        ),
     ),
     "--server-body-mode": CLIOptionMeta(
         name="--server-body-mode",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-body-mode` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-body-modes": CLIOptionMeta(
         name="--server-body-modes",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-body-modes` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-primary-responses": CLIOptionMeta(
         name="--server-primary-responses",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-primary-responses` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-operation-names": CLIOptionMeta(
         name="--server-operation-names",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-operation-names` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-router-names": CLIOptionMeta(
         name="--server-router-names",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-router-names` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
     "--server-parameter-names": CLIOptionMeta(
         name="--server-parameter-names",
         category=OptionCategory.TARGET,
-        requires=(CLIOptionRelation(option="--generate-server"),),
+        requires=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--server-parameter-names` requires `--generate-server fastapi`."
+            ),
+        ),
     ),
 }
 

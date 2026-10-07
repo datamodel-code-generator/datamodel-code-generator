@@ -1557,27 +1557,33 @@ def _generation_config(  # noqa: PLR0913
     return generation_config
 
 
-def _option_list(fields: Sequence[str]) -> str:
-    """Name the options of Config fields as an English list."""
-    flags = [f"--{field.replace('_', '-')}" for field in fields]
+def _option_list(flags: Sequence[str]) -> str:
+    """Name options as an English list."""
     return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
 
 
-def _target_usage_error(
-    config: Config, cli_config_args: Mapping[str, _RawConfigValue], namespace: Namespace
-) -> str | None:
+def _flag(field: str, *, negative: bool = False) -> str:
+    """Return the option of a Config field, or its --no- form."""
+    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
+
+
+def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
     """Return why the target options of a run cannot apply, if they cannot.
 
-    Server settings that come only from pyproject.toml are ignored while no server is selected.
+    Server keys of pyproject.toml are validated like model keys but have no effect while no server is selected.
     """
     if config.generate_server is None:
-        given = [field for field in cli_config_args if field.startswith("server_")]
-        given += [field for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
+        given = [
+            _flag(field, negative=value is False)
+            for field, value in _explicit_config_args(namespace).items()
+            if field.startswith("server_")
+        ]
+        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
         if not given:
             return None
         return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"
     if missing := [field for field in _SERVER_REQUIRED_FIELDS if getattr(config, field) is None]:
-        return f"--generate-server requires {_option_list(missing)}"
+        return f"--generate-server requires {_option_list([_flag(field) for field in missing])}"
     return None
 
 
@@ -1678,7 +1684,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
 
 
 def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
-    """Hand the selected generation target to its runner, which reports every diagnostic; a job passes no config."""
+    """Hand the selected generation target to its runner, which reports every diagnostic."""
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
     return Exit(run_target(args, namespace, config, pyproject_path))
@@ -2555,7 +2561,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    if (target_usage := _target_usage_error(config, cli_config_args, namespace)) is not None:
+    if (target_usage := _target_usage_error(config, namespace)) is not None:
         print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
     if config.generate_server is not None:
