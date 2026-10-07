@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -383,7 +384,8 @@ def test_client_config(case: str, tmp_path: Path) -> None:
 )
 def test_client_output_options(case: str, options: dict[str, object], tmp_path: Path) -> None:
     """Head, format, and encode the client files with the model output options, exactly like the models."""
-    generate_client(SOURCE / "pets.yaml", tmp_path, "client", "pydantic_v2.BaseModel", model=options)
+    source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
+    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     encoding = str(options.get("encoding", "utf-8"))
     text = (tmp_path / "client" / "resources" / "pets" / "__init__.py").read_bytes().decode(encoding)
     assert_output(
