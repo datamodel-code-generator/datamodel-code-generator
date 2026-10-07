@@ -7,8 +7,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldOrdersOrderIdGetPathOrderIdParameter as _dcg_type_0
-from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_1
+from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -42,8 +41,8 @@ class OrdersResource:
     def get_order(
         self,
         *,
-        order_id: _dcg_type_0,
-        view: _dcg_type_1 | Unset = UNSET,
+        order_id: int,
+        view: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
@@ -66,8 +65,8 @@ class OrdersWithResponse:
     def get_order(
         self,
         *,
-        order_id: _dcg_type_0,
-        view: _dcg_type_1 | Unset = UNSET,
+        order_id: int,
+        view: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
@@ -90,8 +89,8 @@ class OrdersWithRawResponse:
     def get_order(
         self,
         *,
-        order_id: _dcg_type_0,
-        view: _dcg_type_1 | Unset = UNSET,
+        order_id: int,
+        view: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -114,8 +113,8 @@ class OrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: _dcg_type_0,
-        view: _dcg_type_1 | Unset = UNSET,
+        order_id: int,
+        view: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

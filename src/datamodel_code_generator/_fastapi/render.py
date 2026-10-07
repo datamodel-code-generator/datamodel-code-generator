@@ -21,7 +21,7 @@ from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, inval
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
-from datamodel_code_generator._target_contract import ConstructorType, LiteralScalar, LiteralSequence
+from datamodel_code_generator._target_contract import AnnotatedType, ConstructorType, LiteralScalar, LiteralSequence
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 
 if TYPE_CHECKING:
@@ -157,7 +157,13 @@ class _Annotations(TypeSource):
     __slots__ = ()
 
     def parts(self, value: FinalPythonType) -> tuple[str, tuple[str, ...]]:
-        """Return a type's runtime base and the Annotated metadata that constrains a constrained scalar."""
+        """Return a type's runtime base and the Annotated metadata that constrains a constrained or annotated type."""
+        if isinstance(value, AnnotatedType):
+            names = self._namespace
+            return self.runtime(value.base), tuple(
+                f"{names.name(call.import_.from_ or '', call.import_.import_)}({self._keywords(call.keywords)})"
+                for call in value.metadata
+            )
         if (
             not isinstance(value, ConstructorType)
             or ((imported := value.callable.import_).from_, imported.import_) not in CONSTRAINED
@@ -173,7 +179,7 @@ class _Annotations(TypeSource):
         return self._spell(value, static=False)
 
     def _spell(self, value: FinalPythonType | TypeArgument | GeneratedEnumMember, *, static: bool) -> str:
-        if static or not isinstance(value, ConstructorType):
+        if static or not isinstance(value, ConstructorType | AnnotatedType):
             return super()._spell(value, static=static)
         base, metadata = self.parts(value)
         return f"{self._namespace.name('typing', 'Annotated')}[{base}, {', '.join(metadata)}]" if metadata else base

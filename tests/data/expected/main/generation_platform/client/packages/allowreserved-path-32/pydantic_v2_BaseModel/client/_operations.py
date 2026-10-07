@@ -105,6 +105,7 @@ OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse]] = OperationPlan
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_0,
+            converts=True,
         ),
     ),
 )
@@ -124,6 +125,7 @@ OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse]] = Operatio
                 required=True,
             ),
             codec=model_bindings.codec_1,
+            converts=True,
         ),
     ),
 )
@@ -143,6 +145,7 @@ OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse]] = Operati
                 required=True,
             ),
             codec=model_bindings.codec_2,
+            converts=True,
         ),
     ),
 )
@@ -164,6 +167,7 @@ OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
                 shape='array',
             ),
             codec=model_bindings.codec_3,
+            converts=True,
         ),
     ),
 )
@@ -184,6 +188,7 @@ OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_4,
+            converts=True,
         ),
     ),
 )
@@ -204,6 +209,7 @@ OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse]] = Operatio
                 shape='array',
             ),
             codec=model_bindings.codec_5,
+            converts=True,
         ),
     ),
 )
@@ -226,6 +232,7 @@ OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
                 shape='array',
             ),
             codec=model_bindings.codec_6,
+            converts=True,
         ),
     ),
 )
@@ -247,6 +254,7 @@ OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse]] = OperationP
                 shape='array',
             ),
             codec=model_bindings.codec_7,
+            converts=True,
         ),
     ),
 )
@@ -268,6 +276,7 @@ OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_8,
+            converts=True,
         ),
     ),
 )
@@ -425,6 +434,7 @@ OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_15,
+            converts=True,
         ),
     ),
 )
@@ -444,6 +454,7 @@ OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse]] = Operatio
                 required=True,
             ),
             codec=model_bindings.codec_16,
+            converts=True,
         ),
     ),
 )
@@ -463,6 +474,7 @@ OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse]] = Operati
                 required=True,
             ),
             codec=model_bindings.codec_17,
+            converts=True,
         ),
     ),
 )
@@ -484,6 +496,7 @@ OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
                 shape='array',
             ),
             codec=model_bindings.codec_18,
+            converts=True,
         ),
     ),
 )
@@ -504,6 +517,7 @@ OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_19,
+            converts=True,
         ),
     ),
 )
@@ -524,6 +538,7 @@ OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse]] = Operatio
                 shape='array',
             ),
             codec=model_bindings.codec_20,
+            converts=True,
         ),
     ),
 )
@@ -546,6 +561,7 @@ OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
                 shape='array',
             ),
             codec=model_bindings.codec_21,
+            converts=True,
         ),
     ),
 )
@@ -567,6 +583,7 @@ OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse]] = OperationP
                 shape='array',
             ),
             codec=model_bindings.codec_22,
+            converts=True,
         ),
     ),
 )
@@ -588,6 +605,7 @@ OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_23,
+            converts=True,
         ),
     ),
 )
@@ -745,6 +763,7 @@ OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPla
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_30,
+            converts=True,
         ),
     ),
 )
@@ -764,6 +783,7 @@ OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse]] = Operati
                 required=True,
             ),
             codec=model_bindings.codec_31,
+            converts=True,
         ),
     ),
 )
@@ -783,6 +803,7 @@ OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse]] = Operat
                 required=True,
             ),
             codec=model_bindings.codec_32,
+            converts=True,
         ),
     ),
 )
@@ -804,6 +825,7 @@ OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan
                 shape='array',
             ),
             codec=model_bindings.codec_33,
+            converts=True,
         ),
     ),
 )
@@ -824,6 +846,7 @@ OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse]] = Operatio
                 shape='array',
             ),
             codec=model_bindings.codec_34,
+            converts=True,
         ),
     ),
 )
@@ -844,6 +867,7 @@ OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse]] = Operati
                 shape='array',
             ),
             codec=model_bindings.codec_35,
+            converts=True,
         ),
     ),
 )
@@ -866,6 +890,7 @@ OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
                 shape='array',
             ),
             codec=model_bindings.codec_36,
+            converts=True,
         ),
     ),
 )
@@ -887,6 +912,7 @@ OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_37,
+            converts=True,
         ),
     ),
 )
@@ -908,6 +934,7 @@ OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse]] = Operatio
                 shape='array',
             ),
             codec=model_bindings.codec_38,
+            converts=True,
         ),
     ),
 )
@@ -1064,6 +1091,7 @@ OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse]] = Operation
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_45,
+            converts=True,
         ),
     ),
 )
@@ -1078,6 +1106,7 @@ OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse]] = Operatio
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
             codec=model_bindings.codec_46,
+            converts=True,
         ),
     ),
 )
@@ -1092,6 +1121,7 @@ OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse]] = Operati
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
             codec=model_bindings.codec_47,
+            converts=True,
         ),
     ),
 )
@@ -1112,6 +1142,7 @@ OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse]] = OperationP
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_48,
+            converts=True,
         ),
     ),
 )
@@ -1126,6 +1157,7 @@ OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse]] = Operation
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
             codec=model_bindings.codec_49,
+            converts=True,
         ),
     ),
 )
@@ -1140,6 +1172,7 @@ OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse]] = Operatio
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
             codec=model_bindings.codec_50,
+            converts=True,
         ),
     ),
 )
@@ -1160,6 +1193,7 @@ OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse]] = OperationP
                 shape='array',
             ),
             codec=model_bindings.codec_51,
+            converts=True,
         ),
     ),
 )
@@ -1174,6 +1208,7 @@ OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse]] = Operation
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
             codec=model_bindings.codec_52,
+            converts=True,
         ),
     ),
 )
@@ -1188,6 +1223,7 @@ OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse]] = Operatio
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
             codec=model_bindings.codec_53,
+            converts=True,
         ),
     ),
 )
@@ -1209,6 +1245,7 @@ OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse]] = OperationPl
                 shape='array',
             ),
             codec=model_bindings.codec_54,
+            converts=True,
         ),
     ),
 )
@@ -1229,6 +1266,7 @@ OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse]] = OperationP
                 shape='array',
             ),
             codec=model_bindings.codec_55,
+            converts=True,
         ),
     ),
 )
@@ -1249,6 +1287,7 @@ OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse]] = Operation
                 shape='array',
             ),
             codec=model_bindings.codec_56,
+            converts=True,
         ),
     ),
 )
@@ -1417,6 +1456,7 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPla
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Wire', style='simple'),
             codec=model_bindings.codec_64,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -1426,6 +1466,7 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPla
                 explode=True,
             ),
             codec=model_bindings.codec_65,
+            converts=True,
         ),
     ),
 )
@@ -1445,6 +1486,7 @@ OPERATION_65: Final[OperationPlan[ReadTextResponse]] = OperationPlan(
                 content_media_type='text/plain',
             ),
             codec=model_bindings.codec_66,
+            converts=True,
         ),
     ),
 )
@@ -1464,6 +1506,7 @@ OPERATION_66: Final[OperationPlan[ReadJsonResponse]] = OperationPlan(
                 content_media_type='application/json',
             ),
             codec=model_bindings.codec_67,
+            converts=True,
         ),
     ),
 )
@@ -1484,6 +1527,7 @@ OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_68,
+            converts=True,
         ),
     ),
 )
@@ -1504,6 +1548,7 @@ OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
                 allow_reserved=True,
             ),
             codec=model_bindings.codec_69,
+            converts=True,
         ),
     ),
 )

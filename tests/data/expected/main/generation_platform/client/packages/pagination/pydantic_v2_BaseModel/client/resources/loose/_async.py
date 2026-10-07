@@ -7,8 +7,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldLooseGetQueryCursorParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -41,7 +39,7 @@ class AsyncLooseResource:
     async def list_loose(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLooseResponse:
@@ -64,7 +62,7 @@ class AsyncLooseWithResponse:
     async def list_loose(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLooseResponse]:
@@ -87,7 +85,7 @@ class AsyncLooseWithRawResponse:
     async def list_loose(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -110,7 +108,7 @@ class AsyncLooseWithStreamingResponse:
     def list_loose(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

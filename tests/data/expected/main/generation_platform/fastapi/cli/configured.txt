@@ -133,8 +133,9 @@ from typing import Annotated, Final
 
 import models
 import pydantic
-from fastapi import APIRouter, Body, Depends, Header, Query, Request
+from fastapi import APIRouter, Body, Depends, Header, Path, Query, Request
 from fastapi.responses import Response
+from pydantic import Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -150,6 +151,10 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
     def list_all(
         *,
         request: Request,
+        page_size: Annotated[int, Field(ge=1, le=100), Query(
+            alias='limit',
+            description='Page size.',
+        )] = 20,
         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
         kind: Annotated[models.FieldPetsGetQueryKindParameter, Query(
             alias='kind',
@@ -169,7 +174,7 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         return dispatch(
             list_all_handler(
                 request=request,
-                page_size=parameters.page_size,
+                page_size=page_size,
                 tags=present(tags),
                 kind=present(kind),
                 trace=present(trace),
@@ -193,18 +198,6 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         responses={'default': {'model': models.Error, 'description': 'An error.'}},
         openapi_extra={
             'parameters': [
-                {
-                    'name': 'limit',
-                    'in': 'query',
-                    'description': 'Page size.',
-                    'schema': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 1,
-                        'maximum': 100,
-                        'default': 20,
-                    },
-                },
                 {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
             ],
         },
@@ -270,10 +263,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     async def get_pet(
         *,
         request: Request,
-        parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
+        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            await get_pet_handler(request=request, pet_id=parameters.pet_id),
+            await get_pet_handler(request=request, pet_id=pet_id),
             contract.GetPet.RESPONSES,
         )
 
@@ -289,16 +282,6 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='The pet.',
         responses={'404': {'model': models.Error, 'description': 'Missing.'}},
-        openapi_extra={
-            'parameters': [
-                {
-                    'name': 'petId',
-                    'in': 'path',
-                    'required': True,
-                    'schema': {'type': 'integer', 'format': 'int64', 'minimum': 1},
-                },
-            ],
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
     )
 
@@ -309,10 +292,10 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
     async def delete_pet(
         *,
         request: Request,
-        parameters: Annotated[contract.DeletePet.Parameters, Depends(contract.DeletePet.PARAMETERS)],
+        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            await delete_pet_handler(request=request, pet_id=parameters.pet_id),
+            await delete_pet_handler(request=request, pet_id=pet_id),
             contract.DeletePet.RESPONSES,
         )
 
@@ -327,16 +310,6 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Deleted.',
         responses={'204': {'description': 'Deleted.'}},
-        openapi_extra={
-            'parameters': [
-                {
-                    'name': 'petId',
-                    'in': 'path',
-                    'required': True,
-                    'schema': {'type': 'integer', 'format': 'int64', 'minimum': 1},
-                },
-            ],
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
     )
 
@@ -454,7 +427,7 @@ class AnimalsService(Protocol):
         self,
         *,
         request: Request,
-        page_size: models.FieldPetsGetQueryLimitParameter | Unset,
+        page_size: int,
         tags: list[str] | Unset,
         kind: models.FieldPetsGetQueryKindParameter | Unset,
         trace: uuid.UUID | Unset,
@@ -490,7 +463,7 @@ class AnimalsService(Protocol):
         self,
         *,
         request: Request,
-        pet_id: models.FieldPetsPetIdGetPathPetIdParameter,
+        pet_id: int,
     ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
 
     @abstractmethod
@@ -498,7 +471,7 @@ class AnimalsService(Protocol):
         self,
         *,
         request: Request,
-        pet_id: models.FieldPetsPetIdDeletePathPetIdParameter,
+        pet_id: int,
     ) -> None | HTTPResult[None] | Response: ...
 
 

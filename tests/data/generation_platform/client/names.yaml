@@ -24,10 +24,10 @@ paths:
           schema: {type: string}
         - name: class
           in: query
-          schema: {type: string}
+          schema: {type: string, default: full}
         - name: 2fa
           in: header
-          schema: {type: string}
+          schema: {type: [string, 'null']}
       responses:
         '204':
           description: A file.

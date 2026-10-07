@@ -22,7 +22,7 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        limit: pets_basemodel_models.FieldPetsGetQueryLimitParameter | Unset,
+        limit: int,
         tags: list[str] | Unset,
         kind: pets_basemodel_models.FieldPetsGetQueryKindParameter | Unset,
         x_request_id: uuid.UUID | Unset,
@@ -54,7 +54,7 @@ class PetsService(Protocol):
     def get_pet(
         self,
         *,
-        pet_id: pets_basemodel_models.FieldPetsPetIdGetPathPetIdParameter,
+        pet_id: int,
     ) -> (
         pets_basemodel_models.Pet
         | HTTPResult[pets_basemodel_models.Pet | pets_basemodel_models.Error]
@@ -62,11 +62,7 @@ class PetsService(Protocol):
     ): ...
 
     @abstractmethod
-    def delete_pet(
-        self,
-        *,
-        pet_id: pets_basemodel_models.FieldPetsPetIdDeletePathPetIdParameter,
-    ) -> None | HTTPResult[None] | Response: ...
+    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
 
 
 class StoreService(Protocol):

@@ -7,11 +7,7 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldUsersGetHeaderXSnapshotParameter as _dcg_type_2
-from models import FieldUsersGetQueryCursorParameter as _dcg_type_0
-from models import FieldUsersGetQueryLimitParameter as _dcg_type_1
-from models import FieldUsersSearchPostQueryCursorParameter as _dcg_type_3
-from models import UserQuery as _dcg_type_4
+from models import UserQuery as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -45,9 +41,9 @@ class AsyncUsersResource:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
@@ -62,8 +58,8 @@ class AsyncUsersResource:
     async def search_users(
         self,
         *,
-        cursor: _dcg_type_3 | Unset = UNSET,
-        body: _dcg_type_4,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -89,9 +85,9 @@ class AsyncUsersWithResponse:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
@@ -106,8 +102,8 @@ class AsyncUsersWithResponse:
     async def search_users(
         self,
         *,
-        cursor: _dcg_type_3 | Unset = UNSET,
-        body: _dcg_type_4,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -133,9 +129,9 @@ class AsyncUsersWithRawResponse:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -150,8 +146,8 @@ class AsyncUsersWithRawResponse:
     async def search_users(
         self,
         *,
-        cursor: _dcg_type_3 | Unset = UNSET,
-        body: _dcg_type_4,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -177,9 +173,9 @@ class AsyncUsersWithStreamingResponse:
     def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -194,8 +190,8 @@ class AsyncUsersWithStreamingResponse:
     def search_users(
         self,
         *,
-        cursor: _dcg_type_3 | Unset = UNSET,
-        body: _dcg_type_4,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

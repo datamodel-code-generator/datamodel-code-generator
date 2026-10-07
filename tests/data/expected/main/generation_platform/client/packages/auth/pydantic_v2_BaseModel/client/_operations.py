@@ -237,6 +237,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
                 reserved_names=('session_key',),
             ),
             codec=model_bindings.codec_0,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -249,6 +250,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
                 reserved_names=('filter', 'kind'),
             ),
             codec=model_bindings.codec_1,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -258,6 +260,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
                 required=True,
             ),
             codec=model_bindings.codec_2,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(

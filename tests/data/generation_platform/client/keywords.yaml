@@ -16,7 +16,7 @@ paths:
           schema: {type: string}
         - name: args
           in: query
-          schema: {type: integer}
+          schema: {type: integer, minimum: 1, default: 5}
       responses:
         '200':
           description: The matches.

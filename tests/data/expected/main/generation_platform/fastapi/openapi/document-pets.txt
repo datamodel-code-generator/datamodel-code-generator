@@ -15,6 +15,20 @@
         "operationId": "listPets",
         "parameters": [
           {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page size.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Page size."
+          },
+          {
             "name": "tags",
             "in": "query",
             "required": false,
@@ -52,18 +66,6 @@
               "type": "string",
               "format": "uuid",
               "title": "X-Request-Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Page size.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
             }
           },
           {
@@ -186,6 +188,18 @@
         ],
         "summary": "Get Pet",
         "operationId": "getPet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Petid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The pet.",
@@ -206,20 +220,18 @@
                 }
               }
             }
-          }
-        },
-        "parameters": [
-          {
-            "name": "petId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 1
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
             }
           }
-        ]
+        }
       },
       "delete": {
         "tags": [
@@ -227,11 +239,6 @@
         ],
         "summary": "Delete Pet",
         "operationId": "deletePet",
-        "responses": {
-          "204": {
-            "description": "Deleted."
-          }
-        },
         "parameters": [
           {
             "name": "petId",
@@ -239,11 +246,26 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "minimum": 1
+              "minimum": 1,
+              "title": "Petid"
             }
           }
-        ]
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

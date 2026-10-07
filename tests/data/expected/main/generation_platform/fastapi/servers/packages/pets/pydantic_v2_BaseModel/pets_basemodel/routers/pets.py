@@ -7,8 +7,9 @@ from typing import Annotated, Final
 
 import pets_basemodel_models
 import pydantic
-from fastapi import APIRouter, Body, Depends, Header, Query
+from fastapi import APIRouter, Body, Depends, Header, Path, Query
 from fastapi.responses import Response
+from pydantic import Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -23,6 +24,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
 
     def list_pets(
         *,
+        limit: Annotated[int, Field(ge=1, le=100), Query(
+            alias='limit',
+            description='Page size.',
+        )] = 20,
         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
         kind: Annotated[pets_basemodel_models.FieldPetsGetQueryKindParameter, Query(
             alias='kind',
@@ -41,7 +46,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     ) -> object:
         return dispatch(
             list_pets_handler(
-                limit=parameters.limit,
+                limit=limit,
                 tags=present(tags),
                 kind=present(kind),
                 x_request_id=present(x_request_id),
@@ -70,18 +75,6 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         },
         openapi_extra={
             'parameters': [
-                {
-                    'name': 'limit',
-                    'in': 'query',
-                    'description': 'Page size.',
-                    'schema': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 1,
-                        'maximum': 100,
-                        'default': 20,
-                    },
-                },
                 {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
             ],
         },
@@ -139,14 +132,8 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     get_pet_handler = wiring.handlers['get_pet']
 
-    def get_pet(
-        *,
-        parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
-    ) -> object:
-        return dispatch(
-            get_pet_handler(pet_id=parameters.pet_id),
-            contract.GetPet.RESPONSES,
-        )
+    def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
+        return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
 
     router.add_api_route(
         '/pets/{petId}',
@@ -162,16 +149,6 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         responses={
             '404': {'model': pets_basemodel_models.Error, 'description': 'Missing.'},
         },
-        openapi_extra={
-            'parameters': [
-                {
-                    'name': 'petId',
-                    'in': 'path',
-                    'required': True,
-                    'schema': {'type': 'integer', 'format': 'int64', 'minimum': 1},
-                },
-            ],
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
     )
 
@@ -181,10 +158,10 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
 
     def delete_pet(
         *,
-        parameters: Annotated[contract.DeletePet.Parameters, Depends(contract.DeletePet.PARAMETERS)],
+        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            delete_pet_handler(pet_id=parameters.pet_id),
+            delete_pet_handler(pet_id=pet_id),
             contract.DeletePet.RESPONSES,
         )
 
@@ -199,16 +176,6 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Deleted.',
         responses={'204': {'description': 'Deleted.'}},
-        openapi_extra={
-            'parameters': [
-                {
-                    'name': 'petId',
-                    'in': 'path',
-                    'required': True,
-                    'schema': {'type': 'integer', 'format': 'int64', 'minimum': 1},
-                },
-            ],
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
     )
 

@@ -4,6 +4,6 @@
   > GET https://api.example.com/codes?cursor=longer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   a long server cursor ['1', '2']
-  > GET https://api.example.com/codes?cursor=longer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  a long start cursor ['1']
+  a long start cursor [] ! DecodeError: DecodeError(operation_id='listCodes', call_id='<call>', reason='unencodable', location='query.cursor') [operation_id='listCodes', location=('query', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=1 validation error for constrained-str
+  String should have at most 4 characters [type=string_too_long, input_value='longer', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_too_long] unencodable

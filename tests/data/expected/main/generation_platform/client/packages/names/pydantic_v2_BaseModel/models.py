@@ -14,4 +14,4 @@ FieldFilesFileNameExtGetPathExtParameter = TypeAliasType("FieldFilesFileNameExtG
 FieldFilesFileNameExtGetQueryClassParameter = TypeAliasType("FieldFilesFileNameExtGetQueryClassParameter", str)
 
 
-FieldFilesFileNameExtGetHeaderField2faParameter = TypeAliasType("FieldFilesFileNameExtGetHeaderField2faParameter", str)
+FieldFilesFileNameExtGetHeaderField2faParameter = TypeAliasType("FieldFilesFileNameExtGetHeaderField2faParameter", str | None)

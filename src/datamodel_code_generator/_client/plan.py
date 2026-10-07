@@ -28,7 +28,14 @@ from datamodel_code_generator._openapi_wire_plan import parameter_plans, propert
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
-from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence, SourceLocation, TypeUseBinding
+from datamodel_code_generator._target_contract import (
+    BuiltinType,
+    LiteralScalar,
+    LiteralSequence,
+    SourceLocation,
+    TypeUseBinding,
+)
+from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -41,6 +48,7 @@ if TYPE_CHECKING:
         ClientOperationConfig,
         IdempotencyMetadata,
     )
+    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.client.multipart import PartKind
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
@@ -88,6 +96,12 @@ _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
 _STYLED: Final = ("style", "explode", "allowReserved")
+_CONVERTING: Final = frozenset({
+    DataModelType.PydanticV2BaseModel,
+    DataModelType.PydanticV2Dataclass,
+    DataModelType.MsgspecStruct,
+})
+_DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"), "str": ("str",)}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -124,7 +138,12 @@ class MediaSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its location and names, requiredness, type use, and wire plan."""
+    """One effective parameter: its location and names, requiredness, type use, and wire plan.
+
+    `argument` is the type its argument takes: the model type, with each alias and root model by the type it stands
+    for, which the call `converts` into the model type before it encodes it. `default` is the schema's default of a
+    builtin scalar argument.
+    """
 
     location: ParameterLocation
     wire_name: str
@@ -132,6 +151,9 @@ class ParameterSpec:
     required: bool
     use: TypeUseBinding | None
     plan: ParameterPlan
+    argument: FinalPythonType | None = None
+    default: LiteralScalar | None = None
+    converts: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -337,11 +359,15 @@ def _tags(operation: OperationContract) -> tuple[str, ...]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan) -> None:
+    def __init__(
+        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, facts: ModelFacts
+    ) -> None:
         """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
         self.wire = wire
+        self.facts = facts
+        self.converting = request.model_config.output_model_type in _CONVERTING
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
@@ -513,14 +539,20 @@ class Planner:
             if not python_name or python_name in RESERVED_ARGUMENTS:
                 message = f"The {location} parameter {wire_name!r} of {_label(operation)} needs an explicit python_name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
+            required = fact(declaration, "required") is True
+            use = self.use(_uses(declaration))
+            argument = None if use is None or use.type is None else self.facts.argument(use.type)
             specs.append(
                 ParameterSpec(
                     location=location,
                     wire_name=wire_name,
                     python_name=python_name,
-                    required=fact(declaration, "required") is True,
-                    use=self.use(_uses(declaration)),
+                    required=required,
+                    use=use,
                     plan=plan,
+                    argument=argument,
+                    default=None if required else _default(self.wire, use, argument),
+                    converts=self.converting and use is not None and argument != use.type,
                 )
             )
         self.problems.extend(
@@ -857,6 +889,14 @@ class Planner:
             for name, count in sorted(Counter(spec.pascal for spec in resource.operations).items())
             if count > 1
         )
+
+
+def _default(wire: WirePlan, use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
+    """Return the default the schema of a builtin scalar argument declares, when it is a value of its type."""
+    if not isinstance(argument, BuiltinType) or use is None or use.schema is None:
+        return None
+    literal = wire.default(use.schema)
+    return literal if literal is not None and literal.kind in _DEFAULTS.get(argument.name, ()) else None
 
 
 def _success(status: str, success_statuses: tuple[int, ...]) -> bool:

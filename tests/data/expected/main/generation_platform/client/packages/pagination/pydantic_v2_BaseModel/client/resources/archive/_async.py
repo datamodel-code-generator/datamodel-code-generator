@@ -7,8 +7,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldArchiveCursorGetPathCursorParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import RequestOptions
@@ -41,7 +39,7 @@ class AsyncArchiveResource:
     async def list_archive(
         self,
         *,
-        cursor: _dcg_type_0,
+        cursor: str,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
@@ -64,7 +62,7 @@ class AsyncArchiveWithResponse:
     async def list_archive(
         self,
         *,
-        cursor: _dcg_type_0,
+        cursor: str,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
@@ -87,7 +85,7 @@ class AsyncArchiveWithRawResponse:
     async def list_archive(
         self,
         *,
-        cursor: _dcg_type_0,
+        cursor: str,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -110,7 +108,7 @@ class AsyncArchiveWithStreamingResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0,
+        cursor: str,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

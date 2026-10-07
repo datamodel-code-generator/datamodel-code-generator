@@ -2,7 +2,10 @@
   > GET https://keywords.example.com/search?kwargs=a&args=2
     [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   search = Operation0Arguments(kwargs='found')
-  > GET https://keywords.example.com/search?kwargs=b
+  > GET https://keywords.example.com/search?kwargs=b&args=5
     [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   search without args = Operation0Arguments(kwargs=None)
+  search with args the model refuses ! DecodeError: DecodeError(operation_id='search', call_id='<call>', reason='unencodable', location='query.args') [operation_id='search', location=('query', 'args'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=1 validation error for constrained-int
+  Input should be greater than or equal to 1 [type=greater_than_equal, input_value=0, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/greater_than_equal] unencodable
   search keywords kwargs!, args, response_media_type, options

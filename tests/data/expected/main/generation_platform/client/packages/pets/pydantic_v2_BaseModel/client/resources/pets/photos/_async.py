@@ -7,8 +7,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
-
 from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
 from ....bodies import AsyncBinaryBody
@@ -42,7 +40,7 @@ class AsyncPetsPhotosResource:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -69,7 +67,7 @@ class AsyncPetsPhotosWithResponse:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -96,7 +94,7 @@ class AsyncPetsPhotosWithRawResponse:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -123,7 +121,7 @@ class AsyncPetsPhotosWithStreamingResponse:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,

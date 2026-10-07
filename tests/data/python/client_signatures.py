@@ -111,14 +111,16 @@ async def _async_signatures(package: ModuleType, lines: list[str], trace: object
 
 
 def keywords(package: ModuleType, lines: list[str]) -> None:
-    """Take keywords named like the collector, and return a model named like a TypedDict, which the binding keeps apart."""
-    first, second = (argument(package, "search", "query", "kwargs", value) for value in ("a", "b"))
-    count = argument(package, "search", "query", "args", 2)
+    """Take keywords named like the collector, and return a model named like a TypedDict, which the binding keeps apart.
+
+    An omitted argument takes its schema's default, and the model refuses one its schema does not allow.
+    """
     exchange = Exchange(lines)
     http = exchange.client()
     with package.Client(http_client=http) as api:
         exchange.respond(json_response(200, {"kwargs": "found"}), json_response(200, {}))
-        record(lines, "search", lambda: api.search.search(kwargs=first, args=count))
-        record(lines, "search without args", lambda: api.search.search(kwargs=second))
+        record(lines, "search", lambda: api.search.search(kwargs="a", args=2))
+        record(lines, "search without args", lambda: api.search.search(kwargs="b"))
+        record(lines, "search with args the model refuses", lambda: api.search.search(kwargs="c", args=0))
         lines.append(f"  search keywords {_keywords(api.search.search)}")
     http.close()

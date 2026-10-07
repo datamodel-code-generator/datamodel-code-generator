@@ -52,6 +52,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_0,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -109,6 +110,7 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_4,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -149,6 +151,7 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_6,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -190,6 +193,7 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_8,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -249,6 +253,7 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_11,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -280,6 +285,7 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_13,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -315,6 +321,7 @@ OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_14,
+            converts=True,
         ),
     ),
     body=RequestBody(

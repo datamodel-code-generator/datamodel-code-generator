@@ -46,6 +46,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
                 reserved_names=('ext',),
             ),
             codec=model_bindings.codec_0,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -56,6 +57,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
                 reserved_names=('fileName',),
             ),
             codec=model_bindings.codec_1,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -65,10 +67,12 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
                 explode=True,
             ),
             codec=model_bindings.codec_2,
+            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(location='header', name='2fa', style='simple'),
             codec=model_bindings.codec_3,
+            converts=True,
         ),
     ),
 )

@@ -487,7 +487,7 @@ async def _async_backends(package: ModuleType, lines: list[str]) -> None:
 
 
 def pagination_limits(package: ModuleType, lines: list[str]) -> None:
-    """Send a server's cursor and a caller's start cursor as they came, past their parameter's schema."""
+    """Send a server's cursor as it came, past its parameter's schema; the model refuses such a caller's start cursor."""
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         helper = api.protocols.codes.all
@@ -495,5 +495,4 @@ def pagination_limits(package: ModuleType, lines: list[str]) -> None:
             json_response(200, {"data": [{"id": "1"}], "next": "longer"}), json_response(200, {"data": [{"id": "2"}]})
         )
         drained(lines, "a long server cursor", helper.iterate())
-        exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         drained(lines, "a long start cursor", helper.iterate(cursor="longer"))

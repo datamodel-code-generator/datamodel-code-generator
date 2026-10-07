@@ -177,7 +177,7 @@ def _sync_callbacks(package: ModuleType, lines: list[str]) -> None:
             lines.append(
                 f"    entered={limiter.entered} wrong_mode_released={foreign.released} queued={len(exchange.responders)}"
             )
-        record(lines, "raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id=object()))
+        record(lines, "raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id="one"))
         semaphore = _SemaphoreLimiter()
         factory = _Factory(semaphore.usage)
         starting, ending = _Events(semaphore.usage, "call_start"), _Events(semaphore.usage, "call_end")
@@ -296,7 +296,7 @@ async def _async_callbacks(package: ModuleType, lines: list[str]) -> None:
                 f"    entered={limiter.entered} wrong_mode_released={foreign.released} queued={len(exchange.responders)}"
             )
         await arecord(
-            lines, "async raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id=object())
+            lines, "async raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id="one")
         )
         semaphore = _AsyncSemaphoreLimiter()
         factory = _Factory(semaphore.usage)

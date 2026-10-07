@@ -22,7 +22,7 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        limit: int | Unset,
+        limit: int,
         tags: list[str] | Unset,
         kind: pets_dataclass_models.FieldPetsGetQueryKindParameter | Unset,
         x_request_id: uuid.UUID | Unset,

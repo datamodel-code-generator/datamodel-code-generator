@@ -4,26 +4,19 @@
 from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
-from datetime import date as _dcg_type_4
+from datetime import date as _dcg_type_3
 from functools import cached_property
 from typing import Literal, overload
 
-from models import FieldOwnersPostRequest as _dcg_type_11
-from models import FieldPetsPetIdLabelsPutPathPetIdParameter as _dcg_type_12
-from models import FieldPetsPetIdOwnerPutPathPetIdParameter as _dcg_type_10
-from models import FieldPetsPetIdPatchPathPetIdParameter as _dcg_type_6
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_14
-from models import FieldPetsPetIdRecordsPutPathPetIdParameter as _dcg_type_15
-from models import FieldPetsPetIdVisitsPostPathPetIdParameter as _dcg_type_8
-from models import FieldPetsPostQueryTagParameter as _dcg_type_0
-from models import Kind as _dcg_type_3
-from models import Labels as _dcg_type_13
-from models import NewPet as _dcg_type_1
-from models import Owner as _dcg_type_5
-from models import Pet as _dcg_type_16
-from models import PetForm as _dcg_type_2
-from models import PetPatch as _dcg_type_7
-from models import Visit as _dcg_type_9
+from models import FieldOwnersPostRequest as _dcg_type_7
+from models import Kind as _dcg_type_2
+from models import Labels as _dcg_type_8
+from models import NewPet as _dcg_type_0
+from models import Owner as _dcg_type_4
+from models import Pet as _dcg_type_9
+from models import PetForm as _dcg_type_1
+from models import PetPatch as _dcg_type_5
+from models import Visit as _dcg_type_6
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -69,8 +62,8 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -85,8 +78,8 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_2,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -101,13 +94,13 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
-        kind: _dcg_type_3,
+        kind: _dcg_type_2,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
@@ -117,7 +110,7 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -132,13 +125,13 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
         name: str | Unset = UNSET,
-        kind: _dcg_type_3 | Unset = UNSET,
+        kind: _dcg_type_2 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -159,8 +152,8 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7,
+        pet_id: int,
+        body: _dcg_type_5,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -170,7 +163,7 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -181,7 +174,7 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -192,7 +185,7 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -202,8 +195,8 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_5 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -223,8 +216,8 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9,
+        pet_id: int,
+        body: _dcg_type_6,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -234,7 +227,7 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -245,7 +238,7 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -255,8 +248,8 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9 | str | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_6 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -275,8 +268,8 @@ class AsyncDefaultResource:
     async def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10,
-        body: _dcg_type_5 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_4 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SetOwnerResponse:
@@ -293,7 +286,7 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11,
+        body: _dcg_type_7,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -312,7 +305,7 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11 | Unset = UNSET,
+        body: _dcg_type_7 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -331,8 +324,8 @@ class AsyncDefaultResource:
     async def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12,
-        body: _dcg_type_13,
+        pet_id: int,
+        body: _dcg_type_8,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
@@ -348,7 +341,7 @@ class AsyncDefaultResource:
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
+        pet_id: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -366,8 +359,8 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: int,
+        body: _dcg_type_9,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -377,7 +370,7 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -387,8 +380,8 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_9 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -416,8 +409,8 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -432,8 +425,8 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_2,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -448,13 +441,13 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
-        kind: _dcg_type_3,
+        kind: _dcg_type_2,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
@@ -464,7 +457,7 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -479,13 +472,13 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
         name: str | Unset = UNSET,
-        kind: _dcg_type_3 | Unset = UNSET,
+        kind: _dcg_type_2 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -506,8 +499,8 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7,
+        pet_id: int,
+        body: _dcg_type_5,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -517,7 +510,7 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -528,7 +521,7 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -539,7 +532,7 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -549,8 +542,8 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_5 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -570,8 +563,8 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9,
+        pet_id: int,
+        body: _dcg_type_6,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -581,7 +574,7 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -592,7 +585,7 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -602,8 +595,8 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9 | str | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_6 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -622,8 +615,8 @@ class AsyncDefaultWithResponse:
     async def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10,
-        body: _dcg_type_5 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_4 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SetOwnerResponse]:
@@ -640,7 +633,7 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11,
+        body: _dcg_type_7,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -659,7 +652,7 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11 | Unset = UNSET,
+        body: _dcg_type_7 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -678,8 +671,8 @@ class AsyncDefaultWithResponse:
     async def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12,
-        body: _dcg_type_13,
+        pet_id: int,
+        body: _dcg_type_8,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
@@ -695,7 +688,7 @@ class AsyncDefaultWithResponse:
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
+        pet_id: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -713,8 +706,8 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: int,
+        body: _dcg_type_9,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -724,7 +717,7 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -734,8 +727,8 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_9 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -763,8 +756,8 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -779,8 +772,8 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_2,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -795,13 +788,13 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
-        kind: _dcg_type_3,
+        kind: _dcg_type_2,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
@@ -811,7 +804,7 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -826,13 +819,13 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
         name: str | Unset = UNSET,
-        kind: _dcg_type_3 | Unset = UNSET,
+        kind: _dcg_type_2 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -853,8 +846,8 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7,
+        pet_id: int,
+        body: _dcg_type_5,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -864,7 +857,7 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -875,7 +868,7 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -886,7 +879,7 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -896,8 +889,8 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_5 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -917,8 +910,8 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9,
+        pet_id: int,
+        body: _dcg_type_6,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -928,7 +921,7 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -939,7 +932,7 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -949,8 +942,8 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9 | str | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_6 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -969,8 +962,8 @@ class AsyncDefaultWithRawResponse:
     async def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10,
-        body: _dcg_type_5 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_4 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -987,7 +980,7 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11,
+        body: _dcg_type_7,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1006,7 +999,7 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_11 | Unset = UNSET,
+        body: _dcg_type_7 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1025,8 +1018,8 @@ class AsyncDefaultWithRawResponse:
     async def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12,
-        body: _dcg_type_13,
+        pet_id: int,
+        body: _dcg_type_8,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1042,7 +1035,7 @@ class AsyncDefaultWithRawResponse:
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
+        pet_id: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -1060,8 +1053,8 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: int,
+        body: _dcg_type_9,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1071,7 +1064,7 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1081,8 +1074,8 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_9 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1110,8 +1103,8 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -1126,8 +1119,8 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_2,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -1142,13 +1135,13 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
-        kind: _dcg_type_3,
+        kind: _dcg_type_2,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
@@ -1158,7 +1151,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
+        tag: str | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -1173,13 +1166,13 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | Unset = UNSET,
-        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
+        tag: str | Unset = UNSET,
+        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
         name: str | Unset = UNSET,
-        kind: _dcg_type_3 | Unset = UNSET,
+        kind: _dcg_type_2 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_4 | Unset = UNSET,
-        owner: _dcg_type_5 | Unset = UNSET,
+        birth_date: _dcg_type_3 | Unset = UNSET,
+        owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -1200,8 +1193,8 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7,
+        pet_id: int,
+        body: _dcg_type_5,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1211,7 +1204,7 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1222,7 +1215,7 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -1233,7 +1226,7 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -1243,8 +1236,8 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_5 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1264,8 +1257,8 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9,
+        pet_id: int,
+        body: _dcg_type_6,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -1275,7 +1268,7 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -1286,7 +1279,7 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
+        pet_id: int,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -1296,8 +1289,8 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8,
-        body: _dcg_type_9 | str | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_6 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -1316,8 +1309,8 @@ class AsyncDefaultWithStreamingResponse:
     def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10,
-        body: _dcg_type_5 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_4 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1334,7 +1327,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11,
+        body: _dcg_type_7,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1353,7 +1346,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | Unset = UNSET,
+        body: _dcg_type_7 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1372,8 +1365,8 @@ class AsyncDefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12,
-        body: _dcg_type_13,
+        pet_id: int,
+        body: _dcg_type_8,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1389,7 +1382,7 @@ class AsyncDefaultWithStreamingResponse:
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
+        pet_id: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -1407,8 +1400,8 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: int,
+        body: _dcg_type_9,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1418,7 +1411,7 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1428,8 +1421,8 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_9 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,

@@ -71,6 +71,7 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_2,
+            converts=True,
         ),
     ),
     accepted_content_encodings=('gzip',),
@@ -110,6 +111,7 @@ OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_5,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -137,6 +139,7 @@ OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_6,
+            converts=True,
         ),
     ),
     body=RequestBody(
@@ -217,6 +220,7 @@ OPERATION_7: Final[OperationPlan[GetJobResponse]] = OperationPlan(
                 required=True,
             ),
             codec=model_bindings.codec_13,
+            converts=True,
         ),
     ),
 )
@@ -273,6 +277,7 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_18,
+            converts=True,
         ),
     ),
 )
@@ -295,6 +300,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_20,
+            converts=True,
         ),
     ),
     body=RequestBody(

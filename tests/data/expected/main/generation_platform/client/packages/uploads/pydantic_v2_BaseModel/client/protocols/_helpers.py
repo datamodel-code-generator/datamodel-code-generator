@@ -5,10 +5,6 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import FieldFilesPostHeaderTusResumableParameter as _dcg_type_0
-from models import FieldFilesPostHeaderUploadLengthParameter as _dcg_type_2
-from models import FieldFilesPostHeaderXNameParameter as _dcg_type_1
-
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.uploads import UploadHandle, resume_upload, start_upload
@@ -64,8 +60,8 @@ class FilesUploadResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0,
-        x_name: _dcg_type_1 | Unset = UNSET,
+        tus_resumable: str,
+        x_name: str | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -113,8 +109,8 @@ class FilesFinishResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0,
-        x_name: _dcg_type_1 | Unset = UNSET,
+        tus_resumable: str,
+        x_name: str | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -162,9 +158,9 @@ class FilesPutResumableUpload:
         self,
         source: UploadSource,
         *,
-        upload_length: _dcg_type_2,
-        tus_resumable: _dcg_type_0,
-        x_name: _dcg_type_1 | Unset = UNSET,
+        upload_length: int,
+        tus_resumable: str,
+        x_name: str | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

@@ -1162,15 +1162,8 @@ render pydantic_v2.BaseModel
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "models.FieldPetsPetIdGetPathPetIdParameter",
-    |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               }
-    |             ]
+    |             "value": "int",
+    |             "imports": []
     |           },
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/0",
     |           "is_request": false,
@@ -1219,11 +1212,18 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "adapter",
-    |             "reason": "parameter_shape",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
     |             "source": null
     |           },
-    |           "native_declaration": null
+    |           "native_declaration": {
+    |             "api": "Path",
+    |             "alias": "petId",
+    |             "required": true,
+    |             "default_kind": "required",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
     |         },
     |         {
     |           "python_name": "limit",
@@ -1468,14 +1468,8 @@ render pydantic_v2.BaseModel
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "models.FieldPetsPetIdGetCookieSessionParameter | Unset",
+    |             "value": "str | Unset",
     |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -1532,7 +1526,7 @@ render pydantic_v2.BaseModel
     |             ],
     |             "site": "parameter",
     |             "transport": "adapter",
-    |             "reason": "parameter_shape",
+    |             "reason": "parameter_style",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -1674,8 +1668,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "adapter",
-    |           "reason": "parameter_shape",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
     |           "source": null
     |         },
     |         {
@@ -1819,7 +1813,7 @@ render pydantic_v2.BaseModel
     |           ],
     |           "site": "parameter",
     |           "transport": "adapter",
-    |           "reason": "parameter_shape",
+    |           "reason": "parameter_style",
     |           "source": null
     |         },
     |         {

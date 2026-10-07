@@ -43,6 +43,7 @@ OPERATION_0: Final[OperationPlan[ParameterResponse]] = OperationPlan(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Request-Key', style='simple'),
             codec=model_bindings.codec_0,
+            converts=True,
         ),
     ),
 )
@@ -150,6 +151,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
                 style='simple',
             ),
             codec=model_bindings.codec_17,
+            converts=True,
         ),
     ),
     request_id_header='X-Idempotency',

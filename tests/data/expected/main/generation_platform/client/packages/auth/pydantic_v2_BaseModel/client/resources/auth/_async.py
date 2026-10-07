@@ -7,10 +7,7 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldApiKeyCookieParametersGetCookieThemeParameter as _dcg_type_0
-from models import FieldApiKeyCookieParametersGetHeaderXTraceParameter as _dcg_type_2
-from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_3
-from models import FieldApiKeyCookieParametersGetQueryPageParameter as _dcg_type_1
+from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -226,10 +223,10 @@ class AsyncAuthResource:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0,
-        page: _dcg_type_1,
-        x_trace: _dcg_type_2,
-        filter: _dcg_type_3 | Unset = UNSET,
+        theme: str,
+        page: int,
+        x_trace: str,
+        filter: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -618,10 +615,10 @@ class AsyncAuthWithResponse:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0,
-        page: _dcg_type_1,
-        x_trace: _dcg_type_2,
-        filter: _dcg_type_3 | Unset = UNSET,
+        theme: str,
+        page: int,
+        x_trace: str,
+        filter: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -1010,10 +1007,10 @@ class AsyncAuthWithRawResponse:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0,
-        page: _dcg_type_1,
-        x_trace: _dcg_type_2,
-        filter: _dcg_type_3 | Unset = UNSET,
+        theme: str,
+        page: int,
+        x_trace: str,
+        filter: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1402,10 +1399,10 @@ class AsyncAuthWithStreamingResponse:
     def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0,
-        page: _dcg_type_1,
-        x_trace: _dcg_type_2,
-        filter: _dcg_type_3 | Unset = UNSET,
+        theme: str,
+        page: int,
+        x_trace: str,
+        filter: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

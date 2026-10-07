@@ -681,7 +681,7 @@ class _Walk(Generic[T, P]):
     def callers(self) -> dict[str, str]:
         """Return the texts of the caller's path arguments that share a segment with a read value, once a walk.
 
-        Each argument the first page sent is encoded again by its parameter's codec, without validation.
+        Each argument the first page sent is encoded again as the first page encoded it.
         """
         if (texts := self.paths) is None:
             plan, arguments = self.plan, self.request.arguments
