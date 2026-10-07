@@ -15494,8 +15494,20 @@ def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file:
     [
         ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
         ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
-        ("rust_unsupported_end_of_string", "3.13", "rust_unsupported_end_of_string_py313.py", False),
-        ("rust_unsupported_end_of_string", "3.14", "rust_unsupported_end_of_string_py314.py", True),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.13",
+            "rust_unsupported_end_of_string_py313.py",
+            False,
+            marks=BLACK_PY313_SKIP,
+        ),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.14",
+            "rust_unsupported_end_of_string_py314.py",
+            True,
+            marks=BLACK_PY314_SKIP,
+        ),
     ],
 )
 def test_main_rust_unsupported_target_python(
