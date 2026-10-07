@@ -1,0 +1,106 @@
+{
+  "users.unknown": {
+    "kind": "pagination",
+    "operation": "/paths/~1people/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.external": {
+    "kind": "pagination",
+    "operation": {"pointer": "/paths/~1users/get", "document": "../helpers-external.yaml"},
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.created": {
+    "kind": "pagination",
+    "operation": "/webhooks/userCreated/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "audit.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1admin~1audit/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/NamePage"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.schema": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User", "document": "../other.yaml"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.query": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"},
+    "bindings": [{"target": {"in": "query", "name": "limit"}, "value": {"literal": 10}}]
+  },
+  "users.header": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"},
+    "bindings": [{"target": {"in": "header", "name": "X-Snapshot"}, "value": {"literal": "a"}}]
+  },
+  "users.body": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "body", "pointer": "/cursor"},
+      "end": [{"kind": "missing"}],
+      "empty_string": "end"
+    }
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "id"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "operation", "operation": "/paths/~1jobs~1{jobId}~1output/get"}
+  },
+  "users.parsed": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Record", "document": "helpers-external.yaml"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.bracket": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": {"pointer": "/paths/~1users/get", "document": "http://["},
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.null": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User", "document": "helpers\u0000.yaml"},
+    "continuation": {"kind": "link", "header": "Link"}
+  }
+}

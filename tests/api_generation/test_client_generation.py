@@ -168,20 +168,9 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-unsupported",
         "protocols-unsupported-kinds",
         "protocols-file-missing",
-        "protocols-not-utf8",
-        "protocols-not-yaml",
-        "protocols-control",
-        "protocols-complex-key",
+        "protocols-not-json",
+        "protocols-not-object",
         "protocols-deep",
-        "protocols-duplicate",
-        "protocols-alias",
-        "protocols-alias-key",
-        "protocols-anchor",
-        "protocols-merge",
-        "protocols-not-mapping",
-        "protocols-empty-file",
-        "protocols-envelope",
-        "protocols-envelope-missing",
         "protocols-names",
         "protocols-shared-errors",
         "protocols-pagination-errors",
@@ -212,7 +201,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
-    """Load helper settings from YAML, TOML, or Python records, validate and record them, and keep the package.
+    """Load helper settings from JSON, TOML, or Python records, validate and record them, and keep the package.
 
     Cases that give the same settings another way report under the name of the case they equal.
     """

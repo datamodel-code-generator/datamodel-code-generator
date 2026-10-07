@@ -1,4 +1,4 @@
 # protocols-deep
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols: The protocol configuration file nests collections deeper than 64 levels
+  E_CONFIG_VALUE config protocols['users.all'].bindings[0].value.literal: protocols['users.all'].bindings[0].value.literal nests deeper than 64 levels

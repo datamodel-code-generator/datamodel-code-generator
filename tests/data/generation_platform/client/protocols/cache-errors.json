@@ -1,0 +1,30 @@
+{
+  "bad.validator": {
+    "kind": "cache",
+    "operation": "/paths/~1users~1{userId}/get",
+    "validator": "strong",
+    "authenticated": "yes"
+  },
+  "bad.missing": {"kind": "cache", "operation": "/paths/~1users~1{userId}/get"},
+  "bad.vary": {
+    "kind": "cache",
+    "operation": "/paths/~1users~1{userId}/get",
+    "validator": "etag",
+    "authenticated": false,
+    "vary_allowlist": ["*", "Accept", "accept", "bad header"]
+  },
+  "bad.repeated": {
+    "kind": "cache",
+    "operation": "/paths/~1users~1{userId}/get",
+    "validator": "etag",
+    "authenticated": false,
+    "vary_allowlist": ["Accept", "ACCEPT"]
+  },
+  "bad.statuses": {
+    "kind": "cache",
+    "operation": "/paths/~1users~1{userId}/get",
+    "validator": "etag",
+    "authenticated": false,
+    "statuses": [700]
+  }
+}
