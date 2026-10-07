@@ -15,6 +15,7 @@ from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.config import absolute
+from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import (
     RESERVED_ARGUMENTS,
     RESERVED_MEMBERS,
@@ -141,8 +142,8 @@ class ParameterSpec:
     """One effective parameter: its location and names, requiredness, type use, and wire plan.
 
     `argument` is the type its argument takes: the model type, with each alias and root model by the type it stands
-    for, which the call `converts` into the model type before it encodes it. `default` is the schema's default of a
-    builtin scalar argument.
+    for. A call `converts` an argument that stands for a root model into it before it encodes it, and sends any other
+    as given. `default` is the schema's default of a builtin scalar argument.
     """
 
     location: ParameterLocation
@@ -552,7 +553,10 @@ class Planner:
                     plan=plan,
                     argument=argument,
                     default=None if required else _default(self.wire, use, argument),
-                    converts=self.converting and use is not None and argument != use.type,
+                    converts=self.converting
+                    and use is not None
+                    and use.type is not None
+                    and argument != self.facts.argument(use.type, ALIASES),
                 )
             )
         self.problems.extend(

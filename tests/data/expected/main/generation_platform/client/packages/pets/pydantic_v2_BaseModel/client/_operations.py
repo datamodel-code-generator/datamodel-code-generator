@@ -63,7 +63,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 reserved_names=('tags',),
             ),
             codec=model_bindings.codec_0,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -75,7 +74,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 reserved_names=('limit',),
             ),
             codec=model_bindings.codec_1,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -85,7 +83,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 required=True,
             ),
             codec=model_bindings.codec_2,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -95,7 +92,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_3,
-            converts=True,
         ),
     ),
     request_id_header='X-Request-Id',
@@ -149,7 +145,6 @@ OPERATION_2: Final[OperationPlan[GetPetResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_12,
-            converts=True,
         ),
     ),
     response_media_type='application/json',
@@ -171,7 +166,6 @@ OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_15,
-            converts=True,
         ),
     ),
 )
@@ -192,7 +186,6 @@ OPERATION_4: Final[OperationPlan[HeadPetResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_16,
-            converts=True,
         ),
     ),
 )
@@ -213,7 +206,6 @@ OPERATION_5: Final[OperationPlan[UploadResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_18,
-            converts=True,
         ),
     ),
     body=RequestBody(
@@ -238,7 +230,6 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_19,
-            converts=True,
         ),
     ),
     body=RequestBody(
@@ -294,7 +285,6 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_20,
-            converts=True,
         ),
     ),
 )

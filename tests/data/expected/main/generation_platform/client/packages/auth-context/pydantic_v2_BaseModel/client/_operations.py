@@ -37,7 +37,6 @@ OPERATION_0: Final[OperationPlan[InheritedResponse]] = OperationPlan(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
             codec=model_bindings.codec_0,
-            converts=True,
         ),
     ),
     security=security.OPERATION_0,
@@ -53,7 +52,6 @@ OPERATION_1: Final[OperationPlan[ExplicitResponse]] = OperationPlan(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
             codec=model_bindings.codec_1,
-            converts=True,
         ),
     ),
     security=security.OPERATION_1,

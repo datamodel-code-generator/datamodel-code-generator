@@ -84,7 +84,7 @@ class OutboundModelCodec(Protocol):
         ...
 
     def convert(self, value: Any) -> object:
-        """Return the model value of a value its model type stands for, validated as the model validates it."""
+        """Return the model value of a value its model type stands for, built as the model builds it."""
         ...
 
     @property
@@ -141,7 +141,7 @@ class ServerPlan:
 class ParameterSpec:
     """One effective parameter: its wire plan and, when it has a schema, the codec of its argument.
 
-    An argument that `converts` takes the type its model type stands for, and is converted into the model type first.
+    An argument that `converts` takes the type its root model stands for, and is converted into the root model first.
     """
 
     plan: ParameterPlan

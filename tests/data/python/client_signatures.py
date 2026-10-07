@@ -113,14 +113,17 @@ async def _async_signatures(package: ModuleType, lines: list[str], trace: object
 def keywords(package: ModuleType, lines: list[str]) -> None:
     """Take keywords named like the collector, and return a model named like a TypedDict, which the binding keeps apart.
 
-    An omitted argument takes its schema's default, and the model refuses one its schema does not allow.
+    An omitted argument takes its schema's default, and an alias's argument is sent as given, past its schema; a root
+    model's argument is built into the root model, which refuses one its schema does not allow.
     """
     exchange = Exchange(lines)
     http = exchange.client()
     with package.Client(http_client=http) as api:
-        exchange.respond(json_response(200, {"kwargs": "found"}), json_response(200, {}))
+        exchange.respond(*(json_response(200, {"kwargs": "found"}), json_response(200, {})) * 2)
         record(lines, "search", lambda: api.search.search(kwargs="a", args=2))
         record(lines, "search without args", lambda: api.search.search(kwargs="b"))
-        record(lines, "search with args the model refuses", lambda: api.search.search(kwargs="c", args=0))
+        record(lines, "search with args past the schema", lambda: api.search.search(kwargs="c", args=0))
+        record(lines, "search with a code", lambda: api.search.search(kwargs="d", code="ab"))
+        record(lines, "search with a code the root model refuses", lambda: api.search.search(kwargs="e", code="abc"))
         lines.append(f"  search keywords {_keywords(api.search.search)}")
     http.close()

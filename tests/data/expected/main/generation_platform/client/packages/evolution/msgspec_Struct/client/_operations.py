@@ -40,7 +40,6 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_0,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(

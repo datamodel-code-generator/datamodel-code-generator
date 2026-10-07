@@ -45,7 +45,6 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
                 reserved_names=('limit',),
             ),
             codec=model_bindings.codec_0,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -57,12 +56,10 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
                 reserved_names=('cursor',),
             ),
             codec=model_bindings.codec_1,
-            converts=True,
         ),
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Snapshot', style='simple'),
             codec=model_bindings.codec_2,
-            converts=True,
         ),
     ),
 )
@@ -85,7 +82,6 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_6,
-            converts=True,
         ),
     ),
     body=RequestBody(
@@ -120,7 +116,6 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_9,
-            converts=True,
         ),
     ),
 )
@@ -143,7 +138,6 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_11,
-            converts=True,
         ),
     ),
 )
@@ -166,7 +160,6 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_13,
-            converts=True,
         ),
     ),
 )
@@ -189,7 +182,6 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_16,
-            converts=True,
         ),
     ),
 )
@@ -212,7 +204,6 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
                 required=True,
             ),
             codec=model_bindings.codec_19,
-            converts=True,
         ),
     ),
 )
@@ -236,7 +227,6 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
                 kind='integer',
             ),
             codec=model_bindings.codec_21,
-            converts=True,
         ),
     ),
 )
@@ -259,7 +249,6 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
                 explode=True,
             ),
             codec=model_bindings.codec_23,
-            converts=True,
         ),
     ),
     security=security.OPERATION_8,

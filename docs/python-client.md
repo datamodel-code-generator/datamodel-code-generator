@@ -2666,8 +2666,9 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
 - **Parameter arguments.** A parameter whose model type is a type alias or a root model takes the type it stands for,
   such as `limit: int` or `tags: list[str]`, never the alias or the root model. An optional one whose schema declares a
   boolean, number, or string default of a builtin type defaults to it, such as `limit: int = 20`, and any other optional
-  one to `UNSET`. With Pydantic and msgspec models, the argument is validated into its model type before it is sent, so
-  a value its schema's constraints refuse fails with a request `DecodeError` with the reason `unencodable`. An empty array or
+  one to `UNSET`. An alias's argument is sent as given, without validation. With Pydantic models, an argument whose
+  parameter is a root model is built into it before it is sent, which checks it as the root model's constructor does: a
+  value it refuses fails with a request `DecodeError` with the reason `unencodable`. An empty array or
   object in a style-encoded parameter or a form member is left out as an omitted value is: it writes no query pair,
   header, cookie, or part. A path segment cannot be left out, so an empty array or object in a path parameter fails
   with a request `DecodeError` before anything is sent.
