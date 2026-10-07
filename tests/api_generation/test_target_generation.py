@@ -37,6 +37,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "state",
         "unowned",
         "include-paths",
+        "path-items",
         "inputs",
         "input-cycles",
         "input-cycle-reference",

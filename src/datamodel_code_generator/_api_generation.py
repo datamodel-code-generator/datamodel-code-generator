@@ -392,12 +392,18 @@ def _normalized(text: str) -> str:
 
 
 def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContract, ...]:
-    """Return the path operations of the root document, in document order."""
+    """Return the operations of the root document's `paths`, in document order.
+
+    A component path item that no included path references is walked on its own; it has no URL, so it is left out.
+    """
     root = batch.documents[0].id
     return tuple(
         operation
         for operation in batch.operations
-        if operation.id.parent is None and operation.id.use_site.document == root and operation.id.kind == "path"
+        if operation.id.parent is None
+        and operation.id.kind == "path"
+        and operation.id.use_site.document == root
+        and operation.id.use_site.pointer.startswith("/paths/")
     )
 
 

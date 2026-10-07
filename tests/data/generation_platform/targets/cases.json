@@ -120,6 +120,17 @@
       {"render": {"config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, "pets"]]}}}
     ]
   },
+  "path-items": {
+    "input": {"path": "path-items.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"render": {"model": {"openapi_include_paths": ["/store"]}}},
+      {"render": {"model": {"openapi_include_paths": ["/pets"]}}},
+      {"generate": {"model": {"openapi_include_paths": ["/pets"]}}},
+      {"show": "server/routers/pets.py"}
+    ]
+  },
   "inputs": {
     "input": {"text": "inline.yaml"},
     "model": {"openapi_scopes": ["api"]},
