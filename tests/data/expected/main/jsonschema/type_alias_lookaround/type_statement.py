@@ -10,7 +10,7 @@ from pydantic import BaseModel, constr
 type Code = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
 
 
-type CodeCopy = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
+type Dup = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
 
 
 type Codes = list[constr(pattern=compile('^(?=x)[a-z]+$'))]
@@ -19,7 +19,10 @@ type Codes = list[constr(pattern=compile('^(?=x)[a-z]+$'))]
 type Mapping = dict[str, constr(pattern=compile('^[a-z]+(?<!z)$'))]
 
 
-type Keys = dict[constr(pattern=compile('^(?=k)[a-z]+$')), int]
+type Keys = dict[constr(pattern=compile('^(?=key)[a-z0-9_]+$')), int]
+
+
+type Tags = dict[constr(pattern=compile('^(?=t)')), str]
 
 
 type Either = constr(pattern=compile('^(?!no)[a-z]+$')) | int
@@ -27,8 +30,9 @@ type Either = constr(pattern=compile('^(?!no)[a-z]+$')) | int
 
 class Holder(BaseModel):
     code: Code | None = None
-    codeCopy: CodeCopy | None = None
+    dup: Dup | None = None
     codes: Codes | None = None
     mapping: Mapping | None = None
     keys: Keys | None = None
+    tags: Tags | None = None
     either: Either | None = None

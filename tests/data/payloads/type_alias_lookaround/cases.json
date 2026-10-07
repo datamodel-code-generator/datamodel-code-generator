@@ -1,13 +1,14 @@
 {
   "model": {
     "Code": ["abc", "badly", "abcdefghi"],
-    "CodeCopy": ["abc", "badly"],
+    "Dup": ["abc", "badly"],
     "Codes": [["xa", "xb"], ["ya"]],
     "Mapping": [{"k": "ab"}, {"k": "az"}],
-    "Keys": [{"ka": 1}, {"za": 1}],
+    "Keys": [{"keya": 1}, {"za": 1}],
+    "Tags": [{"ta": "x"}, {"xa": "x"}],
     "Either": ["yes", 1, "nope"],
     "Holder": [
-      {"code": "abc", "codeCopy": "abc", "codes": ["xa"], "mapping": {"k": "ab"}, "keys": {"ka": 1}, "either": "yes"},
+      {"code": "abc", "codes": ["xa"], "mapping": {"k": "ab"}, "keys": {"keya": 1}, "either": "yes"},
       {"code": "badly"},
       {"codes": ["ya"]},
       {"keys": {"za": 1}},

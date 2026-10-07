@@ -17,7 +17,7 @@
       ]
     }
   ],
-  "CodeCopy": [
+  "Dup": [
     {
       "payload": "abc",
       "errors": []
@@ -65,13 +65,29 @@
   "Keys": [
     {
       "payload": {
-        "ka": 1
+        "keya": 1
       },
       "errors": []
     },
     {
       "payload": {
         "za": 1
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Tags": [
+    {
+      "payload": {
+        "ta": "x"
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "xa": "x"
       },
       "errors": [
         "string_pattern_mismatch"
@@ -99,7 +115,6 @@
     {
       "payload": {
         "code": "abc",
-        "codeCopy": "abc",
         "codes": [
           "xa"
         ],
@@ -107,7 +122,7 @@
           "k": "ab"
         },
         "keys": {
-          "ka": 1
+          "keya": 1
         },
         "either": "yes"
       },

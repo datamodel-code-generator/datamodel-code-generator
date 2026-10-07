@@ -11,9 +11,7 @@ from typing_extensions import TypeAliasType
 Code = TypeAliasType("Code", constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8))
 
 
-CodeCopy = TypeAliasType(
-    "CodeCopy", constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
-)
+Dup = TypeAliasType("Dup", constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8))
 
 
 Codes = TypeAliasType("Codes", list[constr(pattern=compile('^(?=x)[a-z]+$'))])
@@ -22,7 +20,10 @@ Codes = TypeAliasType("Codes", list[constr(pattern=compile('^(?=x)[a-z]+$'))])
 Mapping = TypeAliasType("Mapping", dict[str, constr(pattern=compile('^[a-z]+(?<!z)$'))])
 
 
-Keys = TypeAliasType("Keys", dict[constr(pattern=compile('^(?=k)[a-z]+$')), int])
+Keys = TypeAliasType("Keys", dict[constr(pattern=compile('^(?=key)[a-z0-9_]+$')), int])
+
+
+Tags = TypeAliasType("Tags", dict[constr(pattern=compile('^(?=t)')), str])
 
 
 Either = TypeAliasType("Either", constr(pattern=compile('^(?!no)[a-z]+$')) | int)
@@ -30,8 +31,9 @@ Either = TypeAliasType("Either", constr(pattern=compile('^(?!no)[a-z]+$')) | int
 
 class Holder(BaseModel):
     code: Code | None = None
-    codeCopy: CodeCopy | None = None
+    dup: Dup | None = None
     codes: Codes | None = None
     mapping: Mapping | None = None
     keys: Keys | None = None
+    tags: Tags | None = None
     either: Either | None = None
