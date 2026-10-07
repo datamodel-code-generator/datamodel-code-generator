@@ -15350,6 +15350,43 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
 
 
 @pytest.mark.benchmark
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_file", "doubled_path"),
+    [
+        ("pydantic_v2.BaseModel", "rust_unsupported_pattern_pydantic_v2.py", ("doubled", "root")),
+        ("pydantic_v2.dataclass", "rust_unsupported_pattern_pydantic_v2_dataclass.py", ("doubled",)),
+    ],
+)
+def test_main_rust_unsupported_pattern(
+    output_model_type: str, expected_file: str, doubled_path: tuple[str, ...], output_file: Path
+) -> None:
+    """Patterns pydantic-core's Rust engine rejects, such as backreferences, select Python's regex engine.
+
+    Lookaround and plain patterns keep their existing output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", output_model_type],
+        force_exec_validation=True,
+    )
+    for path in (("pair",), doubled_path):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_pattern_{path[0]}",
+            model_name="Model",
+            valid_json=json.dumps({path[0]: "aa"}),
+            invalid_json=json.dumps({path[0]: "ab"}),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=path,
+            expected_attribute_value="aa",
+        )
+
+
+@pytest.mark.benchmark
 def test_main_nested_lookaround_array_generic_container(output_file: Path) -> None:
     """Test lookaround pattern with --use-generic-container-types for Sequence path."""
     run_main_and_assert(

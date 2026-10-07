@@ -10,6 +10,7 @@ import json
 import keyword
 import re
 from collections import defaultdict
+from functools import cache
 from pathlib import Path
 from types import MappingProxyType, NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
@@ -18,6 +19,7 @@ from warnings import warn
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic.alias_generators import to_camel, to_pascal, to_snake
+from pydantic_core import SchemaError, SchemaValidator, core_schema
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.enums import AliasGenerator, TargetPydanticVersion, _is_pydantic_version_at_least
@@ -811,6 +813,18 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
+@cache
+def _needs_python_regex_engine(pattern: str) -> bool:
+    """Return whether a pattern needs Python's ``re`` because pydantic-core's Rust engine rejects it."""
+    if _LOOKAROUND_PATTERN.search(pattern):
+        return True
+    try:
+        SchemaValidator(core_schema.str_schema(pattern=pattern))
+    except SchemaError:
+        return True
+    return False
+
+
 if TYPE_CHECKING:
 
     class _ParserSimpleFieldData(TypedDict, total=False):
@@ -891,7 +905,10 @@ def has_lookaround_pattern(
     follow_references: bool = False,
     _visited: set[int] | None = None,
 ) -> bool:
-    """Check if any field has a regex pattern with lookaround assertions.
+    """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
+
+    This covers lookaround assertions and any other syntax pydantic-core's Rust engine rejects,
+    such as backreferences.
 
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
@@ -901,13 +918,13 @@ def has_lookaround_pattern(
         _visited = set()
     for field in fields:
         pattern = isinstance(field.constraints, Constraints) and field.constraints.pattern
-        if pattern and _LOOKAROUND_PATTERN.search(pattern):
+        if pattern and _needs_python_regex_engine(pattern):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern)
-            if pattern and _LOOKAROUND_PATTERN.search(pattern):
+            if pattern and _needs_python_regex_engine(pattern):
                 return True
             if not follow_references or data_type.reference is None:
                 continue

@@ -3173,6 +3173,33 @@ def test_main_openapi_pattern_with_lookaround_pydantic_v2_dataclass(
     )
 
 
+def test_main_openapi_pattern_with_backreference_pydantic_v2(output_file: Path) -> None:
+    """OpenAPI patterns with backreferences select Python's regex engine for RootModel and BaseModel output."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "pattern_backreference.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="pattern_with_backreference_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
+    )
+    for model_name, valid, invalid, path in (
+        ("Doubled", "aa", "ab", ("root",)),
+        ("Info", {"pair": "aa"}, {"pair": "ab"}, ("pair",)),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"pattern_with_backreference_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=path,
+            expected_attribute_value="aa",
+        )
+
+
 def test_main_generate_custom_class_name_generator_modular(
     tmp_path: Path,
 ) -> None:
