@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import BaseModel
 
 
 class Pet(BaseModel):
@@ -20,85 +20,3 @@ class NewPet(BaseModel):
 class Error(BaseModel):
     code: int
     message: str | None = None
-
-
-class FieldPetsGetQueryLimitParameter(RootModel[int]):
-    root: int
-
-
-class FieldPetsGetQueryTagsParameter(RootModel[list[str]]):
-    root: list[str]
-
-
-class FieldPetsGetHeaderXTraceParameter(RootModel[str]):
-    root: str
-
-
-class FieldPetsGetCookieSessionParameter(RootModel[str]):
-    root: str
-
-
-class FieldPetsGetResponse(RootModel[list[Pet]]):
-    root: list[Pet]
-
-
-class FieldPetsGetResponse200XNextHeader(RootModel[str]):
-    root: str
-
-
-class FieldPetsGetResponse200XRateHeader(RootModel[int]):
-    root: int
-
-
-class FieldPetsPostRequest(RootModel[str]):
-    root: str
-
-
-class FieldPetsPetIdGetPathPetIdParameter(RootModel[int]):
-    root: int
-
-
-class FieldPetsPetIdGetResponse(RootModel[str]):
-    root: str
-
-
-class FieldPetsPetIdHeadResponse200ETagHeader(RootModel[str]):
-    root: str
-
-
-class FieldPetsPetIdPhotoPutPathPetIdParameter(RootModel[int]):
-    root: int
-
-
-class FieldPetsPetIdPhotoPutRequest(RootModel[bytes]):
-    root: bytes
-
-
-class FieldPetsPetIdPhotoPutResponse(RootModel[bytes]):
-    root: bytes
-
-
-class FieldPetsPetIdFilesPostPathPetIdParameter(RootModel[int]):
-    root: int
-
-
-class FieldPetsPetIdFilesPostRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    note: str | None = None
-    labels: list[str] | None = None
-    file: bytes
-
-
-class FieldPetsPetIdFilesGetPathPetIdParameter(RootModel[int]):
-    root: int
-
-
-class FieldPetsPetIdFilesGetResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    note: str | None = None
-    labels: list[str] | None = None
-    file: bytes

@@ -1,2 +1,1 @@
 E_CONFIG_VALUE error config output: output must be a string
-E_CONFIG_VALUE error config selection: selection must be a table

@@ -1,4 +1,4 @@
-"""Generate the FastAPI target through the public entry points: settings, models, selection, and ownership."""
+"""Generate the FastAPI target through the public entry points: settings, models, and ownership."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "state",
         "unowned",
         "verify",
-        "selection",
+        "include-paths",
         "inputs",
         "input-cycles",
         "input-cycle-reference",
@@ -62,7 +62,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generate models once, select operations, plan target files, and publish them through a reversible journal."""
+    """Generate models once, plan target files, and publish them through a reversible journal."""
     expected = f"{case}.txt"
     if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
@@ -315,8 +315,6 @@ def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     [
         "defaults",
         "invalid-values",
-        "selection-type",
-        "selection-problems",
     ],
 )
 def test_target_config(case: str) -> None:
@@ -349,14 +347,12 @@ def _toml_arguments(*extra: str) -> list[str]:
         "toml-unknown",
         "toml-missing",
         "toml-values",
-        "toml-selection-unknown",
-        "toml-records",
     ],
 )
 def test_target_toml_errors(
     case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse a flat target file whose syntax, version, keys, values, or records are invalid, writing nothing."""
+    """Refuse a flat target file whose syntax, version, keys, or values are invalid, writing nothing."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "spec", tmp_path / "spec")
     run_main_and_assert(
@@ -371,34 +367,25 @@ def test_target_toml_errors(
     assert_output(capsys.readouterr().err, EXPECTED / "configs" / f"{case}.txt")
 
 
-@pytest.mark.parametrize(
-    ("case", "arguments", "output"),
-    [("toml-selection", [], "server"), ("toml-output-override", ["--target-output", "elsewhere"], "elsewhere")],
-)
 def test_target_toml_values(
-    case: str,
-    arguments: list[str],
-    output: str,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Read the selection and paths of a flat target file, which decide the published files."""
+    """Publish the package where --target-output points instead of the flat target file's output."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "spec", tmp_path / "spec")
     run_main_and_assert(
         input_path=Path("spec/api.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_toml_arguments(*arguments),
-        copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
+        extra_args=_toml_arguments("--target-output", "elsewhere"),
+        copy_files=[(SOURCE / "configs" / "toml-output-override.toml", tmp_path / "target.toml")],
     )
     published = sorted(
         path.relative_to(tmp_path).as_posix()
-        for path in (tmp_path / output).rglob("*")
+        for path in (tmp_path / "elsewhere").rglob("*")
         if path.is_file() and "_runtime" not in path.parts
     )
     assert_output(
         capsys.readouterr().err + "\n".join(published) + "\n",
-        EXPECTED / "configs" / f"{case}.txt",
+        EXPECTED / "configs" / "toml-output-override.txt",
     )

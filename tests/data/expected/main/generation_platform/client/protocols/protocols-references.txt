@@ -4,7 +4,7 @@ render pydantic_v2.BaseModel
   E_OPERATION_REF config protocols.helpers['users.unknown'].operation /paths/~1people/get: protocols.helpers['users.unknown'].operation '/paths/~1people/get' selects no root path operation
   E_OPERATION_REF config protocols.helpers['users.external'].operation /paths/~1users/get: protocols.helpers['users.external'].operation '/paths/~1users/get' in '../helpers-external.yaml' selects no root path operation
   E_OPERATION_REF config protocols.helpers['users.created'].operation /webhooks/userCreated/post: protocols.helpers['users.created'].operation '/webhooks/userCreated/post' selects no root path operation
-  E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/~1admin~1audit/get: The enabled pagination helper 'audit.all' needs GET /admin/audit, which the selection excludes (excluded by exclude_tags 'admin')
+  E_OPERATION_REF config protocols.helpers['audit.all'].operation /paths/~1admin~1audit/get: protocols.helpers['audit.all'].operation '/paths/~1admin~1audit/get' selects no root path operation
   E_CONFIG_VALUE config protocols.helpers['users.schema'].item_schema: protocols.helpers['users.schema'].item_schema names a document outside the accepted input
   E_CONFIG_VALUE config protocols.helpers['users.query'].bindings[0].target /paths/~1users/get: protocols.helpers['users.query'].bindings[0].target: GET /users has no query parameter 'limit'
   E_CONFIG_VALUE config protocols.helpers['users.header'].bindings[0].target /paths/~1users/get: protocols.helpers['users.header'].bindings[0].target: GET /users has no header parameter 'X-Snapshot'

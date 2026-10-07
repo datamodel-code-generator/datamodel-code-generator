@@ -21,7 +21,6 @@ __all__ = [
     "GeneratedProject",
     "GenerationReport",
     "OperationRef",
-    "OperationSelection",
     "OperationSelector",
     "PublicationRollbackError",
     "SchemaRef",
@@ -33,7 +32,7 @@ __all__ = [
 TargetKind: TypeAlias = Literal["fastapi", "client"]
 DiagnosticSeverity: TypeAlias = Literal["error", "warning", "info"]
 DiagnosticStage: TypeAlias = Literal[
-    "config", "input", "model", "binding", "selection", "target", "verify", "ownership", "format", "publication"
+    "config", "input", "model", "binding", "target", "verify", "ownership", "format", "publication"
 ]
 ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target", "target_manifest"]
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
@@ -105,17 +104,6 @@ class APIGenerationError(Exception):
         """Keep the ordered diagnostics and summarize them in the message."""
         self.diagnostics = diagnostics
         super().__init__("; ".join(f"{item.code}: {item.message}" for item in diagnostics))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class OperationSelection:
-    """Select root path operations by reference or tag, then subtract exclusions."""
-
-    include_operations: tuple[OperationSelector, ...] = ()
-    include_tags: tuple[str, ...] = ()
-    exclude_operations: tuple[OperationSelector, ...] = ()
-    exclude_tags: tuple[str, ...] = ()
-    reason: str | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

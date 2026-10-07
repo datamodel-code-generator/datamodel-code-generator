@@ -1,4 +1,4 @@
-"""Coordinate one target: validate settings, generate models once in staging, select operations, and plan files."""
+"""Coordinate one target: validate settings, generate models once in staging, and plan files."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_manifest import (
@@ -55,8 +55,6 @@ if TYPE_CHECKING:
         ArtifactKind,
         DiagnosticStage,
         GenerationReport,
-        OperationSelection,
-        OperationSelector,
         TargetKind,
     )
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
@@ -65,14 +63,11 @@ if TYPE_CHECKING:
         GeneratedTypeContractBatch,
         ModelArtifact,
         OperationContract,
-        OperationId,
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType, OpenAPIScope
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
-
-Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
 _PYTHON_MINIMUM = (3, 11)
 _PYTHON_MINIMUM_TEXT = f"{_PYTHON_MINIMUM[0]}.{_PYTHON_MINIMUM[1]}"
@@ -94,7 +89,7 @@ class RenderedFile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
-    """Everything a target renders from: settings, the accepted model contracts, the selection, and the cwd."""
+    """Everything a target renders from: settings, the accepted model contracts, the root operations, and the cwd."""
 
     config: TargetConfig
     model_config: GenerateConfig
@@ -103,7 +98,6 @@ class TargetRequest:
     lease: SourceLease
     models: tuple[ModelArtifact, ...]
     operations: tuple[OperationContract, ...]
-    excluded: tuple[Exclusion, ...]
     documents: DocumentTable
     resolve: Callable[[OperationRef], OperationContract | None]
     cwd: Path
@@ -397,96 +391,14 @@ def _normalized(text: str) -> str:
     return f"{text}\n" if text else ""
 
 
-def _tags(operation: OperationContract) -> tuple[str, ...]:
-    from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
-
-    if not isinstance(tags := dict(operation.facts).get("tags"), LiteralSequence):
-        return ()
-    return tuple(item.value for item in tags.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
-
-
-class _Selector:
-    def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput, cwd: Path) -> None:
-        root = batch.documents[0].id
-        self.operations = {
-            operation.id.use_site.pointer: operation
-            for operation in batch.operations
-            if operation.id.parent is None and operation.id.use_site.document == root
-        }
-        self.endpoints = [operation for operation in self.operations.values() if operation.id.kind == "path"]
-        self.source = source
-        self.cwd = cwd
-        self.problems: list[Diagnostic] = []
-
-    def report(self, code: str, option_path: str, message: str, pointer: str | None = None) -> None:
-        self.problems.append(
-            Diagnostic(
-                code=code,
-                severity="error",
-                stage="selection",
-                message=message,
-                source_pointer=pointer,
-                option_path=option_path,
-            )
-        )
-
-    def resolve(self, name: str, selectors: tuple[OperationSelector, ...]) -> set[OperationId]:
-        resolved: set[OperationId] = set()
-        for index, selector in enumerate(selectors):
-            pointer, document = (selector, None) if isinstance(selector, str) else (selector.pointer, selector.document)
-            if document is not None and document_identity(document, self.cwd) != self.source.identity:
-                message = "The operation reference names a document other than the root input"
-            elif (operation := self.operations.get(pointer)) is None:
-                message = "The operation reference selects no root operation"
-            elif operation.id.kind != "path":
-                message = "The operation reference selects a webhook, not a path operation"
-            elif operation.id in resolved:
-                self.report("E_SELECTION", f"selection.{name}[{index}]", "The selection repeats an operation", pointer)
-                continue
-            else:
-                resolved.add(operation.id)
-                continue
-            self.report("E_OPERATION_REF", f"selection.{name}[{index}]", message, pointer)
-        return resolved
-
-    def known(self, name: str, values: tuple[str, ...]) -> frozenset[str]:
-        present = {tag for operation in self.endpoints for tag in _tags(operation)}
-        for index, tag in enumerate(values):
-            if tag not in present:
-                self.report("E_SELECTION", f"selection.{name}[{index}]", f"No path operation has the tag {tag!r}")
-        return frozenset(values)
-
-
-def select_operations(
-    batch: GeneratedTypeContractBatch, selection: OperationSelection, source: RootInput, cwd: Path
-) -> tuple[tuple[OperationContract, ...], tuple[Exclusion, ...]]:
-    """Resolve selectors against root use sites, then include by OR and subtract exclusions, keeping order."""
-    selector = _Selector(batch, source, cwd)
-    include_operations = selector.resolve("include_operations", selection.include_operations)
-    include_tags = selector.known("include_tags", selection.include_tags)
-    exclude_operations = selector.resolve("exclude_operations", selection.exclude_operations)
-    exclude_tags = selector.known("exclude_tags", selection.exclude_tags)
-    if selector.problems:
-        raise APIGenerationError(tuple(selector.problems))
-    everything = not (include_operations or include_tags)
-    selected: list[OperationContract] = []
-    excluded: list[Exclusion] = []
-    for operation in selector.endpoints:
-        found = _tags(operation)
-        included = ["include_operations"] if operation.id in include_operations else []
-        included += [f"include_tags {tag!r}" for tag in found if tag in include_tags]
-        dropped = ["exclude_operations"] if operation.id in exclude_operations else []
-        dropped += [f"exclude_tags {tag!r}" for tag in found if tag in exclude_tags]
-        match bool(included), bool(dropped):
-            case True, True:
-                excluded.append((operation, f"included by {', '.join(included)} but excluded by {', '.join(dropped)}"))
-            case _, True:
-                excluded.append((operation, f"excluded by {', '.join(dropped)}"))
-            case False, _ if not everything:
-                excluded.append((operation, "matched by no include rule"))
-            case _:
-                selected.append(operation)
-    return tuple(selected), tuple(excluded)
+def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContract, ...]:
+    """Return the path operations of the root document, in document order."""
+    root = batch.documents[0].id
+    return tuple(
+        operation
+        for operation in batch.operations
+        if operation.id.parent is None and operation.id.use_site.document == root and operation.id.kind == "path"
+    )
 
 
 class _Planner:
@@ -515,22 +427,6 @@ class _Planner:
         if document is None or document_identity(document, self.cwd) == self.models.source.identity:
             return self.operations.get(reference.pointer)
         return None
-
-    def exclusions(self, excluded: tuple[Exclusion, ...]) -> tuple[Diagnostic, ...]:
-        reason = self.config.selection.reason
-        return tuple(
-            Diagnostic(
-                code="S_OPERATION_EXCLUDED",
-                severity="info",
-                stage="selection",
-                message=f"{operation.method.upper()} {operation.path} is {grounds}: {reason}",
-                source_uri=self.documents.root_uri,
-                source_pointer=operation.id.use_site.pointer,
-                operation=OperationRef(pointer=operation.id.use_site.pointer),
-                target_id=self.target_id,
-            )
-            for operation, grounds in excluded
-        )
 
     def model_path(self, artifact: ModelArtifact) -> Path:
         output = self.effective.output
@@ -635,10 +531,8 @@ class _Planner:
 
     def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
-        selected, excluded = select_operations(models.product.batch, config.selection, models.source, self.cwd)
-        self.operations = {
-            operation.id.use_site.pointer: operation for operation in (*selected, *(item for item, _ in excluded))
-        }
+        operations = _root_operations(models.product.batch)
+        self.operations = {operation.id.use_site.pointer: operation for operation in operations}
         state = read_target_state(self.root, generator.kind, config.package)
         rendered = generator.render(
             TargetRequest(
@@ -648,8 +542,7 @@ class _Planner:
                 batch=models.product.batch,
                 lease=models.product.source_lease,
                 models=models.artifacts,
-                operations=selected,
-                excluded=excluded,
+                operations=operations,
                 documents=self.documents,
                 resolve=self.operation,
                 cwd=self.cwd,
@@ -662,7 +555,6 @@ class _Planner:
         output = self.effective.output
         assert output is not None
         model = model_record(output=self.locate(output, option_path="model_config.output"), artifacts=models.artifacts)
-        exclusions = self.exclusions(excluded)
         manifest = self.manifest(plans, model)
         artifacts = (
             *(
@@ -702,7 +594,6 @@ class _Planner:
             artifacts=artifacts,
             diagnostics=(
                 *state.diagnostics,
-                *exclusions,
                 *rendered.diagnostics,
                 *hand_edits(state, plans, self.target_id),
             ),

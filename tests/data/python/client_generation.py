@@ -17,7 +17,6 @@ from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
     OperationRef,
-    OperationSelection,
     attached_diagnostic,
 )
 from datamodel_code_generator._client.config import (
@@ -104,11 +103,6 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
         match key:
             case "output":
                 converted[key] = root / value
-            case "selection":
-                converted[key] = OperationSelection(**{
-                    name: tuple(_selector(item) for item in item_value) if isinstance(item_value, list) else item_value
-                    for name, item_value in value.items()
-                })
             case "resource_names" if isinstance(value, list):
                 converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
             case "operations" if isinstance(value, list):

@@ -25,10 +25,6 @@ FORMATTERS = ["--formatters", "builtin"]
 MODEL_OPTIONS = [*PYTHON, *SCOPES, *BACKEND, *FORMATTERS]
 OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
 SERVER = ["--generate-server", "fastapi", "--target-config", "fastapi.toml"]
-EXCLUDED = (
-    "S_OPERATION_EXCLUDED info selection /paths/~1store~1inventory/get: "
-    "GET /store/inventory is excluded by exclude_tags 'store': The store is internal\n"
-)
 UNSUPPORTED = (
     "E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not "
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
@@ -171,28 +167,33 @@ def test_fastapi_cli_dependencies(
 def test_fastapi_cli_target_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the package where --target-output points, reporting the excluded operation to stdout or a file."""
+    """Write the package where --target-output points without the paths --openapi-include-paths leaves out."""
     monkeypatch.chdir(tmp_path)
+    include = ["--openapi-include-paths", "/pets*"]
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--diagnostics-json", "-"),
-        copy_files=_inputs(tmp_path, "selection.toml"),
+        extra_args=_server("--target-output", "service", "--diagnostics-json", "-", *include),
+        copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "excluded.txt",
-        expected_stderr=EXCLUDED,
+        expected_stdout_path=EXPECTED / "cli" / "empty-report.txt",
+        assert_no_stderr=True,
         file_should_not_exist=tmp_path / "server",
     )
+    assert_output(
+        "\n".join(sorted(path.name for path in (tmp_path / "service" / "routers").iterdir())) + "\n",
+        EXPECTED / "cli" / "include-paths-routers.txt",
+    )
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--check", "--diagnostics-json", "diagnostics.json"),
+        extra_args=_server("--target-output", "service", "--check", "--diagnostics-json", "diagnostics.json", *include),
         capsys=capsys,
-        expected_stderr=EXCLUDED,
+        assert_no_stderr=True,
     )
-    assert_file_content(tmp_path / "diagnostics.json", "cli/excluded.txt")
+    assert_file_content(tmp_path / "diagnostics.json", "cli/empty-report.txt")
 
 
 def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:

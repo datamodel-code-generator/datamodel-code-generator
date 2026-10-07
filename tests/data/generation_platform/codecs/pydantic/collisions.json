@@ -3,7 +3,7 @@
   "package": "codec_collisions",
   "options": {"aliases": {"nick-name": ["nick-name", "nickName"]}, "allow_population_by_field_name": true},
   "refusal": {},
-  "config": {"selection": {"exclude_operations": ["/paths/~1choices/post"], "reason": "Its nickName property collides with nick-name."}},
+  "config": {"model": {"openapi_include_paths": ["/names"]}},
   "cases": [
     {"name": "names-server-decode-name", "use": "/paths/~1names/post request_body", "op": "decode", "value": {"a_b": 1}},
     {"name": "names-server-decode-both", "use": "/paths/~1names/post request_body", "op": "decode", "value": {"a-b": 2, "a_b": 1}},

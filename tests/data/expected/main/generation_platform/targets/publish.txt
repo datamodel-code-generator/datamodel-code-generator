@@ -51,12 +51,12 @@ generate
   13 runtime modules ['unchanged']
 generate
   target=fastapi schema_version=1
+  written model models.py
   written target server/application.py (target)
   written target server/_generated/contract.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  unchanged model models.py
   unchanged target server/__init__.py (target)
   unchanged target server/routers/__init__.py (target)
   unchanged target server/routers/pets.py (target)
@@ -97,4 +97,3 @@ render
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']
-  S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service

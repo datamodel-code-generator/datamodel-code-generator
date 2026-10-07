@@ -11210,8 +11210,8 @@ for record in report.written_files:
 Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
 as a `uv add` command.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
-ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, operation
-selection, and codec registrations are also available from `datamodel_code_generator.api_types`.
+ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, and codec
+registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Target configuration
 
@@ -11225,7 +11225,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `package` | required | Import path of the generated package |
 | `model_package` | required | Import path of the models `--output` generates |
 | `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
-| `selection` | every operation | Table of `include_operations`, `include_tags`, `exclude_operations`, `exclude_tags`, and a required `reason` |
 | `layout` | `"routers"` | One router module per tag, or `"single"` for one `routes.py` |
 | `handler_mode` | `"sync"` | `"async"` makes service methods coroutine functions; `[[handler_modes]]` sets one operation |
 | `include_request` | `false` | Pass the Starlette `Request` to every service method |
@@ -11234,6 +11233,10 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `operation_names` | inferred | `[[operation_names]]` rename service methods |
 | `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
+
+The package serves every path operation of the input. To leave paths out, pass
+[`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths); the models only those
+operations use are not generated either.
 
 Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
 or a table with `pointer` and `document`:
@@ -11394,7 +11397,7 @@ stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPP
 (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
 (`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding, planning, and templates (`BND_*`, `F_*`), and ownership
 (`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
-served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.
+served document cannot carry, do not.
 
 ---
 

@@ -84,12 +84,6 @@ FieldOwnersPostRequest = TypeAliasType("FieldOwnersPostRequest", Owner | None)
 FieldPetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdLabelsPutPathPetIdParameter", int)
 
 
-FieldSearchPostRequest = TypeAliasType("FieldSearchPostRequest", ByName | ByKind)
-
-
-FieldSearchPostResponse = TypeAliasType("FieldSearchPostResponse", list[Pet])
-
-
 FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
 
 

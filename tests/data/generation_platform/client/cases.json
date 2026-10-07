@@ -790,13 +790,10 @@
         "models.py"
       ]
     ],
-    "config": {
-      "selection": {
-        "exclude_tags": [
-          "pets"
-        ],
-        "reason": "No operation is needed yet."
-      }
+    "model": {
+      "openapi_include_paths": [
+        "/none"
+      ]
     }
   },
   "evolution": {
@@ -985,6 +982,12 @@
         ]
       ]
     },
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
     "config": {
       "body_arguments": "both",
       "operations": [
@@ -1017,13 +1020,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1search/post"
-        ],
-        "reason": "msgspec validates its union only against the schema."
-      }
+      ]
     }
   },
   "fields-structural": {
@@ -1082,6 +1079,12 @@
         ]
       ]
     },
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
     "config": {
       "body_arguments": "both",
       "operations": [
@@ -1114,13 +1117,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1search/post"
-        ],
-        "reason": "Stdlib unions need a declared discriminator; native union conversion is covered separately."
-      }
+      ]
     }
   },
   "fields-unpack": {
@@ -1147,6 +1144,12 @@
         "models.py"
       ]
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
     "config": {
       "body_arguments": "both",
       "signature_style": "unpack",
@@ -1180,13 +1183,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1search/post"
-        ],
-        "reason": "The fields-structural case covers the union body."
-      }
+      ]
     }
   },
   "fields-errors": {
@@ -1245,6 +1242,12 @@
   "fields-both": {
     "input": "fields.yaml",
     "modules": false,
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
     "config": {
       "body_arguments": "both",
       "operations": [
@@ -1277,13 +1280,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1search/post"
-        ],
-        "reason": "The fields-structural and fields-arguments cases cover the union body."
-      }
+      ]
     }
   },
   "fields-cycle": {
@@ -1328,7 +1325,11 @@
       ]
     ],
     "model": {
-      "force_optional_for_required_fields": true
+      "force_optional_for_required_fields": true,
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
     },
     "config": {
       "body_arguments": "both",
@@ -1362,13 +1363,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1search/post"
-        ],
-        "reason": "The fields-structural case covers the union body."
-      }
+      ]
     }
   },
   "type-spellings": {
@@ -1977,13 +1972,15 @@
     "references": [
       "helpers-external.yaml"
     ],
-    "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      }
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
     }
   },
   "protocols-disabled": {
@@ -2194,13 +2191,17 @@
       "helpers-external.yaml",
       "protocols/disabled.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/disabled.yaml"
     }
   },
@@ -2411,13 +2412,17 @@
     "references": [
       "helpers-external.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": {
         "python": "disabled"
       }
@@ -2633,7 +2638,17 @@
       "helpers-external.yaml",
       "protocols/disabled.yaml"
     ],
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"../protocols/disabled.yaml\"\n\n[selection]\nexclude_tags = [\"admin\"]\nreason = \"Administration stays internal\"\n",
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"../protocols/disabled.yaml\"\n",
     "toml_path": "config/client.toml",
     "expected": "protocols-disabled"
   },
@@ -2845,13 +2860,17 @@
       "helpers-external.yaml",
       "protocols/disabled.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": {
         "relative": "protocols/disabled.yaml"
       }
@@ -2865,13 +2884,17 @@
       "helpers-external.yaml",
       "protocols/empty.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/empty.yaml"
     },
     "modules": [
@@ -3083,13 +3106,17 @@
       "helpers-external.yaml",
       "protocols/unsupported-kinds.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/unsupported-kinds.yaml"
     },
     "modules": false
@@ -3100,13 +3127,17 @@
       "helpers-external.yaml",
       "protocols/not-utf8.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/not-utf8.yaml"
     },
     "modules": false
@@ -3117,13 +3148,17 @@
       "helpers-external.yaml",
       "protocols/not-yaml.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/not-yaml.yaml"
     },
     "modules": false
@@ -3134,13 +3169,17 @@
       "helpers-external.yaml",
       "protocols/control.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/control.yaml"
     },
     "modules": false
@@ -3151,13 +3190,17 @@
       "helpers-external.yaml",
       "protocols/complex-key.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/complex-key.yaml"
     },
     "modules": false
@@ -3168,13 +3211,17 @@
       "helpers-external.yaml",
       "protocols/deep.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/deep.yaml"
     },
     "modules": false
@@ -3185,13 +3232,17 @@
       "helpers-external.yaml",
       "protocols/duplicate.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/duplicate.yaml"
     },
     "modules": false
@@ -3202,13 +3253,17 @@
       "helpers-external.yaml",
       "protocols/alias.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/alias.yaml"
     },
     "modules": false
@@ -3219,13 +3274,17 @@
       "helpers-external.yaml",
       "protocols/alias-key.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/alias-key.yaml"
     },
     "modules": false
@@ -3236,13 +3295,17 @@
       "helpers-external.yaml",
       "protocols/anchor.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/anchor.yaml"
     },
     "modules": false
@@ -3253,13 +3316,17 @@
       "helpers-external.yaml",
       "protocols/merge.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/merge.yaml"
     },
     "modules": false
@@ -3270,13 +3337,17 @@
       "helpers-external.yaml",
       "protocols/not-mapping.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/not-mapping.yaml"
     },
     "modules": false
@@ -3287,13 +3358,17 @@
       "helpers-external.yaml",
       "protocols/empty-file.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/empty-file.yaml"
     },
     "modules": false
@@ -3304,13 +3379,17 @@
       "helpers-external.yaml",
       "protocols/envelope.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/envelope.yaml"
     },
     "modules": false
@@ -3321,13 +3400,17 @@
       "helpers-external.yaml",
       "protocols/envelope-missing.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/envelope-missing.yaml"
     },
     "modules": false
@@ -3338,13 +3421,17 @@
       "helpers-external.yaml",
       "protocols/names.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/names.yaml"
     },
     "modules": false
@@ -3355,13 +3442,17 @@
       "helpers-external.yaml",
       "protocols/shared-errors.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/shared-errors.yaml"
     },
     "modules": false
@@ -3372,13 +3463,17 @@
       "helpers-external.yaml",
       "protocols/pagination-errors.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/pagination-errors.yaml"
     },
     "modules": false
@@ -3389,13 +3484,17 @@
       "helpers-external.yaml",
       "protocols/polling-errors.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/polling-errors.yaml"
     },
     "modules": false
@@ -3406,13 +3505,17 @@
       "helpers-external.yaml",
       "protocols/stream-errors.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/stream-errors.yaml"
     },
     "modules": false
@@ -3423,13 +3526,17 @@
       "helpers-external.yaml",
       "protocols/references.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/references.yaml"
     },
     "modules": false
@@ -3439,13 +3546,17 @@
     "references": [
       "helpers-external.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/missing.yaml"
     },
     "modules": false
@@ -3456,13 +3567,17 @@
       "helpers-external.yaml",
       "protocols/unsupported.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
     "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
       "protocols": "protocols/unsupported.yaml",
       "operations": [
         {
@@ -4199,14 +4314,10 @@
   },
   "unions-tagged": {
     "input": "unions.yaml",
-    "config": {
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1shapes/get",
-          "/paths/~1overlaps/get"
-        ],
-        "reason": "msgspec tells apart only tagged union members natively."
-      }
+    "model": {
+      "openapi_include_paths": [
+        "/pets"
+      ]
     }
   },
   "unions-legacy": {
@@ -4304,14 +4415,16 @@
     "references": [
       "protocols/polling.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/jobs*",
+        "/reports*",
+        "/exports*",
+        "/notes"
+      ]
+    },
     "config": {
-      "protocols": "protocols/polling.yaml",
-      "selection": {
-        "exclude_tags": [
-          "archives"
-        ],
-        "reason": "Archives have no success response"
-      }
+      "protocols": "protocols/polling.yaml"
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -4339,14 +4452,16 @@
     "references": [
       "protocols/polling.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/jobs*",
+        "/reports*",
+        "/exports*",
+        "/notes"
+      ]
+    },
     "config": {
-      "protocols": "protocols/polling.yaml",
-      "selection": {
-        "exclude_tags": [
-          "archives"
-        ],
-        "reason": "Archives have no success response"
-      }
+      "protocols": "protocols/polling.yaml"
     },
     "backends": [
       "pydantic_v2.dataclass",
@@ -4624,15 +4739,15 @@
     "references": [
       "protocols/caching.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
     "config": {
-      "protocols": "protocols/caching.yaml",
-      "selection": {
-        "exclude_tags": [
-          "items",
-          "reports"
-        ],
-        "reason": "Checked elsewhere"
-      }
+      "protocols": "protocols/caching.yaml"
     },
     "modules": [
       [
@@ -4657,15 +4772,15 @@
     "references": [
       "protocols/caching.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
     "config": {
-      "protocols": "protocols/caching.yaml",
-      "selection": {
-        "exclude_tags": [
-          "items",
-          "reports"
-        ],
-        "reason": "Checked elsewhere"
-      }
+      "protocols": "protocols/caching.yaml"
     },
     "modules": false
   },
@@ -4703,16 +4818,16 @@
   },
   "caching-python": {
     "input": "caching.yaml",
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
     "config": {
       "protocols": {
         "python": "caching"
-      },
-      "selection": {
-        "exclude_tags": [
-          "items",
-          "reports"
-        ],
-        "reason": "Checked elsewhere"
       }
     }
   },
@@ -4721,15 +4836,15 @@
     "references": [
       "protocols/caching.yaml"
     ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
     "config": {
-      "protocols": "protocols/caching.yaml",
-      "selection": {
-        "exclude_tags": [
-          "items",
-          "reports"
-        ],
-        "reason": "Checked elsewhere"
-      }
+      "protocols": "protocols/caching.yaml"
     },
     "modules": false
   },
@@ -5054,18 +5169,13 @@
         "models.py"
       ]
     ],
-    "config": {
-      "selection": {
-        "exclude_tags": [
-          "pets"
-        ],
-        "reason": "No operation is needed yet."
-      }
-    },
     "expected": "empty",
     "cwd": true,
     "model": {
-      "custom_template_dir": "templates/missing"
+      "custom_template_dir": "templates/missing",
+      "openapi_include_paths": [
+        "/none"
+      ]
     }
   },
   "templates-invalid": {

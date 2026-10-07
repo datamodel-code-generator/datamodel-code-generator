@@ -32,12 +32,12 @@
       {"render": {}},
       {"publish": null},
       {"remove": "server/routers/store.py"},
-      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}},
       {"restore": "server/routers/store.py"},
-      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}},
       {"publish": null},
       {"manifest": null},
-      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}}
+      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
     ]
   },
   "conflict": {
@@ -113,65 +113,25 @@
       {"render": {"config": {"model_mode": "verify"}}}
     ]
   },
-  "selection": {
+  "include-paths": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "openapi_include_paths": ["/pets"]},
     "steps": [
-      {
-        "render": {
-          "config": {
-            "selection": {
-              "include_tags": ["pets"],
-              "exclude_operations": ["/paths/~1pets/post"],
-              "reason": "Only reading pets"
-            }
-          }
-        }
-      },
-      {"manifest": null},
-      {"render": {"config": {"selection": {"exclude_tags": ["admin"], "reason": "Administration runs elsewhere"}}}},
-      {
-        "render": {
-          "config": {
-            "selection": {
-              "include_operations": [
-                "/paths/~1nope/get",
-                "/webhooks/petAdded/post",
-                {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"},
-                "/paths/~1pets/get",
-                {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}
-              ],
-              "include_tags": ["missing"],
-              "exclude_tags": ["absent"],
-              "reason": "Broken selection"
-            }
-          }
-        }
-      },
-      {"render": {"config": {"selection": {"include_operations": ["/paths/~1pets/get"], "reason": "One operation"}}}},
+      {"render": {}},
+      {"publish": null},
+      {"show": "models.py"},
+      {"render": {"config": {"operation_names": [["/paths/~1store~1orders/get", "orders"]]}}},
+      {"render": {"config": {"operation_names": [["/paths/~1pets/get", "pets"]]}}},
       {"remember": "shorthand"},
-      {
-        "render": {
-          "config": {
-            "selection": {
-              "include_operations": [{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}],
-              "reason": "One operation"
-            }
-          }
-        }
-      },
+      {"render": {"config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}, "pets"]]}}},
       {"compare": "shorthand"},
       {
         "render": {
-          "config": {
-            "selection": {
-              "include_operations": [{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}],
-              "reason": "One operation"
-            }
-          }
+          "config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}, "pets"]]}
         }
       },
-      {"compare": "shorthand"}
+      {"compare": "shorthand"},
+      {"render": {"config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, "pets"]]}}}
     ]
   },
   "inputs": {
@@ -180,12 +140,7 @@
     "steps": [
       {
         "render": {
-          "config": {
-            "selection": {
-              "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
-              "reason": "Items only"
-            }
-          }
+          "config": {"operation_names": [[{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}, "items"]]}
         }
       },
       {"manifest": null},
@@ -193,12 +148,7 @@
       {
         "render": {
           "input": {"path": "inline.yaml"},
-          "config": {
-            "selection": {
-              "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
-              "reason": "Items only"
-            }
-          }
+          "config": {"operation_names": [[{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}, "items"]]}
         }
       },
       {"render": {"input": {"list": ["inline.yaml"]}}},
@@ -295,12 +245,10 @@
       {"tree": null},
       {"generate": {}},
       {
-        "generate": {
-          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
-        }
+        "generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}
       },
       {"tree": null},
-      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}}
+      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
     ]
   },
   "publish-verify": {
@@ -355,9 +303,7 @@
       {"tree": null},
       {"generate": {}},
       {
-        "generate": {
-          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
-        }
+        "generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}
       },
       {"tree": null}
     ]
@@ -375,9 +321,7 @@
     "steps": [
       {"generate": {}},
       {
-        "generate": {
-          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
-        }
+        "generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}
       },
       {"tree": null}
     ]

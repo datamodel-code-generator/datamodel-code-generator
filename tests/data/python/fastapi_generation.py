@@ -19,7 +19,6 @@ from datamodel_code_generator.fastapi import (
     GenerationInput,
     GenerationReport,
     OperationRef,
-    OperationSelection,
     ResponseChoice,
     generate_fastapi,
     render_fastapi,
@@ -48,11 +47,6 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
         match key:
             case "output":
                 converted[key] = root / value
-            case "selection":
-                converted[key] = OperationSelection(**{
-                    name: tuple(_selector(item) for item in item_value) if isinstance(item_value, list) else item_value
-                    for name, item_value in value.items()
-                })
             case "primary_responses" if isinstance(value, list):
                 converted[key] = {
                     _selector(selector): ResponseChoice(**choice) if isinstance(choice, dict) else choice

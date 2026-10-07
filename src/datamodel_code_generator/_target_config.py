@@ -4,20 +4,19 @@ from __future__ import annotations
 
 import keyword
 from collections.abc import Callable, Iterator, Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, fields
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
 from datamodel_code_generator._api_manifest import document_identity
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, OperationSelection
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
 ModelMode: TypeAlias = Literal["generate", "verify"]
 Converter: TypeAlias = Callable[[object, Path, str], object]
 ConfigT = TypeVar("ConfigT", bound="TargetConfig")
 
 _MODEL_MODES: Final = frozenset({"generate", "verify"})
-_SELECTION_COLLECTIONS: Final = ("include_operations", "include_tags", "exclude_operations", "exclude_tags")
 
 
 class _ConfigValueError(Exception):
@@ -46,22 +45,6 @@ def _dotted(value: object) -> bool:
     )
 
 
-def _selection_problems(selection: object) -> Iterator[Diagnostic]:
-    if not isinstance(selection, OperationSelection):
-        yield _diagnostic("E_CONFIG_VALUE", "selection", "selection must be an OperationSelection")
-        return
-    for name in _SELECTION_COLLECTIONS:
-        values = getattr(selection, name)
-        if not isinstance(values, tuple) or not all(isinstance(value, (str, OperationRef)) for value in values):
-            yield _diagnostic("E_CONFIG_VALUE", f"selection.{name}", f"selection.{name} must be a tuple")
-        elif len(set(values)) != len(values):
-            yield _diagnostic("E_SELECTION", f"selection.{name}", f"selection.{name} repeats an entry")
-    if any(getattr(selection, name) for name in _SELECTION_COLLECTIONS) and not (
-        isinstance(selection.reason, str) and selection.reason.strip()
-    ):
-        yield _diagnostic("E_SELECTION", "selection.reason", "A selection needs a reason with non-whitespace text")
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetConfig:
     """Hold the settings every single target shares; concrete targets add their own fields."""
@@ -70,7 +53,6 @@ class TargetConfig:
     package: str
     model_package: str
     model_mode: ModelMode = "generate"
-    selection: OperationSelection = field(default_factory=OperationSelection)
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
 
@@ -87,7 +69,6 @@ class TargetConfig:
                 yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must be a dotted Python import path")
         if self.model_mode not in _MODEL_MODES:
             yield _diagnostic("E_CONFIG_VALUE", "model_mode", "model_mode must be 'generate' or 'verify'")
-        yield from _selection_problems(self.selection)
 
 
 def _string(value: object, _: Path, option_path: str) -> str:
@@ -142,28 +123,6 @@ def _operation(value: object, base: Path, option_path: str) -> OperationRef | st
     return OperationRef(pointer=pointer, document=document)
 
 
-def _selection(value: object, base: Path, option_path: str) -> OperationSelection:
-    table = _table(value, option_path, frozenset({*_SELECTION_COLLECTIONS, "reason"}))
-    reason = table.get("reason")
-    return OperationSelection(
-        include_operations=tuple(
-            _operation(item, base, f"{option_path}.include_operations[{index}]")
-            for index, item in enumerate(
-                _array(table.get("include_operations", []), f"{option_path}.include_operations")
-            )
-        ),
-        include_tags=_strings(table.get("include_tags", []), base, f"{option_path}.include_tags"),
-        exclude_operations=tuple(
-            _operation(item, base, f"{option_path}.exclude_operations[{index}]")
-            for index, item in enumerate(
-                _array(table.get("exclude_operations", []), f"{option_path}.exclude_operations")
-            )
-        ),
-        exclude_tags=_strings(table.get("exclude_tags", []), base, f"{option_path}.exclude_tags"),
-        reason=None if reason is None else _string(reason, base, f"{option_path}.reason"),
-    )
-
-
 def _records(convert: Converter) -> Converter:
     def records(value: object, base: Path, option_path: str) -> tuple[object, ...]:
         return tuple(
@@ -178,7 +137,6 @@ SHARED_TOML_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "package": _string,
     "model_package": _string,
     "model_mode": _string,
-    "selection": _selection,
 })
 
 

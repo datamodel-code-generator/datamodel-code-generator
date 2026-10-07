@@ -27,18 +27,14 @@ UNSELECTED = (
     'openapi: 3.1.0\ninfo: {title: Unselected, version: "1.0"}\npaths:\n  /names:\n    get:\n'
     "      tags: [names]\n      responses:\n        '204': {description: Done.}\n"
 )
-SELECTION = '[selection]\nexclude_tags = ["names"]\nreason = "Nothing is selected"\n'
+INCLUDED = {"unselected": ["/none"]}
 
 
 def _write(root: Path) -> None:
-    for name, text, extra in (
-        ("primitive", PRIMITIVE, ""),
-        ("empty", EMPTY, ""),
-        ("unselected", UNSELECTED, SELECTION),
-    ):
+    for name, text in (("primitive", PRIMITIVE), ("empty", EMPTY), ("unselected", UNSELECTED)):
         (root / f"{name}.yaml").write_text(text, encoding="utf-8")
-        target = 'schema_version = 1\npackage = "server"\nmodel_package = "models"\noutput = "server"\n'
-        (root / f"{name}.toml").write_text(target + extra, encoding="utf-8")
+    target = 'schema_version = 1\npackage = "server"\nmodel_package = "models"\noutput = "server"\n'
+    (root / "fastapi.toml").write_text(target, encoding="utf-8")
 
 
 def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
@@ -57,6 +53,7 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType(backend),
         use_missing_sentinel=sentinel,
+        openapi_include_paths=INCLUDED.get(name),
     )
     config = FastAPIConfig(
         output=root / "server",
@@ -80,7 +77,8 @@ def _cli(root: Path, name: str, backend: str) -> str:
     arguments = [
         *("--input", str(root / f"{name}.yaml"), "--input-file-type", "openapi", "--openapi-scopes", "schemas", "api"),
         *("--output", str(root / "models.py"), "--output-model-type", backend, "--target-python-version", "3.11", "--check"),
-        *("--generate-server", "fastapi", "--target-config", str(root / f"{name}.toml")),
+        *("--generate-server", "fastapi", "--target-config", str(root / "fastapi.toml")),
+        *(f"--openapi-include-paths={path}" for path in INCLUDED.get(name, ())),
     ]
     stderr = StringIO()
     with redirect_stderr(stderr):

@@ -74,13 +74,6 @@ helpers:
       write: {in: body, pointer: /cursor}
       end: [{kind: value, value: 204}]
       empty_string: end
-  audit.all:
-    kind: pagination
-    enabled: false
-    operation: /paths/~1admin~1audit/get
-    items: {from: body, pointer: /data}
-    item_schema: {pointer: /components/schemas/NamePage/properties/data/items}
-    continuation: {kind: link, header: Link, rel: more}
   jobs.run:
     kind: polling
     enabled: false

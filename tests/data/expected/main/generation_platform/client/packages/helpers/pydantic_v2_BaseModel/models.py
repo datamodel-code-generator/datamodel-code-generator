@@ -115,7 +115,3 @@ class FieldRecordsGetResponse(RootModel[str]):
 class Record(BaseModel):
     id: str | None = None
     value: str | None = None
-
-
-class FieldAdminAuditGetQueryCursorParameter(RootModel[str]):
-    root: str
