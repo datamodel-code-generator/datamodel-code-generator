@@ -15584,7 +15584,7 @@ def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
     )
 
 
