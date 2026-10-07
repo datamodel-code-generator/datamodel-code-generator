@@ -29,7 +29,6 @@ from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
@@ -39,7 +38,6 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralSequence,
     LiteralType,
-    MetadataCall,
     NoneType,
     SourceLocation,
     UnionType,
@@ -124,7 +122,13 @@ _CONSTRAINTS: Final = frozenset({
     "multiple_of",
     "pattern",
 })
-_FIELD: Final = Import(import_="Field", from_="pydantic")
+_CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
+    (None, "bytes"): "conbytes",
+    ("decimal", "Decimal"): "condecimal",
+    (None, "float"): "confloat",
+    (None, "int"): "conint",
+    (None, "str"): "constr",
+}
 CONSTRAINED: Final = frozenset({
     ("pydantic", "conbytes"),
     ("pydantic", "condecimal"),
@@ -749,7 +753,7 @@ class Planner:  # noqa: PLR0904
         return value, default
 
     def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
-        """Return the type a root model or alias validates as: its type, with the constraints of a scalar.
+        """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
 
         Its documentation keywords are left to the parameter's own; any other keyword, a constrained container, or a
         setting returns None.
@@ -766,7 +770,16 @@ class Planner:  # noqa: PLR0904
         value = self.nested(facts.type, seen | {symbol})
         if not constraints:
             return value
-        return AnnotatedType(value, (MetadataCall(_FIELD, constraints),)) if self.scalar(value) else None
+        base = (
+            (None, value.name)
+            if isinstance(value, BuiltinType)
+            else (value.import_.from_, value.import_.import_)
+            if isinstance(value, ImportedType)
+            else None
+        )
+        if (constructor := _CONSTRUCTORS.get(base)) is None:
+            return None
+        return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), constraints)
 
     def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
         """Return a type with each alias among its members and arguments replaced by the type it validates as."""
@@ -795,8 +808,6 @@ class Planner:  # noqa: PLR0904
                 kind = found.pop() if len(found) == 1 else None
             case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
                 kind = "sequence" if self.kind(value.arguments[0]) == "scalar" else None
-            case AnnotatedType():
-                kind = self.kind(value.base)
             case _ if self.scalar(value):
                 kind = "scalar"
             case _:
@@ -808,8 +819,6 @@ class Planner:  # noqa: PLR0904
         if isinstance(value, UnionType | GenericType):
             members = value.members if isinstance(value, UnionType) else value.arguments
             return any(self.literal(member) for member in members)
-        if isinstance(value, AnnotatedType):
-            return self.literal(value.base)
         if isinstance(value, GeneratedSymbolType):
             return self.symbols[value.symbol].kind == "enum"
         return isinstance(value, LiteralType)
