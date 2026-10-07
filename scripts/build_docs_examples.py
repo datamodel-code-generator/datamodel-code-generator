@@ -397,7 +397,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                     line.strip()
                     for name in ("protocols-unsupported.txt", "protocols-references.txt")
                     for line in read_text(EXPECTED_CLIENT / "protocols" / name).splitlines()
-                    if line.lstrip().startswith(("E_NAME_COLLISION", "E_SELECTOR_DEPENDENCY"))
+                    if line.lstrip().startswith("E_NAME_COLLISION")
                 ),
             ),
         ),

@@ -1,30 +1,29 @@
 # encoding
 render pydantic_v2.BaseModel
   write models.py
-  write server/src/server/__init__.py
-  write server/src/server/application.py
-  write server/src/server/routers/__init__.py
-  write server/src/server/routers/untagged.py
-  write server/src/server/_generated/__init__.py
-  write server/src/server/_generated/contract.py
-  write server/src/server/errors.py
-  write server/src/server/services.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/errors.py
+  write server/services.py
   write server/README.md
-  write server/src/server/_runtime/__init__.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/errors.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/media.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/wire.py (copied runtime)
-  write server/src/server/_runtime/server/__init__.py (copied runtime)
-  write server/src/server/_runtime/server/application.py (copied runtime)
-  write server/src/server/_runtime/server/errors.py (copied runtime)
-  write server/src/server/_runtime/server/requests.py (copied runtime)
-  write server/src/server/_runtime/server/responses.py (copied runtime)
-  write server/src/server/_runtime/server/security.py (copied runtime)
-  write server/src/server/py.typed
-  write server/pyproject.toml
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
   write server/.dcg-target-manifest.json
   file server/README.md
     | # Server parameters
@@ -100,23 +99,6 @@ render pydantic_v2.BaseModel
     | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
     | Generation rewrites every file it owns, restoring any you edited or deleted, and never touches your own modules.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
-    | `pyproject.toml` declares the runtime dependencies of the package.
-  file server/src/server/py.typed
-  file server/pyproject.toml
-    | [build-system]
-    | requires = ["hatchling>=1.27"]
-    | build-backend = "hatchling.build"
-    |
-    | [project]
-    | name = "menu-server"
-    | version = "1.0.0"
-    | requires-python = ">=3.11"
-    | readme = "README.md"
-    | dependencies = ["fastapi>=0.141.1", "pydantic>=2.13.5", "menu-models>=1.0"]
-    |
-    | [tool.hatch.build.targets.wheel]
-    | only-include = ["src/server"]
-    | sources = ["src"]
-    |
-    | [tool.hatch.build.targets.sdist]
-    | only-include = ["src/server", "README.md", "pyproject.toml"]
+    | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+    | run it again when a new version of datamodel-code-generator changes them.
+  file server/py.typed

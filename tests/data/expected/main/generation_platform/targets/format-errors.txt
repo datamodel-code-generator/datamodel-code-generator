@@ -1,6 +1,6 @@
 # format-errors
 render
-  UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 33: ordinal not in range(256)
+  UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 7: ordinal not in range(256)
 render
   APIGenerationError
   E_TARGET_SOURCE error target application.py: The generated Python source is invalid: invalid syntax

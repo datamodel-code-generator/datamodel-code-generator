@@ -92,6 +92,7 @@ CATEGORY_ORDER = [
     OptionCategory.TYPING.value,
     OptionCategory.OPENAPI.value,
     OptionCategory.GRAPHQL.value,
+    OptionCategory.TARGET.value,
 ]
 
 

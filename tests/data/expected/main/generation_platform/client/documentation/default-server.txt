@@ -1,32 +1,31 @@
-  write client/src/client/__init__.py
-  write client/src/client/_client.py
-  write client/src/client/_async_client.py
-  write client/src/client/options.py
-  write client/src/client/hooks.py
-  write client/src/client/errors.py
-  write client/src/client/responses.py
-  write client/src/client/auth.py
-  write client/src/client/bodies.py
-  write client/src/client/model_codecs.py
-  write client/src/client/protocols/__init__.py
-  write client/src/client/resources/__init__.py
-  write client/src/client/resources/default/__init__.py
-  write client/src/client/resources/default/_sync.py
-  write client/src/client/resources/default/_async.py
-  write client/src/client/types/__init__.py
-  write client/src/client/types/default/__init__.py
-  write client/src/client/types/default/_operations.py
-  write client/src/client/_generated/__init__.py
-  write client/src/client/_generated/model_bindings.py
-  write client/src/client/_operations.py
-  write client/README.md
-  write client/docs/runtime.md
-  write client/src/client/py.typed
-  write client/pyproject.toml
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/default/__init__.py
+  write client/resources/default/_sync.py
+  write client/resources/default/_async.py
+  write client/types/__init__.py
+  write client/types/default/__init__.py
+  write client/types/default/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5', 'pets-models>=1']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 
-# artifact client/README.md
+# artifact client/_generated_docs/README.md
 # client
 
 This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
@@ -48,7 +47,23 @@ The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays 
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
 
-See the [runtime reference](docs/runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `default.get_status`: `GET /status`, no request body
 
 ## Selected operation contracts
 
@@ -75,8 +90,32 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ]
 ```
 
+## Dependencies
 
-# artifact client/docs/runtime.md
+The package needs these distributions at run time:
+
+- `httpx2>=2.13.0`
+- `typing-extensions>=4.16`
+- `pydantic>=2.13.5`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | none |
+| Helpers | none |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `_runtime`: `__init__.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `parameters.py`, `unset.py`, `wire.py`
+- `_runtime/protocols`: `__init__.py`, `caches.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket_types.py`
+
+
+# artifact client/_generated_docs/runtime.md
 # Runtime reference
 
 Import `Client` and `AsyncClient` from `client` and the records below from
@@ -241,23 +280,3 @@ Native task cancellation propagates unchanged, and user callbacks are not shield
 ## Request compression
 
 No operation of this package declares request compression, so every request is sent without SDK compression.
-
-
-# artifact client/pyproject.toml
-[build-system]
-requires = ["hatchling>=1.27"]
-build-backend = "hatchling.build"
-
-[project]
-name = "pets-client"
-version = "1.2.3"
-requires-python = ">=3.11"
-readme = "README.md"
-dependencies = ["httpx2>=2.13.0", "typing-extensions>=4.16", "pydantic>=2.13.5", "pets-models>=1"]
-
-[tool.hatch.build.targets.wheel]
-only-include = ["src/client"]
-sources = ["src"]
-
-[tool.hatch.build.targets.sdist]
-only-include = ["src/client", "README.md", "docs/runtime.md", "pyproject.toml"]

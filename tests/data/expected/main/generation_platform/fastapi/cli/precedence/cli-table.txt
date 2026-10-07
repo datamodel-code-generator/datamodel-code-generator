@@ -1,0 +1,8 @@
+$ datamodel-codegen --server-handler-modes {"/paths/~1store~1inventory/get": "async"}
+# server/services.py
+def list_pets
+def create_pet
+def list_my_pets
+def get_pet
+def delete_pet
+async def get_inventory

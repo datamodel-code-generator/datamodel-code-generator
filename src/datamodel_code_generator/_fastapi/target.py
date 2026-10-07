@@ -6,15 +6,13 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.documentation import Documentation
-from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
-from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
+from datamodel_code_generator._fastapi.plan import PlanError, Planner
 from datamodel_code_generator._fastapi.render import ServerRenderer
-from datamodel_code_generator._fastapi.templates import TemplateSet
-from datamodel_code_generator._fastapi.views import ContextBuilder
+from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
@@ -22,7 +20,6 @@ from datamodel_code_generator.enums import DataModelType
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
-    from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.plan import ServerPlan
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
@@ -42,95 +39,43 @@ class FastAPITarget:
     kind: TargetKind = "fastapi"
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_FASTAPI_BACKEND_UNSUPPORTED"
+    selector: str = "--generate-server"
 
     def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301
-        """Plan the selected operations, let the hooks revise the plan, and render the package."""
+        """Plan the selected operations and render the package, with the custom template directory's overrides."""
         config = request.config
         assert isinstance(config, FastAPIConfig)
-        stage = _Stage(request, config)
-        try:
-            plan = stage.planned(Revision())
-        except PlanError as error:
-            raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
-            ) from None
-        templates = None if config.templates is None else TemplateSet(config.templates, request.target_id)
-        excluded: tuple[Diagnostic, ...] = ()
-        context = None
-        if config.hooks:
-            revision, _, context = HookRunner(config.hooks, request.target_id).run(stage)
-            plan = stage.planned(revision)
-            excluded = _excluded(plan, request)
-        elif templates is not None:
-            context = stage.context(Revision(), Extensions())
-        docs = _docs(plan, request, stage.wire)
-        renderer = ServerRenderer(
-            config=config,
-            package=request.layout.package,
-            backend=_BACKENDS[request.model_config.output_model_type],
-            plan=plan,
-            batch=request.batch,
-            wire=stage.wire,
-            templates=templates,
-            context=context,
-            docs=docs,
-        )
-        return TargetRender(
-            files=renderer.files(),
-            dependencies=_dependencies(plan, request.models),
-            diagnostics=(*docs.problems, *excluded),
-        )
-
-
-class _Stage:
-    """Plan the server under a hook revision, keeping the latest plan."""
-
-    def __init__(self, request: TargetRequest, config: FastAPIConfig) -> None:
-        """Plan the wire of the selected operations once."""
-        self.request = request
-        self.config = config
-        self.wire = plan_wire(
+        wire = plan_wire(
             request.batch,
             request.lease,
             [use for operation in request.operations for use in operation_uses(operation)],
             operations=frozenset(operation.id for operation in request.operations),
             documents=request.documents.pointers,
         )
-        self.latest: tuple[Revision, ServerPlan] | None = None
-        self.view: tuple[Revision, FastAPIContext] | None = None
-
-    def planned(self, revision: Revision) -> ServerPlan:
-        """Return the plan of a revision, planning it unless the latest revision was the same.
-
-        The wire rules the planned operations break stop the plan.
-        """
-        if (latest := self.latest) is not None and latest[0] == revision:
-            return latest[1]
-        request = self.request
-        plan = Planner(request, self.config, self.wire, revision).plan()
+        try:
+            plan = Planner(request, config, wire).plan()
+        except PlanError as error:
+            raise APIGenerationError(
+                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
+            ) from None
         selected = {operation.contract.id for operation in plan.operations}
-        if problems := [item for item in self.wire.diagnostics if item.operation in {None, *selected}]:
+        if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        self.latest = (revision, plan)
-        return plan
-
-    def context(self, revision: Revision, extensions: Extensions) -> FastAPIContext:
-        """Return the context of a revision's plan, with the hooks' extras and imports.
-
-        The context of the latest revision is built once, however many hooks only add extras.
-        """
-        if (view := self.view) is None or view[0] != revision:
-            plan = self.planned(revision)
-            renderer = ServerRenderer(
-                config=self.config,
-                package=self.request.layout.package,
-                backend=_BACKENDS[self.request.model_config.output_model_type],
-                plan=plan,
-                batch=self.request.batch,
-                wire=self.wire,
-            )
-            view = self.view = (revision, ContextBuilder(renderer, self.request).context())
-        return extended(view[1], extensions)
+        docs = _docs(plan, request, wire)
+        renderer = ServerRenderer(
+            config=config,
+            backend=_BACKENDS[request.model_config.output_model_type],
+            plan=plan,
+            batch=request.batch,
+            wire=wire,
+            templates=FastAPITemplates.custom(request.model_config, request.target_id, request.cwd),
+            docs=docs,
+        )
+        return TargetRender(
+            files=renderer.files(),
+            dependencies=_dependencies(plan, request.models),
+            diagnostics=tuple(docs.problems),
+        )
 
 
 def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
@@ -156,24 +101,6 @@ def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documenta
             ),
         )
     return Documentation(plan, request, wires)
-
-
-def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...]:
-    kept = {spec.key for spec in plan.operations}
-    return tuple(
-        Diagnostic(
-            code="S_OPERATION_EXCLUDED",
-            severity="info",
-            stage="hook",
-            message=f"{operation.method.upper()} {operation.path} is removed by a hook",
-            source_uri=request.documents.root_uri,
-            source_pointer=key,
-            operation=OperationRef(pointer=key),
-            target_id=request.target_id,
-        )
-        for operation in request.operations
-        if (key := operation.id.use_site.pointer) not in kept
-    )
 
 
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:

@@ -1,4 +1,4 @@
 # default-server pydantic_v2.BaseModel
   > GET https://default.example.com/base/status
-    [host: default.example.com, user-agent: pets-client/1.2.3, accept-encoding: gzip, deflate] b''
+    [host: default.example.com, accept-encoding: gzip, deflate] b''
   status = None

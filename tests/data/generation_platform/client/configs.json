@@ -483,5 +483,17 @@
   },
   "toml-retry-removed-replay": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = true\n"
+  },
+  "toml-syntax": {
+    "toml": "schema_version = \n"
+  },
+  "toml-version": {
+    "toml": "schema_version = 2\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n"
+  },
+  "toml-unknown-setting": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntargets = []\n"
+  },
+  "toml-operation-document": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/get\", document = \"https://example.com/api.yaml\" }\nname = \"list_all\"\n"
   }
 }

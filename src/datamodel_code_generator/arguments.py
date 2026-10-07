@@ -1553,22 +1553,87 @@ general_options.add_argument(
 target_selection_options.add_argument(
     "--generate-server",
     choices=["fastapi"],
-    default=SUPPRESS,
-    help="Generate a server package for the models from the --target-config settings (experimental).",
+    default=None,
+    help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
 )
 target_options.add_argument(
-    "--target-config",
-    type=Path,
-    default=SUPPRESS,
-    metavar="PATH",
-    help="Read the selected target's settings from a flat TOML file.",
+    "--server-output",
+    default=None,
+    help="Directory of the generated server package (experimental).",
 )
 target_options.add_argument(
-    "--target-output",
-    type=Path,
-    default=SUPPRESS,
-    metavar="PATH",
-    help="Write the selected target to PATH instead of the output its settings name.",
+    "--server-package",
+    default=None,
+    help="Import path of the generated server package (experimental).",
+)
+target_options.add_argument(
+    "--server-model-package",
+    default=None,
+    help="Import path of the models that --output generates (experimental).",
+)
+target_options.add_argument(
+    "--server-layout",
+    choices=["routers", "single"],
+    default=None,
+    help="Write one router module per tag (default) or a single routes module (experimental).",
+)
+target_options.add_argument(
+    "--server-handler-mode",
+    choices=["sync", "async"],
+    default=None,
+    help="Make service methods plain functions (default) or coroutine functions (experimental).",
+)
+target_options.add_argument(
+    "--server-handler-modes",
+    type=str,
+    default=None,
+    help="Per-operation handler modes as inline JSON or a JSON file path, keyed by operation reference such as "
+    "/paths/~1pets/get; overrides --server-handler-mode for matched operations (experimental).",
+)
+target_options.add_argument(
+    "--server-include-request",
+    action=BooleanOptionalAction,
+    default=None,
+    help="Pass the Starlette Request to every service method (experimental).",
+)
+target_options.add_argument(
+    "--server-body-mode",
+    choices=["typed", "request"],
+    default=None,
+    help="Pass request bodies as validated models (default) or as the raw Request (experimental).",
+)
+target_options.add_argument(
+    "--server-body-modes",
+    type=str,
+    default=None,
+    help="Per-operation body modes as inline JSON or a JSON file path, keyed by operation reference; "
+    "overrides --server-body-mode for matched operations (experimental).",
+)
+target_options.add_argument(
+    "--server-primary-responses",
+    type=str,
+    default=None,
+    help="The declared response a bare return value takes, per operation, as inline JSON or a JSON file path: "
+    'an object with "status_code" and an optional "media_type" for each operation reference (experimental).',
+)
+target_options.add_argument(
+    "--server-operation-names",
+    type=str,
+    default=None,
+    help="Service method names per operation reference as inline JSON or a JSON file path (experimental).",
+)
+target_options.add_argument(
+    "--server-router-names",
+    type=str,
+    default=None,
+    help="Router group names keyed by group key, such as tag:pets, as inline JSON or a JSON file path (experimental).",
+)
+target_options.add_argument(
+    "--server-parameter-names",
+    type=str,
+    default=None,
+    help="Argument names per operation reference, each keyed by location and name such as query:limit, "
+    "as inline JSON or a JSON file path (experimental).",
 )
 target_options.add_argument(
     "--diagnostics-json",

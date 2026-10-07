@@ -16,15 +16,15 @@ render
 {
   "files": {
     "README.md": "sha256:68894e4d88791299b465b83c0693209b51c7396a84d317843908c83290af5d3d",
-    "__init__.py": "sha256:fa3a4edd4eedf761a5a21315681c8f9a17cda023e3ece80dd61043a24864892b",
-    "_generated/__init__.py": "sha256:41b0f77c872513da0026ab0b281e7cdba021c0c940f3f113dae177b0f7fe8881",
-    "_generated/contract.py": "sha256:dd1cccc92fca0496e7607b4d3e346779468da4d1ab6c779ed6a0b7d11e6c2503",
-    "application.py": "sha256:2569e5894883b309fdfa1a200ec6abf4f4629804d31c29b6f8ec0b5cc89db7d8",
-    "errors.py": "sha256:3871856272b5dbcbdfd0f1e8567a063e972621320f7ec42b481519570a1692b0",
+    "__init__.py": "sha256:2c4f42bc28ffc1f38572169afab2a4f6e2ea65984f0aacd7207f3acc4289e0bc",
+    "_generated/__init__.py": "sha256:d22165340f71942f0e29783a9c49bd0810bdc252b0459e25962b3e5a4595b5ef",
+    "_generated/contract.py": "sha256:fd30ee6518729ad2aa03751326a95be23eb0004bd54b12e77d09eeab797f8b5a",
+    "application.py": "sha256:e885899d65fd66b8fa2df55fe012f7bc85218f23d7532e7c21f3b1a32965309d",
+    "errors.py": "sha256:5e345b2e4ec32838c978cf59d0632b57380d155bdfc56629dea02c72727175f5",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:2351ea2590b5b524515d25bef2cc4727a889b3724209c156ab83bb55635cee52",
-    "routers/untagged.py": "sha256:fd190eaa023fbb69edc6ce8ad2341e0fcd5423e78e0f34de447e2aaabd516b8e",
-    "services.py": "sha256:17f8874fdc1d9b4d4438231aac9433a31c39945e6e30442901655c55ed63b56b"
+    "routers/__init__.py": "sha256:dce1f16f231205d5985ed48d469e0210921cfa08918bea6c8cc2660fc693f0b8",
+    "routers/untagged.py": "sha256:121b4e7b9e22bf8a67a2e2b7ced28939b460feff91e20809d744222484d2affc",
+    "services.py": "sha256:c232ceccdbeb233e31b88a82deb02fd5b841b6f0ce73a0ba61977b1717944361"
   },
   "format": 1,
   "generator": {
@@ -41,16 +41,4 @@ render
   }
 }
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
+  Error: --generate-server requires --openapi-scopes to include api

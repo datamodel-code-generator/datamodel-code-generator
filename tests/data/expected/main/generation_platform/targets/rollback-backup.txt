@@ -17,14 +17,14 @@ generate
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 generate
-  PublicationRollbackError after OSError: unrestored server/_generated/contract.py, server/application.py; 2 backups kept
+  PublicationRollbackError after OSError: unrestored server/application.py, models.py; 2 backups kept
 tree
+  .models.py.<private>.bak
   models.py
   server/.application.py.<private>.bak
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
-  server/_generated/.contract.py.<private>.bak
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py

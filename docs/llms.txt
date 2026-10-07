@@ -56,7 +56,7 @@
 
 ### Generation Targets
 
-- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, target configuration file, generated package, template context, and served OpenAPI document...
+- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, generated package, template values, and served OpenAPI document may change. See Experimenta...
 
 
 ## CLI Reference
@@ -70,6 +70,7 @@
 - [OpenAPI-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/openapi-only-options/): This generated reference lists every OpenAPI-only CLI flag and its tested examples. For a workflow-oriented guide, see OpenAPI Options. For input f...
 - [GraphQL-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/graphql-only-options/)
 - [General Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/general-options/)
+- [Target Generation Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-generation-options/)
 - [Utility Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-options/)
 ### Focused Topics
 
