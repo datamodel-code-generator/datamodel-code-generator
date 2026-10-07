@@ -343,6 +343,10 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
         LITERAL_PATTERN_INTERSECTION_CASE_IDS,
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to intersected literal patterns",
     ),
+    **dict.fromkeys(
+        ("jsonschema/collapse_root_models_lookaround.json", "jsonschema/collapse_root_models_lookaround_root.json"),
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to collapsed lookaround pattern validators",
+    ),
     "jsonschema/lookaround_anyof_nullable.json": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
     ),
