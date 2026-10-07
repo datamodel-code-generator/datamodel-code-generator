@@ -1,14 +1,12 @@
-"""Render FastAPI server targets from OpenAPI fixtures and report their files, decisions, and failures."""
+"""Render FastAPI server targets from OpenAPI fixtures and report their files, diagnostics, and failures."""
 
 from __future__ import annotations
 
 import json
 import re
 import shutil
-from collections.abc import Mapping
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import fields
 from pathlib import Path, PurePosixPath
-from types import FunctionType
 from typing import Any, TypeAlias, get_type_hints
 
 from datamodel_code_generator import DataModelType, GenerateConfig, _runtime
@@ -20,7 +18,6 @@ from datamodel_code_generator.fastapi import (
     GeneratedProject,
     GenerationInput,
     GenerationReport,
-    HookReference,
     OperationRef,
     OperationSelection,
     ResponseChoice,
@@ -28,12 +25,12 @@ from datamodel_code_generator.fastapi import (
     render_fastapi,
 )
 from datamodel_code_generator.format import Formatter
-from tests.data.python import fastapi_hooks
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
 MANIFEST = ".dcg-target-manifest.json"
 RUNTIME = Path(_runtime.__file__).parent
+BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
 _DIGEST = re.compile(r'"[0-9a-f]{64}"')
 _SIZE = re.compile(r'"size":\d+')
 Modules: TypeAlias = dict[tuple[str, ...], str]
@@ -63,10 +60,6 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 }
             case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
                 converted[key] = {_selector(selector): item for selector, item in value}
-            case "hooks" if isinstance(value, list):
-                converted[key] = tuple(_hook(item, root) for item in value)
-            case "templates" if isinstance(value, str):
-                converted[key] = _copied(value, root)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -83,28 +76,11 @@ def _copied(name: str, root: Path) -> Path:
     return target
 
 
-def _hook(value: object, root: Path) -> object:
-    match value:
-        case {"file": str() as file, **rest}:
-            return HookReference(file=_copied(file, root), **rest)
-        case dict():
-            return HookReference(**value)
-        case str():
-            return getattr(fastapi_hooks, value)
-        case _:
-            return value
-
-
 def _setting(value: object, root: Path) -> str:
     match value:
         case tuple():
             items = [_setting(item, root) for item in value]
             return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-        case HookReference(file=Path() as file):
-            relative = file.relative_to(root if file.is_relative_to(root) else SOURCE)
-            return repr(replace(value, file=PurePosixPath(relative.as_posix())))
-        case FunctionType(__module__=module, __qualname__=name):
-            return f"<function {module}.{name}>"
         case Path():
             return repr(PurePosixPath(value.relative_to(root if value.is_relative_to(root) else SOURCE).as_posix()))
         case _:
@@ -117,19 +93,9 @@ def _diagnostic(item: Diagnostic) -> str:
     return f"  {item.code} {location}: {item.message}"
 
 
-def _projection(value: object) -> object:
-    match value:
-        case Mapping():
-            return {str(key): _projection(item) for key, item in value.items()}
-        case tuple():
-            return [_projection(item) for item in value]
-        case _ if is_dataclass(value) and not isinstance(value, type):
-            return {item.name: _projection(getattr(value, item.name)) for item in fields(value)}
-        case _:
-            return value
-
-
-def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) -> list[str]:
+def _render(
+    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, builtin_sources: bool = False
+) -> list[str]:
     model = {
         "output": root / "models.py",
         "input_file_type": "openapi",
@@ -141,18 +107,20 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
         **case.get("model", {}),
     }
     root.mkdir(parents=True, exist_ok=True)
+    if isinstance(directory := model.get("custom_template_dir"), str):
+        model["custom_template_dir"] = _copied(directory, root)
+    if builtin_sources:
+        shutil.copytree(BUILTIN_TEMPLATES, root / "builtin-sources" / "fastapi")
+        model["custom_template_dir"] = root / "builtin-sources"
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     for name in case.get("files", ()):
         shutil.copy2(SOURCE / name, root / name)
-    fastapi_hooks.RECORDED.clear()
     try:
         project = render_fastapi(
             source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
         )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
-    except LookupError as error:
-        return [f"  {type(error).__name__}: {error}"]
     encoding = case.get("model", {}).get("encoding", "utf-8")
     lines: list[str] = []
     files: list[str] = []
@@ -177,20 +145,30 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
                 files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
         lines.append(line)
     lines.extend(_diagnostic(item) for item in project.diagnostics)
-    for context in fastapi_hooks.RECORDED:
-        lines.append("  context")
-        lines.extend(f"    | {line}" for line in json.dumps(_projection(context), indent=2).splitlines())
     return [*lines, *files]
 
 
-def fastapi_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
-    """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
+def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:
+    """Render one fixture for each of its backends, returning a report and every backend's Python modules.
+
+    The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
+    holds a copy of the builtin server templates, so that every role renders from its Jinja source instead of its
+    compiled renderer.
+    """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
-    lines = [f"# {case_name}"]
+    lines = [f"# {case.get('expected', case_name)}"]
     rendered: dict[str, Modules] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
-        lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
+        lines.extend(
+            _render(
+                case,
+                backend,
+                root / (name := backend.replace(".", "_")),
+                modules := {},
+                builtin_sources=builtin_sources,
+            )
+        )
         if modules:
             rendered[name] = modules
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered

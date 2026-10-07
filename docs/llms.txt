@@ -56,7 +56,7 @@
 
 ### Generation Targets
 
-- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, target configuration file, generated package, template context, and served OpenAPI document...
+- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, target configuration file, generated package, template values, and served OpenAPI document ...
 
 
 ## CLI Reference

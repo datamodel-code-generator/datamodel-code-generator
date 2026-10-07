@@ -31,6 +31,9 @@ if TYPE_CHECKING:
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     for name in case.get("files", ()):
         shutil.copy2(SOURCE / name, root / name)
+    model = case.get("model", {})
+    if isinstance(directory := model.get("custom_template_dir"), str):
+        model = {**model, "custom_template_dir": SOURCE / directory}
     generate_fastapi(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=GenerateConfig(
@@ -41,7 +44,7 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             output_model_type=DataModelType(backend),
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
-            **case.get("model", {}),
+            **model,
         ),
         config=fastapi_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},

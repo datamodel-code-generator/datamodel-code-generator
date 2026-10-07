@@ -17,5 +17,3 @@ primary_responses=mappingproxy({OperationRef(pointer='/paths/~1pets/post', docum
 operation_names=mappingproxy({'/paths/~1pets/get': 'list_all'})
 router_names=mappingproxy({'tag:pets': 'animals'})
 parameter_names=mappingproxy({'/paths/~1pets/get': mappingproxy({'query:limit': 'page_size'})})
-hooks=(HookReference(module='project.hooks', file=None, callable='rename'), HookReference(module=None, file=PurePosixPath('hooks/extra.py'), callable='transform'), <function tests.data.python.fastapi_hooks.rename>)
-templates=PurePosixPath('templates/custom')

@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from enum import Enum
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
@@ -50,7 +49,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
-    from datamodel_code_generator._fastapi.context import ArgumentLocation
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -68,22 +66,10 @@ if TYPE_CHECKING:
         WireDeclaration,
     )
 
-Site: TypeAlias = Literal["parameter", "body", "primary_response"]
-Transport: TypeAlias = Literal["fastapi_native", "adapter", "raw_request"]
-Reason: TypeAlias = Literal[
-    "native_supported",
-    "explicit_raw",
-    "parameter_style",
-    "parameter_shape",
-    "parameter_content",
-    "repeated_path",
-    "media_form",
-    "media_text",
-    "media_binary",
-    "media_selection",
-    "media_untyped",
-    "response_empty",
+ArgumentLocation: TypeAlias = Literal[
+    "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
 ]
+Transport: TypeAlias = Literal["fastapi_native", "adapter", "raw_request"]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
 SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "digest", "oauth2", "openid", "custom"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
@@ -143,13 +129,9 @@ class Default(Enum):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Decision:
-    """How one parameter, body, or primary response is handled, why, and where the reason comes from."""
+    """How one parameter, body, or primary response is handled."""
 
-    site: Site
     transport: Transport
-    reason: Reason
-    source: SourceLocation | None = None
-    uses: tuple[TypeUseId, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -183,7 +165,6 @@ class ParameterSpec:
     use: TypeUseBinding | None
     plan: ParameterPlan | None
     decision: Decision
-    source: SourceLocation
     type: FinalPythonType | None = None
     native: NativeField | None = None
     default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
@@ -205,23 +186,12 @@ class BodySpec:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class HeaderSpec:
-    """One effective declared response header, with the plan and type use that validate its value."""
-
-    name: str
-    required: bool
-    use: TypeUseBinding | None
-    plan: ParameterPlan | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class ResponseSpec:
-    """One declared response with its media and headers."""
+    """One declared response with its media."""
 
     status: str
     declaration: WireDeclaration
     media: tuple[MediaSpec, ...]
-    headers: tuple[HeaderSpec, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -303,22 +273,13 @@ class OperationSpec:
         """Return whether FastAPI's response_model sends bare primary values."""
         return self.primary is not None and self.primary.decision.transport == "fastapi_native"
 
-    def decisions(self) -> Iterator[Decision]:
-        """Yield the operation's decisions in parameter, body, and primary response order."""
-        yield from (parameter.decision for parameter in self.parameters)
-        if self.body is not None:
-            yield self.body.decision
-        if self.primary is not None:
-            yield self.primary.decision
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, name, first tag, and operations in declaration order."""
+    """One router group: its key, name, and operations in declaration order."""
 
     key: str
     stem: str
-    primary_tag: str | None
     operations: tuple[OperationSpec, ...]
 
     @property
@@ -384,19 +345,6 @@ def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Revision:
-    """Plan changes that hooks ask for, keyed by operation or group key, applied over the configuration.
-
-    An order selects and orders the planned operations; None keeps the selection's.
-    """
-
-    order: tuple[str, ...] | None = None
-    operation_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    handler_modes: Mapping[str, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
-
-
 def _encoded(media: MediaSpec) -> WireDeclaration | None:
     """Return the first form encoding that neither FastAPI's Form nor the form adapter reads."""
     return next(
@@ -424,12 +372,10 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
-        revision: Revision | None = None,
     ) -> None:
         """Index the batch, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
-        self.revision = revision or Revision()
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
@@ -443,7 +389,6 @@ class Planner:  # noqa: PLR0904
             if member.model_facts is not None
         }
         self.parameter_plans = parameter_plans(wire)
-        self.header_plans = dict(wire.headers)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration
             for declaration in request.batch.security_schemes
@@ -451,14 +396,11 @@ class Planner:  # noqa: PLR0904
         self.schemes: dict[str, SchemeSpec] = {}
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
-        self.names = {**self.selected("operation_names", config.operation_names), **self.revision.operation_names}
+        self.names = self.selected("operation_names", config.operation_names)
         self.body_modes = self.selected("body_modes", config.body_modes)
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
-        self.modes: dict[str, HandlerMode] = {
-            **self.selected("handler_modes", config.handler_modes),
-            **self.revision.handler_modes,
-        }
+        self.modes: dict[str, HandlerMode] = self.selected("handler_modes", config.handler_modes)
         self.raise_problems()
 
     def raise_problems(self) -> None:
@@ -484,9 +426,6 @@ class Planner:  # noqa: PLR0904
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
-        if (order := self.revision.order) is not None:
-            keyed = {operation.id.use_site.pointer: operation for operation in operations}
-            operations = tuple(keyed[key] for key in order)
         names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
@@ -509,8 +448,7 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        router_names = {**self.config.router_names, **self.revision.router_names}
-        stems = {key: router_names.get(key) or group_stem(key) for key in members}
+        stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(stem_conflicts(stems.values()))
@@ -519,7 +457,6 @@ class Planner:  # noqa: PLR0904
             GroupSpec(
                 key=key,
                 stem=stems[key],
-                primary_tag=key.removeprefix("tag:") if key.startswith("tag:") else None,
                 operations=tuple(values),
             )
             for key, values in members.items()
@@ -667,8 +604,7 @@ class Planner:  # noqa: PLR0904
         """Decide how the server receives one effective parameter: natively when FastAPI reads its style and type."""
         location = _LOCATIONS[fact(declaration, "in")]
         name = declaration.name or ""
-        uses = _uses(declaration)
-        use = self.bound(self.use(uses))
+        use = self.bound(self.use(_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)
         kind = (
@@ -676,19 +612,17 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.literal(value))
             else self.kind(value)
         )
-        reason = _parameter_reason(plan, location, kind, repeated=name in repeated)
         spec = ParameterSpec(
             location=location,
             wire_name=name,
             required=fact(declaration, "required") is True,
             use=use,
             plan=plan,
-            decision=Decision(site="parameter", transport="adapter", reason=reason, uses=uses),
-            source=declaration.use_site,
+            decision=Decision(transport="adapter"),
             type=value,
             default=default,
         )
-        if reason != "native_supported" or plan is None or value is None:
+        if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
             return spec
         native = NativeField(
             api=_APIS[location],
@@ -783,14 +717,13 @@ class Planner:  # noqa: PLR0904
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
         """Decide how the server receives a request body: FastAPI reads one JSON or URL-encoded model natively."""
         media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
-        uses = tuple(use.id for item in media if (use := self.bound(item.use)) is not None)
+        for item in media:
+            self.bound(item.use)
         spec = BodySpec(
-            required=fact(declaration, "required") is True,
-            media=media,
-            decision=Decision(site="body", transport="adapter", reason="media_selection", uses=uses),
+            required=fact(declaration, "required") is True, media=media, decision=Decision(transport="adapter")
         )
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
-            return replace(spec, decision=replace(spec.decision, transport="raw_request", reason="explicit_raw"))
+            return replace(spec, decision=Decision(transport="raw_request"))
         if len(media) != 1:
             self.unsupported(operation, (item for item in media if item.kind == "multipart"))
             for item in media:
@@ -801,15 +734,12 @@ class Planner:  # noqa: PLR0904
         item = media[0]
         match item.kind:
             case "json":
-                native = replace(spec.decision, transport="fastapi_native", reason="native_supported")
-                return replace(spec, decision=native)
+                return replace(spec, decision=Decision(transport="fastapi_native"))
             case "form" | "multipart":
                 return self.form_body(operation, spec, item)
-            case "text":
-                return replace(spec, decision=replace(spec.decision, reason="media_text"))
             case _:
                 pass
-        return replace(spec, decision=replace(spec.decision, reason="media_binary"))
+        return spec
 
     def unsupported(self, operation: OperationContract, media: Iterable[MediaSpec], encoding: str = "") -> None:
         """Report request media that only the request body mode reads."""
@@ -834,16 +764,15 @@ class Planner:  # noqa: PLR0904
 
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
         """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model."""
-        decision = replace(spec.decision, reason="media_form")
         if (use := media.use) is None or (media.kind == "multipart" and use.type is None):
             self.unsupported(operation, (media,))
-            return replace(spec, decision=decision)
+            return spec
         if (encoded := _encoded(media)) is not None:
             self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
-            return replace(spec, decision=decision)
+            return spec
         if media.kind == "form" and spec.required and self.form_model(use.type):
-            return replace(spec, decision=replace(decision, transport="fastapi_native", reason="native_supported"))
-        return replace(spec, decision=decision, form_fields=self.form_plans(use.type))
+            return replace(spec, decision=Decision(transport="fastapi_native"))
+        return replace(spec, form_fields=self.form_plans(use.type))
 
     def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
         """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
@@ -878,22 +807,9 @@ class Planner:  # noqa: PLR0904
             for item in media
             if item.kind in {"form", "multipart"}
         )
-        headers = tuple(
-            HeaderSpec(
-                name=child.name or "",
-                required=fact(child, "required") is True,
-                use=(use := self.use(_uses(child))),
-                plan=None if use is None else self.header_plans.get(use.id),
-            )
-            for child in declaration.children
-            if child.kind == "header"
-        )
         status = declaration.name or "default"
         return ResponseSpec(
-            status=status if status == "default" else status.upper(),
-            declaration=declaration,
-            media=media,
-            headers=headers,
+            status=status if status == "default" else status.upper(), declaration=declaration, media=media
         )
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
@@ -907,7 +823,7 @@ class Planner:  # noqa: PLR0904
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact else min(successful or exact)
         response = exact[status]
         media = default_media(response)
-        decision = _primary_decision(operation, status, response, media)
+        decision = _primary_decision(operation, status, media)
         return PrimarySpec(status=status, response=response, media=media, decision=decision)
 
     def chosen(
@@ -929,7 +845,7 @@ class Planner:  # noqa: PLR0904
                 )
             )
             return None
-        decision = _primary_decision(operation, choice.status_code, response, media)
+        decision = _primary_decision(operation, choice.status_code, media)
         return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
 
     def arguments(
@@ -1058,27 +974,17 @@ def _member(source: object, key: str) -> WireValue | None:
         return None
 
 
-def _primary_decision(
-    operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None
-) -> Decision:
+def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
     """Decide whether a bare primary value goes to FastAPI's response_model or through the response codecs."""
     bodyless = operation.method == "head" or status in BODYLESS_STATUSES or status < _MIN_CONTENT_STATUS
-    use = None if bodyless or media is None else media.use
-    decision = Decision(
-        site="primary_response",
-        transport="adapter",
-        reason="response_empty",
-        source=response.declaration.use_site,
-        uses=() if use is None else (use.id,),
+    native = (
+        not bodyless
+        and media is not None
+        and media.media_type == _JSON
+        and (use := media.use) is not None
+        and use.type is not None
     )
-    if media is None or bodyless:
-        return decision
-    if media.media_type == _JSON and use is not None and use.type is not None:
-        return replace(decision, transport="fastapi_native", reason="native_supported", source=None)
-    reason: Reason = (
-        "media_text" if media.kind == "text" else "media_untyped" if media.kind == "json" else "media_binary"
-    )
-    return replace(decision, reason=reason)
+    return Decision(transport="fastapi_native" if native else "adapter")
 
 
 def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
@@ -1090,19 +996,16 @@ def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
     }
 
 
-def _parameter_reason(
-    plan: ParameterPlan | None, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool
-) -> Reason:
-    """Return why an adapter reads a parameter, or native support when FastAPI reads its style and type."""
-    if plan is not None and plan.content_media_type is not None:
-        return "parameter_content"
-    if plan is None or kind is None or kind != {"scalar": "scalar", "array": "sequence"}.get(plan.shape):
-        return "parameter_shape"
-    if _STYLES.get(location) != plan.style or (kind == "sequence" and (location != "query" or not plan.explode)):
-        return "parameter_style"
-    if location == "path" and repeated:
-        return "repeated_path"
-    return "native_supported"
+def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool) -> bool:
+    """Return whether FastAPI reads a parameter's style and type natively, so no adapter reads it."""
+    return (
+        plan.content_media_type is None
+        and kind is not None
+        and kind == {"scalar": "scalar", "array": "sequence"}.get(plan.shape)
+        and _STYLES.get(location) == plan.style
+        and (kind != "sequence" or (location == "query" and plan.explode))
+        and not (location == "path" and repeated)
+    )
 
 
 def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:

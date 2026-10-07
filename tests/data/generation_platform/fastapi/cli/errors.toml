@@ -19,7 +19,3 @@ operation = "/paths/~1pets/get"
 parameter = "query:limit"
 name = "page_size"
 where = "query"
-
-[[hooks]]
-module = "project.hooks"
-when = "always"

@@ -100,7 +100,6 @@ class RenderedFile:
     kind: str
     text: str
     verbatim: bool = False
-    header: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -864,7 +863,7 @@ class _Finisher:
             body = formatter.format_code(file.text) if file.path in formatted else file.text
             texts[file.path] = (
                 _build_module_content(body, header, has_custom_file_header=bool(custom_header))
-                if file.header and _is_python(file.path)
+                if _is_python(file.path)
                 else body
             )
         self.defer(formatter, texts, formatted)

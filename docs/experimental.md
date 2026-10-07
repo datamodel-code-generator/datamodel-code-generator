@@ -192,6 +192,6 @@ The parser focuses on model generation from XSD documents, not full XML instance
 - **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
 - **Since:** 0.83.1
 
-The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
+The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
 
 generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.

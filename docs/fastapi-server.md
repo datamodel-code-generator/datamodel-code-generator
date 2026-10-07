@@ -3,7 +3,7 @@
 !!! warning "Experimental"
 
     FastAPI server generation is experimental. Its options, target configuration file, generated package,
-    template context, and served OpenAPI document may change. See [Experimental Features](experimental.md).
+    template values, and served OpenAPI document may change. See [Experimental Features](experimental.md).
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
 the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,
@@ -149,8 +149,7 @@ Both results list the package's runtime requirement specifiers in `dependencies`
 as a `uv add` command.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
 ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, operation
-selection, and codec registrations are also available from `datamodel_code_generator.api_types`, and the
-context records hooks read from `datamodel_code_generator.fastapi.templates`.
+selection, and codec registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Target configuration
 
@@ -173,8 +172,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `operation_names` | inferred | `[[operation_names]]` rename service methods |
 | `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
-| `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
-| `templates` | none | Directory of template overrides and extra files |
 | `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
 | `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
 
@@ -189,10 +186,6 @@ mode = "async"
 [[body_modes]]
 operation = "/paths/~1upload/post"
 mode = "request"
-
-[[hooks]]
-module = "project.hooks"
-callable = "rename"
 ```
 
 ## The generated package
@@ -294,40 +287,47 @@ adapters read, with schema references resolved in place (a schema that refers to
 reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
 own placeholder names.
 
-## Templates and hooks
+## Templates
 
-A `templates` directory overrides builtin roles by file name: `application.jinja2`, `router.jinja2`,
-`services.jinja2`, and `readme.jinja2`. Each role
-receives the values its builtin template uses and the frozen `context`. A `fastapi-templates.toml` file in the
-directory declares extra files, rendered on every generation once for the project, each router, or each
-operation:
+The server templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
+as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name,
+`application.jinja2`, `router.jinja2`, `services.jinja2`, and `readme.jinja2`. A role the directory does not hold,
+or a custom template directory without a `fastapi` directory, keeps its builtin template. The builtin templates are
+in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
+or import the other builtin templates.
 
-```toml
-schema_version = 1
-
-[[files]]
-template = "operation.md.jinja2"
-path = "docs/{operation}.md"
-scope = "operation"
+```text
+templates/
+├── fastapi/
+│   └── services.jinja2
+└── pydantic_v2/
+    └── BaseModel.jinja2
 ```
 
-A hook is a function that receives the `FastAPIContext` and returns a `FastAPIContextPatch`, which can rename
-methods and router groups, reorder or remove operations, change method modes, and add extras and imports that
-templates read:
+Each role receives the values its builtin template uses and, as custom model templates do, the `#all#` entry of
+[`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's own values take
+precedence over the extra data:
 
-```python
-from datamodel_code_generator.fastapi.templates import FastAPIContext, FastAPIContextPatch
-
-
-def transform(context: FastAPIContext) -> FastAPIContextPatch:
-    return FastAPIContextPatch(
-        handler_modes={operation.key: "async" for operation in context.operations},
-    )
+```json
+{"#all#": {"team": "the platform team"}}
 ```
 
-An invalid patch is `E_HOOK_CONTRACT`, a patch that makes the plan conflict is `E_HOOK_CONFLICT`, and an
-exception the hook raises is reported as `E_HOOK_FAILURE` by the command line and propagates from the Python
-API.
+```bash
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --output models.py \
+  --custom-template-dir templates \
+  --extra-template-data extra.json \
+  --generate-server fastapi \
+  --target-config fastapi.toml
+```
+
+A template that does not parse or render stops the run with `F_TEMPLATE_INVALID`, which names the file in the custom
+template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
+directory, so the model templates must keep the class and field names, as the requirements above describe.
 
 ## Diagnostics
 
@@ -335,6 +335,6 @@ The command line prints each diagnostic to stderr as `CODE severity stage locati
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
 stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
 (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
-(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding and planning (`BND_*`, `F_*`), hooks (`E_HOOK_*`), and ownership
+(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding, planning, and templates (`BND_*`, `F_*`), and ownership
 (`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
 served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.

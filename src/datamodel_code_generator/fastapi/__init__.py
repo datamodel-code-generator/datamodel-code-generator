@@ -11,7 +11,6 @@ from typing import Any, TypeAlias
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
-from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator.api_types import (
     APIGenerationError,
     ArtifactRecord,
@@ -56,7 +55,6 @@ __all__ = [
     "GeneratedProject",
     "GenerationInput",
     "GenerationReport",
-    "HookReference",
     "OperationRef",
     "OperationSelection",
     "PublicationRollbackError",
