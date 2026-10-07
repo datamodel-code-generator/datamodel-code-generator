@@ -74,5 +74,6 @@
   delete pets/types/archive/__init__.py
   delete pets/types/archive/_operations.py
   runtime files 47
+  W_TARGET_EDITED _client.py: The owned file changed since the last generation, and this generation discards the change
   pets/extensions.py unchanged True
   pets/_client.py edited False

@@ -1,5 +1,5 @@
 # templates-invalid
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_TEMPLATE_INVALID target templates: resource.jinja2 line 6: unexpected end of template, expected 'end of statement block'.
+  E_TEMPLATE_INVALID target model_config.custom_template_dir: client/resource.jinja2 line 6: unexpected end of template, expected 'end of statement block'.
   files []

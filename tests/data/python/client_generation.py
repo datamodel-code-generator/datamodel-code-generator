@@ -30,6 +30,7 @@ from datamodel_code_generator._client.config import (
     RuntimeOperationMetadata,
 )
 from datamodel_code_generator._client.target import ClientTarget
+from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
@@ -96,17 +97,12 @@ def _protocols(value: object, root: Path) -> object:
 
 
 def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
-    """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value.
-
-    A `templates` string names a directory under the root.
-    """
+    """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value."""
     values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
             case "output" | "formatter_settings":
-                converted[key] = root / value
-            case "templates" if isinstance(value, str):
                 converted[key] = root / value
             case "selection":
                 converted[key] = OperationSelection(**{
@@ -180,9 +176,19 @@ def _prepare_input(case: dict[str, Any], root: Path) -> Path:
 
 
 def _render(
-    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
+    case: dict[str, Any],
+    backend: str,
+    root: Path,
+    modules: Modules,
+    *,
+    documents: dict[str, str] | None = None,
+    builtin_sources: bool = False,
 ) -> list[str]:
     source = _prepare_input(case, root)
+    model = case.get("model", {})
+    if builtin_sources:
+        shutil.copytree(ClientTemplates.BUILTIN, root / "builtin-sources" / "client")
+        model = {**model, "custom_template_dir": root / "builtin-sources"}
     try:
         with _working_directory(case, root):
             if (toml := case.get("toml")) is not None:
@@ -193,7 +199,7 @@ def _render(
                 config = client_config(case.get("config", {}), root)
             project = (generate_target if case.get("publish") else render_target)(
                 source,
-                model_config=model_config(root / "models.py", backend, case.get("model", {})),
+                model_config=model_config(root / "models.py", backend, model),
                 config=config,
                 generator=ClientTarget(),
             )
@@ -300,11 +306,12 @@ def client_helper_spelling_report(first: str, second: str, root: Path) -> str:
     ])
 
 
-def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
+def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:
     """Render one fixture for each of its backends, returning a report and every backend's Python modules.
 
     A case's `modules` keeps all modules (`true`), none (`false`), the listed ones,
-    or maps each backend to one of these.
+    or maps each backend to one of these. With builtin_sources, a custom template directory holds a copy of the
+    builtin client templates, so that every role renders from its Jinja source instead of its compiled renderer.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]
@@ -312,7 +319,15 @@ def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     selected = case.get("modules", True)
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
-        lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
+        lines.extend(
+            _render(
+                case,
+                backend,
+                root / (name := backend.replace(".", "_")),
+                modules := {},
+                builtin_sources=builtin_sources,
+            )
+        )
         if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
@@ -489,11 +504,14 @@ def client_input_report(case_name: str, root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def client_documentation_report(case_name: str, root: Path) -> str:
-    """Report generated owned Markdown and packaging files for a finalized client selection."""
+def client_documentation_report(case_name: str, root: Path, *, builtin_sources: bool = False) -> str:
+    """Report generated owned Markdown and packaging files for a finalized client selection.
+
+    With builtin_sources, the files render from a copy of the builtin client templates, as in `client_render`.
+    """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     documents: dict[str, str] = {}
-    lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents)
+    lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents, builtin_sources=builtin_sources)
     return (
         "\n"
         .join((
@@ -594,8 +612,15 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
     return "\n".join(lines) + "\n"
 
 
+def _artifact_diagnostic(item: Diagnostic) -> str:
+    return f"  {item.code} {item.artifact_path}: {item.message}"
+
+
 def _regenerate(source: Path, root: Path) -> list[str]:
-    """Generate the regeneration fixture's package from one version, reporting each file's action or the refusal."""
+    """Generate the regeneration fixture's package from one version, reporting each file's action and diagnostic.
+
+    A refused generation reports its diagnostics instead.
+    """
     shutil.copy2(source, root / "api.yaml")
     try:
         report = generate_target(
@@ -605,7 +630,7 @@ def _regenerate(source: Path, root: Path) -> list[str]:
             generator=ClientTarget(),
         )
     except APIGenerationError as error:
-        return ["  APIGenerationError", *(f"  {item.code} {item.artifact_path}: {item.message}" for item in error.diagnostics)]
+        return ["  APIGenerationError", *map(_artifact_diagnostic, error.diagnostics)]
     actions = (("write", report.written_files), ("unchanged", report.unchanged_files), ("delete", report.deleted_files))
     lines = [
         f"  {action} {path.as_posix()}"
@@ -614,7 +639,7 @@ def _regenerate(source: Path, root: Path) -> list[str]:
         if "_runtime" not in (path := record.path.relative_to(root)).parts
     ]
     runtime = sum("_runtime" in record.path.parts for _, records in actions for record in records)
-    return [*lines, f"  runtime files {runtime}"]
+    return [*lines, f"  runtime files {runtime}", *map(_artifact_diagnostic, report.diagnostics)]
 
 
 def client_regeneration_report(root: Path) -> str:

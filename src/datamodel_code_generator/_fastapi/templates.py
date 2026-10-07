@@ -67,12 +67,14 @@ class TemplateSet(TemplateOverlay):
 
     BUILTIN = Path(__file__).parent / "templates"
     ROLES = frozenset({"application.jinja2", "router.jinja2", "services.jinja2", "readme.jinja2"})
-    MISSING = ("F_TEMPLATE_INVALID", "target")
     INVALID = "F_TEMPLATE_INVALID"
+    OPTION = "templates"
 
     def __init__(self, directory: Path, target_id: str) -> None:
         """Find the overridden roles and read the manifest, rejecting a missing directory or an invalid manifest."""
-        super().__init__(directory, target_id)
+        super().__init__(directory, ".", target_id)
+        if not directory.is_dir():
+            raise APIGenerationError((self.problem("The template directory does not exist"),))
         self.extras = self.manifest()
 
     def manifest(self) -> tuple[ExtraFile, ...]:

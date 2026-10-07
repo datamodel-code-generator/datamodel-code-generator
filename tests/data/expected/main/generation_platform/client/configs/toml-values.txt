@@ -23,4 +23,3 @@ body_arguments='body'
 default_base_url='https://api.example.com'
 server_base_url='https://api.example.com/base/'
 protocols=None
-templates=None

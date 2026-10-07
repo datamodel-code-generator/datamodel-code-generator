@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config templates: templates must be a string

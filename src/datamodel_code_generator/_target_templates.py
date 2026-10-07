@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import cached_property
+from pathlib import PurePosixPath
+from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
@@ -14,33 +16,38 @@ if TYPE_CHECKING:
 
     from jinja2 import Environment
 
-    from datamodel_code_generator._api_types import DiagnosticStage
-
 Role: TypeAlias = Callable[..., Callable[..., str]]
 
 
 class TemplateOverlay:
-    """A template directory whose files replace the builtin roles of the same name.
+    """The `subdir` of a custom template directory, whose files replace the builtin roles of the same name.
 
     The directory loads before the builtin templates through the Jinja environment of the model templates, so an
-    override may include or import any other builtin template. A target names its builtin directory, its roles, and
-    the codes of a missing directory and of a template that does not render. A `Role` returns the renderer of a builtin
-    role from its name, its compiled renderer, and the values only overrides receive.
+    override may include or import any other builtin template. A missing directory or role falls back to the builtin
+    role, as model templates do, and overrides receive the template data, as custom model templates do. A target names
+    its builtin directory, its roles, the code of a template that does not render, and the setting of the directory.
+    A `Role` returns the renderer of a builtin role from its name, its compiled renderer, and the values only overrides
+    receive.
     """
 
     BUILTIN: ClassVar[Path]
     ROLES: ClassVar[frozenset[str]]
-    MISSING: ClassVar[tuple[str, DiagnosticStage]]
     INVALID: ClassVar[str]
+    OPTION: ClassVar[str]
 
-    def __init__(self, directory: Path, target_id: str) -> None:
-        """Find the overridden roles, rejecting a missing directory."""
-        self.directory = directory
+    def __init__(
+        self,
+        custom_template_dir: Path,
+        subdir: str,
+        target_id: str,
+        data: Mapping[str, object] = MappingProxyType({}),
+    ) -> None:
+        """Find the roles the directory overrides."""
+        self.subdir = subdir
+        self.directory = custom_template_dir / subdir
         self.target_id = target_id
-        if not directory.is_dir():
-            code, stage = self.MISSING
-            raise APIGenerationError((self.diagnostic(code, "The template directory does not exist", stage),))
-        self.roles = frozenset(role for role in self.ROLES if (directory / role).is_file())
+        self.data = data
+        self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
 
     @cached_property
     def environment(self) -> Environment:
@@ -57,25 +64,32 @@ class TemplateOverlay:
     def render(self, template: str, values: Mapping[str, object]) -> str:
         """Render one template of the directory, or a builtin role it extends or includes.
 
-        A template that does not parse or render is reported with its file name.
+        A template that does not parse or render is reported with its path in the custom template directory and, when
+        Jinja knows it, its line.
         """
-        from jinja2 import TemplateError  # noqa: PLC0415
+        from jinja2 import TemplateError, TemplateNotFound  # noqa: PLC0415
 
         try:
             return self.environment.get_template(template).render(**values)
+        except TemplateNotFound as error:
+            message = f"{PurePosixPath(self.subdir, template)}: template {error.name!r} not found"
+            raise APIGenerationError((self.problem(message),)) from None
         except TemplateError as error:
-            name = getattr(error, "name", None) or template
+            name = PurePosixPath(self.subdir, getattr(error, "name", None) or template)
             line = getattr(error, "lineno", None)
             where = name if line is None else f"{name} line {line}"
             raise APIGenerationError((self.problem(f"{where}: {error}"),)) from None
 
     def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
-        """Return the renderer of one builtin role: this directory's override, given the frame too, or the builtin."""
+        """Return the renderer of one builtin role: this directory's override, or the builtin.
+
+        An override receives the template data, then the role's values and the frame, which take precedence.
+        """
         if name not in self.roles:
             return compiled
 
         def render(**values: object) -> str:
-            return self.render(name, {**values, **frame})
+            return self.render(name, {**self.data, **values, **frame})
 
         return render
 
@@ -83,14 +97,14 @@ class TemplateOverlay:
         """Return a template diagnostic of this target."""
         return self.diagnostic(self.INVALID, message)
 
-    def diagnostic(self, code: str, message: str, stage: DiagnosticStage = "target") -> Diagnostic:
+    def diagnostic(self, code: str, message: str) -> Diagnostic:
         """Return a diagnostic of this target's templates."""
         return Diagnostic(
             code=code,
             severity="error",
-            stage=stage,
+            stage="target",
             message=message,
-            option_path="templates",
+            option_path=self.OPTION,
             target_id=self.target_id,
         )
 

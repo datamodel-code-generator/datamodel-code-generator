@@ -483,18 +483,5 @@
   },
   "toml-retry-removed-replay": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = true\n"
-  },
-  "templates-values": {
-    "templates": "templates/custom"
-  },
-  "templates-type": {
-    "templates": 5
-  },
-  "toml-templates": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntemplates = \"client-templates\"\n",
-    "toml_path": "config/client.toml"
-  },
-  "toml-templates-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntemplates = [\"client-templates\"]\n"
   }
 }

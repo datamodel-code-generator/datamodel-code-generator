@@ -5018,8 +5018,8 @@
   "templates": {
     "input": "pets.yaml",
     "references": [
-      "templates/custom/resource.jinja2",
-      "templates/custom/readme.jinja2"
+      "templates/custom/client/resource.jinja2",
+      "templates/custom/client/readme.jinja2"
     ],
     "modules": [
       [
@@ -5029,25 +5029,58 @@
         "_sync.py"
       ]
     ],
-    "config": {
-      "templates": "templates/custom"
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
     }
   },
   "templates-missing": {
     "input": "pets.yaml",
-    "publish": true,
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
     "config": {
-      "templates": "templates/missing"
+      "selection": {
+        "exclude_tags": [
+          "pets"
+        ],
+        "reason": "No operation is needed yet."
+      }
+    },
+    "expected": "empty",
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/missing"
     }
   },
   "templates-invalid": {
     "input": "pets.yaml",
     "references": [
-      "templates/invalid/resource.jinja2"
+      "templates/invalid/client/resource.jinja2"
     ],
     "publish": true,
-    "config": {
-      "templates": "templates/invalid"
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/invalid"
     }
   },
   "standalone-bundled": {
@@ -5062,6 +5095,17 @@
       "package_mode": "standalone",
       "package_version": "1.2.3",
       "distribution_name": "pets-client"
+    }
+  },
+  "templates-not-found": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/not-found/client/readme.jinja2"
+    ],
+    "publish": true,
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/not-found"
     }
   }
 }
