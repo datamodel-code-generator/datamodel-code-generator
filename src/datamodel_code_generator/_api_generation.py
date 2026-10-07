@@ -167,8 +167,8 @@ class _Models:
     source: RootInput
     cwd: Path
     filename: str
-    settings_path: Path | None
-    formatter_cwd: Path | None
+    settings_path: Path
+    formatter_cwd: Path
     custom_header: str | None
 
 
@@ -372,10 +372,8 @@ def _generate_models(
     lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
     assert output is not None
-    formatter_cwd = None if use_output_cwd else _output_context_path(_absolute_generation_path(output, cwd), cwd)
-    settings_path = (
-        prepared.settings_path if formatter_cwd is None else _settings_path_from(formatter_cwd, prepared.settings_path)
-    )
+    formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
+    settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
         staged_output = _staging(stack, output, cwd) / (output.name or "output")
         if (cwd / output).is_dir():
