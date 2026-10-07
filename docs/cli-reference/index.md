@@ -16,7 +16,8 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📝 [Utility Options](utility-options.md) | 20 | Help, version, debug options |
+| 📋 [Target Generation Options](target-generation-options.md) | 14 |  |
+| 📝 [Utility Options](utility-options.md) | 17 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -157,7 +158,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--generate-prompt`](utility-options.md#generate-prompt)
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config)
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators)
-- [`--generate-server`](utility-options.md#generate-server)
+- [`--generate-server`](target-generation-options.md#generate-server)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename)
 
 ### H {#h}
@@ -253,6 +254,19 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--schema-version`](base-options.md#schema-version)
 - [`--schema-version-mode`](base-options.md#schema-version-mode)
 - [`--serialization-aliases`](field-customization.md#serialization-aliases)
+- [`--server-body-mode`](target-generation-options.md#server-body-mode)
+- [`--server-body-modes`](target-generation-options.md#server-body-modes)
+- [`--server-handler-mode`](target-generation-options.md#server-handler-mode)
+- [`--server-handler-modes`](target-generation-options.md#server-handler-modes)
+- [`--server-include-request`](target-generation-options.md#server-include-request)
+- [`--server-layout`](target-generation-options.md#server-layout)
+- [`--server-model-package`](target-generation-options.md#server-model-package)
+- [`--server-operation-names`](target-generation-options.md#server-operation-names)
+- [`--server-output`](target-generation-options.md#server-output)
+- [`--server-package`](target-generation-options.md#server-package)
+- [`--server-parameter-names`](target-generation-options.md#server-parameter-names)
+- [`--server-primary-responses`](target-generation-options.md#server-primary-responses)
+- [`--server-router-names`](target-generation-options.md#server-router-names)
 - [`--set-default-enum-member`](field-customization.md#set-default-enum-member)
 - [`--shared-module-name`](general-options.md#shared-module-name)
 - [`--skill-scope`](utility-options.md#skill-scope)
@@ -267,8 +281,6 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### T {#t}
 
-- [`--target-config`](utility-options.md#target-config)
-- [`--target-output`](utility-options.md#target-output)
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version)
 - [`--target-python-version`](model-customization.md#target-python-version)
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)

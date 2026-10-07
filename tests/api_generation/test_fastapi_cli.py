@@ -18,13 +18,18 @@ SOURCE = DATA / "generation_platform" / "fastapi"
 CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
 PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
+DEPENDENCIES = EXPECTED / "cli" / "dependencies.txt"
 PYTHON = ["--target-python-version", "3.11"]
 SCOPES = ["--openapi-scopes", "schemas", "api"]
 BACKEND = ["--output-model-type", "pydantic_v2.BaseModel"]
 FORMATTERS = ["--formatters", "builtin"]
 MODEL_OPTIONS = [*PYTHON, *SCOPES, *BACKEND, *FORMATTERS]
 OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
-SERVER = ["--generate-server", "fastapi", "--target-config", "fastapi.toml"]
+PACKAGES = ["--server-package", "server", "--server-model-package", "models"]
+SERVER = ["--generate-server", "fastapi", "--server-output", "server", *PACKAGES]
+DOC_OPTIONS = ["--input-file-type", "openapi", *OPTIONS, *SERVER]
+DOC_INPUT = "generation_platform/fastapi/cli/options.yaml"
+DOC_OUTPUT = "main/generation_platform/fastapi/cli/options"
 UNSUPPORTED = (
     "E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not "
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
@@ -35,16 +40,36 @@ NOT_WRITABLE = (
 )
 READ_OR_WRITTEN = "E_CONFIG_CONFLICT error config: --diagnostics-json names a file the generation reads or writes\n"
 OTHER_FILE = "E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report\n"
+CONFIGURED = [
+    *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
+    *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
+    *("--server-body-modes", '{"/paths/~1pets/post": "typed"}', "--server-primary-responses", "responses.json"),
+    *("--server-operation-names", '{"/paths/~1pets/get": "list_all"}'),
+    "--server-parameter-names",
+    '{"/paths/~1pets/get": {"query:limit": "page_size", "header:X-Request-Id": "trace"}}',
+    *("--server-handler-modes", '{"/paths/~1pets/get": "sync"}'),
+]
 
 assert_file_content = create_assert_file_content(EXPECTED)
 
 
-def _server(*extra: str, config: str = "fastapi.toml") -> list[str]:
-    return [*OPTIONS, "--generate-server", "fastapi", "--target-config", config, *extra]
+def _server(*extra: str, output: str = "server") -> list[str]:
+    return [*OPTIONS, "--generate-server", "fastapi", "--server-output", output, *PACKAGES, *extra]
 
 
-def _inputs(root: Path, config: str = "fastapi.toml") -> list[tuple[Path, Path]]:
-    return [(SOURCE / "pets.yaml", root / "pets.yaml"), (CLI / config, root / "fastapi.toml")]
+def _inputs(root: Path, *pyproject: str) -> list[tuple[Path, Path]]:
+    return [(SOURCE / "pets.yaml", root / "pets.yaml"), *((CLI / name, root / "pyproject.toml") for name in pyproject)]
+
+
+def _copy(root: Path, *pyproject: str) -> None:
+    for source, destination in _inputs(root, *pyproject):
+        shutil.copy2(source, destination)
+
+
+def _methods(services: Path) -> str:
+    lines = services.read_text(encoding="utf-8").splitlines(keepends=True)
+    methods = (line.strip().partition("(")[0] for line in lines if "def " in line)
+    return f"# {services.parent.name}/services.py\n" + "".join(f"{method}\n" for method in methods)
 
 
 class _ReadOnlyPath(type(Path())):
@@ -64,7 +89,7 @@ def test_fastapi_cli_generate(
         extra_args=_server(),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        expected_stdout_path=DEPENDENCIES,
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -82,7 +107,7 @@ def test_fastapi_cli_generate(
         input_path=tmp_path / "pets.yaml",
         output_path=tmp_path / "models.py",
         input_file_type="openapi",
-        extra_args=_server("--check", config=str(tmp_path / "fastapi.toml")),
+        extra_args=_server("--check", output=str(tmp_path / "server")),
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -113,11 +138,133 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        expected_stdout_path=DEPENDENCIES,
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
+
+
+def test_fastapi_cli_pyproject(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the same models and package from pyproject.toml alone as from the options, then check them."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-server.toml")
+    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--check"], capsys=capsys, assert_no_stderr=True)
+
+
+def test_fastapi_cli_ignore_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Generate only the models when --ignore-pyproject leaves out the server pyproject.toml selects."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, "--ignore-pyproject"],
+        copy_files=_inputs(tmp_path, "pyproject-server.toml"),
+        file_should_not_exist=tmp_path / "server",
+    )
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+
+
+def test_fastapi_cli_unselected_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ignore server settings that only pyproject.toml holds while no server is selected."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        (CLI / "pyproject-configured.toml").read_text(encoding="utf-8").replace('generate-server = "fastapi"\n', ""),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=OPTIONS,
+        copy_files=_inputs(tmp_path),
+        file_should_not_exist=tmp_path / "server",
+    )
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        ("base", []),
+        ("profile", ["--profile", "async"]),
+        ("cli-over-profile", ["--profile", "async", "--server-handler-mode", "sync"]),
+        ("cli-table", ["--server-handler-modes", '{"/paths/~1store~1inventory/get": "async"}']),
+        ("cli-empty-table", ["--profile", "async", "--server-handler-modes", "{}"]),
+        ("profile-output", ["--profile", "elsewhere"]),
+        ("cli-output", ["--profile", "elsewhere", "--server-output", "service"]),
+    ],
+)
+def test_fastapi_cli_precedence(
+    name: str,
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Take each server setting from the command line, then the profile, then the base table.
+
+    An operation's own entry beats the global setting, and a command-line table replaces the pyproject.toml one.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-precedence.toml")
+    run_main_with_args(arguments, capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    report = "".join(_methods(path) for path in sorted(tmp_path.glob("*/services.py")))
+    assert_output(
+        f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
+    )
+
+
+def test_fastapi_cli_pyproject_paths(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Resolve pyproject.toml paths, JSON files and operation documents against its directory.
+
+    Command-line paths and JSON files resolve against the working directory.
+    """
+    project, work = tmp_path / "project", tmp_path / "project" / "work"
+    work.mkdir(parents=True)
+    _copy(project, "pyproject-paths.toml")
+    shutil.copy2(CLI / "names.json", project / "names.json")
+    (work / "names.json").write_text('{"/paths/~1pets/get": "find_pets"}', encoding="utf-8")
+    monkeypatch.chdir(work)
+    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args(
+        ["--server-output", "service", "--server-operation-names", "names.json"],
+        capsys=capsys,
+        expected_stdout_path=DEPENDENCIES,
+    )
+    services = sorted(tmp_path.rglob("services.py"), key=lambda path: path.relative_to(tmp_path).as_posix())
+    assert_output(
+        "".join(f"# in {path.parent.parent.relative_to(tmp_path).as_posix()}\n{_methods(path)}" for path in services),
+        EXPECTED / "cli" / "pyproject-paths.txt",
+    )
+
+
+def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
+    """Print the server options of a command line as [tool.datamodel-codegen] keys, like model options."""
+    run_main_with_args(
+        ["--input", "pets.yaml", "--output", "models.py", *SERVER, *CONFIGURED, "--generate-pyproject-config"],
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "pyproject-config.txt",
+    )
+
+
+def test_fastapi_cli_generate_cli_command(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the server keys of pyproject.toml as command-line options, like model keys."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(CLI / "pyproject-configured.toml", tmp_path / "pyproject.toml")
+    run_main_with_args(
+        ["--generate-cli-command"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "cli-command.txt"
+    )
 
 
 @pytest.mark.parametrize(
@@ -156,7 +303,7 @@ def test_fastapi_cli_dependencies(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--dependency-format", "requirements"),
+        extra_args=_server("--dependency-format", "requirements", output="service"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "requirements.txt",
@@ -164,17 +311,17 @@ def test_fastapi_cli_dependencies(
     )
 
 
-def test_fastapi_cli_target_output(
+def test_fastapi_cli_include_paths(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the package where --target-output points without the paths --openapi-include-paths leaves out."""
+    """Write the package where --server-output points without the paths --openapi-include-paths leaves out."""
     monkeypatch.chdir(tmp_path)
     include = ["--openapi-include-paths", "/pets*"]
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--diagnostics-json", "-", *include),
+        extra_args=_server("--diagnostics-json", "-", *include, output="service"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "empty-report.txt",
@@ -189,7 +336,7 @@ def test_fastapi_cli_target_output(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--check", "--diagnostics-json", "diagnostics.json", *include),
+        extra_args=_server("--check", "--diagnostics-json", "diagnostics.json", *include, output="service"),
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -199,7 +346,6 @@ def test_fastapi_cli_target_output(
 def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
     """Read the OpenAPI document from standard input, check the result, and refuse an unsupported backend."""
     monkeypatch.chdir(tmp_path)
-    shutil.copy2(CLI / "fastapi.toml", tmp_path / "fastapi.toml")
     run_main_and_assert(
         stdin_path=SOURCE / "pets.yaml",
         monkeypatch=monkeypatch,
@@ -233,28 +379,33 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
 @pytest.mark.parametrize(
     ("arguments", "message"),
     [
-        ([*OPTIONS, "--target-config", "fastapi.toml"], "--target-config can only be used with --generate-server"),
+        ([*OPTIONS, "--server-layout", "single"], "--server-layout requires --generate-server"),
         (
-            [*OPTIONS, "--target-output", "service", "--diagnostics-json", "-", "--dependency-format", "uv"],
-            "--target-output, --diagnostics-json, --dependency-format can only be used with --generate-server",
+            [*OPTIONS, *PACKAGES, "--server-include-request", "--diagnostics-json", "-", "--dependency-format", "uv"],
+            (
+                "--server-package, --server-model-package, --server-include-request, --diagnostics-json and "
+                "--dependency-format require --generate-server"
+            ),
         ),
-        ([*OPTIONS, "--generate-server", "fastapi"], "--generate-server requires --target-config"),
-        (_server("--list-experimental"), "--generate-server cannot be used with --list-experimental"),
         (
-            _server("--generate-prompt", "--install-skill", "codex"),
-            "--generate-server cannot be used with --install-skill, --generate-prompt",
+            [*OPTIONS, "--generate-server", "fastapi"],
+            "--generate-server requires --server-output, --server-package and --server-model-package",
+        ),
+        (
+            [*OPTIONS, "--generate-server", "fastapi", "--server-package", "server"],
+            "--generate-server requires --server-output and --server-model-package",
         ),
         (
             _server("--check", "--emit-model-metadata", "metadata.json"),
             "--check cannot be used with --emit-model-metadata",
         ),
     ],
-    ids=["target-config", "target-options", "no-target-config", "info", "skill", "metadata"],
+    ids=["server-option", "server-options", "no-server-settings", "missing-server-settings", "metadata"],
 )
 def test_fastapi_cli_usage(
     arguments: list[str], message: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Refuse target options without a target, and target runs combined with commands that do not generate."""
+    """Refuse server options without the server, and a server without the settings it requires."""
     run_main_and_assert(
         input_path=SOURCE / "pets.yaml",
         output_path=tmp_path / "models.py",
@@ -264,6 +415,22 @@ def test_fastapi_cli_usage(
         capsys=capsys,
         expected_stderr=f"Error: {message}\n",
         output_should_not_exist=True,
+    )
+
+
+def test_fastapi_cli_information(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run an information command as it runs without the server options, writing nothing."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=SOURCE / "pets.yaml",
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*SERVER, "--list-experimental"],
+        capsys=capsys,
+        expected_stdout_path=DATA / "expected" / "main" / "list_experimental.txt",
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
 
@@ -303,8 +470,7 @@ def test_fastapi_cli_check_after_generate(
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
     monkeypatch.chdir(generated)
-    for source, destination in _inputs(generated):
-        shutil.copy2(source, destination)
+    _copy(generated)
     (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
     arguments = [
         *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
@@ -429,7 +595,7 @@ def test_fastapi_cli_model_option_warning(
         extra_args=_server("--reuse-scope", "tree"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        expected_stdout_path=DEPENDENCIES,
         expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n",
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
@@ -447,8 +613,7 @@ def test_fastapi_cli_disable_warnings(
 ) -> None:
     """Silence the model warnings of a server run with --disable-warnings, as for a model-only run."""
     monkeypatch.chdir(tmp_path)
-    for source, destination in _inputs(tmp_path):
-        shutil.copy2(source, destination)
+    _copy(tmp_path)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", FutureWarning)
         run_main_with_args(
@@ -498,7 +663,7 @@ def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
-        copy_files=[*_inputs(tmp_path), (CLI / "pyproject-target.toml", tmp_path / "pyproject.toml")],
+        copy_files=_inputs(tmp_path, "pyproject-target.toml"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -523,15 +688,13 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
             "conflicts-report.txt",
         ),
         (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n", None),
-        (["--all-jobs"], f"{CONFLICT} --all-jobs\n", None),
-        (["--job", "server"], f"{CONFLICT} --job\n", None),
         (["--diagnostics-json", "pets.yaml"], READ_OR_WRITTEN, None),
-        (["--diagnostics-json", "fastapi.toml"], READ_OR_WRITTEN, None),
-        (["--all-jobs", "--diagnostics-json", "fastapi.toml"], READ_OR_WRITTEN, None),
-        (["--diagnostics-json", "server/diagnostics.json"], NOT_WRITABLE, None),
+        (["--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN, None),
+        (["--diagnostics-json", "server/diagnostics.json"], READ_OR_WRITTEN, None),
+        (["--diagnostics-json", "absent/diagnostics.json"], NOT_WRITABLE, None),
         (["--diagnostics-json", "reports"], NOT_WRITABLE, None),
     ],
-    ids=["watch", "diff", "all-jobs", "job", "input", "target-config", "jobs-target-config", "missing", "directory"],
+    ids=["watch", "diff", "input", "pyproject", "server", "missing", "directory"],
 )
 def test_fastapi_cli_conflicts(
     arguments: list[str],
@@ -549,7 +712,7 @@ def test_fastapi_cli_conflicts(
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(*arguments),
-        copy_files=_inputs(tmp_path),
+        copy_files=_inputs(tmp_path, "pyproject-target.toml"),
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stdout_path=None if stdout is None else EXPECTED / "cli" / stdout,
@@ -557,22 +720,53 @@ def test_fastapi_cli_conflicts(
         output_should_not_exist=True,
     )
     assert_output(
-        (tmp_path / "fastapi.toml").read_text(encoding="utf-8"), EXPECTED / "cli" / "kept" / "fastapi.toml.txt"
+        (tmp_path / "pyproject.toml").read_text(encoding="utf-8"),
+        EXPECTED / "cli" / "kept" / "pyproject-target.toml.txt",
     )
 
 
 @pytest.mark.parametrize(
-    ("fixture", "name"),
+    ("arguments", "stderr"),
     [
-        ("notes.md", "notes.md"),
-        ("settings.json", "settings.json"),
-        ("client.json", "client.json"),
-        ("entries.json", "entries.json"),
-        ("tool-settings.toml", "pyproject.toml"),
+        (["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
+        (["--job", "server"], f"{CONFLICT} --job\n"),
+        (["--all-jobs", "--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN),
+    ],
+    ids=["all-jobs", "job", "jobs-pyproject"],
+)
+def test_fastapi_cli_jobs(
+    arguments: list[str],
+    stderr: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Refuse a job that selects the server, until the job runner stages target packages, writing nothing."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(arguments, expected_exit=Exit.ERROR, capsys=capsys, expected_stderr=stderr)
+    assert_output(
+        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture", "name", "stderr"),
+    [
+        ("notes.md", "notes.md", OTHER_FILE),
+        ("settings.json", "settings.json", OTHER_FILE),
+        ("client.json", "client.json", OTHER_FILE),
+        ("entries.json", "entries.json", OTHER_FILE),
+        ("tool-settings.toml", "pyproject.toml", READ_OR_WRITTEN),
     ],
 )
 def test_fastapi_cli_report_other_file(
-    fixture: str, name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    fixture: str,
+    name: str,
+    stderr: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Keep an existing file that is not a diagnostics report of this target instead of replacing it."""
     monkeypatch.chdir(tmp_path)
@@ -584,7 +778,7 @@ def test_fastapi_cli_report_other_file(
         copy_files=[*_inputs(tmp_path), (CLI / "reports" / fixture, tmp_path / name)],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=OTHER_FILE,
+        expected_stderr=stderr,
         output_should_not_exist=True,
     )
     assert_output((tmp_path / name).read_text(encoding="utf-8"), EXPECTED / "cli" / "kept" / f"{name}.txt")
@@ -621,50 +815,24 @@ def test_fastapi_cli_report_replaced(
     )
 
 
-def test_fastapi_cli_missing_target_config(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Report a target file that cannot be read."""
-    monkeypatch.chdir(tmp_path)
-    run_main_and_assert(
-        input_path=SOURCE / "pets.yaml",
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server(config="missing.toml"),
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr="E_CONFIG_VALUE error config: The target file cannot be read: No such file or directory\n",
-        output_should_not_exist=True,
-    )
-
-
 @pytest.mark.parametrize(
-    ("config", "arguments", "stderr", "stdout"),
+    ("arguments", "stderr", "stdout"),
     [
+        (["--output-model-type", "msgspec.Struct"], UNSUPPORTED, None),
         (
-            "unknown.toml",
-            ["--diagnostics-json", "-"],
-            "E_CONFIG_UNKNOWN error config packages: The target file has no setting 'packages'\n",
-            "unknown-report.txt",
-        ),
-        ("fastapi.toml", ["--output-model-type", "msgspec.Struct"], UNSUPPORTED, None),
-        (
-            "fastapi.toml",
             ["--emit-model-metadata", "metadata"],
             "E_MODEL_CONFIG error config: Model metadata output requires a file path, not a directory\n",
             None,
         ),
         (
-            "fastapi.toml",
             ["--dependency-format", "requirements", "--diagnostics-json", "-"],
             "E_CONFIG_CONFLICT error config: --dependency-format cannot be used with --diagnostics-json -\n",
             "format-report.txt",
         ),
     ],
-    ids=["unknown", "backend", "metadata", "format"],
+    ids=["backend", "metadata", "format"],
 )
 def test_fastapi_cli_config_errors(
-    config: str,
     arguments: list[str],
     stderr: str,
     stdout: str | None,
@@ -672,7 +840,7 @@ def test_fastapi_cli_config_errors(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Report target settings and model settings that fail before any file is written."""
+    """Report model settings and run options that fail before any file is written."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "metadata").mkdir()
     run_main_and_assert(
@@ -680,7 +848,7 @@ def test_fastapi_cli_config_errors(
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(*arguments),
-        copy_files=_inputs(tmp_path, config),
+        copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stdout_path=None if stdout is None else EXPECTED / "cli" / stdout,
@@ -689,16 +857,26 @@ def test_fastapi_cli_config_errors(
     )
 
 
-def test_fastapi_cli_config_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Read every setting of a flat target file, and the server templates of the custom template directory."""
+@pytest.mark.parametrize(
+    ("server", "pyproject"),
+    [([], ["pyproject-configured.toml"]), ([*SERVER, *CONFIGURED], [])],
+    ids=["pyproject", "options"],
+)
+def test_fastapi_cli_config_values(
+    server: list[str], pyproject: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the same package from every server setting in pyproject.toml as from the same options.
+
+    The server templates come from the custom template directory.
+    """
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "templates" / "roles", tmp_path / "templates")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--custom-template-dir", "templates"),
-        copy_files=_inputs(tmp_path, "configured.toml"),
+        extra_args=[*OPTIONS, "--custom-template-dir", "templates", *server],
+        copy_files=[*_inputs(tmp_path, *pyproject), (CLI / "primary-responses.json", tmp_path / "responses.json")],
     )
     sources = sorted(
         path for path in (tmp_path / "server").rglob("*.py") if not {"_runtime", "_generated"} & set(path.parts)
@@ -709,21 +887,391 @@ def test_fastapi_cli_config_values(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     )
 
 
-def test_fastapi_cli_config_value_errors(
+@pytest.mark.parametrize(
+    ("arguments", "stderr"),
+    [
+        (["--server-handler-modes", '"async"'], "Invalid --server-handler-modes: Input should be a valid dictionary"),
+        (
+            ["--server-handler-modes", '{"/paths/~1pets/get": "parallel"}'],
+            "Invalid --server-handler-modes: /paths/~1pets/get: Input should be 'sync' or 'async'",
+        ),
+        (
+            ["--server-body-modes", "{"],
+            (
+                "Invalid JSON for --server-body-modes: Expecting property name enclosed in double quotes: "
+                "line 1 column 2 (char 1)"
+            ),
+        ),
+        (
+            ["--server-primary-responses", '{"/paths/~1pets/post": {"status_code": "201"}}'],
+            "Invalid --server-primary-responses: /paths/~1pets/post.status_code: Input should be a valid integer",
+        ),
+        (
+            ["--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 700}}'],
+            (
+                "Invalid --server-primary-responses: /paths/~1pets/post.status_code: "
+                "Input should be less than or equal to 599"
+            ),
+        ),
+        (
+            ["--server-primary-responses", '{"/paths/~1pets/post": {"status": 201}}'],
+            "Invalid --server-primary-responses: /paths/~1pets/post.status_code: Field required",
+        ),
+        (
+            ["--server-operation-names", '{"/paths/~1pets/get": 7}'],
+            "Invalid --server-operation-names: /paths/~1pets/get: Input should be a valid string",
+        ),
+        (
+            ["--server-router-names", "missing.json"],
+            "Invalid JSON for --server-router-names: Expecting value: line 1 column 1 (char 0)",
+        ),
+        (
+            ["--server-parameter-names", '{"/paths/~1pets/get": "page_size"}'],
+            "Invalid --server-parameter-names: /paths/~1pets/get: Input should be a valid dictionary",
+        ),
+    ],
+    ids=[
+        "not-object",
+        "mode",
+        "json",
+        "status-type",
+        "status-range",
+        "unknown-key",
+        "name-type",
+        "missing-file",
+        "names-type",
+    ],
+)
+def test_fastapi_cli_json_errors(
+    arguments: list[str],
+    stderr: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Refuse a JSON server option whose value does not have the documented shape, like a JSON model option."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*arguments),
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"{stderr}\n",
+        output_should_not_exist=True,
+    )
+
+
+def test_fastapi_cli_pyproject_json_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report every invalid value of a flat target file in the order the file declares them."""
+    """Refuse a pyproject.toml server table whose value does not have the documented shape."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(),
-        copy_files=_inputs(tmp_path, "errors.toml"),
+        copy_files=_inputs(tmp_path, "pyproject-invalid.toml"),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Invalid --server-body-modes: /paths/~1pets/post: Input should be 'typed' or 'request'\n",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        (
+            "values",
+            [
+                *("--server-operation-names", '{"/paths/~1pets/get": "class"}'),
+                *("--server-router-names", '{"tag:pets": "1pets"}'),
+                *("--server-parameter-names", '{"/paths/~1pets/get": {"limit": "page_size"}}'),
+            ],
+        ),
+        (
+            "operations",
+            [
+                *("--server-handler-modes", '{"/paths/~1cats/get": "async"}'),
+                *("--server-body-modes", '{"other.yaml#/paths/~1pets/post": "request"}'),
+            ],
+        ),
+    ],
+)
+def test_fastapi_cli_setting_errors(
+    name: str, arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report every server setting the server cannot use, before any file is written."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*arguments),
+        copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "config-errors.txt")
+    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+
+
+@pytest.mark.parametrize(
+    ("arguments", "generated", "expected"),
+    [
+        pytest.param(
+            [],
+            "services.py",
+            "services.py",
+            id="generate-server",
+            marks=pytest.mark.cli_doc(
+                options=["--generate-server"],
+                option_description="""Generate a FastAPI server package for the models (experimental).
+
+`--generate-server fastapi` generates the models of an OpenAPI document as usual and, in the same run, a FastAPI
+server package at `--server-output`: routers, a service Protocol for each router group, and the application. The
+models need the `api` scope (`--openapi-scopes schemas api`), a Pydantic v2 output model type, and a target Python
+version of 3.11 or later. Like every server setting, it can also be set in `[tool.datamodel-codegen]` of
+pyproject.toml, here as `generate-server = "fastapi"`.""",
+                input_schema=DOC_INPUT,
+                cli_args=DOC_OPTIONS,
+                golden_output=f"{DOC_OUTPUT}/services.py",
+            ),
+        ),
+        pytest.param(
+            [],
+            "services.py",
+            "services.py",
+            id="server-output",
+            marks=pytest.mark.cli_doc(
+                options=["--server-output"],
+                option_description="""Write the server package to this directory (experimental).
+
+`--server-output` is required with `--generate-server`. A path given on the command line is relative to the working
+directory, and the `server-output` key of pyproject.toml is relative to the pyproject.toml directory, as for
+`--output`.""",
+                input_schema=DOC_INPUT,
+                cli_args=DOC_OPTIONS,
+                golden_output=f"{DOC_OUTPUT}/services.py",
+            ),
+        ),
+        pytest.param(
+            [],
+            "services.py",
+            "services.py",
+            id="server-package",
+            marks=pytest.mark.cli_doc(
+                options=["--server-package"],
+                option_description="""Name the import path of the server package (experimental).
+
+`--server-package` is required with `--generate-server`. The generated README and the dependency command a
+generation prints name the package by it; the package imports its own modules relatively.""",
+                input_schema=DOC_INPUT,
+                cli_args=DOC_OPTIONS,
+                golden_output=f"{DOC_OUTPUT}/services.py",
+            ),
+        ),
+        pytest.param(
+            [],
+            "services.py",
+            "services.py",
+            id="server-model-package",
+            marks=pytest.mark.cli_doc(
+                options=["--server-model-package"],
+                option_description="""Name the import path of the models the server package imports (experimental).
+
+`--server-model-package` is required with `--generate-server`, and names the module or package `--output`
+generates.""",
+                input_schema=DOC_INPUT,
+                cli_args=DOC_OPTIONS,
+                golden_output=f"{DOC_OUTPUT}/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-layout", "single"],
+            "routes.py",
+            "layout/routes.py",
+            id="server-layout",
+            marks=pytest.mark.cli_doc(
+                options=["--server-layout"],
+                option_description="""Choose how the server package lays out its routes (experimental).
+
+`routers` (the default) writes one router module per tag under `routers/`; `single` writes every route to one
+`routes.py` module.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-layout", "single"],
+                golden_output=f"{DOC_OUTPUT}/layout/routes.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-handler-mode", "async"],
+            "services.py",
+            "handler-mode/services.py",
+            id="server-handler-mode",
+            marks=pytest.mark.cli_doc(
+                options=["--server-handler-mode"],
+                option_description="""Declare the service methods as plain or coroutine functions (experimental).
+
+`sync` (the default) declares plain methods, which FastAPI runs in a thread pool; `async` declares coroutine
+methods. `--server-handler-modes` overrides it for single operations.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-handler-mode", "async"],
+                golden_output=f"{DOC_OUTPUT}/handler-mode/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
+            "services.py",
+            "handler-modes/services.py",
+            id="server-handler-modes",
+            marks=pytest.mark.cli_doc(
+                options=["--server-handler-modes"],
+                option_description="""Set the handler mode of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
+`--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
+pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
+                golden_output=f"{DOC_OUTPUT}/handler-modes/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-include-request"],
+            "services.py",
+            "include-request/services.py",
+            id="server-include-request",
+            marks=pytest.mark.cli_doc(
+                options=["--server-include-request"],
+                option_description="""Pass the Starlette Request to every service method (experimental).
+
+Each service method takes a `request` keyword argument as well as the operation's arguments.
+`--no-server-include-request` turns off a `server-include-request = true` of pyproject.toml.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-include-request"],
+                golden_output=f"{DOC_OUTPUT}/include-request/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-body-mode", "request"],
+            "services.py",
+            "body-mode/services.py",
+            id="server-body-mode",
+            marks=pytest.mark.cli_doc(
+                options=["--server-body-mode"],
+                option_description="""Choose how service methods receive request bodies (experimental).
+
+`typed` (the default) passes the body validated as its model; `request` passes the raw Starlette `Request` instead,
+for methods that read the body themselves. `--server-body-modes` overrides it for single operations.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-body-mode", "request"],
+                golden_output=f"{DOC_OUTPUT}/body-mode/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
+            "services.py",
+            "body-modes/services.py",
+            id="server-body-modes",
+            marks=pytest.mark.cli_doc(
+                options=["--server-body-modes"],
+                option_description="""Set the body mode of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
+`--server-body-mode` for those operations.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
+                golden_output=f"{DOC_OUTPUT}/body-modes/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
+            "routers/pets.py",
+            "primary-responses/pets.py",
+            id="server-primary-responses",
+            marks=pytest.mark.cli_doc(
+                options=["--server-primary-responses"],
+                option_description="""Choose the response a bare return value of an operation takes (experimental).
+
+The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
+response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
+primary response from the declared success responses.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
+                golden_output=f"{DOC_OUTPUT}/primary-responses/pets.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
+            "services.py",
+            "operation-names/services.py",
+            id="server-operation-names",
+            marks=pytest.mark.cli_doc(
+                options=["--server-operation-names"],
+                option_description="""Name the service methods of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to method names. Other operations take the
+snake_case form of their operationId, or of their method and path.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
+                golden_output=f"{DOC_OUTPUT}/operation-names/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-router-names", '{"tag:pets": "animals"}'],
+            "services.py",
+            "router-names/services.py",
+            id="server-router-names",
+            marks=pytest.mark.cli_doc(
+                options=["--server-router-names"],
+                option_description="""Name router groups (experimental).
+
+The JSON object, inline or in a file, maps group keys, such as `tag:pets` for the operations whose first tag is
+`pets`, to the name of the router module, the `create_app` argument, and the `<Name>Service` Protocol.""",
+                input_schema=DOC_INPUT,
+                cli_args=[*DOC_OPTIONS, "--server-router-names", '{"tag:pets": "animals"}'],
+                golden_output=f"{DOC_OUTPUT}/router-names/services.py",
+            ),
+        ),
+        pytest.param(
+            ["--server-parameter-names", '{"/paths/~1pets/get": {"query:limit": "page_size"}}'],
+            "services.py",
+            "parameter-names/services.py",
+            id="server-parameter-names",
+            marks=pytest.mark.cli_doc(
+                options=["--server-parameter-names"],
+                option_description="""Name the method arguments of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.""",
+                input_schema=DOC_INPUT,
+                cli_args=[
+                    *DOC_OPTIONS,
+                    "--server-parameter-names",
+                    '{"/paths/~1pets/get": {"query:limit": "page_size"}}',
+                ],
+                golden_output=f"{DOC_OUTPUT}/parameter-names/services.py",
+            ),
+        ),
+    ],
+)
+def test_fastapi_cli_options(
+    arguments: list[str], generated: str, expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the server file each server option changes."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *SERVER, *arguments],
+        copy_files=[(CLI / "options.yaml", tmp_path / "options.yaml")],
+    )
+    assert_file_content(tmp_path / "server" / generated, f"cli/options/{expected}")
 
 
 @pytest.mark.abnormal_path("no input makes the FastAPI target raise while rendering")
@@ -737,10 +1285,7 @@ def test_fastapi_cli_failures(
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server("--strict-refs"),
-        copy_files=[
-            (SOURCE / "unresolved-ref.yaml", tmp_path / "broken.yaml"),
-            (CLI / "fastapi.toml", tmp_path / "fastapi.toml"),
-        ],
+        copy_files=[(SOURCE / "unresolved-ref.yaml", tmp_path / "broken.yaml")],
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )

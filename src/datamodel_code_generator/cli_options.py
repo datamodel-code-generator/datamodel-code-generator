@@ -40,6 +40,7 @@ class OptionCategory(str, Enum):
     OPENAPI = "OpenAPI-only Options"
     GRAPHQL = "GraphQL-only Options"
     GENERAL = "General Options"
+    TARGET = "Target Generation Options"
 
 
 class OptionTopic(str, Enum):
@@ -155,9 +156,6 @@ MANUAL_DOCS: frozenset[str] = frozenset({
     "--overwrite-skill",
     "--list-deprecations",
     "--list-experimental",
-    "--generate-server",
-    "--target-config",
-    "--target-output",
     "--diagnostics-json",
     "--dependency-format",
 })
@@ -976,6 +974,88 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--disable-warnings": CLIOptionMeta(name="--disable-warnings", category=OptionCategory.GENERAL),
     "--watch": CLIOptionMeta(name="--watch", category=OptionCategory.GENERAL),
     "--watch-delay": CLIOptionMeta(name="--watch-delay", category=OptionCategory.GENERAL),
+    # ==========================================================================
+    # Target Generation Options
+    # ==========================================================================
+    "--generate-server": CLIOptionMeta(
+        name="--generate-server",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(option="--server-output"),
+            CLIOptionRelation(option="--server-package"),
+            CLIOptionRelation(option="--server-model-package"),
+        ),
+    ),
+    "--server-output": CLIOptionMeta(
+        name="--server-output",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-package": CLIOptionMeta(
+        name="--server-package",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-model-package": CLIOptionMeta(
+        name="--server-model-package",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-layout": CLIOptionMeta(
+        name="--server-layout",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-handler-mode": CLIOptionMeta(
+        name="--server-handler-mode",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-handler-modes": CLIOptionMeta(
+        name="--server-handler-modes",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-include-request": CLIOptionMeta(
+        name="--server-include-request",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--no-server-include-request": CLIOptionMeta(
+        name="--no-server-include-request",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-body-mode": CLIOptionMeta(
+        name="--server-body-mode",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-body-modes": CLIOptionMeta(
+        name="--server-body-modes",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-primary-responses": CLIOptionMeta(
+        name="--server-primary-responses",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-operation-names": CLIOptionMeta(
+        name="--server-operation-names",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-router-names": CLIOptionMeta(
+        name="--server-router-names",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
+    "--server-parameter-names": CLIOptionMeta(
+        name="--server-parameter-names",
+        category=OptionCategory.TARGET,
+        requires=(CLIOptionRelation(option="--generate-server"),),
+    ),
 }
 
 

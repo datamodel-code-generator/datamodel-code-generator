@@ -232,6 +232,25 @@ datamodel-codegen [OPTIONS]
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
 
+### 📋 Target Generation Options
+
+| Option | Description |
+|--------|-------------|
+| [`--generate-server`](target-generation-options.md#generate-server) | Generate a FastAPI server package for the models (experimental). |
+| [`--server-body-mode`](target-generation-options.md#server-body-mode) | Choose how service methods receive request bodies (experimental). |
+| [`--server-body-modes`](target-generation-options.md#server-body-modes) | Set the body mode of single operations (experimental). |
+| [`--server-handler-mode`](target-generation-options.md#server-handler-mode) | Declare the service methods as plain or coroutine functions (experimental). |
+| [`--server-handler-modes`](target-generation-options.md#server-handler-modes) | Set the handler mode of single operations (experimental). |
+| [`--server-include-request`](target-generation-options.md#server-include-request) | Pass the Starlette Request to every service method (experimental). |
+| [`--server-layout`](target-generation-options.md#server-layout) | Choose how the server package lays out its routes (experimental). |
+| [`--server-model-package`](target-generation-options.md#server-model-package) | Name the import path of the models the server package imports (experimental). |
+| [`--server-operation-names`](target-generation-options.md#server-operation-names) | Name the service methods of single operations (experimental). |
+| [`--server-output`](target-generation-options.md#server-output) | Write the server package to this directory (experimental). |
+| [`--server-package`](target-generation-options.md#server-package) | Name the import path of the server package (experimental). |
+| [`--server-parameter-names`](target-generation-options.md#server-parameter-names) | Name the method arguments of single operations (experimental). |
+| [`--server-primary-responses`](target-generation-options.md#server-primary-responses) | Choose the response a bare return value of an operation takes (experimental). |
+| [`--server-router-names`](target-generation-options.md#server-router-names) | Name router groups (experimental). |
+
 ### 📝 Utility Options
 
 | Option | Description |
@@ -241,7 +260,6 @@ datamodel-codegen [OPTIONS]
 | [`--dependency-format`](utility-options.md#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
 | [`--diagnostics-json`](utility-options.md#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](utility-options.md#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
-| [`--generate-server`](utility-options.md#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](utility-options.md#help) | Show help message and exit |
 | [`--install-skill`](utility-options.md#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](utility-options.md#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -253,8 +271,6 @@ datamodel-codegen [OPTIONS]
 | [`--overwrite-skill`](utility-options.md#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](utility-options.md#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](utility-options.md#skill-scope) | Choose an Agent Skill installation scope |
-| [`--target-config`](utility-options.md#target-config) | Read the generation target's settings from a TOML file |
-| [`--target-output`](utility-options.md#target-output) | Override the generation target's output directory |
 | [`--version`](utility-options.md#version) | Show program version and exit |
 
 ---
@@ -331,7 +347,7 @@ All options sorted alphabetically:
 - [`--generate-prompt`](utility-options.md#generate-prompt) - Generate a prompt for consulting LLMs about CLI options
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config) - Generate pyproject.toml configuration from CLI arguments.
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators) - Generate experimental Pydantic v2 model validators for JSON ...
-- [`--generate-server`](utility-options.md#generate-server) - Generate a FastAPI server package with the models (experimental)
+- [`--generate-server`](target-generation-options.md#generate-server) - Generate a FastAPI server package for the models (experiment...
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename) - Exclude __typename field from generated GraphQL models.
 - [`--help`](utility-options.md#help) - Show help message and exit
 - [`--http-backend`](base-options.md#http-backend) - Select the HTTP client backend for remote schemas.
@@ -394,6 +410,19 @@ All options sorted alphabetically:
 - [`--schema-version`](base-options.md#schema-version) - Schema version to use for parsing.
 - [`--schema-version-mode`](base-options.md#schema-version-mode) - Schema version validation mode.
 - [`--serialization-aliases`](field-customization.md#serialization-aliases) - Apply custom Pydantic v2 serialization aliases via inline JS...
+- [`--server-body-mode`](target-generation-options.md#server-body-mode) - Choose how service methods receive request bodies (experimen...
+- [`--server-body-modes`](target-generation-options.md#server-body-modes) - Set the body mode of single operations (experimental).
+- [`--server-handler-mode`](target-generation-options.md#server-handler-mode) - Declare the service methods as plain or coroutine functions ...
+- [`--server-handler-modes`](target-generation-options.md#server-handler-modes) - Set the handler mode of single operations (experimental).
+- [`--server-include-request`](target-generation-options.md#server-include-request) - Pass the Starlette Request to every service method (experime...
+- [`--server-layout`](target-generation-options.md#server-layout) - Choose how the server package lays out its routes (experimen...
+- [`--server-model-package`](target-generation-options.md#server-model-package) - Name the import path of the models the server package import...
+- [`--server-operation-names`](target-generation-options.md#server-operation-names) - Name the service methods of single operations (experimental)...
+- [`--server-output`](target-generation-options.md#server-output) - Write the server package to this directory (experimental).
+- [`--server-package`](target-generation-options.md#server-package) - Name the import path of the server package (experimental).
+- [`--server-parameter-names`](target-generation-options.md#server-parameter-names) - Name the method arguments of single operations (experimental...
+- [`--server-primary-responses`](target-generation-options.md#server-primary-responses) - Choose the response a bare return value of an operation take...
+- [`--server-router-names`](target-generation-options.md#server-router-names) - Name router groups (experimental).
 - [`--set-default-enum-member`](field-customization.md#set-default-enum-member) - Use the legacy flag for deserializing enum defaults.
 - [`--shared-module-name`](general-options.md#shared-module-name) - Customize the name of the shared module for deduplicated mod...
 - [`--skill-scope`](utility-options.md#skill-scope) - Choose an Agent Skill installation scope
@@ -405,8 +434,6 @@ All options sorted alphabetically:
 - [`--strict-refs`](general-options.md#strict-refs) - Treat unresolved local `$ref` JSON pointers as errors.
 - [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for specified Python types.
 - [`--strip-default-none`](model-customization.md#strip-default-none) - Remove fields with None as default value from generated mode...
-- [`--target-config`](utility-options.md#target-config) - Read the generation target's settings from a TOML file
-- [`--target-output`](utility-options.md#target-output) - Override the generation target's output directory
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version) - Target Pydantic version for generated code compatibility.
 - [`--target-python-version`](model-customization.md#target-python-version) - Target Python version for generated code syntax and imports.
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module) - Treat dots in schema names as module separators.

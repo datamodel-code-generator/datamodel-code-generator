@@ -26,10 +26,6 @@ OPTIONS = [
     "--formatters",
     "builtin",
     "--disable-timestamp",
-    "--generate-server",
-    "fastapi",
-    "--target-config",
-    "fastapi.toml",
     "--dependency-format",
     "requirements",
 ]
@@ -48,7 +44,7 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
         extra_args=OPTIONS,
         copy_files=[
             (SOURCE / "contacts.yaml", tmp_path / "contacts.yaml"),
-            (SOURCE / "fastapi.toml", tmp_path / "fastapi.toml"),
+            (SOURCE / "pyproject-server.toml", tmp_path / "pyproject.toml"),
             (SOURCE / "app.py", tmp_path / "app.py"),
             (requirements, tmp_path / "requirements.txt"),
         ],
