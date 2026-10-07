@@ -19,7 +19,7 @@
   "result": null,
   "retained_parsers": 0,
   "artifacts": {
-    "models.py": "494ea7a18e8aa573c6b04a14ba94c40a20ef548566078a5018c3a6e557607031"
+    "models.py": "876b1830a45cc39c1bf7e7bccbd78359707e5b3543904185d4c99cd1b219517d"
   },
   "target_imports": []
 }
