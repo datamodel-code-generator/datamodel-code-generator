@@ -11324,9 +11324,9 @@ directory when the paths name the same input and outputs. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-Several targets can share one models module: with the same model options, including the same
-`--openapi-include-paths`, and `--disable-timestamp`, each run writes the same bytes, and `--check` reports a
-module that differs.
+Several targets can share one models module: with the same input, whose file name the model header records, the
+same model options, including the same `--openapi-include-paths`, and `--disable-timestamp`, each run writes the same
+bytes, and `--check` reports a module that differs.
 
 ## Models and adapters
 
