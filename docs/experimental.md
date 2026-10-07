@@ -9,7 +9,7 @@ This page lists features that are available but still experimental.
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
-| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format` | 0.83.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys), --diagnostics-json, and --dependency-format` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -22,7 +22,7 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
-| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.83.1 | - |
+| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -59,12 +59,12 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 ### `cli-option.generate-server`
 
 - **Kind:** cli-option
-- **Target:** `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format`
-- **Since:** 0.83.1
+- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys), --diagnostics-json, and --dependency-format`
+- **Since:** 0.84.0
 
-FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
+FastAPI server generation from the CLI is experimental; its options, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml and in its profiles. --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -190,7 +190,7 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 - **Kind:** python-api
 - **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
-- **Since:** 0.83.1
+- **Since:** 0.84.0
 
 The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
 

@@ -723,12 +723,55 @@ Target generation options (experimental):
                         Write the selected target's diagnostics as JSON to
                         PATH, or to stdout with -.
   --generate-server {fastapi}
-                        Generate a server package for the models from the
-                        --target-config settings (experimental).
-  --target-config PATH  Read the selected target's settings from a flat TOML
-                        file.
-  --target-output PATH  Write the selected target to PATH instead of the
-                        output its settings name.
+                        Generate a FastAPI server package for the models; the
+                        --server-* options configure it (experimental).
+  --server-body-mode {typed,request}
+                        Pass request bodies as validated models (default) or
+                        as the raw Request (experimental).
+  --server-body-modes SERVER_BODY_MODES
+                        Per-operation body modes as inline JSON or a JSON file
+                        path, keyed by operation reference; overrides
+                        --server-body-mode for matched operations
+                        (experimental).
+  --server-handler-mode {sync,async}
+                        Make service methods plain functions (default) or
+                        coroutine functions (experimental).
+  --server-handler-modes SERVER_HANDLER_MODES
+                        Per-operation handler modes as inline JSON or a JSON
+                        file path, keyed by operation reference such as
+                        /paths/~1pets/get; overrides --server-handler-mode for
+                        matched operations (experimental).
+  --server-include-request, --no-server-include-request
+                        Pass the Starlette Request to every service method
+                        (experimental).
+  --server-layout {routers,single}
+                        Write one router module per tag (default) or a single
+                        routes module (experimental).
+  --server-model-package SERVER_MODEL_PACKAGE
+                        Import path of the models that --output generates
+                        (experimental).
+  --server-operation-names SERVER_OPERATION_NAMES
+                        Service method names per operation reference as inline
+                        JSON or a JSON file path (experimental).
+  --server-output SERVER_OUTPUT
+                        Directory of the generated server package
+                        (experimental).
+  --server-package SERVER_PACKAGE
+                        Import path of the generated server package
+                        (experimental).
+  --server-parameter-names SERVER_PARAMETER_NAMES
+                        Argument names per operation reference, each keyed by
+                        location and name such as query:limit, as inline JSON
+                        or a JSON file path (experimental).
+  --server-primary-responses SERVER_PRIMARY_RESPONSES
+                        The declared response a bare return value takes, per
+                        operation, as inline JSON or a JSON file path: an
+                        object with "status_code" and an optional "media_type"
+                        for each operation reference (experimental).
+  --server-router-names SERVER_ROUTER_NAMES
+                        Router group names keyed by group key, such as
+                        tag:pets, as inline JSON or a JSON file path
+                        (experimental).
 
 Documentation: https://datamodel-code-generator.koxudaxi.dev
 Agent skill: https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/

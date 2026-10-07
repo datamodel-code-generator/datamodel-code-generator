@@ -9,7 +9,6 @@
 | [`--dependency-format`](#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
 | [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
-| [`--generate-server`](#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](#help) | Show help message and exit |
 | [`--install-skill`](#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -21,8 +20,6 @@
 | [`--overwrite-skill`](#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](#skill-scope) | Choose an Agent Skill installation scope |
-| [`--target-config`](#target-config) | Read the generation target's settings from a TOML file |
-| [`--target-output`](#target-output) | Override the generation target's output directory |
 | [`--version`](#version) | Show program version and exit |
 
 ---
@@ -96,15 +93,16 @@ or code generation. Requires the `debug` extra to be installed.
 Choose what a generation prints to add the generated package to your project (experimental): `uv`, the
 default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
 
-**Related:** [`--generate-server`](#generate-server),
+**Related:** [`--generate-server`](target-generation-options.md#generate-server),
 [FastAPI Server](../fastapi-server.md)
 
 !!! tip "Usage"
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output models.py \
-      --generate-server fastapi --target-config fastapi.toml \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --generate-server fastapi --server-output server \
+      --server-package server --server-model-package models \
       --dependency-format requirements > requirements.txt
     ```
 
@@ -129,21 +127,22 @@ cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_
 
 Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
 
-**Related:** [`--generate-server`](#generate-server),
+**Related:** [`--generate-server`](target-generation-options.md#generate-server),
 [Diagnostics](../fastapi-server.md#diagnostics)
 
 !!! tip "Usage"
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output models.py \
-      --generate-server fastapi --target-config fastapi.toml \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --generate-server fastapi --server-output server \
+      --server-package server --server-model-package models \
       --diagnostics-json diagnostics.json
     ```
 
 The document is written after every run that passes the command-line checks, successful or not, and lists
 the diagnostics in the order stderr shows them. A usage error, such as `--generate-server` without
-`--target-config`, prints `Error:` like any other command-line error and writes no document.
+`--server-output`, prints `Error:` like any other command-line error and writes no document.
 
 ```json
 {
@@ -151,23 +150,23 @@ the diagnostics in the order stderr shows them. A usage error, such as `--genera
   "target": "fastapi",
   "diagnostics": [
     {
-      "code": "E_CONFIG_UNKNOWN",
+      "code": "E_OPERATION_REF",
       "severity": "error",
       "stage": "config",
-      "message": "The target file has no setting 'packages'",
+      "message": "The handler_modes entry '/paths/~1cats/get' selects no root path operation",
       "source_uri": null,
       "source_pointer": null,
       "operation": null,
-      "option_path": "packages",
+      "option_path": "handler_modes",
       "artifact_path": null,
-      "target_id": null
+      "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
     }
   ]
 }
 ```
 
 A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
-and nothing is written to it; the check runs before any setting is read. An existing file is replaced only
+and nothing is written to it; the check runs before anything is generated. An existing file is replaced only
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
 directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
 
@@ -244,56 +243,6 @@ Schema for that structured payload, such as when defining a tool contract.
         --generate-prompt "Review this command for stable generated output in CI." \
         | claude -p
     ```
-
----
-
-## `--generate-server` {#generate-server}
-
-Generate a server package for the models from the settings `--target-config` names (experimental).
-The only choice is `fastapi`.
-
-!!! warning "Experimental"
-
-    FastAPI server generation is experimental; its options, target configuration file,
-    generated package, and diagnostics may change.
-
-**Related:** [`--target-config`](#target-config), [`--target-output`](#target-output),
-[`--diagnostics-json`](#diagnostics-json),
-[`--dependency-format`](#dependency-format), [FastAPI Server](../fastapi-server.md)
-
-!!! tip "Usage"
-
-    ```bash
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --openapi-scopes schemas api --disable-timestamp --output models.py \
-      --generate-server fastapi --target-config fastapi.toml # (1)!
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --openapi-scopes schemas api --disable-timestamp --output models.py \
-      --generate-server fastapi --target-config fastapi.toml --check # (2)!
-    ```
-
-    1. :material-arrow-left: Generate the models at `--output` and the server package the target file describes
-    2. :material-arrow-left: Report the files that would change, without writing them
-
-One run generates the models with the usual model options and the server package from the same accepted
-document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
-error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
-command that adds the package to your project, as [`--dependency-format`](#dependency-format)
-chooses.
-
-The server needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version, which
-`--target-python-version` or a preset sets. On Python 3.10 the run stops with `E_PYTHON_UNSUPPORTED`, and a target
-Python version below 3.11, including the default 3.10, stops it with `E_CONFIG_VALUE`.
-
-The model options apply as they do without `--generate-server`, and the server changes none of them.
-`--openapi-scopes` must include `api`; otherwise the run stops with
-`Error: --generate-server requires --openapi-scopes to include api` and exit code 2. The models keep the generation
-timestamp unless `--disable-timestamp` or a preset that sets it leaves it out, so `--check` reports no change on
-unchanged inputs only without the timestamp.
-
-`--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
-`--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints
-information, such as `--generate-prompt` or `--list-experimental`.
 
 ---
 
@@ -659,56 +608,6 @@ below your home directory.
 
     datamodel-codegen --install-skill codex --skill-scope project
     datamodel-codegen --install-skill claude-code --skill-scope user
-
----
-
-## `--target-config` {#target-config}
-
-Read the selected target's settings from a flat TOML file (experimental). `--generate-server` requires it.
-
-**Related:** [`--generate-server`](#generate-server),
-[`--target-output`](#target-output), [Target configuration](../fastapi-server.md#target-configuration)
-
-!!! tip "Usage"
-
-    ```bash
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output models.py \
-      --generate-server fastapi --target-config fastapi.toml
-    ```
-
-    ```toml
-    # fastapi.toml
-    schema_version = 1
-    package = "server"
-    model_package = "models"
-    output = "server"
-    ```
-
-The file holds `schema_version = 1` and the target's own settings only; model options stay on the command
-line or in `pyproject.toml`. Relative paths are resolved against the file's directory. An unknown setting is
-`E_CONFIG_UNKNOWN`, and a missing or invalid value is `E_CONFIG_VALUE`.
-
----
-
-## `--target-output` {#target-output}
-
-Write the selected target to a directory instead of the `output` its target configuration file names
-(experimental). `--output` keeps naming the model output.
-
-**Related:** [`--generate-server`](#generate-server),
-[`--target-config`](#target-config)
-
-!!! tip "Usage"
-
-    ```bash
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --target-python-version 3.12 --output src/example/models.py \
-      --generate-server fastapi --target-config fastapi.toml \
-      --target-output src/example/server
-    ```
-
-A relative `--target-output` is resolved against the current directory.
 
 ---
 

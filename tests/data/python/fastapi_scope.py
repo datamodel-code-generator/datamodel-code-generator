@@ -33,8 +33,6 @@ INCLUDED = {"unselected": ["/none"]}
 def _write(root: Path) -> None:
     for name, text in (("primitive", PRIMITIVE), ("empty", EMPTY), ("unselected", UNSELECTED)):
         (root / f"{name}.yaml").write_text(text, encoding="utf-8")
-    target = 'schema_version = 1\npackage = "server"\nmodel_package = "models"\noutput = "server"\n'
-    (root / "fastapi.toml").write_text(target, encoding="utf-8")
 
 
 def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
@@ -72,7 +70,8 @@ def _cli(root: Path, name: str, backend: str) -> str:
     arguments = [
         *("--input", str(root / f"{name}.yaml"), "--input-file-type", "openapi", "--openapi-scopes", "schemas", "api"),
         *("--output", str(root / "models.py"), "--output-model-type", backend, "--target-python-version", "3.11", "--check"),
-        *("--generate-server", "fastapi", "--target-config", str(root / "fastapi.toml")),
+        *("--generate-server", "fastapi", "--server-output", str(root / "server")),
+        *("--server-package", "server", "--server-model-package", "models"),
         *(f"--openapi-include-paths={path}" for path in INCLUDED.get(name, ())),
     ]
     stderr = StringIO()

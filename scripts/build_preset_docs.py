@@ -346,7 +346,9 @@ datamodel-codegen \\
   --preset {preset_name} \\
   --output models.py \\
   --generate-server fastapi \\
-  --target-config fastapi.toml
+  --server-output server \\
+  --server-package server \\
+  --server-model-package models
 ```
 
 The preset supplies the model options, as in the model [quick start](getting-started.md).

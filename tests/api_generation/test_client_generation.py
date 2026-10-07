@@ -358,6 +358,10 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "protocols-records-shape",
         "toml-protocols",
         "toml-protocols-type",
+        "toml-syntax",
+        "toml-version",
+        "toml-unknown-setting",
+        "toml-operation-document",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:

@@ -11,12 +11,14 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, attached_diagnostic
+from datamodel_code_generator._api_manifest import document_identity
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, attached_diagnostic
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Sequence
 
+    from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
@@ -26,6 +28,8 @@ _ERROR: Final = 2
 _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
+_SERVER_SETTINGS: Final = ("layout", "handler_mode", "include_request", "body_mode", "router_names")
+_OPERATION_SETTINGS: Final = ("handler_modes", "body_modes", "operation_names", "parameter_names")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
     "code",
@@ -54,7 +58,11 @@ def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject
         return _ERROR
     report = _Report(vars(namespace).get("diagnostics_json"))
     try:
-        code = _jobs(namespace, report) if config is None else _run(args, namespace, config, pyproject_path, report)
+        code = (
+            _jobs(namespace, pyproject_path, report)
+            if config is None
+            else _run(args, namespace, config, pyproject_path, report)
+        )
     except APIGenerationError as error:
         report.extend(error.diagnostics)
         code = _ERROR
@@ -72,17 +80,16 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
     from datamodel_code_generator._api_generation import generate_target, prepare_target, render_target  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
-    target_config, output = namespace.target_config, vars(namespace).get("target_output")
     lockfile = _target_lockfile(config, pyproject_path)
     report.guard(
-        (target_config, config.input, config.output, config.emit_model_metadata, lockfile), (output, config.output)
+        (pyproject_path, config.input, config.output, config.emit_model_metadata, lockfile),
+        (config.server_output, config.output),
     )
     if flags := _flags(namespace, config, _CONFLICTS):
         raise _refused(flags)
     if (form := vars(namespace).get("dependency_format")) is not None and report.destination == "-":
         raise APIGenerationError((_conflict("--dependency-format cannot be used with --diagnostics-json -"),))
-    target = _target_config(target_config, output)
-    report.guard((), (target.output,))
+    target = _server_config(config, namespace, pyproject_path)
     effective = _target_settings(config, args, lockfile)
     generator = FastAPITarget()
     if (source := config.url or config.input) is None:
@@ -116,8 +123,8 @@ def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...], form: str |
     return f"Add the runtime dependencies of {target.package} to your project:\n  uv add {arguments}"
 
 
-def _jobs(namespace: Namespace, report: _Report) -> NoReturn:
-    report.guard((namespace.target_config,), (vars(namespace).get("target_output"),))
+def _jobs(namespace: Namespace, pyproject_path: Path | None, report: _Report) -> NoReturn:
+    report.guard((pyproject_path,), ())
     raise _refused(_flags(namespace, namespace, _JOBS))
 
 
@@ -130,17 +137,41 @@ def _refused(flags: list[str]) -> APIGenerationError:
     return APIGenerationError(tuple(_conflict(f"--generate-server cannot be used with {flag}") for flag in flags))
 
 
-def _target_config(path: Path, output: Path | None) -> FastAPIConfig:
-    from datamodel_code_generator._fastapi.config import FastAPIConfig  # noqa: PLC0415
-    from datamodel_code_generator._target_config import load_target_config  # noqa: PLC0415
+def _server_config(config: Any, namespace: Namespace, pyproject_path: Path | None) -> FastAPIConfig:
+    """Map the --server-* settings onto the server configuration, leaving unset ones at their defaults.
 
-    try:
-        return load_target_config(path, FastAPIConfig, output=output)
-    except OSError as error:
-        message = f"The target file cannot be read: {error.strerror}"
-        raise APIGenerationError((
-            Diagnostic(code="E_CONFIG_VALUE", severity="error", stage="config", message=message),
-        )) from None
+    Documents named in operation references resolve against the pyproject.toml directory for settings read from it,
+    and against the working directory for settings given on the command line.
+    """
+    from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice  # noqa: PLC0415
+
+    def base(field: str) -> Path:
+        return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
+
+    values: dict[str, Any] = {
+        name: value for name in _SERVER_SETTINGS if (value := getattr(config, f"server_{name}")) is not None
+    }
+    for name in _OPERATION_SETTINGS:
+        if (entries := getattr(config, field := f"server_{name}")) is not None:
+            root = base(field)
+            values[name] = {_operation(key, root): value for key, value in entries.items()}
+    if (responses := config.server_primary_responses) is not None:
+        root = base("server_primary_responses")
+        values["primary_responses"] = {
+            _operation(key, root): ResponseChoice(status_code=choice.status_code, media_type=choice.media_type)
+            for key, choice in responses.items()
+        }
+    return FastAPIConfig(
+        output=config.server_output, package=config.server_package, model_package=config.server_model_package, **values
+    )
+
+
+def _operation(key: str, base: Path) -> OperationSelector:
+    """Read an operation reference: a pointer into the root document, or a document and a pointer joined by #."""
+    document, separator, pointer = key.partition("#")
+    if not separator:
+        return key
+    return OperationRef(pointer=pointer, document=document_identity(document, base) if document else None)
 
 
 def _is_report(path: Path) -> bool:

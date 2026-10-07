@@ -210,9 +210,6 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "list_experimental",
     "watch",
     "watch_delay",
-    "generate_server",
-    "target_config",
-    "target_output",
     "diagnostics_json",
     "dependency_format",
 })
@@ -223,21 +220,8 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
-_TARGET_OPTIONS: tuple[tuple[str, str], ...] = (
-    ("target_config", "--target-config"),
-    ("target_output", "--target-output"),
-    ("diagnostics_json", "--diagnostics-json"),
-    ("dependency_format", "--dependency-format"),
-)
-_TARGET_EXCLUSIVE: tuple[tuple[str, str], ...] = (
-    ("install_skill", "--install-skill"),
-    ("generate_prompt", "--generate-prompt"),
-    ("generate_pyproject_config", "--generate-pyproject-config"),
-    ("generate_cli_command", "--generate-cli-command"),
-    ("output_format_json_schema", "--output-format-json-schema"),
-    ("list_deprecations", "--list-deprecations"),
-    ("list_experimental", "--list-experimental"),
-)
+_SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
+_TARGET_RUN_OPTIONS: tuple[str, ...] = ("diagnostics_json", "dependency_format")
 
 
 class Exit(IntEnum):
@@ -1573,17 +1557,33 @@ def _generation_config(  # noqa: PLR0913
     return generation_config
 
 
-def _target_usage_error(namespace: Namespace) -> str | None:
-    """Return why the target options of a command line cannot run together, if they cannot."""
-    selected = vars(namespace)
-    if "generate_server" not in selected:
-        if options := [flag for name, flag in _TARGET_OPTIONS if name in selected]:
-            return f"{', '.join(options)} can only be used with --generate-server"
-        return None
-    if "target_config" not in selected:
-        return "--generate-server requires --target-config"
-    if modes := [flag for name, flag in _TARGET_EXCLUSIVE if selected.get(name) not in {None, False}]:
-        return f"--generate-server cannot be used with {', '.join(modes)}"
+def _option_list(flags: Sequence[str]) -> str:
+    """Name options as an English list."""
+    return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
+
+
+def _flag(field: str, *, negative: bool = False) -> str:
+    """Return the option of a Config field, or its --no- form."""
+    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
+
+
+def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
+    """Return why the target options of a run cannot apply, if they cannot.
+
+    Server keys of pyproject.toml are validated like model keys but have no effect while no server is selected.
+    """
+    if config.generate_server is None:
+        given = [
+            _flag(field, negative=value is False)
+            for field, value in _explicit_config_args(namespace).items()
+            if field.startswith("server_")
+        ]
+        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
+        if not given:
+            return None
+        return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"
+    if missing := [field for field in _SERVER_REQUIRED_FIELDS if getattr(config, field) is None]:
+        return f"--generate-server requires {_option_list([_flag(field) for field in missing])}"
     return None
 
 
@@ -2316,10 +2316,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     arg_parser.parse_args(args, namespace=namespace)
 
-    if not namespace.version and (target_usage := _target_usage_error(namespace)) is not None:
-        print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
-        return Exit.ERROR
-
     if (agent := namespace.install_skill) is not None:
         from datamodel_code_generator._agent_skill_cli import install_agent_skill_command  # noqa: PLC0415
 
@@ -2384,8 +2380,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return Exit.OK
 
     if _batch_config is None and (namespace.job or namespace.all_jobs):
-        if "generate_server" in vars(namespace):
-            return _run_target(args, namespace, None, None)
         try:
             batch_plan = _plan_jobs(namespace)
         except Error as e:
@@ -2567,10 +2561,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    if "generate_server" in vars(namespace):
+    if (target_usage := _target_usage_error(config, namespace)) is not None:
+        print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+    if config.generate_server is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
-        return _run_target(args, namespace, config, pyproject_path)
+        return _run_target(args, namespace, None if _batch_config is not None else config, pyproject_path)
 
     if config.watch and config.check:
         print(  # noqa: T201

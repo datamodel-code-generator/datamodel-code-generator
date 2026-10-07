@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import _api_manifest, _api_publication, _publication
-from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
@@ -321,63 +320,22 @@ def test_target_config(case: str) -> None:
     assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
 
 
-def _toml_arguments(*extra: str) -> list[str]:
-    return [
-        *(
-            "--target-python-version",
-            "3.11",
-            "--openapi-scopes",
-            "api",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ),
-        *("--generate-server", "fastapi", "--target-config", "target.toml", *extra),
-    ]
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        "toml-syntax",
-        "toml-version",
-        "toml-version-bool",
-        "toml-version-missing",
-        "toml-unknown",
-        "toml-missing",
-        "toml-values",
-    ],
-)
-def test_target_toml_errors(
-    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Refuse a flat target file whose syntax, version, keys, or values are invalid, writing nothing."""
-    monkeypatch.chdir(tmp_path)
-    shutil.copytree(SOURCE / "spec", tmp_path / "spec")
-    run_main_and_assert(
-        input_path=Path("spec/api.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_toml_arguments(),
-        copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
-        expected_exit=Exit.ERROR,
-        output_should_not_exist=True,
-    )
-    assert_output(capsys.readouterr().err, EXPECTED / "configs" / f"{case}.txt")
-
-
-def test_target_toml_values(
+def test_target_pyproject_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Publish the package where --target-output points instead of the flat target file's output."""
+    """Publish the package where --server-output points instead of the pyproject.toml server output."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "spec", tmp_path / "spec")
     run_main_and_assert(
         input_path=Path("spec/api.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_toml_arguments("--target-output", "elsewhere"),
-        copy_files=[(SOURCE / "configs" / "toml-output-override.toml", tmp_path / "target.toml")],
+        extra_args=[
+            *("--target-python-version", "3.11", "--openapi-scopes", "api", "--disable-timestamp"),
+            *("--formatters", "builtin", "--server-output", "elsewhere"),
+        ],
+        copy_files=[(SOURCE / "configs" / "pyproject-output-override.toml", tmp_path / "pyproject.toml")],
+        file_should_not_exist=tmp_path / "server",
     )
     published = sorted(
         path.relative_to(tmp_path).as_posix()
@@ -386,5 +344,5 @@ def test_target_toml_values(
     )
     assert_output(
         capsys.readouterr().err + "\n".join(published) + "\n",
-        EXPECTED / "configs" / "toml-output-override.txt",
+        EXPECTED / "configs" / "pyproject-output-override.txt",
     )

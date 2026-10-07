@@ -108,19 +108,22 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         id="cli-option.generate-server",
         kind="cli-option",
         target=(
-            "--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format"
+            "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys), "
+            "--diagnostics-json, and --dependency-format"
         ),
         message=(
-            "FastAPI server generation from the CLI is experimental; its options, target configuration file, "
-            "generated package, and diagnostics may change."
+            "FastAPI server generation from the CLI is experimental; its options, generated package, and "
+            "diagnostics may change."
         ),
-        since_version="0.83.1",
+        since_version="0.84.0",
         note=(
-            "--generate-server fastapi generates the models at --output and a server package from the flat TOML "
-            "file --target-config names; --target-output overrides the file's output, --check compares without "
-            "writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses "
-            "whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, "
-            "both to run and as --target-python-version."
+            "--generate-server fastapi generates the models at --output and a server package at --server-output; "
+            "--server-package and --server-model-package name their import paths, and the other --server-* options "
+            "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
+            "pyproject.toml and in its profiles. --check compares without writing, --diagnostics-json writes the "
+            "target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add "
+            "command or requirements lines. It needs Python 3.11 or later, both to run and as "
+            "--target-python-version."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(
@@ -249,7 +252,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "The FastAPI server target is experimental; its entry points, settings, templates, generated package, "
             "and served OpenAPI document may change."
         ),
-        since_version="0.83.1",
+        since_version="0.84.0",
         note=(
             "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
             "document with the api scope. The package declares a service Protocol for each router group, builds "
