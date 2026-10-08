@@ -253,8 +253,25 @@ General utility, HTTP, checking, and project integration options.
 - `--watch`: Watch input file(s) for changes and regenerate output automatically
 - `--watch-delay`: Debounce delay in seconds for watch mode (default: 0.5)
 - `--version`: show version
-- `--generate-server`: Generate a server package for the models from the --target-config settings (experimental). Choices: `fastapi`.
-- `--target-config`: Read the selected target's settings from a flat TOML file.
-- `--target-output`: Write the selected target to PATH instead of the output its settings name.
 - `--diagnostics-json`: Write the selected target's diagnostics as JSON to PATH, or to stdout with -.
 - `--dependency-format`: Print what adds the generated package to a project as a uv add command (default) or requirements lines. Choices: `uv`, `requirements`.
+
+## Target Generation Options
+
+Server generation alongside the models (experimental).
+
+- `--generate-server`: Generate a FastAPI server package for the models; the --server-* options configure it (experimental). Choices: `fastapi`.
+- `--server-output`: Directory of the generated server package (experimental).
+- `--server-package`: Import path of the generated server package (experimental).
+- `--server-model-package`: Import path of the models that --output generates (experimental).
+- `--server-layout`: Write one router module per tag (default) or a single routes module (experimental). Choices: `routers`, `single`.
+- `--server-handler-mode`: Make service methods plain functions (default) or coroutine functions (experimental). Choices: `sync`, `async`.
+- `--server-handler-modes`: Per-operation handler modes as inline JSON or a JSON file path, keyed by operation reference such as /paths/~1pets/get; overrides --server-handler-mode for matched operations (experimental).
+- `--server-include-request`: Pass the Starlette Request to every service method (experimental).
+- `--no-server-include-request`: Pass the Starlette Request to every service method (experimental).
+- `--server-body-mode`: Pass request bodies as validated models (default) or as the raw Request (experimental). Choices: `typed`, `request`.
+- `--server-body-modes`: Per-operation body modes as inline JSON or a JSON file path, keyed by operation reference; overrides --server-body-mode for matched operations (experimental).
+- `--server-primary-responses`: The declared response a bare return value takes, per operation, as inline JSON or a JSON file path: an object with "status_code" and an optional "media_type" for each operation reference (experimental).
+- `--server-operation-names`: Service method names per operation reference as inline JSON or a JSON file path (experimental).
+- `--server-router-names`: Router group names keyed by group key, such as tag:pets, as inline JSON or a JSON file path (experimental).
+- `--server-parameter-names`: Argument names per operation reference, each keyed by location and name such as query:limit, as inline JSON or a JSON file path (experimental).

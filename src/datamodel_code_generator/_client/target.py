@@ -37,6 +37,7 @@ from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
+from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -94,6 +95,7 @@ class ClientTarget:
     kind: TargetKind = "client"
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
+    selector: str = "--generate-client"
 
     def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals]
         """Plan the selected operations, bind their codecs, and render the package."""
@@ -165,9 +167,15 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
+        dependencies = (
+            *DEPENDENCIES,
+            *((WEBSOCKETS,) if sockets else ()),
+            *BACKEND_DEPENDENCIES.get(backend, ()),
+            *webhook_dependencies(webhooks),
+            *model_dependencies(request.models),
+        )
         renderer = ClientRenderer(
             config=config,
-            package=request.layout.package,
             plan=plan,
             batch=batch,
             wire=wire,
@@ -178,17 +186,11 @@ class ClientTarget:
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
+            backend=backend,
+            dependencies=dependencies,
+            templates=ClientTemplates.custom(request.model_config, request.target_id, request.cwd),
         )
-        return TargetRender(
-            files=renderer.files(),
-            dependencies=(
-                *DEPENDENCIES,
-                *((WEBSOCKETS,) if sockets else ()),
-                *BACKEND_DEPENDENCIES.get(backend, ()),
-                *webhook_dependencies(webhooks),
-                *model_dependencies(request.models),
-            ),
-        )
+        return TargetRender(files=renderer.files(), dependencies=dependencies)
 
 
 def _wire(

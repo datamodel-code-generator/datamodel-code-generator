@@ -39,9 +39,10 @@ def client_typing_report(
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
             formatters=[Formatter.BUILTIN],
+            **case.get("model", {}),
         ),
         config=client_config(
-            {"output": "pets", "package": "pets", "model_package": "pets_models", **case["config"]}, root
+            {"output": "pets", "package": "pets", "model_package": "pets_models", **case.get("config", {})}, root
         ),
         generator=ClientTarget(),
     )
@@ -54,4 +55,35 @@ def client_typing_report(
     for sample in samples:
         marked = marked_lines(root / (name := f"{sample}_negative.py"))
         lines.extend((f"{name} {len(marked)} marked lines", *negative(root, name, marked)))
+    return "\n".join(lines) + "\n"
+
+
+def _generate_pets(source: Path, root: Path) -> None:
+    """Generate the Pydantic v2 `pets` package of one API version under a root, replacing the earlier version."""
+    generate_target(
+        shutil.copy2(source, root / "api.yaml"),
+        model_config=GenerateConfig(
+            output=root / "pets_models.py",
+            input_file_type="openapi",
+            target_python_version="3.11",
+            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            formatters=[Formatter.BUILTIN],
+        ),
+        config=client_config({"output": "pets", "package": "pets", "model_package": "pets_models"}, root),
+        generator=ClientTarget(),
+    )
+
+
+def client_regenerated_typing_report(root: Path) -> str:
+    """Check user code against the package of an API, then report what each checker finds once a later version is out.
+
+    The later version removes an operation the user code calls and renames a parameter it passes.
+    """
+    source = SOURCE / "regeneration"
+    _generate_pets(source / "v1.yaml", root)
+    shutil.copyfile(source / "extensions.py", root / "extensions.py")
+    lines = checked(root, ["pets", "extensions.py"], "v1 pets and extensions.py")
+    _generate_pets(source / "v2.yaml", root)
+    lines.extend(checked(root, ["extensions.py"], "v2 extensions.py"))
     return "\n".join(lines) + "\n"

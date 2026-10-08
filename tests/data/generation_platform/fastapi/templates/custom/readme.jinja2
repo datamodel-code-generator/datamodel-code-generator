@@ -1,5 +1,0 @@
-# {{ context.info.title }}
-
-{% for operation in context.operations -%}
-- `{{ operation.method.upper() }} {{ operation.path }}` is handled by `{{ operation.python_name }}`
-{% endfor %}

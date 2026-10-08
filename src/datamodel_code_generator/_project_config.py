@@ -127,6 +127,7 @@ _PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
     "input",
     "lockfile",
     "output",
+    "server_output",
 })
 
 _PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
@@ -140,6 +141,12 @@ _PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
     "import_overrides",
     "model_name_map",
     "serialization_aliases",
+    "server_body_modes",
+    "server_handler_modes",
+    "server_operation_names",
+    "server_parameter_names",
+    "server_primary_responses",
+    "server_router_names",
     "type_overrides",
     "validators",
 })

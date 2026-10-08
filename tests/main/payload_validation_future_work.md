@@ -19,9 +19,8 @@ source-valid witnesses for the cases classified after issue #4061:
   non-string types, and null-only aliases retain unrelated constraint metadata.
   Numeric schemas with date-time formats can generate string aliases with numeric
   bounds. These generator gaps need focused changes with output compatibility tests.
-- Bare Pydantic dataclass aliases cannot carry the model-level regex-engine config
-  needed by lookaround patterns. Pydantic before 2.5 also lacks the required regex
-  behavior and can warn while serializing enum dictionary keys.
+- Pydantic before 2.5 lacks the regex behavior needed by lookaround patterns and
+  can warn while serializing enum dictionary keys.
 
 These cases retain explicit backend or version-specific reasons. E2E tests generate
 the modules and verify the runtime failures, so an exclusion that becomes obsolete
@@ -184,9 +183,11 @@ Current Pydantic 2.0 compatibility fixes:
 Current version-specific exclusions:
 
 - Pydantic before 2.5.0 does not support generated `regex_engine="python-re"` for
-  lookaround pattern validators, so the Pydantic v2 BaseModel and dataclass
-  payload runtime matrices skip only the classified lookaround pattern cases
-  under older runtimes.
+  lookaround pattern validators, so the Pydantic v2 BaseModel payload runtime
+  matrix skips only the classified lookaround pattern cases under older runtimes.
+- Pydantic before 2.8.0 cannot validate the compiled lookaround patterns that
+  generated type aliases carry, so the Pydantic v2 dataclass payload runtime
+  matrix skips only the classified lookaround pattern cases under older runtimes.
 - Pydantic before 2.5.0 can reject schema-valid Decimal `multipleOf` values near
   float-originated boundaries, so only the classified Decimal `multipleOf` cases
   are skipped under older runtimes.

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from re import compile
 from typing import Annotated
 
 from pydantic import ConfigDict, Field, constr
@@ -13,16 +14,18 @@ from typing_extensions import TypeAliasType
 Doubled = TypeAliasType(
     "Doubled",
     Annotated[
-        constr(pattern=r'^(a)\1$'),
+        Annotated[str, Field(pattern=compile('^(a)\\1$'))],
         Field(..., description="Backreference only Python's regex engine supports."),
     ],
 )
 
 
-Lookahead = TypeAliasType("Lookahead", constr(pattern=r'^(?=.*[A-Z]).+$'))
+Lookahead = TypeAliasType(
+    "Lookahead", Annotated[str, Field(pattern=compile('^(?=.*[A-Z]).+$'))]
+)
 
 
-Plain = TypeAliasType("Plain", constr(pattern=r'^[a-z]+$'))
+Plain = TypeAliasType("Plain", Annotated[str, Field(pattern=r'^[a-z]+$')])
 
 
 @dataclass
@@ -35,7 +38,9 @@ class LookaheadHolder:
     code: Lookahead | None = None
 
 
-KeyHolder = TypeAliasType("KeyHolder", dict[constr(pattern=r'^(k)\1$'), int])
+KeyHolder = TypeAliasType(
+    "KeyHolder", dict[Annotated[str, Field(pattern=compile('^(k)\\1$'))], int]
+)
 
 
 @dataclass(config=ConfigDict(regex_engine="python-re"))

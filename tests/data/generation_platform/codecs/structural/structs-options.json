@@ -1,7 +1,7 @@
 {
   "backend": "msgspec.Struct",
   "package": "codec_structs_options",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "strategies": true,
   "options": {"use_standard_primitive_types": true,
               "extra_template_data": {"Batch": {"base_class_kwargs": {"array_like": true}},

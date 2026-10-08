@@ -3,7 +3,8 @@
   "package": "native_temporal_typeddict",
   "scopes": [
     "schemas",
-    "paths"
+    "paths",
+    "api"
   ],
   "options": {
     "use_standard_primitive_types": true,

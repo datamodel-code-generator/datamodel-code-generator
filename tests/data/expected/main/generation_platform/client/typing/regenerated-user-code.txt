@@ -1,0 +1,18 @@
+mypy v1 pets and extensions.py: clean
+pyright v1 pets and extensions.py: clean
+ty v1 pets and extensions.py: clean
+mypy v2 extensions.py:
+  extensions.py:15 call-arg
+  extensions.py:29 attr-defined
+pyright v2 extensions.py:
+  extensions.py:15 reportCallIssue
+  extensions.py:15 reportUnknownVariableType
+  extensions.py:16 reportUnknownMemberType
+  extensions.py:16 reportUnknownMemberType
+  extensions.py:16 reportUnknownVariableType
+  extensions.py:29 reportAttributeAccessIssue
+  extensions.py:29 reportUnknownMemberType
+  extensions.py:29 reportUnknownMemberType
+ty v2 extensions.py:
+  extensions.py:15 unknown-argument
+  extensions.py:29 unresolved-attribute

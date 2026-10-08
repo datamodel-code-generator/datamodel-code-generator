@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE error config selection: selection must be an OperationSelection

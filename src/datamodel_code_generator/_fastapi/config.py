@@ -1,35 +1,23 @@
-"""FastAPI server target settings and their flat TOML entries."""
+"""FastAPI server target settings."""
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
-from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
-from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
-    Converter,
     TargetConfig,
-    _array,  # pyright: ignore[reportPrivateUsage]
-    _boolean,  # pyright: ignore[reportPrivateUsage]
-    _ConfigValueError,  # pyright: ignore[reportPrivateUsage]
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
-    _operation,  # pyright: ignore[reportPrivateUsage]
-    _path,  # pyright: ignore[reportPrivateUsage]
-    _records,  # pyright: ignore[reportPrivateUsage]
-    _string,  # pyright: ignore[reportPrivateUsage]
-    _table,  # pyright: ignore[reportPrivateUsage]
 )
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
-    from datamodel_code_generator._fastapi.context import FastAPIHook
 
 Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
@@ -65,10 +53,6 @@ class FastAPIConfig(TargetConfig):
     operation_names: Mapping[OperationSelector, str] = field(default_factory=lambda: MappingProxyType({}))
     router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     parameter_names: Mapping[OperationSelector, Mapping[str, str]] = field(default_factory=lambda: MappingProxyType({}))
-    hooks: tuple[HookReference | FastAPIHook, ...] = ()
-    templates: Path | None = None
-
-    toml_converters: ClassVar[Mapping[str, Converter]]
 
     def __post_init__(self) -> None:
         """Freeze the given mappings, then reject values the server settings do not allow."""
@@ -98,15 +82,6 @@ class FastAPIConfig(TargetConfig):
         yield from _selector_problems(self.parameter_names, "parameter_names", _parameter_names)
         if not _router_names_valid(self.router_names):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
-        if self.templates is not None and not _is_path(self.templates):
-            yield _diagnostic("E_CONFIG_VALUE", "templates", "templates must be the path of a template directory")
-        if not _is_tuple(self.hooks):
-            yield _diagnostic("E_CONFIG_VALUE", "hooks", "hooks must be a tuple of hook references and callables")
-            return
-        for index, hook in enumerate(self.hooks):
-            if not (callable(hook) or _reference(hook)):
-                message = f"hooks[{index}] must be a callable, or a reference to one module or file and an identifier"
-                yield _diagnostic("E_CONFIG_VALUE", f"hooks[{index}]", message)
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
@@ -115,10 +90,6 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 def _is_bool(value: object) -> TypeIs[bool]:
     return isinstance(value, bool)
-
-
-def _is_path(value: object) -> TypeIs[Path]:
-    return isinstance(value, Path)
 
 
 def _frozen(value: object) -> object:
@@ -131,21 +102,6 @@ def _identifier(value: object) -> bool:
 
 def _router_names_valid(value: object) -> bool:
     return _is_mapping(value) and all(isinstance(key, str) and _identifier(name) for key, name in value.items())
-
-
-def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
-    return isinstance(value, tuple)
-
-
-def _reference(value: object) -> bool:
-    match value:
-        case HookReference(module=str() as module, file=None, callable=str() as name):
-            return all(part.isidentifier() for part in module.split(".")) and name.isidentifier()
-        case HookReference(module=None, file=Path(), callable=str() as name):
-            return name.isidentifier()
-        case _:
-            pass
-    return False
 
 
 def _response_choice(value: object) -> bool:
@@ -179,84 +135,3 @@ def _selector_problems(value: object, name: str, valid: Callable[[object], bool]
         if not isinstance(key, (str, OperationRef)) or not valid(item):
             yield _diagnostic("E_CONFIG_VALUE", name, f"{name} has an invalid entry")
             return
-
-
-def _selector_entries(
-    value: object, base: Path, option_path: str, keys: frozenset[str]
-) -> Iterator[tuple[OperationSelector, Mapping[str, object], str]]:
-    for index, item in enumerate(_array(value, option_path)):
-        at = f"{option_path}[{index}]"
-        table = _table(item, at, frozenset({"operation", *keys}))
-        yield _operation(table.get("operation"), base, f"{at}.operation"), table, at
-
-
-def _modes(value: object, base: Path, option_path: str) -> Mapping[OperationSelector, str]:
-    return {
-        selector: _string(table.get("mode"), base, f"{at}.mode")
-        for selector, table, at in _selector_entries(value, base, option_path, frozenset({"mode"}))
-    }
-
-
-def _primary_responses(value: object, base: Path, option_path: str) -> Mapping[OperationSelector, ResponseChoice]:
-    choices: dict[OperationSelector, ResponseChoice] = {}
-    for selector, table, at in _selector_entries(value, base, option_path, frozenset({"status_code", "media_type"})):
-        status = table.get("status_code")
-        if type(status) is not int:
-            option = f"{at}.status_code"
-            msg = f"{option} must be an integer"
-            raise _ConfigValueError(option, msg)
-        media = table.get("media_type")
-        choices[selector] = ResponseChoice(
-            status_code=status, media_type=None if media is None else _string(media, base, f"{at}.media_type")
-        )
-    return choices
-
-
-def _operation_names(value: object, base: Path, option_path: str) -> Mapping[OperationSelector, str]:
-    return {
-        selector: _string(table.get("name"), base, f"{at}.name")
-        for selector, table, at in _selector_entries(value, base, option_path, frozenset({"name"}))
-    }
-
-
-def _router_names(value: object, base: Path, option_path: str) -> Mapping[str, str]:
-    if not _is_mapping(value):
-        raise _ConfigValueError(option_path, f"{option_path} must be a table")
-    return {str(key): _string(name, base, f"{option_path}.{key}") for key, name in value.items()}
-
-
-def _parameter_name_entries(
-    value: object, base: Path, option_path: str
-) -> Mapping[OperationSelector, Mapping[str, str]]:
-    names: dict[OperationSelector, dict[str, str]] = {}
-    for selector, table, at in _selector_entries(value, base, option_path, frozenset({"parameter", "name"})):
-        names.setdefault(selector, {})[_string(table.get("parameter"), base, f"{at}.parameter")] = _string(
-            table.get("name"), base, f"{at}.name"
-        )
-    return names
-
-
-def _hook(value: object, base: Path, option_path: str) -> HookReference:
-    table = _table(value, option_path, frozenset({"module", "file", "callable"}))
-    module, file, name = table.get("module"), table.get("file"), table.get("callable")
-    return HookReference(
-        module=None if module is None else _string(module, base, f"{option_path}.module"),
-        file=None if file is None else _path(file, base, f"{option_path}.file"),
-        callable="transform" if name is None else _string(name, base, f"{option_path}.callable"),
-    )
-
-
-FastAPIConfig.toml_converters = MappingProxyType({
-    "layout": _string,
-    "handler_mode": _string,
-    "handler_modes": _modes,
-    "include_request": _boolean,
-    "body_mode": _string,
-    "body_modes": _modes,
-    "primary_responses": _primary_responses,
-    "operation_names": _operation_names,
-    "router_names": _router_names,
-    "parameter_names": _parameter_name_entries,
-    "hooks": _records(_hook),
-    "templates": _path,
-})

@@ -15254,12 +15254,12 @@ def test_main_lookaround_anyof_nullable_pydantic_v2(output_file: Path) -> None:
 
 @pytest.mark.benchmark
 def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass(output_file: Path) -> None:
-    """Lookaround reachable only through a referenced alias sets regex_engine on the dataclass.
+    """Lookaround reachable only through a referenced alias compiles in the alias.
 
-    The alias becomes a bare ``TypeAliasType`` that carries no config, so the consuming
-    pydantic v2 dataclass must emit ``ConfigDict(regex_engine="python-re")`` or fail to
-    import under pydantic's default rust regex engine. ``force_exec_validation`` proves the
-    generated module actually constructs.
+    The alias becomes a bare ``TypeAliasType`` that carries no config, so its pattern is a
+    compiled ``re.compile(...)`` value; the consuming dataclass keeps
+    ``ConfigDict(regex_engine="python-re")``. ``force_exec_validation`` proves the generated
+    module actually constructs.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
@@ -19251,6 +19251,197 @@ def test_main_allof_mro(output_file: Path) -> None:
         extra_args=[
             "--use-schema-description",
         ],
+    )
+
+
+ALLOF_INHERITANCE_ERRORS_PATH = JSON_SCHEMA_DATA_PATH / "allof_inheritance_errors"
+
+
+ALLOF_INHERITANCE_CYCLE_ERROR = (
+    "Generated model inheritance cycle: A (cycle.json#/$defs/A) -> B (cycle.json#/$defs/B) -> A (cycle.json#/$defs/A)\n"
+)
+
+
+ALLOF_INHERITANCE_MRO_ERROR = (
+    "Generated model E (mro_conflict.json#/$defs/E) has inconsistent method resolution order for generated bases "
+    "C (mro_conflict.json#/$defs/C), D (mro_conflict.json#/$defs/D).\n"
+)
+
+
+@pytest.mark.parametrize(
+    "output_model",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_allof_inheritance_cycle(output_model: str, output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject allOf references that would make generated classes inherit from each other."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=ALLOF_INHERITANCE_CYCLE_ERROR,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        ["--class-decorators", "@deprecated('A is deprecated.')"],
+        ["--additional-imports", "datetime.date"],
+        ["--custom-formatters", "tests.data.python.custom_formatters.add_comment"],
+        ["--custom-template-dir", str(DATA_PATH / "msgspec_inheritance" / "templates_other")],
+        ["--import-overrides", '{"Field": "pydantic.v1"}'],
+        ["--generate-schema-validators"],
+    ],
+    ids=[
+        "class-decorators",
+        "additional-imports",
+        "custom-formatters",
+        "other-template",
+        "import-overrides",
+        "validators",
+    ],
+)
+def test_main_allof_inheritance_cycle_with_output_options(
+    extra_args: list[str], output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Keep rejecting cycles when output options cannot change the emitted class bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=extra_args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=ALLOF_INHERITANCE_CYCLE_ERROR,
+        output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_cycle_custom_class_template(output_file: Path) -> None:
+    """Leave class bases to a custom class template that does not emit them."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--custom-template-dir",
+            str(DATA_PATH / "msgspec_inheritance" / "templates"),
+            "--additional-imports",
+            "msgspec.Struct",
+        ],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_cycle_custom_class_template.py",
+    )
+
+
+TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS = [
+    "--output-model-type",
+    "typing.TypedDict",
+    "--custom-template-dir",
+    str(DATA_PATH / "templates_typed_dict_flat_class"),
+    "--additional-imports",
+    "typing.TypedDict",
+]
+
+
+def test_main_allof_inheritance_cycle_custom_typed_dict_class_template(output_file: Path) -> None:
+    """Leave TypedDict bases to a custom class include that does not emit them."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS,
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_cycle_custom_typed_dict_class_template.py",
+    )
+
+
+def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template(output_dir: Path) -> None:
+    """Keep reused TypedDict models whose custom class include does not reference their bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "late_local_base",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS, "--reuse-model", "--reuse-scope", "tree"],
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "allof_inheritance_late_local_base_custom_typed_dict",
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "expected_stderr"),
+    [
+        ("pydantic_v2.BaseModel", ALLOF_INHERITANCE_MRO_ERROR),
+        ("pydantic_v2.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
+        ("dataclasses.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
+        ("msgspec.Struct", "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'.\n"),
+    ],
+)
+def test_main_allof_inheritance_mro_conflict(
+    output_model: str, expected_stderr: str, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject C(A, B), D(B, A), E(C, D) hierarchies that have no method resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+        output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_mro_conflict_typed_dict(output_file: Path) -> None:
+    """Keep TypedDict output, whose bases do not need a method resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "typing.TypedDict"],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_mro_conflict_typed_dict.py",
+    )
+
+
+def test_main_allof_inheritance_shared_joins(output_file: Path) -> None:
+    """Keep consistent hierarchies whose multiple-base models are reused by several subclasses."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "msgspec_inheritance" / "jsonschema_redundant_dag.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--target-python-version", "3.10"],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_shared_joins.py",
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_allof_inheritance_late_local_base(
+    output_model: str, output_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject a reused model placed before the local base it inherits from."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "late_local_base",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--reuse-model", "--reuse-scope", "tree"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model Child (z.json#) requires local base Base (z.json#/$defs/Base) before its definition.\n"
+        ),
+        output_should_not_exist=True,
     )
 
 

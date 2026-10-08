@@ -1,9 +1,4 @@
 {
   "defaults": {},
-  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models", "model_mode": "update", "formatters": ["black"], "formatter_settings": 5, "custom_formatters": ["not a module"], "custom_formatter_kwargs": ["width"], "encoding": "no-such-codec", "header": 5, "include_timestamp": "yes", "package_mode": "bundle"},
-  "selection-type": {"selection": null},
-  "selection-problems": {"selection": {"include_operations": "/paths/~1pets/get", "include_tags": ["pets", "pets"], "reason": " "}},
-  "standalone-missing": {"package_mode": "standalone", "package_version": " "},
-  "embedded-standalone-fields": {"package_version": "1.0.0", "distribution_name": "example-server", "model_dependency": "example-models"},
-  "standalone": {"package_mode": "standalone", "package_version": "1.0.0", "distribution_name": "example-server", "model_dependency": "example-models>=1"}
+  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models"}
 }

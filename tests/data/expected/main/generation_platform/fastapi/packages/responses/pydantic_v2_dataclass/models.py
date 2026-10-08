@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import conint
+from typing import Annotated
+
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -35,7 +37,9 @@ FieldCreatedPostResponse = TypeAliasType("FieldCreatedPostResponse", str)
 FieldCreatedPostResponse201LocationHeader = TypeAliasType("FieldCreatedPostResponse201LocationHeader", str)
 
 
-FieldCreatedPostResponse201XRateHeader = TypeAliasType("FieldCreatedPostResponse201XRateHeader", conint(ge=0))
+FieldCreatedPostResponse201XRateHeader = TypeAliasType(
+    "FieldCreatedPostResponse201XRateHeader", Annotated[int, Field(ge=0)]
+)
 
 
 FieldRangesGetResponse = TypeAliasType("FieldRangesGetResponse", str)

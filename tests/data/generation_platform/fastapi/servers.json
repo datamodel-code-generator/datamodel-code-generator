@@ -1064,11 +1064,34 @@
     "input": "services.yaml",
     "services": "customized",
     "config": {
-      "hooks": [
-        "rename",
-        "asynchronous"
-      ],
-      "templates": "templates/custom"
+      "handler_mode": "async",
+      "operation_names": [
+        [
+          "/paths/~1pets/get",
+          "handle_list_pets"
+        ],
+        [
+          "/paths/~1pets~1{petId}/delete",
+          "handle_delete_pet"
+        ],
+        [
+          "/paths/~1pets~1{petId}~1moves/post",
+          "handle_move_pet"
+        ],
+        [
+          "/paths/~1health/get",
+          "handle_get_health"
+        ]
+      ]
+    },
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it.",
+          "team": "the platform team"
+        }
+      }
     },
     "requests": [
       {
