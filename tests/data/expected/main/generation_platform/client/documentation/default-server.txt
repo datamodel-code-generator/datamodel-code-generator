@@ -126,29 +126,28 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
+removes the optional budget across attempts.
 
 | Setting | Effective default |
 |---|---|
-| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
-| total timeout | 60 seconds from logical-call entry |
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
 | retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
-phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
-Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-`Deadline.after(seconds, clock=...)` creates a deadline
-on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
+retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
+cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
+Native cancellation remains the original exception.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+
 
 ## Retry decisions and delays
 
