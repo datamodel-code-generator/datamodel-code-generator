@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeAlias, cast
 from urllib.parse import unquote_plus, urlsplit
 
 import httpx2
@@ -329,7 +329,10 @@ class _SessionWait(LogicalCallContext):
             self.deadline = limit
 
 
-class _ProtocolCore(Core[AdapterT, HandleT]):
+_ProtocolCoreBase: TypeAlias = Core[AdapterT, HandleT]
+
+
+class _ProtocolCore(_ProtocolCoreBase[AdapterT, HandleT]):
     """Prepare and restore helper requests using the ordinary client's encoding and resource ownership."""
 
     __slots__ = ()
