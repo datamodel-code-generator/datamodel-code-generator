@@ -13,7 +13,7 @@ import pytest
 from datamodel_code_generator import get_version
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
-from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args
+from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi"
@@ -39,6 +39,7 @@ UNSUPPORTED = (
 CONFLICT = "Error: --generate-server cannot be used with"
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
+REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -562,6 +563,30 @@ def test_fastapi_cli_usage(
         capsys=capsys,
         expected_stderr=f"Error: {message}\n",
         output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("case_name", REMOVED_OPTIONS)
+def test_fastapi_cli_removed_options(
+    case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse the removed reporting options as unknown options, before anything is generated."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    run_main_with_system_exit(
+        [
+            *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
+            *_server(*REMOVED_OPTIONS[case_name]),
+        ],
+        expected_code=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(EXPECTED / "cli" / "removed-options" / f"{case_name}.txt").read_text(
+            encoding="utf-8"
+        ),
+    )
+    assert_output(
+        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())),
+        EXPECTED / "cli" / "removed-options" / "files.txt",
     )
 
 
