@@ -10645,3 +10645,58 @@ def test_main_openapi_api_scope_parameter_type_aliases_modules(
         runtime_validation_model_name="Item",
         runtime_validation_data={"code": "ab", "alias": "abcd"},
     )
+
+
+@pytest.mark.parametrize(
+    ("output_name", "existing_output", "extra_args", "expected_exit", "expected_stdout"),
+    [
+        ("models.py", False, [], Exit.OK, "empty.txt"),
+        ("models.py", False, ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        ("models", False, ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        (None, False, ["--output-format", "json"], Exit.OK, "json_stdout.txt"),
+        ("models.py", True, ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        ("models.py", True, ["--check"], Exit.DIFF, "check_text.txt"),
+        ("models.py", True, ["--check", "--output-format", "json"], Exit.DIFF, "check_json.txt"),
+        (
+            "models.py",
+            False,
+            ["--diff-against", str(OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases.yaml")],
+            Exit.DIFF,
+            "input_diff_text.txt",
+        ),
+    ],
+)
+def test_main_openapi_api_scope_without_models(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    output_name: str | None,
+    existing_output: bool,
+    extra_args: list[str],
+    expected_exit: Exit,
+    expected_stdout: str,
+) -> None:
+    """Report an API scope run without models the same way in text and JSON output."""
+    expected_path = EXPECTED_OPENAPI_PATH / "api_scope_without_models"
+    output_path = tmp_path / (output_name or "models.py")
+    if existing_output:
+        output_path.write_text("outdated\n", encoding="utf-8")
+    run_main_with_args(
+        [
+            "--input",
+            str(OPEN_API_DATA_PATH / "api_scope_without_models.yaml"),
+            "--input-file-type",
+            "openapi",
+            "--openapi-scopes",
+            "api",
+            *(["--output", str(output_path)] if output_name else []),
+            *extra_args,
+        ],
+        expected_exit=expected_exit,
+    )
+    captured = capsys.readouterr()
+    assert_output(captured.out.replace(output_path.as_posix(), "<OUTPUT>"), expected_path / expected_stdout)
+    assert_output(captured.err, expected_path / "empty.txt")
+    assert_output(
+        output_path.read_text(encoding="utf-8") if output_path.is_file() else "",
+        expected_path / ("existing_output.txt" if existing_output else "empty.txt"),
+    )

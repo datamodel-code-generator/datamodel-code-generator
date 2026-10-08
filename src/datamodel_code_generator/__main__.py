@@ -1231,13 +1231,16 @@ def _compare_generated_single_file(
     from datamodel_code_generator._structured_output import CheckDifferencePayload  # noqa: PLC0415
 
     path = comparison.single_file_display_path or actual_output.as_posix()
-    if not actual_output.exists():
-        missing_kind, _, single_file_missing_message_suffix, _, _ = _output_comparison_policy(
-            input_diff=comparison.input_diff
+    if not (actual_exists := actual_output.exists()) or not generated_output.exists():
+        missing_kind, _, single_file_missing_message_suffix, extra_kind, extra_message_suffix = (
+            _output_comparison_policy(input_diff=comparison.input_diff)
         )
-        message = f"{missing_kind.upper()}: {path} ({single_file_missing_message_suffix})"
+        kind, message_suffix = (
+            (extra_kind, extra_message_suffix) if actual_exists else (missing_kind, single_file_missing_message_suffix)
+        )
+        message = f"{kind.upper()}: {path} ({message_suffix})"
         return OutputComparison(
-            differences=[CheckDifferencePayload(kind=missing_kind, path=path, message=message)],
+            differences=[CheckDifferencePayload(kind=kind, path=path, message=message)],
             content=f"{message}\n" if comparison.input_diff else message,
         )
 
@@ -1477,6 +1480,8 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
             shutil.copyfile(generated_file, target)
         return
 
+    if not generated_output.exists():
+        return
     actual_output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(generated_output, actual_output)
 
@@ -2931,10 +2936,10 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if writes_json_output_file and generate_output is not None and config.output is not None:
         _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
 
-    if generate_output is None and result is not None:
+    if generate_output is None and (result is not None or namespace.output_format == "json"):
         if (
             write_error := _write_generated_result(
-                result,
+                {} if result is None else result,
                 namespace.output_format,
                 fail_on_multi_module_stdout=namespace.fail_on_multi_module_stdout is True,
             )
