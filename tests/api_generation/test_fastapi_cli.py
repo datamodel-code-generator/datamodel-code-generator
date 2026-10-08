@@ -490,12 +490,12 @@ def test_fastapi_cli_check_after_generate(
     """Find nothing to change in a copy of a fresh generation, though its models were still staged when formatted.
 
     The copy also gives isort, which caches where it places a module per configuration, a configuration of its own.
+    Ruff reads the server directory's name as the package name while the server files are still staged.
     """
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
     monkeypatch.chdir(generated)
-    _copy(generated)
-    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
+    _copy(generated, "pyproject-ruff.toml")
     arguments = [
         *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
         *PYTHON,
@@ -1340,6 +1340,24 @@ def test_fastapi_cli_failures(
         expected_stderr_contains="RuntimeError: The formatter stopped\n",
         output_should_not_exist=True,
     )
+
+
+def test_fastapi_cli_ruff_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report what Ruff cannot fix in the server directory as an error, without publishing files."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--formatters", "ruff-check", output="my-server"),
+        copy_files=_inputs(tmp_path, "pyproject-ruff.toml"),
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+    )
+    message, _, command = capsys.readouterr().err.splitlines()[0].rpartition(": ")
+    assert_output(f"{message}\n{Path(command).name}\n", EXPECTED / "cli" / "ruff-failure.txt")
 
 
 @pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])

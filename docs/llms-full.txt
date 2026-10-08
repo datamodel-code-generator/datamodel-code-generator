@@ -11333,7 +11333,7 @@ work for them as well. See [Target Generation Options](cli-reference/target-gene
 
 `--server-handler-modes`, `--server-body-modes`, `--server-primary-responses`, `--server-operation-names`,
 `--server-router-names`, and `--server-parameter-names` take a JSON object, inline or as the path of a JSON file, as
-`--aliases` does; in `pyproject.toml` they are tables. `--generate-cli-command` does not yet print these tables as
+`--aliases` does; in `pyproject.toml` they are tables. `--generate-cli-command` prints these tables as
 JSON, as for the model options that take JSON objects. A value on the command line takes precedence over the
 selected profile, which takes precedence over the base table, and a command-line table replaces the whole table of
 `pyproject.toml`. An operation's own entry takes precedence over the global setting, wherever each comes from. Paths
