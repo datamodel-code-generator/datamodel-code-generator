@@ -2317,6 +2317,24 @@ def test_main_alias_generator_pydantic_v2(output_file: Path) -> None:
     )
 
 
+def test_main_alias_generator_keeps_camel_case_names(output_file: Path) -> None:
+    """Keep camelCase property names that `to_camel` returns unchanged, without a per-field alias."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_camel_case_names.py",
+        extra_args=[
+            "--alias-generator",
+            "to_camel",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+        ],
+    )
+
+
 def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Reject --alias-generator for non-Pydantic v2 output models."""
     run_main_with_args(

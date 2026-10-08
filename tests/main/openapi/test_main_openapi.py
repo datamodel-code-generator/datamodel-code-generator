@@ -4026,6 +4026,18 @@ def test_main_openapi_allof_required_inherited_model_references(
             ),
             id="pydantic-v2-dataclass-annotated-legacy-template",
         ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_alias_fallback",
+            ("--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-target-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_annotated_alias_fallback",
+            ("--use-annotated", "--field-constraints", "--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-annotated-target-2",
+        ),
     ],
 )
 def test_main_openapi_allof_required_inherited_dataclass_metadata(
@@ -4035,7 +4047,9 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
     additional_args: tuple[str, ...],
 ) -> None:
     """Preserve explicit field metadata and exact dataclass ordering across required overrides."""
-    runs = installed_pydantic_runs_target(None) or output_model_type != DataModelType.PydanticV2Dataclass.value
+    runs = output_model_type != DataModelType.PydanticV2Dataclass.value or installed_pydantic_runs_target(
+        "2" if "--target-pydantic-version" in additional_args else None
+    )
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_required_inherited_dataclass_metadata.yaml",
         output_path=output_file,
