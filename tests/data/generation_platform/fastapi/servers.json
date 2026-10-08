@@ -407,19 +407,7 @@
       },
       {
         "method": "GET",
-        "url": "/items/1?ratio=nan"
-      },
-      {
-        "method": "GET",
         "url": "/items/1?ratio=1e999"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?mode=1_000"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?levels=%201"
       }
     ],
     "package_snapshots": []

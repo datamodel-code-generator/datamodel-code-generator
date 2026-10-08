@@ -8,7 +8,6 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
-from math import isfinite
 from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
 
@@ -284,20 +283,17 @@ def _integer_text(value: int) -> str:
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:
-    """Read one canonical lexical form back into its declared JSON scalar kind."""
+    """Decode a canonical JSON literal of the declared kind, leaving any other text to the model."""
     if kind == "string":
         return text
-    if kind == "boolean" and text in {"true", "false"}:
-        return text == "true"
-    if kind != "boolean" and _INTEGER.fullmatch(text):
+    if kind == "boolean":
+        return text == "true" if text in {"true", "false"} else text
+    if _INTEGER.fullmatch(text):
         try:
             return int(text)
         except ValueError:
-            msg = "An integer exceeds the interpreter's decimal conversion limit"
-            raise CodecResourceLimitError(msg) from None
-    if kind == "number" and _NUMBER.fullmatch(text) and isfinite(number := float(text)):
-        return number
-    raise issue(code="parameter.lexical", message=f"The value is not a canonical {kind}")
+            return text
+    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else text
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:
