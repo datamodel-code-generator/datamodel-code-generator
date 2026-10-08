@@ -34,11 +34,11 @@ render
   11 runtime modules ['unchanged']
 {
   "files": {
-    "README.md": "sha256:a49c74c3a84b18ff069700c1e5263b5fe7264463c3ae043b4d090d24b9cdd132",
-    "__init__.py": "sha256:e9800951765c1338d57d02ec62573b3f578eada873bddeeacd37cb1bb8b0a9b3",
+    "README.md": "sha256:dbfd3649e80952ddb6f2874978f09ac49ec646acc59436e47a6cd52fd9621f18",
+    "__init__.py": "sha256:d14b8e60a9d6c51792bd88d48000bfd5bbfda33c45d37eaf49202f71033b0c0e",
     "_generated/__init__.py": "sha256:127bc60f3ef1e2ddd8b669ab9c7b3cb57de5934795098da506ec0a1575d1eb42",
     "_generated/contract.py": "sha256:23f807baaf4c995a04e853f8fc4f6173ab8d64b3d619bd2a19b55bbac3cf6450",
-    "application.py": "sha256:8f9ed0c1dbcafb16363263ef474dff112f7ca143991b9a1e6c0dcd2a4b52d848",
+    "application.py": "sha256:5947cf671e13630e3267e23e61a07063df54a543e07d668363c64d84dae097f7",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:94e9d794cb6a198e823fc5418d95ec05b141ce17bf15bb10b06ccba44a7a4e27",
     "routers/store.py": "sha256:c86bee72cec54a22fad3807d64a3403d3e3759adfe86a69903da2daf0ed40163",
