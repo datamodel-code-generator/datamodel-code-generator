@@ -52,7 +52,7 @@ render
 publish
 {
   "files": {
-    "README.md": "sha256:952dab90a1d8fa8264e1717d02c65bd05e31739e79e352d21415bd41bb915b86",
+    "README.md": "sha256:34645bc28e5f8002b0861d6c5e313b86b7ce6d1b6e3abf7dd0448fef03ba0e14",
     "__init__.py": "sha256:a64a7cb464f7f2a5ba1127d4f84df5a6c9a640b44973c08775bb089241309e62",
     "_generated/__init__.py": "sha256:a792d5739e3676bad9222272582e0d6ea9471f05a146f4aaedbb53569ebb3ad4",
     "_generated/contract.py": "sha256:c9b902b1e4e76ed2a0573415199a67166a270c27ca2943752a09a5627725d546",
