@@ -3029,7 +3029,7 @@ def test_output_format_json_writes_suffixless_file(
         input_path=DATA_PATH / "jsonschema" / "person.json",
         output_path=output_path,
         input_file_type="jsonschema",
-        extra_args=["--disable-timestamp", "--output-format", "json"],
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--output-format", "json"],
         assert_func=assert_file_content,
         expected_file="person.py",
     )
