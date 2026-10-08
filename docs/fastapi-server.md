@@ -58,6 +58,8 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
 `pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so the served document shows its
+schema as `anyOf` of the type and `null`.
 For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 
@@ -92,11 +94,13 @@ uv run uvicorn app:app
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
-`middleware`, to `FastAPI`, and looks every method up when it registers the routes, so a missing one raises
-`AttributeError` there; any object with the right methods works, and type checkers check it where you pass it.
-The package does not check signatures or settings again at run time: what a type checker would reject, such as a
-coroutine function for a synchronous operation, fails with Python's or FastAPI's own error, at the latest when the
-operation is first requested. The generated
+`middleware`, to `FastAPI`, and looks every method up when it registers the routes; any object with the right
+methods works, and type checkers check it where you pass it. Registration stops with an error for what would
+otherwise go wrong without one: a missing method (`AttributeError`), a coroutine function for an operation in the
+`sync` handler mode or a plain method for one in the `async` mode, a secured operation without a callable
+`authorize`, and an `operation_dependencies` entry that is not a sequence of `Depends(...)` (`TypeError`) or that
+names no method of the router (`ValueError`). The package does not check the arguments of a method: one whose
+signature a type checker would reject fails with Python's own error when its operation is requested. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
 
@@ -450,6 +454,12 @@ datamodel-codegen \
   --server-package server \
   --server-model-package models
 ```
+
+The values a role receives can change while server generation is experimental, and a value that an older copy of a
+builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
+compare an override with the current builtin template after an upgrade. `router.jinja2` receives one `route` for
+each operation: `adder`, `router`, `wiring`, `service`, `protocol`, `group`, `handler`, `lookup`, `principal`,
+`signature`, `body`, and `registration`.
 
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same

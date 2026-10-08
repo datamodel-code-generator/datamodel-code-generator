@@ -14,7 +14,7 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
-< 422 application/json [{"type": "enum", "loc": ["query", "kind", "str-enum[FieldPetsGetQueryKindParameter]"]}, {"type": "none_required", "loc": ["query", "kind", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /pets?limit=99
   list_pets(limit=99, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
@@ -54,9 +54,9 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
   list_pets(limit=2, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
-< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since", "datetime"]}, {"type": "none_required", "loc": ["query", "since", "none"]}]
+< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
 > GET /pets
-< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id", "uuid"]}, {"type": "none_required", "loc": ["header", "X-Request-Id", "none"]}]
+< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
   list_pets(limit=20, tags=['a b', 'c d'], kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
@@ -89,7 +89,7 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
-< 422 application/json [{"type": "enum", "loc": ["query", "kind", "str-enum[FieldPetsGetQueryKindParameter]"]}, {"type": "none_required", "loc": ["query", "kind", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /pets?limit=99
   list_pets(limit=99, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
@@ -129,9 +129,9 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
   list_pets(limit=2, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
-< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since", "datetime"]}, {"type": "none_required", "loc": ["query", "since", "none"]}]
+< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
 > GET /pets
-< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id", "uuid"]}, {"type": "none_required", "loc": ["header", "X-Request-Id", "none"]}]
+< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
   list_pets(limit=20, tags=['a b', 'c d'], kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]

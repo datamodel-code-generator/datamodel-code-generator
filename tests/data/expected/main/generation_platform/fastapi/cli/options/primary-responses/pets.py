@@ -12,14 +12,17 @@ from fastapi.responses import Response
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    list_pets_handler = pets.list_pets
+    list_pets_handler = checked(
+        pets.list_pets,
+        'The pets.list_pets method of GET /pets',
+    )
 
     def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
         return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
@@ -41,7 +44,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    create_pet_handler = pets.create_pet
+    create_pet_handler = checked(
+        pets.create_pet,
+        'The pets.create_pet method of POST /pets',
+    )
 
     def create_pet(
         *,
@@ -67,7 +73,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    replace_pet_handler = pets.replace_pet
+    replace_pet_handler = checked(
+        pets.replace_pet,
+        'The pets.replace_pet method of PUT /pets/{name}',
+    )
 
     def replace_pet(
         *,

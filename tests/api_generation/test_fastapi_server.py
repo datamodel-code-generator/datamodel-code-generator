@@ -33,6 +33,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "results",
         "security",
         "customized",
+        "locals",
+        "unauthorized",
         "variants",
         "variants-request-response",
         "variants-modular",

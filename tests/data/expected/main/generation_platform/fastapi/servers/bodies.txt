@@ -9,15 +9,15 @@ service UntaggedService without its methods: TypeError
   post_item(body=Item(name='a'))
 < 204 - b''
 > POST /items
-< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "Item", "extra"]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "extra"]}]
 > POST /items
 < 422 application/json [{"type": "json_invalid", "loc": ["body", 1]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
 > POST /accounts
 < 422 application/json [{"type": "missing", "loc": ["body", "id"]}]
 > POST /accounts
@@ -94,9 +94,9 @@ service UntaggedService without its methods: TypeError
   post_check(body=Check(code=12, scores=[1, 2]))
 < 204 - b''
 > POST /checks
-< 422 application/json [{"type": "int_parsing", "loc": ["body", "Check", "code"]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "code"]}]
 > POST /checks
-< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "Check", "scores", 1]}, {"type": "none_required", "loc": ["body", "none"]}]
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "scores", 1]}]
 > POST /checks
 < 400 application/json {"detail":"There was an error parsing the body"}
 > POST /items

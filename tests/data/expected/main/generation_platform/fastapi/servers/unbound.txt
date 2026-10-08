@@ -13,7 +13,7 @@ service UntaggedService without its methods: TypeError
 > GET /values/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}]
 > GET /values/7?at=invalid
-< 422 application/json [{"type": "datetime_from_date_parsing", "loc": ["query", "at", "datetime"]}, {"type": "none_required", "loc": ["query", "at", "none"]}]
+< 422 application/json [{"type": "datetime_from_date_parsing", "loc": ["query", "at"]}]
 serve pydantic_v2.dataclass
 service UntaggedService: get_value
 service UntaggedService without its methods: TypeError
@@ -28,4 +28,4 @@ service UntaggedService without its methods: TypeError
 > GET /values/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}]
 > GET /values/7?at=invalid
-< 422 application/json [{"type": "datetime_from_date_parsing", "loc": ["query", "at", "datetime"]}, {"type": "none_required", "loc": ["query", "at", "none"]}]
+< 422 application/json [{"type": "datetime_from_date_parsing", "loc": ["query", "at"]}]

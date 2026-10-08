@@ -15,18 +15,20 @@ import pydantic
 from fastapi import APIRouter, Body, Depends, Header, Path, Query, params
 from fastapi.responses import Response
 from pydantic import Field
-from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    list_pets_handler = pets.list_pets
+    list_pets_handler = checked(
+        pets.list_pets,
+        'The pets.list_pets method of GET /pets',
+    )
 
     def list_pets(
         *,
@@ -34,17 +36,15 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
             alias='limit',
             description='Page size.',
         )] = 20,
-        tags: Annotated[list[str] | SkipJsonSchema[None], Query(alias='tags')] = None,
-        kind: Annotated[models.FieldPetsGetQueryKindParameter | SkipJsonSchema[None], Query(
+        tags: Annotated[list[str] | None, Query(alias='tags')] = None,
+        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
             alias='kind',
         )] = None,
-        x_request_id: Annotated[uuid.UUID | SkipJsonSchema[None], Header(
+        x_request_id: Annotated[uuid.UUID | None, Header(
             alias='X-Request-Id',
             convert_underscores=False,
         )] = None,
-        since: Annotated[pydantic.AwareDatetime | SkipJsonSchema[None], Query(
-            alias='since',
-        )] = None,
+        since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
         parameters: Annotated[contract.ListPets.Parameters, Depends(contract.ListPets.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -82,7 +82,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    create_pet_handler = pets.create_pet
+    create_pet_handler = checked(
+        pets.create_pet,
+        'The pets.create_pet method of POST /pets',
+    )
 
     def create_pet(
         *,
@@ -107,7 +110,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    list_my_pets_handler = pets.list_my_pets
+    list_my_pets_handler = checked(
+        pets.list_my_pets,
+        'The pets.list_my_pets method of GET /pets/mine',
+    )
 
     def list_my_pets() -> object:
         return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
@@ -129,7 +135,10 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    get_pet_handler = pets.get_pet
+    get_pet_handler = checked(
+        pets.get_pet,
+        'The pets.get_pet method of GET /pets/{petId}',
+    )
 
     def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
         return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
@@ -152,7 +161,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
-    delete_pet_handler = pets.delete_pet
+    delete_pet_handler = checked(
+        pets.delete_pet,
+        'The pets.delete_pet method of DELETE /pets/{petId}',
+    )
 
     def delete_pet(
         *,

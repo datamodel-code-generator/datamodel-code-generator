@@ -1,3 +1,3 @@
-animal-server-cat: HTTP 422 {"detail":[{"type":"extra_forbidden","loc":["body","FieldAnimalsAnyPutRequestRequest","CatRequest","nick-name"],"msg":"Extra inputs are not permitted"},{"type":"missing","loc":["body","FieldAnimalsAnyPutRequestRequest","DogRequest","bark"],"msg":"Field required"},{"type":"none_required","loc":["body","none"],"msg":"Input should be None"}]}
+animal-server-cat: HTTP 422 {"detail":[{"type":"extra_forbidden","loc":["body","CatRequest","nick-name"],"msg":"Extra inputs are not permitted","input":"Tom"},{"type":"missing","loc":["body","DogRequest","bark"],"msg":"Field required","input":{"meow":true,"nick-name":"Tom"}}]}
 animal-any-decode-dog: native FieldAnimalsAnyPutRequestRequest(root=DogRequest(name=None, nick_name=None, bark=3)) set=['root'] json={"bark":3}
 animals-any-convert: native FieldAnimalsAnyPutRequestRequest(root=CatRequest(name=None, nick_name=None, meow=True)) set=['root'] json={"meow":true}

@@ -151,15 +151,18 @@
 -from fastapi.responses import Response
 +from fastapi import APIRouter, Body, Depends, Header, Query, params
  from pydantic import Field
- from pydantic.json_schema import SkipJsonSchema
  
-@@ -102,85 +101,11 @@
+ from .._generated import contract
+@@ -105,94 +104,11 @@
      )
  
  
 -def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
 -    pets: PetsService = wiring.services['pets']
--    list_my_pets_handler = pets.list_my_pets
+-    list_my_pets_handler = checked(
+-        pets.list_my_pets,
+-        'The pets.list_my_pets method of GET /pets/mine',
+-    )
 -
 -    def list_my_pets() -> object:
 -        return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
@@ -181,7 +184,10 @@
 -
 -def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
 -    pets: PetsService = wiring.services['pets']
--    get_pet_handler = pets.get_pet
+-    get_pet_handler = checked(
+-        pets.get_pet,
+-        'The pets.get_pet method of GET /pets/{petId}',
+-    )
 -
 -    def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
 -        return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
@@ -204,7 +210,10 @@
 -
 -def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
 -    pets: PetsService = wiring.services['pets']
--    delete_pet_handler = pets.delete_pet
+-    delete_pet_handler = checked(
+-        pets.delete_pet,
+-        'The pets.delete_pet method of DELETE /pets/{petId}',
+-    )
 -
 -    def delete_pet(
 -        *,

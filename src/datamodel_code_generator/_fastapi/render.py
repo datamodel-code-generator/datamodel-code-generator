@@ -142,6 +142,24 @@ def _unique(base: str, taken: Iterable[str]) -> str:
     return name
 
 
+def _route_names(spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
+    """Name what one route adder defines so that none equals the method, an argument, or another of its names."""
+    taken = {spec.python_name, *(argument.name for argument in spec.arguments)}
+    names: dict[str, str] = {}
+    for key, base in (
+        ("router", "router"),
+        ("wiring", "wiring"),
+        ("service", group.stem),
+        ("handler", f"{spec.python_name}_handler"),
+        ("principal", f"{spec.python_name}_principal"),
+        ("authorize", f"{spec.python_name}_authorize"),
+        ("record", "parameters"),
+    ):
+        taken.add(name := _unique(base, taken))
+        names[key] = name
+    return names
+
+
 def _items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
     return tuple(("", value) for value in values)
 
@@ -376,15 +394,21 @@ class ServerRenderer:  # noqa: PLR0904
         groups = () if group is None else (group,)
         services = [group.stem for group in groups]
         secured = any(group.secured for group in groups)
-        reserved = {"router", "wiring", *BUILDER_NAMES, *services}
-        for spec in operations:
+        reserved = {*BUILDER_NAMES, *services}
+        names = [] if group is None else [_route_names(spec, group) for spec in operations]
+        for spec, locals_ in zip(operations, names, strict=True):
             reserved.update((
                 spec.python_name,
                 f"_add_{spec.python_name}",
                 *(argument.name for argument in spec.arguments),
+                *locals_.values(),
             ))
         module = Module(reserved, self.symbols, level=level)
-        routes = [] if group is None else [self.route(module, spec, group) for spec in operations]
+        routes = (
+            []
+            if group is None
+            else [self.route(module, spec, group, locals_) for spec, locals_ in zip(operations, names, strict=True)]
+        )
         pairs = {
             templated: [
                 Group("(", (("", repr(spec.python_name)), ("", f"_add_{spec.python_name}")), ")")
@@ -412,14 +436,23 @@ class ServerRenderer:  # noqa: PLR0904
             imports=module.imports(),
         )
 
-    def route(self, module: Module, spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
+    def route(self, module: Module, spec: OperationSpec, group: GroupSpec, names: dict[str, str]) -> dict[str, str]:
         """Return the fragments of one operation's endpoint: service method lookup, signature, and handler call."""
         plan = f"{module.local('_generated', 'contract')}.{spec.pascal}"
-        names = {argument.name for argument in spec.arguments}
         service = module.local("services", group.service)
-        handler = _unique(f"{spec.python_name}_handler", {*names, group.stem})
-        principal = "" if spec.security is None else _unique(f"{spec.python_name}_principal", {*names, handler})
-        record = _unique("parameters", names)
+        handler, record = names["handler"], names["record"]
+        principal = "" if spec.security is None else names["principal"]
+        asynchronous = spec.mode == "async"
+        label = f"The {group.stem}.{spec.python_name} method of {spec.contract.method.upper()} {spec.contract.path}"
+        lookup = Group(
+            f"{module.local('_runtime.server.application', 'checked')}(",
+            (
+                ("", f"{names['service']}.{spec.python_name}"),
+                ("", repr(label)),
+                *((("asynchronous=", "True"),) if asynchronous else ()),
+            ),
+            ")",
+        )
         parameters: list[Doc] = [
             self.parameter(module, spec, argument, plan, principal)
             for argument in spec.arguments
@@ -428,7 +461,6 @@ class ServerRenderer:  # noqa: PLR0904
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             parameters.append(f"{record}: {annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]")
-        asynchronous = spec.mode == "async"
         signature = Group(
             f"{'async def' if asynchronous else 'def'} {spec.python_name}(",
             _items(("*", *parameters)) if parameters else (),
@@ -443,21 +475,26 @@ class ServerRenderer:  # noqa: PLR0904
         body = Group(f"return {dispatch}(", (("", call), ("", f"{plan}.RESPONSES")), ")")
         return {
             "adder": f"_add_{spec.python_name}",
+            "router": names["router"],
+            "wiring": names["wiring"],
             "handler": handler,
-            "service": group.stem,
+            "service": names["service"],
             "protocol": f"{service}[object]" if group.secured else service,
             "group": repr(group.stem),
-            "method": spec.python_name,
+            "lookup": layout(lookup, 4, len(f"{handler} = "), WIDTH),
             "name": repr(spec.python_name),
-            "principal": "" if not principal else self.principal(module, spec, principal),
+            "principal": "" if not principal else self.principal(module, spec, names),
             "key": repr(spec.key),
-            "registration": layout(self.registration(module, spec), 4, 0, WIDTH),
+            "registration": layout(self.registration(module, spec, names), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
 
-    def principal(self, module: Module, spec: OperationSpec, name: str) -> str:
-        """Return the dependency that authorizes an operation from the credentials of its schemes' dependencies."""
+    def principal(self, module: Module, spec: OperationSpec, locals_: dict[str, str]) -> str:
+        """Return the dependency that authorizes an operation from the credentials of its schemes' dependencies.
+
+        The authorize callback is taken from the wiring first, so a router without one fails as it registers.
+        """
         assert spec.security is not None
         requirements = spec.security.requirements
         scopes: dict[str, dict[str, None]] = {}
@@ -468,7 +505,8 @@ class ServerRenderer:  # noqa: PLR0904
         security = module.local("", "security")
         annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
         authenticate = module.local("_runtime.server.security", "authenticate")
-        taken = {"wiring", authenticate}
+        authorize = locals_["authorize"]
+        taken = {authorize, authenticate}
         names: dict[str, str] = {}
         parameters: list[Doc] = []
         for scheme, needed in scopes.items():
@@ -476,8 +514,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
             kind = _credential_type(module, schemes[scheme])
             parameters.append(f"{local}: {annotated}[{kind}, {depends}({arguments})]")
-        signature = Group(f"async def {name}(", _items(("*", *parameters)), ") -> object:")
-        credentials = Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")
+        signature = Group(f"async def {locals_['principal']}(", _items(("*", *parameters)), ") -> object:")
         challenge = ", ".join(
             dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
         )
@@ -485,13 +522,16 @@ class ServerRenderer:  # noqa: PLR0904
             f"return await {authenticate}(",
             (
                 ("", Group("(", _items(_requirement(item) for item in requirements), ")", ",")),
-                ("", credentials),
-                ("", "wiring.authorize"),
+                ("", Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")),
+                ("", authorize),
                 ("", repr(challenge)),
             ),
             ")",
         )
-        return f"{layout(signature, 4, 0, WIDTH)}\n        {layout(call, 8, 0, WIDTH)}"
+        return (
+            f"{authorize} = {locals_['wiring']}.authorizer()\n\n"
+            f"    {layout(signature, 4, 0, WIDTH)}\n        {layout(call, 8, 0, WIDTH)}"
+        )
 
     def security(self) -> str:
         """Return the security module: one overridable FastAPI dependency for each scheme the operations use."""
@@ -645,10 +685,10 @@ class ServerRenderer:  # noqa: PLR0904
         definitions = f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
-    def registration(self, module: Module, spec: OperationSpec) -> Group:
+    def registration(self, module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
         """Return the route registration of one operation, with what FastAPI cannot derive from the route documented."""
         assert self.docs is not None
-        return _registration(module, spec, self.docs)
+        return _registration(module, spec, self.docs, names)
 
     @staticmethod
     def operation_plan(module: Module, spec: OperationSpec) -> str:
@@ -723,7 +763,7 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
         keywords.append("convert_underscores=False")
     keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
     if field.default is Default.ABSENT:
-        parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
+        parts: tuple[str, ...] = (_none(module.annotation(field.type), field.type),)
         default = " = None"
     else:
         base, metadata = module.types.parts(field.type)
@@ -743,17 +783,15 @@ def _nullable(value: FinalPythonType | None) -> bool:
     return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
 
 
-def _none(module: Module, text: str, value: FinalPythonType | None) -> str:
-    """Return a runtime annotation that also takes None, which stays out of the served schema of a non-nullable type."""
-    if _nullable(value):
-        return text
-    return f"{text} | {module.name('pydantic.json_schema', 'SkipJsonSchema')}[None]"
+def _none(text: str, value: FinalPythonType | None) -> str:
+    """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
+    return text if _nullable(value) else f"{text} | None"
 
 
 def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
     value = None if media.use is None else media.use.type
     text = module.name("typing", "Any") if value is None else module.annotation(value)
-    return text if required else _none(module, text, value)
+    return text if required else _none(text, value)
 
 
 def _adapter(module: Module, value: FinalPythonType) -> str:
@@ -829,7 +867,7 @@ def _body_adapter(module: Module, body: BodySpec) -> Group:
     return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
-def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> Group:
+def _registration(module: Module, spec: OperationSpec, docs: Documentation, names: dict[str, str]) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     items: list[tuple[str, Doc]] = [
@@ -866,8 +904,8 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> G
         items.append(("responses=", _responses(module, spec, responses)))
     if extra := docs.openapi_extra(spec):
         items.append(("openapi_extra=", _json_literal(extra)))
-    items.append(("dependencies=", f"wiring.dependencies.get({spec.python_name!r})"))
-    return Group("router.add_api_route(", tuple(items), ")")
+    items.append(("dependencies=", f"{names['wiring']}.dependencies.get({spec.python_name!r})"))
+    return Group(f"{names['router']}.add_api_route(", tuple(items), ")")
 
 
 def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
