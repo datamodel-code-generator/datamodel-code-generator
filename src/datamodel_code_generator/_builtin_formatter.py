@@ -787,6 +787,10 @@ def _is_list_of_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "list") and _is_annotated(node.slice)
 
 
+def _is_string_constant(node: ast.AST) -> TypeGuard[ast.Constant]:
+    return isinstance(node, ast.Constant) and isinstance(node.value, str)
+
+
 def _is_union(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Union")
 
@@ -1498,7 +1502,7 @@ def _format_type_alias_type_call(call: ast.Call, indent: str, line_length: int, 
     can_inline_type_alias_arguments = (
         len(call.args) == TYPE_ALIAS_INLINE_ARGUMENT_COUNT
         and not call.keywords
-        and (_is_annotated(call.args[1]) or _is_union(call.args[1]))
+        and (_is_annotated(call.args[1]) or _is_union(call.args[1]) or _is_string_constant(call.args[1]))
         and "\n" not in inline_arguments
     )
     if can_inline_type_alias_arguments and len(f"{continuation_indent}{inline_arguments}") <= line_length:
@@ -1683,8 +1687,8 @@ def _format_generated_module_statement(  # noqa: PLR0911
             _is_union(argument)
             and (len(line) > line_length or argument.lineno != (argument.end_lineno or argument.lineno))
         )
-        or (_is_annotated(argument) and len(line) > line_length)
-        for argument in statement.value.args
+        or ((_is_annotated(argument) or _is_string_constant(argument)) and len(line) > line_length)
+        for argument in statement.value.args[1:]
     ):
         return None
     if len(line) <= line_length and statement.lineno == (statement.end_lineno or statement.lineno):
