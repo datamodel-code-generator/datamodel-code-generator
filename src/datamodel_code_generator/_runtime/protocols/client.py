@@ -5,16 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING, TypeAlias, cast
+from typing import TYPE_CHECKING, cast
 from urllib.parse import unquote_plus, urlsplit
 
 import httpx2
 
+from ..client import client as native_core
+from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import (
-    AdapterT,
     Call,
-    Core,
-    HandleT,
     R,
     ReceivedBody,
     T,
@@ -27,7 +26,6 @@ from ..client.client import (
     request_decode_error,
     strip_credentials,
 )
-from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
 from ..client.errors import (
     APIConnectionError,
@@ -329,10 +327,7 @@ class _SessionWait(LogicalCallContext):
             self.deadline = limit
 
 
-_ProtocolCoreBase: TypeAlias = Core[AdapterT, HandleT]
-
-
-class _ProtocolCore(_ProtocolCoreBase[AdapterT, HandleT]):
+class _ProtocolCore(native_core.Core[native_core.AdapterT, native_core.HandleT]):
     """Prepare and restore helper requests using the ordinary client's encoding and resource ownership."""
 
     __slots__ = ()
@@ -680,7 +675,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
     @classmethod
     def from_client(cls, core: NativeClientCore) -> ClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return core.helper_view(cls)
+        return native_core.Core.helper_view(core, cls)
 
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
@@ -853,7 +848,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
     @classmethod
     def from_client(cls, core: NativeAsyncClientCore) -> AsyncClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return core.helper_view(cls)
+        return native_core.Core.helper_view(core, cls)
 
     async def execute_page(  # ruff: ignore[too-many-arguments]
         self,
