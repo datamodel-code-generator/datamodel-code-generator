@@ -875,8 +875,9 @@ class DataModelField(_PydanticBaseDataModelField):
 
     def _alias_generator_renames(self, name: str) -> bool:
         """Return whether the parent's alias generator serializes a field of this name under another one."""
-        generator_name = self._alias_generator_name_from_parent()
-        return generator_name is not None and _generate_alias(generator_name, name) != name
+        return (generator_name := self._alias_generator_name_from_parent()) is not None and (
+            _generate_alias(generator_name, name) != name
+        )
 
     def _automatic_alias_disabled_for_alias_generator(self) -> bool:
         if self.parent is None:
