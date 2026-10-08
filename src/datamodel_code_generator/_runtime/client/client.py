@@ -142,13 +142,12 @@ if TYPE_CHECKING:
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .body_sources import AsyncBodyBindings, AsyncBodySource, BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
-    from .logical import OperationSession
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ParameterSpec, ServerPlan
     from .options import ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
-    from .timing import Clock, Deadline
+    from .timing import Clock
     from .urls import Origin
 
 T = TypeVar("T")
@@ -1101,22 +1100,10 @@ class Core(Generic[AdapterT, HandleT]):
         """Return the clock that times this client's calls and helper sessions."""
         return self._settings.clock
 
-    @staticmethod
-    def _new_call(
-        settings: Settings,
-        operation: OperationPlan[object],
-        session: OperationSession | None = None,  # noqa: ARG004
-        bound: Deadline | None = None,  # noqa: ARG004
-    ) -> Call:
-        """Create an ordinary call; helper clients bind their child calls to a session."""
-        return Call(settings, operation)
-
-    def _raw_call(
-        self, operation: OperationPlan[object], options: RequestOptions | None, session: OperationSession | None
-    ) -> Call:
-        """Return the state of a raw call, a child of the helper session that gives one."""
-        settings = self._call_settings(options, operation.operation_id)
-        call = self._new_call(settings, operation, session)
+    def _raw_call(self, operation: OperationPlan[object], options: RequestOptions | None, call: Call | None) -> Call:
+        """Prepare an ordinary raw call or retain the helper's prepared call."""
+        if call is None:
+            call = Call(self._call_settings(options, operation.operation_id), operation)
         call.raw_response = True
         return call
 
@@ -1604,16 +1591,10 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         media_type: str | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | None = None,
-        session: OperationSession | None = None,
-        deadline: Deadline | None = None,
     ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy.
-
-        A helper's call passes its session, and any deadline of its own: the call is a child of the session, and a
-        deadline without a session is ignored.
-        """
+        """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
-        call = self._new_call(settings, operation, session, deadline)
+        call = Call(settings, operation)
         events = call.events = self._started(call, operation.path)
         decoder = operation.responses
 
@@ -1666,14 +1647,14 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | None = None,
         stream: bool = False,
-        session: OperationSession | None = None,
+        _call: Call | None = None,
     ) -> RawResponse:
         """Execute one encoded logical call through its retry and redirect policy.
 
-        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
-        of the response media type raises the call's typed failure before the stream is handed over.
+        A helper supplies its prepared call. A response other than a declared success of the response media type
+        raises the call's typed failure before the stream is handed over.
         """
-        call = self._raw_call(operation, options, session)
+        call = self._raw_call(operation, options, _call)
         call.handing_off = stream
         events = call.events = self._started(call, operation.path)
         decoder = operation.responses
@@ -1702,9 +1683,9 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive)
             call.check("send")
-            if _auth_failed(call) or session is not None:
+            if _auth_failed(call) or _call is not None:
                 result.raise_for_status()
-            if session is not None:
+            if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
                 events.finish(UNSET, handed_off=stream)
@@ -2337,16 +2318,10 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         media_type: str | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | None = None,
-        session: OperationSession | None = None,
-        deadline: Deadline | None = None,
     ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy.
-
-        A helper's call passes its session, and any deadline of its own: the call is a child of the session, and a
-        deadline without a session is ignored.
-        """
+        """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
-        call = self._new_call(settings, operation, session, deadline)
+        call = Call(settings, operation)
         events = call.events = await self._started(call, operation.path)
         decoder = operation.responses
 
@@ -2399,14 +2374,14 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | None = None,
         stream: bool = False,
-        session: OperationSession | None = None,
+        _call: Call | None = None,
     ) -> AsyncRawResponse:
         """Execute one encoded logical call through its retry and redirect policy.
 
-        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
-        of the response media type raises the call's typed failure before the stream is handed over.
+        A helper supplies its prepared call. A response other than a declared success of the response media type
+        raises the call's typed failure before the stream is handed over.
         """
-        call = self._raw_call(operation, options, session)
+        call = self._raw_call(operation, options, _call)
         call.handing_off = stream
         events = call.events = await self._started(call, operation.path)
         decoder = operation.responses
@@ -2437,9 +2412,9 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
-            if _auth_failed(call) or session is not None:
+            if _auth_failed(call) or _call is not None:
                 await result.raise_for_status()
-            if session is not None:
+            if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
                 await events.afinish(UNSET, handed_off=stream)

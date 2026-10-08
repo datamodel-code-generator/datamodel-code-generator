@@ -332,14 +332,11 @@ class _ProtocolCore(native_core.Core[native_core.AdapterT, native_core.HandleT])
 
     __slots__ = ()
 
-    @staticmethod
-    def _new_call(
-        settings: Settings,
-        operation: OperationPlan[object],
-        session: OperationSession | None = None,
-        bound: Deadline | None = None,
+    def stream_call(
+        self, operation: OperationPlan[object], options: RequestOptions | None, session: OperationSession
     ) -> Call:
-        return Call(settings, operation) if session is None else _SessionCall(settings, operation, session, bound)
+        """Bind a stream's child call to its helper session before native execution."""
+        return _SessionCall(self._call_settings(options, operation.operation_id), operation, session)
 
     def fixes_key(self, options: RequestOptions | None) -> bool:
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
@@ -675,7 +672,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
     @classmethod
     def from_client(cls, core: NativeClientCore) -> ClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return native_core.ClientCore.helper_view(core, cls)
+        return core.helper_view(cls)
 
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
@@ -848,7 +845,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
     @classmethod
     def from_client(cls, core: NativeAsyncClientCore) -> AsyncClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return native_core.AsyncClientCore.helper_view(core, cls)
+        return core.helper_view(cls)
 
     async def execute_page(  # ruff: ignore[too-many-arguments]
         self,

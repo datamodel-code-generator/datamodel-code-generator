@@ -1565,7 +1565,7 @@ def _sent(  # noqa: PLR0913, PLR0917
         options=limits.options,
         response_media_type=media,
         stream=True,
-        session=session,
+        _call=core.stream_call(call, limits.options, session),
     )
 
 
@@ -1587,7 +1587,7 @@ async def _asent(  # noqa: PLR0913, PLR0917
         options=limits.options,
         response_media_type=media,
         stream=True,
-        session=session,
+        _call=core.stream_call(call, limits.options, session),
     )
 
 
