@@ -1596,7 +1596,10 @@ def test_fastapi_cli_options(
 def test_fastapi_cli_failures(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report an unresolved reference and an unexpected formatter failure without publishing files."""
+    """Report an unresolved reference and an unexpected formatter failure without publishing files.
+
+    The traceback of the unexpected failure ends with a blank line, as the model CLI prints it.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("broken.yaml"),
@@ -1619,7 +1622,7 @@ def test_fastapi_cli_failures(
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="RuntimeError: The formatter stopped\n",
+        expected_stderr_contains="RuntimeError: The formatter stopped\n\n",
         output_should_not_exist=True,
     )
 
