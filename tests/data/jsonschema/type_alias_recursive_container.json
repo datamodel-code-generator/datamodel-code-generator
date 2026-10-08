@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "#/$defs/JsonValue"},
+    "branch": {"$ref": "#/$defs/Branch"},
+    "nested": {"$ref": "#/$defs/Nested"},
+    "quoted": {"$ref": "#/$defs/Quoted"}
+  },
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "number"},
+        {"type": "boolean"},
+        {"type": "null"},
+        {"type": "array", "items": {"$ref": "#/$defs/JsonValue"}},
+        {"type": "object", "additionalProperties": {"$ref": "#/$defs/JsonValue"}}
+      ]
+    },
+    "Branch": {
+      "anyOf": [
+        {"$ref": "#/$defs/Leaf"},
+        {"type": "array", "items": {"$ref": "#/$defs/Branch"}}
+      ]
+    },
+    "Leaf": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "required": ["name"]
+    },
+    "Nested": {
+      "description": "Nested integer lists",
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"$ref": "#/$defs/Nested"}}
+      ]
+    },
+    "Quoted": {
+      "anyOf": [
+        {"enum": ["it's", "\\d"]},
+        {"type": "array", "items": {"$ref": "#/$defs/Quoted"}}
+      ]
+    }
+  }
+}

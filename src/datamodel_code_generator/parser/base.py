@@ -4990,6 +4990,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for field in model.fields:
                 if not process_all_fields and not field.requires_immediate_forward_reference_resolution:
                     continue
+                quote = "" if field.defers_recursive_type_hint else '"'
                 for data_type in field.data_type.all_data_types:
                     if not data_type.reference:
                         continue
@@ -5003,7 +5004,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     name = data_type.reference.short_name
                     source_index = model_index.get(name)
                     if source_index is not None and source_index >= i:
-                        data_type.alias = f'"{name}"'
+                        data_type.alias = f"{quote}{name}{quote}"
                         cls.__disable_union_operator_for_forward_ref(data_type)
                         has_aliased_forward_ref = True
 

@@ -241,6 +241,27 @@ class _TypingImportRequirements:
         return tuple(imports)
 
 
+def _references_only_through_containers(data_type: DataType, path: str, *, in_container: bool = False) -> bool | None:
+    """Return whether every reference to ``path`` is a container item, or None without any reference."""
+    in_container = in_container or any((
+        data_type.is_list,
+        data_type.is_dict,
+        data_type.is_set,
+        data_type.is_frozen_set,
+        data_type.is_mapping,
+        data_type.is_sequence,
+        data_type.is_tuple,
+    ))
+    result = in_container if data_type.reference and data_type.reference.path == path else None
+    for child in (*data_type.data_types, *((data_type.dict_key,) if data_type.dict_key else ())):
+        match _references_only_through_containers(child, path, in_container=in_container):
+            case False:
+                return False
+            case True:
+                result = True
+    return result
+
+
 @lru_cache(maxsize=1024)
 def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
     if annotation in _TYPING_IMPORT_NAMES:
@@ -690,9 +711,20 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return self.data_type.use_union_operator
 
     @property
+    def defers_recursive_type_hint(self) -> bool:
+        """Whether the type hint is one forward reference because it recurses into its alias."""
+        parent = self.parent
+        if parent is None or not parent.DEFERS_RECURSIVE_TYPE_HINT or parent.reference is None:
+            return False
+        return _references_only_through_containers(self.data_type, parent.reference.path) is True
+
+    @property
     def type_hint(self) -> str:
         """Get the type hint string for this field, including nullability."""
-        return self._type_hint_from_data_type(self.data_type)
+        type_hint = self._type_hint_from_data_type(self.data_type)
+        if not self.defers_recursive_type_hint:
+            return type_hint
+        return repr(type_hint) if '"' in type_hint or "\\" in type_hint else f'"{type_hint}"'
 
     def _type_hint_from_data_type(self, data_type: DataType) -> str:  # noqa: PLR0911
         """Get the type hint string for a field data type, including nullability."""
@@ -1870,6 +1902,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     IS_ALIAS: ClassVar[bool] = False
     IS_ROOT_MODEL: ClassVar[bool] = False
+    DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(

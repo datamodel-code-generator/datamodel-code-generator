@@ -11750,6 +11750,40 @@ def test_main_jsonschema_type_alias_py312(output_file: Path) -> None:
     )
 
 
+@pytest.mark.skipif(
+    int(black.__version__.split(".")[0]) < 23,
+    reason="Installed black doesn't support the new 'type' statement",
+)
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        ("3.10", "type_alias_recursive_container.py"),
+        ("3.12", "type_alias_recursive_container_py312.py"),
+    ],
+)
+def test_main_jsonschema_type_alias_recursive_container(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Quote a TypeAliasType value as a whole when it recurses into its own alias."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--use-type-alias",
+            "--target-python-version",
+            target_python_version,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--enum-field-as-literal",
+            "all",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-type-alias-type"],
     option_description="""Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).
