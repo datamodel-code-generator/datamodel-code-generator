@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least, _pydantic_version_key
@@ -20,6 +21,7 @@ PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM: Final = "2.10"
 PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM: Final = "2.10"
 
 
+@cache
 def target_supports(target_version: TargetPydanticVersion | str | None, minimum: str) -> bool:
     """Return whether the target allows a feature form added in ``minimum``; unset allows the newest forms."""
     return _is_pydantic_version_at_least(
