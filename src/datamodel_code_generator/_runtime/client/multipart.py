@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, plain
+from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, typed
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
     from typing import Any, Protocol
 
-    from ..model_codecs.media import JSONValue
+    from ..model_codecs.media import JSONValue, LexicalKind
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
 
     class PartCodec(Protocol):
@@ -884,7 +884,7 @@ def _json_part(part: DecodedPart[bytes]) -> bool:
 def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:
     if kind == "json" or _json_part(part):
         return json_value(part.value)
-    return part.value.decode(charset(part.content_type or ""))
+    return typed(part.value.decode(charset(part.content_type or "")), kind)
 
 
 def decode_parts(
@@ -894,13 +894,16 @@ def decode_parts(
     declared = {plan.name: plan for plan in plans}
     result: dict[str, JSONValue] = {}
     for part in parts:
-        if part.name is None or (plan := declared.get(part.name, additional)) is None:
-            raise issue(code="multipart.undeclared", message="A form-data part is not declared")
-        value = plain(_part_value(part, plan.kind))
+        if part.name is None:
+            raise issue(code="multipart.undeclared", message="A form-data part has no name")
+        plan = declared.get(part.name, additional)
+        value = _part_value(part, "string" if plan is None else plan.kind)
         if part.name not in result:
-            result[part.name] = [value] if plan.repeated else value
-        elif plan.repeated:
+            result[part.name] = [value] if plan is not None and plan.repeated else value
+        elif plan is not None and plan.repeated:
             cast("list[JSONValue]", result[part.name]).append(value)
+        elif part.name not in declared:
+            result[part.name] = value
         else:
             raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
     return result
@@ -967,9 +970,9 @@ def file_part(
     return PartDecoder(name, _content, repeated=repeated, required=required, excluded=excluded)
 
 
-def _part_text(part: DecodedPart[bytes]) -> str:
+def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONValue:
     try:
-        return part.value.decode(charset(part.content_type or ""))
+        return typed(part.value.decode(charset(part.content_type or "")), kind)
     except ValueError as error:
         raise PartSyntaxError(error) from None
 
@@ -978,7 +981,7 @@ def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> 
     try:
         if kind == "json" or _json_part(part):
             return codec.decode(part.value)
-        return codec.convert(_part_text(part))
+        return codec.convert(_part_text(part, kind))
     except codec.errors as error:
         if codec.malformed(error):
             raise PartSyntaxError(error) from None
