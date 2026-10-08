@@ -178,6 +178,21 @@
       {"render": {}}
     ]
   },
+  "mount-points": {
+    "input": {"path": "modular.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "models", "lockfile": "remote.lock", "update_lock": true},
+    "steps": [
+      {"mkdir": "models"},
+      {"mkdir": "server"},
+      {"generate": {}},
+      {"leftovers": null},
+      {"write": ["server/services.py", "# Edited.\n"]},
+      {"write": ["models/pets.py", "# Edited.\n"]},
+      {"generate": {}},
+      {"leftovers": null},
+      {"render": {}}
+    ]
+  },
   "publish-lock": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "lockfile": "locks/remote.lock", "update_lock": true},
@@ -219,6 +234,7 @@
       {"generate": {}},
       {"generate": {"input": {"path": "contacts.yaml"}}},
       {"tree": null},
+      {"leftovers": null},
       {"render": {}}
     ]
   },

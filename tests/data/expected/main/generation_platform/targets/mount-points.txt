@@ -1,12 +1,12 @@
-# publish-failure
-generate
-  OSError: No space left on device
-tree
+# mount-points
+mkdir models
+mkdir server
 generate
   returned None
 tree
-  meta/models.json
-  models.py
+  models/__init__.py
+  models/pets.py
+  models/store.py
   remote.lock
   server/README.md
   server/__init__.py
@@ -16,16 +16,18 @@ tree
   server/errors.py
   server/py.typed
   server/routers/__init__.py
-  server/routers/pets.py
   server/routers/store.py
-  server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
+leftovers []
+write server/services.py
+write models/pets.py
 generate
-  OSError: No space left on device
+  returned None
 tree
-  meta/models.json
-  models.py
+  models/__init__.py
+  models/pets.py
+  models/store.py
   remote.lock
   server/README.md
   server/__init__.py
@@ -35,28 +37,24 @@ tree
   server/errors.py
   server/py.typed
   server/routers/__init__.py
-  server/routers/pets.py
   server/routers/store.py
-  server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
 leftovers []
 render
   target=fastapi schema_version=1
-  unchanged model models.py
+  unchanged model models/__init__.py
+  unchanged model models/pets.py
+  unchanged model models/store.py
   unchanged target server/__init__.py
   unchanged target server/application.py
   unchanged target server/routers/__init__.py
-  unchanged target server/routers/pets.py
   unchanged target server/routers/store.py
-  unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
   unchanged target server/errors.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  unchanged model_metadata meta/models.json
   unchanged remote_lock remote.lock
-  13 runtime modules ['unchanged']
-staged lock updates discarded: 1
+  11 runtime modules ['unchanged']
