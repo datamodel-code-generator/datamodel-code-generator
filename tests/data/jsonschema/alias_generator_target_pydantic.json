@@ -23,6 +23,12 @@
     },
     "owner": {
       "$ref": "#/definitions/Owner"
+    },
+    "tags": {
+      "$ref": "#/definitions/Tags"
+    },
+    "nick_name": {
+      "$ref": "#/definitions/NickName"
     }
   },
   "required": [
@@ -43,6 +49,16 @@
       "required": [
         "displayName"
       ]
+    },
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "NickName": {
+      "type": "string"
     }
   }
 }

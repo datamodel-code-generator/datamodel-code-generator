@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.alias_generators import to_camel
 
 
@@ -15,6 +15,14 @@ class Owner(BaseModel):
     )
     displayName: str
     owner_id: int | None = Field(None, alias='owner_id')
+
+
+class Tags(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
+
+
+class NickName(RootModel[str]):
+    root: str
 
 
 class Account(BaseModel):
@@ -29,3 +37,5 @@ class Account(BaseModel):
     HTTPResponse: int | None = Field(None, alias='HTTPResponse')
     kebab_case: str | None = Field(None, alias='kebab-case')
     owner: Owner | None = None
+    tags: Tags | None = None
+    nick_name: NickName | None = Field(None, alias='nick_name')

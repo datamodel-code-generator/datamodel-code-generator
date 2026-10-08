@@ -2340,7 +2340,7 @@ def test_main_alias_generator_keeps_camel_case_names(output_file: Path) -> None:
 def test_main_alias_generator_target_pydantic_version(
     output_file: Path, alias_generator: str, target_pydantic_version: str | None
 ) -> None:
-    """Pin every field alias for --target-pydantic-version 2 so aliases never depend on the runtime generator."""
+    """Pin every model field alias for --target-pydantic-version 2, leaving RootModel roots without one."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_target_pydantic.json",
         output_path=output_file,
@@ -2363,6 +2363,25 @@ def test_main_alias_generator_target_pydantic_version(
             model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
             EXPECTED_JSON_SCHEMA_PATH / "alias_generator_target_pydantic" / "round_trip.txt",
         )
+
+
+def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Path) -> None:
+    """Keep an enum-only module unchanged for --target-pydantic-version 2: enum members take no alias or Field."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "oneof_const_enum.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="oneof_const_enum.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
 
 
 @pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])

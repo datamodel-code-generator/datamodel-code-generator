@@ -8,5 +8,10 @@
   "owner": {
     "displayName": "Babbage",
     "owner_id": 7
-  }
+  },
+  "tags": [
+    "engine",
+    "notes"
+  ],
+  "nick_name": "Countess"
 }
