@@ -962,6 +962,36 @@ def test_main_modular_reuse_model(output_dir: Path) -> None:
         )
 
 
+def test_main_modular_allof_inheritance_mro_conflict(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject an inconsistent method resolution order across generated modules."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_inheritance_modular_mro_conflict.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model E (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/top.E) has "
+            "inconsistent method resolution order for generated bases "
+            "C (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.C), "
+            "D (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.D).\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_main_modular_allof_inheritance_import_override(output_dir: Path) -> None:
+    """Leave a base imported from an overriding module out of the generated hierarchy."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_inheritance_modular_mro_conflict.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--import-overrides", '{"D": "external.models"}'],
+        expected_directory=EXPECTED_OPENAPI_PATH / "allof_inheritance_modular_import_override",
+        skip_code_validation=True,
+    )
+
+
 def test_main_modular_no_file(tmp_path: Path) -> None:
     """Test main function on modular file with no output name."""
     run_main_and_assert(

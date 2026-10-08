@@ -5201,7 +5201,7 @@
     "verbatim": true
   },
   "trusted-template-cycle": {
-    "source": "allof_model_inheritance/fixtures/cycle.openapi.json",
+    "source": "generation_platform/binding/field-ownership-cycle.json",
     "backends": [
       "msgspec.Struct"
     ],
