@@ -2919,14 +2919,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         print(traceback.format_exc(), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
 
-    if (
-        config.output is not None
-        and config.output.is_dir()
-        and generate_output is not None
-        and generate_output.is_file()
-    ):
-        print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
-        return cleanup_and_return(Exit.ERROR)
+    if config.output is not None and generate_output is not None:
+        if config.output.is_dir():
+            if generate_output.is_file():
+                print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
+                return cleanup_and_return(Exit.ERROR)
+        elif config.check and is_directory_output and generate_output.is_file():
+            is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
         _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
