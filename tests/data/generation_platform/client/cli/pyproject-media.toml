@@ -1,0 +1,16 @@
+[tool.datamodel-codegen]
+input = "media.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1documents/post" = { request_media_type = "application/json", runtime = { success_statuses = [302] } }

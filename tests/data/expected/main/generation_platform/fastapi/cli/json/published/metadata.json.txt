@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Order",
+      "name": "store.Order",
+      "module": "store",
+      "source_ref": "modular.yaml#/components/schemas/store.Order",
+      "source_path": [
+        "components",
+        "schemas",
+        "store.Order"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "pet",
+          "alias": "pet",
+          "original_name": "pet",
+          "type": "pets.Pet | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Pet",
+      "name": "pets.Pet",
+      "module": "pets",
+      "source_ref": "modular.yaml#/components/schemas/pets.Pet",
+      "source_path": [
+        "components",
+        "schemas",
+        "pets.Pet"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "FieldOrdersGetResponse",
+      "name": "FieldOrdersGetResponse",
+      "module": "",
+      "source_ref": "modular.yaml#/paths/~1orders/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "paths",
+        "/orders",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "list[store.Order]",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "publication-client-host"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+include = ["publication_client/**/*.py", "publication_client_models.py"]
+
+[tool.hatch.build.targets.sdist]
+include = ["publication_client/**/*.py", "publication_client_models.py", "pyproject.toml"]

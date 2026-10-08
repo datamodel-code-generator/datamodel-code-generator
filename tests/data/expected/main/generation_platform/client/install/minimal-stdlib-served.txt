@@ -1,0 +1,23 @@
+distribution .whl
+installed package True
+all package modules imported
+optional distributions []
+sync {"id": 7, "name": "installed"}
+async {"id": 7, "name": "installed"}
+
+distribution .tar.gz
+installed package True
+all package modules imported
+optional distributions []
+sync {"id": 7, "name": "installed"}
+async {"id": 7, "name": "installed"}
+
+POST /pets key=None auth=None
+request body {"id": 7, "name": "installed"}
+POST /pets key=None auth=None
+request body {"id": 7, "name": "installed"}
+POST /pets key=None auth=None
+request body {"id": 7, "name": "installed"}
+POST /pets key=None auth=None
+request body {"id": 7, "name": "installed"}
+server failures []

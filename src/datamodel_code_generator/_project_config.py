@@ -128,11 +128,15 @@ _PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
     "lockfile",
     "output",
     "server_output",
+    "client_output",
 })
 
 _PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
     "aliases",
     "base_class_map",
+    "client_operations",
+    "client_protocols",
+    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",

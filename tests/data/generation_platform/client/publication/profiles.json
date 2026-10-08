@@ -1,0 +1,226 @@
+{
+  "minimal": {
+    "input": "publication/minimal.json"
+  },
+  "api-key": {
+    "input": "publication/api-key.json"
+  },
+  "basic": {
+    "input": "publication/basic.json"
+  },
+  "bearer": {
+    "input": "publication/bearer.json"
+  },
+  "oauth2-client-credentials": {
+    "input": "publication/oauth2-client-credentials.json"
+  },
+  "oauth2-refresh": {
+    "input": "publication/oauth2-refresh.json"
+  },
+  "pagination": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    }
+  },
+  "polling": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/jobs*",
+        "/reports*",
+        "/exports*",
+        "/notes"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/polling.json"
+    }
+  },
+  "sse": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/streams.json"
+    ],
+    "config": {
+      "protocols": "protocols/streams.json"
+    }
+  },
+  "ndjson": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson.json"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson.json"
+    }
+  },
+  "websocket": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.json"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.json"
+    }
+  },
+  "webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    }
+  },
+  "webhooks-public-keys": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-public-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-public-keys.json"
+    }
+  },
+  "cache": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    }
+  },
+  "uploads": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.json"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.json"
+    }
+  },
+  "compression": {
+    "input": "compression.yaml",
+    "references": [
+      "protocols/compression.json"
+    ],
+    "config": {
+      "protocols": "protocols/compression.json",
+      "operations": [
+        {
+          "ref": "/paths/~1items/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1items/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1blobs/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1feed/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1events/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "all": {
+    "input": "publication/all.json",
+    "references": [
+      "publication/all-protocols.json"
+    ],
+    "config": {
+      "protocols": "publication/all-protocols.json",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "minimal-pydantic-dataclass": {
+    "input": "publication/minimal.json",
+    "backend": "pydantic_v2.dataclass"
+  },
+  "minimal-dataclass": {
+    "input": "publication/minimal.json",
+    "backend": "dataclasses.dataclass"
+  },
+  "minimal-typeddict": {
+    "input": "publication/minimal.json",
+    "backend": "typing.TypedDict"
+  },
+  "minimal-msgspec": {
+    "input": "publication/minimal.json",
+    "backend": "msgspec.Struct"
+  }
+}
