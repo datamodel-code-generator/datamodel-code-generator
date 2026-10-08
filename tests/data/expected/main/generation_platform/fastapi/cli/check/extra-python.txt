@@ -1,0 +1,1 @@
+EXTRA: server/extensions.py (no longer generated)

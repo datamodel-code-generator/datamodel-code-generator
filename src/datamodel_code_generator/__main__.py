@@ -1078,6 +1078,11 @@ class OutputComparisonOptions(NamedTuple):
     is_directory_output: bool
     input_diff: bool = False
     single_file_display_path: str | None = None
+    directory_display_path: str | None = None
+
+    def directory_file_path(self, path: Path) -> str:
+        """Qualify a directory entry when comparing several output roots."""
+        return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
     def fromfile_suffix(self) -> str:
@@ -1175,8 +1180,8 @@ def _compare_directories(
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
 
-    missing_files = [rel_path.as_posix() for rel_path in sorted(generated_files - actual_files)]
-    extra_files = [rel_path.as_posix() for rel_path in sorted(actual_files - generated_files)]
+    missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
+    extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
         generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
@@ -1184,13 +1189,13 @@ def _compare_directories(
         if generated_content != actual_content:
             changed_files.append(
                 DirectoryChangedFile(
-                    path=rel_path.as_posix(),
+                    path=(display_path := comparison.directory_file_path(rel_path)),
                     diff_lines=list(
                         difflib.unified_diff(
                             actual_content.splitlines(keepends=True),
                             generated_content.splitlines(keepends=True),
-                            fromfile=f"{rel_path.as_posix()}{comparison.fromfile_suffix}",
-                            tofile=f"{rel_path.as_posix()}{comparison.tofile_suffix}",
+                            fromfile=f"{display_path}{comparison.fromfile_suffix}",
+                            tofile=f"{display_path}{comparison.tofile_suffix}",
                         )
                     ),
                 )
