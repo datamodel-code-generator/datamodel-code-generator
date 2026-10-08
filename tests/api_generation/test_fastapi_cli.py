@@ -1057,7 +1057,10 @@ def test_fastapi_cli_layout_errors(
 def test_fastapi_cli_nested_models_example(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Run the documented command that keeps the models inside the server package, then find nothing to change."""
+    """Run the documented command that keeps the models inside the server package, then find nothing to change.
+
+    The command is run as documented: its preset chooses the formatters, so the helper adds no formatter settings.
+    """
     monkeypatch.chdir(tmp_path)
     shutil.copy2(SOURCE / "pets.yaml", tmp_path / "api.yaml")
     arguments = json.loads((CLI / "nested-models-example.json").read_text(encoding="utf-8"))
@@ -1065,8 +1068,11 @@ def test_fastapi_cli_nested_models_example(
         arguments,
         capsys=capsys,
         expected_stderr=(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+        use_builtin_default_formatter=False,
     )
-    run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
+    run_main_with_args(
+        [*arguments, "--check"], capsys=capsys, assert_no_stderr=True, use_builtin_default_formatter=False
+    )
     assert_output(_methods(tmp_path / "app" / "server" / "services.py"), EXPECTED / "cli" / "nested-models-example.txt")
 
 
