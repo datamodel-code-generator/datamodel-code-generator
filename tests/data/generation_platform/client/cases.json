@@ -1762,7 +1762,7 @@
           }
         },
         {
-          "ref": "/paths/~1external-query/post",
+          "ref": "/paths/~1external-explicit/post",
           "runtime": {
             "idempotency": {
               "header_name": "X-Idempotency"
@@ -1797,7 +1797,7 @@
           }
         },
         {
-          "ref": "/paths/~1external-explicit/post",
+          "ref": "/paths/~1external-query/post",
           "runtime": {
             "idempotency": {
               "header_name": "X-Idempotency"

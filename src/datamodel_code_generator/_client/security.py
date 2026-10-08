@@ -65,12 +65,8 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
     return unavailable
 
 
-def _document(operation: OperationContract) -> SourceDocumentId:
-    return operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
-
-
 class SecurityPlanner:
-    """Resolve every requirement in its registration namespace without loading another source."""
+    """Resolve every requirement among the schemes of the document that uses its operation."""
 
     def __init__(self, batch: GeneratedTypeContractBatch, problems: list[Diagnostic]) -> None:
         """Compile complete document catalogues, retaining unusable names as unavailable entries."""
@@ -94,11 +90,11 @@ class SecurityPlanner:
         )
 
     def binding(self, operation: OperationContract) -> SecurityBinding | None:
-        """Preserve absent, empty, and ordered AND/OR requirements in their effective namespace."""
+        """Preserve absent, empty, and ordered AND/OR requirements, naming schemes of the using document."""
         value = next((value for name, value in operation.facts if name == "security"), None)
         if value is None:
             return None
-        schemes = self.catalogues.get(_document(operation), {})
+        schemes = self.catalogues.get(operation.id.use_site.document, {})
         if not isinstance(value, LiteralSequence):
             self.problem(operation, "must be an array of requirement objects")
             return None
