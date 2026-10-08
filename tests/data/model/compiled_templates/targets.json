@@ -667,7 +667,10 @@
             {
               "adder": "add_get",
               "handler": "handle_get",
-              "handlers": "async_handlers",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "method": "get",
               "name": "\"get\"",
               "principal": "async def principal() -> str:\n        return \"principal\"",
               "signature": "async def get(*, pet_id: int) -> Pet:",
@@ -677,7 +680,10 @@
             {
               "adder": "add_list",
               "handler": "handle_get",
-              "handlers": "async_handlers",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "method": "get",
               "name": "\"get\"",
               "principal": null,
               "signature": "async def get(*, pet_id: int) -> Pet:",

@@ -9,7 +9,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -25,25 +24,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
-  server/py.typed
-  server/routers/__init__.py
-  server/routers/pets.py
-  server/routers/store.py
-  server/routers/untagged.py
-  server/services.py
-  11 runtime modules ['present']
-generate
-  returned None
-tree
-  models.py
-  server/.dcg-target-manifest.json
-  server/README.md
-  server/__init__.py
-  server/_generated/__init__.py
-  server/_generated/contract.py
-  server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -61,7 +41,23 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
+generate
+  returned None
+tree
+  models.py
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -76,7 +72,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -93,7 +88,6 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)

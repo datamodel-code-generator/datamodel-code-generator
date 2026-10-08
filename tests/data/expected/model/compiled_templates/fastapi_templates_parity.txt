@@ -9,7 +9,7 @@ INFO: Final[AppOptions] = AppOptions(title="日本 {braces}")
 
 
 def build_router(*, pets: Pets, authorize: Authorize):
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
         services={"pets": pets},
@@ -47,7 +47,7 @@ INFO: Final[AppOptions] = AppOptions()
 
 
 def build_router(*, pets: Pets, authorize: Authorize):
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
         services={},
@@ -93,6 +93,7 @@ Custom templates, base classes, and Python types stay within these two backends.
 A method takes the operation's arguments as keywords, with `None` for an optional parameter or body the request omits, and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
 Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
 Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+The package looks each method up when it registers the routes and checks nothing else at run time: a method that type checkers would reject fails when its operation is requested.
 The Protocols of groups with secured operations take the type of the principal your `authorize` callback returns.
 
 ```python
@@ -187,6 +188,7 @@ Custom templates, base classes, and Python types stay within these two backends.
 A method takes the operation's arguments as keywords, with `None` for an optional parameter or body the request omits, and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
 Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
 Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+The package looks each method up when it registers the routes and checks nothing else at run time: a method that type checkers would reject fails when its operation is requested.
 
 ```python
 from server import create_app
@@ -235,7 +237,8 @@ from fastapi import APIRouter
 
 
 def add_get(router: APIRouter, wiring: Wiring) -> None:
-    handle_get = wiring.async_handlers["get"]
+    pets: PetsService[object] = wiring.services["pets"]
+    handle_get = pets.get
 
     async def principal() -> str:
         return "principal"
@@ -247,7 +250,8 @@ def add_get(router: APIRouter, wiring: Wiring) -> None:
 
 
 def add_list(router: APIRouter, wiring: Wiring) -> None:
-    handle_get = wiring.async_handlers["get"]
+    pets: PetsService[object] = wiring.services["pets"]
+    handle_get = pets.get
 
     async def get(*, pet_id: int) -> Pet:
         return await handle_get(pet_id=pet_id)
@@ -260,7 +264,7 @@ TEMPLATED_ROUTES: Final = (add_get,)
 
 
 def build_router(*, pets: Pets):
-    """Check the service and settings, then register pets on a new router, literal paths first."""
+    """Register pets on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={"pets": pets},
@@ -279,7 +283,7 @@ TEMPLATED_ROUTES: Final = ()
 
 
 def build_router(*, pets: Pets):
-    """Check the service and settings, then register pets on a new router, literal paths first."""
+    """Register pets on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={"pets": pets},

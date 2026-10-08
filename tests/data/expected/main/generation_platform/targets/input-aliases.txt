@@ -7,7 +7,6 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
@@ -15,15 +14,14 @@ render
   11 runtime modules ['write']
 {
   "files": {
-    "README.md": "sha256:6cefca6514d9bd7b56063c57cf6a3533bf44a3167dad2d980a063d3f8b85662e",
-    "__init__.py": "sha256:707576731f50baf0318c1f390f06ea6592e9bb9b6a83ea4a4e71a5478a8effbe",
+    "README.md": "sha256:c9cfe7fa4ce6baa1202d63ec5f43761ec093c1c85b3e1f6ca81095155483f0c6",
+    "__init__.py": "sha256:786b3118782ea89685d9861b7c6152434d4cff8506954ef3ab62228a47008aa5",
     "_generated/__init__.py": "sha256:b862532d1a75f58e094c71836cf6bc843e3cae82e84cbe5689300496f51fbc20",
-    "_generated/contract.py": "sha256:f59117ec9ce9124b81bbe401296c600b86bda0c5ebde820178c24f01c532f6df",
-    "application.py": "sha256:4dad2dadff71046d19dd90a666922ded2a8606cd818067e58c2907ad3fb34b84",
-    "errors.py": "sha256:3148fd3548fc580bc8d276c6f769656c55ecf215bfe52e6c437e4b70c9117cb1",
+    "_generated/contract.py": "sha256:d93214827d56d93e403d1e07a7d832f559704a944a26aebf3f89a1b1233ec459",
+    "application.py": "sha256:9d2c9a4a39130151d183e8d6f02f1bc98fdc4a1b4e2c16f522e72fb47890a618",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:21a06f88c6ae67e83cb21b7f4c68f4de3778cc237661e105203d986f9c8e6f9e",
-    "routers/untagged.py": "sha256:16c0429cd667f0616d72570719fb6cc86f9522ccf823adc0f1e568d67e7a03e6",
+    "routers/untagged.py": "sha256:ec91231291c20beb2e8be8c7a2b88e8ed30dfef6625252c45036e94a17e8ccd9",
     "services.py": "sha256:fc331f02ac0ed1cfadf27ffd6d89c344174b457e7733055f40cdf1183ae86751"
   },
   "format": 1,
@@ -49,7 +47,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
@@ -62,7 +59,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py

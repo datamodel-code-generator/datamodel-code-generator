@@ -15,7 +15,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -31,7 +30,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
