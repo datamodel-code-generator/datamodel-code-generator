@@ -9,7 +9,6 @@ render pydantic_v2.BaseModel
   write server/routers/form.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/errors.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
@@ -66,6 +65,7 @@ render pydantic_v2.BaseModel
     | A method takes the operation's arguments as keywords, with `None` for an optional parameter or body the request omits, and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    | The package looks each method up when it registers the routes and checks nothing else at run time: a method that type checkers would reject fails when its operation is requested.
     |
     | ```python
     | from server import create_app

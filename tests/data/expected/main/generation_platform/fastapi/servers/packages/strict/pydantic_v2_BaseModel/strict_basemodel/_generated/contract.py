@@ -10,17 +10,17 @@ from dataclasses import dataclass
 from typing import Annotated, Final, TypedDict
 
 import pydantic
+from fastapi import params
 from pydantic import Field, TypeAdapter
 
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get_values': Sequence[Dependency]
+        'get_values': Sequence[params.Depends]
     },
     total=False,
 )
@@ -29,26 +29,6 @@ OperationDependencies = TypedDict(
 class GetValues:
     """Plans of the get_values operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_values',
-        service='untagged',
-        keywords=(
-            'id',
-            'count',
-            'bounded',
-            'score',
-            'flag',
-            'name',
-            'label',
-            'counts',
-            'names',
-            'page',
-            'size',
-            'maybe',
-            'x_trace',
-            'x_tag',
-        ),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get_values."""

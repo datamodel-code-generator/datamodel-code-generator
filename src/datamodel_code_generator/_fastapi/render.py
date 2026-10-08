@@ -70,7 +70,6 @@ _BASES: Final = {
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
-    ("_runtime.server.application", "Dependency"),
     ("_runtime.server.security", "AsyncAuthorize"),
     ("_runtime.server.security", "Authorize"),
     ("_runtime.server.security", "Credentials"),
@@ -240,7 +239,6 @@ class ServerRenderer:  # noqa: PLR0904
         self.batch = batch
         self.wire = wire
         self.symbols = symbol_imports(batch)
-        self.services = {group.key: group.stem for group in plan.groups}
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:
@@ -261,7 +259,6 @@ class ServerRenderer:  # noqa: PLR0904
             *self.routers(),
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
-            self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             self.file(PurePosixPath("README.md"), "readme", self.readme()),
@@ -385,11 +382,10 @@ class ServerRenderer:  # noqa: PLR0904
                 *(argument.name for argument in spec.arguments),
             ))
         module = Module(reserved, self.symbols, level=level)
-        routes = [self.route(module, spec) for spec in operations]
-        contract = module.local("_generated", "contract")
+        routes = [] if group is None else [self.route(module, spec, group) for spec in operations]
         pairs = {
             templated: [
-                Group("(", (("", f"{contract}.{spec.pascal}.OPERATION"), ("", f"_add_{spec.python_name}")), ")")
+                Group("(", (("", repr(spec.python_name)), ("", f"_add_{spec.python_name}")), ")")
                 for spec in operations
                 if spec.route.templated is templated
             ]
@@ -414,11 +410,12 @@ class ServerRenderer:  # noqa: PLR0904
             imports=module.imports(),
         )
 
-    def route(self, module: Module, spec: OperationSpec) -> dict[str, str]:
-        """Return the fragments of one operation's endpoint: decorator, signature, and handler call."""
+    def route(self, module: Module, spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
+        """Return the fragments of one operation's endpoint: service method lookup, signature, and handler call."""
         plan = f"{module.local('_generated', 'contract')}.{spec.pascal}"
         names = {argument.name for argument in spec.arguments}
-        handler = _unique(f"{spec.python_name}_handler", names)
+        service = module.local("services", group.service)
+        handler = _unique(f"{spec.python_name}_handler", {*names, group.stem})
         principal = "" if spec.security is None else _unique(f"{spec.python_name}_principal", {*names, handler})
         record = _unique("parameters", names)
         parameters: list[Doc] = [
@@ -445,7 +442,10 @@ class ServerRenderer:  # noqa: PLR0904
         return {
             "adder": f"_add_{spec.python_name}",
             "handler": handler,
-            "handlers": "async_handlers" if asynchronous else "handlers",
+            "service": group.stem,
+            "protocol": f"{service}[object]" if group.secured else service,
+            "group": repr(group.stem),
+            "method": spec.python_name,
             "name": repr(spec.python_name),
             "principal": "" if not principal else self.principal(module, spec, principal),
             "key": repr(spec.key),
@@ -648,12 +648,11 @@ class ServerRenderer:  # noqa: PLR0904
         assert self.docs is not None
         return _registration(module, spec, self.docs)
 
-    def operation_plan(self, module: Module, spec: OperationSpec) -> str:
+    @staticmethod
+    def operation_plan(module: Module, spec: OperationSpec) -> str:
         """Return one operation's plan class: adapter parameter record, request adapters, and responses."""
         final = module.name("typing", "Final")
         lines = [f"class {spec.pascal}:", f'    """Plans of the {spec.python_name} operation."""', ""]
-        operation = self.operation(module, spec)
-        lines.append(f"    OPERATION: {final} = {layout(operation, 4, len('OPERATION: Final = '), WIDTH)}")
         adapters = [argument for argument in spec.arguments if argument.kind == "adapter"]
         if adapters:
             lines.extend((
@@ -672,20 +671,6 @@ class ServerRenderer:  # noqa: PLR0904
         responses = _responses_plan(module, spec)
         lines.append(f"    RESPONSES: {final} = {layout(responses, 4, len('RESPONSES: Final = '), WIDTH)}")
         return "\n".join(lines) + "\n"
-
-    def operation(self, module: Module, spec: OperationSpec) -> Group:
-        """Return the OperationPlan constructor of one operation: method, service, keywords, mode, and security."""
-        items: list[tuple[str, Doc]] = [
-            ("name=", repr(spec.python_name)),
-            ("service=", repr(self.services[spec.group])),
-        ]
-        if spec.arguments:
-            items.append(("keywords=", _keywords(spec.arguments)))
-        if spec.mode == "async":
-            items.append(("asynchronous=", "True"))
-        if spec.security is not None:
-            items.append(("secured=", "True"))
-        return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
 
 
 def _responses_plan(module: Module, spec: OperationSpec) -> Group:
@@ -995,7 +980,7 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
 
 
 def _dependency_sequence(module: Module) -> str:
-    return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
+    return f"{module.name('collections.abc', 'Sequence')}[{module.name('fastapi', 'params')}.Depends]"
 
 
 def _credential_type(module: Module, scheme: SchemeSpec) -> str:
@@ -1047,10 +1032,6 @@ def _requirement(requirement: Requirement) -> Group:
     )
 
 
-def _keywords(arguments: tuple[Argument, ...]) -> Doc:
-    return Group("(", _items(repr(argument.name) for argument in arguments), ")", ",")
-
-
 def _frozenset(names: set[str]) -> str:
     return f"frozenset({{{', '.join(repr(name) for name in sorted(names))}}})"
 
@@ -1065,33 +1046,21 @@ from .application import (
     AsyncAuthorize,
     Authorize,
     Credentials,
-    Dependency,
     OperationDependencies,
     RequirementSets,
     build_router,
     create_app,
 )
-from .errors import AuthConfigurationError, HandlerConfigurationError
 from ._runtime.server.responses import HTTPResult
 
 __all__ = [
     "AsyncAuthorize",
-    "AuthConfigurationError",
     "Authorize",
     "Credentials",
-    "Dependency",
     "HTTPResult",
-    "HandlerConfigurationError",
     "OperationDependencies",
     "RequirementSets",
     "build_router",
     "create_app",
 ]
-'''
-_ERRORS: Final = '''"""Errors a generated server raises while it builds routers and applications."""
-
-from ._runtime.server.application import HandlerConfigurationError
-from ._runtime.server.security import AuthConfigurationError
-
-__all__ = ["AuthConfigurationError", "HandlerConfigurationError"]
 '''

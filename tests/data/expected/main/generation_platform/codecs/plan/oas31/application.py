@@ -6,10 +6,10 @@
 from collections.abc import Sequence
 from typing import Any, Final
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, params
 
 from ._generated.contract import OperationDependencies
-from ._runtime.server.application import Dependency, build
+from ._runtime.server.application import build
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -28,11 +28,11 @@ def build_router(
     *,
     untagged: UntaggedService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
         services={'untagged': untagged},
@@ -68,7 +68,6 @@ __all__ = [
     'AsyncAuthorize',
     'Authorize',
     'Credentials',
-    'Dependency',
     'OperationDependencies',
     'RequirementSets',
     'build_router',

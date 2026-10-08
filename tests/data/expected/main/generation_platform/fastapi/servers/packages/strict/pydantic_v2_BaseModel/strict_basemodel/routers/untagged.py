@@ -7,20 +7,21 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import pydantic
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
 from pydantic import StringConstraints
 from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.application import Wiring, build
 from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
 def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
-    get_values_handler = wiring.handlers['get_values']
+    untagged: UntaggedService = wiring.services['untagged']
+    get_values_handler = untagged.get_values
 
     def get_values(
         *,
@@ -113,17 +114,17 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
 
 
 LITERAL_ROUTES: Final = ()
-TEMPLATED_ROUTES: Final = ((contract.GetValues.OPERATION, _add_get_values),)
+TEMPLATED_ROUTES: Final = (('get_values', _add_get_values),)
 
 
 def build_router(
     *,
     untagged: UntaggedService,
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the service and settings, then register the untagged operations on a new router, literal paths first."""
+    """Register the untagged operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'untagged': untagged},

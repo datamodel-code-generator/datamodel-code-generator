@@ -83,9 +83,7 @@ class _WithoutRawPath:
         await self.app(scope, receive, send)
 
 
-def _exchange(
-    client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str], errors: tuple[type[Exception], ...]
-) -> None:
+def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str]) -> None:
     if (location := request.get("openapi")) is not None:
         path, method, status = location
         document = client.app.app.openapi()
@@ -109,9 +107,6 @@ def _exchange(
     except ResponseValidationError as error:
         lines.extend(f"  {call}" for call in calls)
         lines.append(f"< ResponseValidationError: {[item['msg'] for item in error.errors()]}")
-    except errors as error:
-        lines.extend(f"  {call}" for call in calls)
-        lines.append(f"< {type(error).__name__}: {error}")
     except Exception as error:  # noqa: BLE001
         lines.extend(f"  {call}" for call in calls)
         lines.append(f"< raised {type(error).__name__}: {error}")
@@ -149,10 +144,10 @@ def _interfaces(server: ModuleType) -> Iterator[str]:
                 yield f"service {name} without its methods: TypeError"
 
 
-def _build(label: str, build: Callable[[], object], errors: tuple[type[Exception], ...]) -> str:
+def _build(label: str, build: Callable[[], object]) -> str:
     try:
         build()
-    except errors as error:
+    except (AttributeError, ValueError) as error:
         return f"build {label}: {type(error).__name__}: {error}"
     return f"build {label}: ok"
 
@@ -202,19 +197,16 @@ def fastapi_server_report(
             sets = services.services(server, models, calls)
             settings = services.settings(server, models, calls) if hasattr(services, "settings") else {}
             built = services.applications(server, sets) if hasattr(services, "applications") else {}
-            errors = (server.HandlerConfigurationError, server.AuthConfigurationError)
-            lines.extend(
-                _build(name, partial(server.build_router, **sets[name]), errors) for name in case.get("builds", ())
-            )
+            lines.extend(_build(name, partial(server.build_router, **sets[name])) for name in case.get("builds", ()))
             if hasattr(services, "builds"):
-                lines.extend(_build(label, build, errors) for label, build in services.builds(server, models, calls))
+                lines.extend(_build(label, build) for label, build in services.builds(server, models, calls))
             for app_case in case.get("apps", [{"set": "default", "requests": case.get("requests", [])}]):
                 if "apps" in case:
                     lines.append(f"app {app_case['set']}")
                 app = _serve(server, app_case, sets, settings, built, lines)
                 with TestClient(_WithoutRawPath(app)) as client:
                     for request in app_case.get("requests", ()):
-                        _exchange(client, request, calls, lines, errors)
+                        _exchange(client, request, calls, lines)
         finally:
             forget_generated(package)
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", packages

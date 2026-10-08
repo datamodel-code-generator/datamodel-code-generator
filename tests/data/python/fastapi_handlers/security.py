@@ -11,34 +11,16 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterator
+    from collections.abc import Callable, Iterator
     from types import ModuleType
-
-
-class _Pending:
-    """Stand in for an awaitable result that is not a coroutine."""
-
-    def __await__(self) -> Generator[None, None, None]:
-        yield
 
 
 def _secret(credential: Any) -> str:  # noqa: ANN401
     return str(getattr(credential, "credentials", None) or getattr(credential, "username", None) or credential)
 
 
-class _Variant:
-    """Stand in for a service that replaces some of another service's methods."""
-
-    def __init__(self, service: object, **methods: object) -> None:
-        self.service = service
-        self.methods = methods
-
-    def __getattr__(self, name: str) -> object:
-        return self.methods[name] if name in self.methods else getattr(self.service, name)
-
-
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return service sets: recording services of each mode, and a set whose methods return awaitables."""
+    """Return the service sets: recording services of each mode."""
 
     def record(name: str, arguments: dict[str, object]) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
@@ -65,15 +47,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         async def get_custom(self, **arguments: object) -> None:
             record("get_custom", arguments)
 
-    async def later() -> list[str]:
-        return ["late"]
-
     default = {"pets": Pets(), "public": Public(), "untagged": Untagged()}
-    awaitables = {
-        "pets": _Variant(default["pets"], list_pets=lambda **_: later()),
-        "public": _Variant(default["public"], get_public=lambda **_: _Pending()),
-    }
-    return {"default": default, "async": default, "awaitables": {**default, **awaitables}}
+    return {"default": default, "async": default}
 
 
 def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
@@ -131,35 +106,17 @@ def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             "deprecated": None,
             "generate_unique_id_function": lambda route: f"{route.name}-id",
         },
-        "awaitables": {"authorize": authorize},
     }
 
 
 def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator[tuple[str, Callable[[], object]]]:
-    """Yield builders that the generated package must reject or accept."""
+    """Yield builders that fail on a missing method or an unknown dependency name, and builders that succeed."""
     default = services(server, models, calls)["default"]
     secured = {"authorize": settings(server, models, calls)["default"]["authorize"]}
     build = partial(server.build_router, **default)
     create = partial(server.create_app, **default, **secured)
-    untagged = default["untagged"]
-    yield "no-authorize", partial(build, authorize=None)
-    for label, methods in (
-        ("missing-method", {"put_pet": None}),
-        ("sync-in-async", {"get_maybe": untagged.put_pet}),
-        ("async-in-sync", {"put_pet": untagged.get_maybe}),
-        ("keywords", {"put_pet": lambda *, pet_id: None}),
-    ):
-        yield label, partial(build, untagged=_Variant(untagged, **methods), **secured)
-    for prefix in ("api", "/api/", "/api?x=1", "/{api}", 7):
-        yield f"prefix {prefix!r}", partial(build, prefix=prefix, **secured)
-    yield "dependencies-object", partial(build, dependencies=[object()], **secured)
-    yield "dependencies-text", partial(build, dependencies="global", **secured)
-    for label, value in (
-        ("unknown", {"/paths/~1pets/get": []}),
-        ("list", [("list_pets", [])]),
-        ("items", {"list_pets": [object()]}),
-    ):
-        yield f"operation-dependencies-{label}", partial(build, operation_dependencies=value, **secured)
+    yield "missing-method", partial(build, untagged=object(), **secured)
+    yield "operation-dependencies-unknown", partial(build, operation_dependencies={"/paths/~1pets/get": []}, **secured)
     routers = server.routers
     yield "group public", partial(routers.public.build_router, public=default["public"])
     yield "group pets", partial(routers.pets.build_router, pets=default["pets"], **secured)

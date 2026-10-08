@@ -10,7 +10,6 @@ generate
   written target server/routers/untagged.py (target)
   written target server/_generated/__init__.py (target)
   written target server/_generated/contract.py (target)
-  written target server/errors.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
@@ -24,7 +23,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -43,7 +41,6 @@ generate
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
@@ -62,7 +59,6 @@ generate
   unchanged target server/routers/pets.py (target)
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
-  unchanged target server/errors.py (target)
   unchanged target server/py.typed (target)
   11 runtime modules ['unchanged']
   deleted target server/routers/store.py (target)
@@ -74,7 +70,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -91,7 +86,6 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)

@@ -10,7 +10,6 @@ generate
   written target server/routers/untagged.py (target)
   written target server/_generated/__init__.py (target)
   written target server/_generated/contract.py (target)
-  written target server/errors.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
@@ -24,7 +23,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py

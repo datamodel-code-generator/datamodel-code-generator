@@ -10,20 +10,20 @@ from dataclasses import dataclass
 from typing import Final, TypedDict
 
 import plan_oas32_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get__search': Sequence[Dependency],
-        'get__spread': Sequence[Dependency],
-        'post__raw': Sequence[Dependency],
+        'get__search': Sequence[params.Depends],
+        'get__spread': Sequence[params.Depends],
+        'post__raw': Sequence[params.Depends],
     },
     total=False,
 )
@@ -32,11 +32,6 @@ OperationDependencies = TypedDict(
 class GetSearch:
     """Plans of the get__search operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__search',
-        service='untagged',
-        keywords=('query', 'theme', 'prefs'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__search."""
@@ -82,11 +77,6 @@ class GetSearch:
 class GetSpread:
     """Plans of the get__spread operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__spread',
-        service='untagged',
-        keywords=('extra', 'window', 'jar', 'crumbs', 'x_counts', 'x_tallies'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__spread."""
@@ -190,11 +180,6 @@ class GetSpread:
 class PostRaw:
     """Plans of the post__raw operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='post__raw',
-        service='untagged',
-        keywords=('querystring_body', 'note'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of post__raw."""

@@ -4,7 +4,6 @@ elsewhere/__init__.py
 elsewhere/_generated/__init__.py
 elsewhere/_generated/contract.py
 elsewhere/application.py
-elsewhere/errors.py
 elsewhere/py.typed
 elsewhere/routers/__init__.py
 elsewhere/routers/pets.py

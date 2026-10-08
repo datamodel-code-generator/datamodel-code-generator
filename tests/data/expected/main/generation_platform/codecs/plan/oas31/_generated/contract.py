@@ -10,18 +10,18 @@ from dataclasses import dataclass
 from typing import Final, TypedDict
 
 import plan_oas31_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get__pets_pet_id': Sequence[Dependency]
+        'get__pets_pet_id': Sequence[params.Depends]
     },
     total=False,
 )
@@ -30,22 +30,6 @@ OperationDependencies = TypedDict(
 class GetPetsPetId:
     """Plans of the get__pets_pet_id operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__pets_pet_id',
-        service='untagged',
-        keywords=(
-            'principal',
-            'pet_id',
-            'tags',
-            'filter',
-            'x_trace',
-            'session',
-            'coords',
-            'ids',
-            'when',
-        ),
-        secured=True,
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__pets_pet_id."""

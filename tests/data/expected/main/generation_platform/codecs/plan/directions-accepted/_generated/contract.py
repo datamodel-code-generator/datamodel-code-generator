@@ -9,15 +9,15 @@ from collections.abc import Sequence
 from typing import Final, TypedDict
 
 import plan_directions_accepted_models
+from fastapi import params
 from pydantic import TypeAdapter
 
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'post__items': Sequence[Dependency]
+        'post__items': Sequence[params.Depends]
     },
     total=False,
 )
@@ -26,11 +26,6 @@ OperationDependencies = TypedDict(
 class PostItems:
     """Plans of the post__items operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='post__items',
-        service='untagged',
-        keywords=('body',),
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(

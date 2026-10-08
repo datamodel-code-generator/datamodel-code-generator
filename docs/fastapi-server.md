@@ -10,8 +10,7 @@ the same run, a FastAPI server package for its operations: routers, a service Pr
 adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
 document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
-service Protocols, and type checkers, Python, and the package at startup check that every operation has a
-matching method.
+service Protocols, and type checkers and Python check that every operation has a matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
@@ -96,8 +95,11 @@ prints the lines of a requirements file instead, for pip or `uv pip`.
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
-`middleware`, to `FastAPI`, and checks every method when the application starts; any
-object with the right methods works, and type checkers check it where you pass it. The generated
+`middleware`, to `FastAPI`, and looks every method up when it registers the routes, so a missing one raises
+`AttributeError` there; any object with the right methods works, and type checkers check it where you pass it.
+The package does not check signatures or settings again at run time: what a type checker would reject, such as a
+coroutine function for a synchronous operation, fails with Python's or FastAPI's own error, at the latest when the
+operation is first requested. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
 
@@ -235,7 +237,7 @@ datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 | `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
-| `errors.py`, `security.py` | generator | Errors, and one FastAPI security dependency for each scheme |
+| `security.py` | generator | One FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json` | generator | What the last generation wrote, to regenerate and check safely |

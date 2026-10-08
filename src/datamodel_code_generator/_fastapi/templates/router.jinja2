@@ -5,7 +5,8 @@
 
 
 def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
-    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+    {{ route.service }}: {{ route.protocol }} = wiring.services[{{ route.group }}]
+    {{ route.handler }} = {{ route.service }}.{{ route.method }}
 {%- if route.principal %}
 
     {{ route.principal }}
@@ -23,7 +24,7 @@ TEMPLATED_ROUTES: {{ final }} = {{ templated }}
 
 
 {{ signature }}
-    """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
+    """Register {{ group }} on a new router, literal paths first."""
     return {{ build }}(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={{ services }},

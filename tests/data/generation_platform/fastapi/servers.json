@@ -7,11 +7,7 @@
       "pydantic_v2.dataclass"
     ],
     "builds": [
-      "missing",
-      "not-callable",
-      "async",
-      "async-object",
-      "signature"
+      "missing"
     ],
     "requests": [
       {
@@ -1081,22 +1077,6 @@
           {
             "method": "GET",
             "url": "/api/public"
-          }
-        ]
-      },
-      {
-        "set": "awaitables",
-        "requests": [
-          {
-            "method": "GET",
-            "url": "/pets",
-            "headers": {
-              "X-API-Key": "abc"
-            }
-          },
-          {
-            "method": "GET",
-            "url": "/public"
           }
         ]
       }

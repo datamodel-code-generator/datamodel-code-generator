@@ -6,14 +6,14 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, params
 from fastapi.responses import Response
 from fastapi.security import HTTPBasicCredentials
 
 from .. import security
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.application import Wiring, build
 from .._runtime.server.responses import dispatch
 from .._runtime.server.security import (
     AsyncAuthorize,
@@ -25,7 +25,8 @@ from ..services import UntaggedService
 
 
 def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
-    get_keys_handler = wiring.handlers['get_keys']
+    untagged: UntaggedService[object] = wiring.services['untagged']
+    get_keys_handler = untagged.get_keys
 
     async def get_keys_principal(
         *,
@@ -63,7 +64,7 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = ((contract.GetKeys.OPERATION, _add_get_keys),)
+LITERAL_ROUTES: Final = (('get_keys', _add_get_keys),)
 TEMPLATED_ROUTES: Final = ()
 
 
@@ -71,11 +72,11 @@ def build_router(
     *,
     untagged: UntaggedService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the service and settings, then register the untagged operations on a new router, literal paths first."""
+    """Register the untagged operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'untagged': untagged},

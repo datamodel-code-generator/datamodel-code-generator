@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Coroutine, Mapping
+from collections.abc import Mapping  # noqa: TC003 - get_type_hints resolves the fields of HTTPResult.
 from dataclasses import dataclass
 from typing import Final, Generic
 
@@ -14,7 +14,6 @@ from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.media import charset, media_kind
-from .application import HandlerConfigurationError
 from .errors import response_failure
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
@@ -66,11 +65,6 @@ def dispatch(value: object, plan: OperationResponses) -> object:
         return value
     if _is_result(value):
         return _respond(value.status_code, value.body, value.headers, plan)
-    if hasattr(type(value), "__await__"):
-        if isinstance(value, Coroutine):
-            value.close()
-        msg = "The handler returned an awaitable; an asynchronous handler needs handler_mode='async'"
-        raise HandlerConfigurationError(msg)
     return value if plan.primary is None else _respond(plan.primary, value, None, plan)
 
 

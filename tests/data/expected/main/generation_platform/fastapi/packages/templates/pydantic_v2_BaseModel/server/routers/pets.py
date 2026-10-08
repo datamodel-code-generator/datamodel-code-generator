@@ -12,20 +12,21 @@ from typing import Annotated, Final
 
 import models
 import pydantic
-from fastapi import APIRouter, Body, Depends, Header, Path, Query
+from fastapi import APIRouter, Body, Depends, Header, Path, Query, params
 from fastapi.responses import Response
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.application import Wiring, build
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-    list_pets_handler = wiring.handlers['list_pets']
+    pets: PetsService = wiring.services['pets']
+    list_pets_handler = pets.list_pets
 
     def list_pets(
         *,
@@ -80,7 +81,8 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
 
 
 def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-    create_pet_handler = wiring.handlers['create_pet']
+    pets: PetsService = wiring.services['pets']
+    create_pet_handler = pets.create_pet
 
     def create_pet(
         *,
@@ -104,7 +106,8 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
 
 
 def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
-    list_my_pets_handler = wiring.handlers['list_my_pets']
+    pets: PetsService = wiring.services['pets']
+    list_my_pets_handler = pets.list_my_pets
 
     def list_my_pets() -> object:
         return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
@@ -125,7 +128,8 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
 
 
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
-    get_pet_handler = wiring.handlers['get_pet']
+    pets: PetsService = wiring.services['pets']
+    get_pet_handler = pets.get_pet
 
     def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
         return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
@@ -147,7 +151,8 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
 
 
 def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
-    delete_pet_handler = wiring.handlers['delete_pet']
+    pets: PetsService = wiring.services['pets']
+    delete_pet_handler = pets.delete_pet
 
     def delete_pet(
         *,
@@ -174,20 +179,17 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
 
 
 LITERAL_ROUTES: Final = (
-    (contract.ListPets.OPERATION, _add_list_pets),
-    (contract.CreatePet.OPERATION, _add_create_pet),
-    (contract.ListMyPets.OPERATION, _add_list_my_pets),
+    ('list_pets', _add_list_pets),
+    ('create_pet', _add_create_pet),
+    ('list_my_pets', _add_list_my_pets),
 )
-TEMPLATED_ROUTES: Final = (
-    (contract.GetPet.OPERATION, _add_get_pet),
-    (contract.DeletePet.OPERATION, _add_delete_pet),
-)
+TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet), ('delete_pet', _add_delete_pet))
 
 
 def build_router(
     *,
     pets: PetsService,
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:

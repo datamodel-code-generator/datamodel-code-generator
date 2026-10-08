@@ -8,7 +8,8 @@
 
 
 def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
-    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+    {{ route.service }}: {{ route.protocol }} = wiring.services[{{ route.group }}]
+    {{ route.handler }} = {{ route.service }}.{{ route.method }}
 {%- if route.principal %}
 
     {{ route.principal }}

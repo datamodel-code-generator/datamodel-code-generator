@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request, params
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 from secured_models import FieldPetsGetResponse
@@ -15,7 +15,6 @@ from secured import (
     AsyncAuthorize,
     Authorize,
     Credentials,
-    Dependency,
     HTTPResult,
     OperationDependencies,
     RequirementSets,
@@ -89,7 +88,7 @@ store: dict[str, FieldPetsGetResponse] = {}
 admin_pets: PetsService[Admin] = Pets()
 authorizer: Authorize[User] = authorize
 async_authorizer: AsyncAuthorize[Admin] = authorize_async
-dependencies: list[Dependency] = [Depends(record)]
+dependencies: list[params.Depends] = [Depends(record)]
 operation_dependencies: OperationDependencies = {"list_pets": dependencies}
 app: FastAPI = create_app(
     pets=Pets(),

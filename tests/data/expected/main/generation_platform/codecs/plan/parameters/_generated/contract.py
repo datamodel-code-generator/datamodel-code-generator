@@ -11,21 +11,21 @@ from dataclasses import dataclass
 from typing import Final, TypedDict
 
 import plan_parameters_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get__pages': Sequence[Dependency],
-        'get__options': Sequence[Dependency],
-        'get__more': Sequence[Dependency],
-        'get__headers': Sequence[Dependency],
+        'get__pages': Sequence[params.Depends],
+        'get__options': Sequence[params.Depends],
+        'get__more': Sequence[params.Depends],
+        'get__headers': Sequence[params.Depends],
     },
     total=False,
 )
@@ -34,11 +34,6 @@ OperationDependencies = TypedDict(
 class GetPages:
     """Plans of the get__pages operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__pages',
-        service='untagged',
-        keywords=('x_token', 'page', 'pager'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__pages."""
@@ -69,11 +64,6 @@ class GetPages:
 class GetOptions:
     """Plans of the get__options operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__options',
-        service='untagged',
-        keywords=('opts',),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__options."""
@@ -103,11 +93,6 @@ class GetOptions:
 class GetMore:
     """Plans of the get__more operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__more',
-        service='untagged',
-        keywords=('more',),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__more."""
@@ -137,20 +122,6 @@ class GetMore:
 class GetHeaders:
     """Plans of the get__headers operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__headers',
-        service='untagged',
-        keywords=(
-            'combined',
-            'flag',
-            'ratio',
-            'mode',
-            'shaped',
-            'counts',
-            'any_map',
-            'plain',
-        ),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__headers."""

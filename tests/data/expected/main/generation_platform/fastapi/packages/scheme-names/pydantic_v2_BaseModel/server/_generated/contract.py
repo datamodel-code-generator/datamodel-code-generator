@@ -8,13 +8,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, TypedDict
 
-from .._runtime.server.application import Dependency, OperationPlan
+from fastapi import params
+
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get_keys': Sequence[Dependency]
+        'get_keys': Sequence[params.Depends]
     },
     total=False,
 )
@@ -23,10 +24,4 @@ OperationDependencies = TypedDict(
 class GetKeys:
     """Plans of the get_keys operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_keys',
-        service='untagged',
-        keywords=('principal',),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
