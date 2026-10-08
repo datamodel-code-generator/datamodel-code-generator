@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import httpx2
 
-from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_runtime import arecord, argument, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
@@ -56,14 +58,16 @@ async def _acaptured(
 class _Body(httpx2.SyncByteStream, httpx2.AsyncByteStream):
     """A response body that counts its closes."""
 
-    def __init__(self) -> None:
+    def __init__(self, content: bytes = b"response", headers: dict[str, str] | None = None) -> None:
         self.closed = 0
+        self.content = content
+        self.headers = {"content-type": "application/octet-stream"} if headers is None else headers
 
     def __iter__(self) -> Iterator[bytes]:
-        yield b"response"
+        yield self.content
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
-        yield b"response"
+        yield self.content
 
     def close(self) -> None:
         self.closed += 1
@@ -80,6 +84,24 @@ class _FailedClose(_Body):
     def close(self) -> None:
         super().close()
         raise self.failure
+
+
+class _CompletedBody(_Body):
+    """Advance the public clock at native EOF, after every response byte arrived."""
+
+    def __init__(self, clock: _Clock, vector: dict[str, object]) -> None:
+        super().__init__(json.dumps(vector["response"]).encode(), vector["headers"])
+        self.clock = clock
+        self.completed = vector["completed"]
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield from super().__iter__()
+        self.clock.value = self.completed
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        async for chunk in super().__aiter__():
+            yield chunk
+        self.clock.value = self.completed
 
 
 class _ExpiringClose(_Body):
@@ -115,7 +137,7 @@ class _GatedClose(_Body):
 
 
 def _answer(body: _Body) -> httpx2.Response:
-    return httpx2.Response(200, headers={"content-type": "application/octet-stream"}, stream=body)
+    return httpx2.Response(200, headers=body.headers, stream=body)
 
 
 class _Fault(httpx2.BaseTransport):
@@ -170,7 +192,6 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
             ("phase", 0.5, 1.0),
             ("none", None, 1.0),
             ("unlimited", None, None),
-            ("absolute", 1.0, 2.0),
         ):
             timeout = options.TimeoutOptions(**{phase: configured})
             with httpx2.Client(transport=httpx2.MockTransport(failed)) as native:
@@ -180,7 +201,6 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
                         timeout=timeout,
                         retry=options.RetryOptions(max_retries=0),
                         total_timeout=total,
-                        deadline=options.Deadline.after(0.5, clock=clock) if label == "absolute" else None,
                         clock=clock,
                     ),
                 ) as api:
@@ -633,6 +653,7 @@ async def _cancelled_binding(package: ModuleType, options: ModuleType, lines: li
 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    await _acompleted_response(package, options, lines)
     await _async_races(package, options, lines)
     await _expired_read(package, options, lines)
     await _nested_wait(package, options, lines)
@@ -649,4 +670,53 @@ def deadline_races(package: ModuleType, lines: list[str]) -> None:
     _phase_sources(package, options, lines)
     _admission_race(package, options, lines)
     _sync_races(package, options, lines)
+    _completed_response(package, options, lines)
     run(lambda: _async(package, options, lines))
+
+
+def _completed_input(options: ModuleType) -> tuple[_CompletedBody, object]:
+    vector = json.loads((Path(__file__).parents[1] / "generation_platform/client/deadline-completed.json").read_text())
+    clock = _Clock()
+    clock.value = vector["started"]
+    settings = options.ClientOptions(total_timeout=vector["total_timeout"], clock=options.Clock(monotonic=clock))
+    return _CompletedBody(clock, vector), settings
+
+
+def _completed_response(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    body, settings = _completed_input(options)
+    transport = _Fault(lambda: None, body)
+    with httpx2.Client(transport=transport) as native:
+        with package.Client(
+            http_client=native,
+            options=settings,
+        ) as api:
+            record(
+                lines,
+                "completed typed response after expiry",
+                lambda: api.pets.with_response.list_pets(
+                    x_trace=argument(package, "listPets", "header", "X-Trace", "t")
+                ).data.root[0].name,
+            )
+        record(lines, "completed response resources", lambda: (transport.sent, body.closed, native.is_closed))
+
+
+async def _acompleted_response(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    body, settings = _completed_input(options)
+
+    async def unchanged() -> None:
+        await asyncio.sleep(0)
+
+    transport = _AsyncFault(unchanged, body)
+    async with httpx2.AsyncClient(transport=transport) as native:
+        async with package.AsyncClient(
+            http_client=native,
+            options=settings,
+        ) as api:
+            async def completed() -> object:
+                response = await api.pets.with_response.list_pets(
+                    x_trace=argument(package, "listPets", "header", "X-Trace", "t")
+                )
+                return response.data.root[0].name
+
+            await arecord(lines, "async completed typed response after expiry", completed)
+        record(lines, "async completed response resources", lambda: (transport.sent, body.closed, native.is_closed))

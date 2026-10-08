@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
-    from ..client.timing import Clock, Deadline
+    from ..client.timing import Clock
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
@@ -385,7 +385,6 @@ class _Limits:
     max_page_bytes: int = 8 * 1024 * 1024
     max_cursor_bytes: int = 64 * 1024
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -438,7 +437,6 @@ def _limits(
         max_page_bytes=layered(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
         max_cursor_bytes=layered(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
@@ -770,7 +768,6 @@ class _Walk(Generic[T, P]):
 
             session = self.session = OperationSession(
                 total_timeout=limits.total_timeout,
-                deadline=limits.deadline,
                 clock=limits.clock,
             )
         return session

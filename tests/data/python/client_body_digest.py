@@ -310,11 +310,11 @@ def _sync_faults(
         file.seek(7)
         signer.reset(file=file, offset=7)
         replies.reset(200)
-        deadline = options.Deadline.after(seconds)
+        deadline = seconds
         file.until = deadline.at + 0.05
         outcome = _failure(
             lambda file=file, deadline=deadline: api.auth.signed_body(
-                body=bodies.FileBody(file), options=options.RequestOptions(deadline=deadline)
+                body=bodies.FileBody(file), options=options.RequestOptions(total_timeout=deadline)
             )
         )
         lines.append(f"  {label} {outcome}")
@@ -518,11 +518,11 @@ async def _async_faults(
         body = bodies.AsyncFileBody(file)
         signer.reset(file=file, offset=7)
         replies.reset(200)
-        deadline = options.Deadline.after(seconds)
+        deadline = seconds
         file.until = deadline.at + 0.05
         outcome = await _afailure(
             lambda body=body, deadline=deadline: api.auth.signed_body(
-                body=body, options=options.RequestOptions(deadline=deadline)
+                body=body, options=options.RequestOptions(total_timeout=deadline)
             )
         )
         lines.append(f"  async {label} {outcome}")

@@ -203,7 +203,7 @@ async def _async(
     async with (
         exchange.async_client() as native,
         package.AsyncClient(http_client=native) as api,
-        api.retry.with_streaming_response.get_safe(options=options.RequestOptions(stream_total_timeout=2)) as response,
+        api.retry.with_streaming_response.get_safe(options=options.RequestOptions(timeout=options.TimeoutOptions(read=2))) as response,
     ):
         await arecord(lines, "stream reuses its deadline through EOF", response.read)
     with patch.dict(sys.modules, {"h2": None}):

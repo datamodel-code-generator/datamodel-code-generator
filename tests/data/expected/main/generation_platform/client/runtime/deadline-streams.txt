@@ -5,7 +5,7 @@
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read cap default APIConnectionError secondary []
-  stream observed read cap [60.0]
+  stream observed read cap [5.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read cap disabled APIConnectionError secondary []
@@ -16,15 +16,12 @@
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read APITimeoutError
-  > GET https://example.com/total
-    [host: example.com, accept-encoding: gzip, deflate] b''
-  stream total APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/release
@@ -60,7 +57,7 @@
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read cap default APIConnectionError secondary []
-  async stream observed read cap [60.0]
+  async stream observed read cap [5.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read cap disabled APIConnectionError secondary []
@@ -71,12 +68,9 @@
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read APITimeoutError
-  > GET https://example.com/total
-    [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream total APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=ReadTimeout('')] deadline_exceeded
+  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
   > GET https://example.com/native-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream native cancellation propagated

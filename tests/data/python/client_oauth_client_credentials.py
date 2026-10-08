@@ -514,10 +514,6 @@ def _single_flight(auth: ModuleType, lines: list[str]) -> None:
         script.entered.wait(LIMIT)
         second = Caller(lambda: shared.get(_context(auth)), _outcome)
         second.start()
-        options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-        frozen = options.Clock(monotonic=lambda: 1000.0)
-        bounded = _context(auth, deadline=options.Deadline.after(0, clock=frozen))
-        lines.append(f"  caller whose deadline ends while waiting = {_outcome(lambda: shared.get(bounded))}")
         gate.set()
         for caller in (first, second):
             caller.join(LIMIT)
@@ -583,10 +579,6 @@ def _faults(auth: ModuleType, errors: ModuleType, lines: list[str]) -> None:
         except KeyboardInterrupt:
             lines.append("  interrupted send = KeyboardInterrupt")
         lines.append(f"    later get = {_outcome(lambda: shared.get(_context(auth)))}")
-    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-    with provider() as shared:
-        passed = _context(auth, deadline=options.Deadline.after(0))
-        lines.append(f"  caller deadline already passed = {_outcome(lambda: shared.get(passed))}")
     script = Script(_reply(_ISSUED))
     native = script.client()
     shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, http_client=native)
@@ -676,10 +668,6 @@ async def _async_faults(auth: ModuleType, lines: list[str]) -> None:
     ):
         async with provider(Script(*replies), client_secret, total) as shared:
             lines.append(f"  {label} = {await _aoutcome(lambda shared=shared: shared.get(_context(auth)))}")
-    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-    async with provider(Script()) as shared:
-        passed = _context(auth, deadline=options.Deadline.after(0))
-        lines.append(f"  async caller deadline already passed = {await _aoutcome(lambda: shared.get(passed))}")
     async with provider(Script(Response(200, granted), hold=asyncio.Event()), total=0.1) as shared:
         lines.append(f"  async session expires while sending = {await _aoutcome(lambda: shared.get(_context(auth)))}")
     closing = _AsyncClosing(auth)

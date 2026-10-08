@@ -419,7 +419,7 @@ def _expired_close(harness: _Harness, connector: _Connector) -> None:
     with harness.package.Client(options=harness.client(connector, clock=clock)) as api:
         closed = harness.errors.WebSocketClosedError(code=1000, reason="", clean=True)
         connector.queue.append(_Connection(harness, receive=lambda: now.__setitem__(0, 20.0), frames=(closed,)))
-        session = api.protocols.feed.text.connect(options=options.RequestOptions(stream_total_timeout=10))
+        session = api.protocols.feed.text.connect(session_options=options.SessionOptions(total_timeout=10))
         record(lines, "server closed after the session's deadline", session.receive)
         lines.append(f"    {session!r}")
 
@@ -784,7 +784,7 @@ async def _async_connectors(harness: _Harness) -> None:
         connection.blocked = threading.Event()
         connector.queue.append(connection)
         session = await api.protocols.feed.text.connect(
-            options=harness.options.RequestOptions(stream_total_timeout=0.05)
+            session_options=harness.options.SessionOptions(total_timeout=0.05)
         )
         await arecord(lines, "async send cut by the session deadline", lambda: session.send("first"))
         lines.append(f"    {session!r}")

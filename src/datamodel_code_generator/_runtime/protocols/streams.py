@@ -1,8 +1,8 @@
 """Server-sent event and NDJSON streams: their parsers, typed events, and the handles that read them.
 
 A stream helper opens its operation as one child call of a session of its own and hands the response to a handle, which
-reads only the bytes the next event or record needs. The response's idle limit counts only while a step waits for
-bytes; between steps only the stream's total limit and the session's deadline run. A helper whose metadata declares
+reads only the bytes the next event or record needs. Native read timeouts govern waits for bytes, and an optional
+helper session budget limits later reads and reconnects. A helper whose metadata declares
 resumption tracks the cursor of the last event it delivered: its `checkpoint` saves it, its `resume` reopens the stream
 after it in a session of its own, and an interruption reopens it as one more child call of the same session when the
 call enables reconnection.
@@ -31,7 +31,7 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
-from ..client.options import RequestOptions
+from ..client.options import RequestOptions, TimeoutOptions
 from ..client.raw import afinished, aheld, checked, finished, held
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError, ParameterEncodingError
@@ -71,7 +71,7 @@ if TYPE_CHECKING:
     from ..client.operations import InboundModelCodec, OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
-    from ..client.timing import Clock, Deadline
+    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
@@ -490,7 +490,6 @@ class _Limits:
     max_line_bytes: int = 262144
     max_event_bytes: int = 1048576
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -536,7 +535,9 @@ def _limits(
     else:
         _unpatched(core, plan, resume, request)
     if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
-        request = replace(request or RequestOptions(), stream_idle_timeout=idle)
+        request = request or RequestOptions()
+        timeout = request.timeout if isinstance(request.timeout, TimeoutOptions) else TimeoutOptions()
+        request = replace(request, timeout=replace(timeout, read=idle))
     return _Limits(
         reconnect=reconnect,
         max_reconnects=layered(kinds, "max_reconnects", _DEFAULTS.max_reconnects),
@@ -544,7 +545,6 @@ def _limits(
         max_line_bytes=layered(kinds, "max_line_bytes", _DEFAULTS.max_line_bytes),
         max_event_bytes=layered(kinds, "max_event_bytes", _DEFAULTS.max_event_bytes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
@@ -582,7 +582,7 @@ def _session(limits: _Limits) -> OperationSession:
     """Start the stream's session."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
 
-    return OperationSession(total_timeout=limits.total_timeout, deadline=limits.deadline, clock=limits.clock)
+    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1184,7 +1184,7 @@ class _Events(Generic[T]):
 
     def _retryable(self, error: APIConnectionError) -> bool:
         """Return whether a transport failure reading the body is one an automatic reconnection may follow."""
-        return self._client.reconnects_after(error, self._limits.options, self._operation_id)
+        return self._client.reconnects_after(error)
 
     def _event(self, frame: _Frame) -> StreamEvent[T] | _End:
         """Return a dispatched event decoded, or the stream's end at its terminal event; an error event raises.

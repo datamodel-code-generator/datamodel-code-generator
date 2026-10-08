@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Clock, Deadline
+    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
@@ -222,7 +222,6 @@ class _Limits:
     max_polls: int | None = 1000
     max_wait: float | None = 60.0
     total_timeout: float | None = 600.0
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -275,15 +274,11 @@ def _limits(
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),
         max_wait=layered(kinds, "max_wait", _DEFAULTS.max_wait),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
-    interval, deadline = limits.interval, limits.deadline
-    session = (limits.total_timeout, None if deadline is None else deadline.remaining())
-    if ((allowed := limits.max_wait) is not None and interval > allowed) or any(
-        bound is not None and interval >= bound for bound in session
-    ):
+    interval, total = limits.interval, limits.total_timeout
+    if ((allowed := limits.max_wait) is not None and interval > allowed) or (total is not None and interval >= total):
         raise _invalid(plan, ("poll_options", "interval"))
     return limits
 
@@ -1143,7 +1138,6 @@ def _session(limits: _Limits) -> OperationSession:
 
     return OperationSession(
         total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
         clock=limits.clock,
     )
 

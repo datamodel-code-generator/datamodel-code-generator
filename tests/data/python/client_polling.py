@@ -340,7 +340,7 @@ def _waits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> 
             label,
             lambda polls=polls, session=session: helper.start(body=body, poll_options=polls, session_options=session),
         )
-    deadline = harness.session(deadline=harness.options.Deadline.after(0.5))
+    deadline = harness.session(total_timeout=0.5)
     step(
         lines,
         "interval past the session deadline",

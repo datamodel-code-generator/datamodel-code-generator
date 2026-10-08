@@ -73,7 +73,7 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         f"  scopes unknown={unknown.scopes!r} empty={empty.scopes!r} canonical={token.scopes!r}"
         f" equal={token == equivalent} unknown differs={unknown != empty}"
     )
-    deadline = options.Deadline.after(30)
+    deadline = None
     context = auth.CredentialContext(
         scheme="oauth",
         required_scopes=["write", "read", "read"],

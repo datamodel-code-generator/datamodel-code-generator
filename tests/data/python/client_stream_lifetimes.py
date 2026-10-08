@@ -594,14 +594,15 @@ async def _late_download(
     settings = options.ClientOptions(clock=options.Clock(monotonic=lambda: now[0]))
     async with package.AsyncClient(http_client=http, options=settings) as api:
         exchange.respond(_body())
-        limit = options.RequestOptions(stream_total_timeout=5)
+        limit = options.RequestOptions(total_timeout=5)
         async with api.with_streaming_response.request_raw("GET", _URL, options=limit) as response:
             now[0] = 10.0
+            late = "returned"
             try:
                 await response.stream_to(directory / "late.bin")
             except Exception as error:  # noqa: BLE001
                 late = f"{type(error).__name__} {error.reason} {error.phase} status {error.info.status_code}"
-        lines.append(f"  async download past its stream deadline {late} {_files(directory)}")
+        lines.append(f"  async download after its acquisition budget {late} {_files(directory)}")
 
 
 async def _mid_body(task: asyncio.Task[None]) -> None:

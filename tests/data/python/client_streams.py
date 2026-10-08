@@ -549,43 +549,20 @@ class _Clock:
 
 
 def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any, Any, float], ...]:
-    """Return each limit a step's wait passes on the client clock: its label, its request, stream, and session options,
-    and the seconds the step waits for bytes."""
+    """Return native idle settings and optional helper session budgets on the client clock."""
     options, streams = harness.options, harness.protocols.StreamOptions
-    idle = options.RequestOptions(stream_idle_timeout=1.0)
+    idle = options.RequestOptions(timeout=options.TimeoutOptions(read=1.0))
     return (
-        ("idle while waiting for bytes", None, streams(idle_timeout=1.0), None, 2.0),
-        ("idle the call options set", idle, streams(), None, 2.0),
+        ("native idle while waiting for bytes", None, streams(idle_timeout=1.0), None, 2.0),
+        ("native read timeout from call options", idle, streams(), None, 2.0),
         (
-            "no idle limit before the session total",
-            idle,
+            "session total on the client clock",
+            None,
             streams(idle_timeout=None),
-            options.SessionOptions(total_timeout=5.0),
-            6.0,
-        ),
-        ("session total on the client clock", None, None, options.SessionOptions(total_timeout=10.0), 61.0),
-        (
-            "session deadline from another clock",
-            None,
-            None,
-            options.SessionOptions(deadline=options.Deadline.after(60.0)),
-            61.0,
-        ),
-        ("stream total on the client clock", options.RequestOptions(stream_total_timeout=10.0), None, None, 61.0),
-        (
-            "session total before the stream total",
-            options.RequestOptions(stream_total_timeout=100.0),
-            None,
-            options.SessionOptions(total_timeout=10.0),
-            11.0,
-        ),
-        (
-            "stream total before the session total",
-            options.RequestOptions(stream_total_timeout=1.0),
-            None,
-            options.SessionOptions(total_timeout=10.0),
+            options.SessionOptions(total_timeout=1.0),
             2.0,
         ),
+        ("request budget ends after acquisition", options.RequestOptions(total_timeout=10.0), None, None, 61.0),
     )
 
 

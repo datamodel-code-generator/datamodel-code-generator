@@ -15,7 +15,7 @@ from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
-from .timing import Deadline
+from .timing import Budget
 
 __all__ = (
     "AccessToken",
@@ -167,14 +167,14 @@ class CredentialContext:
     required_scopes: tuple[str, ...] = field(repr=False)
     audience: str | None = field(repr=False)
     origin: str = field(repr=False)
-    deadline: Deadline | None = field(repr=False)
+    deadline: Budget | None = field(repr=False)
 
     def __post_init__(self) -> None:
         """Freeze requirements and retain the caller's exact deadline and cancellation references."""
         checked_type(self.scheme, (str,), ("scheme",))
         checked_type(self.audience, (str, type(None)), ("audience",))
         checked_type(self.origin, (str,), ("origin",))
-        checked_type(self.deadline, (Deadline, type(None)), ("deadline",))
+        checked_type(self.deadline, (Budget, type(None)), ("deadline",))
         object.__setattr__(self, "required_scopes", checked_scopes(self.required_scopes, "required_scopes"))
 
 

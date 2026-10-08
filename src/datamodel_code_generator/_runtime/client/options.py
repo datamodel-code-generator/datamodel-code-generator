@@ -24,7 +24,6 @@ from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: T
 from .timing import (
     SYSTEM_CLOCK,
     Clock,
-    Deadline,
     ResolvedTimeoutOptions,
     SessionOptions,
     checked_count,
@@ -40,7 +39,6 @@ __all__ = (
     "UNSET",
     "ClientOptions",
     "Clock",
-    "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
@@ -234,7 +232,7 @@ class ServerSelection:
         object.__setattr__(self, "variables", MappingProxyType(variables))
 
 
-DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=30.0, write=30.0, pool=5.0)
+DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=600.0, pool=600.0)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -570,10 +568,7 @@ class _Options:
     context: Mapping[str, JSONScalar] | Unset = UNSET
     timeout: TimeoutOptions | Unset | None = UNSET
     total_timeout: float | Unset | None = UNSET
-    deadline: Deadline | Unset | None = UNSET
     limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
-    stream_idle_timeout: float | Unset | None = UNSET
-    stream_total_timeout: float | Unset | None = UNSET
     retry: RetryOptions | Unset = UNSET
     redirects: RedirectOptions | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
@@ -581,10 +576,9 @@ class _Options:
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
-        checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
-        for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
+        for name in ("total_timeout",):
             if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
                 object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
 
@@ -666,12 +660,8 @@ class Settings:
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
     async_hooks: bool = False
     timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
-    stream_read_timeout: float | None = None
-    total_timeout: float | None = 60.0
-    deadline: Deadline | None = None
+    total_timeout: float | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
-    stream_idle_timeout: float | None = 60.0
-    stream_total_timeout: float | None = None
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
     idempotency_key: IdempotencyKey | Unset | None = UNSET

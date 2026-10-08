@@ -167,7 +167,6 @@ def _clock_options(resumes: _Resumes) -> Any:
     return options.ClientOptions(
         clock=options.Clock(monotonic=lambda: next(ticks), time=lambda: 0.0, random=lambda: 0.5),
         total_timeout=None,
-        stream_idle_timeout=None,
         timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
         retry=options.RetryOptions(initial_delay=8.0, max_delay=16.0),
     )
