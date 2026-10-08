@@ -149,8 +149,10 @@ def generate_client(
 
 def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
     """Render a publication profile with all copied files and its dependency report."""
+    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
+    source = _prepare_input(case, root)
     return render_target(
-        SOURCE / case["input"],
+        source,
         model_config=model_config(root / "publication_client_models.py", backend, case.get("model", {})),
         config=client_config(
             {
@@ -158,7 +160,6 @@ def publication_client(case: dict[str, Any], root: Path, backend: str) -> Genera
                 "package": "publication_client",
                 "model_package": "publication_client_models",
                 **case.get("config", {}),
-                **({"protocols": SOURCE / case["config"]["protocols"]} if "protocols" in case.get("config", {}) else {}),
             },
             root,
         ),
