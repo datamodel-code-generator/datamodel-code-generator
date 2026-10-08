@@ -163,9 +163,9 @@
 -from fastapi.responses import Response
 +from fastapi import APIRouter, Body, Depends, Header, Query
  from pydantic import Field
- from pydantic.json_schema import SkipJsonSchema
  
-@@ -100,85 +99,11 @@
+ from .._generated import contract
+@@ -97,85 +96,11 @@
      )
  
  

@@ -21,7 +21,7 @@ service UntaggedService without its methods: TypeError
 > GET /values/5?flag=maybe
 < 422 application/json [{"type": "type_error", "loc": ["query", "flag"]}]
 > GET /values/5?label=a
-< 422 application/json [{"type": "string_too_short", "loc": ["query", "label", "constrained-str"]}, {"type": "none_required", "loc": ["query", "label", "none"]}]
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "label"]}]
 > GET /values/5?counts=1&counts=x
 < 422 application/json [{"type": "type_error", "loc": ["query", "counts"]}]
 > GET /values/5?page=x

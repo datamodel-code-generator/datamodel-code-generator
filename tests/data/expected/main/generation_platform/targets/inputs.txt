@@ -17,16 +17,16 @@ render
   11 runtime modules ['write']
 {
   "files": {
-    "README.md": "sha256:b8046e961b70baa63b8d8b0c7d1e33dd434b4286ecaccd5990ea61d25fafd836",
-    "__init__.py": "sha256:d3052c0e9e057b89ef1ffcf0f78a07f59b43a50ac9cda053bc670b9ae92f2c16",
+    "README.md": "sha256:9361ce53643266d6ad4a6b47a83e52e818932c533f14cec9cb89764866b83071",
+    "__init__.py": "sha256:fd5f12f53e9b91540743a786e8df6ccb8e1d90df3fb39762c3ba8740a32e85a0",
     "_generated/__init__.py": "sha256:10e6a917c6aad1f0b20bd3bc37eb2a23c25709af9263dee4cb4848b6b6f1d218",
-    "_generated/contract.py": "sha256:9d871c369c4d7be28fdb0805a81c5b25d55a7eaa171d8a4082d2655a441b6a7b",
-    "application.py": "sha256:bca7052ea1569d83e766f2c529e8fba624f562dc83349d4cab43b8d0183cd006",
+    "_generated/contract.py": "sha256:19fc85d9e38d10d80b3dd4aefb4b5cb300d379af32487dc6fd55cef136ff3db0",
+    "application.py": "sha256:6cce1a77a380cc0e9ebcd0bbfa0dde1a3a1aac9bf0b26cd175fb9794e637bf62",
     "errors.py": "sha256:efdfe792fa77df3c491f826a91e89194b10a156edfb0d5fe67a8fa02e9cd3e52",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:e8d9d8df87cbfbf0a9add51823d601424c3087a4061a7b0572f6ac1a5ec8c4f0",
-    "routers/items.py": "sha256:b3a2cbfd9ec169a7ba1609d4e385ee989ef24702e33bdddb7c724fc69f7067af",
-    "routers/users.py": "sha256:4fb3560383753c508b8b235ac41ef55e55f93a084e3c590b162f6c18b038f158",
+    "routers/items.py": "sha256:bbb6106d94348cea33a0c8df1dc786cb875773ded1ec333ac7022c875a839ee7",
+    "routers/users.py": "sha256:82587ca12975117e78478568f802ed4d0cbd7894d6818fb454133116b1090fef",
     "services.py": "sha256:e21b295b33f9a9ec3557c31ed341809fcc645187fa50a42328aa476b12f688b3"
   },
   "format": 1,

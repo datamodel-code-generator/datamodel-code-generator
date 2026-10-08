@@ -93,7 +93,7 @@ service UntaggedService without its methods: TypeError
 > GET /items/1
 < 422 application/json [{"type": "literal_error", "loc": ["header", "X-Flag"]}]
 > GET /items/1?kind=c
-< 422 application/json [{"type": "enum", "loc": ["query", "kind", "str-enum[FieldItemsLevelGetQueryKindParameter]"]}, {"type": "none_required", "loc": ["query", "kind", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /items/1?tier=2
   get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=None, ratio=None, x_flag=None, kind=None, tier=<FieldItemsLevelGetQueryTierParameter1.integer_2: 2>, levels=None)
 < 204 - b''

@@ -66,7 +66,6 @@ show server/routers/pets.py
   | import example.models as example_models
   | from fastapi import APIRouter, Body
   | from fastapi.responses import Response
-  | from pydantic.json_schema import SkipJsonSchema
   | 
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
@@ -101,7 +100,7 @@ show server/routers/pets.py
   | 
   |     def create_pet(
   |         *,
-  |         body: Annotated[example_models.Pet | SkipJsonSchema[None], Body(
+  |         body: Annotated[example_models.Pet | None, Body(
   |             media_type='application/json',
   |         )] = None,
   |     ) -> object:
