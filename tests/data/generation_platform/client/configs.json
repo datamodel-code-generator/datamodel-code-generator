@@ -385,7 +385,7 @@
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nsecurity = []\n"
   },
   "protocols-path": {
-    "protocols": "protocols/disabled.yaml"
+    "protocols": "protocols/disabled.json"
   },
   "protocols-type": {
     "protocols": {
@@ -408,7 +408,7 @@
     }
   },
   "toml-protocols": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"client-protocols.yaml\"\n",
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"client-protocols.json\"\n",
     "toml_path": "config/client.toml"
   },
   "toml-protocols-type": {

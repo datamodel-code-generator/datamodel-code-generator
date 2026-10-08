@@ -69,9 +69,9 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     if use_single_line_docstring:
         extra_template_data[ALL_MODEL]["use_single_line_docstring"] = True
     if target_pydantic_version:
-        (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["target_pydantic_version"] = (
-            target_pydantic_version
-        )
+        extra_template_data[ALL_MODEL]["target_pydantic_version"] = target_pydantic_version
+        if use_generic_base_class:
+            base_config["target_pydantic_version"] = target_pydantic_version
     if schema_validator_base_class_name:
         extra_template_data[ALL_MODEL]["schema_validator_base_class_name"] = schema_validator_base_class_name
     if generate_schema_validators:

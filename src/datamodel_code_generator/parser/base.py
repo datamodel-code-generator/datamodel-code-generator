@@ -6237,6 +6237,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__restore_inherited_field_names_for_unique_aliases(models)
         self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
         self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
+        for model in models:
+            model.refresh_field_config()
         self.__fix_constructor_field_ordering(models)
 
         return self.__remove_overridden_models(models)

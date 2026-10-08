@@ -1,5 +1,0 @@
-# protocols-envelope-missing
-render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols.schema_version: protocols needs 'schema_version'
-  E_CONFIG_VALUE config protocols.helpers: protocols needs 'helpers'

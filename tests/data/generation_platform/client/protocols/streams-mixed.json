@@ -1,0 +1,22 @@
+{
+  "notes.watch": {
+    "kind": "sse",
+    "operation": "/paths/~1notes~1events/get",
+    "media": "Text/Event-Stream; charset=utf-8",
+    "event_schema": {"pointer": "/components/schemas/Note"},
+    "completion": {"kind": "eof"}
+  },
+  "notes.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1notes/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Note"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "null"}],
+      "empty_string": "end"
+    }
+  }
+}
