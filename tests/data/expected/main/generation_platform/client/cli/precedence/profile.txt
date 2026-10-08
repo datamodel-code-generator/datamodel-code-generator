@@ -1,0 +1,4 @@
+$ datamodel-codegen --profile unpack
+# client/resources/pets/_sync.py
+list_all(**kwargs)
+create_pet(**kwargs)

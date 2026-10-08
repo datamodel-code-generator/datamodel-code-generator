@@ -218,7 +218,8 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
-_SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
+_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
+_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
 class Exit(IntEnum):
@@ -474,7 +475,7 @@ def _validate_remote_lock_artifacts(
             ("input", config.input if isinstance(config.input, Path) else None),
             ("diff input", config.diff_against),
             ("output", config.output),
-            ("server output", config.server_output if config.generate_server is not None else None),
+            _target_output(config) or ("target output", None),
             ("model metadata", config.emit_model_metadata),
         ):
             if path is not None:
@@ -767,7 +768,7 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
-    target_jobs = {plan.name for plan in plans if plan.config.generate_server is not None}
+    target_jobs = {plan.name for plan in plans if _selected_target(plan.config) is not None}
     for plan in plans:
         config = plan.config
         if config.output is None:  # pragma: no cover - guarded by the TOML validation above
@@ -779,8 +780,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
         inputs.append((plan.name, config.input.expanduser().resolve()))
         artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
-        if config.generate_server is not None and (server_output := config.server_output) is not None:
-            artifacts.append((plan.name, "server output", server_output.expanduser().resolve(strict=False)))
+        if (target := _target_output(config)) is not None:
+            artifacts.append((plan.name, target[0], target[1].expanduser().resolve(strict=False)))
         if (model_metadata := config.emit_model_metadata) is not None:
             if plan.resolved_model_metadata_root is None:  # pragma: no cover - set when metadata is configured
                 msg = f"Job '{plan.name}' cannot resolve model metadata output: {model_metadata}"
@@ -1247,17 +1248,22 @@ def _compare_generated_single_file(
     from datamodel_code_generator._structured_output import CheckDifferencePayload  # noqa: PLC0415
 
     path = comparison.single_file_display_path or actual_output.as_posix()
-    if not actual_output.exists():
-        missing_kind, _, single_file_missing_message_suffix, _, _ = _output_comparison_policy(
-            input_diff=comparison.input_diff
+    if (actual_exists := actual_output.exists()) != generated_output.exists():
+        missing_kind, _, single_file_missing_message_suffix, extra_kind, extra_message_suffix = (
+            _output_comparison_policy(input_diff=comparison.input_diff)
         )
-        message = f"{missing_kind.upper()}: {path} ({single_file_missing_message_suffix})"
+        kind, message_suffix = (
+            (extra_kind, extra_message_suffix) if actual_exists else (missing_kind, single_file_missing_message_suffix)
+        )
+        message = f"{kind.upper()}: {path} ({message_suffix})"
         return OutputComparison(
-            differences=[CheckDifferencePayload(kind=missing_kind, path=path, message=message)],
+            differences=[CheckDifferencePayload(kind=kind, path=path, message=message)],
             content=f"{message}\n" if comparison.input_diff else message,
         )
 
-    diff_found, diff_lines = _compare_single_file(generated_output, actual_output, encoding, comparison)
+    diff_found, diff_lines = (
+        _compare_single_file(generated_output, actual_output, encoding, comparison) if actual_exists else (False, [])
+    )
     if not diff_found:
         return OutputComparison(differences=[], content="")
 
@@ -1493,6 +1499,8 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
             shutil.copyfile(generated_file, target)
         return
 
+    if not generated_output.exists():
+        return
     actual_output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(generated_output, actual_output)
 
@@ -1613,23 +1621,48 @@ def _flag(field: str, *, negative: bool = False) -> str:
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
 
 
-def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
-    """Return why the target options of a run cannot apply, if they cannot.
+def _selected_target(config: Config) -> tuple[str, str] | None:
+    """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
+    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
 
-    Server keys of pyproject.toml are validated like model keys but have no effect while no server is selected.
+
+def _target_output(config: Config) -> tuple[str, Path] | None:
+    """Name the package directory of the target a config selects, such as the server output and its path."""
+    if (selected := _selected_target(config)) is None or (output := getattr(config, f"{selected[1]}output")) is None:
+        return None
+    return f"{selected[1].removesuffix('_')} output", output
+
+
+def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
+    """Return why the target options of a run cannot apply.
+
+    Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
-    if config.generate_server is None:
-        given = [
-            _flag(field, negative=value is False)
-            for field, value in _explicit_config_args(namespace).items()
-            if field.startswith("server_")
-        ]
-        if not given:
-            return None
-        return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"
-    if missing := [field for field in _SERVER_REQUIRED_FIELDS if getattr(config, field) is None]:
-        return f"--generate-server requires {_option_list([_flag(field) for field in missing])}"
-    return None
+    explicit = _explicit_config_args(namespace)
+    unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
+    given = [
+        (
+            _flag(selector),
+            [_flag(field, negative=value is False) for field, value in explicit.items() if field.startswith(prefix)],
+        )
+        for selector, prefix in unselected
+    ]
+    if errors := [
+        f"{_option_list(flags)} {'requires' if len(flags) == 1 else 'require'} {selector}"
+        for selector, flags in given
+        if flags
+    ]:
+        return errors
+    return [
+        f"{_flag(selector)} requires {_option_list(missing)}"
+        for selector, prefix in _TARGET_SELECTORS
+        if getattr(config, selector) is not None
+        and (
+            missing := [
+                _flag(field) for name in _TARGET_REQUIRED if getattr(config, field := f"{prefix}{name}") is None
+            ]
+        )
+    ]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
@@ -1757,10 +1790,10 @@ def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
 def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     """Redirect a write-mode job's artifacts to private, same-filesystem staging paths.
 
-    A server job stages nothing: it renders its models and package without writing them, for publication with the
+    A target job stages nothing: it renders its models and package without writing them, for publication with the
     batch.
     """
-    if plan.config.check or plan.config.generate_server is not None:
+    if plan.config.check or _selected_target(plan.config) is not None:
         return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
     output = plan.config.output
@@ -1819,7 +1852,7 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
 def _stage_job_plans(plans: Sequence[JobPlan]) -> tuple[_StagedJobPlan, ...]:
     """Stage every write-mode job, removing earlier staging if preparation fails.
 
-    The jobs share one list for the targets that the server jobs of the batch plan.
+    The jobs share one list for the targets that the target jobs of the batch plan.
     """
     staged_plans: list[_StagedJobPlan] = []
     targets: list[Any] = []
@@ -1938,7 +1971,7 @@ def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
 
 
 def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:
-    """Load the publication journal only when an artifact must be published, with the targets server jobs planned."""
+    """Load the publication journal only when an artifact must be published, with the targets its jobs planned."""
     if targets:
         from datamodel_code_generator._target_cli import publish_targets  # noqa: PLC0415
 
@@ -1950,7 +1983,7 @@ def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targ
 
 
 def _planned_targets(staged_plans: Sequence[_StagedJobPlan]) -> Sequence[Any]:
-    """Return the targets the server jobs of a batch planned, in job order."""
+    """Return the targets the jobs of a batch planned, in job order."""
     return next((targets for staged_plan in staged_plans if (targets := staged_plan.targets)), ())
 
 
@@ -2474,8 +2507,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
-        if any(plan.config.generate_server is not None for plan in batch_plan.jobs):
-            print("Error: --generate-server cannot be used with --watch", file=sys.stderr)  # noqa: T201
+        if selected := next(filter(None, (_selected_target(plan.config) for plan in batch_plan.jobs)), None):
+            print(f"Error: {_flag(selected[0])} cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
         if namespace.output_format == "json":
             print("Error: --output-format json cannot be used with --watch", file=sys.stderr)  # noqa: T201
@@ -2646,10 +2679,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    if (target_usage := _target_usage_error(config, namespace)) is not None:
-        print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
+    if target_usage := _target_usage_errors(config, namespace):
+        for error in target_usage:
+            print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
-    if config.generate_server is not None:
+    if _selected_target(config) is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
         lock = None
@@ -2940,16 +2974,20 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             if generate_output.is_file():
                 print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
                 return cleanup_and_return(Exit.ERROR)
-        elif config.check and is_directory_output and generate_output.is_file():
+        elif (
+            config.check
+            and is_directory_output
+            and (generate_output.is_file() or (config.output.is_file() and not generate_output.exists()))
+        ):
             is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
         _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
 
-    if generate_output is None and result is not None:
+    if generate_output is None and (result is not None or namespace.output_format == "json"):
         if (
             write_error := _write_generated_result(
-                result,
+                {} if result is None else result,
                 namespace.output_format,
                 fail_on_multi_module_stdout=namespace.fail_on_multi_module_stdout is True,
             )

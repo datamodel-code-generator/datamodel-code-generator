@@ -5,6 +5,6 @@ paths:
     get:
       operationId: getChoices
       parameters:
-        - {name: choice, in: query, schema: {anyOf: [{type: string}, {type: integer}]}}
+        - {name: choice, in: query, schema: {anyOf: [{type: string}, {type: object}]}}
       responses:
         "204": {description: Done.}

@@ -71,7 +71,7 @@ from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model.base import UNDEFINED, DataModel
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
-from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum
+from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
@@ -1686,6 +1686,9 @@ class _Models:
                         model.IS_ALIAS,
                         model._nullable,  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                         _model_facts(model, policy),
+                        tuple(_literal_scalar(get_raw_enum_member_value(field.default)) for field in model.fields)
+                        if policy.kind == "enum"
+                        else (),
                     )
                 )
         return tuple(symbols), tuple(artifacts)

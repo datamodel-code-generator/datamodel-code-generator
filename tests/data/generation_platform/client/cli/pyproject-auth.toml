@@ -1,0 +1,20 @@
+[tool.datamodel-codegen]
+input = "auth.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1challenge-less/get" = { runtime = { auth_challenge_less_401 = true } }
+"/paths/~1idempotent/post" = { runtime = { retry_safety = "idempotent" } }
+"/paths/~1never/get" = { runtime = { retry_safety = "never" } }
+"/paths/~1vendor/get" = { runtime = { retry_after_ms_header = "X-Retry-In-Ms", should_retry_header = "X-Retry-Permitted" } }
+"/paths/~1signed-multipart/post" = { runtime = { retry_safety = "idempotent" } }
