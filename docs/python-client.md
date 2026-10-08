@@ -1023,10 +1023,10 @@ HTTP date, makes the wait longer, never shorter. The delay counts from the final
 inside it, so a retry's own delay is never added to the poll interval. A poll or a result fetch that fails with a
 response, such as a `503` after its retries, sets the next wait from that response the same way before its error is
 raised, and the next poll or fetch waits for it; the first result fetch is sent at once. `status` waits the same way.
-An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout` or the time left
-before its `deadline`, could never be waited out, so `start` raises `ConfigurationError` with the
+An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout`, could never be
+waited out, so `start` raises `ConfigurationError` with the
 `field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
-than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
+than `max_wait`, or not shorter than the remaining budget derived from the session and call `total_timeout`, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays as it was. Async waits propagate native task cancellation unchanged. Once the client is
 closed, every later `status` or `wait` that needs a poll or a result fetch raises `ConfigurationError` with the reason
