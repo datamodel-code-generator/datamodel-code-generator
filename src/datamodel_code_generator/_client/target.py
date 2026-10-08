@@ -14,7 +14,7 @@ from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
-from datamodel_code_generator._client.config import ClientGenerationConfig
+from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
@@ -117,7 +117,8 @@ class ClientTarget:
             plan = Planner(request, config, wire).plan()
         except PlanError as error:
             raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
+                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
+                option_prefix=OPTION_PREFIX,
             ) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
@@ -165,7 +166,8 @@ class ClientTarget:
                 tuple(
                     replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
                     for item in refused
-                )
+                ),
+                option_prefix=OPTION_PREFIX,
             )
         data = _HelperDigests(request, codecs, wire)
         metadata = helper_metadata(protocols, request)

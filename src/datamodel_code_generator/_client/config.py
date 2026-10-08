@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeIs
 
@@ -30,6 +30,7 @@ SignatureStyle: TypeAlias = Literal["explicit", "unpack"]
 BodyArguments: TypeAlias = Literal["body", "both"]
 RecordT = TypeVar("RecordT")
 
+OPTION_PREFIX: Final = "client"
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
@@ -109,6 +110,8 @@ class ClientOperationConfig:
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientGenerationConfig(TargetConfig):
     """Settings of one client target; model settings stay in the model configuration."""
+
+    _option_prefix: ClassVar[str] = OPTION_PREFIX
 
     transport: Transport = "httpx2"
     resource_names: tuple[ResourceName, ...] = ()
@@ -371,7 +374,7 @@ def operation_configs(entries: Mapping[OperationSelector, object]) -> tuple[Clie
     """
     read = [_entry(ref, entry, f"operations[{index}]") for index, (ref, entry) in enumerate(entries.items())]
     if problems := tuple(item for item in read if isinstance(item, Diagnostic)):
-        raise APIGenerationError(problems)
+        raise APIGenerationError(problems, option_prefix=OPTION_PREFIX)
     return tuple(item for item in read if isinstance(item, ClientOperationConfig))
 
 

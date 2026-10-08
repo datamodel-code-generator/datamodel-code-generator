@@ -17,5 +17,5 @@ generate
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 render
-  APIGenerationError
+  Error: server/.dcg-target-manifest.json: The manifest changed while the target was planned
   E_STATE_CHANGED error ownership server/.dcg-target-manifest.json: The manifest changed while the target was planned

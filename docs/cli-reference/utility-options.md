@@ -94,7 +94,6 @@ Choose what a generation prints to add the generated package to your project (ex
 default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
 
 **Related:** [`--generate-server`](target-generation-options.md#generate-server),
-[`--generate-client`](target-generation-options.md#generate-client),
 [FastAPI Server](../fastapi-server.md)
 
 !!! tip "Usage"
@@ -129,7 +128,6 @@ cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_
 Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
 
 **Related:** [`--generate-server`](target-generation-options.md#generate-server),
-[`--generate-client`](target-generation-options.md#generate-client),
 [Diagnostics](../fastapi-server.md#diagnostics)
 
 !!! tip "Usage"
@@ -143,7 +141,10 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
     ```
 
 The document is written after every run that passes the command-line checks, successful or not, and lists
-the diagnostics in the order stderr shows them. A usage error, such as `--generate-server` without
+the diagnostic records in their original phase order. stderr prints warnings separately, then one combined
+`Error:` message for a target failure, without the records' codes or stages. Ordinary model generation errors
+receive code `E_GENERATION_FAILURE` and stage `target` in the document, with the original exception type and
+message. A usage error, such as `--generate-server` without
 `--server-output`, prints `Error:` like any other command-line error and writes no document.
 
 ```json
@@ -167,12 +168,10 @@ the diagnostics in the order stderr shows them. A usage error, such as `--genera
 }
 ```
 
-`target` names the selected target: `fastapi` for `--generate-server` and `httpx2` for `--generate-client`.
-
-A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
+A path the generation reads or writes, or one inside the model or target output, is refused with `Error:`,
 and nothing is written to it; the check runs before anything is generated. An existing file is replaced only
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
-directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
+directory, or a file that cannot be written is refused with `Error:`, and the command exits with 2.
 
 ---
 

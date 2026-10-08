@@ -1,4 +1,4 @@
 # codec-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
+  Error: /paths/~1choices/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
   MC_PARAMETER_ENCODING binding /paths/~1choices/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind

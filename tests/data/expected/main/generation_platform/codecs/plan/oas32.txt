@@ -1,3 +1,2 @@
 # oas32
-refused APIGenerationError
-refused diagnostic MC_PARAMETER_ENCODING /paths/~1deep/get/parameters/0: Expanded query parameter names collide
+refused Error: /paths/~1deep/get/parameters/0: Expanded query parameter names collide

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._api_manifest import document_identity, portable
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
 
@@ -73,7 +74,9 @@ def plan_protocols(
             for at, schema in helper.schemas:
                 problems.extend(resolver.schema(at, schema))
     if problems:
-        raise APIGenerationError(tuple(replace(item, target_id=request.target_id) for item in problems))
+        raise APIGenerationError(
+            tuple(replace(item, target_id=request.target_id) for item in problems), option_prefix=OPTION_PREFIX
+        )
     return Protocols(helpers=helpers, operations=resolver.operations, documents=resolver.documents)
 
 

@@ -1,6 +1,1 @@
-APIGenerationError
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Leaves/properties/span: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Leaves/properties/moments/items: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The union members are both JSON strings, which the dataclasses.dataclass converter cannot tell apart
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Keyed/properties/by_color: The Color key type has no dataclasses.dataclass conversion
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Keyed/properties/by_code: The Code key type has no dataclasses.dataclass conversion
+Error: /components/schemas/Leaves/properties/span: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type; /components/schemas/Leaves/properties/moments/items: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type; /paths/~1leaves/post/requestBody: The union members are both JSON strings, which the dataclasses.dataclass converter cannot tell apart; /components/schemas/Keyed/properties/by_color: The Color key type has no dataclasses.dataclass conversion; /components/schemas/Keyed/properties/by_code: The Code key type has no dataclasses.dataclass conversion

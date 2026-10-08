@@ -5,7 +5,7 @@ from __future__ import annotations
 import keyword
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 
@@ -33,10 +33,12 @@ class TargetConfig:
     package: str
     model_package: str
 
+    _option_prefix: ClassVar[str | None] = None
+
     def __post_init__(self) -> None:
         """Reject values and combinations the shared contract does not allow, in field order."""
         if diagnostics := tuple(self._problems()):
-            raise APIGenerationError(diagnostics)
+            raise APIGenerationError(diagnostics, option_prefix=self._option_prefix)
 
     def _problems(self) -> Iterator[Diagnostic]:
         if not isinstance(self.output, Path):
