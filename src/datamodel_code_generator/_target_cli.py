@@ -292,6 +292,6 @@ def _failure(error: Exception, *, encoding: str = "utf-8") -> None:
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
         if not isinstance(error, RemoteLockError):
-            traceback.print_exception(error, file=sys.stderr)
+            print("".join(traceback.format_exception(error)), file=sys.stderr)  # noqa: T201
             return
     print(f"Error: {message}", file=sys.stderr)  # noqa: T201
