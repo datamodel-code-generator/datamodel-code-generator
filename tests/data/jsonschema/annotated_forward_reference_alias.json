@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tree",
+  "type": "object",
+  "properties": {
+    "treeName": {
+      "type": "string"
+    },
+    "rootNode": {
+      "$ref": "#/definitions/Node",
+      "description": "The first node"
+    },
+    "spare-node": {
+      "$ref": "#/definitions/Node"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Node"
+      },
+      "minItems": 1
+    },
+    "labels": {
+      "$ref": "#/definitions/Labels"
+    }
+  },
+  "required": [
+    "rootNode"
+  ],
+  "definitions": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "nodeValue": {
+          "type": "integer"
+        },
+        "owner-tree": {
+          "$ref": "#"
+        },
+        "next-node": {
+          "$ref": "#/definitions/Node"
+        }
+      }
+    },
+    "Labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    }
+  }
+}

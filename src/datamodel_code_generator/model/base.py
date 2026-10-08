@@ -1237,6 +1237,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """
         return False
 
+    @property
+    def loses_annotated_alias_for_forward_reference(self) -> bool:
+        """Return whether an alias inside ``Annotated`` is lost when the field type is a forward reference.
+
+        The neutral field policy intentionally keeps such an alias. Output backends whose target drops it can
+        override this hook; the parser then renders the field by assignment.
+        """
+        return False
+
     def _get_constructor_default_info(self) -> tuple[bool, bool]:
         """Return neutral constructor-default semantics for this field."""
         return _get_field_default_info(self)

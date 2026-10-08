@@ -1,0 +1,20 @@
+{
+  "treeName": "oak",
+  "rootNode": {
+    "nodeValue": 1,
+    "next-node": {
+      "nodeValue": 2
+    }
+  },
+  "spare-node": {
+    "nodeValue": 3
+  },
+  "nodes": [
+    {
+      "nodeValue": 4
+    }
+  ],
+  "labels": [
+    "old"
+  ]
+}

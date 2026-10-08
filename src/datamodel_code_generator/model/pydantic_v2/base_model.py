@@ -79,6 +79,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
+    PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
@@ -253,6 +254,7 @@ class Constraints(_Constraints):
 
 DataModelFieldV1 = _PydanticBaseDataModelField  # deprecated re-export, pydantic-v1 output removed in #3031
 
+_ALIAS_FIELD_KEYS: frozenset[str] = frozenset({"alias", "validation_alias", "serialization_alias"})
 _ALIAS_GENERATOR_TEMPLATE_DATA_KEY = "alias_generator"
 _ALIAS_GENERATOR_INTERNAL_KEY = "_alias_generator"
 _NO_ALIAS_INTERNAL_KEY = "_no_alias"
@@ -881,6 +883,20 @@ class DataModelField(_PydanticBaseDataModelField):
             return pinned_alias
         data["alias"] = wire_name
         return pinned_alias
+
+    @property
+    def loses_annotated_alias_for_forward_reference(self) -> bool:
+        """Return whether the target drops this BaseModel field's alias inside ``Annotated`` for a forward reference.
+
+        Pydantic before 2.11 builds such a field without the ``Annotated`` metadata and never applies its alias.
+        """
+        return (
+            self.use_annotated
+            and not model_target_supports(parent := self.parent, PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM)
+            and isinstance(parent, BaseModel)
+            and not parent.IS_ROOT_MODEL
+            and not _ALIAS_FIELD_KEYS.isdisjoint(self._get_field_data_and_default_factory()[0])
+        )
 
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:
