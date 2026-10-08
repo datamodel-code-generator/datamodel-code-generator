@@ -6246,21 +6246,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def __assign_forward_reference_aliases(  # noqa: PLR6301
         self, models: list[DataModel], *, can_retain_cache: bool
     ) -> None:
-        """Render a field by assignment when its alias inside ``Annotated`` would be lost for a forward reference.
+        """Let each model render fields by assignment when their alias inside ``Annotated`` would be lost.
 
-        A deferred annotation that names a model defined later in the module cannot be evaluated while the class is
-        created. A self reference can, so it is not a forward reference here. This remains an instance method
-        because ``snooper_to_methods`` does not preserve staticmethod descriptors on parser subclasses.
+        This remains an instance method because ``snooper_to_methods`` does not preserve staticmethod descriptors
+        on parser subclasses.
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
-            for field in model.fields:
-                if field.loses_annotated_alias_for_forward_reference and any(
-                    (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
-                    for data_type in field.data_type.all_data_types
-                ):
-                    field.use_annotated = False
-                    _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+            if model.assign_forward_reference_aliases(positions, index):
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __finalize_module_models(
         self,

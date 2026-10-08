@@ -1237,15 +1237,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """
         return False
 
-    @property
-    def loses_annotated_alias_for_forward_reference(self) -> bool:
-        """Return whether an alias inside ``Annotated`` is lost when the field type is a forward reference.
-
-        The neutral field policy intentionally keeps such an alias. Output backends whose target drops it can
-        override this hook; the parser then renders the field by assignment.
-        """
-        return False
-
     def _get_constructor_default_info(self) -> tuple[bool, bool]:
         """Return neutral constructor-default semantics for this field."""
         return _get_field_default_info(self)
@@ -2465,6 +2456,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         )
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
+
+    def assign_forward_reference_aliases(self, positions: Mapping[str, int], index: int) -> bool:  # noqa: ARG002, PLR6301
+        """Render fields by assignment when an alias inside ``Annotated`` is lost for a forward reference.
+
+        ``positions`` maps the path of each model in the module to its order and ``index`` is this model's order.
+        The neutral model policy intentionally changes nothing. Output backends whose target drops such an alias
+        can override this hook and return whether a field changed.
+        """
+        return False
 
     def clear_imports_cache(self) -> None:
         """Clear cached imports after import-affecting model, field, or data type mutations."""

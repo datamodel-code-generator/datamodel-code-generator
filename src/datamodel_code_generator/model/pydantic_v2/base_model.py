@@ -884,20 +884,6 @@ class DataModelField(_PydanticBaseDataModelField):
         data["alias"] = wire_name
         return pinned_alias
 
-    @property
-    def loses_annotated_alias_for_forward_reference(self) -> bool:
-        """Return whether the target drops this BaseModel field's alias inside ``Annotated`` for a forward reference.
-
-        Pydantic before 2.11 builds such a field without the ``Annotated`` metadata and never applies its alias.
-        """
-        return (
-            self.use_annotated
-            and not model_target_supports(parent := self.parent, PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM)
-            and isinstance(parent, BaseModel)
-            and not parent.IS_ROOT_MODEL
-            and not _ALIAS_FIELD_KEYS.isdisjoint(self._get_field_data_and_default_factory()[0])
-        )
-
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:
             return None
@@ -2125,6 +2111,30 @@ class BaseModel(BaseModelBase):
         if _is_internal_schema_runtime_validation(runtime_validation) and runtime_validation:
             return runtime_validation
         return None
+
+    def assign_forward_reference_aliases(self, positions: Mapping[str, int], index: int) -> bool:
+        """Leave ``Annotated`` for aliased fields that name a later model when the target predates Pydantic 2.11.
+
+        A deferred annotation naming a model defined later in the module cannot be evaluated while the class is
+        created, and older Pydantic then builds the field without the alias inside ``Annotated``. A self reference
+        can be evaluated, so it is not a forward reference here.
+        """
+        if self.IS_ROOT_MODEL or model_target_supports(self, PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM):
+            return False
+        changed = False
+        for field in self.fields:
+            if (
+                field.use_annotated
+                and isinstance(field, DataModelField)
+                and any(
+                    (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
+                    for data_type in field.data_type.all_data_types
+                )
+                and not _ALIAS_FIELD_KEYS.isdisjoint(field._get_field_data_and_default_factory()[0])  # noqa: SLF001
+            ):
+                field.use_annotated = False
+                changed = True
+        return changed
 
     def _prepare_schema_runtime_validation_config(self) -> None:
         """Prepare Pydantic config required by schema-derived runtime validators."""
