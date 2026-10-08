@@ -1,4 +1,4 @@
-# self-references
+# references
 render pydantic_v2.BaseModel
   write models.py
   write client/__init__.py
@@ -21,6 +21,7 @@ render pydantic_v2.BaseModel
   write client/types/default/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md

@@ -403,12 +403,23 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
         return result
 
+    def referenced_document(self, document: str, ref: str) -> str:
+        """Return the document a reference in a loaded document names, resolved as the walk resolves them there.
+
+        The walk follows no link or security scheme, so their references resolve here, loading nothing.
+        """
+        with self._inherited_ref_context(f"{document}#"), self.openapi_self_context(self._api_documents[document]):
+            return self.model_resolver.resolve_ref(f"{ref.partition('#')[0]}#").partition("#")[0]
+
     def release_records(self) -> None:
-        """Drop the recorded graph anchors and borrowed source nodes."""
+        """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
         self.acquisitions.clear()
         self.module_outputs.clear()
         self.operations.clear()
         self.resolutions.clear()
+        self._walked_items.clear()
+        self._walked_operations.clear()
+        self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
 
@@ -2229,9 +2240,9 @@ class _Contracts(_SchemaUses):
         while isinstance(ref := value.get("$ref"), str):
             source = locate(declaration, "declaration")
             document = (
-                urljoin(declaration.document, ref.partition("#")[0])
-                if not ref.startswith("#")
-                else declaration.document
+                declaration.document
+                if ref.startswith("#")
+                else self.parser.referenced_document(declaration.document, ref)
             )
             if document not in self.schemas.documents:
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
