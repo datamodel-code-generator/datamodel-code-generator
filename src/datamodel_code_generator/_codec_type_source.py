@@ -47,6 +47,19 @@ _STATIC_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str | None, str]]
     ("pydantic", "conint"): (None, "int"),
     ("pydantic", "constr"): (None, "str"),
 }
+_STATIC_SCALARS: Final = {name: BuiltinType(name) for name in ("bytes", "float", "int", "str")}
+
+
+def static_scalar(value: FinalPythonType) -> FinalPythonType:
+    """Return the builtin scalar a static checker sees for a constrained one, or any other type itself."""
+    match value:
+        case ConstructorType() if (
+            target := _STATIC_CONSTRUCTORS.get((value.callable.import_.from_, value.callable.import_.import_))
+        ) and (scalar := _STATIC_SCALARS.get(target[1])):
+            return scalar
+        case _:
+            pass
+    return value
 
 
 class Namespace:

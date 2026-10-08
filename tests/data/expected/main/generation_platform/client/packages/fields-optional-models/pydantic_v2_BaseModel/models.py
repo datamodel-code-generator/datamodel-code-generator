@@ -8,6 +8,7 @@ from enum import StrEnum
 from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class Kind(StrEnum):
@@ -62,32 +63,26 @@ class Pet(BaseModel):
     tag: str | None = None
 
 
-class FieldPetsPostQueryTagParameter(RootModel[str | None]):
-    root: str | None = None
+FieldPetsPostQueryTagParameter = TypeAliasType("FieldPetsPostQueryTagParameter", str | None)
 
 
-class FieldPetsPetIdPatchPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdPatchPathPetIdParameter = TypeAliasType("FieldPetsPetIdPatchPathPetIdParameter", int | None)
 
 
-class FieldPetsPetIdVisitsPostPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdVisitsPostPathPetIdParameter", int | None)
 
 
-class FieldPetsPetIdOwnerPutPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdOwnerPutPathPetIdParameter", int | None)
 
 
 class FieldOwnersPostRequest(RootModel[Owner | None]):
     root: Owner | None = None
 
 
-class FieldPetsPetIdLabelsPutPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdLabelsPutPathPetIdParameter", int | None)
 
 
-class FieldPetsPetIdPhotoPutPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int | None)
 
 
 class FieldPetsPetIdPhotoPutRequest(BaseModel):
@@ -95,8 +90,7 @@ class FieldPetsPetIdPhotoPutRequest(BaseModel):
     caption: str | None = None
 
 
-class FieldPetsPetIdRecordsPutPathPetIdParameter(RootModel[int | None]):
-    root: int | None = None
+FieldPetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdRecordsPutPathPetIdParameter", int | None)
 
 
 class NewPet(BaseModel):

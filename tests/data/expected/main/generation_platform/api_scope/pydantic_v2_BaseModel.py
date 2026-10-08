@@ -6,6 +6,7 @@ from __future__ import annotations
 from enum import Enum
 
 from pydantic import BaseModel, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Foo(BaseModel):
@@ -17,13 +18,11 @@ class Unused(Enum):
     missing = 'missing'
 
 
-class PageParameter(RootModel[int]):
-    root: int
+PageParameter = TypeAliasType("PageParameter", int)
 
 
 class TraceHeader(RootModel[str]):
     root: str
 
 
-class ListPetsQueryLimitParameter(RootModel[int]):
-    root: int
+ListPetsQueryLimitParameter = TypeAliasType("ListPetsQueryLimitParameter", int)

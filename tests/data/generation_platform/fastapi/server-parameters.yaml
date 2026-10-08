@@ -26,6 +26,16 @@ paths:
           schema: {type: array, title: Limits, examples: [[1]], items: {type: integer, minimum: 1}, default: [1, 2]}
       responses:
         "204": {description: Done.}
+  /sizes:
+    get:
+      operationId: getSizes
+      parameters:
+        - {name: size, in: query, schema: {$ref: "#/components/schemas/Size"}}
+        - {name: words, in: query, schema: {$ref: "#/components/schemas/Words"}}
+        - {name: one, in: query, schema: {type: string, const: x, default: x}}
+        - {name: least, in: query, schema: {$ref: "#/components/schemas/Size", default: 7}}
+      responses:
+        "204": {description: Done.}
   /repeat/{id}/again/{id}:
     get:
       operationId: repeat
@@ -69,6 +79,8 @@ paths:
         "204": {description: Done.}
 components:
   schemas:
+    Size: {type: integer, title: Size, minimum: 1, default: 10}
+    Words: {type: array, items: {type: string}, default: [a, b]}
     Filter:
       type: object
       additionalProperties: false

@@ -30,6 +30,7 @@ show models.py
   | # a comment
   | 
   | from pydantic import BaseModel, RootModel
+  | from typing_extensions import TypeAliasType
   | 
   | 
   | class Pet(BaseModel):
@@ -41,8 +42,7 @@ show models.py
   |     root: list[Pet]
   | 
   | 
-  | class FieldStoreOrdersGetQueryLimitParameter(RootModel[int]):
-  |     root: int
+  | FieldStoreOrdersGetQueryLimitParameter = TypeAliasType("FieldStoreOrdersGetQueryLimitParameter", int)
   | 
   | 
   | class Order(BaseModel):
