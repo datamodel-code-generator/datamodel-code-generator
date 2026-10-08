@@ -978,6 +978,33 @@ def test_fastapi_cli_jobs_json(
     )
 
 
+def test_fastapi_cli_jobs_json_paths(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Name the files of each server job in the batch document relative to that job's model output directory."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-layout-jobs.toml")
+    shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
+    run_main_with_args(
+        ["--all-jobs", "--output-format", "json"],
+        capsys=capsys,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8") * 2,
+    )
+    run_main_with_args(
+        ["--all-jobs", "--check", "--output-format", "json"],
+        capsys=capsys,
+        assert_no_stderr=True,
+        expected_stdout_path=EXPECTED / "cli" / "json" / "check" / "jobs-unchanged.txt",
+    )
+    for name in ("nested/models.py", "nested/server/README.md", "modular/models/pets.py", "modular/server/services.py"):
+        (tmp_path / name).unlink()
+    run_main_with_args(["--all-jobs", "--check", "--output-format", "json"], expected_exit=Exit.DIFF)
+    assert_output(
+        capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"),
+        EXPECTED / "cli" / "json" / "check" / "jobs.txt",
+    )
+
+
 def test_fastapi_cli_shared_models_jobs(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

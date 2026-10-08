@@ -11414,8 +11414,8 @@ The batch publishes the server packages together with the models of every job on
 nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
 planned changed in the meantime; the `uv add` notice of each package follows the publication on stderr. `--check`
 compares every job as a single run does and exits with 1 when any of them would change. With `--output-format json`,
-a server job adds the generation or check payload of a single server run to the batch document. Server jobs refuse
-`--watch`, as a single server run does.
+a server job adds the generation or check payload of a single server run to the batch document, with file paths
+relative to that job's model output directory. Server jobs refuse `--watch`, as a single server run does.
 
 ## The generated package
 
