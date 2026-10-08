@@ -544,6 +544,7 @@ def test_modular_output_below_a_file_keeps_the_filesystem_error(
         input_path=DATA_PATH / "openapi" / "modular.yaml",
         output_path=occupied_path / "output",
         input_file_type="openapi",
+        extra_args=["--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=TRACEBACK_HEADER,
