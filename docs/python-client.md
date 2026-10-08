@@ -24,10 +24,11 @@ to the names in the generated model graph and does not read the rendered model s
 
 ## Model conversion
 
-The generated models determine validation and conversion. Parameter, response-header and form text is split into
-strings and containers before the selected backend converts it; the client does not require a canonical numeric
-spelling or reject unknown object members before the model handles them. Pydantic and msgspec use their native
-conversion rules. Dataclass and TypedDict codecs construct values without adding schema validation.
+The generated models determine validation and conversion. Parameter, response-header and form text is decoded into
+its declared scalar types and containers before the selected backend handles it. Numeric spelling is not restricted
+to canonical JSON; invalid scalar text and unknown object members reach the model. Repeated undeclared members keep
+their last value. Pydantic and msgspec use their native conversion rules. Dataclass and TypedDict codecs construct
+values without adding schema validation.
 
 The generated `model_codecs` module exports `UNSET`, `Unset` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details.

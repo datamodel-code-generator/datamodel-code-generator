@@ -12151,6 +12151,27 @@ def test_main_jsonschema_type_alias_recursive_default_list(output_file: Path) ->
     )
 
 
+def test_main_jsonschema_type_alias_recursive_default_list_pydantic_v2_dataclass(output_file: Path) -> None:
+    """Import Field for list default factories on type alias fields in pydantic dataclasses."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_default_list.json",
+        output_path=output_file,
+        input_file_type=None,
+        assert_func=assert_file_content,
+        expected_file="type_alias_recursive_default_list_pydantic_v2_dataclass.py",
+        extra_args=[
+            "--use-type-alias",
+            "--use-annotated",
+            "--field-constraints",
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     int(black.__version__.split(".")[0]) < 23,
     reason="Installed black doesn't support the new 'type' statement",

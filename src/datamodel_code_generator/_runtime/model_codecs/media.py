@@ -280,6 +280,18 @@ def _integer_text(value: int) -> str:
         raise CodecResourceLimitError(msg) from None
 
 
+def typed(text: str, kind: LexicalKind) -> JSONScalar:
+    """Decode a declared scalar's wire text, leaving invalid values to the model."""
+    if kind == "string":
+        return text
+    if kind == "boolean":
+        return text == "true" if text in {"true", "false"} else text
+    try:
+        return int(text) if kind == "integer" else float(text)
+    except ValueError:
+        return text
+
+
 def percent_decode(raw: bytes, *, plus: bool) -> str:
     """Decode percent triplets exactly once and require the result to be UTF-8."""
     if plus:
@@ -346,13 +358,15 @@ def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan
     for raw_name, raw_value in split_form(raw):
         name = percent_decode(raw_name, plus=True)
         field = declared.get(name, additional)
-        value = percent_decode(raw_value, plus=True)
+        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)
             case None if field is not None and field.repeated:
                 result[name] = [value]
             case None:
+                result[name] = value
+            case _ if name not in declared:
                 result[name] = value
             case _:
                 raise issue(code="form.duplicate", message="A URL-encoded form repeats a single-valued member")

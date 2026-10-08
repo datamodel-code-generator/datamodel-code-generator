@@ -160,6 +160,7 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for label, parts in (
         ("stored id read", ((_NAMED % b"id", b"4"),)),
         ("stored id read of an extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"))),
+        ("stored id read of a repeated extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"), (_NAMED % b"x", b"2"))),
     ):
         exchange.respond(raw_response(202, _form(*parts), form))
         record(lines, label, api.forms.read_parts)
