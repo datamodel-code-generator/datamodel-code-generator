@@ -4556,6 +4556,32 @@ def test_main_strict_types_time(output_file: Path) -> None:
     )
 
 
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("strict_float.py", ["--strict-types", "float"]),
+        ("non_negative.py", ["--use-non-positive-negative-number-constrained-types"]),
+        (
+            "field_constraints_non_negative.py",
+            ["--field-constraints", "--use-non-positive-negative-number-constrained-types"],
+        ),
+        ("decimal_multiple_of.py", ["--use-decimal-for-multiple-of"]),
+    ],
+)
+def test_main_string_time_number_constraints(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test string time formats drop number constraints like string dates while numbers keep them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "string_time_number_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"string_time_number_constraints/{expected_file}",
+        extra_args=extra_args,
+    )
+
+
 def test_main_selective_constraint_kwargs_pydantic_v2(output_file: Path) -> None:
     """Test primitive constraints are preserved without dumping the full schema object."""
     run_main_and_assert(
