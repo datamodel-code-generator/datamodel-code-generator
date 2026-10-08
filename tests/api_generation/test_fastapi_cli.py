@@ -37,9 +37,6 @@ UNSUPPORTED = (
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
 )
 CONFLICT = "Error: --generate-server cannot be used with"
-NOT_WRITABLE = "Error: --diagnostics-json cannot be written: it is not a file in an existing directory\n"
-READ_OR_WRITTEN = "Error: --diagnostics-json names a file the generation reads or writes\n"
-OTHER_FILE = "Error: --diagnostics-json names an existing file that is not a report\n"
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 CONFIGURED = [
@@ -74,11 +71,6 @@ def _methods(services: Path) -> str:
     return f"# {services.parent.name}/services.py\n" + "".join(f"{method}\n" for method in methods)
 
 
-class _ReadOnlyPath(type(Path())):
-    def write_text(self, *_args: object, **_kwargs: object) -> int:
-        raise PermissionError(13, "Permission denied")
-
-
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -91,7 +83,7 @@ def test_fastapi_cli_generate(
         extra_args=_server(),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -142,7 +134,7 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -160,8 +152,6 @@ def test_fastapi_cli_check_outputs(
 ) -> None:
     """Compare real model and target text without publishing or changing any output file."""
     case = CHECK_CASES[case_name]
-    if case.get("json_only") and not structured:
-        pytest.skip("This conflict requires JSON output")
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     output = Path("models" if case.get("modular") else "models.py")
@@ -180,7 +170,7 @@ def test_fastapi_cli_check_outputs(
         output_path=output,
         extra_args=_server(*options),
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
     )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
@@ -271,7 +261,7 @@ def test_fastapi_cli_generation_json(
             output_path=model,
             extra_args=_server(*options, output=str(server)),
             capsys=capsys,
-            expected_stdout_path=DEPENDENCIES,
+            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         )
     if case.get("unowned"):
         server.mkdir()
@@ -320,7 +310,7 @@ def test_fastapi_cli_pyproject(
     """Write the same models and package from pyproject.toml alone as from the options, then check them."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-server.toml")
-    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     run_main_with_args(["--check"], capsys=capsys, assert_no_stderr=True)
@@ -383,7 +373,7 @@ def test_fastapi_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    run_main_with_args(arguments, capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
     report = "".join(_methods(path) for path in sorted(tmp_path.glob("*/services.py")))
     assert_output(
         f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
@@ -403,11 +393,11 @@ def test_fastapi_cli_pyproject_paths(
     shutil.copy2(CLI / "names.json", project / "names.json")
     (work / "names.json").write_text('{"/paths/~1pets/get": "find_pets"}', encoding="utf-8")
     monkeypatch.chdir(work)
-    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
     run_main_with_args(
         ["--server-output", "service", "--server-operation-names", "names.json"],
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
     )
     services = sorted(tmp_path.rglob("services.py"), key=lambda path: path.relative_to(tmp_path).as_posix())
     assert_output(
@@ -463,23 +453,6 @@ def test_fastapi_cli_lockfile(
     )
 
 
-def test_fastapi_cli_dependencies(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Print the runtime dependencies of the generated package as requirements lines when asked to."""
-    monkeypatch.chdir(tmp_path)
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server("--dependency-format", "requirements", output="service"),
-        copy_files=_inputs(tmp_path),
-        capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "requirements.txt",
-        file_should_not_exist=tmp_path / "server",
-    )
-
-
 def test_fastapi_cli_include_paths(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -490,11 +463,10 @@ def test_fastapi_cli_include_paths(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--diagnostics-json", "-", *include, output="service"),
+        extra_args=_server(*include, output="service"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "empty-report.txt",
-        assert_no_stderr=True,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         file_should_not_exist=tmp_path / "server",
     )
     assert_output(
@@ -505,11 +477,10 @@ def test_fastapi_cli_include_paths(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--check", "--diagnostics-json", "diagnostics.json", *include, output="service"),
+        extra_args=_server("--check", *include, output="service"),
         capsys=capsys,
         assert_no_stderr=True,
     )
-    assert_file_content(tmp_path / "diagnostics.json", "cli/empty-report.txt")
 
 
 def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
@@ -521,6 +492,8 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(),
+        capsys=capsys,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file="cli/stdin-models.py",
     )
@@ -551,11 +524,8 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         ([*OPTIONS, "--server-layout", "single"], "--server-layout requires --generate-server"),
         ([*OPTIONS, "--no-server-include-request"], "--no-server-include-request requires --generate-server"),
         (
-            [*OPTIONS, *PACKAGES, "--server-include-request", "--diagnostics-json", "-", "--dependency-format", "uv"],
-            (
-                "--server-package, --server-model-package, --server-include-request, --diagnostics-json and "
-                "--dependency-format require --generate-server"
-            ),
+            [*OPTIONS, *PACKAGES, "--server-include-request"],
+            "--server-package, --server-model-package and --server-include-request require --generate-server",
         ),
         (
             [*OPTIONS, "--generate-server", "fastapi"],
@@ -790,8 +760,8 @@ def test_fastapi_cli_model_option_warning(
         extra_args=_server("--reuse-scope", "tree"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
-        expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n",
+        expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n"
+        + DEPENDENCIES.read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -874,33 +844,22 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
 
 
 @pytest.mark.parametrize(
-    ("arguments", "stderr", "stdout"),
+    ("arguments", "stderr"),
     [
-        (
-            ["--watch", "--output-format", "json", "--diagnostics-json", "-"],
-            "Error: --generate-server cannot be used with --watch\n",
-            "conflicts-report.txt",
-        ),
-        (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n", None),
-        (["--diagnostics-json", "pets.yaml"], READ_OR_WRITTEN, None),
-        (["--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN, None),
-        (["--diagnostics-json", "server/diagnostics.json"], READ_OR_WRITTEN, None),
-        (["--diagnostics-json", "absent/diagnostics.json"], NOT_WRITABLE, None),
-        (["--diagnostics-json", "reports"], NOT_WRITABLE, None),
+        (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
+        (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
     ],
-    ids=["watch", "diff", "input", "pyproject", "server", "missing", "directory"],
+    ids=["watch", "diff"],
 )
 def test_fastapi_cli_conflicts(
     arguments: list[str],
     stderr: str,
-    stdout: str | None,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor and reports that would replace inputs, before writing anything."""
+    """Refuse options the target cannot honor before writing anything."""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "reports").mkdir()
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -909,7 +868,6 @@ def test_fastapi_cli_conflicts(
         copy_files=_inputs(tmp_path, "pyproject-target.toml"),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stdout_path=None if stdout is None else EXPECTED / "cli" / stdout,
         expected_stderr=stderr,
         output_should_not_exist=True,
     )
@@ -924,14 +882,13 @@ def test_fastapi_cli_conflicts(
     [
         ("pyproject-jobs.toml", ["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
         ("pyproject-jobs.toml", ["--job", "server"], f"{CONFLICT} --job\n"),
-        ("pyproject-jobs.toml", ["--all-jobs", "--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],
             "Error: --server-layout requires --generate-server\n",
         ),
     ],
-    ids=["all-jobs", "job", "jobs-pyproject", "model-job-server-option"],
+    ids=["all-jobs", "job", "model-job-server-option"],
 )
 def test_fastapi_cli_jobs(
     pyproject: str,
@@ -954,91 +911,16 @@ def test_fastapi_cli_jobs(
 
 
 @pytest.mark.parametrize(
-    ("fixture", "name", "stderr"),
+    ("arguments", "stderr"),
     [
-        ("notes.md", "notes.md", OTHER_FILE),
-        ("settings.json", "settings.json", OTHER_FILE),
-        ("client.json", "client.json", OTHER_FILE),
-        ("entries.json", "entries.json", OTHER_FILE),
-        ("tool-settings.toml", "pyproject.toml", READ_OR_WRITTEN),
+        (["--output-model-type", "msgspec.Struct"], UNSUPPORTED),
+        (["--emit-model-metadata", "metadata"], "Error: Model metadata output requires a file path, not a directory\n"),
     ],
-)
-def test_fastapi_cli_report_other_file(
-    fixture: str,
-    name: str,
-    stderr: str,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Keep an existing file that is not a diagnostics report of this target instead of replacing it."""
-    monkeypatch.chdir(tmp_path)
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server("--diagnostics-json", name),
-        copy_files=[*_inputs(tmp_path), (CLI / "reports" / fixture, tmp_path / name)],
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr=stderr,
-        output_should_not_exist=True,
-    )
-    assert_output((tmp_path / name).read_text(encoding="utf-8"), EXPECTED / "cli" / "kept" / f"{name}.txt")
-
-
-def test_fastapi_cli_report_replaced(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Replace an earlier report of this target, and refuse a report that cannot be written."""
-    monkeypatch.chdir(tmp_path)
-    for arguments in (
-        ["--diagnostics-json", "diagnostics.json"],
-        ["--check", "--diagnostics-json", "diagnostics.json"],
-    ):
-        run_main_and_assert(
-            input_path=Path("pets.yaml"),
-            output_path=Path("models.py"),
-            input_file_type="openapi",
-            extra_args=_server(*arguments),
-            copy_files=_inputs(tmp_path),
-            capsys=capsys,
-            assert_no_stderr=True,
-        )
-    assert_file_content(tmp_path / "diagnostics.json", "cli/empty-report.txt")
-    monkeypatch.setattr("datamodel_code_generator._target_cli.Path", _ReadOnlyPath)
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server("--check", "--diagnostics-json", "diagnostics.json"),
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr="Error: --diagnostics-json cannot be written: Permission denied\n",
-    )
-
-
-@pytest.mark.parametrize(
-    ("arguments", "stderr", "stdout"),
-    [
-        (["--output-model-type", "msgspec.Struct"], UNSUPPORTED, None),
-        (
-            ["--emit-model-metadata", "metadata"],
-            "Error: Model metadata output requires a file path, not a directory\n",
-            None,
-        ),
-        (
-            ["--dependency-format", "requirements", "--diagnostics-json", "-"],
-            "Error: --dependency-format cannot be used with --diagnostics-json -\n",
-            "format-report.txt",
-        ),
-    ],
-    ids=["backend", "metadata", "format"],
+    ids=["backend", "metadata"],
 )
 def test_fastapi_cli_config_errors(
     arguments: list[str],
     stderr: str,
-    stdout: str | None,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -1054,7 +936,6 @@ def test_fastapi_cli_config_errors(
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stdout_path=None if stdout is None else EXPECTED / "cli" / stdout,
         expected_stderr=stderr,
         output_should_not_exist=True,
     )
@@ -1477,9 +1358,8 @@ def test_fastapi_cli_options(
     assert_file_content(tmp_path / "server" / generated, f"cli/options/{expected}")
 
 
-@pytest.mark.parametrize("report", [False, True])
 def test_fastapi_cli_failures(
-    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Report an unresolved reference and an unexpected formatter failure without publishing files."""
     monkeypatch.chdir(tmp_path)
@@ -1487,15 +1367,14 @@ def test_fastapi_cli_failures(
         input_path=Path("broken.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--strict-refs", *(["--diagnostics-json", "-"] if report else [])),
+        extra_args=_server("--strict-refs"),
         copy_files=[(SOURCE / "unresolved-ref.yaml", tmp_path / "broken.yaml")],
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
     captured = capsys.readouterr()
     assert_output(captured.err, EXPECTED / "cli" / "unresolved.txt")
-    if report:
-        assert_output(captured.out, EXPECTED / "cli" / "unresolved-report.txt")
+    assert_output(captured.out, EXPECTED / "cli" / "json" / "error-empty.txt")
 
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -1553,10 +1432,9 @@ def test_fastapi_cli_model_error_context(
     )
 
 
-@pytest.mark.parametrize("report", [False, True])
 @pytest.mark.parametrize("disabled", [False, True])
 def test_fastapi_cli_unowned_manifest(
-    report: bool, disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
     monkeypatch.chdir(tmp_path)
@@ -1570,12 +1448,9 @@ def test_fastapi_cli_unowned_manifest(
             input_path=Path("pets.yaml"),
             output_path=Path("models.py"),
             input_file_type="openapi",
-            extra_args=_server(
-                *(["--diagnostics-json", "-"] if report else []), *(["--disable-warnings"] if disabled else [])
-            ),
+            extra_args=_server(*(["--disable-warnings"] if disabled else [])),
             expected_exit=Exit.ERROR,
             capsys=capsys,
-            expected_stdout_path=EXPECTED / "cli" / "unowned-report.txt" if report else None,
             expected_stderr="Error: application.py: An unmanaged file occupies a path the target owns\n",
             output_should_not_exist=True,
         )

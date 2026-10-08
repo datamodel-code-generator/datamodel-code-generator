@@ -210,8 +210,6 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "list_experimental",
     "watch",
     "watch_delay",
-    "diagnostics_json",
-    "dependency_format",
 })
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
@@ -221,7 +219,6 @@ BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
 _SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
-_TARGET_RUN_OPTIONS: tuple[str, ...] = ("diagnostics_json", "dependency_format")
 
 
 class Exit(IntEnum):
@@ -1598,7 +1595,6 @@ def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
             for field, value in _explicit_config_args(namespace).items()
             if field.startswith("server_")
         ]
-        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
         if not given:
             return None
         return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"

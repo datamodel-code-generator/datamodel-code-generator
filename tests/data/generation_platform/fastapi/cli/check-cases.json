@@ -19,6 +19,5 @@
   "modular": {"modular": true},
   "modular-extra": {"modular": true, "write": {"models/extra.py": "# stale model\n"}},
   "modular-missing": {"modular": true, "remove": ["models"]},
-  "stale-owned": {"options": ["--openapi-include-paths", "/pets"], "changed": true},
-  "json-report-conflict": {"options": ["--diagnostics-json", "-"], "json_only": true, "error": "--output-format json cannot be used with --diagnostics-json -"}
+  "stale-owned": {"options": ["--openapi-include-paths", "/pets"], "changed": true}
 }
