@@ -353,7 +353,6 @@ def publish_project(
             for artifact in project.artifacts
             if artifact.action == "delete" and (state := observed[cwd / artifact.path]) is not None
         ),
-        diagnostics=project.diagnostics,
         generator_version=project.generator_version,
         runtime_revision=project.runtime_revision,
         dependencies=project.dependencies,

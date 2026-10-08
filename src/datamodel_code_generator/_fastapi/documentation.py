@@ -14,7 +14,6 @@ from urllib.parse import unquote, urldefrag, urljoin
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex
 from datamodel_code_generator._runtime.model_codecs.wire import pointer_tokens
 from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar, LiteralSequence
@@ -69,7 +68,7 @@ class Documentation:
                 self.resources.setdefault(resource.uri, []).append(resource.contents)
             self.ids.update(wire.schema_ids)
         self.index = CallbackIndex(request.batch)
-        self.problems: dict[Diagnostic, None] = {}
+        self.problems: dict[str, None] = {}
 
     def openapi_extra(self, spec: OperationSpec) -> JSONObject:
         """Return what the operation adds to FastAPI's operation object: adapter inputs, callbacks, and links."""
@@ -211,16 +210,7 @@ class Documentation:
         try:
             target[key] = _json(value)
         except _NotJSONError:
-            self.problems[
-                Diagnostic(
-                    code="W_DOCUMENTATION_ANNOTATION",
-                    severity="warning",
-                    stage="target",
-                    message=f"The served document leaves out {key}, which has no JSON form",
-                    source_pointer=pointer,
-                    target_id=self.request.target_id,
-                )
-            ] = None
+            self.problems[f"{pointer}: The served document leaves out {key}, which has no JSON form"] = None
 
     def schema(self, use: TypeUseId) -> JSONValue:
         """Return the normalized schema of a type use with every reference resolved in place."""

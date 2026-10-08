@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import warnings
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -18,7 +19,6 @@ from datamodel_code_generator.fastapi import (
     Diagnostic,
     FastAPIConfig,
     GeneratedProject,
-    GenerationReport,
     OperationRef,
     PublicationRollbackError,
     ResponseChoice,
@@ -141,7 +141,6 @@ def _report_project(project: GeneratedProject, root: Path, lines: list[str]) -> 
         if not _runtime(artifact.path)
     )
     lines.extend(_runtime_line([artifact.action for artifact in project.artifacts if _runtime(artifact.path)]))
-    lines.extend(_diagnostic(item) for item in project.diagnostics)
 
 
 def _publish(project: GeneratedProject, root: Path) -> None:
@@ -178,7 +177,7 @@ def _manifest(project: GeneratedProject) -> bytes:
 
 def _run(
     case: dict[str, Any], overrides: dict[str, Any], root: Path, server: str | None, *, publish: bool
-) -> GeneratedProject | GenerationReport | str:
+) -> GeneratedProject | str | None:
     spec = {**case, **{key: value for key, value in overrides.items() if key not in {"model", "config"}}}
     model = {**case.get("model", {}), **overrides.get("model", {})}
     config = {**case.get("config", {}), **overrides.get("config", {})}
@@ -223,21 +222,6 @@ def _run(
         return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
 
 
-def _report_generation(report: GenerationReport, root: Path, lines: list[str]) -> None:
-    lines.append(f"  target={report.target} schema_version={report.schema_version}")
-    for name, records in (
-        ("written", report.written_files),
-        ("unchanged", report.unchanged_files),
-        ("deleted", report.deleted_files),
-    ):
-        lines.extend(
-            f"  {name} {record.kind} {_relative(record.path, root)}" + ("" if record.target_id is None else " (target)")
-            for record in records
-            if not _runtime(record.path)
-        )
-        lines.extend(_runtime_line([name for record in records if _runtime(record.path)]))
-
-
 @dataclass
 class _Scenario:
     """Replay one case's steps against a checkout, collecting the report lines."""
@@ -274,8 +258,9 @@ class _Scenario:
         match _run(self.case, overrides, self.root, self.server, publish=True):
             case str() as failure:
                 self.lines.append(failure)
-            case GenerationReport() as report:
-                _report_generation(report, self.root, self.lines)
+            case None:
+                self.lines.append("  returned None")
+                self.tree(None)
             case project:
                 raise AssertionError(project)
 
@@ -373,7 +358,10 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
     for step in case["steps"]:
         ((name, value),) = step.items()
-        getattr(scenario, name)(value)
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            getattr(scenario, name)(value)
+        scenario.lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
     return _HASH.sub('"<sha256>"', "\n".join(scenario.lines)) + "\n"
 
 
