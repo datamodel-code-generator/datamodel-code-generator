@@ -247,6 +247,18 @@
       },
       {
         "method": "GET",
+        "url": "/sizes"
+      },
+      {
+        "method": "GET",
+        "url": "/sizes?size=3&words=x&words=y"
+      },
+      {
+        "method": "GET",
+        "url": "/sizes?size=0"
+      },
+      {
+        "method": "GET",
         "url": "/repeat/1/again/1"
       },
       {
@@ -372,6 +384,30 @@
         "headers": {
           "Cookie": "session=abc"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=%EF%BC%92.%EF%BC%92"
+      },
+      {
+        "method": "GET",
+        "url": "/items/%D9%A1"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?levels=%EF%BC%91"
+      },
+      {
+        "method": "GET",
+        "url": "/notes/%D9%A7"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=1e999"
       }
     ],
     "package_snapshots": []

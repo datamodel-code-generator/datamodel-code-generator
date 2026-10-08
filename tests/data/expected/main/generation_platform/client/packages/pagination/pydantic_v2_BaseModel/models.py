@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, RootModel
+from typing_extensions import TypeAliasType
 
 
 class User(BaseModel):
@@ -49,36 +50,29 @@ class Error(BaseModel):
     message: str
 
 
-class FieldUsersGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldUsersGetQueryCursorParameter = TypeAliasType("FieldUsersGetQueryCursorParameter", str)
 
 
-class FieldUsersGetQueryLimitParameter(RootModel[int]):
-    root: int
+FieldUsersGetQueryLimitParameter = TypeAliasType("FieldUsersGetQueryLimitParameter", int)
 
 
-class FieldUsersGetHeaderXSnapshotParameter(RootModel[str]):
-    root: str
+FieldUsersGetHeaderXSnapshotParameter = TypeAliasType("FieldUsersGetHeaderXSnapshotParameter", str)
 
 
 class FieldUsersGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-class FieldUsersSearchPostQueryCursorParameter(RootModel[str]):
-    root: str
+FieldUsersSearchPostQueryCursorParameter = TypeAliasType("FieldUsersSearchPostQueryCursorParameter", str)
 
 
-class FieldLooseGetQueryCursorParameter(RootModel[int]):
-    root: int
+FieldLooseGetQueryCursorParameter = TypeAliasType("FieldLooseGetQueryCursorParameter", int)
 
 
-class FieldNestedGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldNestedGetQueryCursorParameter = TypeAliasType("FieldNestedGetQueryCursorParameter", str)
 
 
-class FieldLabelsGetQueryAfterParameter(RootModel[str]):
-    root: str
+FieldLabelsGetQueryAfterParameter = TypeAliasType("FieldLabelsGetQueryAfterParameter", str)
 
 
 class FieldLabelsGetResponse(RootModel[list[Label]]):
@@ -89,21 +83,17 @@ class FieldLabelsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-class FieldLabelSetsGetQueryAfterParameter(RootModel[str]):
-    root: str
+FieldLabelSetsGetQueryAfterParameter = TypeAliasType("FieldLabelSetsGetQueryAfterParameter", str)
 
 
 class FieldLabelSetsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-class FieldArchiveCursorGetPathCursorParameter(RootModel[str]):
-    root: str
+FieldArchiveCursorGetPathCursorParameter = TypeAliasType("FieldArchiveCursorGetPathCursorParameter", str)
 
 
-class FieldStatusesGetQueryCodeParameter(RootModel[int]):
-    root: int
+FieldStatusesGetQueryCodeParameter = TypeAliasType("FieldStatusesGetQueryCodeParameter", int)
 
 
-class FieldSecureUsersGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldSecureUsersGetQueryCursorParameter = TypeAliasType("FieldSecureUsersGetQueryCursorParameter", str)

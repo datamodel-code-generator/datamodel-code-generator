@@ -33,6 +33,8 @@ _PARAMETER: Final = re.compile(
     rf";[ \t]*(?P<name>{_HTTP_WORD})=(?P<value>{_HTTP_WORD}|"
     r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
 )
+_INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
 
@@ -284,15 +286,17 @@ def _integer_text(value: int) -> str:
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:
-    """Decode a declared scalar's wire text, leaving invalid values to the model."""
+    """Decode a canonical JSON literal of the declared kind, leaving any other text to the model."""
     if kind == "string":
         return text
     if kind == "boolean":
         return text == "true" if text in {"true", "false"} else text
-    try:
-        return int(text) if kind == "integer" else float(text)
-    except ValueError:
-        return text
+    if _INTEGER.fullmatch(text):
+        try:
+            return int(text)
+        except ValueError:
+            return text
+    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else text
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:

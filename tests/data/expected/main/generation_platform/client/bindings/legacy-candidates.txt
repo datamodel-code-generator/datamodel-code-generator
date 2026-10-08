@@ -6,19 +6,20 @@ render pydantic_v2.BaseModel default
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Pet(BaseModel):
       name: Optional[str] = None
   
   
-  class FieldChosenGetQueryLimitParameter(RootModel[int]):
-      root: int
+  
+  FieldChosenGetQueryLimitParameter = TypeAliasType("FieldChosenGetQueryLimitParameter", int)
   
   
-  class FieldChosenGetQueryCommonParameter(RootModel[str]):
-      root: str
+  
+  FieldChosenGetQueryCommonParameter = TypeAliasType("FieldChosenGetQueryCommonParameter", str)
   model_bindings.py
   codec_0 models.FieldChosenGetQueryLimitParameter
   codec_1 models.FieldChosenGetQueryCommonParameter

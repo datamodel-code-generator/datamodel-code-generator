@@ -8,20 +8,9 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import FieldArchiveCursorGetPathCursorParameter as _dcg_type_11
-from models import FieldLabelSetsGetQueryAfterParameter as _dcg_type_10
-from models import FieldLabelsGetQueryAfterParameter as _dcg_type_8
-from models import FieldLooseGetQueryCursorParameter as _dcg_type_6
-from models import FieldNestedGetQueryCursorParameter as _dcg_type_7
-from models import FieldSecureUsersGetQueryCursorParameter as _dcg_type_13
-from models import FieldStatusesGetQueryCodeParameter as _dcg_type_12
-from models import FieldUsersGetHeaderXSnapshotParameter as _dcg_type_2
-from models import FieldUsersGetQueryCursorParameter as _dcg_type_0
-from models import FieldUsersGetQueryLimitParameter as _dcg_type_1
-from models import FieldUsersSearchPostQueryCursorParameter as _dcg_type_4
-from models import Label as _dcg_type_9
-from models import User as _dcg_type_3
-from models import UserQuery as _dcg_type_5
+from models import Label as _dcg_type_2
+from models import User as _dcg_type_0
+from models import UserQuery as _dcg_type_1
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
@@ -209,13 +198,13 @@ class AsyncUsersAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListUsersResponse]:
+    ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return await afirst_page(
             self._core,
@@ -229,13 +218,13 @@ class AsyncUsersAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -248,12 +237,12 @@ class AsyncUsersAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListUsersResponse],
+        page: Page[_dcg_type_0, ListUsersResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListUsersResponse] | None:
+    ) -> Page[_dcg_type_0, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -271,7 +260,7 @@ class AsyncUsersAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -293,13 +282,13 @@ class AsyncUsersByHeaderPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListUsersResponse]:
+    ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return await afirst_page(
             self._core,
@@ -313,13 +302,13 @@ class AsyncUsersByHeaderPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -332,12 +321,12 @@ class AsyncUsersByHeaderPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListUsersResponse],
+        page: Page[_dcg_type_0, ListUsersResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListUsersResponse] | None:
+    ) -> Page[_dcg_type_0, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -355,7 +344,7 @@ class AsyncUsersByHeaderPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -377,13 +366,13 @@ class AsyncUsersSearchPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_4 | Unset = UNSET,
-        body: _dcg_type_5,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_1,
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, SearchUsersResponse]:
+    ) -> Page[_dcg_type_0, SearchUsersResponse]:
         """Fetch the first page of POST /users/search."""
         return await afirst_page(
             self._core,
@@ -399,13 +388,13 @@ class AsyncUsersSearchPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_4 | Unset = UNSET,
-        body: _dcg_type_5,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_1,
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, SearchUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, SearchUsersResponse]:
         """Return a pager over the items of POST /users/search; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -420,12 +409,12 @@ class AsyncUsersSearchPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, SearchUsersResponse],
+        page: Page[_dcg_type_0, SearchUsersResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, SearchUsersResponse] | None:
+    ) -> Page[_dcg_type_0, SearchUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -443,7 +432,7 @@ class AsyncUsersSearchPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, SearchUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, SearchUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -465,11 +454,11 @@ class AsyncLooseAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_6 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListLooseResponse]:
+    ) -> Page[_dcg_type_0, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return await afirst_page(
             self._core,
@@ -483,11 +472,11 @@ class AsyncLooseAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_6 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListLooseResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -500,12 +489,12 @@ class AsyncLooseAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListLooseResponse],
+        page: Page[_dcg_type_0, ListLooseResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListLooseResponse] | None:
+    ) -> Page[_dcg_type_0, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -523,7 +512,7 @@ class AsyncLooseAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListLooseResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -545,11 +534,11 @@ class AsyncLooseTokensPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_6 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListLooseResponse]:
+    ) -> Page[_dcg_type_0, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return await afirst_page(
             self._core,
@@ -563,11 +552,11 @@ class AsyncLooseTokensPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_6 | Unset = UNSET,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListLooseResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -580,12 +569,12 @@ class AsyncLooseTokensPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListLooseResponse],
+        page: Page[_dcg_type_0, ListLooseResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListLooseResponse] | None:
+    ) -> Page[_dcg_type_0, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -603,7 +592,7 @@ class AsyncLooseTokensPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListLooseResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -625,11 +614,11 @@ class AsyncNestedAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_7 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListNestedResponse]:
+    ) -> Page[_dcg_type_0, ListNestedResponse]:
         """Fetch the first page of GET /nested."""
         return await afirst_page(
             self._core,
@@ -643,11 +632,11 @@ class AsyncNestedAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_7 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListNestedResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListNestedResponse]:
         """Return a pager over the items of GET /nested; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -660,12 +649,12 @@ class AsyncNestedAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListNestedResponse],
+        page: Page[_dcg_type_0, ListNestedResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListNestedResponse] | None:
+    ) -> Page[_dcg_type_0, ListNestedResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -683,7 +672,7 @@ class AsyncNestedAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListNestedResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListNestedResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -705,11 +694,11 @@ class AsyncLabelsAllPagination:
     async def page(
         self,
         *,
-        after: _dcg_type_8 | Unset = UNSET,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_9, ListLabelsResponse]:
+    ) -> Page[_dcg_type_2, ListLabelsResponse]:
         """Fetch the first page of GET /labels."""
         return await afirst_page(
             self._core,
@@ -723,11 +712,11 @@ class AsyncLabelsAllPagination:
     def iterate(
         self,
         *,
-        after: _dcg_type_8 | Unset = UNSET,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_9, ListLabelsResponse]:
+    ) -> AsyncPager[_dcg_type_2, ListLabelsResponse]:
         """Return a pager over the items of GET /labels; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -740,12 +729,12 @@ class AsyncLabelsAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_9, ListLabelsResponse],
+        page: Page[_dcg_type_2, ListLabelsResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_9, ListLabelsResponse] | None:
+    ) -> Page[_dcg_type_2, ListLabelsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -763,7 +752,7 @@ class AsyncLabelsAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_9, ListLabelsResponse]:
+    ) -> AsyncPager[_dcg_type_2, ListLabelsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -785,11 +774,11 @@ class AsyncLabelsSetsPagination:
     async def page(
         self,
         *,
-        after: _dcg_type_10 | Unset = UNSET,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_9, ListLabelSetsResponse]:
+    ) -> Page[_dcg_type_2, ListLabelSetsResponse]:
         """Fetch the first page of GET /label-sets."""
         return await afirst_page(
             self._core,
@@ -803,11 +792,11 @@ class AsyncLabelsSetsPagination:
     def iterate(
         self,
         *,
-        after: _dcg_type_10 | Unset = UNSET,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_9, ListLabelSetsResponse]:
+    ) -> AsyncPager[_dcg_type_2, ListLabelSetsResponse]:
         """Return a pager over the items of GET /label-sets; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -820,12 +809,12 @@ class AsyncLabelsSetsPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_9, ListLabelSetsResponse],
+        page: Page[_dcg_type_2, ListLabelSetsResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_9, ListLabelSetsResponse] | None:
+    ) -> Page[_dcg_type_2, ListLabelSetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -843,7 +832,7 @@ class AsyncLabelsSetsPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_9, ListLabelSetsResponse]:
+    ) -> AsyncPager[_dcg_type_2, ListLabelSetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -865,11 +854,11 @@ class AsyncArchiveAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_11,
+        cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListArchiveResponse]:
+    ) -> Page[_dcg_type_0, ListArchiveResponse]:
         """Fetch the first page of GET /archive/{cursor}."""
         return await afirst_page(
             self._core,
@@ -883,11 +872,11 @@ class AsyncArchiveAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_11,
+        cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListArchiveResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListArchiveResponse]:
         """Return a pager over the items of GET /archive/{cursor}; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -900,12 +889,12 @@ class AsyncArchiveAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListArchiveResponse],
+        page: Page[_dcg_type_0, ListArchiveResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListArchiveResponse] | None:
+    ) -> Page[_dcg_type_0, ListArchiveResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -923,7 +912,7 @@ class AsyncArchiveAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListArchiveResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListArchiveResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -945,11 +934,11 @@ class AsyncStatusesAllPagination:
     async def page(
         self,
         *,
-        code: _dcg_type_12 | Unset = UNSET,
+        code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListStatusesResponse]:
+    ) -> Page[_dcg_type_0, ListStatusesResponse]:
         """Fetch the first page of GET /statuses."""
         return await afirst_page(
             self._core,
@@ -963,11 +952,11 @@ class AsyncStatusesAllPagination:
     def iterate(
         self,
         *,
-        code: _dcg_type_12 | Unset = UNSET,
+        code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListStatusesResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListStatusesResponse]:
         """Return a pager over the items of GET /statuses; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -980,12 +969,12 @@ class AsyncStatusesAllPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListStatusesResponse],
+        page: Page[_dcg_type_0, ListStatusesResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListStatusesResponse] | None:
+    ) -> Page[_dcg_type_0, ListStatusesResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -1003,7 +992,7 @@ class AsyncStatusesAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListStatusesResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListStatusesResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,
@@ -1025,11 +1014,11 @@ class AsyncSecureUsersPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_13 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListSecureUsersResponse]:
+    ) -> Page[_dcg_type_0, ListSecureUsersResponse]:
         """Fetch the first page of GET /secure/users."""
         return await afirst_page(
             self._core,
@@ -1043,11 +1032,11 @@ class AsyncSecureUsersPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_13 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListSecureUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListSecureUsersResponse]:
         """Return a pager over the items of GET /secure/users; it sends nothing until it is iterated."""
         return aiterate_pages(
             self._core,
@@ -1060,12 +1049,12 @@ class AsyncSecureUsersPagination:
 
     async def next_page(
         self,
-        page: Page[_dcg_type_3, ListSecureUsersResponse],
+        page: Page[_dcg_type_0, ListSecureUsersResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListSecureUsersResponse] | None:
+    ) -> Page[_dcg_type_0, ListSecureUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
             self._core,
@@ -1083,7 +1072,7 @@ class AsyncSecureUsersPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncPager[_dcg_type_3, ListSecureUsersResponse]:
+    ) -> AsyncPager[_dcg_type_0, ListSecureUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
             self._core,

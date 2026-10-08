@@ -5,19 +5,20 @@ render pydantic_v2.BaseModel schemas
   #   filename:  session-schema-callback-referenced.json
   
   from __future__ import annotations
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       id: int
   
   
-  class FieldItemsPostOnDoneCallback1PostQueryQParameter(RootModel[int]):
-      root: int
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostQueryQParameter", int)
   
   
-  class FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter(RootModel[str]):
-      root: str
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter", str)
   
   
   class FieldItemsPostOnDoneCallback1PostRequest(BaseModel):
@@ -30,19 +31,20 @@ render pydantic_v2.BaseModel api
   #   filename:  session-schema-callback-referenced.json
   
   from __future__ import annotations
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       id: int
   
   
-  class FieldItemsPostOnDoneCallback1PostQueryQParameter(RootModel[int]):
-      root: int
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostQueryQParameter", int)
   
   
-  class FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter(RootModel[str]):
-      root: str
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter", str)
   
   
   class FieldItemsPostOnDoneCallback1PostRequest(BaseModel):

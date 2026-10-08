@@ -9,9 +9,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldDirectionPostHeaderXRetryControlParameter as _dcg_type_1
-from models import FieldParameterPostHeaderXRequestKeyParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -55,7 +52,7 @@ class AsyncHeadersResource:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | Unset = UNSET,
+        x_request_key: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ParameterResponse:
@@ -168,7 +165,7 @@ class AsyncHeadersResource:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        x_retry_control: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> DirectionResponse:
@@ -205,7 +202,7 @@ class AsyncHeadersWithResponse:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | Unset = UNSET,
+        x_request_key: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ParameterResponse]:
@@ -318,7 +315,7 @@ class AsyncHeadersWithResponse:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        x_retry_control: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[DirectionResponse]:
@@ -355,7 +352,7 @@ class AsyncHeadersWithRawResponse:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | Unset = UNSET,
+        x_request_key: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -468,7 +465,7 @@ class AsyncHeadersWithRawResponse:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        x_retry_control: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -505,7 +502,7 @@ class AsyncHeadersWithStreamingResponse:
     def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | Unset = UNSET,
+        x_request_key: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -618,7 +615,7 @@ class AsyncHeadersWithStreamingResponse:
     def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        x_retry_control: str | Unset = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

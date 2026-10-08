@@ -19,8 +19,23 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/CodePage'}
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: offset
+          in: query
+          schema: {$ref: '#/components/schemas/Offset'}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CodePage'}
 components:
   schemas:
+    Offset: {type: integer, minimum: 0}
     Code:
       type: object
       required: [id]
@@ -34,3 +49,4 @@ components:
           type: array
           items: {$ref: '#/components/schemas/Code'}
         next: {type: string}
+        has_more: {type: boolean}
