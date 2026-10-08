@@ -209,7 +209,7 @@
   cycle fixed condition ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'condition' []
   cycle negative ! ValueError: page_index must be a nonnegative integer []
   cycle cursor field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'continuation' []
-  cycle resume field ! NameError: name 'resume' is not defined []
+  cycle resume field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'resume_state' []
   polling condition missing ! ValueError: condition must be one of its declared values []
   wait kind unknown ! ValueError: kind must be one of its declared values []
   wait nan ! ValueError: required_wait must be a finite number in its permitted range []

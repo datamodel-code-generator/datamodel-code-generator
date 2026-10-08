@@ -320,7 +320,7 @@ def _rejections(
             page_index=1, first_seen_page_index=0, continuation=secret
         )),
         ("cycle resume field", lambda: errors.PaginationCycleError(
-            page_index=1, first_seen_page_index=0, resume_state=resume
+            page_index=1, first_seen_page_index=0, resume_state=secret
         )),
         ("polling condition missing", lambda: errors.PollingStateError(condition="missing")),
         ("wait kind unknown", lambda: errors.PollWaitLimitError(kind="interval", required_wait=1, limit=0)),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
 import itertools
 from contextlib import asynccontextmanager, contextmanager
@@ -625,11 +626,14 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     tick = ticks.checkpoint()
     ticks.close()
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(_Signer(auth),))))
+    signer = _Signer(auth)
+    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
+    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
     for label, client, criteria in (
         ("ordinary querystring", api, {"term": "news"}),
         ("credential querystring", api, {"api_key": "secret"}),
         ("ordinary querystring with a signer", signed, {"term": "news"}),
+        ("signer querystring field", signed, {"sig": "echoed"}),
     ):
         resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))
         value = resumes.argument("querystring", "criteria", criteria, "searchFeed")

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import dataclasses
+import importlib
 import json
 from typing import TYPE_CHECKING, Any
 
+from tests.data.python.client_caching import _Signer
 from tests.data.python.client_pagination import (
     Harness,
     adrained,
@@ -30,7 +33,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
     with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
         _cursors(harness, api, exchange, lines)
         _counts(api, exchange, lines)
-        _urls(api, exchange, lines)
+        _urls(harness, api, exchange, lines)
         _bodies(harness, api, exchange, lines)
         _limits(harness, api, exchange, lines)
     run(lambda: _async_resume(harness, lines))
@@ -122,7 +125,7 @@ def _counts(api: Any, exchange: Exchange, lines: list[str]) -> None:
         drained(lines, f"total resumed counts from its page to {label}", helper.resume(2))
 
 
-def _urls(api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     for name, responder in (
         ("follow", user_page("1", next=f"{_SERVER}/users?cursor=a&api_key=server-secret")),
         ("linked", headed_page("1", headers=(("Link", "<?page=2&api_key=server-secret>; rel=next"),))),
@@ -149,6 +152,13 @@ def _urls(api: Any, exchange: Exchange, lines: list[str]) -> None:
     lines.append(f"  supplied URL checkpoint={state!r} key kept={'api_key' in state}")
     exchange.respond(user_page("3", next=f"{_SERVER}/users?cursor=a&api_key=server-secret"))
     drained(lines, "supplied URL removes echoed key", supplied)
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer = _Signer(auth)
+    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
+    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
+    for label, client in (("without the signer", api), ("under its signer", signed)):
+        state = client.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&sig=stale").checkpoint()
+        lines.append(f"  supplied URL {label} checkpoint={state!r} sig kept={'sig' in state}")
 
 
 def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
