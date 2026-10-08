@@ -11334,7 +11334,7 @@ work for them as well. See [Target Generation Options](cli-reference/target-gene
 
 `--server-handler-modes`, `--server-body-modes`, `--server-primary-responses`, `--server-operation-names`,
 `--server-router-names`, and `--server-parameter-names` take a JSON object, inline or as the path of a JSON file, as
-`--aliases` does; in `pyproject.toml` they are tables. `--generate-cli-command` does not yet print these tables as
+`--aliases` does; in `pyproject.toml` they are tables. `--generate-cli-command` prints these tables as
 JSON, as for the model options that take JSON objects. A value on the command line takes precedence over the
 selected profile, which takes precedence over the base table, and a command-line table replaces the whole table of
 `pyproject.toml`. An operation's own entry takes precedence over the global setting, wherever each comes from. Paths
@@ -11416,7 +11416,8 @@ The batch publishes the server packages together with the models of every job on
 nothing when a job fails or when jobs generate different models for a shared `output`; the `uv add` notice of each
 package follows the publication on stderr. `--check` compares every job as a single run does and exits with 1 when
 any of them would change. With `--output-format json`, a server job adds the generation or check payload of a single
-server run to the batch document. Server jobs refuse `--watch`, as a single server run does.
+server run to the batch document, with file paths relative to that job's model output directory. Server jobs refuse
+`--watch`, as a single server run does.
 
 ## The generated package
 
@@ -11472,10 +11473,13 @@ the model and server output directories. CRLF and LF compare equally. Unrelated 
 `--check --output-format json` uses the same check payload as model generation. Checking publishes nothing.
 
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
-stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. File
-paths are relative to the common parent of the configured outputs when those paths share one, otherwise they
-are absolute. Model metadata and the remote lock are outside the payload, as for model generation. The dependency
-notice goes to stderr, along with errors and Python warnings.
+stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
+the model payload, a file path is relative to the model output directory, which is `output` for a model directory
+and its parent for a single model file, so `output` and the path give the file on disk. A file outside that
+directory, such as a server package beside a model directory, has an absolute path. Paths use forward slashes.
+`--check --output-format json` names the files the same way in `differences[].path`, while the diff labels stay
+relative to the working directory. Model metadata and the remote lock are outside the payload, as for model
+generation. The dependency notice goes to stderr, along with errors and Python warnings.
 
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
