@@ -369,7 +369,7 @@ def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Pat
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
     shutil.copy2(SOURCE / "pets.yaml", generated / "pets.yaml")
-    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
+    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I", "N999"]\n', encoding="utf-8")
     model = {"formatters": formatters}
     generate_client(generated / "pets.yaml", generated, "client", "pydantic_v2.BaseModel", model=model)
     shutil.copytree(generated, copy)

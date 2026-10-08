@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "check",
+  "success": false,
+  "content": "MISSING: generated/models.py (file does not exist but should be generated)\nMISSING: generated/server/services.py (should be generated)\nMISSING: generated/server/README.md (file does not exist but should be generated)\n",
+  "differences": [
+    {
+      "kind": "missing",
+      "path": "models.py",
+      "message": "MISSING: generated/models.py (file does not exist but should be generated)",
+      "diff": null
+    },
+    {
+      "kind": "missing",
+      "path": "server/services.py",
+      "message": "MISSING: generated/server/services.py (should be generated)",
+      "diff": null
+    },
+    {
+      "kind": "missing",
+      "path": "server/README.md",
+      "message": "MISSING: generated/server/README.md (file does not exist but should be generated)",
+      "diff": null
+    }
+  ]
+}
