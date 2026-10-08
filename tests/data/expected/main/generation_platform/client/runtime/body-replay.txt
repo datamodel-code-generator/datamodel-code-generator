@@ -35,17 +35,17 @@
     stream begins=1 closes=1
   factory per candidate hop = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/hop-0', b'factory'), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, True), (0, 1, True), (1, 0, True)] one_call=True closes=[1, 1, 1]
+    contexts=[(0, 0, False), (0, 1, False), (1, 0, False)] one_call=True closes=[1, 1, 1]
   factory A B A refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_not_replayable
     wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/idempotent', b'factory')] pending=1
   factory immediate next call refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    contexts=[(0, 0, True), (1, 0, True), (2, 0, True), (0, 0, True)] closes=(1, 1)
+    contexts=[(0, 0, False), (1, 0, False), (2, 0, False), (0, 0, False)] closes=(1, 1)
   factory observed length changed ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
     wire=[('POST', b'/idempotent', b'factory')] pending=1
     closes=(1, 1)
   bodyless redirect retry restores source = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'factory'), ('GET', b'/hop-0', b''), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, True), (1, 0, True)] closes=[1, 1]
+    contexts=[(0, 0, False), (1, 0, False)] closes=[1, 1]
   async bytes retained = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'retained'), ('POST', b'/idempotent', b'retained')] pending=0
   async borrowed entry offset = FieldIdempotentPostResponse(root='ok')
@@ -73,11 +73,11 @@
     stream begins=1 closes=1
   async factory per candidate hop = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/hop-0', b'factory'), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, True), (0, 1, True), (1, 0, True)] one_call=True closes=[1, 1, 1]
+    contexts=[(0, 0, False), (0, 1, False), (1, 0, False)] one_call=True closes=[1, 1, 1]
   async factory A B A refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_not_replayable
     wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/idempotent', b'factory')] pending=1
   async factory immediate next call refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    contexts=[(0, 0, True), (1, 0, True), (2, 0, True), (0, 0, True)] closes=(1, 1)
+    contexts=[(0, 0, False), (1, 0, False), (2, 0, False), (0, 0, False)] closes=(1, 1)
   async factory observed length changed ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
     wire=[('POST', b'/idempotent', b'factory')] pending=1
     closes=(1, 1)

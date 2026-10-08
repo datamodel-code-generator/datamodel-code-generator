@@ -536,7 +536,9 @@ def _limits(
         _unpatched(core, plan, resume, request)
     if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
         request = request or RequestOptions()
-        timeout = request.timeout if isinstance(request.timeout, TimeoutOptions) else TimeoutOptions()
+        timeout = request.timeout
+        if not isinstance(timeout, TimeoutOptions):
+            timeout = TimeoutOptions(connect=None, write=None, pool=None) if timeout is None else TimeoutOptions()
         request = replace(request, timeout=replace(timeout, read=idle))
     return _Limits(
         reconnect=reconnect,

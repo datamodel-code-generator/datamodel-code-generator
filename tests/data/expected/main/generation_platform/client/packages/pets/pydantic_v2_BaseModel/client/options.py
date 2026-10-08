@@ -8,7 +8,6 @@ from __future__ import annotations
 from ._runtime.client.options import (
     ClientOptions,
     Clock,
-    Deadline,
     HeaderPatch,
     IdempotencyKey,
     QueryPatch,
@@ -24,7 +23,6 @@ from ._runtime.model_codecs.unset import UNSET, Unset
 __all__ = [
     "ClientOptions",
     "Clock",
-    "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",

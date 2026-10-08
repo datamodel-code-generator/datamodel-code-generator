@@ -73,6 +73,7 @@ from .native import (
 )
 from .operations import ResponseDecoder, request_errors
 from .options import (
+    DEFAULT_TIMEOUT,
     DEFAULT_TRANSPORT,
     ClientOptions,
     HeaderPatch,
@@ -230,18 +231,16 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
 
 
 def _client_settings(options: object, http_client: object) -> Settings:
-    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, None)
+    phases = DEFAULT_TIMEOUT
     if isinstance(http_client, (httpx2.Client, httpx2.AsyncClient)):
         timeout = http_client.timeout
-        settings = replace(
-            settings,
-            timeout=ResolvedTimeoutOptions(
-                connect=timeout.connect,
-                read=timeout.read,
-                write=timeout.write,
-                pool=timeout.pool,
-            ),
+        phases = ResolvedTimeoutOptions(
+            connect=timeout.connect,
+            read=timeout.read,
+            write=timeout.write,
+            pool=timeout.pool,
         )
+    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, None, timeout=phases)
     match options:
         case None:
             return settings

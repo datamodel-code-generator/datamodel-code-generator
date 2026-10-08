@@ -101,7 +101,7 @@
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded secondary=[]
+  deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=1
@@ -206,7 +206,7 @@
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  async deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded secondary=[]
+  async deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=1

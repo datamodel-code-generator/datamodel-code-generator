@@ -578,9 +578,8 @@ class _Options:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
-        for name in ("total_timeout",):
-            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
-                object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
+        if (value := self.total_timeout) is not None and not isinstance(value, Unset):
+            object.__setattr__(self, "total_timeout", seconds(value, ("total_timeout",)))  # noqa: PLC2801
 
     def __post_init__(self) -> None:
         self._check_timing()
