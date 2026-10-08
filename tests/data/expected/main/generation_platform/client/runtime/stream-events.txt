@@ -28,6 +28,12 @@
   < closed
     end
   > GET https://api.example.com/events accept=text/event-stream
+  native idle overrides explicit read timeout
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
   session total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -64,6 +70,12 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   async native read timeout from call options
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async native idle overrides explicit read timeout
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
     2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed

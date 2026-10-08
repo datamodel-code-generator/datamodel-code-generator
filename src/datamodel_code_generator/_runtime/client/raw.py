@@ -10,7 +10,6 @@ import errno
 import os
 import threading
 from contextlib import aclosing
-from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
@@ -758,7 +757,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         download = _Download(worker)
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
-            created = await self._disk(partial(download.create, path, overwrite))
+            created = await download.create(path, overwrite)
             chunks = self._iterate(action="stream_to", decoded=True)
             async with aclosing(chunks):
                 async for chunk in chunks:
@@ -774,14 +773,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
         finally:
             worker.close()
-
-    async def _disk(self, operation: Callable[[], Awaitable[T]]) -> T:
-        """Await ordinary disk work and attach its response to an SDK failure."""
-        try:
-            return await operation()
-        except SDKError as error:
-            error.info = self._info
-            raise
 
     async def raise_for_status(self) -> None:
         """Return for a success; close and raise the typed failure of any other status from its error prefix.

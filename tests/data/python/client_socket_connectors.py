@@ -489,7 +489,9 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
                     phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState[delivery]
                 )
                 if kind == "timeout"
-                else harness.errors.APIConnectionError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
+                else harness.errors.APIConnectionError(
+                    phase="read", delivery_state=harness.errors.DeliveryState[delivery]
+                )
             )
             sentinel = _Connection(harness, subprotocol="chat.v2")
             connector.queue.extend((failure, sentinel))
@@ -845,7 +847,7 @@ async def _connector_outcomes(harness: _Harness, vectors: list[dict[str, Any]]) 
                             episode.body_stops[0].__cause__ = prior
                             episode.body_stops[0].add_note("existing episode note")
                         case "child_cancel":
-                            episode.tasks["first"].cancel(action["message"])
+                            episode.tasks[action.get("task", "first")].cancel(action["message"])
                         case "decorate_parent":
                             episode.parent_stops[0].__cause__ = prior
                             episode.parent_stops[0].add_note("existing parent note")

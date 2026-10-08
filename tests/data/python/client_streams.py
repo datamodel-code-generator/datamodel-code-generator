@@ -555,6 +555,7 @@ def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any, Any, float]
     return (
         ("native idle while waiting for bytes", None, streams(idle_timeout=1.0), None, 2.0),
         ("native read timeout from call options", idle, streams(), None, 2.0),
+        ("native idle overrides explicit read timeout", idle, streams(idle_timeout=2.0), None, 3.0),
         (
             "session total on the client clock",
             None,

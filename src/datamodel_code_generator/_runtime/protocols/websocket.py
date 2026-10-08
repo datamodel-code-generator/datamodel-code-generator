@@ -794,16 +794,13 @@ class _Queue:
             self._next += 1
             served = False
             try:
-                while ticket != self._serving:
-                    if (left := _left(deadline)) is not None and not left > 0:
-                        return False
-                    if not self._condition.wait(left) and left is not None:
-                        return False
-                served = True
+                served = ticket == self._serving or self._condition.wait_for(
+                    lambda: ticket == self._serving, timeout=_left(deadline)
+                )
             finally:
                 if not served:
                     self._gone.add(ticket)
-            return True
+            return served
 
     def release(self) -> None:
         """Give the turn to the next ticket that still waits."""
@@ -1012,7 +1009,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         except TimeoutError:
             raise self._unsent() from None
         except BaseException as error:  # noqa: BLE001
-            raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
+            raise self._own(error) from None
         deadline = self._call.deadline
         try:
             self._usable("send")
