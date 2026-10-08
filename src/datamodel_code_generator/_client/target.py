@@ -78,7 +78,7 @@ PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
     "pydantic_v2.dataclass": (PYDANTIC,),
-    "msgspec.Struct": ("msgspec>=0.18",),
+    "msgspec.Struct": ("msgspec>=0.21.1",),
 }
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",

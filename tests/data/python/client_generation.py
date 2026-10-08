@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+    from datamodel_code_generator._api_types import GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
@@ -141,6 +142,25 @@ def generate_client(
         model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        ),
+        generator=ClientTarget(),
+    )
+
+
+def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
+    """Render a publication profile with all copied files and its dependency report."""
+    return render_target(
+        SOURCE / case["input"],
+        model_config=model_config(root / "publication_client_models.py", backend, case.get("model", {})),
+        config=client_config(
+            {
+                "output": "publication_client",
+                "package": "publication_client",
+                "model_package": "publication_client_models",
+                **case.get("config", {}),
+                **({"protocols": SOURCE / case["config"]["protocols"]} if "protocols" in case.get("config", {}) else {}),
+            },
+            root,
         ),
         generator=ClientTarget(),
     )
