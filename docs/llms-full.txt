@@ -11248,6 +11248,10 @@ object with the right methods works, and type checkers check it where you pass i
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
 
+`create_app` and `build_router` also take `prefix` and `operation_dependencies`, FastAPI dependencies of single
+operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`; `build_router` takes
+`dependencies` for all of its routes, which `create_app` passes to `FastAPI`.
+
 ## Requirements
 
 - The input is one OpenAPI 3.0, 3.1, or 3.2 document, from a file, a URL, or stdin; a directory or a list of
@@ -11356,6 +11360,8 @@ an error before generation.
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
 `pets.yaml#/paths/~1pets/get`. The README of the generated package lists the reference of every operation.
+These settings decide the generated code, including each method name, so they name an operation as the input
+document does; `operation_dependencies`, an argument of the generated package, names it by its method.
 
 ```toml
 [tool.datamodel-codegen.server-handler-modes]
@@ -41699,7 +41705,7 @@ Choose how the server package lays out its routes (experimental).
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
@@ -41724,7 +41730,7 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Already there.',
             responses={'201': {'model': models.Pet, 'description': 'Created.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
@@ -41752,7 +41758,7 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
@@ -42582,7 +42588,7 @@ primary response from the declared success responses.
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
@@ -42607,7 +42613,7 @@ primary response from the declared success responses.
             tags=['pets'],
             response_description='Created.',
             responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
@@ -42635,7 +42641,7 @@ primary response from the declared success responses.
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 

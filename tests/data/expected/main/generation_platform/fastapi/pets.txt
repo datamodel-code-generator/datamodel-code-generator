@@ -39,7 +39,7 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
     | | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
@@ -48,7 +48,7 @@ render pydantic_v2.BaseModel
     | | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
     | | `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |
@@ -146,7 +146,7 @@ render pydantic_v2.dataclass
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
     | | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
@@ -155,7 +155,7 @@ render pydantic_v2.dataclass
     | | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
     | | `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

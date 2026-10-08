@@ -70,7 +70,6 @@ _BASES: Final = {
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
-    ("_generated.contract", "OperationKey"),
     ("_runtime.server.application", "Dependency"),
     ("_runtime.server.security", "AsyncAuthorize"),
     ("_runtime.server.security", "Authorize"),
@@ -626,16 +625,12 @@ class ServerRenderer:  # noqa: PLR0904
         return [self.media_type(module, media)]
 
     def contract(self) -> str:
-        """Return the contract module: key types, schemes, and each operation's plans and request adapters."""
-        reserved = {"OperationKey", "OperationDependencies"}
-        module = Module({*reserved, *(spec.pascal for spec in self.plan.operations)}, self.symbols, level=2)
+        """Return the contract module: the dependency keys, and each operation's plans and request adapters."""
+        reserved = {"OperationDependencies", *(spec.pascal for spec in self.plan.operations)}
+        module = Module(reserved, self.symbols, level=2)
         sections = [self.operation_plan(module, spec) for spec in self.plan.operations]
-        alias = module.name("typing", "TypeAlias")
-        dependencies: Doc = (
-            Group("{", tuple((f"{spec.key!r}: ", _dependency_sequence(module)) for spec in self.plan.operations), "}")
-            if self.plan.operations
-            else "{}"
-        )
+        names = tuple((f"{spec.python_name!r}: ", _dependency_sequence(module)) for spec in self.plan.operations)
+        dependencies: Doc = Group("{", names, "}") if names else "{}"
         typed = Group(
             f"{module.name('typing', 'TypedDict')}(",
             (("", "'OperationDependencies'"), ("", dependencies), ("total=", "False")),
@@ -645,11 +640,7 @@ class ServerRenderer:  # noqa: PLR0904
             '"""Operation plans of this package; regenerate them instead of editing."""\n\n'
             "from __future__ import annotations\n\n"
         )
-        keys = [spec.key for spec in self.plan.operations]
-        definitions = (
-            f"OperationKey: {alias} = {_literal(module, keys, len(f'OperationKey: {alias} = '))}\n"
-            f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
-        )
+        definitions = f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
     def registration(self, module: Module, spec: OperationSpec) -> Group:
@@ -683,10 +674,9 @@ class ServerRenderer:  # noqa: PLR0904
         return "\n".join(lines) + "\n"
 
     def operation(self, module: Module, spec: OperationSpec) -> Group:
-        """Return the OperationPlan constructor of one operation: method, key, service, keywords, mode, and security."""
+        """Return the OperationPlan constructor of one operation: method, service, keywords, mode, and security."""
         items: list[tuple[str, Doc]] = [
             ("name=", repr(spec.python_name)),
-            ("key=", repr(spec.key)),
             ("service=", repr(self.services[spec.group])),
         ]
         if spec.arguments:
@@ -889,7 +879,7 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> G
         items.append(("responses=", _responses(module, spec, responses)))
     if extra := docs.openapi_extra(spec):
         items.append(("openapi_extra=", _json_literal(extra)))
-    items.append(("dependencies=", f"wiring.dependencies.get({spec.key!r})"))
+    items.append(("dependencies=", f"wiring.dependencies.get({spec.python_name!r})"))
     return Group("router.add_api_route(", tuple(items), ")")
 
 
@@ -1008,14 +998,6 @@ def _dependency_sequence(module: Module) -> str:
     return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
 
 
-def _literal(module: Module, values: list[str], used: int) -> str:
-    if not values:
-        return module.name("typing_extensions", "Never")
-    return layout(
-        Group(f"{module.name('typing', 'Literal')}[", _items(repr(value) for value in values), "]"), 0, used, WIDTH
-    )
-
-
 def _credential_type(module: Module, scheme: SchemeSpec) -> str:
     """Return the type of the credential a scheme's FastAPI dependency returns."""
     match scheme.kind:
@@ -1085,7 +1067,6 @@ from .application import (
     Credentials,
     Dependency,
     OperationDependencies,
-    OperationKey,
     RequirementSets,
     build_router,
     create_app,
@@ -1102,7 +1083,6 @@ __all__ = [
     "HTTPResult",
     "HandlerConfigurationError",
     "OperationDependencies",
-    "OperationKey",
     "RequirementSets",
     "build_router",
     "create_app",

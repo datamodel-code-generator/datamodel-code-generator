@@ -37,14 +37,14 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
     | | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
     | | `PetsService` | `move_pet` | POST | `/pets/{petId}/moves` | `/paths/~1pets~1{petId}~1moves/post` |
     | | `UntaggedService` | `get_health` | GET | `/health` | `/paths/~1health/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

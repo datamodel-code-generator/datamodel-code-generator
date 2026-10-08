@@ -283,7 +283,7 @@ class OperationSpec:
 
     @property
     def key(self) -> str:
-        """Return the operation key: the root use-site pointer."""
+        """Return the operation reference: the root use-site pointer."""
         return self.contract.id.use_site.pointer
 
     @property

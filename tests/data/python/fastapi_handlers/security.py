@@ -107,12 +107,12 @@ def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         "default": {
             "authorize": authorize,
             "dependencies": [Depends(dependency("global"))],
-            "operation_dependencies": {"/paths/~1public/get": [Depends(dependency("public"))]},
+            "operation_dependencies": {"get_public": [Depends(dependency("public"))]},
             "dependency_overrides": {server.security.mtls: certificate},
         },
         "async": {
             "authorize": AsyncAuthorize(),
-            "operation_dependencies": {"/paths/~1public/get": (Depends(teapot),)},
+            "operation_dependencies": {"get_public": (Depends(teapot),)},
             "prefix": "/api",
             "debug": False,
             "title": "Renamed pets",
@@ -155,9 +155,9 @@ def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator
     yield "dependencies-object", partial(build, dependencies=[object()], **secured)
     yield "dependencies-text", partial(build, dependencies="global", **secured)
     for label, value in (
-        ("unknown", {"/paths/~1nope/get": []}),
-        ("list", [("/paths/~1pets/get", [])]),
-        ("items", {"/paths/~1pets/get": [object()]}),
+        ("unknown", {"/paths/~1pets/get": []}),
+        ("list", [("list_pets", [])]),
+        ("items", {"list_pets": [object()]}),
     ):
         yield f"operation-dependencies-{label}", partial(build, operation_dependencies=value, **secured)
     routers = server.routers

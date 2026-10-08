@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_directions_accepted_models
 from pydantic import TypeAdapter
@@ -14,11 +14,10 @@ from pydantic import TypeAdapter
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1items/post']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1items/post': Sequence[Dependency]
+        'post__items': Sequence[Dependency]
     },
     total=False,
 )
@@ -29,7 +28,6 @@ class PostItems:
 
     OPERATION: Final = OperationPlan(
         name='post__items',
-        key='/paths/~1items/post',
         service='untagged',
         keywords=('body',),
     )

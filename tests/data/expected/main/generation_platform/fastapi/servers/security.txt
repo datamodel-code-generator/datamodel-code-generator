@@ -18,9 +18,9 @@ build prefix '/{api}': HandlerConfigurationError: prefix must be empty or a lite
 build prefix 7: HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
 build dependencies-object: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
 build dependencies-text: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
-build operation-dependencies-unknown: HandlerConfigurationError: operation_dependencies names no operation of this router: /paths/~1nope/get
-build operation-dependencies-list: HandlerConfigurationError: operation_dependencies must map operation keys to sequences of dependencies
-build operation-dependencies-items: HandlerConfigurationError: operation_dependencies['/paths/~1pets/get'] must be a sequence of Depends(...) values
+build operation-dependencies-unknown: HandlerConfigurationError: operation_dependencies names no operation of this router: /paths/~1pets/get
+build operation-dependencies-list: HandlerConfigurationError: operation_dependencies must map method names to sequences of dependencies
+build operation-dependencies-items: HandlerConfigurationError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
 build group public: ok
 build group pets: ok
 build options-unique-id: ok

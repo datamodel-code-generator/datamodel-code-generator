@@ -18,7 +18,6 @@ from secured import (
     Dependency,
     HTTPResult,
     OperationDependencies,
-    OperationKey,
     RequirementSets,
     build_router,
     create_app,
@@ -90,9 +89,8 @@ store: dict[str, FieldPetsGetResponse] = {}
 admin_pets: PetsService[Admin] = Pets()
 authorizer: Authorize[User] = authorize
 async_authorizer: AsyncAuthorize[Admin] = authorize_async
-key: OperationKey = "/paths/~1pets/get"
 dependencies: list[Dependency] = [Depends(record)]
-operation_dependencies: OperationDependencies = {"/paths/~1pets/get": dependencies}
+operation_dependencies: OperationDependencies = {"list_pets": dependencies}
 app: FastAPI = create_app(
     pets=Pets(),
     public=Public(),

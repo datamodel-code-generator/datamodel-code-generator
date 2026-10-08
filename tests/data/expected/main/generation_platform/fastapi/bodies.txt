@@ -40,7 +40,7 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `JsonService` | `post_json` | POST | `/json` | `/paths/~1json/post` |
     | | `JsonService` | `post_optional` | POST | `/json/optional` | `/paths/~1json~1optional/post` |
@@ -58,7 +58,7 @@ render pydantic_v2.BaseModel
     | | `FormService` | `post_choice_form` | POST | `/form/choice` | `/paths/~1form~1choice/post` |
     | | `FormService` | `upload` | POST | `/upload` | `/paths/~1upload/post` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

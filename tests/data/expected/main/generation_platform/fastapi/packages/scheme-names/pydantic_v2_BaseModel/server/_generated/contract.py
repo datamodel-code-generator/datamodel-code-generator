@@ -6,16 +6,15 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1keys/get']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1keys/get': Sequence[Dependency]
+        'get_keys': Sequence[Dependency]
     },
     total=False,
 )
@@ -26,7 +25,6 @@ class GetKeys:
 
     OPERATION: Final = OperationPlan(
         name='get_keys',
-        key='/paths/~1keys/get',
         service='untagged',
         keywords=('principal',),
         secured=True,

@@ -39,13 +39,13 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `ItemsService` | `get_part` | GET | `/items/{item-id}/parts/{part}` | `/paths/~1items~1{item-id}~1parts~1{part}/get` |
     | | `AdaptersService` | `list_adapters` | GET | `/adapters` | `/paths/~1adapters/get` |
     | | `AdaptersService` | `get_repeated` | GET | `/repeat/{id}/again/{id}` | `/paths/~1repeat~1{id}~1again~1{id}/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

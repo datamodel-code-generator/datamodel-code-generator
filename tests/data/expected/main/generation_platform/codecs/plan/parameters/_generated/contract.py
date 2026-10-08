@@ -8,7 +8,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_parameters_models
 from pydantic import TypeAdapter
@@ -19,19 +19,13 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pages/get',
-    '/paths/~1options/get',
-    '/paths/~1more/get',
-    '/paths/~1headers/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pages/get': Sequence[Dependency],
-        '/paths/~1options/get': Sequence[Dependency],
-        '/paths/~1more/get': Sequence[Dependency],
-        '/paths/~1headers/get': Sequence[Dependency],
+        'get__pages': Sequence[Dependency],
+        'get__options': Sequence[Dependency],
+        'get__more': Sequence[Dependency],
+        'get__headers': Sequence[Dependency],
     },
     total=False,
 )
@@ -42,7 +36,6 @@ class GetPages:
 
     OPERATION: Final = OperationPlan(
         name='get__pages',
-        key='/paths/~1pages/get',
         service='untagged',
         keywords=('x_token', 'page', 'pager'),
     )
@@ -78,7 +71,6 @@ class GetOptions:
 
     OPERATION: Final = OperationPlan(
         name='get__options',
-        key='/paths/~1options/get',
         service='untagged',
         keywords=('opts',),
     )
@@ -113,7 +105,6 @@ class GetMore:
 
     OPERATION: Final = OperationPlan(
         name='get__more',
-        key='/paths/~1more/get',
         service='untagged',
         keywords=('more',),
     )
@@ -148,7 +139,6 @@ class GetHeaders:
 
     OPERATION: Final = OperationPlan(
         name='get__headers',
-        key='/paths/~1headers/get',
         service='untagged',
         keywords=(
             'combined',

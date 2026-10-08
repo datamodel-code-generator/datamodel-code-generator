@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import pets_basemodel_models
 from pydantic import TypeAdapter
@@ -17,23 +17,15 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pets/get',
-    '/paths/~1pets/post',
-    '/paths/~1pets~1mine/get',
-    '/paths/~1pets~1{petId}/get',
-    '/paths/~1pets~1{petId}/delete',
-    '/paths/~1store~1inventory/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pets/get': Sequence[Dependency],
-        '/paths/~1pets/post': Sequence[Dependency],
-        '/paths/~1pets~1mine/get': Sequence[Dependency],
-        '/paths/~1pets~1{petId}/get': Sequence[Dependency],
-        '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
-        '/paths/~1store~1inventory/get': Sequence[Dependency],
+        'list_pets': Sequence[Dependency],
+        'create_pet': Sequence[Dependency],
+        'list_my_pets': Sequence[Dependency],
+        'get_pet': Sequence[Dependency],
+        'delete_pet': Sequence[Dependency],
+        'get_inventory': Sequence[Dependency],
     },
     total=False,
 )
@@ -44,7 +36,6 @@ class ListPets:
 
     OPERATION: Final = OperationPlan(
         name='list_pets',
-        key='/paths/~1pets/get',
         service='pets',
         keywords=('limit', 'tags', 'kind', 'x_request_id', 'since', 'session'),
     )
@@ -88,7 +79,6 @@ class CreatePet:
 
     OPERATION: Final = OperationPlan(
         name='create_pet',
-        key='/paths/~1pets/post',
         service='pets',
         keywords=('body',),
     )
@@ -105,11 +95,7 @@ class CreatePet:
 class ListMyPets:
     """Plans of the list_my_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_my_pets',
-        key='/paths/~1pets~1mine/get',
-        service='pets',
-    )
+    OPERATION: Final = OperationPlan(name='list_my_pets', service='pets')
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
@@ -125,7 +111,6 @@ class GetPet:
 
     OPERATION: Final = OperationPlan(
         name='get_pet',
-        key='/paths/~1pets~1{petId}/get',
         service='pets',
         keywords=('pet_id',),
     )
@@ -148,7 +133,6 @@ class DeletePet:
 
     OPERATION: Final = OperationPlan(
         name='delete_pet',
-        key='/paths/~1pets~1{petId}/delete',
         service='pets',
         keywords=('pet_id',),
     )
@@ -158,11 +142,7 @@ class DeletePet:
 class GetInventory:
     """Plans of the get_inventory operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_inventory',
-        key='/paths/~1store~1inventory/get',
-        service='store',
-    )
+    OPERATION: Final = OperationPlan(name='get_inventory', service='store')
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(

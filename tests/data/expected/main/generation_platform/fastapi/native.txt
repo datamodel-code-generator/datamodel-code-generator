@@ -36,7 +36,7 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `UntaggedService` | `post_discriminated` | POST | `/discriminated` | `/paths/~1discriminated/post` |
     | | `UntaggedService` | `post_ranges` | POST | `/ranges` | `/paths/~1ranges/post` |
@@ -62,7 +62,7 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
     | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |
@@ -153,7 +153,7 @@ render pydantic_v2.dataclass
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `UntaggedService` | `post_discriminated` | POST | `/discriminated` | `/paths/~1discriminated/post` |
     | | `UntaggedService` | `post_ranges` | POST | `/ranges` | `/paths/~1ranges/post` |
@@ -179,7 +179,7 @@ render pydantic_v2.dataclass
     | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
     | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

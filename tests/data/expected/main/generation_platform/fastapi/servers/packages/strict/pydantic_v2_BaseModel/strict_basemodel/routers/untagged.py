@@ -108,7 +108,7 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 {'name': 'X-Trace', 'in': 'header', 'schema': {'type': 'integer'}},
             ],
         },
-        dependencies=wiring.dependencies.get('/paths/~1values~1{id}/get'),
+        dependencies=wiring.dependencies.get('get_values'),
     )
 
 

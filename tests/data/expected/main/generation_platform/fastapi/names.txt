@@ -40,7 +40,7 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `UsersService` | `get__users_me` | GET | `/users/me` | `/paths/~1users~1me/get` |
     | | `UsersService` | `get_user_by_id` | GET | `/users/{id}` | `/paths/~1users~1{id}/get` |
@@ -48,7 +48,7 @@ render pydantic_v2.BaseModel
     | | `Router2024FilesService` | `get_file` | GET | `/files/{file.name}/{dcg_p0}` | `/paths/~1files~1{file.name}~1{dcg_p0}/get` |
     | | `MiscService` | `health_check` | GET | `/health` | `/paths/~1health/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

@@ -34,7 +34,6 @@ class OperationPlan:
     """One operation a router registers: its service and method, the keywords, how it is called, and its security."""
 
     name: str
-    key: str
     service: str
     keywords: tuple[str, ...] = ()
     asynchronous: bool = False
@@ -118,13 +117,13 @@ def checked_services(
 def checked_operation_dependencies(
     value: object, operations: tuple[OperationPlan, ...]
 ) -> Mapping[str, tuple[Dependency, ...]]:
-    """Return each operation's own dependencies once every key names one of the router's operations."""
+    """Return each operation's own dependencies once every key names a method of the router's operations."""
     if value is None:
         return MappingProxyType({})
     if not _is_mapping(value):
-        msg = "operation_dependencies must map operation keys to sequences of dependencies"
+        msg = "operation_dependencies must map method names to sequences of dependencies"
         raise HandlerConfigurationError(msg)
-    keys = {operation.key for operation in operations}
+    keys = {operation.name for operation in operations}
     if unknown := sorted(str(key) for key in value if key not in keys):
         msg = f"operation_dependencies names no operation of this router: {', '.join(unknown)}"
         raise HandlerConfigurationError(msg)

@@ -8,7 +8,7 @@ from typing import Any, Final
 
 from fastapi import APIRouter, FastAPI
 
-from ._generated.contract import OperationDependencies, OperationKey
+from ._generated.contract import OperationDependencies
 from ._runtime.server.application import Dependency, build
 from ._runtime.server.security import (
     AsyncAuthorize,
@@ -70,7 +70,6 @@ __all__ = [
     'Credentials',
     'Dependency',
     'OperationDependencies',
-    'OperationKey',
     'RequirementSets',
     'build_router',
     'create_app',
