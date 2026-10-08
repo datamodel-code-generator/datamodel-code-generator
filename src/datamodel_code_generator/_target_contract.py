@@ -400,7 +400,7 @@ class TypeUseBinding:
 
 @dataclass(frozen=True, slots=True)
 class SourceReference:
-    """Retain a metadata reference without acquiring another source for observation."""
+    """Retain a metadata reference and whether it reaches an object of a document that loads."""
 
     source: SourceLocation
     reference: str

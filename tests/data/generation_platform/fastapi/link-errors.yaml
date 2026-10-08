@@ -10,6 +10,8 @@ paths:
           links:
             known: {$ref: "#/components/links/Known"}
             missing: {$ref: "#/components/links/Absent"}
+            nonlink: {$ref: "#"}
+            unnamed: {description: Names no operation.}
       callbacks:
         created:
           "{$request.body#/url}":

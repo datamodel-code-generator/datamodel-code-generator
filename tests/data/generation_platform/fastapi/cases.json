@@ -307,7 +307,8 @@
   "references": {
     "input": "references.yaml",
     "files": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "config": {
       "layout": "single"
@@ -316,7 +317,8 @@
   "self-references": {
     "input": "self-references.yaml",
     "files": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "expected": "references",
     "model": {

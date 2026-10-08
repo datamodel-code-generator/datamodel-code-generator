@@ -16,6 +16,7 @@ from math import isfinite
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
+from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
@@ -403,13 +404,29 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
         return result
 
-    def referenced_document(self, document: str, ref: str) -> str:
+    def referenced_document(self, document: str, ref: str) -> str | None:
         """Return the document a reference in a loaded document names, resolved as the walk resolves them there.
 
-        The walk follows no link or security scheme, so their references resolve here, loading nothing.
+        The walk follows no link or security scheme, so their references resolve here; None is a reference that
+        names no document, such as a malformed URL.
         """
-        with self._inherited_ref_context(f"{document}#"), self.openapi_self_context(self._api_documents[document]):
-            return self.model_resolver.resolve_ref(f"{ref.partition('#')[0]}#").partition("#")[0]
+        try:
+            with self._inherited_ref_context(f"{document}#"), self.openapi_self_context(self._api_documents[document]):
+                return self.model_resolver.resolve_ref(f"{ref.partition('#')[0]}#").partition("#")[0]
+        except ValueError:
+            return None
+
+    def load_document(self, document: str) -> dict[str, YamlValue] | None:
+        """Load a document that only links or security schemes reference, as the walk loads every other document.
+
+        None is a document that the loader cannot read or may not fetch.
+        """
+        try:
+            raw = self._get_ref_body(document)
+        except Error:
+            return None
+        self._api_documents[document] = raw
+        return raw
 
     def release_records(self) -> None:
         """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
@@ -1415,6 +1432,7 @@ class _Schemas:
             if document not in self.ids:
                 self.ids[document] = SourceDocumentId(len(self.ids))
                 self.documents[document] = loaded[document]
+        self.walked = tuple(self.documents)
 
     def location(self, declaration: _Declaration, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -2220,6 +2238,16 @@ class _SchemaUses(_Models):
 class _Contracts(_SchemaUses):
     """Bind every type use of the operations the target parser walked."""
 
+    def observed(self, document: str) -> bool:
+        """Return whether a document is loaded, loading one that nothing but a link or security scheme references."""
+        if document in self.schemas.documents:
+            return True
+        if (raw := self.parser.load_document(document)) is None:
+            return False
+        self.schemas.ids[document] = SourceDocumentId(len(self.schemas.ids))
+        self.schemas.documents[document] = raw
+        return True
+
     def declared(self, declaration: _Declaration, raw: YamlValue) -> tuple[_Declaration, dict[str, YamlValue]]:
         """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
         return self.parser.resolutions.get(declaration) or (declaration, _mapping(raw))
@@ -2244,12 +2272,12 @@ class _Contracts(_SchemaUses):
                 if ref.startswith("#")
                 else self.parser.referenced_document(declaration.document, ref)
             )
-            if document not in self.schemas.documents:
+            if document is not None and not self.observed(document):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
                 break
             fragment = ref.partition("#")[2]
             noncanonical = _BAD_PERCENT.search(fragment) or _BAD_ESCAPE.search(unquote(fragment))
-            if noncanonical or (tokens := _pointer_tokens(ref)) is None:
+            if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break
             target = _Declaration(document, tokens)
@@ -2573,8 +2601,10 @@ class _Contracts(_SchemaUses):
         )
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
+        """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
         declarations: list[WireDeclaration] = []
-        for document, raw in self.schemas.documents.items():
+        for document in self.schemas.walked:
+            raw = self.schemas.documents[document]
             for name, scheme in _mapping(_mapping(_mapping(raw).get("components")).get("securitySchemes")).items():
                 use = _Declaration(document, ("components", "securitySchemes", name))
                 declarations.append(self.metadata("security_scheme", name, use, use, scheme))
@@ -2608,6 +2638,7 @@ def bind_operations(
     builder.schema_uses()
     builder.helper_uses()
     builder.extras()
+    security_schemes = builder.security_schemes()
     schemas = builder.schemas
     return BoundAttempt(
         GeneratedTypeContractBatch(
@@ -2620,7 +2651,7 @@ def bind_operations(
             artifacts,
             fields,
             (),
-            builder.security_schemes(),
+            security_schemes,
             api_scope=True,
         ),
         tuple(schemas.documents.items()),

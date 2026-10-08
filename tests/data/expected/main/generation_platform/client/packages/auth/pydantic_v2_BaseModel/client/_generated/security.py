@@ -98,7 +98,12 @@ _SCHEME_9: Final = SecurityScheme(
 _SCHEME_10: Final = UnavailableSecurityScheme(name='unused_digest')
 
 
-_SCHEME_11: Final = UnavailableSecurityScheme(name='unused_external')
+_SCHEME_11: Final = SecurityScheme(
+    name='unused_external',
+    kind='bearer',
+    location='header',
+    wire_name='Authorization',
+)
 
 
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (

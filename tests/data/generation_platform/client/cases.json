@@ -926,7 +926,8 @@
   "references": {
     "input": "references.yaml",
     "references": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "modules": [
       [
@@ -943,7 +944,8 @@
   "self-references": {
     "input": "self-references.yaml",
     "references": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "modules": false,
     "model": {
