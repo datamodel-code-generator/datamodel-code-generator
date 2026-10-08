@@ -168,6 +168,16 @@ formatted, and encoded like the model files, by the same model settings: `format
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
+## Model conversion
+
+The generated models determine validation and conversion. Parameter, response-header and form text is split into
+strings and containers before the selected backend converts it; the client does not require a canonical numeric
+spelling or reject unknown object members before the model handles them. Pydantic and msgspec use their native
+conversion rules. Dataclass and TypedDict codecs construct values without adding schema validation.
+
+The generated `model_codecs` module exports `UNSET`, `Unset` and `JSONValue`. Parameter parsing records and wire
+validation errors are implementation details.
+
 ## Webhook contracts
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is

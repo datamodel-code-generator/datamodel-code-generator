@@ -19,6 +19,20 @@ paths:
               content:
                 application/json:
                   schema: {$ref: '#/components/schemas/Entry'}
+            X-Count:
+              schema: {type: integer}
+            X-Flag:
+              schema: {type: boolean}
+            X-Counts:
+              schema: {type: array, items: {type: integer}}
+            X-Entry:
+              style: simple
+              explode: true
+              schema: {$ref: '#/components/schemas/Entry'}
+            X-Closed:
+              style: simple
+              explode: true
+              schema: {$ref: '#/components/schemas/ClosedEntry'}
     post:
       operationId: saveValue
       tags: [nativeHeaders]
@@ -36,6 +50,12 @@ components:
   schemas:
     Entry:
       type: object
+      required: [value]
+      properties:
+        value: {type: string}
+    ClosedEntry:
+      type: object
+      additionalProperties: false
       required: [value]
       properties:
         value: {type: string}

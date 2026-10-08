@@ -30,8 +30,6 @@ _PARAMETER: Final = re.compile(
     rf";[ \t]*(?P<name>{_HTTP_WORD})=(?P<value>{_HTTP_WORD}|"
     r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
 )
-_INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
-_NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
 
@@ -57,8 +55,6 @@ def json_value(content: str | bytes) -> JSONValue:
 
 def plain(value: object) -> JSONValue:
     """Turn parsed form and header containers into builtins a native backend accepts."""
-    if isinstance(value, Decimal):
-        return float(value)
     if isinstance(value, Mapping):
         return {cast("str", key): plain(item) for key, item in cast("Mapping[object, object]", value).items()}
     if isinstance(value, (list, tuple)):
@@ -284,23 +280,6 @@ def _integer_text(value: int) -> str:
         raise CodecResourceLimitError(msg) from None
 
 
-def typed(text: str, kind: LexicalKind) -> WireScalar:
-    """Read one canonical lexical form back into its declared JSON scalar kind."""
-    if kind == "string":
-        return text
-    if kind == "boolean" and text in {"true", "false"}:
-        return text == "true"
-    if kind != "boolean" and _INTEGER.fullmatch(text):
-        try:
-            return int(text)
-        except ValueError:
-            msg = "An integer exceeds the interpreter's decimal conversion limit"
-            raise CodecResourceLimitError(msg) from None
-    if kind == "number" and _NUMBER.fullmatch(text):
-        return Decimal(text)
-    raise issue(code="parameter.lexical", message=f"The value is not a canonical {kind}")
-
-
 def percent_decode(raw: bytes, *, plus: bool) -> str:
     """Decode percent triplets exactly once and require the result to be UTF-8."""
     if plus:
@@ -361,21 +340,20 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
 
 
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> WireValue:
-    """Read ordered URL-encoded pairs into a flat object, rejecting duplicate scalars."""
+    """Split URL-encoded text for native model conversion, collecting declared repeated fields."""
     declared = {field.name: field for field in fields}
-    result: dict[str, WireJSON] = {}
+    result: dict[str, JSONValue] = {}
     for raw_name, raw_value in split_form(raw):
         name = percent_decode(raw_name, plus=True)
-        if (field := declared.get(name, additional)) is None:
-            raise issue(code="form.undeclared", message="A URL-encoded form member is not declared")
-        value = typed(percent_decode(raw_value, plus=True), field.kind)
+        field = declared.get(name, additional)
+        value = percent_decode(raw_value, plus=True)
         match result.get(name):
             case list() as values:
                 values.append(value)
-            case None if field.repeated:
+            case None if field is not None and field.repeated:
                 result[name] = [value]
             case None:
                 result[name] = value
             case _:
                 raise issue(code="form.duplicate", message="A URL-encoded form repeats a single-valued member")
-    return freeze_wire(result)
+    return result

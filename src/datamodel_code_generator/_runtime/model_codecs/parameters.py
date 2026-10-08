@@ -1,4 +1,4 @@
-"""Reversible OpenAPI parameter styles between raw HTTP fragments and wire values."""
+"""OpenAPI parameter styles between raw HTTP fragments and parsed text values."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from itertools import starmap
-from typing import Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import quote
 
 from .errors import ParameterEncodingError, WireIssue, WireValidationError
@@ -22,10 +22,11 @@ from .media import (
     media_kind,
     percent_decode,
     split_form,
-    typed,
 )
 from .unset import UNSET, Unset
-from .wire import JSONValue, WireValue, freeze_wire
+
+if TYPE_CHECKING:
+    from .wire import JSONValue, WireValue
 
 ParameterLocation: TypeAlias = Literal["path", "query", "querystring", "header", "cookie"]
 ValueShape: TypeAlias = Literal["scalar", "array", "object"]
@@ -150,10 +151,6 @@ class QueryStringContribution:
 
 EncodedParameterContribution: TypeAlias = FragmentContribution | QueryStringContribution
 _Entry: TypeAlias = tuple[str | None, str]
-
-
-def _member(plan: ParameterPlan, name: str) -> FieldPlan | None:
-    return next((item for item in plan.fields if item.name == name), plan.additional)
 
 
 def _entries(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
@@ -390,31 +387,29 @@ def encode_parameters(
     return tuple(contributions)
 
 
-def _object(plan: ParameterPlan, members: list[tuple[str, str]]) -> WireValue:
-    result: dict[str, JSONValue] = {}
+def _object(members: list[tuple[str, str]]) -> WireValue:
+    result: dict[str, str] = {}
     for name, text in members:
         if name in result:
             raise issue(code="parameter.duplicate", message="An object parameter repeats a member")
-        if (declared := _member(plan, name)) is None:
-            raise issue(code="parameter.undeclared", message="An object parameter member is not declared")
-        result[name] = typed(text, declared.kind)
-    return freeze_wire(result)
+        result[name] = text
+    return result
 
 
 def _collection(plan: ParameterPlan, parts: list[str], *, exploded_pairs: bool) -> WireValue:
     if plan.shape == "array":
-        return tuple(typed(text, plan.kind) for text in parts)
+        return tuple(parts)
     if exploded_pairs:
-        return _paired(plan, [part.partition("=") for part in parts])
+        return _paired([part.partition("=") for part in parts])
     if len(parts) % 2:
         raise issue(code="parameter.object", message="An object parameter has an unpaired member")
-    return _object(plan, list(zip(parts[::2], parts[1::2], strict=True)))
+    return _object(list(zip(parts[::2], parts[1::2], strict=True)))
 
 
-def _paired(plan: ParameterPlan, members: list[tuple[str, str, str]]) -> WireValue:
+def _paired(members: list[tuple[str, str, str]]) -> WireValue:
     if not all(equals for _, equals, _ in members):
         raise issue(code="parameter.object", message="An exploded object member has no '=' separator")
-    return _object(plan, [(name, text) for name, _, text in members])
+    return _object([(name, text) for name, _, text in members])
 
 
 def _parts(raw: bytes, delimiter: re.Pattern[bytes]) -> list[bytes]:
@@ -437,11 +432,10 @@ def _decode_path(plan: ParameterPlan, raw: bytes) -> WireValue:
     if plan.style == "matrix":
         return _decode_matrix(plan, body.split(b";"))
     if plan.shape == "scalar":
-        return typed(percent_decode(body, plus=False), plan.kind)
+        return percent_decode(body, plus=False)
     delimiter = _DOT if plan.style == "label" and plan.explode else _COMMA
     if plan.shape == "object" and plan.explode:
         return _paired(
-            plan,
             [
                 (percent_decode(name, plus=False), equals.decode(), percent_decode(text, plus=False))
                 for name, equals, text in (part.partition(b"=") for part in _parts(body, delimiter))
@@ -453,15 +447,15 @@ def _decode_path(plan: ParameterPlan, raw: bytes) -> WireValue:
 def _decode_matrix(plan: ParameterPlan, parts: list[bytes]) -> WireValue:
     members = [(percent_decode(name, plus=False), value) for name, _, value in (part.partition(b"=") for part in parts)]
     if plan.shape == "object" and plan.explode:
-        return _object(plan, [(name, percent_decode(value, plus=False)) for name, value in members])
+        return _object([(name, percent_decode(value, plus=False)) for name, value in members])
     if any(name != plan.name for name, _ in members):
         raise issue(code="parameter.syntax", message="A matrix path member has an unexpected name")
     if plan.shape == "array" and plan.explode:
-        return tuple(typed(percent_decode(value, plus=False), plan.kind) for _, value in members)
+        return tuple(percent_decode(value, plus=False) for _, value in members)
     if len(members) != 1:
         raise issue(code="parameter.duplicate", message="A matrix path value repeats a single-valued member")
     if plan.shape == "scalar":
-        return typed(percent_decode(members[0][1], plus=False), plan.kind)
+        return percent_decode(members[0][1], plus=False)
     return _collection(plan, _split(members[0][1], _COMMA, plus=False), exploded_pairs=False)
 
 
@@ -482,16 +476,13 @@ def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireV
         for name, text in pairs
         if name in declared or (plan.additional is not None and name not in plan.reserved_names)
     ]
-    return _object(plan, members) if members else UNSET
+    return _object(members) if members else UNSET
 
 
 def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireValue | Unset:
     match plan.style, plan.shape, plan.explode:
         case "form", "array", True:
-            return (
-                tuple(typed(percent_decode(value, plus=True), plan.kind) for name, value in pairs if name == plan.name)
-                or UNSET
-            )
+            return tuple(percent_decode(value, plus=True) for name, value in pairs if name == plan.name) or UNSET
         case "form", "object", True:
             return _exploded_object(plan, [(name, percent_decode(value, plus=True)) for name, value in pairs])
         case "deepObject", _, _:
@@ -501,13 +492,13 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireVa
                 for name, value in pairs
                 if name.startswith(prefix) and name.endswith("]")
             ]
-            return _object(plan, members) if members else UNSET
+            return _object(members) if members else UNSET
         case _:
             pass
     if (value := _single([value for name, value in pairs if name == plan.name])) is UNSET:
         return UNSET
     if plan.shape == "scalar":
-        return typed(percent_decode(value, plus=True), plan.kind)
+        return percent_decode(value, plus=True)
     delimiter = _DELIMITERS[plan.style][0] if plan.style in _DELIMITERS else _COMMA
     return _collection(plan, _split(value, delimiter, plus=True), exploded_pairs=False)
 
@@ -522,7 +513,7 @@ def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | Unse
     if plan.shape == "scalar":
         if len(texts) > 1:
             raise issue(code="parameter.duplicate", message="A single-valued header occurs more than once")
-        return typed(texts[0], plan.kind)
+        return texts[0]
     if not (combined := ",".join(texts)):
         raise issue(code="parameter.empty", message="An empty header value cannot represent a container")
     return _collection(plan, [part.strip(_OWS) for part in combined.split(",")], exploded_pairs=plan.explode)
@@ -533,10 +524,10 @@ def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireVal
         return _exploded_object(plan, pairs)
     matching = [text for name, text in pairs if name == plan.name]
     if plan.shape == "array":
-        return tuple(typed(text, plan.kind) for text in matching) or UNSET
+        return tuple(matching) or UNSET
     if len(matching) > 1:
         raise issue(code="parameter.duplicate", message="A single-valued cookie occurs more than once")
-    return typed(matching[0], plan.kind) if matching else UNSET
+    return matching[0] if matching else UNSET
 
 
 def _utf8(raw: bytes) -> str:
