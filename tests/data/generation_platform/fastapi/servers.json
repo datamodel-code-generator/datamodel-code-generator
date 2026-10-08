@@ -1866,5 +1866,156 @@
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "errors": {
+    "input": "server-errors.yaml",
+    "services": "errors",
+    "apps": [
+      {
+        "set": "default",
+        "requests": [
+          {
+            "method": "POST",
+            "url": "/accounts/1?limit=5",
+            "headers": {
+              "X-Token": "long-token",
+              "Cookie": "session=long-session"
+            },
+            "json": {
+              "secret": "long-secret"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/0?limit=11",
+            "headers": {
+              "X-Token": "short",
+              "Cookie": "session=short"
+            },
+            "json": {
+              "secret": "p4ss"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/1",
+            "content": "{\"secret\": ",
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/1"
+          },
+          {
+            "method": "GET",
+            "url": "/codes?codes=long-code,short"
+          },
+          {
+            "method": "GET",
+            "url": "/accounts/1"
+          },
+          {
+            "method": "GET",
+            "url": "/missing"
+          }
+        ]
+      },
+      {
+        "set": "override",
+        "requests": [
+          {
+            "method": "POST",
+            "url": "/accounts/1?limit=5",
+            "headers": {
+              "X-Token": "long-token",
+              "Cookie": "session=long-session"
+            },
+            "json": {
+              "secret": "long-secret"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/0?limit=11",
+            "headers": {
+              "X-Token": "short",
+              "Cookie": "session=short"
+            },
+            "json": {
+              "secret": "p4ss"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/codes?codes=short"
+          }
+        ]
+      },
+      {
+        "set": "router",
+        "requests": [
+          {
+            "method": "POST",
+            "url": "/accounts/1?limit=5",
+            "headers": {
+              "X-Token": "long-token",
+              "Cookie": "session=long-session"
+            },
+            "json": {
+              "secret": "long-secret"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/0?limit=11",
+            "headers": {
+              "X-Token": "short",
+              "Cookie": "session=short"
+            },
+            "json": {
+              "secret": "p4ss"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/codes?codes=short"
+          }
+        ]
+      },
+      {
+        "set": "router-handler",
+        "requests": [
+          {
+            "method": "POST",
+            "url": "/accounts/1?limit=5",
+            "headers": {
+              "X-Token": "long-token",
+              "Cookie": "session=long-session"
+            },
+            "json": {
+              "secret": "long-secret"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/accounts/0?limit=11",
+            "headers": {
+              "X-Token": "short",
+              "Cookie": "session=short"
+            },
+            "json": {
+              "secret": "p4ss"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/codes?codes=short"
+          }
+        ]
+      }
+    ],
+    "package_snapshots": []
   }
 }

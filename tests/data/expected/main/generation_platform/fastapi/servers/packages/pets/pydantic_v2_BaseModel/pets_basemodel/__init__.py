@@ -12,6 +12,7 @@ from .application import (
     RequirementSets,
     build_router,
     create_app,
+    validation_error_handler,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "RequirementSets",
     "build_router",
     "create_app",
+    "validation_error_handler",
 ]

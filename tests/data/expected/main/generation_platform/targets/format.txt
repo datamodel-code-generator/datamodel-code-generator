@@ -165,6 +165,7 @@ show server/__init__.py
   |     RequirementSets,
   |     build_router,
   |     create_app,
+  |     validation_error_handler,
   | )
   | 
   | __all__ = [
@@ -176,6 +177,7 @@ show server/__init__.py
   |     "RequirementSets",
   |     "build_router",
   |     "create_app",
+  |     "validation_error_handler",
   | ]
 show server/_runtime/model_codecs/unset.py
   | # Example header
