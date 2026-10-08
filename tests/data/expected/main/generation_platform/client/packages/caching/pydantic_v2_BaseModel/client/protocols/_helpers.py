@@ -7,14 +7,6 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_5
-from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_6
-from models import FieldUsersGetQueryPageParameter as _dcg_type_3
-from models import FieldUsersGetQueryRoleParameter as _dcg_type_4
-from models import FieldUsersUserIdGetHeaderAcceptLanguageParameter as _dcg_type_1
-from models import FieldUsersUserIdGetPathUserIdParameter as _dcg_type_2
-from models import FieldUsersUserIdGetQueryFieldsParameter as _dcg_type_0
-
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.cache import fetch
 from .._runtime.protocols.caches import CacheResult
@@ -108,9 +100,9 @@ class UsersProfileCache:
     def fetch(
         self,
         *,
-        fields: _dcg_type_0 | Unset = UNSET,
-        accept_language: _dcg_type_1 | Unset = UNSET,
-        user_id: _dcg_type_2,
+        fields: str | Unset = UNSET,
+        accept_language: str | Unset = UNSET,
+        user_id: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -134,9 +126,9 @@ class UsersDatedCache:
     def fetch(
         self,
         *,
-        fields: _dcg_type_0 | Unset = UNSET,
-        accept_language: _dcg_type_1 | Unset = UNSET,
-        user_id: _dcg_type_2,
+        fields: str | Unset = UNSET,
+        accept_language: str | Unset = UNSET,
+        user_id: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -160,8 +152,8 @@ class UsersListingCache:
     def fetch(
         self,
         *,
-        page: _dcg_type_3 | Unset = UNSET,
-        role: _dcg_type_4 | Unset = UNSET,
+        page: int | Unset = UNSET,
+        role: list[str] | Unset = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -185,7 +177,7 @@ class CartsCurrentCache:
     def fetch(
         self,
         *,
-        cart: _dcg_type_5,
+        cart: str,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetCurrentCartResponse]:
@@ -209,7 +201,7 @@ class SecureProfileCache:
     def fetch(
         self,
         *,
-        user_id: _dcg_type_6,
+        user_id: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:

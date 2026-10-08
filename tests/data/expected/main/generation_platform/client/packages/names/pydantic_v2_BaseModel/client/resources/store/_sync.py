@@ -8,14 +8,9 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from functools import cached_property
 
-from models import FieldFilesFileNameExtGetHeaderField2faParameter as _dcg_type_3
-from models import FieldFilesFileNameExtGetPathExtParameter as _dcg_type_1
-from models import FieldFilesFileNameExtGetPathFileNameParameter as _dcg_type_0
-from models import FieldFilesFileNameExtGetQueryClassParameter as _dcg_type_2
-
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import RequestOptions
 from ...responses import RawResponse, Response
 from ...types.store import GetFilesByFileNameByExtResponse
 
@@ -45,10 +40,10 @@ class StoreResource:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: _dcg_type_0,
-        ext: _dcg_type_1,
-        class_: _dcg_type_2 | Unset = UNSET,
-        two_factor: _dcg_type_3 | Unset = UNSET,
+        file_name: str,
+        ext: str,
+        class_: str = 'full',
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> GetFilesByFileNameByExtResponse:
         """Call GET /files/{fileName}.{ext}."""
@@ -69,10 +64,10 @@ class StoreWithResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: _dcg_type_0,
-        ext: _dcg_type_1,
-        class_: _dcg_type_2 | Unset = UNSET,
-        two_factor: _dcg_type_3 | Unset = UNSET,
+        file_name: str,
+        ext: str,
+        class_: str = 'full',
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> Response[GetFilesByFileNameByExtResponse]:
         """Call GET /files/{fileName}.{ext}."""
@@ -93,10 +88,10 @@ class StoreWithRawResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: _dcg_type_0,
-        ext: _dcg_type_1,
-        class_: _dcg_type_2 | Unset = UNSET,
-        two_factor: _dcg_type_3 | Unset = UNSET,
+        file_name: str,
+        ext: str,
+        class_: str = 'full',
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /files/{fileName}.{ext}."""
@@ -117,10 +112,10 @@ class StoreWithStreamingResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: _dcg_type_0,
-        ext: _dcg_type_1,
-        class_: _dcg_type_2 | Unset = UNSET,
-        two_factor: _dcg_type_3 | Unset = UNSET,
+        file_name: str,
+        ext: str,
+        class_: str = 'full',
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /files/{fileName}.{ext}."""

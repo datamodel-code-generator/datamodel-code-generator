@@ -9,8 +9,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldStatusesGetQueryCodeParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -43,7 +41,7 @@ class AsyncStatusesResource:
     async def list_statuses(
         self,
         *,
-        code: _dcg_type_0 | Unset = UNSET,
+        code: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
@@ -66,7 +64,7 @@ class AsyncStatusesWithResponse:
     async def list_statuses(
         self,
         *,
-        code: _dcg_type_0 | Unset = UNSET,
+        code: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
@@ -89,7 +87,7 @@ class AsyncStatusesWithRawResponse:
     async def list_statuses(
         self,
         *,
-        code: _dcg_type_0 | Unset = UNSET,
+        code: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -112,7 +110,7 @@ class AsyncStatusesWithStreamingResponse:
     def list_statuses(
         self,
         *,
-        code: _dcg_type_0 | Unset = UNSET,
+        code: int | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

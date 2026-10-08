@@ -6,14 +6,15 @@ render pydantic_v2.BaseModel default
   
   from __future__ import annotations
   from pydantic import BaseModel, RootModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       id: int
   
   
-  class FieldItemsGetQueryTokenParameter(RootModel[str]):
-      root: str
+  
+  FieldItemsGetQueryTokenParameter = TypeAliasType("FieldItemsGetQueryTokenParameter", str)
   
   
   class Marker(RootModel[Item]):

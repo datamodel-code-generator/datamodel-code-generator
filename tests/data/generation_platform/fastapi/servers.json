@@ -247,6 +247,18 @@
       },
       {
         "method": "GET",
+        "url": "/sizes"
+      },
+      {
+        "method": "GET",
+        "url": "/sizes?size=3&words=x&words=y"
+      },
+      {
+        "method": "GET",
+        "url": "/sizes?size=0"
+      },
+      {
+        "method": "GET",
         "url": "/repeat/1/again/1"
       },
       {

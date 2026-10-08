@@ -10549,3 +10549,99 @@ def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint:
                 expected_file="type_union_nullable.py",
             )
     assert_warnings_contain(recorded, "nullable keyword is deprecated")
+
+
+@pytest.mark.parametrize("use_type_alias", [False, True], ids=["api-scope", "use-type-alias"])
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", ["--output-model-type", "pydantic_v2.BaseModel"]),
+        (
+            "pydantic_v2_type_statement.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--target-python-version", "3.12"],
+        ),
+        ("pydantic_v2_reuse.py", ["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"]),
+        (
+            "pydantic_v2_collapse_reuse.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model", "--collapse-reuse-models"],
+        ),
+        ("pydantic_v2_frozen.py", ["--output-model-type", "pydantic_v2.BaseModel", "--enable-faux-immutability"]),
+        ("pydantic_v2_collapse.py", ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"]),
+        (
+            "pydantic_v2_collapse_titles.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--use-title-as-name"],
+        ),
+        ("pydantic_v2_titles.py", ["--output-model-type", "pydantic_v2.BaseModel", "--use-title-as-name"]),
+        ("pydantic_v2_field_constraints.py", ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"]),
+        (
+            "pydantic_v2_root_model_type_alias.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias"],
+        ),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("dataclass.py", ["--output-model-type", "dataclasses.dataclass"]),
+        ("typed_dict.py", ["--output-model-type", "typing.TypedDict"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_openapi_api_scope_parameter_type_aliases(
+    output_file: Path, expected_file: str, extra_args: list[str], *, use_type_alias: bool
+) -> None:
+    """Emit API scope parameter schemas exactly as --use-type-alias emits them."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=f"api_scope_parameter_type_aliases/{expected_file}",
+        extra_args=[
+            "--openapi-scopes",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(
+                extra_args
+                if "--target-python-version" in extra_args
+                else [*extra_args, "--target-python-version", "3.10"]
+            ),
+            *(["--use-type-alias"] if use_type_alias else []),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_directory", "extra_args"),
+    [
+        ("default", []),
+        ("reuse_tree", ["--reuse-model", "--reuse-scope", "tree"]),
+        ("collapse_reuse_tree", ["--reuse-model", "--reuse-scope", "tree", "--collapse-reuse-models"]),
+        ("collapse", ["--collapse-root-models"]),
+        ("frozen_reuse", ["--reuse-model", "--enable-faux-immutability"]),
+    ],
+)
+def test_main_openapi_api_scope_parameter_type_aliases_modules(
+    output_dir: Path, expected_directory: str, extra_args: list[str]
+) -> None:
+    """Keep component root models while parameter schemas and their users follow the type alias form."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases_mixed.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "api_scope_parameter_type_aliases_mixed" / expected_directory,
+        extra_args=[
+            "--openapi-scopes",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
+            *extra_args,
+        ],
+        runtime_validation_module="items",
+        runtime_validation_model_name="Item",
+        runtime_validation_data={"code": "ab", "alias": "abcd"},
+    )

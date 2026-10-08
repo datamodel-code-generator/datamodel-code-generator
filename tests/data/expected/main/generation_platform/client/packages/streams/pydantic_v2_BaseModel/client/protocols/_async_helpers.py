@@ -8,12 +8,10 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import Created as _dcg_type_3
-from models import Deleted as _dcg_type_4
-from models import FeedQuery as _dcg_type_5
-from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_1
-from models import FieldEventsGetQueryTopicParameter as _dcg_type_0
-from models import Message as _dcg_type_2
+from models import Created as _dcg_type_1
+from models import Deleted as _dcg_type_2
+from models import FeedQuery as _dcg_type_3
+from models import Message as _dcg_type_0
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
@@ -86,12 +84,12 @@ class AsyncEventsMessagesSse:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | Unset = UNSET,
-        last_event_id: _dcg_type_1 | Unset = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[_dcg_type_0]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -113,12 +111,12 @@ class AsyncEventsTypedSse:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | Unset = UNSET,
-        last_event_id: _dcg_type_1 | Unset = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | _dcg_type_4 | UnknownEvent]:
+    ) -> AsyncEventStream[_dcg_type_1 | _dcg_type_2 | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -140,12 +138,12 @@ class AsyncEventsTaggedSse:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | Unset = UNSET,
-        last_event_id: _dcg_type_1 | Unset = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | _dcg_type_4]:
+    ) -> AsyncEventStream[_dcg_type_1 | _dcg_type_2]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -167,12 +165,12 @@ class AsyncFeedAllSse:
     async def open(
         self,
         *,
-        body: _dcg_type_5,
+        body: _dcg_type_3,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[_dcg_type_0]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
