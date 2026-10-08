@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from re import compile
 from typing import Annotated
 
 from pydantic import ConfigDict, Field, constr
@@ -13,7 +14,7 @@ from typing_extensions import TypeAliasType
 LookaroundNullableString = TypeAliasType(
     "LookaroundNullableString",
     Annotated[
-        constr(pattern=r'^(?=.*[A-Z]).+$') | None,
+        constr(pattern=compile('^(?=.*[A-Z]).+$')) | None,
         Field(..., description='Nullable string with lookaround pattern.'),
     ],
 )

@@ -543,6 +543,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     PREPARE_PYTHON_PATTERNS: ClassVar[
         Callable[[DataModelFieldBase, str, dict[str, PythonRuntimeExpression]], None] | None
     ] = None
+    COMPILE_ALIAS_PYTHON_PATTERNS: ClassVar[
+        Callable[
+            [DataModelFieldBase, dict[str, PythonRuntimeExpression], Callable[[DataModelFieldBase, DataType], None]],
+            bool,
+        ]
+        | None
+    ] = None
     _FIELD_IMPORTS_CACHE_MAX_SIZE: ClassVar[int] = 4096
     _field_imports_cache: ClassVar[dict[tuple[Any, ...], tuple[Import, ...]]] = {}
     _SEMANTIC_CACHE_KEYS: ClassVar[tuple[str, ...]] = (
