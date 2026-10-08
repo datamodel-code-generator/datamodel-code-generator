@@ -675,7 +675,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
     @classmethod
     def from_client(cls, core: NativeClientCore) -> ClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return native_core.Core.helper_view(core, cls)
+        return native_core.ClientCore.helper_view(core, cls)
 
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
@@ -848,7 +848,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
     @classmethod
     def from_client(cls, core: NativeAsyncClientCore) -> AsyncClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return native_core.Core.helper_view(core, cls)
+        return native_core.AsyncClientCore.helper_view(core, cls)
 
     async def execute_page(  # ruff: ignore[too-many-arguments]
         self,
