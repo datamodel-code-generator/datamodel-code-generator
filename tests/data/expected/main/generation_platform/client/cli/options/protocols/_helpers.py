@@ -7,9 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import FieldPetsGetQueryCursorParameter as _dcg_type_1
-from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
-from models import Pet as _dcg_type_2
+from models import Pet as _dcg_type_0
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.pagination import (
@@ -62,12 +60,12 @@ class PetsAllPagination:
     def page(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_2, ListPetsResponse]:
+    ) -> Page[_dcg_type_0, ListPetsResponse]:
         """Fetch the first page of GET /pets."""
         return first_page(
             self._core,
@@ -81,12 +79,12 @@ class PetsAllPagination:
     def iterate(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_2, ListPetsResponse]:
+    ) -> Pager[_dcg_type_0, ListPetsResponse]:
         """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
         return iterate_pages(
             self._core,
@@ -99,12 +97,12 @@ class PetsAllPagination:
 
     def next_page(
         self,
-        page: Page[_dcg_type_2, ListPetsResponse],
+        page: Page[_dcg_type_0, ListPetsResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_2, ListPetsResponse] | None:
+    ) -> Page[_dcg_type_0, ListPetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
             self._core,
@@ -122,7 +120,7 @@ class PetsAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_2, ListPetsResponse]:
+    ) -> Pager[_dcg_type_0, ListPetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
             self._core,

@@ -9,9 +9,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldPetsGetQueryCursorParameter as _dcg_type_1
-from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
-from models import NewPet as _dcg_type_2
+from models import NewPet as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -45,8 +43,8 @@ class AnimalsResource:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -61,7 +59,7 @@ class AnimalsResource:
     def create_pet(
         self,
         *,
-        body: _dcg_type_2,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -87,8 +85,8 @@ class AnimalsWithResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -103,7 +101,7 @@ class AnimalsWithResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_2,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -129,8 +127,8 @@ class AnimalsWithRawResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -145,7 +143,7 @@ class AnimalsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_2,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -171,8 +169,8 @@ class AnimalsWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        cursor: _dcg_type_1 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -187,7 +185,7 @@ class AnimalsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_2,
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
