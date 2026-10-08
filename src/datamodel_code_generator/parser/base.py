@@ -2303,39 +2303,34 @@ def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -
 
 @dataclass(frozen=True)
 class _AliasReferenceCycles:
-    """Reference cycles among a module's deferrable aliases."""
+    """Reference cycles among a module's deferrable aliases that pass only through containers."""
 
     cycles: Mapping[int, int]
-    direct_cycles: frozenset[int]
 
     def defers(self, model: DataModel, forward_references: Iterable[DataModel]) -> bool:
-        """Return whether the model forward-references its own cycle and each such cycle passes a container."""
-        if (cycle := self.cycles.get(id(model))) is None or id(model) in self.direct_cycles:
+        """Return whether the model forward-references an alias on its own container cycle."""
+        if (cycle := self.cycles.get(id(model))) is None:
             return False
         return any(self.cycles.get(id(source)) == cycle for source in forward_references)
 
 
 def _alias_reference_cycles(models: Sequence[DataModel]) -> _AliasReferenceCycles:
-    """Find the reference cycles among aliases, and those without any container on them."""
+    """Find the cycles among aliases whose every reference is a container item."""
     aliases: dict[ModulePath, DataModel] = {}
     graph: ModuleGraph = {}
-    direct_graph: ModuleGraph = {}
     pending = [model for model in models if model.DEFERS_RECURSIVE_TYPE_HINT]
     while pending:
         if (key := ((model := pending.pop()).path,)) in graph:
             continue
         aliases[key] = model
         graph[key] = set()
-        direct_graph[key] = set()
         for field in model.fields:
             for target, in_container in _iter_alias_references(field.data_type):
-                graph[key].add(target_key := (target.path,))
-                if not in_container:
-                    direct_graph[key].add(target_key)
-                pending.append(target)
+                if in_container:
+                    graph[key].add((target.path,))
+                    pending.append(target)
     return _AliasReferenceCycles(
         cycles={id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc},
-        direct_cycles=frozenset(id(aliases[key]) for scc in find_circular_sccs(direct_graph) for key in scc),
     )
 
 

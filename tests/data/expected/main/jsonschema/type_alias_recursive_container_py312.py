@@ -33,6 +33,7 @@ class Document(BaseModel):
     quoted: Quoted | None = None
     forest: Forest | None = None
     grove: Grove | None = None
+    node: Node | None = None
 
 
 type Forest = Annotated[
@@ -53,6 +54,12 @@ type Left = list[Right]
 
 
 type Right = list[Hub]
+
+
+type Node = int | NodeList
+
+
+type NodeList = list[Node]
 
 
 Document.model_rebuild()

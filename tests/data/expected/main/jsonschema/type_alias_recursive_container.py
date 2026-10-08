@@ -40,6 +40,7 @@ class Document(BaseModel):
     quoted: Quoted | None = None
     forest: Forest | None = None
     grove: Grove | None = None
+    node: Node | None = None
 
 
 Forest = TypeAliasType(
@@ -63,6 +64,12 @@ Left = TypeAliasType("Left", "list[Right]")
 
 
 Right = TypeAliasType("Right", list[Hub])
+
+
+Node = TypeAliasType("Node", Union[int, "NodeList"])
+
+
+NodeList = TypeAliasType("NodeList", list[Node])
 
 
 Document.model_rebuild()

@@ -8,7 +8,8 @@
     "nested": {"$ref": "#/$defs/Nested"},
     "quoted": {"$ref": "#/$defs/Quoted"},
     "forest": {"$ref": "#/$defs/Forest"},
-    "grove": {"$ref": "#/$defs/Grove"}
+    "grove": {"$ref": "#/$defs/Grove"},
+    "node": {"$ref": "#/$defs/Node"}
   },
   "$defs": {
     "JsonValue": {
@@ -71,6 +72,16 @@
     "Right": {
       "type": "array",
       "items": {"$ref": "#/$defs/Hub"}
+    },
+    "Node": {
+      "anyOf": [
+        {"type": "integer"},
+        {"$ref": "#/$defs/NodeList"}
+      ]
+    },
+    "NodeList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Node"}
     },
     "Quoted": {
       "anyOf": [
