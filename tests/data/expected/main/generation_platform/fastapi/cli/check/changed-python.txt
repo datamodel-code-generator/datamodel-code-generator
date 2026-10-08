@@ -1,0 +1,7 @@
+--- server/services.py
++++ server/services.py (expected)
+@@ -74,4 +74,3 @@
+         | HTTPResult[models.FieldStoreInventoryGetResponse]
+         | Response
+     ): ...
+-# changed

@@ -1,4 +1,6 @@
 # document-callbacks
+DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
+DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The served document leaves out servers, which has no JSON form
 {
   "openapi": "3.1.0",
   "info": {

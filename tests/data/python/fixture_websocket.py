@@ -13,6 +13,7 @@ import base64
 import hashlib
 import socket
 import threading
+from contextlib import suppress
 from socketserver import BaseRequestHandler, ThreadingTCPServer
 from typing import TYPE_CHECKING, Any, Final
 
@@ -69,6 +70,7 @@ class SocketServer:
     def __init__(self) -> None:
         """Start serving in a daemon thread."""
         self.plays: list[Play] = []
+        self._connections: list[ServerConnection] = []
         self._server = serve(
             self._handle,
             "127.0.0.1",
@@ -77,6 +79,7 @@ class SocketServer:
             select_subprotocol=self._select,
             process_request=self._process,
             ping_interval=None,
+            close_timeout=None,
             max_size=None,
             server_header=None,
         )
@@ -94,6 +97,7 @@ class SocketServer:
         play = self.plays.pop(0)
         play.request = _request(request)
         connection.play = play  # ty: ignore[unresolved-attribute]
+        self._connections.append(connection)
         if play.refuse is None:
             return None
         status, headers, body = play.refuse
@@ -127,7 +131,10 @@ class SocketServer:
             play.done.set()
 
     def stop(self) -> None:
-        """Stop serving and release the port."""
+        """Hang up the connections clients left open, stop serving, and release the port."""
+        for connection in self._connections:
+            with suppress(OSError):
+                socket.socket.shutdown(connection.socket, socket.SHUT_RDWR)
         self._server.shutdown()
         self._thread.join(timeout=5)
 

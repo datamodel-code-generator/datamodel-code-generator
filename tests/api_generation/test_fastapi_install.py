@@ -1,8 +1,9 @@
-"""Install generated FastAPI servers into new environments that hold only their printed requirements."""
+"""Install generated FastAPI servers into new environments that hold only their printed dependencies."""
 
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -26,17 +27,15 @@ OPTIONS = [
     "--formatters",
     "builtin",
     "--disable-timestamp",
-    "--dependency-format",
-    "requirements",
 ]
 
 
 def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
-    """Install only the printed requirements with uv into a new environment, then serve requests from the package."""
+    """Install the dependencies of the printed uv command into a new environment, then serve from the package."""
     if not os.environ.get("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E"):
         pytest.skip("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E enables installing generated servers")
     monkeypatch.chdir(tmp_path)
-    requirements = EXPECTED / "requirements.txt"
+    notice = (EXPECTED / "dependencies.txt").read_text(encoding="utf-8")
     run_main_and_assert(
         input_path=Path("contacts.yaml"),
         output_path=Path("models.py"),
@@ -46,16 +45,14 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
             (SOURCE / "contacts.yaml", tmp_path / "contacts.yaml"),
             (SOURCE / "pyproject-server.toml", tmp_path / "pyproject.toml"),
             (SOURCE / "app.py", tmp_path / "app.py"),
-            (requirements, tmp_path / "requirements.txt"),
         ],
         capsys=capsys,
-        expected_stdout_path=requirements,
+        expected_stderr=notice,
     )
     environment = tmp_path / "environment"
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
     python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"
-    subprocess.run(
-        ["uv", "pip", "install", "--quiet", "--python", python, "--requirement", "requirements.txt"], check=True
-    )
+    dependencies = shlex.split(notice.splitlines()[-1])[2:]
+    subprocess.run(["uv", "pip", "install", "--quiet", "--python", python, *dependencies], check=True)
     served = subprocess.run([python, "app.py"], capture_output=True, text=True, check=False)
     assert_output(served.stdout + served.stderr, EXPECTED / "served.txt")
