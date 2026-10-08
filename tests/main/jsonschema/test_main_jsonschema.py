@@ -3008,6 +3008,25 @@ def test_main_jsonschema_multiple_files_json_pointer(output_dir: Path) -> None:
     )
 
 
+def test_main_jsonschema_allof_scalar_roots(output_file: Path) -> None:
+    """Generate scalar roots for a document and definitions whose allOf only constrains one value."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_scalar_roots.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="allof_scalar_roots.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_root_model_with_additional_properties(output_file: Path) -> None:
     """Test root model with additional properties."""
     run_main_and_assert(

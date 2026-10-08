@@ -7418,6 +7418,77 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged.setdefault("type", "object")
         return self.SCHEMA_OBJECT_TYPE.model_validate(merged)
 
+    def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
+        """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
+        types = [schema.type for schema in schemas if schema.type]
+        if (
+            not (
+                all(type_ == types[0] for type_ in types)
+                or all(isinstance(type_, str) and type_ in {"integer", "number"} for type_ in types)
+            )
+            or sum(self._schema_literal_values(schema) is not None for schema in schemas) > 1
+            or len({schema.format for schema in schemas if schema.format}) > 1
+        ):
+            return None
+        merged: dict[str, Any] = {}
+        for schema in schemas:
+            merged = self._deep_merge(
+                merged,
+                schema.model_dump(
+                    exclude={"allOf", *JsonSchemaObject.__constraint_fields__}, exclude_unset=True, by_alias=True
+                ),
+            )
+        if types:
+            merged["type"] = JsonSchemaParser._first_typed_schema_dict(schemas)["type"]
+        self._merge_schema_constraints(merged, schemas, intersect=self.allof_merge_mode != AllOfMergeMode.NoMerge)
+        return self.SCHEMA_OBJECT_TYPE.model_validate(merged)
+
+    def _merge_all_of_value_schema(
+        self, obj: JsonSchemaObject, path: list[str], base_classes: list[Reference]
+    ) -> JsonSchemaObject | None:
+        """Rewrite a named allOf whose members describe one scalar value as the schema it is without allOf."""
+        if any(SPECIAL_PATH_MARKER in element for element in path) or any(
+            not (target := self._load_inherited_schema_object(base.path)).ref
+            and self._schema_requires_model_type(target)
+            for base in base_classes
+        ):
+            return None
+        own_schemas: list[JsonSchemaObject] = []
+        schemas: list[JsonSchemaObject] = []
+        pending = [(obj, False)]
+        while pending:
+            schema, referenced = pending.pop()
+            if schema.ref:
+                if not referenced:
+                    own_schemas.append(schema)
+                schema, referenced = self._merge_ref_with_schema(schema), True
+            if schema.allOf:
+                pending.append((schema.model_copy(update={"allOf": []}), referenced))
+                pending.extend(
+                    (
+                        item if isinstance(item, JsonSchemaObject) else self._validate_schema_object(item, path),
+                        referenced,
+                    )
+                    for item in reversed(schema.allOf)
+                )
+                continue
+            if (
+                self._schema_requires_model_type(schema)
+                or any((schema.is_boolean_schema_false, schema.is_array, schema.anyOf, schema.oneOf))
+                or (referenced and self._schema_literal_values(schema) is not None)
+            ):
+                return None
+            schemas.append(schema)
+            if not referenced:
+                own_schemas.append(schema)
+        if (
+            sum(bool(schema.ref) for schema in own_schemas) == 1
+            and (reference := self._merge_value_schemas(own_schemas))
+            and (not reference.has_ref_with_schema_keywords or reference.is_ref_with_nullable_only)
+        ):
+            return reference
+        return self._merge_value_schemas(schemas)
+
     def parse_combined_schema(  # noqa: PLR0912
         self,
         name: str,
@@ -9528,6 +9599,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 literal_validation(root_model, literal_values)
         return root_data_type
 
+    def _parse_all_of_merged_root(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
+        """Parse the schema an allOf merges into like the same schema written without allOf."""
+        if (
+            merged_root.enum
+            and not self.ignore_enum_constraints
+            and not self.should_parse_enum_as_literal(merged_root, property_name=name)
+        ):
+            return self.parse_enum(name, merged_root, path)
+        return (
+            self.parse_array(name, merged_root, path)
+            if merged_root.is_array
+            else self.parse_root_type(name, merged_root, path)
+        )
+
     def parse_all_of(  # noqa: PLR0911
         self,
         name: str,
@@ -9546,17 +9631,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if merged_root := self._merge_all_of_root_schema(obj):
             if self.generate_schema_validators and hasattr(self.data_model_root_type, "add_literal_validation"):
                 return self._parse_all_of_root_value(name, merged_root, path)
-            if (
-                merged_root.enum
-                and not self.ignore_enum_constraints
-                and not self.should_parse_enum_as_literal(merged_root, property_name=name)
-            ):
-                return self.parse_enum(name, merged_root, path)
-            return (
-                self.parse_array(name, merged_root, path)
-                if merged_root.is_array
-                else self.parse_root_type(name, merged_root, path)
-            )
+            return self._parse_all_of_merged_root(name, merged_root, path)
 
         merged_all_of_obj = self._merge_all_of_object(obj)
         if merged_all_of_obj:
@@ -9597,6 +9672,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             union_models,
             frozenset(declared_property_names),
         )
+        if not (fields or required or union_models) and (
+            value_root := self._merge_all_of_value_schema(obj, path, base_classes)
+        ):
+            return self._parse_all_of_merged_root(name, value_root, path)
         if not union_models:
             return self._parse_object_common_part(
                 name,

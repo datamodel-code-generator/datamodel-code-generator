@@ -26,6 +26,6 @@ FieldValuesIdGetQueryAtParameter = TypeAliasType("FieldValuesIdGetQueryAtParamet
 FieldValuesIdGetQueryTagsParameter = TypeAliasType("FieldValuesIdGetQueryTagsParameter", list[str])
 
 
-@dataclass
-class FieldValuesIdGetHeaderXLabelParameter:
-    pass
+FieldValuesIdGetHeaderXLabelParameter = TypeAliasType(
+    "FieldValuesIdGetHeaderXLabelParameter", Annotated[str, Field(min_length=1)]
+)

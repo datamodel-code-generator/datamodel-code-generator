@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: allOf scalar roots
+  version: "1.0"
+paths:
+  /labels:
+    get:
+      operationId: listLabels
+      parameters:
+        - name: prefix
+          in: query
+          schema:
+            allOf:
+              - type: string
+              - minLength: 1
+      responses:
+        "200":
+          description: The labels.
+          headers:
+            X-Total:
+              schema:
+                type: integer
+                allOf:
+                  - minimum: 0
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Label"
+components:
+  schemas:
+    Label:
+      allOf:
+        - type: string
+        - minLength: 1
+    Count:
+      allOf:
+        - type: integer
+        - minimum: 1
+    Ratio:
+      allOf:
+        - type: number
+        - minimum: 0
+        - maximum: 1
+    Enabled:
+      type: boolean
+      allOf:
+        - description: Whether the label is shown.
+    Code:
+      type: string
+      allOf:
+        - minLength: 2
+        - maxLength: 5
+    Color:
+      allOf:
+        - type: string
+          enum:
+            - red
+            - green
+        - minLength: 1
+    Nickname:
+      allOf:
+        - type: [string, "null"]
+        - maxLength: 8
+    Title:
+      description: A display title.
+      allOf:
+        - type: string
+        - allOf:
+            - minLength: 1
+            - maxLength: 40
+    LabelAlias:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+        - description: Another name for a label.
+    ShortLabel:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+        - maxLength: 9
+    Anything:
+      allOf:
+        - minLength: 1
+        - maxLength: 5
+    Mismatch:
+      allOf:
+        - type: string
+        - type: integer
+    Named:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/Label"
+        nickname:
+          allOf:
+            - type: string
+            - maxLength: 8
+    Described:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - description: A named object with a description.

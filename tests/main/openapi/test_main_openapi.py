@@ -3077,6 +3077,42 @@ def test_main_openapi_all_of_required(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_file"),
+    [
+        pytest.param(DataModelType.PydanticV2BaseModel.value, "allof_scalar_roots/pydantic_v2.py", id="pydantic-v2"),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "allof_scalar_roots/pydantic_v2_dataclass.py",
+            id="pydantic-v2-dataclass",
+        ),
+        pytest.param(DataModelType.DataclassesDataclass.value, "allof_scalar_roots/dataclass.py", id="dataclass"),
+        pytest.param(DataModelType.TypingTypedDict.value, "allof_scalar_roots/typed_dict.py", id="typed-dict"),
+        pytest.param(DataModelType.MsgspecStruct.value, "allof_scalar_roots/msgspec.py", id="msgspec"),
+    ],
+)
+def test_main_openapi_allof_scalar_roots(output_file: Path, output_model_type: str, expected_file: str) -> None:
+    """Generate the scalar root a schema, parameter or header allOf describes instead of an empty class."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_scalar_roots.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.benchmark
 def test_main_openapi_nullable(output_file: Path) -> None:
     """Test OpenAPI generation with nullable types."""
