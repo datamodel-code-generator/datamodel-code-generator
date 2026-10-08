@@ -210,8 +210,6 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "list_experimental",
     "watch",
     "watch_delay",
-    "diagnostics_json",
-    "dependency_format",
 })
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
@@ -221,7 +219,6 @@ BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
 _SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
-_TARGET_RUN_OPTIONS: tuple[str, ...] = ("diagnostics_json", "dependency_format")
 
 
 class Exit(IntEnum):
@@ -390,6 +387,7 @@ class _StagedJobPlan(NamedTuple):
     output_anchor: _PublicationAnchor | None
     model_metadata_anchor: _PublicationAnchor | None
     staging_contexts: tuple[tempfile.TemporaryDirectory[str], ...]
+    targets: list[Any] | None = None
 
 
 class _RemoteLockPlan(NamedTuple):
@@ -476,6 +474,7 @@ def _validate_remote_lock_artifacts(
             ("input", config.input if isinstance(config.input, Path) else None),
             ("diff input", config.diff_against),
             ("output", config.output),
+            ("server output", config.server_output if config.generate_server is not None else None),
             ("model metadata", config.emit_model_metadata),
         ):
             if path is not None:
@@ -762,9 +761,13 @@ def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
 
 
 def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
-    """Validate all selected jobs before any job starts generation."""
+    """Validate all selected jobs before any job starts generation.
+
+    Jobs that each generate a target may name one models output, which they must then generate identically.
+    """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
+    target_jobs = {plan.name for plan in plans if plan.config.generate_server is not None}
     for plan in plans:
         config = plan.config
         if config.output is None:  # pragma: no cover - guarded by the TOML validation above
@@ -776,6 +779,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
         inputs.append((plan.name, config.input.expanduser().resolve()))
         artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
+        if config.generate_server is not None and (server_output := config.server_output) is not None:
+            artifacts.append((plan.name, "server output", server_output.expanduser().resolve(strict=False)))
         if (model_metadata := config.emit_model_metadata) is not None:
             if plan.resolved_model_metadata_root is None:  # pragma: no cover - set when metadata is configured
                 msg = f"Job '{plan.name}' cannot resolve model metadata output: {model_metadata}"
@@ -785,7 +790,12 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     for index, first_artifact in enumerate(artifacts):
         first_job, first_kind, first_path = first_artifact
         for second_job, second_kind, second_path in artifacts[index + 1 :]:
-            if not _paths_overlap_or_samefile(first_path, second_path):
+            shares_models = (
+                first_path == second_path
+                and first_kind == second_kind == "output"
+                and target_jobs.issuperset((first_job, second_job))
+            )
+            if shares_models or not _paths_overlap_or_samefile(first_path, second_path):
                 continue
             msg = (
                 f"Jobs '{first_job}' ({first_kind}: {first_path}) and '{second_job}' "
@@ -1078,6 +1088,11 @@ class OutputComparisonOptions(NamedTuple):
     is_directory_output: bool
     input_diff: bool = False
     single_file_display_path: str | None = None
+    directory_display_path: str | None = None
+
+    def directory_file_path(self, path: Path) -> str:
+        """Qualify a directory entry when comparing several output roots."""
+        return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
     def fromfile_suffix(self) -> str:
@@ -1175,8 +1190,8 @@ def _compare_directories(
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
 
-    missing_files = [rel_path.as_posix() for rel_path in sorted(generated_files - actual_files)]
-    extra_files = [rel_path.as_posix() for rel_path in sorted(actual_files - generated_files)]
+    missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
+    extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
         generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
@@ -1184,13 +1199,13 @@ def _compare_directories(
         if generated_content != actual_content:
             changed_files.append(
                 DirectoryChangedFile(
-                    path=rel_path.as_posix(),
+                    path=(display_path := comparison.directory_file_path(rel_path)),
                     diff_lines=list(
                         difflib.unified_diff(
                             actual_content.splitlines(keepends=True),
                             generated_content.splitlines(keepends=True),
-                            fromfile=f"{rel_path.as_posix()}{comparison.fromfile_suffix}",
-                            tofile=f"{rel_path.as_posix()}{comparison.tofile_suffix}",
+                            fromfile=f"{display_path}{comparison.fromfile_suffix}",
+                            tofile=f"{display_path}{comparison.tofile_suffix}",
                         )
                     ),
                 )
@@ -1593,7 +1608,6 @@ def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
             for field, value in _explicit_config_args(namespace).items()
             if field.startswith("server_")
         ]
-        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
         if not given:
             return None
         return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"
@@ -1698,11 +1712,22 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
     return None
 
 
-def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
-    """Hand the selected generation target to its runner, which reports every diagnostic."""
+def _run_target(  # noqa: PLR0913, PLR0917
+    args: Sequence[str],
+    namespace: Namespace,
+    config: Config,
+    pyproject_path: Path | None,
+    batch: list[Any] | None = None,
+    lock: Any = None,
+    job: str = "",
+) -> Exit:
+    """Hand the selected generation target to its runner, which reports every diagnostic.
+
+    A batch `job` plans the target into `batch` for publication with the batch, recording into the batch's lock.
+    """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path))
+    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -1714,8 +1739,12 @@ def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
 
 
 def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
-    """Redirect a write-mode job's artifacts to private, same-filesystem staging paths."""
-    if plan.config.check:
+    """Redirect a write-mode job's artifacts to private, same-filesystem staging paths.
+
+    A server job stages nothing: it renders its models and package without writing them, for publication with the
+    batch.
+    """
+    if plan.config.check or plan.config.generate_server is not None:
         return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
     output = plan.config.output
@@ -1772,11 +1801,15 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
 
 
 def _stage_job_plans(plans: Sequence[JobPlan]) -> tuple[_StagedJobPlan, ...]:
-    """Stage every write-mode job, removing earlier staging if preparation fails."""
+    """Stage every write-mode job, removing earlier staging if preparation fails.
+
+    The jobs share one list for the targets that the server jobs of the batch plan.
+    """
     staged_plans: list[_StagedJobPlan] = []
+    targets: list[Any] = []
     try:
         for plan in plans:
-            staged_plans.append(_stage_job_plan(plan))  # noqa: PERF401
+            staged_plans.append(_stage_job_plan(plan)._replace(targets=targets))  # noqa: PERF401
     except OSError as exc:
         cleanup_errors = _cleanup_staged_job_plans(staged_plans)
         if cleanup_error := _staging_cleanup_error(exc, cleanup_errors):
@@ -1888,16 +1921,28 @@ def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
         )
 
 
-def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile]) -> None:
-    """Load the publication journal only when an artifact must be published."""
+def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:
+    """Load the publication journal only when an artifact must be published, with the targets server jobs planned."""
+    if targets:
+        from datamodel_code_generator._target_cli import publish_targets  # noqa: PLC0415
+
+        publish_targets(cast("Iterable[_StagedFile]", files), targets)
+        return
     from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
 
     publish_staged_files(files)
 
 
+def _planned_targets(staged_plans: Sequence[_StagedJobPlan]) -> Sequence[Any]:
+    """Return the targets the server jobs of a batch planned, in job order."""
+    return next((targets for staged_plan in staged_plans if (targets := staged_plan.targets)), ())
+
+
 def _publish_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
     """Publish every generated batch artifact after all jobs have completed successfully."""
-    _publish_staged_files(file for staged_plan in staged_plans for file in _staged_files(staged_plan))
+    _publish_staged_files(
+        (file for staged_plan in staged_plans for file in _staged_files(staged_plan)), _planned_targets(staged_plans)
+    )
 
 
 def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
@@ -2008,7 +2053,7 @@ def _publish_or_error(
             lock_files = remote_locks.staged_files()
             if lock_files:
                 output_files = tuple(file for staged_plan in staged_plans for file in _staged_files(staged_plan))
-                _publish_staged_files((*output_files, *lock_files))
+                _publish_staged_files((*output_files, *lock_files), _planned_targets(staged_plans))
                 remote_locks.mark_committed()
             else:
                 _publish_staged_job_plans(staged_plans)
@@ -2035,6 +2080,8 @@ def _run_jobs_text(
             _batch_pyproject_path=staged_plan.plan.pyproject_path,
             _batch_original_output=staged_plan.output,
             _batch_output_is_staged=staged_plan.staged_output is not None,
+            _batch_targets=staged_plan.targets,
+            _batch_job=staged_plan.plan.name,
             _remote_locks=remote_locks,
             _bound_remote_lock_plan=remote_lock_plan,
         )
@@ -2084,6 +2131,8 @@ def _run_jobs_json(
                             _batch_pyproject_path=staged_plan.plan.pyproject_path,
                             _batch_original_output=staged_plan.output,
                             _batch_output_is_staged=staged_plan.staged_output is not None,
+                            _batch_targets=staged_plan.targets,
+                            _batch_job=staged_plan.plan.name,
                             _remote_locks=remote_locks,
                             _bound_remote_lock_plan=remote_lock_plan,
                         )
@@ -2314,6 +2363,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _batch_pyproject_path: Path | None = None,
     _batch_original_output: Path | None = None,
     _batch_output_is_staged: bool = False,
+    _batch_targets: list[Any] | None = None,
+    _batch_job: str = "",
     _remote_locks: _RemoteLockTransaction | _UnresolvedRemoteLocks | None = _UNRESOLVED_REMOTE_LOCKS,
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
@@ -2406,6 +2457,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             return _run_jobs(args, batch_plan.jobs)
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
+            return Exit.ERROR
+        if any(plan.config.generate_server is not None for plan in batch_plan.jobs):
+            print("Error: --generate-server cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
         if namespace.output_format == "json":
             print("Error: --output-format json cannot be used with --watch", file=sys.stderr)  # noqa: T201
@@ -2582,7 +2636,18 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if config.generate_server is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
-        return _run_target(args, namespace, None if _batch_config is not None else config, pyproject_path)
+        lock = None
+        if _batch_targets is None:
+            try:
+                _validate_remote_lock_preflight(
+                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
+                )
+            except Error as e:
+                print(str(e), file=sys.stderr)  # noqa: T201
+                return Exit.ERROR
+        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
+            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
+        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
 
     if config.watch and config.check:
         print(  # noqa: T201

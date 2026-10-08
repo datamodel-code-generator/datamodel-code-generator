@@ -21,6 +21,10 @@ paths:
                   schema: {$ref: '#/components/schemas/Entry'}
             X-Count:
               schema: {type: integer}
+            X-Ratio:
+              schema: {type: number, enum: [0.5, 2.2]}
+            X-Score:
+              schema: {type: number}
             X-Flag:
               schema: {type: boolean}
             X-Counts:

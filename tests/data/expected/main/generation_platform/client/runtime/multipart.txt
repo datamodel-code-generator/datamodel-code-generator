@@ -119,7 +119,7 @@
   album of tags their named charset cannot represent ! DecodeError: DecodeError(operation_id='submitAlbum', call_id='<call>', reason='unencodable', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2.0, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
+  profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read with a quoted boundary = FieldProfilesGetResponse(name='Ada', age=None, score=None, ratio=None, active=None, tags=None, address=None)
@@ -286,7 +286,7 @@ codes.0
   async upload without its photo ! DecodeError: DecodeError(operation_id='submitUpload', call_id='<call>', reason='unencodable', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ValueError('A form-data body lacks a required member')] unencodable
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  async profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2.0, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
+  async profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
   > GET https://media.example.com/api/uploads
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   async upload read MultipartData(<9 parts>) DecodedPart(name='title', content_type=None) 'title' None None [('Content-Disposition', 'form-data; name="title"')] 'Notes'; DecodedPart(name='count', content_type=None) 'count' None None [('Content-Disposition', 'form-data; name="count"')] 3; DecodedPart(name='tags', content_type=None) 'tags' None None [('Content-Disposition', 'form-data; name="tags"')] 'a'; DecodedPart(name='tags', content_type=None) 'tags' None None [('Content-Disposition', 'form-data; name="tags"')] 'b'; DecodedPart(name='meta', content_type='application/json') 'meta' None 'application/json' [('Content-Disposition', 'form-data; name="meta"'), ('Content-Type', 'application/json')] Address(city='Oslo', codes=[7]); DecodedPart(name='photo', content_type='image/png') 'photo' 'a.png' 'image/png' [('Content-Disposition', 'form-data; name="photo"; filename="a.png"'), ('Content-Type', 'image/png')] b'\x89PNG'; DecodedPart(name='pages', content_type=None) 'pages' None None [('Content-Disposition', 'form-data; name="pages"')] b'1'; DecodedPart(name='pages', content_type=None) 'pages' None None [('Content-Disposition', 'form-data; name="pages"')] b'2'; DecodedPart(name='bonus', content_type=None) 'bonus' None None [('Content-Disposition', 'form-data; name="bonus"')] 7
@@ -414,7 +414,7 @@ codes.0
   album of tags their named charset cannot represent ! DecodeError: DecodeError(operation_id='submitAlbum', call_id='<call>', reason='unencodable', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2.0, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
+  profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read with a quoted boundary = {'name': 'Ada'}
@@ -560,7 +560,7 @@ codes.0
   async upload without its photo ! DecodeError: DecodeError(operation_id='submitUpload', call_id='<call>', reason='unencodable', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ValueError('A form-data body lacks a required member')] unencodable
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  async profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2.0, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
+  async profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
   > GET https://media.example.com/api/uploads
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   async upload read MultipartData(<9 parts>) DecodedPart(name='title', content_type=None) 'title' None None [('Content-Disposition', 'form-data; name="title"')] 'Notes'; DecodedPart(name='count', content_type=None) 'count' None None [('Content-Disposition', 'form-data; name="count"')] 3; DecodedPart(name='tags', content_type=None) 'tags' None None [('Content-Disposition', 'form-data; name="tags"')] 'a'; DecodedPart(name='tags', content_type=None) 'tags' None None [('Content-Disposition', 'form-data; name="tags"')] 'b'; DecodedPart(name='meta', content_type='application/json') 'meta' None 'application/json' [('Content-Disposition', 'form-data; name="meta"'), ('Content-Type', 'application/json')] {'city': 'Oslo', 'codes': [7]}; DecodedPart(name='photo', content_type='image/png') 'photo' 'a.png' 'image/png' [('Content-Disposition', 'form-data; name="photo"; filename="a.png"'), ('Content-Type', 'image/png')] b'\x89PNG'; DecodedPart(name='pages', content_type=None) 'pages' None None [('Content-Disposition', 'form-data; name="pages"')] b'1'; DecodedPart(name='pages', content_type=None) 'pages' None None [('Content-Disposition', 'form-data; name="pages"')] b'2'; DecodedPart(name='bonus', content_type=None) 'bonus' None None [('Content-Disposition', 'form-data; name="bonus"')] 7

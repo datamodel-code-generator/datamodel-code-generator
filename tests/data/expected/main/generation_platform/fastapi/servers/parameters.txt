@@ -108,3 +108,16 @@ service UntaggedService without its methods: TypeError
 > GET /search?filter[name]=n&filter[id]=1.0
   search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
 < 204 - b''
+> GET /items/1?ratio=2.2
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=<FieldItemsLevelGetQueryRatioParameter.number_2_2: 2.2>, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=UNSET)
+< 204 - b''
+> GET /items/1?ratio=%EF%BC%92.%EF%BC%92
+< 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]
+> GET /items/%D9%A1
+< 422 application/json [{"type": "enum", "loc": ["path", "level"]}]
+> GET /items/1?levels=%EF%BC%91
+< 422 application/json [{"type": "enum", "loc": ["query", "levels", 0]}]
+> GET /notes/%D9%A7
+< 422 application/json [{"type": "int_parsing", "loc": ["path", "dcg_p0"]}]
+> GET /items/1?ratio=1e999
+< 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]
