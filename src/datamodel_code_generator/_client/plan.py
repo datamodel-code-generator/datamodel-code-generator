@@ -25,6 +25,7 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._client.security import SecurityPlanner
+from datamodel_code_generator._codec_type_source import static_scalar
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
@@ -900,7 +901,7 @@ def _default(wire: WirePlan, use: TypeUseBinding | None, argument: FinalPythonTy
         if isinstance(argument, UnionType)
         else (argument,)
     )
-    scalar = present[0] if len(present) == 1 else None
+    scalar = static_scalar(present[0]) if len(present) == 1 else None
     if not isinstance(scalar, BuiltinType) or use is None or use.schema is None:
         return None
     literal = wire.default(use.schema)
