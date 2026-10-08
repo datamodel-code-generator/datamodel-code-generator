@@ -1247,7 +1247,7 @@ def _compare_generated_single_file(
     from datamodel_code_generator._structured_output import CheckDifferencePayload  # noqa: PLC0415
 
     path = comparison.single_file_display_path or actual_output.as_posix()
-    if not (actual_exists := actual_output.exists()) or not generated_output.exists():
+    if (actual_exists := actual_output.exists()) != generated_output.exists():
         missing_kind, _, single_file_missing_message_suffix, extra_kind, extra_message_suffix = (
             _output_comparison_policy(input_diff=comparison.input_diff)
         )
@@ -1260,7 +1260,9 @@ def _compare_generated_single_file(
             content=f"{message}\n" if comparison.input_diff else message,
         )
 
-    diff_found, diff_lines = _compare_single_file(generated_output, actual_output, encoding, comparison)
+    diff_found, diff_lines = (
+        _compare_single_file(generated_output, actual_output, encoding, comparison) if actual_exists else (False, [])
+    )
     if not diff_found:
         return OutputComparison(differences=[], content="")
 
@@ -2945,7 +2947,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             if generate_output.is_file():
                 print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
                 return cleanup_and_return(Exit.ERROR)
-        elif config.check and is_directory_output and generate_output.is_file():
+        elif (
+            config.check
+            and is_directory_output
+            and (generate_output.is_file() or (config.output.is_file() and not generate_output.exists()))
+        ):
             is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
