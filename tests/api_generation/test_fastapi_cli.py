@@ -227,7 +227,7 @@ def test_fastapi_cli_check_outputs(
 def test_fastapi_cli_generation_json(
     case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Pin the one generation payload a run prints, whose paths compose with its output like the model payload."""
+    """Print one generation payload whose paths compose with its output, and name files the same way in a check."""
     case = JSON_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -235,14 +235,11 @@ def test_fastapi_cli_generation_json(
     if name := case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / name
-    model = Path(case.get("model", "models.py"))
-    server = Path(case.get("server", "server"))
-    if case.get("absolute"):
-        model, server = tmp_path / model, tmp_path / server
-    elif case.get("absolute_server"):
-        server = tmp_path / server
+    absolute = case.get("absolute", ())
+    model = (tmp_path if "model" in absolute else Path()) / case.get("model", "models.py")
+    server = (tmp_path if "server" in absolute else Path()) / case.get("server", "server")
     encoding = case.get("encoding", "utf-8")
-    options = ["--encoding", encoding]
+    options = ["--output-format", "json", "--encoding", encoding, *case.get("options", ())]
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
@@ -251,7 +248,7 @@ def test_fastapi_cli_generation_json(
             input_path=source,
             input_file_type="openapi",
             output_path=model,
-            extra_args=_server(*options, output=str(server)),
+            extra_args=_server("--encoding", encoding, output=str(server)),
             capsys=capsys,
             expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         )
@@ -264,15 +261,13 @@ def test_fastapi_cli_generation_json(
             input_path=source,
             input_file_type="openapi",
             output_path=model,
-            extra_args=_server("--output-format", "json", *options, *case.get("options", ()), output=str(server)),
+            extra_args=_server(*options, *case.get("publish", ()), output=str(server)),
             skip_code_validation=encoding != "utf-8",
         )
     captured = capsys.readouterr()
     assert_output(captured.err, DEPENDENCIES)
-    assert_output(
-        captured.out.replace(tmp_path.as_posix(), "<root>"),
-        EXPECTED / "cli" / "json" / f"{case.get('payload', case_name)}.txt",
-    )
+    if payload := case.get("payload"):
+        assert_output(captured.out.replace(tmp_path.as_posix(), "<root>"), EXPECTED / "cli" / "json" / f"{payload}.txt")
     assert_output(
         "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
         EXPECTED / "cli" / ("unowned-warning.txt" if case.get("unowned") else "no-warning.txt"),
@@ -282,6 +277,33 @@ def test_fastapi_cli_generation_json(
         assert_directory_content(tmp_path / server, PACKAGE / "server")
     for name in case.get("published", ()):
         assert_file_content(tmp_path / name, EXPECTED / "cli" / "json" / "published" / f"{name}.txt")
+    run_main_and_assert(
+        input_path=source,
+        input_file_type="openapi",
+        output_path=model,
+        extra_args=_server("--check", *options, output=str(server)),
+        capsys=capsys,
+        assert_no_stderr=True,
+        expected_stdout_path=EXPECTED / "cli" / "check" / "unchanged.json",
+        skip_code_validation=encoding != "utf-8",
+    )
+    if removed := case.get("remove"):
+        for name in removed:
+            if (path := tmp_path / name).is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=model,
+            extra_args=_server("--check", *options, output=str(server)),
+            expected_exit=Exit.DIFF,
+        )
+        assert_output(
+            capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"),
+            EXPECTED / "cli" / "json" / "check" / f"{case['check']}.txt",
+        )
 
 
 def test_fastapi_cli_pyproject(

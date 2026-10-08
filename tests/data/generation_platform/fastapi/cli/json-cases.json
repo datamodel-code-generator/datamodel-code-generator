@@ -1,14 +1,15 @@
 {
-  "default": {"package": true},
-  "nested-output": {"model": "generated/models.py", "server": "generated/server", "package": true},
-  "separate-parents": {"model": "models/models.py", "server": "service/server", "package": true},
-  "absolute": {"absolute": true, "payload": "default", "package": true},
-  "mixed-paths": {"absolute_server": true, "payload": "default", "package": true},
-  "modular": {"source": "modular.yaml", "model": "models"},
-  "empty-models": {"source": "empty.yaml"},
-  "latin-1": {"encoding": "latin-1", "templates": true, "options": ["--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]},
-  "carriage-return-header": {"options": ["--custom-file-header", "# first\r# second"]},
-  "warning": {"unowned": true, "payload": "default", "package": true},
-  "stale-owned": {"repeat": true, "options": ["--openapi-include-paths", "/pets"]},
-  "metadata-lock": {"options": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "payload": "default", "package": true, "published": ["metadata.json", "api.lock"]}
+  "default": {"package": true, "remove": ["models.py", "server/README.md", "server/services.py"], "check": "sibling"},
+  "nested-output": {"model": "generated/models.py", "server": "generated/server", "package": true, "remove": ["generated/models.py", "generated/server/README.md", "generated/server/services.py"], "check": "nested-output"},
+  "separate-parents": {"model": "models/models.py", "server": "service/server", "package": true, "remove": ["models/models.py", "service/server/README.md", "service/server/services.py"], "check": "separate-parents"},
+  "suffixless-model": {"model": "models", "package": true, "remove": ["models", "server/README.md", "server/services.py"], "check": "suffixless-model"},
+  "empty-models": {"source": "empty.yaml", "remove": ["server/README.md", "server/services.py"], "check": "empty-models"},
+  "modular": {"source": "modular.yaml", "model": "models", "payload": "modular", "remove": ["models", "server/README.md", "server/services.py"], "check": "modular"},
+  "absolute": {"source": "modular.yaml", "model": "models", "absolute": ["model", "server"], "payload": "modular"},
+  "mixed-paths": {"source": "modular.yaml", "model": "models", "absolute": ["server"], "payload": "modular"},
+  "warning": {"source": "modular.yaml", "model": "models", "unowned": true, "payload": "modular"},
+  "metadata-lock": {"source": "modular.yaml", "model": "models", "publish": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "payload": "modular", "published": ["metadata.json", "api.lock"]},
+  "latin-1": {"source": "inline.yaml", "encoding": "latin-1", "templates": true, "options": ["--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"], "payload": "latin-1"},
+  "carriage-return-header": {"source": "inline.yaml", "options": ["--custom-file-header", "# first\r# second"], "payload": "carriage-return-header"},
+  "stale-owned": {"repeat": true, "options": ["--openapi-include-paths", "/pets"]}
 }

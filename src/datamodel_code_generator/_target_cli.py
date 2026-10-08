@@ -143,7 +143,7 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
     base, cwd = _payload_base(project, models), Path.cwd()
     with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
         staging = Path(directory)
-        for kind, output, is_directory in (("model", models, not models.suffix), ("target", target, True)):
+        for kind, output, is_directory in (("model", models, base == models), ("target", target, True)):
             if not is_directory and not any(artifact.kind == kind for artifact in project.artifacts):
                 continue
             staged_root = staging / kind
