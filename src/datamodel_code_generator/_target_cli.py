@@ -246,6 +246,15 @@ class _Report:
                     self.diagnostics.append(diagnostic)
                 else:
                     self.extend((diagnostic,))
+        else:
+            self.diagnostics.append(
+                Diagnostic(
+                    code="E_GENERATION_FAILURE",
+                    severity="error",
+                    stage="target",
+                    message=f"{type(error).__name__}: {error}",
+                )
+            )
         message = str(error)
         if isinstance(error, InvalidClassNameError):
             message = f"{error} You have to set `--class-name` option"

@@ -1309,8 +1309,9 @@ def test_fastapi_cli_options(
     assert_file_content(tmp_path / "server" / generated, f"cli/options/{expected}")
 
 
+@pytest.mark.parametrize("report", [False, True])
 def test_fastapi_cli_failures(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Report an unresolved reference and an unexpected formatter failure without publishing files."""
     monkeypatch.chdir(tmp_path)
@@ -1318,12 +1319,15 @@ def test_fastapi_cli_failures(
         input_path=Path("broken.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--strict-refs"),
+        extra_args=_server("--strict-refs", *(["--diagnostics-json", "-"] if report else [])),
         copy_files=[(SOURCE / "unresolved-ref.yaml", tmp_path / "broken.yaml")],
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "unresolved.txt")
+    captured = capsys.readouterr()
+    assert_output(captured.err, EXPECTED / "cli" / "unresolved.txt")
+    if report:
+        assert_output(captured.out, EXPECTED / "cli" / "unresolved-report.txt")
 
     run_main_and_assert(
         input_path=Path("pets.yaml"),
