@@ -13,28 +13,27 @@ from urllib.parse import ParseResult
 from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
 from datamodel_code_generator.api_types import (
     APIGenerationError,
-    ArtifactRecord,
     Diagnostic,
+    DocumentationAnnotationWarning,
     GeneratedArtifact,
     GeneratedProject,
-    GenerationReport,
     OperationRef,
     PublicationRollbackError,
     SchemaRef,
+    TargetEditWarning,
+    TargetStateWarning,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
 
 GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any]
 
 
-def generate_fastapi(
-    input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig
-) -> GenerationReport:
+def generate_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig) -> None:
     """Generate the models and the server package once, then publish every change together."""
     from datamodel_code_generator._api_generation import generate_target  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
-    return generate_target(input_, model_config=model_config, config=config, generator=FastAPITarget())
+    generate_target(input_, model_config=model_config, config=config, generator=FastAPITarget())
 
 
 def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig) -> GeneratedProject:
@@ -47,17 +46,18 @@ def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, con
 
 __all__ = [
     "APIGenerationError",
-    "ArtifactRecord",
     "Diagnostic",
+    "DocumentationAnnotationWarning",
     "FastAPIConfig",
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationInput",
-    "GenerationReport",
     "OperationRef",
     "PublicationRollbackError",
     "ResponseChoice",
     "SchemaRef",
+    "TargetEditWarning",
+    "TargetStateWarning",
     "generate_fastapi",
     "render_fastapi",
 ]

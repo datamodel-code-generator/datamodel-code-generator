@@ -141,7 +141,8 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
     ```
 
 The document is written after every run that passes the command-line checks, successful or not, and lists
-the diagnostic records in their original phase order. stderr prints warnings separately, then one combined
+the error records in their original phase order. Python warnings go to stderr and are excluded from the
+JSON document. stderr prints one combined
 `Error:` message for a target failure, without the records' codes or stages. Ordinary model generation errors
 receive code `E_GENERATION_FAILURE` and stage `target` in the document, with the original exception type and
 message. A usage error, such as `--generate-server` without

@@ -161,7 +161,10 @@ def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.Monke
     imported: dict[str, Any] = {}
     try:
         for name in names:
-            _generate(PACKAGES[name], "pydantic_v2.BaseModel", root, f"docs_{name}")
+            with warnings.catch_warnings(record=True) as recorded:
+                warnings.simplefilter("always", UserWarning)
+                _generate(PACKAGES[name], "pydantic_v2.BaseModel", root, f"docs_{name}")
+            lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
             imported[name] = _import(f"docs_{name}")[0]
         lines.extend(scenario(imported))
     finally:
