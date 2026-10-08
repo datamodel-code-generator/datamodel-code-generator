@@ -34,6 +34,7 @@ from datamodel_code_generator._api_manifest import (
     relative_uri,
     runtime_revision,
     sha256,
+    shown,
     target_identity,
 )
 from datamodel_code_generator._api_types import (
@@ -118,7 +119,6 @@ class TargetRender:
 
     files: tuple[RenderedFile, ...]
     dependencies: tuple[str, ...] = ()
-    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 class TargetGenerator(Protocol):
@@ -408,6 +408,7 @@ class _Planner:
         self.generator = generator
         self.cwd = models.cwd
         self.root = (self.cwd / config.output.expanduser()).resolve()
+        self.shown = shown(config.output, self.cwd)
         self.target_id = target_identity(generator.kind, config.package)
         self.documents = DocumentTable(models.product.batch, models.source, self.root)
         self.operations: dict[str, OperationContract] = {}
@@ -510,7 +511,7 @@ class _Planner:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
         self.operations = {operation.id.use_site.pointer: operation for operation in operations}
-        state = read_target_state(self.root, generator.kind, config.package)
+        state = read_target_state(self.root, generator.kind, config.package, self.shown)
         rendered = generator.render(
             TargetRequest(
                 config=config,
@@ -558,14 +559,10 @@ class _Planner:
         )
         self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
+        hand_edits(state, plans, self.shown)
         return GeneratedProject(
             target=generator.kind,
             artifacts=artifacts,
-            diagnostics=(
-                *state.diagnostics,
-                *rendered.diagnostics,
-                *hand_edits(state, plans, self.target_id),
-            ),
             generator_version=self.version,
             runtime_revision=self.revision,
             dependencies=rendered.dependencies,

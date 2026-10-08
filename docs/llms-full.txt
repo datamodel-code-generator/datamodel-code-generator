@@ -11284,7 +11284,7 @@ from pathlib import Path
 from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
 from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
 
-report = generate_fastapi(
+generate_fastapi(
     Path("openapi.yaml"),
     model_config=GenerateConfig(
         output=Path("models.py"),
@@ -11295,17 +11295,16 @@ report = generate_fastapi(
     ),
     config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
 )
-for record in report.written_files:
-    print(record.path)
 ```
 <!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
-Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
-as a `uv add` command.
+`generate_fastapi` publishes the files and returns `None`, like model generation.
+The rendered project lists the package's runtime requirement specifiers in `dependencies`, which the command line
+prints as a `uv add` command. Neither public result contains diagnostic records.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
 `datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
-model generation errors keep their own types and messages. The records, errors, and codec
+model generation errors keep their own types and messages. The records, errors, warnings, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
@@ -11392,9 +11391,10 @@ when they differ. Run generators that share output files one at a time.
 
 The manifest records the generator version, the target kind and package, the model output and one hash of the model
 files, and the hash of every file the target owns. Generation overwrites the owned files, deletes the ones it no longer
-plans, and warns with `W_TARGET_EDITED` about an owned file edited since the last generation; `--check` reports it as a
-difference. A manifest of an older or unknown format owns nothing: generation warns with `W_STATE_UNOWNED` and deletes
-no file.
+plans, and emits a `TargetEditWarning` about an owned file edited since the last generation; `--check` reports it
+as a difference. A manifest of an older or unknown format owns nothing: generation emits a `TargetStateWarning`
+and deletes no file. `--disable-warnings` and Python warning filters suppress these warnings as for model
+generation.
 
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
@@ -11514,9 +11514,12 @@ directory, so the model templates must keep the class and field names, as the re
 The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
 messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
-Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings,
-such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the served document cannot carry, still print as
-`CODE severity stage location: message` and do not stop the run.
+Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
+Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `TargetEditWarning`,
+`TargetStateWarning`, and `DocumentationAnnotationWarning` for a documentation value the served document cannot
+carry. Each message starts with the output path, spelled relative to the working directory when it lies inside
+it, so every generated package reports its own files. They respect `--disable-warnings` and Python warning
+filters, and are not returned as diagnostic records.
 
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
 records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
@@ -42948,7 +42951,8 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
     ```
 
 The document is written after every run that passes the command-line checks, successful or not, and lists
-the diagnostic records in their original phase order. stderr prints warnings separately, then one combined
+the error records in their original phase order. Python warnings go to stderr and are excluded from the
+JSON document. stderr prints one combined
 `Error:` message for a target failure, without the records' codes or stages. Ordinary model generation errors
 receive code `E_GENERATION_FAILURE` and stage `target` in the document, with the original exception type and
 message. A usage error, such as `--generate-server` without
