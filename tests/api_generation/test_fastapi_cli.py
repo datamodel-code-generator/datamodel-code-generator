@@ -1364,7 +1364,7 @@ def test_fastapi_cli_model_error_context(
             (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
             options = ["--lockfile", "api.lock"]
             stderr = "Error: Unable to read remote lock "
-        case "output-parent":
+        case _:
             (tmp_path / "occupied").write_text("occupied\n", encoding="utf-8")
             output = Path("occupied/models.py")
     run_main_and_assert(
