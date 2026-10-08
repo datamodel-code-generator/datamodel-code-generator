@@ -155,7 +155,8 @@ def test_fastapi_cli_check_read_only(
 ) -> None:
     """Check outputs whose directories cannot be written to: a check creates nothing inside the outputs it compares.
 
-    The outputs lie beside each other, or one inside the other.
+    The outputs lie beside each other, or one inside the other. A model directory in such a nested layout is not
+    importable under its own name, as the model checks of the helper import it, so they are left out for it.
     """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
@@ -165,6 +166,7 @@ def test_fastapi_cli_check_read_only(
     output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
     server = case.get("server", "server")
     arguments = case.get("arguments", ())
+    nested_package = bool(case.get("modular")) and bool({"model", "server"} & case.keys())
     run_main_and_assert(
         input_path=source,
         input_file_type="openapi",
@@ -172,6 +174,7 @@ def test_fastapi_cli_check_read_only(
         extra_args=_server(*arguments, output=server),
         capsys=capsys,
         expected_stderr=(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(encoding="utf-8"),
+        skip_code_validation=nested_package,
     )
     roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
     directories = [*roots, *(path for root in roots for path in root.rglob("*") if path.is_dir())]
@@ -188,6 +191,7 @@ def test_fastapi_cli_check_read_only(
             capsys=capsys,
             assert_no_stderr=True,
             expected_stdout_path=EXPECTED / "cli" / "check" / f"unchanged.{'json' if structured else 'txt'}",
+            skip_code_validation=nested_package,
         )
     finally:
         for directory in directories:
@@ -206,7 +210,9 @@ def test_fastapi_cli_check_outputs(
     """Compare real model and target text without publishing or changing any output file.
 
     A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
-    A case can name its model and server outputs, with the arguments that give their import paths.
+    A case can name its model and server outputs, with the arguments that give their import paths. A model
+    directory in such a nested layout is not importable under its own name, as the model checks of the helper
+    import it, so they are left out for it.
     """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
@@ -220,6 +226,7 @@ def test_fastapi_cli_check_outputs(
         source = Path("spec") / case.get("source", "modular.yaml")
     encoding = case.get("encoding", "utf-8")
     options: list[str] = ["--encoding", encoding, *case.get("arguments", ())]
+    unvalidated = encoding != "utf-8" or (bool(case.get("modular")) and bool({"model", "server"} & case.keys()))
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
@@ -231,6 +238,7 @@ def test_fastapi_cli_check_outputs(
             extra_args=_server(*options, output=server),
             capsys=capsys,
             expected_stderr=notice.read_text(encoding="utf-8"),
+            skip_code_validation=unvalidated,
         )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
@@ -255,6 +263,7 @@ def test_fastapi_cli_check_outputs(
             extra_args=_server(*options, *case.get("options", ()), output=server),
             capsys=capsys,
             expected_stderr=notice.read_text(encoding="utf-8"),
+            skip_code_validation=unvalidated,
         )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
@@ -285,7 +294,7 @@ def test_fastapi_cli_check_outputs(
                 if "error" not in case
                 else None
             ),
-            skip_code_validation=encoding != "utf-8",
+            skip_code_validation=unvalidated,
         )
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     assert_output(
