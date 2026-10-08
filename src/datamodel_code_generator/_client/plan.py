@@ -83,15 +83,9 @@ _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
-_PART_KINDS: Final[dict[tuple[str, ...], PartKind]] = {
-    ("string",): "string",
-    ("integer",): "integer",
-    ("number",): "number",
-    ("boolean",): "boolean",
-    ("integer", "number"): "number",
-}
 _OBJECT: Final = frozenset({"object"})
 _ARRAY: Final = frozenset({"array"})
+_NESTED: Final = _ARRAY | _OBJECT
 _STRING: Final = frozenset({"string"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
@@ -1161,8 +1155,9 @@ def _part_plan(
     """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
     _, schema = wire.schema(location)
     if repeated := _types(schema) - _NULL == _ARRAY:
-        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    kind = _PART_KINDS.get(tuple(sorted(_types(schema) - _NULL)), "json")
+        location = SourceLocation(location.document, f"{location.pointer}/items", "schema")
+        _, schema = wire.schema(location)
+    kind: PartKind = wire.kinds.at(location) if (types := _types(schema) - _NULL) and not types & _NESTED else "json"
     return PartPlan(name, kind, repeated=repeated, required=required, excluded=excluded)
 
 
@@ -1183,7 +1178,7 @@ def _structured(wire: WirePlan, location: SourceLocation) -> bool:
     _, schema = wire.schema(location)
     if _types(schema) - _NULL == _ARRAY:
         _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    return bool(_types(schema) & {"object", "array"})
+    return bool(_types(schema) & _NESTED)
 
 
 def _content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:

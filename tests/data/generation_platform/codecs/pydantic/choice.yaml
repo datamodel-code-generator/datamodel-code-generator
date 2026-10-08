@@ -11,7 +11,7 @@ paths:
           schema:
             oneOf:
               - type: integer
-              - type: boolean
+              - type: object
       responses:
         "204":
           description: Nothing.

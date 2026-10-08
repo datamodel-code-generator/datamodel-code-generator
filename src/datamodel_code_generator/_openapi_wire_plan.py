@@ -9,6 +9,7 @@ from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote, urldefrag, urljoin
 
+from datamodel_code_generator._codec_type_source import LexicalKinds
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
@@ -96,19 +97,13 @@ _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple",
 _NULL: Final = frozenset({"null"})
 _ARRAY: Final = frozenset({"array"})
 _OBJECT: Final = frozenset({"object"})
+_NESTED: Final = _ARRAY | _OBJECT
 _STRING: Final = frozenset({"string"})
-_INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _SCALAR_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
     bool: "bool",
     int: "int",
     float: "float",
     str: "str",
-}
-_LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
-    "string": "string",
-    "integer": "integer",
-    "number": "number",
-    "boolean": "boolean",
 }
 
 
@@ -134,12 +129,13 @@ class SchemaResource:
 
 @dataclass(frozen=True, slots=True)
 class WirePlan:
-    """Keep bundled normalized schema resources, per-use schema IDs, and parameter plans."""
+    """Keep bundled normalized schema resources, per-use schema IDs, parameter plans, and bound lexical kinds."""
 
     resources: tuple[SchemaResource, ...]
     schema_ids: tuple[tuple[TypeUseId, str], ...]
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
+    kinds: LexicalKinds
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
@@ -236,6 +232,7 @@ class _WirePlanner:
     ) -> None:
         self.batch = batch
         self.lease = lease
+        self.kinds = LexicalKinds(batch)
         self.logical = _logical(batch, pointers)
         self.retrieval = {document.uri: document.id for document in batch.documents}
         self.bases = {document.id: document.uri for document in batch.documents}
@@ -503,6 +500,7 @@ def plan_wire(  # noqa: PLR0913
         schema_ids,
         parameters,
         tuple(planner.diagnostics),
+        planner.kinds,
         tuple(sorted(planner.logical.items())),
         planner.version,
         headers,
@@ -879,14 +877,12 @@ def _json_kind(value: object) -> str:
 
 
 def _kind(planner: _WirePlanner, location: SourceLocation) -> LexicalKind:
-    kinds = (_kinds(planner, location) or frozenset()) - _NULL
-    if kinds == _INTEGER_NUMBER:
-        return "number"
-    if len(kinds) != 1 or (kind := _LEXICAL_KINDS.get(next(iter(kinds)))) is None:
+    """Return the kind of a text leaf, its bound final type's, refusing a schema that may hold an object or array."""
+    if (_kinds(planner, location) or frozenset()) & _NESTED:
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=location, message="A parameter value needs one unambiguous scalar kind"
         )
-    return kind
+    return planner.kinds.at(location)
 
 
 def _shape(

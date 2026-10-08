@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._target_contract import (
@@ -21,9 +22,17 @@ from datamodel_code_generator._target_contract import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
-    from datamodel_code_generator._target_contract import FinalPythonType, TypeArgument, TypeProjectionReason
+    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
+    from datamodel_code_generator._target_contract import (
+        FinalModelSymbol,
+        FinalPythonType,
+        GeneratedTypeContractBatch,
+        SourceLocation,
+        TypeArgument,
+        TypeProjectionReason,
+    )
 
 _UNSUPPORTED: Final = "BND_TYPE_EXPRESSION_UNSUPPORTED"
 _BUILTINS: Final = (
@@ -48,6 +57,27 @@ _STATIC_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str | None, str]]
     ("pydantic", "constr"): (None, "str"),
 }
 _STATIC_SCALARS: Final = {name: BuiltinType(name) for name in ("bytes", "float", "int", "str")}
+_LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
+_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind]] = {
+    (None, "bool"): "boolean",
+    (None, "float"): "number",
+    (None, "int"): "integer",
+    ("pydantic", "StrictBool"): "boolean",
+    ("pydantic", "NegativeFloat"): "number",
+    ("pydantic", "NonNegativeFloat"): "number",
+    ("pydantic", "NonPositiveFloat"): "number",
+    ("pydantic", "PositiveFloat"): "number",
+    ("pydantic", "StrictFloat"): "number",
+    ("pydantic", "confloat"): "number",
+    ("pydantic", "NegativeInt"): "integer",
+    ("pydantic", "NonNegativeInt"): "integer",
+    ("pydantic", "NonPositiveInt"): "integer",
+    ("pydantic", "PositiveInt"): "integer",
+    ("pydantic", "StrictInt"): "integer",
+    ("pydantic", "conint"): "integer",
+}
+_INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_WRAPPERS: Final = frozenset({"alias", "root"})
 
 
 def static_scalar(value: FinalPythonType) -> FinalPythonType:
@@ -60,6 +90,88 @@ def static_scalar(value: FinalPythonType) -> FinalPythonType:
         case _:
             pass
     return value
+
+
+class LexicalKinds:
+    """Read the lexical kind of a text leaf from the final type the model generator bound at its schema.
+
+    An int, float or bool leaf has its own kind: as the builtin, a constrained or strict form of it, or the member
+    type of an enum or literal. The text of any other leaf, a union of several kinds included, is the model's to read.
+    """
+
+    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
+        """Keep the batch whose schema uses, symbols and root values the first lookups index."""
+        self._batch = batch
+
+    @cached_property
+    def _types(self) -> dict[tuple[int, str], FinalPythonType | None]:
+        return {
+            (use.id.use_site.document, use.id.use_site.pointer): use.type
+            for use in self._batch.type_uses
+            if use.id.role == "schema" and use.id.projection == "value" and use.id.direction == "neutral"
+        }
+
+    @cached_property
+    def _symbols(self) -> dict[int, FinalModelSymbol]:
+        return {symbol.id: symbol for symbol in self._batch.symbols}
+
+    @cached_property
+    def _roots(self) -> dict[int, FinalPythonType]:
+        return {
+            member.consumer: facts.type
+            for member in self._batch.fields
+            if member.member_kind == "root_value" and (facts := member.model_facts) is not None
+        }
+
+    def at(self, location: SourceLocation) -> LexicalKind:
+        """Return the kind of the leaf a schema declares, taking an int beside a float as a number.
+
+        A schema no type is bound at has the string kind.
+        """
+        kinds = set(self._leaves(self._types.get((location.document, location.pointer)), frozenset()))
+        if kinds == _INTEGER_NUMBER:
+            return "number"
+        return kinds.pop() if len(kinds) == 1 else "string"
+
+    def _leaves(self, value: FinalPythonType | None, seen: frozenset[int]) -> Iterator[LexicalKind]:
+        match value:
+            case None | NoneType():
+                pass
+            case AnnotatedType() | ConstructorType():
+                yield from self._leaves(value.base if isinstance(value, AnnotatedType) else value.callable, seen)
+            case UnionType():
+                for member in value.members:
+                    yield from self._leaves(member, seen)
+            case LiteralType():
+                for item in value.values:
+                    yield from (
+                        self._leaves(GeneratedSymbolType(item.symbol), seen)
+                        if isinstance(item, GeneratedEnumMember)
+                        else _literal_kinds(item)
+                    )
+            case GeneratedSymbolType():
+                yield from self._symbol(self._symbols[value.symbol], seen)
+            case BuiltinType():
+                yield _LEXICAL_KINDS.get((None, value.name), "string")
+            case ImportedType():
+                yield _LEXICAL_KINDS.get((value.import_.from_, value.import_.import_), "string")
+            case _:
+                yield "string"
+
+    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind]:
+        if symbol.kind == "enum":
+            for item in symbol.values:
+                yield from _literal_kinds(item)
+        elif symbol.kind in _WRAPPERS and symbol.id not in seen:
+            yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
+        else:
+            yield "string"
+
+
+def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind]:
+    """Yield the kind of one literal or enum member value, none for null."""
+    if value is None or value.kind != "none":
+        yield "string" if value is None else _LITERAL_KINDS.get(value.kind, "string")
 
 
 class Namespace:

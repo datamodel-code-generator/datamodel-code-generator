@@ -56,6 +56,8 @@ paths:
           in: header
           content:
             text/plain: {}
+        - {name: nested, in: header, schema: {type: array, items: {type: array, items: {type: string}}}}
+        - {name: objects, in: header, explode: true, schema: {type: object, properties: {inner: {type: object}}}}
       responses:
         "200":
           description: ok
