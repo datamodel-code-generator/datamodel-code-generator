@@ -27,6 +27,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "pets",
         "unbound",
         "parameters",
+        "strict",
         "bodies",
         "results",
         "security",

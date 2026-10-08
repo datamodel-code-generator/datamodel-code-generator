@@ -277,10 +277,10 @@ value follows the OpenAPI document is decided by the model generation options, n
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
-form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
-placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
-`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
-`bytes`.
+form-style cookies, header and path arrays, objects, enums and literals of non-string values, strict integers,
+numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
+and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
+the method as its model, with uploads read to `bytes`.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
