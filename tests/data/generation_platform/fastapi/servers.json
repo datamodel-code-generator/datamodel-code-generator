@@ -294,6 +294,17 @@
       },
       {
         "method": "GET",
+        "url": "/codes"
+      },
+      {
+        "method": "GET",
+        "url": "/codes",
+        "headers": {
+          "X-Codes": "1, 2"
+        }
+      },
+      {
+        "method": "GET",
         "url": "/repeat/1/again/1"
       },
       {
