@@ -9,6 +9,12 @@
       "title": "ClientOperationsConfig",
       "type": "object"
     },
+    "ClientProtocolsConfig": {
+      "additionalProperties": true,
+      "description": "Client helper definitions keyed by helper name; the client target validates them.",
+      "title": "ClientProtocolsConfig",
+      "type": "object"
+    },
     "DefaultValuesConfig": {
       "additionalProperties": true,
       "description": "Default value override mapping.",
@@ -261,6 +267,17 @@
       "anyOf": [
         {
           "$ref": "#/$defs/ClientOperationsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-protocols": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClientProtocolsConfig"
         },
         {
           "type": "null"

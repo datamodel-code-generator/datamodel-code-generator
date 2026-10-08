@@ -162,6 +162,7 @@ def _get_config_class() -> type[Config]:
             "server_parameter_names",
             "client_resource_names",
             "client_operations",
+            "client_protocols",
             mode="before",
         )
         @classmethod
@@ -189,22 +190,6 @@ def _get_config_class() -> type[Config]:
 
             try:
                 return load_json_config_field("validators", cast("JsonConfigSource", value))
-            except JsonConfigError as e:
-                raise Error(str(e)) from e
-
-        @field_validator("client_protocols", mode="before")
-        @classmethod
-        def validate_client_protocols(cls, value: Any) -> Any:
-            """Load the client helpers from inline JSON or a JSON file path, refusing deep nesting before parsing."""
-            if not isinstance(value, str | Path):
-                return value
-            from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH  # noqa: PLC0415
-            from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
-
-            try:
-                return validate_json_value_or_file(
-                    str(value), option_name="--client-protocols", max_depth=CLIENT_PROTOCOLS_MAX_DEPTH
-                )
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 

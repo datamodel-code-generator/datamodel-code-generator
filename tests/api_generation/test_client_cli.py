@@ -366,7 +366,7 @@ def test_client_cli_both_selectors(capsys: pytest.CaptureFixture[str]) -> None:
             "--generate-server and --generate-client cannot be used together\n",
         ),
         ("pyproject-bogus.toml", "Invalid configuration: 1 validation error for Config\nclient_signature_style\n"),
-        ("pyproject-invalid.toml", "Invalid configuration: 1 validation error for Config\nclient_protocols\n"),
+        ("pyproject-invalid.toml", "Invalid --client-protocols: Input should be a valid dictionary\n"),
     ],
     ids=["both", "unselected", "protocols"],
 )
@@ -452,7 +452,7 @@ def test_client_cli_api_scope_required(
             ["--client-protocols", "missing.json"],
             "Invalid JSON for --client-protocols: Expecting value: line 1 column 1 (char 0)",
         ),
-        (["--client-protocols", "[]"], "Expected a JSON object, got list"),
+        (["--client-protocols", "[]"], "Invalid --client-protocols: Input should be a valid dictionary"),
         (
             ["--client-protocols", "[" * 65 + "]" * 65],
             "Invalid JSON for --client-protocols: nests collections deeper than 64 levels",
