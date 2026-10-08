@@ -99,7 +99,7 @@ When the target is unset:
 | `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
-| `--use-annotated` aliases of fields whose type is defined later in the module (2.11+) | `name: Type = Field(..., alias=...)` assignment | `Annotated[Type, Field(alias=...)]` |
+| `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
 
 | Config key naming | Unset, `2` | `2.11`, `2.12` |
 | --- | --- | --- |
@@ -107,11 +107,16 @@ When the target is unset:
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
-With `2` and `--use-annotated`, a `BaseModel` field that has an alias and whose type names a model defined later in
-the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11 cannot evaluate
-such an annotation while it creates the class, and then ignores the alias inside `Annotated[...]`. Fields that
-reference only their own model or earlier models, fields without an alias, and output without deferred annotations
-(`--disable-future-imports`) keep the `Annotated` form.
+With `2` and `--use-annotated`, a `BaseModel` or `RootModel` field whose type names a model defined later in the same
+module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11 cannot evaluate such an
+annotation while it creates the class, and then mishandles the `Field()` inside `Annotated[...]`: depending on the
+release it drops the alias and the description, ignores `validate_default`, or fails on a constraint. Fields that
+reference only their own model or earlier models, output without deferred annotations (`--disable-future-imports`),
+and `pydantic_v2.dataclass` output keep the `Annotated` form.
+
+For a field written this way, type checkers that read `Field()` assignments, such as pyright, take the alias as the
+constructor argument name and treat a positional default such as `Field(None, alias=...)` as a required argument. Add
+`--use-default-kwarg` to emit `Field(default=None, ...)` instead.
 
 With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
 constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime

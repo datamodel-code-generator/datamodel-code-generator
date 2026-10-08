@@ -22,6 +22,30 @@
     },
     "labels": {
       "$ref": "#/definitions/Labels"
+    },
+    "favourite": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Node"
+        }
+      ],
+      "default": {
+        "nodeValue": 7
+      },
+      "title": "Favourite"
+    },
+    "spare": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Node"
+        }
+      ],
+      "default": {
+        "nodeValue": 8
+      }
+    },
+    "branches": {
+      "$ref": "#/definitions/Branches"
     }
   },
   "required": [
@@ -39,6 +63,10 @@
         },
         "next-node": {
           "$ref": "#/definitions/Node"
+        },
+        "kind": {
+          "type": "string",
+          "default": "leaf"
         }
       }
     },
@@ -48,6 +76,20 @@
         "type": "string"
       },
       "minItems": 1
+    },
+    "Branches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Twigs"
+      },
+      "minItems": 1,
+      "title": "Branch list"
+    },
+    "Twigs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Branches"
+      }
     }
   }
 }

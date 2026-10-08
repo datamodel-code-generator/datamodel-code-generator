@@ -2369,18 +2369,17 @@ def test_main_alias_generator_target_pydantic_version(
 
 @pytest.mark.parametrize("target_pydantic_version", TARGET_PYDANTIC_VERSION_CASES)
 @pytest.mark.parametrize("alias_generator", [None, "to_camel"], ids=["no-generator", "to_camel"])
-def test_main_use_annotated_forward_reference_alias(
+def test_main_use_annotated_forward_reference(
     output_file: Path, alias_generator: str | None, target_pydantic_version: str | None
 ) -> None:
-    """Assign the alias of a field whose type is defined later for --target-pydantic-version 2."""
+    """Write a field whose type is defined later as an assignment for --target-pydantic-version 2."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_alias.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=(
-            f"annotated_forward_reference_alias/{alias_generator or 'no_generator'}_"
-            f"{target_pydantic_version or 'unset'}.py"
+            f"annotated_forward_reference/{alias_generator or 'no_generator'}_{target_pydantic_version or 'unset'}.py"
         ),
         extra_args=[
             "--output-model-type",
@@ -2392,31 +2391,39 @@ def test_main_use_annotated_forward_reference_alias(
         force_exec_validation=True,
         skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
     )
-    payload = (JSON_DATA_PATH / "annotated_forward_reference_alias.json").read_text()
-    with _generated_model(output_file, "annotated_forward_reference_alias", "Tree") as model:
+    payload = (JSON_DATA_PATH / "annotated_forward_reference.json").read_text()
+    with _generated_model(output_file, "annotated_forward_reference", "Tree") as model:
         assert_output(
             model.model_validate_json(payload).model_dump_json(by_alias=True, exclude_none=True, indent=2) + "\n",
-            EXPECTED_JSON_SCHEMA_PATH / "annotated_forward_reference_alias" / "round_trip.txt",
+            EXPECTED_JSON_SCHEMA_PATH / "annotated_forward_reference" / "round_trip.txt",
         )
 
 
-def test_main_use_annotated_forward_reference_alias_without_deferred_annotations(output_file: Path) -> None:
-    """Keep aliases inside Annotated when --disable-future-imports quotes the forward references."""
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args", "expected_file"),
+    [
+        ("pydantic_v2.BaseModel", ["--alias-generator", "to_camel", "--disable-future-imports"], "to_camel_2_eager.py"),
+        ("pydantic_v2.dataclass", [], "dataclass_2.py"),
+    ],
+    ids=["disable-future-imports", "pydantic-dataclass"],
+)
+def test_main_use_annotated_forward_reference_unchanged(
+    output_file: Path, output_model_type: str, extra_args: list[str], expected_file: str
+) -> None:
+    """Keep Annotated for --target-pydantic-version 2 where annotations are eager or the model is a dataclass."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_alias.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="annotated_forward_reference_alias/to_camel_2_disable_future_imports.py",
+        expected_file=f"annotated_forward_reference/{expected_file}",
         extra_args=[
             "--output-model-type",
-            "pydantic_v2.BaseModel",
+            output_model_type,
             "--use-annotated",
-            "--alias-generator",
-            "to_camel",
             "--target-pydantic-version",
             "2",
-            "--disable-future-imports",
+            *extra_args,
         ],
         force_exec_validation=True,
     )

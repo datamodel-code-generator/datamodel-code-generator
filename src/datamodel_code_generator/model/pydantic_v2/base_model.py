@@ -79,7 +79,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
-    PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM,
+    PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
@@ -254,7 +254,6 @@ class Constraints(_Constraints):
 
 DataModelFieldV1 = _PydanticBaseDataModelField  # deprecated re-export, pydantic-v1 output removed in #3031
 
-_ALIAS_FIELD_KEYS: frozenset[str] = frozenset({"alias", "validation_alias", "serialization_alias"})
 _ALIAS_GENERATOR_TEMPLATE_DATA_KEY = "alias_generator"
 _ALIAS_GENERATOR_INTERNAL_KEY = "_alias_generator"
 _NO_ALIAS_INTERNAL_KEY = "_no_alias"
@@ -2112,25 +2111,21 @@ class BaseModel(BaseModelBase):
             return runtime_validation
         return None
 
-    def assign_forward_reference_aliases(self, positions: Mapping[str, int], index: int) -> bool:
-        """Leave ``Annotated`` for aliased fields that name a later model when the target predates Pydantic 2.11.
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
+        """Leave ``Annotated`` for fields that name a later model when the target predates Pydantic 2.11.
 
         A deferred annotation naming a model defined later in the module cannot be evaluated while the class is
-        created, and older Pydantic then builds the field without the alias inside ``Annotated``. A self reference
-        can be evaluated, so it is not a forward reference here.
+        created, and older Pydantic then mishandles the ``Field()`` inside ``Annotated``: it drops aliases and
+        descriptions, ignores ``validate_default`` or fails on constraints. A self reference can be evaluated, so
+        it is not a forward reference here.
         """
-        if self.IS_ROOT_MODEL or model_target_supports(self, PYDANTIC_V2_ANNOTATED_FORWARD_REF_ALIAS_MINIMUM):
+        if model_target_supports(self, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM):
             return False
         changed = False
         for field in self.fields:
-            if (
-                field.use_annotated
-                and isinstance(field, DataModelField)
-                and any(
-                    (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
-                    for data_type in field.data_type.all_data_types
-                )
-                and not _ALIAS_FIELD_KEYS.isdisjoint(field._get_field_data_and_default_factory()[0])  # noqa: SLF001
+            if field.use_annotated and any(
+                (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
+                for data_type in field.data_type.all_data_types
             ):
                 field.use_annotated = False
                 changed = True
