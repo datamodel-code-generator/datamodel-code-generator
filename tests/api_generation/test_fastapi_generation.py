@@ -70,6 +70,9 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
     ("case", "builtin_sources"),
     [
         ("pets", True),
+        ("bodies", True),
+        ("native", True),
+        ("empty", True),
         ("single", True),
         ("security", True),
         ("template-missing", False),
