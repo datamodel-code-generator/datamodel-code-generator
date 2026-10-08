@@ -68,5 +68,37 @@
       ],
       "empty_string": "end"
     }
+  },
+  "pets.schema": {
+    "kind": "pagination",
+    "operation": "/paths/~1pets/get",
+    "items": {
+      "from": "body",
+      "pointer": "/data"
+    },
+    "item_schema": {
+      "pointer": "/components/schemas/Pet",
+      "document": "missing.yaml"
+    },
+    "continuation": {
+      "kind": "cursor",
+      "read": {
+        "from": "body",
+        "pointer": "/next_cursor"
+      },
+      "write": {
+        "in": "query",
+        "name": "cursor"
+      },
+      "end": [
+        {
+          "kind": "missing"
+        },
+        {
+          "kind": "null"
+        }
+      ],
+      "empty_string": "end"
+    }
   }
 }

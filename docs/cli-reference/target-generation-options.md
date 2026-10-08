@@ -3403,7 +3403,8 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
 Set the body mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
-`--server-body-mode` for those operations.
+`--server-body-mode` for those operations. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -3675,10 +3676,10 @@ Set the handler mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. A relative
-document resolves against the JSON file that holds the reference, or without a file against the working directory,
-and against the pyproject.toml directory for a table. In pyproject.toml, `server-handler-modes` is a table, and a
-command-line value replaces the whole table.
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`.
+A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table. In pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole
+table.
 
 **Option relationships:**
 
@@ -4293,7 +4294,8 @@ generates.
 Name the service methods of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to method names. Other operations take the
-snake_case form of their operationId, or of their method and path.
+snake_case form of their operationId, or of their method and path. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -4699,7 +4701,8 @@ generation prints name the package by it; the package imports its own modules re
 Name the method arguments of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
-location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -4835,7 +4838,8 @@ Choose the response a bare return value of an operation takes (experimental).
 
 The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
 response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses.
+primary response from the declared success responses. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 

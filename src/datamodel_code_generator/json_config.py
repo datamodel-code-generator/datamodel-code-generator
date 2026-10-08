@@ -231,13 +231,13 @@ def _path_is_file(path: Path) -> bool:
         return False
 
 
-def json_file(value: str | Path) -> Path | None:
+def _json_file(value: str | Path) -> Path | None:
     """Return the file a JSON option value names, or None for inline JSON."""
     return path if _path_is_file(path := Path(value).expanduser()) else None
 
 
 def _read_json_or_inline(value: str) -> str:
-    if (path := json_file(value)) is None:
+    if (path := _json_file(value)) is None:
         return value
 
     try:

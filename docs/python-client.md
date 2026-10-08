@@ -74,8 +74,9 @@ command-line table replaces the whole table of `pyproject.toml`. An operation's 
 over `--client-body-arguments`, wherever each comes from. Paths in `pyproject.toml`, including the JSON files, are
 relative to its directory, and command-line paths are relative to the working directory. The documents that
 operation references and helpers name are relative to the JSON file that holds them, however the file is given, as
-a `$ref` is relative to its document. Without a file, they are relative to the `pyproject.toml` directory for its
-tables, and to the working directory for inline JSON on the command line.
+a `$ref` is relative to its document; a file given through a symbolic link uses the link's directory. Without a
+file, they are relative to the `pyproject.toml` directory for its tables, and to the working directory for inline
+JSON on the command line.
 
 `--client-resource-names` maps a tag to the dotted namespace of the resource its operations join, such as
 `{"pets": "store.pets"}`. `--client-operations` maps an operation reference, the JSON pointer of the path item method

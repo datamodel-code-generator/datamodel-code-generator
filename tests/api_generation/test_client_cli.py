@@ -203,9 +203,15 @@ def test_client_cli_pyproject_protocols_file(
 
 
 def _json_files(root: Path, *pyproject: str) -> None:
-    """Copy the JSON files that name options.yaml as their sibling, and the document, into a directory of a root."""
-    shutil.copytree(CLI / "json-files", root / "api")
-    shutil.copy2(CLI / "options.yaml", root / "api" / "options.yaml")
+    """Copy the JSON files that name options.yaml as their sibling, and the document, into a directory of a root.
+
+    One more helper file names its missing document by an absolute path.
+    """
+    shutil.copytree(CLI / "json-files", directory := root / "api")
+    shutil.copy2(CLI / "options.yaml", directory / "options.yaml")
+    helpers = json.loads((directory / "unresolved.json").read_text(encoding="utf-8"))
+    helpers["pets.all"]["operation"]["document"] = (directory.resolve() / "missing.yaml").as_posix()
+    (directory / "absolute.json").write_text(json.dumps({"pets.all": helpers["pets.all"]}), encoding="utf-8")
     for name in pyproject:
         shutil.copy2(CLI / name, root / "pyproject.toml")
 
@@ -258,18 +264,29 @@ def test_client_cli_json_file_documents(
     assert_output(_methods(project / SYNC, tmp_path), EXPECTED / "cli" / "json-files" / "documents.txt")
 
 
-@pytest.mark.parametrize("name", ["unresolved", "list"])
+@pytest.mark.parametrize(
+    ("name", "option"),
+    [
+        ("unresolved", "--client-protocols"),
+        ("absolute", "--client-protocols"),
+        ("list", "--client-protocols"),
+        ("unresolved-operations", "--client-operations"),
+    ],
+)
 def test_client_cli_json_file_errors(
-    name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    name: str, option: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Name the file a document of a helper file resolved to, and refuse a helper file that holds no object."""
+    """Name the file that a document of a helper or operations file resolved to, an absolute one once.
+
+    A helper file that holds no object is refused like the same inline JSON.
+    """
     monkeypatch.chdir(tmp_path)
     _json_files(tmp_path)
     run_main_and_assert(
         input_path=Path("api/options.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS, *CLIENT, "--client-protocols", f"api/{name}.json"],
+        extra_args=[*OPTIONS, *CLIENT, option, f"api/{name}.json"],
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
@@ -760,7 +777,10 @@ def test_client_cli_setting_errors(
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+    assert_output(
+        capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
+        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
+    )
 
 
 @pytest.mark.parametrize("form", ["pyproject", "options"])

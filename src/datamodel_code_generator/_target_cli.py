@@ -287,13 +287,14 @@ def _refused(flags: list[str], selector: str) -> APIGenerationError:
 def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:
     """Return the directory that the documents a setting names resolve against.
 
-    A setting read from a JSON file resolves against that file's directory. Inline JSON and tables resolve against
-    the pyproject.toml directory for its keys, and against the working directory for options.
+    A setting read from a JSON file resolves against that file's directory, and against a link's directory when
+    the file is given through one. Inline JSON and tables resolve against the pyproject.toml directory for its keys,
+    and against the working directory for options.
     """
     if (source := config._json_sources.get(field)) is not None:  # noqa: SLF001
-        from datamodel_code_generator.json_config import json_file  # noqa: PLC0415
+        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
 
-        if (file := json_file(source)) is not None:
+        if (file := _json_file(source)) is not None:
             return (Path.cwd() / file).parent
     return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
 

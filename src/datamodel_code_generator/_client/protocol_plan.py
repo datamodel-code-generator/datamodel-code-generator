@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator._api_manifest import document_identity, portable
+from datamodel_code_generator._api_manifest import document_identity, named_document, portable
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
@@ -99,10 +99,7 @@ class _Resolver:
         return document_identity(document, self.base)
 
     def link(self, link: Link) -> Iterator[Diagnostic]:
-        """Resolve one operation reference, and check each request target it takes.
-
-        An unresolved reference names its document as written and, for a path, the file it resolved to.
-        """
+        """Resolve one operation reference, and check each request target it takes."""
         reference = link.ref
         try:
             document = self.identity(reference.document)
@@ -110,10 +107,7 @@ class _Resolver:
             yield _undocumented(link.at, reference.document)
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
-            named = ""
-            if (written := reference.document) is not None:
-                path = (self.base / written).resolve()
-                named = f" in {written!r} ({path.as_posix()})" if document == path.as_uri() else f" in {written!r}"
+            named = named_document(reference.document, document)
             message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
@@ -131,7 +125,8 @@ class _Resolver:
             yield _undocumented(at, schema.document)
             return
         if (located := self.request.documents.pointer(document, self.base)) is None:
-            yield _problem("E_CONFIG_VALUE", "config", at, f"{at} names a document outside the accepted input")
+            message = f"{at} names a schema{named_document(schema.document, document)} outside the accepted input"
+            yield _problem("E_CONFIG_VALUE", "config", at, message)
             return
         self.documents[schema] = located
 
