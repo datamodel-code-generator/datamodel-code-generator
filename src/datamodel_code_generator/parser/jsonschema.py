@@ -1669,11 +1669,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return _get_type(type_, format_, data_formats)
 
-    def _get_mapped_data_type(self, type_: str, types: Types, **kwargs: Any) -> DataType:
-        """Resolve a mapped type, marking string time formats so they stay out of float strictness."""
+    def _get_format_data_type(self, type_: str, format_: str) -> DataType:
+        """Map a type and format without constraints, keeping string time formats out of float strictness."""
+        types = self._get_type_with_mappings(type_, format_)
         if types == Types.time and type_ == "string":
-            kwargs["string_format"] = True
-        return self.data_type_manager.get_data_type(types, **kwargs)
+            return self.data_type_manager.get_data_type(types, string_format=True)
+        return self.data_type_manager.get_data_type(types)
 
     def _is_base64_encoded_binary_mapping(self, type_: str, format_: str) -> bool:
         if type_ != "string" or format_ != "byte" or not self.type_mappings:
@@ -3333,9 +3334,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
             if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format__):
                 kwargs_to_pass["base64_encoded"] = True
+            elif types == Types.time and type_ == "string":
+                kwargs_to_pass["string_format"] = True
 
-            return self._get_mapped_data_type(
-                type_,
+            return self.data_type_manager.get_data_type(
                 types,
                 field_constraints=self.field_constraints and not localize_constraints,
                 **kwargs_to_pass,
@@ -10780,7 +10782,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 type_,
             )
             if localize_constraints
-            else self._get_mapped_data_type(type_, self._get_type_with_mappings(type_, obj.format or "default"))
+            else self._get_format_data_type(type_, obj.format or "default")
             for type_ in non_array_types
             if type_ != "object" or not obj.is_object
         )
@@ -10820,9 +10822,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse a constrained union branch through the backend-compatible alias path."""
         branch_schema = self._get_array_union_branch_schema(obj, type_)
         if not self._has_effective_constraints(branch_schema):
-            return fallback_data_type or self._get_mapped_data_type(
-                type_, self._get_type_with_mappings(type_, obj.format or "default")
-            )
+            return fallback_data_type or self._get_format_data_type(type_, obj.format or "default")
 
         branch_path = get_special_path(f"array-union-{type_}", path)
         branch_name = self.model_resolver.add(
@@ -11258,7 +11258,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 yield (
                     self._parse_array_union_constrained_branch(name, obj, path, type_)
                     if localize_constraints
-                    else self._get_mapped_data_type(type_, self._get_type_with_mappings(type_, obj.format or "default"))
+                    else self._get_format_data_type(type_, obj.format or "default")
                 )
 
     def _parse_multiple_types_with_properties(
