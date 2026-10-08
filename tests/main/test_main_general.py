@@ -3017,6 +3017,28 @@ def test_check_suffixless_file_does_not_exist(tmp_path: Path, capsys: pytest.Cap
     )
 
 
+@pytest.mark.parametrize("existing_output", [False, True])
+def test_output_format_json_writes_suffixless_file(
+    existing_output: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --output-format json writes the single-module output without a suffix that it reports."""
+    output_path = tmp_path / "model"
+    if existing_output:
+        output_path.write_text("# Different content\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--output-format", "json"],
+        assert_func=assert_file_content,
+        expected_file="person.py",
+    )
+    assert_output(
+        capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
+        EXPECTED_MAIN_PATH / "output_format_json" / "suffixless_file.txt",
+    )
+
+
 def test_check_with_stdout_output(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --check with stdout output returns error."""
     run_main_and_assert(
