@@ -26,6 +26,13 @@
   "leftover-manifest": {"write": {"server/.dcg-target-manifest.json": "{\"format\": 1}\n"}},
   "foreign": {"fresh": true, "write": {"server/routers/__init__.py": "# Someone else's module.\n"}},
   "models-in-package": {"model": "server/models.py", "arguments": ["--server-model-package", "server.models"]},
+  "suffixless-models-in-package": {
+    "model": "server/models",
+    "encoding": "latin-1",
+    "arguments": [
+      "--server-model-package", "server.models", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"
+    ]
+  },
   "models-in-package-changed": {
     "model": "server/models.py",
     "arguments": ["--server-model-package", "server.models"],

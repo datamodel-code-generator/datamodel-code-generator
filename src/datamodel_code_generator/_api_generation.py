@@ -21,6 +21,7 @@ from datamodel_code_generator._api_manifest import (
     RootInput,
     config_error,
     document_identity,
+    shown,
     target_identity,
 )
 from datamodel_code_generator._api_types import (
@@ -429,27 +430,43 @@ class _Planner:
         return (self.artifact(lock.path, "remote_lock", content),)
 
     def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
-        """Refuse a path that two files resolve to, and a file at a path that is the directory of another file."""
+        """Refuse files that cannot be written or imported together.
+
+        Two files resolve to one path, a file takes the path of the directory of another file, or a module has the
+        name of a directory that the run generates into beside it, which Python imports instead of the module.
+        """
+        output = self.effective.output
+        assert output is not None
+        roots = [self.root, *(() if self.models.single else ((self.cwd / output).resolve(),))]
         parents: dict[Path, Path] = {}
         directories: set[str] = set()
-        keys: list[str] = []
+        packages: set[str] = set()
+        locations: list[Path] = []
         for artifact in artifacts:
             location = self.cwd / artifact.path
             if (parent := parents.get(location.parent)) is None:
                 parent = parents[location.parent] = location.parent.resolve()
-                directories.update(_collision_key(directory) for directory in (parent, *parent.parents))
-            keys.append(_collision_key(parent / location.name))
+                for directory in (parent, *parent.parents):
+                    directories.add(key := _collision_key(directory))
+                    if any(directory == root or root in directory.parents for root in roots):
+                        packages.add(key)
+            locations.append(parent / location.name)
         seen: set[str] = set()
         problems: list[Diagnostic] = []
-        for artifact, key in zip(artifacts, keys, strict=True):
-            if key in seen or key in directories:
+        for artifact, location in zip(artifacts, locations, strict=True):
+            message = None
+            if (key := _collision_key(location)) in seen or key in directories:
+                message = "Two generated files resolve to the same path"
+            elif location.suffix == ".py" and _collision_key(location.with_suffix("")) in packages:
+                message = "The module has the name of a generated package directory beside it"
+            if message is not None:
                 problems.append(
                     Diagnostic(
                         code="E_PATH_COLLISION",
                         severity="error",
                         stage="ownership",
-                        message="Two generated files resolve to the same path",
-                        artifact_path=artifact.path.as_posix(),
+                        message=message,
+                        artifact_path=shown(artifact.path, self.cwd).as_posix(),
                         target_id=self.target_id if artifact.kind == "target" else None,
                     )
                 )

@@ -288,12 +288,16 @@ and a file at a path the package needs is overwritten.
 
 The models can be part of the package. Name a model file or directory inside `--server-output` and its import path:
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.nested-models.command -->
+<!-- fmt: off -->
+
 ```bash
 datamodel-codegen \
   --input api.yaml \
   --input-file-type openapi \
   --output app/server/models.py \
   --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
   --openapi-scopes schemas api \
   --generate-server fastapi \
   --server-output app/server \
@@ -301,9 +305,14 @@ datamodel-codegen \
   --server-model-package app.server.models
 ```
 
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.nested-models.command -->
+
 The server package can also sit inside a models directory. Either way `--check` compares the outer directory once,
-so it reports each file once, and a model file and a server file that would take the same path stop the run with an
-error. A job can nest its own `output` and `server-output` in the same way.
+so it reports each file once. A model file and a server file that would take the same path stop the run with an
+error, and so does a module with the name of a generated package directory beside it, such as `server/routers.py`
+beside `server/routers/`, which Python would import instead of the module. A job can nest its own `output` and
+`server-output` in the same way.
 
 ## Regenerating and checking
 
