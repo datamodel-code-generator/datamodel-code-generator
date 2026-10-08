@@ -24,11 +24,14 @@ from datamodel_code_generator._client.config import (
 from datamodel_code_generator.api_types import (
     APIGenerationError,
     Diagnostic,
+    DocumentationAnnotationWarning,
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
     PublicationRollbackError,
     SchemaRef,
+    TargetEditWarning,
+    TargetStateWarning,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -122,6 +125,7 @@ __all__ = [  # noqa: PLE0604
     "ClientGenerationConfig",
     "ClientOperationConfig",
     "Diagnostic",
+    "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationInput",
@@ -132,6 +136,8 @@ __all__ = [  # noqa: PLE0604
     "ResourceName",
     "RuntimeOperationMetadata",
     "SchemaRef",
+    "TargetEditWarning",
+    "TargetStateWarning",
     "generate_client",
     "render_client",
     *_LAZY,

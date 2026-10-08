@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import ast
+import json
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -17,7 +19,7 @@ DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "client"
-DEPENDENCIES = EXPECTED / "cli" / "dependencies.txt"
+DEPENDENCIES = (EXPECTED / "cli" / "dependencies.txt").read_text(encoding="utf-8")
 OPTIONS = [
     *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
     *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
@@ -68,7 +70,7 @@ def _methods(module: Path, root: Path) -> str:
 def test_client_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the models and the client package, find nothing to change, then report an edit and the target's name."""
+    """Write the models and the client package, find nothing to change, then report an edited file as a difference."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("options.yaml"),
@@ -77,7 +79,7 @@ def test_client_cli_generate(
         extra_args=[*OPTIONS, *CLIENT],
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES,
     )
     assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
     run_main_and_assert(
@@ -93,14 +95,11 @@ def test_client_cli_generate(
         input_path=Path("options.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS, *CLIENT, "--check", "--diagnostics-json", "-"],
+        extra_args=[*OPTIONS, *CLIENT, "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "edited-report.txt",
-        expected_stderr=(
-            "W_TARGET_EDITED warning ownership resources/pets/_sync.py: The owned file changed since the last "
-            f"generation, and this generation discards the change\nwrite {SYNC}\n"
-        ),
+        expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
+        assert_no_stderr=True,
     )
 
 
@@ -149,7 +148,7 @@ def test_client_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    run_main_with_args(arguments, capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
     report = "".join(_methods(path, tmp_path) for path in sorted(tmp_path.glob("*/resources/pets/_sync.py")))
     assert_output(
         f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
@@ -167,7 +166,7 @@ def test_client_cli_pyproject_paths(
     work.mkdir(parents=True)
     _copy(project, "pyproject-paths.toml")
     monkeypatch.chdir(work)
-    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES)
     helpers = (
         (CLI / "protocols.json")
         .read_text(encoding="utf-8")
@@ -182,7 +181,7 @@ def test_client_cli_pyproject_paths(
             *("--client-operations", '{"../options.yaml#/paths/~1pets/get": {"name": "find_pets"}}'),
         ],
         capsys=capsys,
-        expected_stdout_path=DEPENDENCIES,
+        expected_stderr=DEPENDENCIES,
     )
     packages = sorted(path.parents[1] for path in tmp_path.rglob("protocols/_helpers.py"))
     assert_output(
@@ -199,7 +198,7 @@ def test_client_cli_pyproject_protocols_file(
     work.mkdir(parents=True)
     _copy(project, "pyproject-protocols.toml")
     monkeypatch.chdir(work)
-    run_main_with_args([], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES)
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/options/protocols/_helpers.py")
 
 
@@ -300,11 +299,8 @@ def test_client_cli_selector_replaces_pyproject(
     [
         ([*OPTIONS, "--client-signature-style", "unpack"], "--client-signature-style requires --generate-client"),
         (
-            [*OPTIONS, *PACKAGES, "--client-protocols", "{}", "--dependency-format", "uv"],
-            (
-                "--client-package, --client-model-package and --client-protocols require --generate-client\n"
-                "Error: --dependency-format requires --generate-server or --generate-client"
-            ),
+            [*OPTIONS, *PACKAGES, "--client-protocols", "{}"],
+            "--client-package, --client-model-package and --client-protocols require --generate-client",
         ),
         (
             [*OPTIONS, "--generate-server", "fastapi", "--client-output", "client"],
@@ -388,18 +384,146 @@ def test_client_cli_invalid_pyproject(
     )
 
 
+def _payload(result: dict[str, Any], root: Path) -> list[str]:
+    """Describe a generation payload and whether each file it reports matches the published file.
+
+    The copied runtime modules are reported together.
+    """
+    matches = {item["path"]: item["content"] == (root / item["path"]).read_text("utf-8") for item in result["files"]}
+    runtime = [matched for path, matched in matches.items() if "_runtime" in Path(path).parts]
+    return [
+        f"kind {result['kind']}; output {result['output']}",
+        *(
+            f"file {path}; matches published {matched}"
+            for path, matched in matches.items()
+            if "_runtime" not in Path(path).parts
+        ),
+        f"runtime files match published {bool(runtime) and all(runtime)}",
+    ]
+
+
+def test_client_cli_generation_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report a client run, alone and as a job next to a server job, with the payload of a server run."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--output-format", "json"],
+        copy_files=_inputs(tmp_path, "pyproject-shared-models-jobs.toml"),
+    )
+    single = capsys.readouterr()
+    lines = [
+        "$ datamodel-codegen --generate-client httpx2 --output-format json",
+        *_payload(json.loads(single.out), tmp_path),
+    ]
+    run_main_with_args(["--all-jobs", "--output-format", "json"])
+    jobs = capsys.readouterr()
+    lines.append("$ datamodel-codegen --all-jobs --output-format json")
+    for job in json.loads(jobs.out)["jobs"]:
+        lines.extend((f"job {job['name']}", *_payload(job["result"], tmp_path)))
+    assert_output(single.err, EXPECTED / "cli" / "dependencies.txt")
+    assert_output(jobs.err, EXPECTED / "cli" / "shared-models-dependencies.txt")
+    assert_output("\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json.txt")
+
+
+@pytest.mark.parametrize(
+    ("arguments", "stderr"),
+    [
+        (["--watch"], f"{CONFLICT} --watch\n"),
+        (
+            ["--update-lock", "--lockfile", "client/api.lock"],
+            "Remote lock for 'command' ({lock}) overlaps client output for 'command': {client}\n",
+        ),
+    ],
+    ids=["watch", "lock-in-client-output"],
+)
+def test_client_cli_conflicts(
+    arguments: list[str],
+    stderr: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Refuse options the client cannot honor, and a remote lock inside the client output, as for the server."""
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path.resolve()
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=stderr.format(lock=root / "client" / "api.lock", client=root / "client"),
+        output_should_not_exist=True,
+    )
+
+
+def test_client_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the models and the package of a client job as a single run does, check them, then check a drift."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "client"], capsys=capsys, expected_stderr=DEPENDENCIES)
+    assert_file_content(tmp_path / "models.py", "cli/options/models.py")
+    assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
+    run_main_with_args(["--job", "client", "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / SYNC).write_text("# edited\n", encoding="utf-8")
+    run_main_with_args(
+        ["--all-jobs", "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
+        assert_no_stderr=True,
+    )
+
+
+def test_client_cli_shared_models_jobs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models a server job and a client job share once, next to the package of each job, then check them."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-models-jobs.toml")
+    run_main_with_args(
+        ["--all-jobs"],
+        capsys=capsys,
+        expected_stderr=(EXPECTED / "cli" / "shared-models-dependencies.txt").read_text(encoding="utf-8"),
+    )
+    assert_file_content(tmp_path / "models.py", "cli/options/models.py")
+    assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
+    assert_file_content(tmp_path / "server" / "services.py", "cli/shared-models-services.py")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
-        ("pyproject-jobs.toml", ["--job", "client"], f"{CONFLICT} --job\n"),
+        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], f"{CONFLICT} --watch\n"),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--client-body-arguments", "both"],
             "Error: --client-body-arguments requires --generate-client\n",
         ),
+        (
+            "pyproject-overlap-jobs.toml",
+            ["--all-jobs"],
+            "Jobs 'models' (output: {schemas}) and 'client' (client output: {client}) have overlapping output paths\n",
+        ),
+        (
+            "pyproject-differing-models-jobs.toml",
+            ["--all-jobs"],
+            "Error: could not publish batch output: {shared}: Jobs 'server' and 'client' generate different models\n",
+        ),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--update-lock", "--lockfile", "client/py.typed"],
+            "Remote lock for 'client' ({lock}) overlaps client output for 'client': {client}\n",
+        ),
     ],
-    ids=["all-jobs", "job", "model-job-client-option"],
+    ids=["watch", "model-job-client-option", "overlap", "differing-models", "lock-in-client-output"],
 )
 def test_client_cli_jobs(
     pyproject: str,
@@ -409,10 +533,24 @@ def test_client_cli_jobs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse client jobs and client options of model-only jobs, writing nothing, as for the server."""
+    """Refuse what a client job cannot honor, as for a server job, writing nothing.
+
+    A server job and a client job can share a models output, which they must generate identically.
+    """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
-    run_main_with_args(arguments, expected_exit=Exit.ERROR, capsys=capsys, expected_stderr=stderr)
+    root = tmp_path.resolve()
+    run_main_with_args(
+        arguments,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=stderr.format(
+            schemas=root / "client" / "schemas.py",
+            client=root / "client",
+            shared=(Path.cwd() / "models.py").as_posix(),
+            lock=root / "client" / "py.typed",
+        ),
+    )
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
     )

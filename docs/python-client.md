@@ -44,9 +44,9 @@ datamodel-codegen \
   --client-model-package models
 ```
 
-Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your project;
-with `--dependency-format requirements`, it prints the lines of a requirements file instead. `--check` compares
-without writing, and `--diagnostics-json` writes the diagnostics as JSON, as with `--generate-server`.
+Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
+project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
+emits the model generation and check payloads, as with `--generate-server`.
 
 ## Client settings
 
@@ -108,7 +108,12 @@ the Python API raises `APIGenerationError`.
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
 `--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
 selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
-no client is selected. Batch jobs (`--job`, `--all-jobs`) cannot generate a client yet.
+no client is selected.
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the client generates it as a single run
+does, under the rules of [server jobs](fastapi-server.md#batch-jobs): `client-output` must not overlap the outputs of
+other jobs or contain the remote lock file, and client jobs refuse `--watch`. Jobs that each select a server or a
+client may name the same models `output`, which the batch writes once; they must generate the same models for it.
 
 ## Python API
 

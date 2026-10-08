@@ -97,16 +97,16 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="cli-option",
         target="--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)",
         message=(
-            "HTTPX2 client generation from the CLI is experimental; its options, generated package, and diagnostics "
-            "may change."
+            "HTTPX2 client generation from the CLI is experimental; its options and generated package may change."
         ),
         since_version="0.84.0",
         note=(
             "--generate-client httpx2 generates the models at --output and a client package at --client-output; "
             "--client-package and --client-model-package name their import paths, and the other --client-* options "
             "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
-            "pyproject.toml and in its profiles. --check, --diagnostics-json, and --dependency-format work as with "
-            "--generate-server. It needs Python 3.11 or later, both to run and as --target-python-version."
+            "pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice "
+            "on stderr work as with --generate-server. It needs Python 3.11 or later, both to run and as "
+            "--target-python-version."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(
