@@ -156,24 +156,30 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
 
 
+@pytest.mark.parametrize(
+    ("case", "mounted"), [("mount-points", ["models", "server"]), ("nested-mount-point", ["server/routers"])]
+)
 @pytest.mark.abnormal_path("a rename fails with EXDEV only between filesystems, which needs a mounted output")
-def test_target_generate_mount_points(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_generate_mount_points(
+    case: str, mounted: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Write into output directories that are mount points: each file is staged inside the directory it goes to.
 
-    The replacement refuses, as the operating system does, every move from outside a mount point into it.
+    The replacement refuses, as the operating system does, every move from outside a mount point into it. A mount
+    point below an output directory is such a move, which the journal rolls back, as it does for model output.
     """
-    mounts = {tmp_path.resolve() / name for name in ("models", "server")}
+    mounts = {tmp_path.resolve() / name for name in mounted}
     replace = _publication._replace_source
 
     def replaced(file: _publication.StagedFile, *args: object) -> None:
         source = None if file.staged_file is None else file.staged_file.resolve()
         for mount in mounts.intersection(file.resolved_target.parents):
             if source is not None and mount not in source.parents:
-                raise OSError(errno.EXDEV, "Invalid cross-device link", str(source))
+                raise OSError(errno.EXDEV, "Invalid cross-device link")
         replace(file, *args)
 
     monkeypatch.setattr(_publication, "_replace_source", replaced)
-    assert_output(target_render_report("mount-points", tmp_path, monkeypatch), EXPECTED / "mount-points.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
 
 
 @pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")
