@@ -35,6 +35,7 @@ from datamodel_code_generator._api_manifest import (
     relative_uri,
     runtime_revision,
     sha256,
+    shown,
     target_identity,
 )
 from datamodel_code_generator._api_types import (
@@ -120,7 +121,6 @@ class TargetRender:
 
     files: tuple[RenderedFile, ...]
     dependencies: tuple[str, ...] = ()
-    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 class TargetGenerator(Protocol):
@@ -404,6 +404,7 @@ class _Planner:
         self.generator = generator
         self.cwd = models.cwd
         self.root = (self.cwd / config.output.expanduser()).resolve()
+        self.shown = shown(config.output, self.cwd)
         self.target_id = target_identity(generator.kind, config.package)
         self.documents = DocumentTable(models.product.batch, models.source, self.root)
         self.operations: dict[str, OperationContract] = {}
@@ -500,11 +501,11 @@ class _Planner:
             "files": manifest_files(plans),
         }
 
-    def project(self) -> GeneratedProject:
+    def project(self, *, warn_edits: bool = True) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
         self.operations = {operation.id.use_site.pointer: operation for operation in operations}
-        state = read_target_state(self.root, generator.kind, config.package)
+        state = read_target_state(self.root, generator.kind, config.package, self.shown)
         rendered = generator.render(
             TargetRequest(
                 config=config,
@@ -552,14 +553,11 @@ class _Planner:
         )
         self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
+        if warn_edits:
+            hand_edits(state, plans, self.shown)
         return GeneratedProject(
             target=generator.kind,
             artifacts=artifacts,
-            diagnostics=(
-                *state.diagnostics,
-                *rendered.diagnostics,
-                *hand_edits(state, plans, self.target_id),
-            ),
             generator_version=self.version,
             runtime_revision=self.revision,
             dependencies=rendered.dependencies,
@@ -688,6 +686,7 @@ def _plan(  # noqa: PLR0913
     *,
     publish: bool,
     timestamp: str | None = None,
+    warn_edits: bool = True,
 ) -> tuple[_Planner, GeneratedProject]:
     """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
 
@@ -708,16 +707,21 @@ def _plan(  # noqa: PLR0913
     models = _run_models(input_, effective, config)
     try:
         planner = _Planner(models, effective, config, generator)
-        return planner, planner.project()
+        return planner, planner.project(warn_edits=warn_edits)
     finally:
         models.product.close()
 
 
 def render_target(
-    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+    input_: _GenerationInput,
+    *,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    warn_edits: bool = True,
 ) -> GeneratedProject:
     """Render one target and its models once, returning every publication candidate without writing it."""
-    return _plan(input_, model_config, config, generator, publish=False)[1]
+    return _plan(input_, model_config, config, generator, publish=False, warn_edits=warn_edits)[1]
 
 
 def plan_target(

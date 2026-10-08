@@ -79,7 +79,7 @@ class Pets(PetsService):
 app = create_app(pets=Pets())
 ```
 
-Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your project,
+Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your project,
 including what the models import, such as `email-validator` for `format: email` and `python-ulid` for
 `format: ulid`. It names only the minimum version each one needs, so uv adds the latest release and your lock file
 keeps it. Run it, then start the application with an ASGI server:
@@ -88,9 +88,6 @@ keeps it. Run it, then start the application with an ASGI server:
 uv add uvicorn
 uv run uvicorn app:app
 ```
-
-With [`--dependency-format requirements`](cli-reference/manual/dependency-format.md#dependency-format), generation
-prints the lines of a requirements file instead, for pip or `uv pip`.
 
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
@@ -137,7 +134,7 @@ from pathlib import Path
 from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
 from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
 
-report = generate_fastapi(
+generate_fastapi(
     Path("openapi.yaml"),
     model_config=GenerateConfig(
         output=Path("models.py"),
@@ -148,17 +145,16 @@ report = generate_fastapi(
     ),
     config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
 )
-for record in report.written_files:
-    print(record.path)
 ```
 <!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
-Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
-as a `uv add` command.
+`generate_fastapi` publishes the files and returns `None`, like model generation.
+The rendered project lists the package's runtime requirement specifiers in `dependencies`, which the command line
+prints as a `uv add` command. Neither public result contains diagnostic records.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
 `datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
-model generation errors keep their own types and messages. The records, errors, and codec
+model generation errors keep their own types and messages. The records, errors, warnings, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
@@ -266,9 +262,10 @@ unless `--disable-timestamp` leaves it out.
 
 The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
 nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
-planned changed in the meantime; the `uv add` notice of each package follows the publication. `--check` checks every
-job and exits with 1 when any of them would change. Server jobs refuse `--watch` and `--output-format json`, as a
-single server run does, and `--diagnostics-json`, whose report covers one run.
+planned changed in the meantime; the `uv add` notice of each package follows the publication on stderr. `--check`
+compares every job as a single run does and exits with 1 when any of them would change. With `--output-format json`,
+a server job adds the generation or check payload of a single server run to the batch document. Server jobs refuse
+`--watch`, as a single server run does.
 
 ## The generated package
 
@@ -294,15 +291,28 @@ when they differ. Run generators that share output files one at a time.
 
 The manifest records the generator version, the target kind and package, the model output and one hash of the model
 files, and the hash of every file the target owns. Generation overwrites the owned files, deletes the ones it no longer
-plans, and warns with `W_TARGET_EDITED` about an owned file edited since the last generation; `--check` reports it as a
-difference. A manifest of an older or unknown format owns nothing: generation warns with `W_STATE_UNOWNED` and deletes
-no file.
+plans, and emits a `TargetEditWarning` about an owned file edited since the last generation; `--check` reports it
+as a difference. A manifest of an older or unknown format owns nothing: generation emits a `TargetStateWarning`
+and deletes no file. `--disable-warnings` and Python warning filters suppress these warnings as for model
+generation.
 
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
 lacks a new method; your own modules are never touched. `--check` renders everything without writing it and exits
 with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
 for an error; `render_fastapi` returns the same artifacts, each with its action.
+
+`--check` uses the model output comparison: it prints unified diffs and missing or extra file messages to stdout.
+It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
+the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
+`--check --output-format json` uses the same check payload as model generation. Checking publishes nothing and
+does not warn that it would overwrite an edited owned file.
+
+`--output-format json` publishes the files and emits the existing generation payload as one JSON document on
+stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. File
+paths are relative to the common parent of the configured outputs when those paths share one, otherwise they
+are absolute. The target manifest, model metadata, and remote lock are outside the payload. The dependency
+notice goes to stderr, along with errors and Python warnings.
 
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
@@ -411,17 +421,14 @@ A template that does not parse or render stops the run with an `Error` that name
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
 directory, so the model templates must keep the class and field names, as the requirements above describe.
 
-## Diagnostics
+## Errors and warnings
 
 The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
-messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
+messages in order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
-Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings,
-such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the served document cannot carry, still print as
-`CODE severity stage location: message` and do not stop the run.
-
-[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
-records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
-document. Ordinary model generation errors receive `E_GENERATION_FAILURE` with stage `target`; the record's
-message includes the original exception type and message. For example, an unresolved reference is reported as
-`Error: Unresolved local $ref targets: ...` on stderr and as `E_GENERATION_FAILURE` in the JSON document.
+Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
+Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `TargetEditWarning`,
+`TargetStateWarning`, and `DocumentationAnnotationWarning` for a documentation value the served document cannot
+carry. Each message starts with the output path, spelled relative to the working directory when it lies inside
+it, so every generated package reports its own files. They respect `--disable-warnings` and Python warning
+filters, and are not returned as diagnostic records.

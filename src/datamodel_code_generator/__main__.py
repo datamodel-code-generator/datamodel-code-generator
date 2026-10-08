@@ -210,8 +210,6 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "list_experimental",
     "watch",
     "watch_delay",
-    "diagnostics_json",
-    "dependency_format",
 })
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
@@ -221,7 +219,6 @@ BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
 _SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
-_TARGET_RUN_OPTIONS: tuple[str, ...] = ("diagnostics_json", "dependency_format")
 
 
 class Exit(IntEnum):
@@ -1091,6 +1088,11 @@ class OutputComparisonOptions(NamedTuple):
     is_directory_output: bool
     input_diff: bool = False
     single_file_display_path: str | None = None
+    directory_display_path: str | None = None
+
+    def directory_file_path(self, path: Path) -> str:
+        """Qualify a directory entry when comparing several output roots."""
+        return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
     def fromfile_suffix(self) -> str:
@@ -1188,8 +1190,8 @@ def _compare_directories(
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
 
-    missing_files = [rel_path.as_posix() for rel_path in sorted(generated_files - actual_files)]
-    extra_files = [rel_path.as_posix() for rel_path in sorted(actual_files - generated_files)]
+    missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
+    extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
         generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
@@ -1197,13 +1199,13 @@ def _compare_directories(
         if generated_content != actual_content:
             changed_files.append(
                 DirectoryChangedFile(
-                    path=rel_path.as_posix(),
+                    path=(display_path := comparison.directory_file_path(rel_path)),
                     diff_lines=list(
                         difflib.unified_diff(
                             actual_content.splitlines(keepends=True),
                             generated_content.splitlines(keepends=True),
-                            fromfile=f"{rel_path.as_posix()}{comparison.fromfile_suffix}",
-                            tofile=f"{rel_path.as_posix()}{comparison.tofile_suffix}",
+                            fromfile=f"{display_path}{comparison.fromfile_suffix}",
+                            tofile=f"{display_path}{comparison.tofile_suffix}",
                         )
                     ),
                 )
@@ -1606,7 +1608,6 @@ def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
             for field, value in _explicit_config_args(namespace).items()
             if field.startswith("server_")
         ]
-        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
         if not given:
             return None
         return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"

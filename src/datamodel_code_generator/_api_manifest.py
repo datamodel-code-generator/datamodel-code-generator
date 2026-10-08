@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import unicodedata
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cache
@@ -17,7 +18,15 @@ from urllib.request import url2pathname
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, ArtifactAction, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._api_types import (
+    APIGenerationError,
+    ArtifactAction,
+    Diagnostic,
+    OperationRef,
+    SchemaRef,
+    TargetEditWarning,
+    TargetStateWarning,
+)
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
@@ -212,7 +221,6 @@ class TargetState:
 
     files: Mapping[PurePosixPath, str] = field(default_factory=lambda: MappingProxyType({}))
     snapshot: Observed = None
-    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 def _is_hash(value: object) -> TypeIs[str]:
@@ -260,7 +268,12 @@ def _owned(manifest: object, kind: TargetKind, package: str) -> dict[PurePosixPa
     return None
 
 
-def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState:
+def shown(path: Path, cwd: Path) -> Path:
+    """Spell an output path for a message: relative to the working directory when it lies inside it."""
+    return location.relative_to(cwd) if (location := cwd / path.expanduser()).is_relative_to(cwd) else location
+
+
+def read_target_state(root: Path, kind: TargetKind, package: str, output: Path) -> TargetState:
     """Read a target root's previous manifest; an old or unknown one owns nothing, so nothing is deleted."""
     if not (path := root / MANIFEST_NAME).is_file():
         return TargetState()
@@ -271,15 +284,13 @@ def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState
         manifest = None
     if (owned := _owned(manifest, kind, package)) is not None:
         return TargetState(files=MappingProxyType(owned), snapshot=observe(data))
-    unowned = Diagnostic(
-        code="W_STATE_UNOWNED",
-        severity="warning",
-        stage="ownership",
-        message="The manifest has an old or unknown format, so the target owns no files and deletes none",
-        artifact_path=MANIFEST_NAME,
-        target_id=target_identity(kind, package),
+    warnings.warn(
+        f"{(output / MANIFEST_NAME).as_posix()}: The manifest has an old or unknown format, "
+        "so the target owns no files and deletes none",
+        TargetStateWarning,
+        stacklevel=2,
     )
-    return TargetState(snapshot=observe(data), diagnostics=(unowned,))
+    return TargetState(snapshot=observe(data))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -341,26 +352,24 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
         if path not in kept and (content := current(path)) is not None
     )
     if conflicts:
-        raise APIGenerationError((*state.diagnostics, *conflicts))
+        raise APIGenerationError(tuple(conflicts))
     return tuple(plans)
 
 
-def hand_edits(state: TargetState, plans: Sequence[FilePlan], target_id: str) -> tuple[Diagnostic, ...]:
+def hand_edits(state: TargetState, plans: Sequence[FilePlan], output: Path) -> None:
     """Warn about each owned file whose bytes differ from the hash its last generation recorded."""
-    return tuple(
-        Diagnostic(
-            code="W_TARGET_EDITED",
-            severity="warning",
-            stage="ownership",
-            message="The owned file changed since the last generation, and this generation discards the change",
-            artifact_path=plan.path.as_posix(),
-            target_id=target_id,
-        )
-        for plan in plans
-        if (observed := plan.observed) is not None
-        and (recorded := state.files.get(plan.path)) is not None
-        and observed[0] != recorded
-    )
+    for plan in plans:
+        if (
+            (observed := plan.observed) is not None
+            and (recorded := state.files.get(plan.path)) is not None
+            and observed[0] != recorded
+        ):
+            warnings.warn(
+                f"{output.joinpath(*plan.path.parts).as_posix()}: The owned file changed since the last generation, "
+                "and this generation discards the change",
+                TargetEditWarning,
+                stacklevel=2,
+            )
 
 
 def manifest_files(plans: Sequence[FilePlan]) -> JSONObject:
