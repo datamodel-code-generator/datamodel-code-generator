@@ -1,5 +1,5 @@
 # argument-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
+  Error: /paths/~1items/get: The arguments of GET /items take 'limit' twice; /paths/~1items/get: The arguments of GET /items take 'request' twice
   F_NAME_CONFLICT target /paths/~1items/get: The arguments of GET /items take 'limit' twice
   F_NAME_CONFLICT target /paths/~1items/get: The arguments of GET /items take 'request' twice

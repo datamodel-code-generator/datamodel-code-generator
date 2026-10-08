@@ -1,3 +1,1 @@
-E_CONFIG_VALUE error config operation_names: operation_names has an invalid entry
-E_CONFIG_VALUE error config parameter_names: parameter_names has an invalid entry
-E_CONFIG_VALUE error config router_names: router_names must map group keys to identifiers
+Error: --server-operation-names has an invalid entry; --server-parameter-names has an invalid entry; --server-router-names must map group keys to identifiers

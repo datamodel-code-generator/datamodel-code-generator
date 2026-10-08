@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from datamodel_code_generator import Error
 from tests.data.python.client_allowreserved import reserved_paths
 from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
@@ -959,8 +960,8 @@ def client_runtime_report(name: str, root: Path) -> str:
     for backend in backends:
         try:
             reports.append(generated(case, backend, root / backend.replace(".", "_"), scenario))
-        except Exception as error:
-            if not str(error).startswith("MC_CODEC_UNSUPPORTED:"):
+        except Error as error:
+            if name != "webhook-backends" or "needs a declared discriminator" not in str(error):
                 raise
             reports.append(f"# {case} {backend}\n  generation {error}\n")
     return _PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", "".join(reports))

@@ -56,7 +56,8 @@ class FastAPITarget:
             plan = Planner(request, config, wire).plan()
         except PlanError as error:
             raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
+                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
+                option_prefix=FastAPIConfig._option_prefix,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
             ) from None
         selected = {operation.contract.id for operation in plan.operations}
         if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:

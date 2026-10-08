@@ -1,5 +1,2 @@
 # dialects32
-APIGenerationError
-diagnostic MC_PARAMETER_ENCODING /paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object
-diagnostic MC_PARAMETER_ENCODING /paths/~1search/get/parameters/1: cookie parameter style 'form' has no builtin form for array values
-diagnostic MC_PARAMETER_ENCODING /paths/~1blank/get/parameters/0: A style-based parameter requires a schema
+Error: /paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object; /paths/~1search/get/parameters/1: cookie parameter style 'form' has no builtin form for array values; /paths/~1blank/get/parameters/0: A style-based parameter requires a schema
