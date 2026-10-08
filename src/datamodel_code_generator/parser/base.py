@@ -2280,6 +2280,65 @@ def _remap_imports(imports: Imports, overrides: Mapping[str, str]) -> None:
         raise Error(str(e)) from e
 
 
+def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -> Iterator[tuple[DataModel, bool]]:
+    """Yield each referenced deferrable alias with whether a container encloses the reference."""
+    in_container = in_container or any((
+        data_type.is_list,
+        data_type.is_dict,
+        data_type.is_set,
+        data_type.is_frozen_set,
+        data_type.is_mapping,
+        data_type.is_sequence,
+        data_type.is_tuple,
+    ))
+    if (
+        (reference := data_type.reference)
+        and isinstance(source := reference.source, DataModel)
+        and source.DEFERS_RECURSIVE_TYPE_HINT
+    ):
+        yield source, in_container
+    for child in (*data_type.data_types, *((data_type.dict_key,) if data_type.dict_key else ())):
+        yield from _iter_alias_references(child, in_container=in_container)
+
+
+@dataclass(frozen=True)
+class _AliasReferenceCycles:
+    """Reference cycles among a module's deferrable aliases."""
+
+    cycles: Mapping[int, int]
+    direct_cycles: frozenset[int]
+
+    def defers(self, model: DataModel, forward_references: Iterable[DataModel]) -> bool:
+        """Return whether the model forward-references its own cycle and each such cycle passes a container."""
+        if (cycle := self.cycles.get(id(model))) is None or id(model) in self.direct_cycles:
+            return False
+        return any(self.cycles.get(id(source)) == cycle for source in forward_references)
+
+
+def _alias_reference_cycles(models: Sequence[DataModel]) -> _AliasReferenceCycles:
+    """Find the reference cycles among aliases, and those without any container on them."""
+    aliases: dict[ModulePath, DataModel] = {}
+    graph: ModuleGraph = {}
+    direct_graph: ModuleGraph = {}
+    pending = [model for model in models if model.DEFERS_RECURSIVE_TYPE_HINT]
+    while pending:
+        if (key := ((model := pending.pop()).path,)) in graph:
+            continue
+        aliases[key] = model
+        graph[key] = set()
+        direct_graph[key] = set()
+        for field in model.fields:
+            for target, in_container in _iter_alias_references(field.data_type):
+                graph[key].add(target_key := (target.path,))
+                if not in_container:
+                    direct_graph[key].add(target_key)
+                pending.append(target)
+    return _AliasReferenceCycles(
+        cycles={id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc},
+        direct_cycles=frozenset(id(aliases[key]) for scc in find_circular_sccs(direct_graph) for key in scc),
+    )
+
+
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     """Abstract base class for schema parsers.
 
@@ -4948,6 +5007,28 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 parent.use_union_operator = False
             parent = parent.parent
 
+    @staticmethod
+    def __forward_references(
+        field: DataModelFieldBase, model: DataModel, model_index: Mapping[str, int], index: int
+    ) -> list[tuple[DataType, str, DataModel]]:
+        """Collect the field's references to same-module models declared at or after the model."""
+        forward_references: list[tuple[DataType, str, DataModel]] = []
+        for data_type in field.data_type.all_data_types:
+            if not data_type.reference:
+                continue
+            source = data_type.reference.source
+            if not isinstance(source, DataModel):
+                continue  # pragma: no cover
+            if isinstance(source, TypeStatement):
+                continue  # pragma: no cover
+            if source.module_path != model.module_path:
+                continue
+            name = data_type.reference.short_name
+            source_index = model_index.get(name)
+            if source_index is not None and source_index >= index:
+                forward_references.append((data_type, name, source))
+        return forward_references
+
     @classmethod
     def __update_type_aliases(
         cls,
@@ -4965,6 +5046,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         (e.g. Ruff F821) and older runtimes do not trip over the forward reference.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
+        alias_cycles: _AliasReferenceCycles | None = None
 
         for i, model in enumerate(models):
             is_type_alias_or_root = isinstance(model, TypeAliasBase) or _is_pydantic_v2_root_model(
@@ -4988,23 +5070,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for field in model.fields:
                 if not process_all_fields and not field.requires_immediate_forward_reference_resolution:
                     continue
-                quote = "" if field.defers_recursive_type_hint else '"'
-                for data_type in field.data_type.all_data_types:
-                    if not data_type.reference:
-                        continue
-                    source = data_type.reference.source
-                    if not isinstance(source, DataModel):
-                        continue  # pragma: no cover
-                    if isinstance(source, TypeStatement):
-                        continue  # pragma: no cover
-                    if source.module_path != model.module_path:
-                        continue
-                    name = data_type.reference.short_name
-                    source_index = model_index.get(name)
-                    if source_index is not None and source_index >= i:
-                        data_type.alias = f"{quote}{name}{quote}"
-                        cls.__disable_union_operator_for_forward_ref(data_type)
-                        has_aliased_forward_ref = True
+                if not (forward_references := cls.__forward_references(field, model, model_index, i)):
+                    continue
+                quote = '"'
+                if model.DEFERS_RECURSIVE_TYPE_HINT:
+                    alias_cycles = alias_cycles or _alias_reference_cycles(models)
+                    if alias_cycles.defers(model, (source for *_, source in forward_references)):
+                        field.defer_recursive_type_hint()
+                        quote = ""
+                for data_type, name, _ in forward_references:
+                    data_type.alias = f"{quote}{name}{quote}"
+                    cls.__disable_union_operator_for_forward_ref(data_type)
+                has_aliased_forward_ref = True
 
             if has_aliased_forward_ref:
                 model.has_forward_reference = model.has_forward_reference or process_all_fields

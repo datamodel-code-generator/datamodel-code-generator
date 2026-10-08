@@ -38,3 +38,31 @@ class Document(BaseModel):
     branch: Branch | None = None
     nested: Nested | None = None
     quoted: Quoted | None = None
+    forest: Forest | None = None
+    grove: Grove | None = None
+
+
+Forest = TypeAliasType(
+    "Forest",
+    Annotated["Union[str, list[Tree]]", Field(..., description='Trees or a leaf name')],
+)
+
+
+Tree = TypeAliasType(
+    "Tree", Annotated[list[Forest], Field(..., description='Branches of a forest')]
+)
+
+
+Grove = TypeAliasType("Grove", Union[int, "Hub", "Left"])
+
+
+Hub = TypeAliasType("Hub", "Union[list[Left], list[Right]]")
+
+
+Left = TypeAliasType("Left", "list[Right]")
+
+
+Right = TypeAliasType("Right", list[Hub])
+
+
+Document.model_rebuild()

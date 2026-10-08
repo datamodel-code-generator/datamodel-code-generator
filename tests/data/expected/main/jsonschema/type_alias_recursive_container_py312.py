@@ -31,3 +31,28 @@ class Document(BaseModel):
     branch: Branch | None = None
     nested: Nested | None = None
     quoted: Quoted | None = None
+    forest: Forest | None = None
+    grove: Grove | None = None
+
+
+type Forest = Annotated[
+    str | list[Tree], Field(..., description='Trees or a leaf name')
+]
+
+
+type Tree = Annotated[list[Forest], Field(..., description='Branches of a forest')]
+
+
+type Grove = int | Hub | Left
+
+
+type Hub = list[Left] | list[Right]
+
+
+type Left = list[Right]
+
+
+type Right = list[Hub]
+
+
+Document.model_rebuild()

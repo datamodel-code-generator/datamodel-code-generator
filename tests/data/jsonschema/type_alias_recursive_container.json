@@ -6,7 +6,9 @@
     "value": {"$ref": "#/$defs/JsonValue"},
     "branch": {"$ref": "#/$defs/Branch"},
     "nested": {"$ref": "#/$defs/Nested"},
-    "quoted": {"$ref": "#/$defs/Quoted"}
+    "quoted": {"$ref": "#/$defs/Quoted"},
+    "forest": {"$ref": "#/$defs/Forest"},
+    "grove": {"$ref": "#/$defs/Grove"}
   },
   "$defs": {
     "JsonValue": {
@@ -36,6 +38,39 @@
         {"type": "integer"},
         {"type": "array", "items": {"$ref": "#/$defs/Nested"}}
       ]
+    },
+    "Forest": {
+      "description": "Trees or a leaf name",
+      "anyOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/Tree"}}
+      ]
+    },
+    "Tree": {
+      "description": "Branches of a forest",
+      "type": "array",
+      "items": {"$ref": "#/$defs/Forest"}
+    },
+    "Grove": {
+      "anyOf": [
+        {"type": "integer"},
+        {"$ref": "#/$defs/Hub"},
+        {"$ref": "#/$defs/Left"}
+      ]
+    },
+    "Hub": {
+      "anyOf": [
+        {"type": "array", "items": {"$ref": "#/$defs/Left"}},
+        {"type": "array", "items": {"$ref": "#/$defs/Right"}}
+      ]
+    },
+    "Left": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Right"}
+    },
+    "Right": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Hub"}
     },
     "Quoted": {
       "anyOf": [

@@ -241,27 +241,6 @@ class _TypingImportRequirements:
         return tuple(imports)
 
 
-def _references_only_through_containers(data_type: DataType, path: str, *, in_container: bool = False) -> bool | None:
-    """Return whether every reference to ``path`` is a container item, or None without any reference."""
-    in_container = in_container or any((
-        data_type.is_list,
-        data_type.is_dict,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-    ))
-    result = in_container if data_type.reference and data_type.reference.path == path else None
-    for child in (*data_type.data_types, *((data_type.dict_key,) if data_type.dict_key else ())):
-        match _references_only_through_containers(child, path, in_container=in_container):
-            case False:
-                return False
-            case True:
-                result = True
-    return result
-
-
 @lru_cache(maxsize=1024)
 def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
     if annotation in _TYPING_IMPORT_NAMES:
@@ -720,10 +699,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     @property
     def defers_recursive_type_hint(self) -> bool:
         """Whether the type hint is one forward reference because it recurses into its alias."""
-        parent = self.parent
-        if parent is None or not parent.DEFERS_RECURSIVE_TYPE_HINT or parent.reference is None:
-            return False
-        return _references_only_through_containers(self.data_type, parent.reference.path) is True
+        return self.__dict__.get("_defers_recursive_type_hint", False)
+
+    def defer_recursive_type_hint(self) -> None:
+        """Render the type hint as one forward reference instead of quoting the names inside it."""
+        self.__dict__["_defers_recursive_type_hint"] = True
+        self._invalidate_parent_render_caches()
 
     @property
     def type_hint(self) -> str:
