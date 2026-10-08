@@ -2,3 +2,4 @@
 write server/routers/pets.py
 render
   Error: routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns

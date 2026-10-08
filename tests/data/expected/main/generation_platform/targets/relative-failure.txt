@@ -1,3 +1,4 @@
 # relative-failure
 render
   Error: input: A persistent path cannot be expressed relative to the target root
+  E_CONFIG_VALUE error config input: A persistent path cannot be expressed relative to the target root

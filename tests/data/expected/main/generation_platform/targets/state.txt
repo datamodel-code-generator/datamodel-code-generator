@@ -20,48 +20,411 @@ publish
 remove server/.dcg-target-manifest.json
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 write server/.dcg-target-manifest.json
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"delete": ["/format"], "set": {"/schema_version": 1}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/format": 2}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/format": true}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/extra": 1}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"delete": ["/generator/name"]}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/model/sha256": "0"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files/__init__.py": "0"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files/__init__.py": "sha256:0"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files/..~1victim.py": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files/routes\\..\\..\\victim.py": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files/C:~1victim.py": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/files": {}}}
 render
   Error: __init__.py: An unmanaged file occupies a path the target owns; application.py: An unmanaged file occupies a path the target owns; routers/__init__.py: An unmanaged file occupies a path the target owns; routers/pets.py: An unmanaged file occupies a path the target owns; routers/store.py: An unmanaged file occupies a path the target owns; routers/untagged.py: An unmanaged file occupies a path the target owns; _generated/__init__.py: An unmanaged file occupies a path the target owns; _generated/contract.py: An unmanaged file occupies a path the target owns; errors.py: An unmanaged file occupies a path the target owns; services.py: An unmanaged file occupies a path the target owns; README.md: An unmanaged file occupies a path the target owns; _runtime/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns; _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns; _runtime/server/__init__.py: An unmanaged file occupies a path the target owns; _runtime/server/application.py: An unmanaged file occupies a path the target owns; _runtime/server/errors.py: An unmanaged file occupies a path the target owns; _runtime/server/requests.py: An unmanaged file occupies a path the target owns; _runtime/server/responses.py: An unmanaged file occupies a path the target owns; _runtime/server/security.py: An unmanaged file occupies a path the target owns; py.typed: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership __init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/pets.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/store.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership routers/untagged.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _generated/contract.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership services.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership README.md: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/media.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/parameters.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/unset.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/model_codecs/wire.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/__init__.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/application.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/errors.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/requests.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/responses.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership _runtime/server/security.py: An unmanaged file occupies a path the target owns
+  E_OUTPUT_CONFLICT error ownership py.typed: An unmanaged file occupies a path the target owns
 patch server/.dcg-target-manifest.json {"set": {"/target/package": "example.other"}}
 render
   Error: .dcg-target-manifest.json: The manifest belongs to another target
+  E_OUTPUT_CONFLICT error ownership .dcg-target-manifest.json: The manifest belongs to another target
 patch server/.dcg-target-manifest.json {}
 render
   target=fastapi schema_version=1
