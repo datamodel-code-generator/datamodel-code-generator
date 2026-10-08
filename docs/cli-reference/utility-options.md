@@ -265,6 +265,9 @@ selected jobs' combined dependency graph and `pyproject.toml`. Every event repla
 transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
 
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
+
 ---
 
 ## `--list-deprecations` {#list-deprecations}

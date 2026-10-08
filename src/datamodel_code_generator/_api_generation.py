@@ -31,7 +31,7 @@ from datamodel_code_generator._api_types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_types import ArtifactKind, DiagnosticStage, TargetKind
@@ -246,12 +246,6 @@ def _remote_lock(
         _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
     )
 
-    if config.remote_lock_resolved and getattr(config.remote_lock, "update", False):
-        raise config_error(
-            code="E_CONFIG_CONFLICT",
-            option_path="model_config.update_lock",
-            message="A target run cannot publish a remote lock update that another caller owns",
-        )
     if config.update_lock and not config.remote_lock_resolved:
         config, _, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         return config, lock
@@ -475,67 +469,131 @@ class _Planner:
         self.check_collisions(artifacts)
         return GeneratedProject(target=generator.kind, artifacts=artifacts, dependencies=rendered.dependencies)
 
+    def planned(self) -> PlannedTarget:
+        models, output = self.models, self.effective.output
+        return PlannedTarget(
+            project=self.project(),
+            cwd=self.cwd,
+            package=self.config.output,
+            models=None if models.single else output,
+            lock=models.lock,
+            timestamp=self.effective._generation_timestamp,  # noqa: SLF001
+        )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlannedTarget:
+    """A rendered target and where its files go, for a caller that writes it now or later with other files.
+
+    `models` is the models directory, or None for a models file. `lock` is the remote lock update that the target
+    publishes with its files, None when the caller owns the lock the models record into.
+    """
+
+    project: GeneratedProject
+    cwd: Path
+    package: Path
+    models: Path | None
+    lock: RemoteReferenceLock | None
+    timestamp: str | None
+
     def directory(self, artifact: GeneratedArtifact) -> Path | None:
         """Return the output directory an artifact is generated into, or None for a file output names itself."""
         if artifact.kind == "target":
-            return self.config.output
-        if artifact.kind == "model" and not self.models.single:
-            return self.effective.output
-        return None
+            return self.package
+        return self.models if artifact.kind == "model" else None
 
-    def stage(self, project: GeneratedProject, stack: ExitStack) -> list[StagedFile]:
-        """Stage every changed file beside its output, as an atomic model run stages its files for one journal.
 
-        A file that already holds its bytes is left out, so an unchanged project stages nothing and writes nothing.
-        """
-        if not (changed := [artifact for artifact in project.artifacts if artifact.action == "write"]):
-            return []
-        from datamodel_code_generator._publication import (  # noqa: PLC0415
-            StagedFile,
-            StagingDirectory,
-            close_anchor,
-            publication_anchor,
-        )
+def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack: ExitStack) -> list[StagedFile]:
+    """Stage every changed file beside its output, as an atomic model run stages its files for one journal.
 
-        cwd = self.cwd
-        places: dict[Path, tuple[Path, Path, PublicationAnchor]] = {}
-        files: list[StagedFile] = []
-        for artifact in changed:
-            if artifact.kind == "remote_lock":
-                lock = cast("RemoteReferenceLock", self.models.lock)
-                stack.callback(close_anchor, anchor := publication_anchor(lock.path.parent))
-                lock_staging = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
-                stack.callback(_quietly, lock_staging.cleanup)
-                files.append(cast("StagedFile", lock.stage(lock_staging))._replace(anchor=anchor))
-                continue
-            destination = (directory := self.directory(artifact)) or artifact.path
-            if (place := places.get(destination)) is None:
-                location = cwd / destination.expanduser()
-                resolved = location.resolve() if directory else location.parent.resolve() / location.name
-                stack.callback(close_anchor, anchor := publication_anchor(resolved))
-                place = places[destination] = (_staging(stack, destination, cwd), resolved, anchor)
-            staging, resolved, anchor = place
-            (source := staging / str(len(files))).write_bytes(artifact.content)
-            files.append(
-                StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor)
-            )
-        return files
+    A file that already holds its bytes is left out, so an unchanged target stages nothing and writes nothing.
+    """
+    if not (changed := [artifact for artifact in artifacts if artifact.action == "write"]):
+        return []
+    from datamodel_code_generator._publication import (  # noqa: PLC0415
+        StagedFile,
+        StagingDirectory,
+        close_anchor,
+        publication_anchor,
+    )
 
-    def publish(self, project: GeneratedProject) -> None:
-        """Publish every changed file together through the model journal, which rolls back on an I/O error."""
-        lock = self.models.lock
-        with ExitStack() as stack:
-            try:
-                if files := self.stage(project, stack):
-                    from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+    cwd = target.cwd
+    places: dict[Path, tuple[Path, Path, PublicationAnchor]] = {}
+    files: list[StagedFile] = []
+    for artifact in changed:
+        if artifact.kind == "remote_lock":
+            lock = cast("RemoteReferenceLock", target.lock)
+            stack.callback(close_anchor, anchor := publication_anchor(lock.path.parent))
+            lock_staging = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
+            stack.callback(_quietly, lock_staging.cleanup)
+            files.append(cast("StagedFile", lock.stage(lock_staging))._replace(anchor=anchor))
+            continue
+        destination = (directory := target.directory(artifact)) or artifact.path
+        if (place := places.get(destination)) is None:
+            location = cwd / destination.expanduser()
+            resolved = location.resolve() if directory else location.parent.resolve() / location.name
+            stack.callback(close_anchor, anchor := publication_anchor(resolved))
+            place = places[destination] = (_staging(stack, destination, cwd), resolved, anchor)
+        staging, resolved, anchor = place
+        (source := staging / str(len(files))).write_bytes(artifact.content)
+        files.append(StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor))
+    return files
 
-                    publish_staged_files(files)
-            except BaseException:
-                if lock is not None:
-                    _quietly(lock.discard_stage)
-                raise
-        if lock is not None:
-            lock.mark_committed()
+
+def publish_target(target: PlannedTarget) -> None:
+    """Publish every changed file together through the model journal, which rolls back on an I/O error."""
+    lock = target.lock
+    with ExitStack() as stack:
+        try:
+            if files := _stage(target, target.project.artifacts, stack):
+                from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+
+                publish_staged_files(files)
+        except BaseException:
+            if lock is not None:
+                _quietly(lock.discard_stage)
+            raise
+    if lock is not None:
+        lock.mark_committed()
+
+
+def _unshared(
+    job: str, target: PlannedTarget, models: dict[Path, tuple[str, GeneratedArtifact]]
+) -> Iterator[GeneratedArtifact]:
+    """Yield the artifacts of a job's target that no earlier job plans.
+
+    Jobs that share a models output plan each of its files once, and must plan the same content for it.
+    """
+    for artifact in target.project.artifacts:
+        if artifact.kind != "model":
+            yield artifact
+            continue
+        location = target.cwd / artifact.path
+        owner, planned = models.setdefault(location.parent.resolve(strict=False) / location.name, (job, artifact))
+        if planned is artifact:
+            yield artifact
+        elif planned.content != artifact.content:
+            raise APIGenerationError((
+                Diagnostic(
+                    code="E_PATH_COLLISION",
+                    severity="error",
+                    stage="publication",
+                    message=f"Jobs '{owner}' and '{job}' generate different models",
+                    artifact_path=artifact.path.as_posix(),
+                ),
+            ))
+
+
+def publish_planned(files: Iterable[StagedFile], targets: Sequence[tuple[str, PlannedTarget]]) -> None:
+    """Publish a batch's staged files and the changes its server jobs planned through the batch's one journal."""
+    from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+
+    with ExitStack() as stack:
+        staged = list(files)
+        models: dict[Path, tuple[str, GeneratedArtifact]] = {}
+        for job, target in targets:
+            staged.extend(_stage(target, _unshared(job, target, models), stack))
+        publish_staged_files(staged)
 
 
 def _quietly(cleanup: Callable[[], None]) -> None:
@@ -657,17 +715,34 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
 
 
-def _plan(
-    input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
-) -> tuple[_Planner, GeneratedProject]:
+def _plan(  # noqa: PLR0913
+    input_: _GenerationInput,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    *,
+    publish: bool,
+    timestamp: str | None = None,
+) -> PlannedTarget:
+    """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
+
+    The files carry `timestamp` as their generation timestamp, or the current time without one.
+    """
     effective = prepare_target(input_, model_config, generator)
+    if publish and effective.remote_lock_resolved and getattr(effective.remote_lock, "update", False):
+        raise config_error(
+            code="E_CONFIG_CONFLICT",
+            option_path="model_config.update_lock",
+            message="A target run cannot publish a remote lock update that another caller owns",
+        )
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
-        effective._generation_timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
+        effective._generation_timestamp = (  # noqa: SLF001
+            timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        )
     models = _run_models(input_, effective, config)
     try:
-        planner = _Planner(models, effective, config, generator)
-        return planner, planner.project()
+        return _Planner(models, effective, config, generator).planned()
     finally:
         models.product.close()
 
@@ -676,13 +751,30 @@ def render_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
     """Render one target and its models once, returning every generated file without writing it."""
-    return _plan(input_, model_config, config, generator)[1]
+    return _plan(input_, model_config, config, generator, publish=False).project
+
+
+def plan_target(  # noqa: PLR0913
+    input_: _GenerationInput,
+    *,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    publish: bool = False,
+    timestamp: str | None = None,
+) -> PlannedTarget:
+    """Render one target like `render_target` for a caller that publishes it later, alone or with other files.
+
+    A caller that publishes it with other files owns the remote lock the models record into, so the target leaves
+    the lock out. Targets published together pass on the `timestamp` of the first, so the models they share carry
+    one generation timestamp.
+    """
+    return _plan(input_, model_config, config, generator, publish=publish, timestamp=timestamp)
 
 
 def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
     """Render one target and its models once, then write every changed file together, as an atomic model run does."""
-    planner, project = _plan(input_, model_config, config, generator)
-    planner.publish(project)
-    return project
+    publish_target(planned := _plan(input_, model_config, config, generator, publish=True))
+    return planned.project

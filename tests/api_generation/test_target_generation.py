@@ -13,11 +13,12 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import _api_manifest, _publication
+from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
-from tests.main.conftest import run_main_and_assert
+from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
@@ -152,6 +153,39 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
     report = target_render_report("publish-failure", tmp_path, monkeypatch)
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
+
+
+@pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")
+def test_target_jobs_rollback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish nothing of a batch of a model job and a server job when a file of the last job cannot be written.
+
+    The first batch fails on a new tree; the second fails over edited files of both jobs, which keep their edits.
+    """
+    fixtures = SOURCE.parent / "fastapi"
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(fixtures / "pets.yaml", "pets.yaml")
+    shutil.copy2(fixtures / "cli" / "pyproject-mixed-jobs.toml", "pyproject.toml")
+    replace, failure = _publication._replace_source, OSError("No space left on device")
+    lines: list[str] = []
+
+    def batch(title: str, failures: dict[int, OSError]) -> None:
+        monkeypatch.setattr(_publication, "_replace_source", _failing(replace, failures, "services.py"))
+        run_main_with_args(["--all-jobs"], expected_exit=Exit.ERROR if failures else Exit.OK)
+        stderr = capsys.readouterr().err
+        files = sorted(path.relative_to(tmp_path).parts[0] for path in tmp_path.rglob("*") if path.is_file())
+        lines.extend((f"# {title}", stderr.replace(tmp_path.resolve().as_posix(), "<root>").rstrip("\n")))
+        lines.append(f"  outputs {sorted(set(files) - {'pets.yaml', 'pyproject.toml'})}")
+
+    batch("the server job's services.py cannot be written", {0: failure})
+    batch("the batch publishes", {})
+    edited = dict.fromkeys(("schemas.py", "models.py", "server/services.py"), b"# Edited.\n")
+    for name, content in edited.items():
+        Path(name).write_bytes(content)
+    batch("the server job's services.py cannot be replaced", {0: failure})
+    lines.extend(f"  {name} still edited {Path(name).read_bytes() == content}" for name, content in edited.items())
+    assert_output("\n".join(lines) + "\n", EXPECTED / "jobs-publish-failure.txt")
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
