@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
@@ -42,6 +42,8 @@ class ResponseChoice:
 @dataclass(frozen=True, slots=True, kw_only=True)
 class FastAPIConfig(TargetConfig):
     """Settings of one FastAPI server target; model settings stay in the model configuration."""
+
+    _option_prefix: ClassVar[str] = "server"
 
     layout: Layout = "routers"
     handler_mode: HandlerMode = "sync"

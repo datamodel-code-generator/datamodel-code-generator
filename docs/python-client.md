@@ -2737,14 +2737,13 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   `with_raw_response` or `with_streaming_response` instead.
 
 A union of object models read by a stdlib dataclass or TypedDict converter needs a declared discriminator. Without
-one, generation fails with `MC_CODEC_UNSUPPORTED` naming the use:
+one, generation raises `Error` naming the use:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a declared discriminator for the dataclasses.dataclass converter
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1kin/put/requestBody: The union of Animal and Cat needs a declared discriminator for the dataclasses.dataclass converter
+Error: /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a declared discriminator for the dataclasses.dataclass converter; /paths/~1kin/put/requestBody: The union of Animal and Cat needs a declared discriminator for the dataclasses.dataclass converter; /components/schemas/Values/properties/span: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
 ```
 
 <!-- fmt: on -->

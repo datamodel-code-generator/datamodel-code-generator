@@ -11,8 +11,9 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._api_manifest import document_identity
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, attached_diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -63,11 +64,8 @@ def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject
             if config is None
             else _run(args, namespace, config, pyproject_path, report)
         )
-    except APIGenerationError as error:
-        report.extend(error.diagnostics)
-        code = _ERROR
     except Exception as error:  # noqa: BLE001
-        report.failure(error)
+        report.failure(error, encoding="utf-8" if config is None else config.encoding)
         code = _ERROR
     return code if report.write() else _ERROR
 
@@ -240,12 +238,35 @@ class _Report:
                 file=sys.stderr,
             )
 
-    def failure(self, error: Exception) -> None:
-        if (diagnostic := attached_diagnostic(error)) is None:
-            traceback.print_exception(error, file=sys.stderr)
-            message = f"{type(error).__name__}: {error}"
-            diagnostic = Diagnostic(code="E_GENERATION_FAILURE", severity="error", stage="target", message=message)
-        self.extend((diagnostic,))
+    def failure(self, error: Exception, *, encoding: str = "utf-8") -> None:
+        """Print ordinary target errors and preserve the model CLI's hints and unexpected-error traceback."""
+        if isinstance(error, APIGenerationError):
+            for diagnostic in error.diagnostics:
+                if diagnostic.severity == "error":
+                    self.diagnostics.append(diagnostic)
+                else:
+                    self.extend((diagnostic,))
+        else:
+            self.diagnostics.append(
+                Diagnostic(
+                    code="E_GENERATION_FAILURE",
+                    severity="error",
+                    stage="target",
+                    message=f"{type(error).__name__}: {error}",
+                )
+            )
+        message = str(error)
+        if isinstance(error, InvalidClassNameError):
+            message = f"{error} You have to set `--class-name` option"
+        elif isinstance(error, UnicodeDecodeError):
+            message = f"Unable to decode input using encoding {encoding!r}: {error}"
+        elif not isinstance(error, (Error, OSError)):
+            from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
+
+            if not isinstance(error, RemoteLockError):
+                traceback.print_exception(error, file=sys.stderr)
+                return
+        print(f"Error: {message}", file=sys.stderr)  # noqa: T201
 
     def write(self) -> bool:
         if (destination := self.destination) is None:
@@ -262,7 +283,7 @@ class _Report:
         try:
             Path(destination).write_text(text, encoding="utf-8")
         except OSError as error:
-            self.extend((_unwritable(str(error.strerror)),))
+            self.failure(APIGenerationError((_unwritable(str(error.strerror)),)))
             return False
         return True
 

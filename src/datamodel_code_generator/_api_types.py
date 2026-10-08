@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
-from typing import Final, Literal, TypeAlias
+from typing import Literal, TypeAlias
+
+from datamodel_code_generator import Error
 
 __all__ = [
     "APIGenerationError",
@@ -25,8 +27,6 @@ __all__ = [
     "PublicationRollbackError",
     "SchemaRef",
     "TargetKind",
-    "attach_diagnostic",
-    "attached_diagnostic",
 ]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
@@ -36,7 +36,6 @@ DiagnosticStage: TypeAlias = Literal[
 ]
 ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target", "target_manifest"]
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
-_ATTACHED: Final = "__dcg_diagnostic__"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -58,7 +57,7 @@ class SchemaRef:
 OperationSelector: TypeAlias = OperationRef | str
 
 
-class PublicationRollbackError(Exception):
+class PublicationRollbackError(OSError):
     """Report a failed publication whose rollback could not restore every destination.
 
     The original failure is the ``__cause__``. Backups of destinations that were not restored stay in place.
@@ -87,23 +86,34 @@ class Diagnostic:
     target_id: str | None = None
 
 
-def attach_diagnostic(error: Exception, diagnostic: Diagnostic) -> None:
-    """Record the diagnostic of the stage an exception stopped; the exception keeps its type and cause."""
-    error.__dict__[_ATTACHED] = diagnostic
+class APIGenerationError(Error):
+    """Report target failures as ordinary dcg errors, retaining internal findings in phase order."""
 
-
-def attached_diagnostic(error: Exception) -> Diagnostic | None:
-    """Return the diagnostic a stage recorded on the exception, if any."""
-    return diagnostic if isinstance(diagnostic := error.__dict__.get(_ATTACHED), Diagnostic) else None
-
-
-class APIGenerationError(Exception):
-    """Report configuration, binding, target, or ownership failures in phase order."""
-
-    def __init__(self, diagnostics: tuple[Diagnostic, ...]) -> None:
-        """Keep the ordered diagnostics and summarize them in the message."""
+    def __init__(self, diagnostics: tuple[Diagnostic, ...], *, option_prefix: str | None = None) -> None:
+        """Keep the internal findings and describe errors without diagnostic codes or stages."""
         self.diagnostics = diagnostics
-        super().__init__("; ".join(f"{item.code}: {item.message}" for item in diagnostics))
+        super().__init__(
+            "; ".join(_error_message(item, option_prefix) for item in diagnostics if item.severity == "error")
+        )
+
+
+def _error_message(item: Diagnostic, option_prefix: str | None) -> str:
+    message = item.message
+    location = item.source_pointer or item.artifact_path
+    if (path := item.option_path) is not None:
+        if path.startswith("model_config."):
+            name = path.removeprefix("model_config.")
+            prefix = ""
+        else:
+            name = path
+            prefix = None if option_prefix is None else f"{option_prefix}-"
+        field = name.split(".", 1)[0].split("[", 1)[0]
+        option = name if prefix is None else f"--{prefix}{field.replace('_', '-')}{name[len(field) :]}"
+        if path in message:
+            message = message.replace(path, option, 1)
+        else:
+            location = option
+    return message if location is None else f"{location}: {message}"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
