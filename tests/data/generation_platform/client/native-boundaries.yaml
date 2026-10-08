@@ -27,6 +27,12 @@ paths:
               schema: {type: number}
             X-Flag:
               schema: {type: boolean}
+            X-When:
+              schema: {type: string, format: date-time}
+            X-Id:
+              schema: {type: string, format: uuid}
+            X-Amount:
+              schema: {type: string, format: decimal}
             X-Counts:
               schema: {type: array, items: {type: integer}}
             X-Entry:
@@ -50,6 +56,26 @@ paths:
                 - {type: 'null'}
       responses:
         '204': {description: Saved}
+  /form:
+    get:
+      operationId: getForm
+      tags: [nativeHeaders]
+      responses:
+        '200':
+          description: URL-encoded numbers
+          content:
+            application/x-www-form-urlencoded:
+              schema: {$ref: '#/components/schemas/Numbers'}
+  /parts:
+    get:
+      operationId: getParts
+      tags: [nativeHeaders]
+      responses:
+        '200':
+          description: Form-data numbers
+          content:
+            multipart/form-data:
+              schema: {$ref: '#/components/schemas/Numbers'}
 components:
   schemas:
     Entry:
@@ -63,3 +89,9 @@ components:
       required: [value]
       properties:
         value: {type: string}
+    Numbers:
+      type: object
+      properties:
+        count: {type: integer}
+        score: {type: number}
+        active: {type: boolean}

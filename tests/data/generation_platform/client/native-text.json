@@ -35,6 +35,42 @@
     [
       "X-Counts",
       "١,２"
+    ],
+    [
+      "X-Flag",
+      "yes"
+    ],
+    [
+      "X-When",
+      "yesterday"
+    ],
+    [
+      "X-Id",
+      "not-a-uuid"
+    ],
+    [
+      "X-Amount",
+      "1.50"
+    ],
+    [
+      "X-Amount",
+      "abc"
     ]
+  ],
+  "forms": [
+    {
+      "count": "5",
+      "score": "1.5",
+      "active": "true"
+    },
+    {
+      "count": "05"
+    },
+    {
+      "score": "1_000"
+    },
+    {
+      "active": "True"
+    }
   ]
 }

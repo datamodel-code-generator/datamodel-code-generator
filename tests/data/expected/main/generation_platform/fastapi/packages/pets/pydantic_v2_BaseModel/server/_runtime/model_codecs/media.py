@@ -14,7 +14,7 @@ from json.encoder import encode_basestring, encode_basestring_ascii
 from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import TypeAliasType
+from typing_extensions import Self, TypeAliasType
 
 from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
 from .wire import JSONScalar as WireScalar
@@ -37,6 +37,7 @@ _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
+_SCALARS: Final = frozenset({bool, int, float, str, type(None)})
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,13 +59,38 @@ def json_value(content: str | bytes) -> JSONValue:
     return cast("JSONValue", json.loads(content))
 
 
-def plain(value: object) -> JSONValue:
-    """Turn parsed form and header containers into builtins a native backend accepts."""
+class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
+    """Text of a declared integer, number, or boolean that is not its canonical JSON literal."""
+
+    __slots__ = ("kind",)
+    kind: LexicalKind
+
+    def __new__(cls, text: str, kind: LexicalKind) -> Self:
+        """Keep the text with the kind it was declared as."""
+        unparsed = super().__new__(cls, text)
+        unparsed.kind = kind
+        return unparsed
+
+
+def plain(value: object, *, strict: bool = False) -> JSONValue:
+    """Turn parsed form and header containers into builtins a native backend accepts.
+
+    Text that is not its kind's JSON literal stays text for a backend that validates it, and is refused when strict.
+    """
+    if type(value) in _SCALARS:
+        return cast("JSONValue", value)
     if isinstance(value, Mapping):
-        return {cast("str", key): plain(item) for key, item in cast("Mapping[object, object]", value).items()}
+        return {
+            cast("str", key): plain(item, strict=strict) for key, item in cast("Mapping[object, object]", value).items()
+        }
     if isinstance(value, (list, tuple)):
-        return [plain(item) for item in cast("list[object] | tuple[object, ...]", value)]
-    return cast("JSONValue", value)
+        return [plain(item, strict=strict) for item in cast("list[object] | tuple[object, ...]", value)]
+    if not isinstance(value, Unparsed):
+        return cast("JSONValue", value)
+    if strict:
+        msg = f"Invalid {value.kind} literal: {str(value)!r}"
+        raise ValueError(msg)
+    return str(value)
 
 
 def issue(*, code: str, message: str) -> WireValidationError:
@@ -290,13 +316,13 @@ def typed(text: str, kind: LexicalKind) -> JSONScalar:
     if kind == "string":
         return text
     if kind == "boolean":
-        return text == "true" if text in {"true", "false"} else text
+        return text == "true" if text in {"true", "false"} else Unparsed(text, kind)
     if _INTEGER.fullmatch(text):
         try:
             return int(text)
         except ValueError:
-            return text
-    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else text
+            return Unparsed(text, kind)
+    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else Unparsed(text, kind)
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:

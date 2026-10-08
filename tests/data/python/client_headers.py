@@ -7,6 +7,7 @@ import json
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
+from urllib.parse import urlencode
 
 import httpx2
 
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
 
 _RAW: Final = "https://raw.example.com/items"
 _BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
+_PART: Final = '--b\r\nContent-Disposition: form-data; name="{}"\r\n\r\n{}\r\n'
 
 
 def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
@@ -194,12 +196,19 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(raw_response(204, **{name: value}))
             info = api.native_headers.with_raw_response.get_values().info
             record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
-        numbers = Path(__file__).parents[1] / "generation_platform/client/native-numbers.json"
-        for name, value in json.loads(numbers.read_text(encoding="utf-8"))["headers"]:
+        source = Path(__file__).parents[1] / "generation_platform/client/native-text.json"
+        cases = json.loads(source.read_text(encoding="utf-8"))
+        for name, value in cases["headers"]:
             content = ((name.encode(), value.encode()),)
             exchange.respond(lambda _, content=content: httpx2.Response(204, headers=content))
             info = api.native_headers.with_raw_response.get_values().info
-            record(lines, f"native numeric {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+            record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+        for fields in cases["forms"]:
+            exchange.respond(raw_response(200, urlencode(fields).encode(), "application/x-www-form-urlencoded"))
+            record(lines, f"native form {fields}", api.native_headers.get_form)
+            parts = "".join(_PART.format(name, value) for name, value in fields.items())
+            exchange.respond(raw_response(200, f"{parts}--b--\r\n".encode(), "multipart/form-data; boundary=b"))
+            record(lines, f"native parts {fields}", api.native_headers.get_parts)
         run(lambda: _async_native_headers(package, types, lines))
         exchange.respond(raw_response(204))
         record(lines, "nullable model from fields", lambda: api.native_headers.save_value(value="saved"))
