@@ -5068,5 +5068,41 @@
         "paths"
       ]
     }
+  },
+  "caching-oauth": {
+    "input": "caching-oauth.json",
+    "references": [
+      "caching.yaml",
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*",
+        "/oauth"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ],
+    "expected": "caching"
   }
 }

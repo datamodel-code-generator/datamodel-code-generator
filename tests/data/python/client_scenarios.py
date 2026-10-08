@@ -912,7 +912,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "socket-connector-outcomes": ("sockets", ("pydantic_v2.BaseModel",), socket_connector_outcomes),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
-    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
     "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),

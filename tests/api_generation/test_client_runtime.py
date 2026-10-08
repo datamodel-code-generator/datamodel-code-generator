@@ -11,9 +11,16 @@ pytest.importorskip("httpx2")
 
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_allowreserved import reserved_version_report
+from tests.data.python.client_runtime import client_copied_runtime_report
 from tests.data.python.client_scenarios import BACKENDS, SCENARIOS, client_runtime_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/runtime"
+
+
+def test_client_copied_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make a real TLS call and locate the imported runtime inside the generated package."""
+    monkeypatch.setenv("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E", "1")
+    assert_output(client_copied_runtime_report(tmp_path), EXPECTED / "copied-runtime.txt")
 
 
 @pytest.mark.parametrize(
