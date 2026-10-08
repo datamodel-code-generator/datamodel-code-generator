@@ -258,10 +258,11 @@ datamodel-codegen --all-jobs --check
 A server option on the command line applies to every selected job and takes precedence over the job table, its
 profile, and the base table, as a model option does; every selected job must then select the server.
 
-`server-output`, like `output`, must not overlap the outputs of other jobs. Server jobs can share their models,
-though: jobs that each select the server may name the same `output`, which the batch writes once. They must generate
-the same models for it, so give them the same input and model settings; a model-only job cannot share its `output`.
-The server jobs of a batch write one generation timestamp, unless `--disable-timestamp` leaves it out.
+`server-output`, like `output`, must not overlap the outputs of other jobs or contain the remote lock file. Server
+jobs can share their models, though: jobs that each select the server may name the same `output`, spelled the same
+way, which the batch writes once. They must generate the same models for it, so give them the same input and model
+settings; a model-only job cannot share its `output`. The server jobs of a batch write one generation timestamp,
+unless `--disable-timestamp` leaves it out.
 
 The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
 nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job

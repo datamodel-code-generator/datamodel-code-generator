@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Sequence
 
-    from datamodel_code_generator._api_generation import PlannedTarget
+    from datamodel_code_generator._api_publication import PlannedTarget
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._publication import StagedFile
@@ -52,13 +52,14 @@ def run_target(  # noqa: PLR0913, PLR0917
     namespace: Namespace,
     config: Any,
     pyproject_path: Path | None,
-    batch: list[tuple[PlannedTarget, str]] | None = None,
+    batch: list[tuple[str, PlannedTarget, str]] | None = None,
     lock: Any = None,
+    job: str = "",
 ) -> int:
     """Generate or check the selected target from the finalized CLI config, reporting every diagnostic.
 
     A model setting the target needs but the config lacks is refused like a model option conflict, before the run. A
-    batch job appends the planned target to the targets its `batch` has planned instead of publishing it, and its
+    batch `job` appends the planned target to the targets its `batch` has planned instead of publishing it, and its
     models record into the batch's remote `lock`.
     """
     from datamodel_code_generator._api_generation import model_requirement  # noqa: PLC0415
@@ -69,7 +70,7 @@ def run_target(  # noqa: PLR0913, PLR0917
         return _ERROR
     report = _Report(None if batch is not None else vars(namespace).get("diagnostics_json"))
     try:
-        code = _run(args, namespace, config, pyproject_path, report, batch, lock)
+        code = _run(args, namespace, config, pyproject_path, report, batch, lock, job)
     except Exception as error:  # noqa: BLE001
         report.failure(error, encoding=config.encoding)
         code = _ERROR
@@ -82,8 +83,9 @@ def _run(  # noqa: PLR0913, PLR0917
     config: Any,
     pyproject_path: Path | None,
     report: _Report,
-    batch: list[tuple[PlannedTarget, str]] | None,
+    batch: list[tuple[str, PlannedTarget, str]] | None,
     lock: Any,
+    job: str,
 ) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
         _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
@@ -124,10 +126,10 @@ def _run(  # noqa: PLR0913, PLR0917
             print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
         return _DIFF if changes else _OK
     if batch is not None:
-        timestamp = next((earlier.timestamp for earlier, _ in batch if earlier.timestamp is not None), None)
+        timestamp = next((earlier.timestamp for _, earlier, _ in batch if earlier.timestamp is not None), None)
         planned = plan_target(source, model_config=effective, config=target, generator=generator, timestamp=timestamp)
         report.extend(planned.project.diagnostics)
-        batch.append((planned, _next_step(target, planned.project.dependencies, form)))
+        batch.append((job, planned, _next_step(target, planned.project.dependencies, form)))
         return _OK
     generated = generate_target(source, model_config=effective, config=target, generator=generator)
     report.extend(generated.diagnostics)
@@ -136,15 +138,15 @@ def _run(  # noqa: PLR0913, PLR0917
     return _OK
 
 
-def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[PlannedTarget, str]]) -> None:
+def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[str, PlannedTarget, str]]) -> None:
     """Publish the staged files of a batch and the targets its server jobs planned through one journal.
 
     Each target's dependency notice follows the publication, as after a single run.
     """
     from datamodel_code_generator._api_publication import publish_planned  # noqa: PLC0415
 
-    publish_planned(files, [planned for planned, _ in targets])
-    for _, notice in targets:
+    publish_planned(files, [(job, planned) for job, planned, _ in targets])
+    for _, _, notice in targets:
         print(notice)  # noqa: T201
 
 

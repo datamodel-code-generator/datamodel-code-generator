@@ -6,7 +6,6 @@ import ast
 import os
 import sys
 import tempfile
-import unicodedata
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -22,7 +21,9 @@ from datamodel_code_generator._api_manifest import (
     PlannedFile,
     RootInput,
     canonical_document,
+    collision_key,
     config_error,
+    destination,
     document_identity,
     hand_edits,
     manifest_files,
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
+    from datamodel_code_generator._api_publication import PlannedTarget
     from datamodel_code_generator._api_types import (
         ArtifactAction,
         ArtifactKind,
@@ -474,9 +476,7 @@ class _Planner:
         seen: set[str] = set()
         problems: list[Diagnostic] = []
         for artifact in artifacts:
-            location = self.cwd / artifact.path
-            key = unicodedata.normalize("NFC", str(location.parent.resolve() / location.name)).casefold()
-            if key in seen:
+            if (key := collision_key(destination(self.cwd / artifact.path))) in seen:
                 problems.append(
                     Diagnostic(
                         code="E_PATH_COLLISION",
@@ -720,16 +720,6 @@ def render_target(
     return _plan(input_, model_config, config, generator, publish=False)[1]
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PlannedTarget:
-    """A rendered target and the state of every file it plans, which its later publication rechecks."""
-
-    project: GeneratedProject
-    observed: dict[Path, Observed]
-    cwd: Path
-    timestamp: str | None
-
-
 def plan_target(
     input_: _GenerationInput,
     *,
@@ -743,6 +733,8 @@ def plan_target(
     The caller owns the remote lock the models record into, so the target leaves the lock out. Targets published
     together pass on the `timestamp` of the first, so the models they share carry one generation timestamp.
     """
+    from datamodel_code_generator._api_publication import PlannedTarget  # noqa: PLC0415
+
     planner, project = _plan(input_, model_config, config, generator, publish=False, timestamp=timestamp)
     return PlannedTarget(
         project=project,

@@ -477,6 +477,7 @@ def _validate_remote_lock_artifacts(
             ("input", config.input if isinstance(config.input, Path) else None),
             ("diff input", config.diff_against),
             ("output", config.output),
+            ("server output", config.server_output if config.generate_server is not None else None),
             ("model metadata", config.emit_model_metadata),
         ):
             if path is not None:
@@ -1717,14 +1718,15 @@ def _run_target(  # noqa: PLR0913, PLR0917
     pyproject_path: Path | None,
     batch: list[Any] | None = None,
     lock: Any = None,
+    job: str = "",
 ) -> Exit:
     """Hand the selected generation target to its runner, which reports every diagnostic.
 
-    A batch job plans the target into `batch` for publication with the batch, recording into the batch's lock.
+    A batch `job` plans the target into `batch` for publication with the batch, recording into the batch's lock.
     """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock))
+    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -2078,6 +2080,7 @@ def _run_jobs_text(
             _batch_original_output=staged_plan.output,
             _batch_output_is_staged=staged_plan.staged_output is not None,
             _batch_targets=staged_plan.targets,
+            _batch_job=staged_plan.plan.name,
             _remote_locks=remote_locks,
             _bound_remote_lock_plan=remote_lock_plan,
         )
@@ -2128,6 +2131,7 @@ def _run_jobs_json(
                             _batch_original_output=staged_plan.output,
                             _batch_output_is_staged=staged_plan.staged_output is not None,
                             _batch_targets=staged_plan.targets,
+                            _batch_job=staged_plan.plan.name,
                             _remote_locks=remote_locks,
                             _bound_remote_lock_plan=remote_lock_plan,
                         )
@@ -2359,6 +2363,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _batch_original_output: Path | None = None,
     _batch_output_is_staged: bool = False,
     _batch_targets: list[Any] | None = None,
+    _batch_job: str = "",
     _remote_locks: _RemoteLockTransaction | _UnresolvedRemoteLocks | None = _UNRESOLVED_REMOTE_LOCKS,
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
@@ -2632,7 +2637,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             return refusal
         job_locks = None if _batch_targets is None else cast("_RemoteLockTransaction | None", _remote_locks)
         lock = None if job_locks is None else job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
-        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock)
+        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
 
     if config.watch and config.check:
         print(  # noqa: T201

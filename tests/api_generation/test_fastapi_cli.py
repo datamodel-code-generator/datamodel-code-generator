@@ -11,7 +11,7 @@ import pytest
 from datamodel_code_generator import get_version
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
-from tests.data.python.custom_formatters.advance_time_before_second_generation import CodeFormatter
+from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args
 
 DATA = Path(__file__).parents[1] / "data"
@@ -803,25 +803,17 @@ def test_fastapi_cli_shared_models_timestamp(
 ) -> None:
     """Stamp the files of server jobs that share models with one generation time, though the clock moves on.
 
-    The formatter waits for the next clock second while the first job renders its package.
+    The formatter moves the frozen clock on by a second with every file it formats, so the second job starts later.
     """
-    CodeFormatter.apply_count = 0
-    CodeFormatter.crossed_second_boundary = False
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-shared-timestamp-jobs.toml")
-    run_main_with_args(
-        ["--all-jobs"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "shared-models-dependencies.txt"
-    )
-    timestamps = {
-        line
-        for path in tmp_path.rglob("*.py")
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.startswith("#   timestamp:")
-    }
-    assert_output(
-        f"crossed a clock second: {CodeFormatter.crossed_second_boundary}\ngeneration timestamps: {len(timestamps)}\n",
-        EXPECTED / "cli" / "shared-models-timestamp.txt",
-    )
+    with freeze_time(TIMESTAMP) as clock:
+        monkeypatch.setattr(CodeFormatter, "clock", clock, raising=False)
+        run_main_with_args(
+            ["--all-jobs"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "shared-models-dependencies.txt"
+        )
+    assert_file_content(tmp_path / "models.py", "cli/timestamp-models.py")
+    assert_file_content(tmp_path / "admin" / "services.py", "cli/timestamp-services.py")
 
 
 @pytest.mark.parametrize(
@@ -916,10 +908,17 @@ def test_fastapi_cli_job_changed(
         (
             "pyproject-differing-models-jobs.toml",
             ["--all-jobs"],
-            (
-                "Error: could not publish batch output: {shared}: Jobs that share a models output must generate the"
-                " same models\n"
-            ),
+            "Error: could not publish batch output: {shared}: Jobs 'server' and 'admin' generate different models\n",
+        ),
+        (
+            "pyproject-case-models-jobs.toml",
+            ["--all-jobs"],
+            "Error: could not publish batch output: {cased}: Two generated files resolve to the same path\n",
+        ),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--update-lock", "--lockfile", "server/README.md"],
+            "Remote lock for 'server' ({lock}) overlaps server output for 'server': {server}\n",
         ),
     ],
     ids=[
@@ -931,6 +930,8 @@ def test_fastapi_cli_job_changed(
         "overlap",
         "model-job-shares-output",
         "differing-models",
+        "models-differing-in-case",
+        "lock-in-server-output",
     ],
 )
 def test_fastapi_cli_jobs(
@@ -943,8 +944,8 @@ def test_fastapi_cli_jobs(
 ) -> None:
     """Refuse what a server job cannot honor, and publish nothing of a batch whose later job fails.
 
-    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs. Only
-    server jobs can share a models output, which they must generate identically.
+    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs or
+    hold the remote lock. Only server jobs can share a models output, which they must spell and generate identically.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
@@ -958,6 +959,8 @@ def test_fastapi_cli_jobs(
             server=root / "server",
             models=root / "models.py",
             shared=(Path.cwd() / "models.py").as_posix(),
+            cased=(Path.cwd() / "Models.py").as_posix(),
+            lock=root / "server" / "README.md",
         ),
     )
     assert_output(
