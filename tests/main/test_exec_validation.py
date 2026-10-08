@@ -96,6 +96,7 @@ def test_openapi_modular_relative_output_exec_current_version(tmp_path: Path, mo
 def test_jsonschema_nested_packages_exec_current_version(tmp_path: Path) -> None:
     """Test that the nested packages of each output are imported from that output."""
     for name in ("exact_imports_collapse_root_models_title", "exact_imports_collapse_root_models"):
+        (tmp_path / name).mkdir()
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / name,
             output_path=tmp_path / name / "model",
