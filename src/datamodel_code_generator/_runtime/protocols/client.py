@@ -10,10 +10,11 @@ from urllib.parse import unquote_plus, urlsplit
 
 import httpx2
 
-from ..client import client as native_core
-from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import (
+    AdapterT,
     Call,
+    Core,
+    HandleT,
     R,
     ReceivedBody,
     T,
@@ -26,6 +27,7 @@ from ..client.client import (
     request_decode_error,
     strip_credentials,
 )
+from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
 from ..client.errors import (
     APIConnectionError,
@@ -327,7 +329,7 @@ class _SessionWait(LogicalCallContext):
             self.deadline = limit
 
 
-class _ProtocolCore(native_core.Core[native_core.AdapterT, native_core.HandleT]):
+class _ProtocolCore(Core[AdapterT, HandleT]):
     """Prepare and restore helper requests using the ordinary client's encoding and resource ownership."""
 
     __slots__ = ()
