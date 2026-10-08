@@ -1,20 +1,22 @@
 # format
 generate
-  target=fastapi schema_version=1
-  written model models.py
-  written target server/__init__.py (target)
-  written target server/application.py (target)
-  written target server/routers/__init__.py (target)
-  written target server/routers/pets.py (target)
-  written target server/routers/store.py (target)
-  written target server/routers/untagged.py (target)
-  written target server/_generated/__init__.py (target)
-  written target server/_generated/contract.py (target)
-  written target server/services.py (target)
-  written target server/README.md (target)
-  written target server/py.typed (target)
-  written target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['written']
+  returned None
+tree
+  models.py
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 show models.py
   | # Example header
   | #
@@ -62,20 +64,19 @@ show server/routers/pets.py
   | from typing import Annotated, Final
   | 
   | import example.models as example_models
-  | from fastapi import APIRouter, Body, params
+  | from fastapi import APIRouter, Body
   | from fastapi.responses import Response
   | from pydantic.json_schema import SkipJsonSchema
   | 
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
-  | from .._runtime.server.application import Wiring, build
+  | from .._runtime.server.application import Dependency, Wiring, build
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | 
   | 
   | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-  |     pets: PetsService = wiring.services['pets']
-  |     list_pets_handler = pets.list_pets
+  |     list_pets_handler = wiring.handlers['list_pets']
   | 
   |     def list_pets() -> object:
   |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
@@ -96,8 +97,7 @@ show server/routers/pets.py
   | 
   | 
   | def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-  |     pets: PetsService = wiring.services['pets']
-  |     create_pet_handler = pets.create_pet
+  |     create_pet_handler = wiring.handlers['create_pet']
   | 
   |     def create_pet(
   |         *,
@@ -123,8 +123,8 @@ show server/routers/pets.py
   | 
   | 
   | LITERAL_ROUTES: Final = (
-  |     ('list_pets', _add_list_pets),
-  |     ('create_pet', _add_create_pet),
+  |     (contract.ListPets.OPERATION, _add_list_pets),
+  |     (contract.CreatePet.OPERATION, _add_create_pet),
   | )
   | TEMPLATED_ROUTES: Final = ()
   | 
@@ -132,11 +132,11 @@ show server/routers/pets.py
   | def build_router(
   |     *,
   |     pets: PetsService,
-  |     dependencies: Sequence[params.Depends] = (),
+  |     dependencies: Sequence[Dependency] = (),
   |     operation_dependencies: OperationDependencies | None = None,
   |     prefix: str = "",
   | ) -> APIRouter:
-  |     """Register the pets operations on a new router, literal paths first."""
+  |     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
   |     return build(
   |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
   |         services={'pets': pets},
@@ -161,17 +161,22 @@ show server/__init__.py
   |     AsyncAuthorize,
   |     Authorize,
   |     Credentials,
+  |     Dependency,
   |     OperationDependencies,
   |     RequirementSets,
   |     build_router,
   |     create_app,
   | )
+  | from .errors import AuthConfigurationError, HandlerConfigurationError
   | 
   | __all__ = [
   |     "AsyncAuthorize",
+  |     "AuthConfigurationError",
   |     "Authorize",
   |     "Credentials",
+  |     "Dependency",
   |     "HTTPResult",
+  |     "HandlerConfigurationError",
   |     "OperationDependencies",
   |     "RequirementSets",
   |     "build_router",

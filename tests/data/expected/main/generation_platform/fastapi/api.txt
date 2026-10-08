@@ -1,6 +1,13 @@
 generate_fastapi resolves ['config', 'input_', 'model_config']: True
 render_fastapi resolves ['config', 'input_', 'model_config']: True
 render ['write']
-generate wrote 25 and kept 0
-generate wrote 0 and kept 25
-generate rewrote ['server/README.md']
+generate returned None; files ['api.yaml', 'models.py', 'server/.dcg-target-manifest.json', 'server/README.md', 'server/__init__.py', 'server/_generated/__init__.py', 'server/_generated/contract.py', 'server/_runtime/__init__.py', 'server/_runtime/model_codecs/__init__.py', 'server/_runtime/model_codecs/errors.py', 'server/_runtime/model_codecs/media.py', 'server/_runtime/model_codecs/parameters.py', 'server/_runtime/model_codecs/unset.py', 'server/_runtime/model_codecs/wire.py', 'server/_runtime/server/__init__.py', 'server/_runtime/server/application.py', 'server/_runtime/server/errors.py', 'server/_runtime/server/requests.py', 'server/_runtime/server/responses.py', 'server/_runtime/server/security.py', 'server/application.py', 'server/errors.py', 'server/py.typed', 'server/routers/__init__.py', 'server/routers/pets.py', 'server/routers/store.py', 'server/services.py']
+generate returned None; files ['api.yaml', 'models.py', 'server/.dcg-target-manifest.json', 'server/README.md', 'server/__init__.py', 'server/_generated/__init__.py', 'server/_generated/contract.py', 'server/_runtime/__init__.py', 'server/_runtime/model_codecs/__init__.py', 'server/_runtime/model_codecs/errors.py', 'server/_runtime/model_codecs/media.py', 'server/_runtime/model_codecs/parameters.py', 'server/_runtime/model_codecs/unset.py', 'server/_runtime/model_codecs/wire.py', 'server/_runtime/server/__init__.py', 'server/_runtime/server/application.py', 'server/_runtime/server/errors.py', 'server/_runtime/server/requests.py', 'server/_runtime/server/responses.py', 'server/_runtime/server/security.py', 'server/application.py', 'server/errors.py', 'server/py.typed', 'server/routers/__init__.py', 'server/routers/pets.py', 'server/routers/store.py', 'server/services.py']
+generate returned None; readme restored True
+TargetEditWarning: <root>/server/README.md: The owned file changed since the last generation, and this generation discards the change
+filter ignore: 0 warnings
+filter ignore: readme restored True
+filter error: TargetEditWarning: <root>/server/README.md: The owned file changed since the last generation, and this generation discards the change
+filter error: readme restored False
+filter default: TargetEditWarning: <root>/server/README.md: The owned file changed since the last generation, and this generation discards the change
+filter default: TargetEditWarning: <root>/other/server/README.md: The owned file changed since the last generation, and this generation discards the change

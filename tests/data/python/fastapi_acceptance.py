@@ -13,7 +13,6 @@ from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator.fastapi import (
     FastAPIConfig,
     GeneratedProject,
-    GenerationReport,
     generate_fastapi,
     render_fastapi,
 )
@@ -66,7 +65,7 @@ def _settings(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> tup
     return base / "api.yaml", model, FastAPIConfig(output=base / "server", package="server", model_package="models")
 
 
-def _generate(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> GenerationReport:
+def _generate(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source, model, config = _settings(checkout, cwd, monkeypatch)
     return generate_fastapi(source, model_config=model, config=config)
 
@@ -90,7 +89,7 @@ def fastapi_checkout_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
         _compare("absolute paths from another directory", root / "first", root / "absolute"),
     ]
     report = _generate(root / "absolute", root / "absolute", monkeypatch)
-    lines.append(f"the same checkout from inside it writes {len(report.written_files)} files")
+    lines.append(f"the same checkout from inside it returns {report}")
     shutil.copytree(root / "first", root / "moved")
     project = _render(root / "moved", root / "moved", monkeypatch)
     lines.append(f"a moved checkout renders {sorted({artifact.action for artifact in project.artifacts})}")
