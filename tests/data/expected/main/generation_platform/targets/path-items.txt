@@ -66,7 +66,7 @@ show server/routers/pets.py
   | import example.models as example_models
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
-  | from .._runtime.server.application import Wiring, build
+  | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | from collections.abc import Sequence
@@ -76,7 +76,10 @@ show server/routers/pets.py
   | 
   | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
   |     pets: PetsService = wiring.services['pets']
-  |     list_pets_handler = pets.list_pets
+  |     list_pets_handler = checked(
+  |         pets.list_pets,
+  |         'The pets.list_pets method of GET /pets',
+  |     )
   | 
   |     def list_pets() -> object:
   |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)

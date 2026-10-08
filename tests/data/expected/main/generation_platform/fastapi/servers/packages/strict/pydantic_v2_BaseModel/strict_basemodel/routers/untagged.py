@@ -14,14 +14,17 @@ from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
 def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
     untagged: UntaggedService = wiring.services['untagged']
-    get_values_handler = untagged.get_values
+    get_values_handler = checked(
+        untagged.get_values,
+        'The untagged.get_values method of GET /values/{id}',
+    )
 
     def get_values(
         *,

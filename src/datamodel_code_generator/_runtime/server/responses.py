@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import inspect
 import json
-from collections.abc import Mapping  # noqa: TC003 - get_type_hints resolves the fields of HTTPResult.
+from collections.abc import Coroutine, Mapping
 from dataclasses import dataclass
 from typing import Final, Generic
 
@@ -75,9 +76,18 @@ def _is_result(value: object) -> TypeIs[HTTPResult[object]]:
 def _respond(status: int, body: object, headers: Mapping[str, str] | None, plan: OperationResponses) -> Response:
     declared = plan.find(status) or Declared(media_type="application/json")
     if body is None or plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES:
+        if inspect.isawaitable(body):
+            raise _unawaited(body)
         return Response(status_code=status, headers=headers)
     media_type = declared.media_type or "application/json"
     return Response(_content(declared, media_type, body), status_code=status, media_type=media_type, headers=headers)
+
+
+def _unawaited(body: object) -> TypeError:
+    """Return the error for an awaitable result that a response without a body would drop before it ran."""
+    if isinstance(body, Coroutine):
+        body.close()
+    return TypeError("The method returned an awaitable for a response without a body; nothing awaited it")
 
 
 def _content(declared: Declared, media_type: str, body: object) -> bytes:

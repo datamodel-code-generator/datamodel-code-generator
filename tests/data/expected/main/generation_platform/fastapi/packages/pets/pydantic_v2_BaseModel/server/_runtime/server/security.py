@@ -21,17 +21,22 @@ Authorize: TypeAlias = Callable[[RequirementSets, Credentials], PrincipalT]
 AsyncAuthorize: TypeAlias = Callable[[RequirementSets, Credentials], Awaitable[PrincipalT]]
 
 
-def _coroutine_function(value: object) -> TypeGuard[Callable[..., Awaitable[object]]]:
+def coroutine_function(value: object) -> TypeGuard[Callable[..., Awaitable[object]]]:
+    """Return whether calling a value, a function or an object with an async __call__, returns a coroutine."""
     return inspect.iscoroutinefunction(value) or inspect.iscoroutinefunction(getattr(value, "__call__", None))  # noqa: B004
 
 
 def awaitable(authorize: Callable[..., object]) -> Callable[..., Awaitable[object]]:
-    """Return an authorize callback to await: a coroutine function as it is, any other run in the threadpool."""
-    if _coroutine_function(authorize):
+    """Return an authorize callback to await: a coroutine function as it is, any other run in the threadpool.
+
+    An awaitable that the other returns is awaited too, so its result or its rejection is the callback's.
+    """
+    if coroutine_function(authorize):
         return authorize
 
     async def threaded(requirements: RequirementSets, credentials: Credentials) -> object:
-        return await run_in_threadpool(authorize, requirements, credentials)
+        result = await run_in_threadpool(authorize, requirements, credentials)
+        return await result if inspect.isawaitable(result) else result
 
     return threaded
 

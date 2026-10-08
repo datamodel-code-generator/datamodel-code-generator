@@ -7,7 +7,7 @@
 import models
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import StoreService
 from collections.abc import Sequence
@@ -17,7 +17,10 @@ from typing import Final
 
 def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
     store: StoreService = wiring.services["store"]
-    get_inventory_handler = store.get_inventory
+    get_inventory_handler = checked(
+        store.get_inventory,
+        "The store.get_inventory method of GET /store/inventory",
+    )
 
     def get_inventory() -> object:
         return dispatch(get_inventory_handler(), contract.GetInventory.RESPONSES)

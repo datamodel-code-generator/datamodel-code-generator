@@ -147,7 +147,7 @@ def _interfaces(server: ModuleType) -> Iterator[str]:
 def _build(label: str, build: Callable[[], object]) -> str:
     try:
         build()
-    except (AttributeError, ValueError) as error:
+    except (AttributeError, TypeError, ValueError) as error:
         return f"build {label}: {type(error).__name__}: {error}"
     return f"build {label}: ok"
 

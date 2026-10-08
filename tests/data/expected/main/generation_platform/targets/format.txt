@@ -69,14 +69,17 @@ show server/routers/pets.py
   | 
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
-  | from .._runtime.server.application import Wiring, build
+  | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | 
   | 
   | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
   |     pets: PetsService = wiring.services['pets']
-  |     list_pets_handler = pets.list_pets
+  |     list_pets_handler = checked(
+  |         pets.list_pets,
+  |         'The pets.list_pets method of GET /pets',
+  |     )
   | 
   |     def list_pets() -> object:
   |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
@@ -98,7 +101,10 @@ show server/routers/pets.py
   | 
   | def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
   |     pets: PetsService = wiring.services['pets']
-  |     create_pet_handler = pets.create_pet
+  |     create_pet_handler = checked(
+  |         pets.create_pet,
+  |         'The pets.create_pet method of POST /pets',
+  |     )
   | 
   |     def create_pet(
   |         *,
