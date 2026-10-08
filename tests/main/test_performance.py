@@ -42,12 +42,11 @@ from datamodel_code_generator.model.pydantic_v2.base_model import DataModelField
 from datamodel_code_generator.model.pydantic_v2.base_model import _construct_parser_simple_field
 from datamodel_code_generator.reference import PydanticFieldNameResolver, Reference
 from datamodel_code_generator.types import DataType
+from tests.conftest import TARGET_PYTHON
 from tests.main.conftest import _generated_model
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator
-
-    from pytest_benchmark.fixture import BenchmarkFixture
 
 PERFORMANCE_DATA_PATH: Path = Path(__file__).parent.parent / "data" / "performance"
 EXPECTED_STARTUP_MEASUREMENT_CASES = {
@@ -60,11 +59,9 @@ EXPECTED_STARTUP_MEASUREMENT_CASES = {
     "cli-schema-generation",
     "cli-schema-structured-output",
 }
-
-
-@pytest.fixture
-def auto_freeze_time() -> None:
-    """Keep benchmark clocks advancing instead of inheriting the model tests' frozen wall clock."""
+needs_target_python = pytest.mark.skipif(
+    sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later"
+)
 
 
 @pytest.fixture(scope="module")
@@ -1125,11 +1122,12 @@ def target_size(request: pytest.FixtureRequest) -> str:
     return request.param
 
 
+@needs_target_python
 @pytest.mark.perf
 @pytest.mark.benchmark
-def test_perf_target_render(benchmark: BenchmarkFixture, target_render: Callable[[], Any]) -> None:
+def test_perf_target_render(target_render: Callable[[], Any]) -> None:
     """Measure client and FastAPI model/package rendering without configuration or fixture setup."""
-    benchmark(target_render)
+    target_render()
 
 
 @pytest.fixture(params=["sync", "async"])
@@ -1141,11 +1139,12 @@ def client_calls(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Cal
         yield calls[request.param]
 
 
+@needs_target_python
 @pytest.mark.perf
 @pytest.mark.benchmark
-def test_perf_client_calls(benchmark: BenchmarkFixture, client_calls: Callable[[], Any]) -> None:
+def test_perf_client_calls(client_calls: Callable[[], Any]) -> None:
     """Measure JSON request encoding and typed response decoding in 200 sync or async public calls."""
-    benchmark(client_calls)
+    client_calls()
 
 
 @pytest.mark.perf

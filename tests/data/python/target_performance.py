@@ -10,9 +10,8 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator import DataModelType, Formatter, GenerateConfig, InputFileType, OpenAPIScope
 from datamodel_code_generator.fastapi import FastAPIConfig, render_fastapi
-from tests.data.python.client_generation import client_render_call, generate_client
+from tests.data.python.client_generation import client_render_call, generate_client, model_config
 from tests.data.python.generated_packages import generated_root, import_generated
 
 if TYPE_CHECKING:
@@ -24,25 +23,21 @@ DATA = Path(__file__).parents[1]
 SMALL = DATA / "generation_platform" / "client" / "publication" / "minimal.json"
 LARGE = DATA / "performance" / "openapi_large.yaml"
 PACKAGE = "performance_client"
+BACKEND = "pydantic_v2.BaseModel"
 
 
 def target_render_call(target: str, size: str, root: Path) -> Callable[[], GeneratedProject]:
     """Copy the input beside the output and prepare a render of both models and target artifacts."""
-    source = shutil.copy2(SMALL if size == "small" else LARGE, root / "input.yaml")
+    original = SMALL if size == "small" else LARGE
+    source = shutil.copy2(original, root / f"input{original.suffix}")
     if target == "client":
-        return client_render_call(source, root, PACKAGE, "pydantic_v2.BaseModel")
+        return client_render_call(
+            source, root, PACKAGE, BACKEND, config={"server_base_url": "https://benchmark.invalid"}
+        )
     return partial(
         render_fastapi,
         source,
-        model_config=GenerateConfig(
-            output=root / "performance_server_models.py",
-            input_file_type=InputFileType.OpenAPI,
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=DataModelType.PydanticV2BaseModel,
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-        ),
+        model_config=model_config(root / "performance_server_models.py", BACKEND, {}),
         config=FastAPIConfig(
             output=root / "performance_server", package="performance_server", model_package="performance_server_models"
         ),
@@ -55,7 +50,7 @@ def generated_client_calls(root: Path) -> Iterator[dict[str, Callable[[], Any]]]
     import httpx2
 
     source = shutil.copy2(SMALL, root / "input.json")
-    generate_client(source, root, PACKAGE, "pydantic_v2.BaseModel")
+    generate_client(source, root, PACKAGE, BACKEND)
     response_body = (DATA / "performance" / "client-response.json").read_bytes()
 
     def response(_request: httpx2.Request) -> httpx2.Response:

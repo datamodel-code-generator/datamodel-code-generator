@@ -148,43 +148,32 @@ def generate_client(
     )
 
 
-def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
-    """Render a publication profile with all copied files and its dependency report."""
-    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
-    source = _prepare_input(case, root)
-    return render_target(
-        source,
-        model_config=model_config(root / "publication_client_models.py", backend, case.get("model", {})),
-        config=client_config(
-            {
-                "output": "publication_client",
-                "package": "publication_client",
-                "model_package": "publication_client_models",
-                **case.get("config", {}),
-            },
-            root,
-        ),
-        generator=ClientTarget(),
-    )
-
-
-def client_render_call(source: Path, root: Path, package: str, backend: str) -> Callable[[], GeneratedProject]:
-    """Prepare a client render with configuration construction outside benchmark timing."""
+def client_render_call(
+    source: Path,
+    root: Path,
+    package: str,
+    backend: str,
+    model: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> Callable[[], GeneratedProject]:
+    """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
     return partial(
         render_target,
         source,
-        model_config=model_config(root / f"{package}_models.py", backend, {}),
+        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
-            {
-                "output": package,
-                "package": package,
-                "model_package": f"{package}_models",
-                "server_base_url": "https://benchmark.invalid",
-            },
-            root,
+            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
         generator=ClientTarget(),
     )
+
+
+def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
+    """Render a publication profile with all copied files and its dependency report."""
+    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
+    return client_render_call(
+        _prepare_input(case, root), root, "publication_client", backend, case.get("model"), case.get("config")
+    )()
 
 
 def _diagnostic(item: Diagnostic) -> str:
