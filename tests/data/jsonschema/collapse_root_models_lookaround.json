@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {"$ref": "#/definitions/Code"},
+    "codes": {"type": "array", "items": {"$ref": "#/definitions/Code"}},
+    "either": {"anyOf": [{"$ref": "#/definitions/Code"}, {"type": "integer"}]},
+    "byName": {"type": "object", "additionalProperties": {"$ref": "#/definitions/Code"}},
+    "other": {"$ref": "#/definitions/Other"}
+  },
+  "definitions": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$"},
+    "Other": {
+      "type": "object",
+      "properties": {
+        "own": {"type": "string", "pattern": "^(?=o)[a-z]+$"},
+        "code": {"$ref": "#/definitions/Code"}
+      }
+    }
+  }
+}

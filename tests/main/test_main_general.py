@@ -5043,6 +5043,51 @@ def test_generate_custom_file_header_prepend_after_formatter_parenthesized_docst
     )
 
 
+@pytest.mark.parametrize(
+    ("mode", "formatter", "expected_name"),
+    [
+        pytest.param(
+            CustomFileHeaderMode.Replace,
+            "add_docstring",
+            "generate_custom_comment_header_after_formatter_docstring.py",
+            id="replace-docstring",
+        ),
+        pytest.param(
+            CustomFileHeaderMode.Prepend,
+            "add_docstring",
+            "generate_custom_comment_header_prepend_after_formatter_docstring.py",
+            id="prepend-docstring",
+        ),
+        pytest.param(
+            CustomFileHeaderMode.Replace,
+            "add_parenthesized_docstring",
+            "generate_custom_comment_header_after_formatter_parenthesized_docstring.py",
+            id="replace-parenthesized-docstring",
+        ),
+        pytest.param(
+            CustomFileHeaderMode.Replace,
+            "add_comment",
+            "generate_custom_comment_header_after_formatter_comment.py",
+            id="replace-comment",
+        ),
+    ],
+)
+def test_generate_custom_comment_header_keeps_formatter_docstring_first(
+    mode: CustomFileHeaderMode, formatter: str, expected_name: str
+) -> None:
+    """Keep a formatter docstring as the module docstring under a comment-only header."""
+    run_generate_and_assert(
+        input_=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+        input_file_type=InputFileType.JsonSchema,
+        formatters=[],
+        custom_formatters=[f"tests.data.python.custom_formatters.{formatter}"],
+        custom_file_header="# My header",
+        custom_file_header_mode=mode,
+        disable_timestamp=True,
+        expected_file=EXPECTED_MAIN_PATH / expected_name,
+    )
+
+
 @pytest.mark.allow_direct_assert
 @pytest.mark.parametrize(
     ("header", "expected"),

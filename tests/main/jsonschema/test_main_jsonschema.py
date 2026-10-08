@@ -13975,6 +13975,51 @@ def test_main_jsonschema_collapse_root_models_property_names_reference(output_fi
     )
 
 
+@pytest.mark.parametrize(
+    ("schema_name", "model_name", "extra_args"),
+    [
+        pytest.param("collapse_root_models_lookaround", "Holder", [], id="fields"),
+        pytest.param("collapse_root_models_lookaround", "Holder", ["--use-type-alias"], id="fields-type-alias"),
+        pytest.param("collapse_root_models_lookaround_root", "Holder", [], id="root-model"),
+        pytest.param("collapse_root_models_lookaround_inheritance", "Child", [], id="inheritance"),
+        pytest.param("collapse_root_models_lookaround_discriminator", "Root", [], id="discriminator"),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_lookaround(
+    output_file: Path, schema_name: str, model_name: str, extra_args: list[str]
+) -> None:
+    """Select Python's regex engine for lookaround patterns that collapsed root models leave in final field types.
+
+    A child gets its own config as for inline fields, and a discriminator that replaces the inlined pattern with a
+    ``Literal`` leaves the default engine, so ``$`` still rejects a trailing newline.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{schema_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{schema_name}.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--collapse-root-models",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"output_{schema_name}_{len(extra_args)}",
+        model_name=model_name,
+        valid_json=(DATA_PATH / f"payloads/{schema_name}_valid.json").read_text(),
+        invalid_json=(DATA_PATH / f"payloads/{schema_name}_invalid.json").read_text(),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
 def test_main_jsonschema_rename_preserves_source_alias(output_file: Path) -> None:
     """Do not replace an explicit source alias while avoiding a class-name collision."""
     run_main_and_assert(
@@ -15254,12 +15299,12 @@ def test_main_lookaround_anyof_nullable_pydantic_v2(output_file: Path) -> None:
 
 @pytest.mark.benchmark
 def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass(output_file: Path) -> None:
-    """Lookaround reachable only through a referenced alias sets regex_engine on the dataclass.
+    """Lookaround reachable only through a referenced alias compiles in the alias.
 
-    The alias becomes a bare ``TypeAliasType`` that carries no config, so the consuming
-    pydantic v2 dataclass must emit ``ConfigDict(regex_engine="python-re")`` or fail to
-    import under pydantic's default rust regex engine. ``force_exec_validation`` proves the
-    generated module actually constructs.
+    The alias becomes a bare ``TypeAliasType`` that carries no config, so its pattern is a
+    compiled ``re.compile(...)`` value; the consuming dataclass keeps
+    ``ConfigDict(regex_engine="python-re")``. ``force_exec_validation`` proves the generated
+    module actually constructs.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
@@ -15346,6 +15391,253 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
             "--output-model-type",
             "pydantic_v2.BaseModel",
         ],
+    )
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    ("args", "expected_file", "doubled_path"),
+    [
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            "rust_unsupported_pattern_pydantic_v2.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
+            "rust_unsupported_pattern_pydantic_v2_annotated.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "rust_unsupported_pattern_pydantic_v2_field_constraints.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.dataclass"],
+            "rust_unsupported_pattern_pydantic_v2_dataclass.py",
+            ("doubled",),
+        ),
+    ],
+)
+def test_main_rust_unsupported_pattern(
+    args: list[str], expected_file: str, doubled_path: tuple[str, ...], output_file: Path
+) -> None:
+    """Patterns pydantic-core's Rust engine rejects, such as backreferences, select Python's regex engine.
+
+    Lookaround and plain patterns keep their existing output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=args,
+        force_exec_validation=True,
+    )
+    for path in (("pair",), doubled_path):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_pattern_{path[0]}",
+            model_name="Model",
+            valid_json=json.dumps({path[0]: "aa"}),
+            invalid_json=json.dumps({path[0]: "ab"}),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=path,
+            expected_attribute_value="aa",
+        )
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    ("args", "expected_file"),
+    [
+        ([], "rust_unsupported_pattern_non_string_pydantic_v2.py"),
+        (["--use-annotated"], "rust_unsupported_pattern_non_string_pydantic_v2_annotated.py"),
+    ],
+)
+def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
+    """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
+
+    The ``uri`` pattern is dropped for ``AnyUrl`` and pydantic ignores ``bytes`` patterns, so the
+    model keeps Rust semantics: Unicode classes compile and ``$`` does not match before a final newline.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rust_unsupported_pattern_non_string",
+        model_name="Model",
+        valid_json='{"code": "abc"}',
+        invalid_json=json.dumps({"code": "abc\n"}),
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("code",),
+        expected_attribute_value="abc",
+    )
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("target_pydantic_version", ["2", "2.12"])
+def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file: Path) -> None:
+    """Syntax no pydantic-core release supports selects Python's regex engine, detected statically.
+
+    Escaped characters and character class members never trigger it, and neither does syntax newer
+    pydantic-core releases accept. The target Pydantic version does not change the decision.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_syntax_pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-pydantic-version",
+            target_pydantic_version,
+        ],
+    )
+    for model_name, valid, invalid in (
+        ("Backreference", "aa", "ab"),
+        ("NamedBackreference", "bb", "bc"),
+        ("Conditional", "<a>", "<a"),
+        ("EndOfString", "abc", "abc\n"),
+        ("Comment", "abc", "ABC"),
+        ("NamedCharacter", "aa", "ab"),
+        ("ClassBackspace", "\b", "b"),
+        ("ClassOctal", "AA", "B"),
+        ("AsciiFlag", "abc", "\u00e9"),
+        ("OmittedMinimum", "ab", "abcd"),
+        ("LiteralBrace", "{ab}", "ab"),
+        ("EscapedBackslash", "\\1", "1"),
+        ("EscapedGroup", "(?>ab)", "ab"),
+        ("ClassMembers", "(?>{", "a"),
+        ("EscapedBrace", "{ab}", "ab"),
+        ("CountedRepetition", "ab", "abcd"),
+        ("ClassEscapedBackslash", "\\b", "a"),
+        ("EscapedSlash", "a/b", "ab"),
+        ("AngleNamedGroup", "2024", "24"),
+        ("Possessive", "abc", "abc\n"),
+        ("ScopedAsciiFlag", "abc", "\u00e9"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+def test_main_rust_only_syntax(output_file: Path) -> None:
+    r"""Rust-only syntax keeps pydantic-core's default regex engine and Rust semantics.
+
+    Counted repetitions with whitespace, braced escapes such as ``\p{L}``, ``\x{41}`` and ``\b{start}``,
+    nested character classes, and capture names with brackets are Rust syntax that Python's ``re`` reads
+    differently or rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_only_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_only_syntax_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    for model_name, valid, invalid in (
+        ("BraceWhitespace", "ab", "abcd"),
+        ("UnicodeProperty", "\u00e9", "1"),
+        ("WordBoundary", "abc", "123"),
+        ("HexBrace", "AA", "B"),
+        ("NestedClass", "a{", "1"),
+        ("BracketedCaptureName", "12", "a"),
+        ("ClassBeforeCaptureName", "m>x", "a>x"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_only_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+@pytest.mark.parametrize(
+    ("fixture", "target_python_version", "expected_file", "switched"),
+    [
+        ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
+        ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.13",
+            "rust_unsupported_end_of_string_py313.py",
+            False,
+            marks=BLACK_PY313_SKIP,
+        ),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.14",
+            "rust_unsupported_end_of_string_py314.py",
+            True,
+            marks=BLACK_PY314_SKIP,
+        ),
+    ],
+)
+def test_main_rust_unsupported_target_python(
+    fixture: str, target_python_version: str, expected_file: str, switched: bool, output_file: Path
+) -> None:
+    r"""Python-only regex syntax selects Python's regex engine only when the target Python's ``re`` parses it.
+
+    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The decision
+    depends on ``--target-python-version``, never on the Python running the generator. Switched models are
+    imported when the running Python is at least the target.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+        ],
+        skip_code_validation=not switched,
+        force_exec_validation=switched,
+    )
+
+
+def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
+    """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
+
+    Such a model fails at import with either engine, and the decision never depends on the Python running the
+    generator: unknown character names, global flags after the start, non-ASCII conditional references,
+    overflowing repetitions, and deeply nested groups are switched without compiling the pattern. Verbose
+    patterns keep the default engine because the scan does not model their whitespace and comments.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
     )
 
 
@@ -19004,6 +19296,197 @@ def test_main_allof_mro(output_file: Path) -> None:
         extra_args=[
             "--use-schema-description",
         ],
+    )
+
+
+ALLOF_INHERITANCE_ERRORS_PATH = JSON_SCHEMA_DATA_PATH / "allof_inheritance_errors"
+
+
+ALLOF_INHERITANCE_CYCLE_ERROR = (
+    "Generated model inheritance cycle: A (cycle.json#/$defs/A) -> B (cycle.json#/$defs/B) -> A (cycle.json#/$defs/A)\n"
+)
+
+
+ALLOF_INHERITANCE_MRO_ERROR = (
+    "Generated model E (mro_conflict.json#/$defs/E) has inconsistent method resolution order for generated bases "
+    "C (mro_conflict.json#/$defs/C), D (mro_conflict.json#/$defs/D).\n"
+)
+
+
+@pytest.mark.parametrize(
+    "output_model",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_allof_inheritance_cycle(output_model: str, output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject allOf references that would make generated classes inherit from each other."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=ALLOF_INHERITANCE_CYCLE_ERROR,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        ["--class-decorators", "@deprecated('A is deprecated.')"],
+        ["--additional-imports", "datetime.date"],
+        ["--custom-formatters", "tests.data.python.custom_formatters.add_comment"],
+        ["--custom-template-dir", str(DATA_PATH / "msgspec_inheritance" / "templates_other")],
+        ["--import-overrides", '{"Field": "pydantic.v1"}'],
+        ["--generate-schema-validators"],
+    ],
+    ids=[
+        "class-decorators",
+        "additional-imports",
+        "custom-formatters",
+        "other-template",
+        "import-overrides",
+        "validators",
+    ],
+)
+def test_main_allof_inheritance_cycle_with_output_options(
+    extra_args: list[str], output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Keep rejecting cycles when output options cannot change the emitted class bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=extra_args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=ALLOF_INHERITANCE_CYCLE_ERROR,
+        output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_cycle_custom_class_template(output_file: Path) -> None:
+    """Leave class bases to a custom class template that does not emit them."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--custom-template-dir",
+            str(DATA_PATH / "msgspec_inheritance" / "templates"),
+            "--additional-imports",
+            "msgspec.Struct",
+        ],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_cycle_custom_class_template.py",
+    )
+
+
+TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS = [
+    "--output-model-type",
+    "typing.TypedDict",
+    "--custom-template-dir",
+    str(DATA_PATH / "templates_typed_dict_flat_class"),
+    "--additional-imports",
+    "typing.TypedDict",
+]
+
+
+def test_main_allof_inheritance_cycle_custom_typed_dict_class_template(output_file: Path) -> None:
+    """Leave TypedDict bases to a custom class include that does not emit them."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS,
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_cycle_custom_typed_dict_class_template.py",
+    )
+
+
+def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template(output_dir: Path) -> None:
+    """Keep reused TypedDict models whose custom class include does not reference their bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "late_local_base",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS, "--reuse-model", "--reuse-scope", "tree"],
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "allof_inheritance_late_local_base_custom_typed_dict",
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "expected_stderr"),
+    [
+        ("pydantic_v2.BaseModel", ALLOF_INHERITANCE_MRO_ERROR),
+        ("pydantic_v2.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
+        ("dataclasses.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
+        ("msgspec.Struct", "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'.\n"),
+    ],
+)
+def test_main_allof_inheritance_mro_conflict(
+    output_model: str, expected_stderr: str, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject C(A, B), D(B, A), E(C, D) hierarchies that have no method resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+        output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_mro_conflict_typed_dict(output_file: Path) -> None:
+    """Keep TypedDict output, whose bases do not need a method resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "typing.TypedDict"],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_mro_conflict_typed_dict.py",
+    )
+
+
+def test_main_allof_inheritance_shared_joins(output_file: Path) -> None:
+    """Keep consistent hierarchies whose multiple-base models are reused by several subclasses."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "msgspec_inheritance" / "jsonschema_redundant_dag.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--target-python-version", "3.10"],
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_shared_joins.py",
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_allof_inheritance_late_local_base(
+    output_model: str, output_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject a reused model placed before the local base it inherits from."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "late_local_base",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--reuse-model", "--reuse-scope", "tree"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model Child (z.json#) requires local base Base (z.json#/$defs/Base) before its definition.\n"
+        ),
+        output_should_not_exist=True,
     )
 
 
