@@ -202,6 +202,7 @@
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
+      {"generate": {"model": {"resolved_lock": "update"}}},
       {"render": {"model": {"resolved_lock": "update"}}},
       {"render": {"model": {"resolved_lock": "readonly"}}}
     ]

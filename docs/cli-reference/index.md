@@ -17,7 +17,7 @@ This documentation is auto-generated from test cases.
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 14 | Server generation with the models (experimental) |
-| 📝 [Utility Options](utility-options.md) | 17 | Help, version, debug options |
+| 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -131,9 +131,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
 - [`--default-values`](field-customization.md#default-values)
-- [`--dependency-format`](utility-options.md#dependency-format)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
-- [`--diagnostics-json`](utility-options.md#diagnostics-json)
 - [`--diff-against`](general-options.md#diff-against)
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
