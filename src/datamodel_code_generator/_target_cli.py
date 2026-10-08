@@ -11,8 +11,9 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._api_manifest import document_identity
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, attached_diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -69,11 +70,8 @@ def run_target(  # noqa: PLR0913, PLR0917
     report = _Report(None if batch is not None else vars(namespace).get("diagnostics_json"))
     try:
         code = _run(args, namespace, config, pyproject_path, report, batch, lock)
-    except APIGenerationError as error:
-        report.extend(error.diagnostics)
-        code = _ERROR
     except Exception as error:  # noqa: BLE001
-        report.failure(error)
+        report.failure(error, encoding=config.encoding)
         code = _ERROR
     return code if report.write() else _ERROR
 
@@ -140,17 +138,11 @@ def _run(  # noqa: PLR0913, PLR0917
 def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[PlannedTarget, str]]) -> None:
     """Publish the staged files of a batch and the targets its server jobs planned through one journal.
 
-    Each target's dependency notice follows the publication, as after a single run. A planned file that changed since
-    its job ran, or a rollback that could not restore every file, is an `Error`.
+    Each target's dependency notice follows the publication, as after a single run.
     """
-    from datamodel_code_generator import Error  # noqa: PLC0415
     from datamodel_code_generator._api_publication import publish_planned  # noqa: PLC0415
-    from datamodel_code_generator._api_types import PublicationRollbackError  # noqa: PLC0415
 
-    try:
-        publish_planned(files, [planned for planned, _ in targets])
-    except (APIGenerationError, PublicationRollbackError) as error:
-        raise Error(str(error)) from error
+    publish_planned(files, [planned for planned, _ in targets])
     for _, notice in targets:
         print(notice)  # noqa: T201
 
@@ -281,12 +273,35 @@ class _Report:
                 file=sys.stderr,
             )
 
-    def failure(self, error: Exception) -> None:
-        if (diagnostic := attached_diagnostic(error)) is None:
-            traceback.print_exception(error, file=sys.stderr)
-            message = f"{type(error).__name__}: {error}"
-            diagnostic = Diagnostic(code="E_GENERATION_FAILURE", severity="error", stage="target", message=message)
-        self.extend((diagnostic,))
+    def failure(self, error: Exception, *, encoding: str = "utf-8") -> None:
+        """Print ordinary target errors and preserve the model CLI's hints and unexpected-error traceback."""
+        if isinstance(error, APIGenerationError):
+            for diagnostic in error.diagnostics:
+                if diagnostic.severity == "error":
+                    self.diagnostics.append(diagnostic)
+                else:
+                    self.extend((diagnostic,))
+        else:
+            self.diagnostics.append(
+                Diagnostic(
+                    code="E_GENERATION_FAILURE",
+                    severity="error",
+                    stage="target",
+                    message=f"{type(error).__name__}: {error}",
+                )
+            )
+        message = str(error)
+        if isinstance(error, InvalidClassNameError):
+            message = f"{error} You have to set `--class-name` option"
+        elif isinstance(error, UnicodeDecodeError):
+            message = f"Unable to decode input using encoding {encoding!r}: {error}"
+        elif not isinstance(error, (Error, OSError)):
+            from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
+
+            if not isinstance(error, RemoteLockError):
+                traceback.print_exception(error, file=sys.stderr)
+                return
+        print(f"Error: {message}", file=sys.stderr)  # noqa: T201
 
     def write(self) -> bool:
         if (destination := self.destination) is None:
@@ -303,7 +318,7 @@ class _Report:
         try:
             Path(destination).write_text(text, encoding="utf-8")
         except OSError as error:
-            self.extend((_unwritable(str(error.strerror)),))
+            self.failure(APIGenerationError((_unwritable(str(error.strerror)),)))
             return False
         return True
 

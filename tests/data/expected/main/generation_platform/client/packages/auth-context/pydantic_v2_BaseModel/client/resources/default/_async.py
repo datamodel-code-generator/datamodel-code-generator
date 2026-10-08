@@ -8,9 +8,6 @@ from __future__ import annotations
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
-from models import FieldExplicitPostHeaderXIdempotencyParameter as _dcg_type_1
-from models import FieldInheritedPostHeaderXIdempotencyParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -52,7 +49,7 @@ class AsyncDefaultResource:
     async def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
         """Call POST /inherited."""
@@ -65,7 +62,7 @@ class AsyncDefaultResource:
     async def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
         """Call POST /explicit."""
@@ -158,7 +155,7 @@ class AsyncDefaultWithResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
         """Call POST /inherited."""
@@ -171,7 +168,7 @@ class AsyncDefaultWithResponse:
     async def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
         """Call POST /explicit."""
@@ -240,7 +237,7 @@ class AsyncDefaultWithRawResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /inherited."""
@@ -253,7 +250,7 @@ class AsyncDefaultWithRawResponse:
     async def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /explicit."""
@@ -346,7 +343,7 @@ class AsyncDefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /inherited."""
@@ -359,7 +356,7 @@ class AsyncDefaultWithStreamingResponse:
     def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | Unset = UNSET,
+        x_idempotency: str | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /explicit."""

@@ -1,20 +1,19 @@
 APIGenerationError
-  E_CONFIG_VALUE config protocols.schema_version: protocols.schema_version must be 1
-  E_CONFIG_VALUE config protocols.helpers[1]: protocols.helpers has the key 1, which is not a string
-  E_CONFIG_VALUE config protocols.helpers['users.all'].enabled: protocols.helpers['users.all'].enabled must be a boolean
-  E_CONFIG_VALUE config protocols.helpers['users.all'].operation: protocols.helpers['users.all'].operation must be an operation reference
-  E_CONFIG_VALUE config protocols.helpers['users.all'].items: protocols.helpers['users.all'].items must be a selector
-  E_CONFIG_VALUE config protocols.helpers['users.all'].item_schema: protocols.helpers['users.all'].item_schema must be a schema reference
-  E_CONFIG_VALUE config protocols.helpers['users.all'].continuation.read: protocols.helpers['users.all'].continuation.read must be a selector
-  E_CONFIG_VALUE config protocols.helpers['users.all'].continuation.end[0].value: protocols.helpers['users.all'].continuation.end[0] needs 'value'
-  E_CONFIG_VALUE config protocols.helpers['users.all'].bindings[0].value.literal: protocols.helpers['users.all'].bindings[0].value.literal must be a JSON value
-  E_CONFIG_VALUE config protocols.helpers['users.pages'].continuation.step.literal: protocols.helpers['users.pages'].continuation.step.literal must be a positive integer
-  E_CONFIG_VALUE config protocols.helpers['events.watch'].event_schema.mapping['created']: protocols.helpers['events.watch'].event_schema.mapping['created'] must be a schema reference
-  E_CONFIG_VALUE config protocols.helpers['events.watch'].error_events: protocols.helpers['events.watch'].error_events must be a mapping
-  E_CONFIG_VALUE config protocols.helpers['users.nested'].item_schema.pointer: protocols.helpers['users.nested'].item_schema.pointer must be a UTF-8 string
-  E_CONFIG_VALUE config protocols.helpers['users.nested'].continuation.end[0]: protocols.helpers['users.nested'].continuation.end[0] must be an end
-  E_CONFIG_VALUE config protocols.helpers['users.nested'].bindings[0].value.literal: protocols.helpers['users.nested'].bindings[0].value.literal nests deeper than 64 levels
-  E_CONFIG_VALUE config protocols.helpers['users.nested'].bindings[1].value.literal: protocols.helpers['users.nested'].bindings[1].value.literal has text that is not UTF-8
-  E_CONFIG_VALUE config protocols.helpers['jobs.run']: protocols.helpers['jobs.run'] must be a helper definition
-  E_CONFIG_VALUE config protocols.helpers['hooks.hmac'].signature.algorithm: protocols.helpers['hooks.hmac'].signature.algorithm must be 'hmac-sha256' or 'hmac-sha512'
-  E_CONFIG_VALUE config protocols.helpers['hooks.public'].signature: protocols.helpers['hooks.public'].signature must be a signature
+  E_CONFIG_VALUE config protocols[1]: protocols has the key 1, which is not a string
+  E_CONFIG_VALUE config protocols['users.all'].enabled: protocols['users.all'].enabled must be a boolean
+  E_CONFIG_VALUE config protocols['users.all'].operation: protocols['users.all'].operation must be an operation reference
+  E_CONFIG_VALUE config protocols['users.all'].items: protocols['users.all'].items must be a selector
+  E_CONFIG_VALUE config protocols['users.all'].item_schema: protocols['users.all'].item_schema must be a schema reference
+  E_CONFIG_VALUE config protocols['users.all'].continuation.read: protocols['users.all'].continuation.read must be a selector
+  E_CONFIG_VALUE config protocols['users.all'].continuation.end[0].value: protocols['users.all'].continuation.end[0] needs 'value'
+  E_CONFIG_VALUE config protocols['users.all'].bindings[0].value.literal: protocols['users.all'].bindings[0].value.literal must be a JSON value
+  E_CONFIG_VALUE config protocols['users.pages'].continuation.step.literal: protocols['users.pages'].continuation.step.literal must be a positive integer
+  E_CONFIG_VALUE config protocols['events.watch'].event_schema.mapping['created']: protocols['events.watch'].event_schema.mapping['created'] must be a schema reference
+  E_CONFIG_VALUE config protocols['events.watch'].error_events: protocols['events.watch'].error_events must be a mapping
+  E_CONFIG_VALUE config protocols['users.nested'].item_schema.pointer: protocols['users.nested'].item_schema.pointer must be a UTF-8 string
+  E_CONFIG_VALUE config protocols['users.nested'].continuation.end[0]: protocols['users.nested'].continuation.end[0] must be an end
+  E_CONFIG_VALUE config protocols['users.nested'].bindings[0].value.literal: protocols['users.nested'].bindings[0].value.literal nests deeper than 64 levels
+  E_CONFIG_VALUE config protocols['users.nested'].bindings[1].value.literal: protocols['users.nested'].bindings[1].value.literal has text that is not UTF-8
+  E_CONFIG_VALUE config protocols['jobs.run']: protocols['jobs.run'] must be a helper definition
+  E_CONFIG_VALUE config protocols['hooks.hmac'].signature.algorithm: protocols['hooks.hmac'].signature.algorithm must be 'hmac-sha256' or 'hmac-sha512'
+  E_CONFIG_VALUE config protocols['hooks.public'].signature: protocols['hooks.public'].signature must be a signature

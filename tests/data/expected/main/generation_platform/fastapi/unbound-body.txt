@@ -1,4 +1,4 @@
 # unbound-body
 render pydantic_v2.BaseModel
-  APIGenerationError
+  Error: /paths/~1values/post/requestBody: The use has no generated native type
   BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1values/post/requestBody: The use has no generated native type

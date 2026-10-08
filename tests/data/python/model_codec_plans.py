@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from tests.data.python.generated_packages import generated_root
 from tests.data.python.model_codec_builtin import generate_package
@@ -27,12 +27,12 @@ def _validation(models: Any, case: dict[str, Any]) -> str:
     """Validate the fixed instance with the generated native model used in either direction."""
     pointer = case["schema"].partition("#")[2]
     name = PARAMETER_MODELS[pointer] if pointer in PARAMETER_MODELS else pointer.rsplit("/", 1)[1]
-    model = getattr(models, name)
+    adapter = TypeAdapter(getattr(models, name))
     content = json.dumps(case["value"], separators=(",", ":"))
     outcomes = []
     for direction in ("request", "response"):
         try:
-            model.model_validate_json(content).model_dump_json(by_alias=True, exclude_unset=True)
+            adapter.dump_json(adapter.validate_json(content), by_alias=True, exclude_unset=True)
         except ValidationError as error:
             issues = ",".join(
                 f"{item['type']}@/{'/'.join(str(part) for part in item['loc'])}"

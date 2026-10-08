@@ -3899,8 +3899,18 @@ models indefinitely.
 
 Parameters generate individual schema types, including path parameters regardless of
 `--include-path-parameters`. The legacy aggregate parameter wrapper is specific to the
-`parameters` scope without `api`. Adding other scopes alongside `api` does not repeat
-schema generation. `--openapi-include-paths` filters root paths and their reachable
+`parameters` scope without `api`.
+
+Parameter schemas (path, query, header, and cookie parameters) that would be emitted as
+root models are emitted exactly as `--use-type-alias` emits them, for every output model
+type and option combination: `type LimitParameter = Annotated[int, Field(ge=1, le=100)]`
+on Python 3.12+ and `TypeAliasType` below 3.12. Object parameters stay models. Anything
+that references a parameter schema, including another schema, references its alias. An
+alias has no default value, so the model no longer applies a parameter schema's scalar
+default. Component schemas, response headers, and the other scopes keep their usual
+models.
+
+Adding other scopes alongside `api` does not repeat schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
 
 Use standard JSON Pointer escaping in references: `~1` represents a slash in a key and
@@ -4568,6 +4578,49 @@ This allows you to set a default base class with `--base-class`, override specif
 | Scalar constraints | Generated as `Field(...)` metadata with `--field-constraints` / `--use-annotated` |
 | `format` values | Mapped to Python/Pydantic types where supported |
 | Custom extensions | `customBasePath` and related options can steer generated base classes |
+
+## Regular Expression Patterns
+
+Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the
+pattern when the model class is created. Some syntax that Python's `re` accepts is rejected by every
+pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
+OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
+the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
+the installed pydantic-core or on the Python running the generator, and it is the same for every
+`--target-pydantic-version`.
+
+| Pattern syntax | Example | Generated model |
+|----------------|---------|-----------------|
+| Lookahead and lookbehind | `(?=x)`, `(?<!x)` | `python-re` |
+| Numbered backreferences and octal escapes | `([a-z])\1`, `\0`, `[\101]` | `python-re` |
+| Named backreferences | `(?P<c>x)(?P=c)` | `python-re` |
+| Conditionals | `(<)?a(?(1)>)` | `python-re` |
+| End of string | `\Z` | `python-re` |
+| Comments | `(?#note)` | `python-re` |
+| Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
+| Backspace in a character class | `[\b]` | `python-re` |
+| ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
+| Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
+| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
+| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
+| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
+| Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
+| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
+
+Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
+Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
+Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a
+`pattern` on `bytes`.
+Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
+example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
+linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
+validate untrusted input.
 
 ## Limitations
 
@@ -5941,6 +5994,35 @@ class Pet:
 - Want to use dataclass syntax with Pydantic validation
 - Migrating from dataclasses but need validation
 - Prefer decorator-based class definition
+
+---
+
+## Targeting a Pydantic version
+
+Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
+`datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+
+When the target is unset:
+
+- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
+  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
+
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
+| --- | --- | --- |
+| Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
+| `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
+| Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
+| Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
+| `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
+| Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
+
+| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| --- | --- | --- |
+| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
+
+`2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
 ---
 
@@ -7784,6 +7866,8 @@ When a schema defines a simple type (not an object with properties), `datamodel-
 - 📌 RootModel and type aliases do not fully support field-specific metadata (default, alias, etc). See [Named Type Aliases](https://docs.pydantic.dev/latest/concepts/types/#named-type-aliases) for details.
 - 🚫 Type aliases do not support some RootModel features (e.g. `model_config`)
 - 📄 A RootModel or type alias is also generated for the main schema, allowing you to define a single type alias from a schema file (e.g. `model.json` containing `{"title": "MyString", "type": "string"}`)
+- 🧩 Pydantic v2 type aliases express constraints as `Annotated[int, Field(ge=1)]` instead of `conint(ge=1)`, because mypy and Pyright reject call expressions in type aliases. A `Decimal` `multipleOf` uses `annotated_types.MultipleOf`, because `Field` types `multiple_of` as a float. Validation, serialization, and JSON schema stay the same, except that on Pydantic 2.0.x a string alias with `minLength: 0` now keeps `minLength: 0` in its JSON schema.
+- 🔤 Pydantic v2 type aliases (`--use-type-alias` and `pydantic_v2.dataclass` output) cannot select Python's regex engine through `model_config`, so patterns that need it, such as lookaround assertions, are generated as compiled `re.compile(...)` patterns. These aliases require **Pydantic 2.8 or later in the environment that runs the generated code**, because [Pydantic 2.8 added support for compiled patterns](https://pydantic.dev/articles/pydantic-v2-8-release#respect-regex-flags-in-constrained-string-validation).
 
 When `--use-root-model-type-alias` is enabled, roots with field constraints or
 patterns that require Python regex configuration use a regular `RootModel` class
@@ -11081,7 +11165,7 @@ matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
-default target, 3.10, is refused with `E_CONFIG_VALUE`, and running on Python 3.10 with `E_PYTHON_UNSUPPORTED`.
+default target, 3.10, and running on Python 3.10 are both refused with `Error:` and exit code 2.
 
 ## Quick start
 
@@ -11169,9 +11253,9 @@ object with the right methods works, and type checkers check it where you pass i
 ## Requirements
 
 - The input is one OpenAPI 3.0, 3.1, or 3.2 document, from a file, a URL, or stdin; a directory or a list of
-  files is `E_INPUT_ROOT`.
+  files is refused.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
-  `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, and types do not add backends.
+  refused. Custom templates, base classes, and types do not add backends.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
@@ -11222,8 +11306,9 @@ for record in report.written_files:
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
 as a `uv add` command.
-Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
-ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, and codec
+Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
+`datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
+model generation errors keep their own types and messages. The records, errors, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
@@ -11267,7 +11352,7 @@ path references has no URL and is not served. To leave paths out, pass
 [`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths). The models follow the
 `api` scope as in a model-only run: inline schemas of the paths left out are not generated, while the schemas and
 path items under `components` still are. A per-operation setting that names a path left out fails with
-`E_OPERATION_REF`.
+an error before generation.
 
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
@@ -11343,12 +11428,12 @@ would change. Server jobs refuse `--watch` and `--output-format json`, as a sing
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
 restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
-own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`).
+own modules; a file the generator never wrote at a path it needs stops the run with an error.
 
 ## Regenerating and checking
 
 Generation stages file changes and rolls back earlier changes if publication fails.
-Before publishing, it rechecks planned file hashes and reports `E_STATE_CHANGED`
+Before publishing, it rechecks planned file hashes and reports an error
 when they differ. Run generators that share output files one at a time.
 
 The manifest records the generator version, the target kind and package, the model output and one hash of the model
@@ -11466,19 +11551,24 @@ datamodel-codegen \
   --server-model-package models
 ```
 
-A template that does not parse or render stops the run with `F_TEMPLATE_INVALID`, which names the file in the custom
+A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
 directory, so the model templates must keep the class and field names, as the requirements above describe.
 
 ## Diagnostics
 
-The command line prints each diagnostic to stderr as `CODE severity stage location: message`, and
-[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
-stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
-(`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
-(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding, planning, and templates (`BND_*`, `F_*`), and ownership
-(`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
-served document cannot carry, do not.
+The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
+messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
+messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
+Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings,
+such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the served document cannot carry, still print as
+`CODE severity stage location: message` and do not stop the run.
+
+[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
+records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
+document. Ordinary model generation errors receive `E_GENERATION_FAILURE` with stage `target`; the record's
+message includes the original exception type and message. For example, an unresolved reference is reported as
+`Error: Unresolved local $ref targets: ...` on stderr and as `E_GENERATION_FAILURE` in the JSON document.
 
 ---
 
@@ -18459,13 +18549,18 @@ default to None.
 
 Target Pydantic version for generated code compatibility.
 
-The `--target-pydantic-version` flag controls Pydantic version-specific config:
+The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
+Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **2**: Uses `populate_by_name=True` (compatible with Pydantic 2.0-2.10)
-- **2.11**: Uses `validate_by_name=True` (for Pydantic 2.11+)
-- **2.12**: Uses `validate_by_name=True` and allows features that require Pydantic 2.12+
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
+- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+  `json_schema_extra` for deprecated fields, and dictionary-key models defined first
+- **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
+  `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
+- **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 
-This prevents breaking changes when generated code is used on older Pydantic versions.
+See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
 !!! tip "Usage"
 
@@ -18631,7 +18726,10 @@ This affects import statements and type annotation syntax in generated code.
 
 Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-The `--union-mode` flag configures the code generation behavior.
+The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+Discriminated unions are not given a `union_mode`: Pydantic validates them by
+their discriminator tag, a separate mode that cannot be combined with
+`smart` or `left_to_right`.
 
 **Option relationships:**
 
@@ -42896,7 +42994,10 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
     ```
 
 The document is written after every run that passes the command-line checks, successful or not, and lists
-the diagnostics in the order stderr shows them. A usage error, such as `--generate-server` without
+the diagnostic records in their original phase order. stderr prints warnings separately, then one combined
+`Error:` message for a target failure, without the records' codes or stages. Ordinary model generation errors
+receive code `E_GENERATION_FAILURE` and stage `target` in the document, with the original exception type and
+message. A usage error, such as `--generate-server` without
 `--server-output`, prints `Error:` like any other command-line error and writes no document.
 
 ```json
@@ -42920,12 +43021,12 @@ the diagnostics in the order stderr shows them. A usage error, such as `--genera
 }
 ```
 
-A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
+A path the generation reads or writes, or one inside the model or target output, is refused with `Error:`,
 and nothing is written to it; the check runs before anything is generated. An existing file is replaced only
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
-directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
+directory, or a file that cannot be written is refused with `Error:`, and the command exits with 2.
 
-One document covers one run, so `--job` and `--all-jobs` refuse it with `E_CONFIG_CONFLICT`.
+One document covers one run, so `--job` and `--all-jobs` refuse it with `Error:`.
 
 ---
 
@@ -45002,16 +45103,21 @@ The proposed 2.8.2 floor applies to **DCG's runtime**, not the environment that 
 `--target-pydantic-version` values such as 2, 2.11 and 2.12 remain unchanged. Raising the runtime floor alone is not
 a reason to delete every existing compatibility branch.
 
-The following classification reflects the current source. Runtime feature switches in
-`model/pydantic_v2/version.py` are often used to choose emitted code, so their effects span both environments.
+The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
+`model/pydantic_v2/version.py` keys every generated-code boundary on `--target-pydantic-version`. Leaving it unset
+gives the newest supported feature forms, while config key naming keeps its existing rule (`populate_by_name` unless
+the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime floor therefore cannot
+change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
 | --- | --- | --- |
 | DCG configuration/internal Pydantic models | Internal runtime compatibility: validating generator configuration and constructing internal model/field objects relies on the installed Pydantic. | Keep the minimum DCG-runtime configuration and generation tests; reassess only when the actual floor changes. |
-| Dataclass alias, 2.4 boundary | Both: `dataclass.py` constructs internal fields with an alias fallback and changes emitted `Field` assignments/validation and serialization aliases so generated dataclasses work on old Pydantic. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
-| `deprecated` / `json_schema_extra`, 2.7 boundary | Both: `base_model.py` selects recognized field keys using the runtime version, changing whether generated metadata is emitted as a direct field argument or JSON Schema extras. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
-| `regex_engine`, 2.5 boundary | Generated-code compatibility: the version module retains the unsupported capability flag; the current emitter adds `python-re` for lookaround patterns. Removing an unused flag does not establish that old generated models support those expressions. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
-| RootModel, dictionary keys, forward references, 2.8 boundary | Both: the installed runtime selects `_INCLUDE_DICT_KEY_REFERENCE_CLASSES`, affecting dependency sorting and emitted model order for dictionary-key references. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
+| Dataclass alias, 2.4 boundary | Generated-code compatibility: targets before 2.4 (`2`) use the `DataModelFieldBackport` alias fallback, which emits `Field` assignments with validation and serialization aliases for non-identifier aliases. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
+| `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11` and `2.12` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
+| `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)) for every target. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
+| RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11` and `2.12` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
+| `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11` and `2.12` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
+| Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11` and `2.12` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | Discriminator / Union | Both: internal schema/model construction and emitted union/discriminator annotations must agree; existing force-optional and payload cases exercise runtime-sensitive behavior. | Keep generation assertions and instantiate generated union cases on separately pinned consumer versions. |
 | `additionalProperties` | Both: schema interpretation plus emitted typed extras, recursive references and runtime validators affect consumer behavior. | Preserve schema/alias/recursive extra-property tests and verify generated validation, rather than treating all failures as DCG-runtime-only. |
 | Payload and generated-code execution | Both are currently exercised together in pinned environments: generated code is imported and validated using the same environment's Pydantic. | Split producer and consumer environments where necessary to retain old consumer coverage after raising DCG's own minimum. |

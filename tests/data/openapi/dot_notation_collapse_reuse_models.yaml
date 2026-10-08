@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: Collapsed duplicate referenced from another module
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    holder.Holder:
+      type: object
+      properties:
+        entry:
+          $ref: '#/components/schemas/item.Entry'
+        local:
+          $ref: '#/components/schemas/holder.Local'
+    holder.Local:
+      type: object
+      properties:
+        name:
+          type: string
+    item.Item:
+      type: object
+      properties:
+        name:
+          type: string
+    item.Entry:
+      type: object
+      properties:
+        name:
+          type: string

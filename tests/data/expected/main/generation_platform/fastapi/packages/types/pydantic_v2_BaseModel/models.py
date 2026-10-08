@@ -8,6 +8,7 @@ from enum import StrEnum
 from typing import Annotated
 
 from pydantic import BaseModel, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Code(RootModel[str]):
@@ -27,30 +28,27 @@ class Point(BaseModel):
     x: int | None = None
 
 
-class FieldValuesGetQueryAtParameter(RootModel[datetime]):
-    root: datetime
+FieldValuesGetQueryAtParameter = TypeAliasType("FieldValuesGetQueryAtParameter", datetime)
 
 
-class FieldValuesGetQueryStampParameter(RootModel[datetime]):
-    root: datetime
+FieldValuesGetQueryStampParameter = TypeAliasType("FieldValuesGetQueryStampParameter", datetime)
 
 
-class FieldValuesGetQueryCountParameter(RootModel[int]):
-    root: int
+FieldValuesGetQueryCountParameter = TypeAliasType("FieldValuesGetQueryCountParameter", int)
 
 
-class FieldValuesGetQueryHostParameter(RootModel[str]):
-    root: Annotated[
+FieldValuesGetQueryHostParameter = TypeAliasType(
+    "FieldValuesGetQueryHostParameter",
+    Annotated[
         str,
         Field(
             pattern='^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$'
         ),
-    ]
+    ],
+)
 
 
-class FieldValuesGetQueryLabelParameter(RootModel[str]):
-    root: str
+FieldValuesGetQueryLabelParameter = TypeAliasType("FieldValuesGetQueryLabelParameter", str)
 
 
-class FieldValuesGetQueryPointParameter(RootModel[Point]):
-    root: Point
+FieldValuesGetQueryPointParameter = TypeAliasType("FieldValuesGetQueryPointParameter", Point)

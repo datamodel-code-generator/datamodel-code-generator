@@ -7,13 +7,14 @@ symbols and field bindings alone, never from a codec.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
+    GenericType,
     KnownBackendValue,
     LiteralScalar,
     NoneType,
@@ -32,12 +33,14 @@ if TYPE_CHECKING:
         SymbolId,
     )
 
-__all__ = ("ItemStep", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ALIASES", "WRAPPERS", "ItemStep", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 _EXTRAS: Final = "__pydantic_extra__"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
+WRAPPERS: Final = frozenset({"alias", "root"})
+ALIASES: Final = frozenset({"alias"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,6 +159,25 @@ class ModelFacts:
         return next(
             (facts.type for member in self.members.get(symbol, ()) if (facts := member.model_facts) is not None), None
         )
+
+    def argument(
+        self, value: FinalPythonType, kinds: frozenset[str] = WRAPPERS, seen: frozenset[SymbolId] = frozenset()
+    ) -> FinalPythonType:
+        """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
+        match value:
+            case GeneratedSymbolType() if (
+                value.symbol not in seen
+                and self.symbols[value.symbol].kind in kinds
+                and (root := self.root(value.symbol)) is not None
+            ):
+                return self.argument(root, kinds, seen | {value.symbol})
+            case GenericType():
+                return replace(value, arguments=tuple(self.argument(item, kinds, seen) for item in value.arguments))
+            case UnionType():
+                return replace(value, members=tuple(self.argument(item, kinds, seen) for item in value.members))
+            case _:
+                pass
+        return value
 
     def plain(self, value: FinalPythonType) -> FinalPythonType:
         """Return the type an alias stands for, through aliases of aliases, or any other type itself."""

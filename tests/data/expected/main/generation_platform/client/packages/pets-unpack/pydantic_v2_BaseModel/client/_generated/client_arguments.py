@@ -7,16 +7,8 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from models import FieldPetsGetCookieSessionParameter as _dcg_type_3
-from models import FieldPetsGetHeaderXTraceParameter as _dcg_type_2
-from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
-from models import FieldPetsGetQueryTagsParameter as _dcg_type_1
-from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_9
-from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_8
-from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_6
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_7
-from models import FieldPetsPostRequest as _dcg_type_5
-from models import NewPet as _dcg_type_4
+from models import FieldPetsPostRequest as _dcg_type_1
+from models import NewPet as _dcg_type_0
 from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
@@ -27,10 +19,10 @@ from ..options import RequestOptions, Unset
 class Operation0Arguments(TypedDict):
     """The keyword arguments of one signature of list_pets."""
 
-    limit: NotRequired[_dcg_type_0 | Unset]
-    labels: NotRequired[_dcg_type_1 | Unset]
-    x_trace: _dcg_type_2
-    session: NotRequired[_dcg_type_3 | Unset]
+    limit: NotRequired[int | Unset]
+    labels: NotRequired[list[str] | Unset]
+    x_trace: str
+    session: NotRequired[str | Unset]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -38,7 +30,7 @@ class Operation0Arguments(TypedDict):
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_4
+    body: _dcg_type_0
     media_type: Literal['application/json']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -47,7 +39,7 @@ class Operation1Arguments(TypedDict):
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_5
+    body: _dcg_type_1
     media_type: Literal['text/plain']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -56,7 +48,7 @@ class Operation1Arguments1(TypedDict):
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_4 | _dcg_type_5
+    body: _dcg_type_0 | _dcg_type_1
     media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -65,7 +57,7 @@ class Operation1Arguments2(TypedDict):
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -73,7 +65,7 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -81,7 +73,7 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -89,7 +81,7 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -97,21 +89,21 @@ class Operation2Arguments3(TypedDict):
 class Operation3Arguments(TypedDict):
     """The keyword arguments of one signature of delete_pets_by_pet_id."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     options: NotRequired[RequestOptions | None]
 
 
 class Operation4Arguments(TypedDict):
     """The keyword arguments of one signature of head_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     options: NotRequired[RequestOptions | None]
 
 
 class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: _dcg_type_7
+    pet_id: int
     body: NotRequired[SyncBinaryBody | Unset]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
@@ -121,7 +113,7 @@ class Operation5Arguments(TypedDict):
 class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: _dcg_type_7
+    pet_id: int
     body: NotRequired[AsyncBinaryBody | Unset]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
@@ -131,7 +123,7 @@ class Operation5Arguments1(TypedDict):
 class Operation6Arguments(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: _dcg_type_8
+    pet_id: int
     body: MultipartBody[str | list[str]]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -140,7 +132,7 @@ class Operation6Arguments(TypedDict):
 class Operation6Arguments1(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: _dcg_type_8
+    pet_id: int
     body: AsyncMultipartBody[str | list[str]]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -149,7 +141,7 @@ class Operation6Arguments1(TypedDict):
 class Operation7Arguments(TypedDict):
     """The keyword arguments of one signature of read_files."""
 
-    pet_id: _dcg_type_9
+    pet_id: int
     response_media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 

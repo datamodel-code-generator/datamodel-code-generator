@@ -1,12 +1,12 @@
-"""Helper configuration of a client target: its Python records, its YAML file, and the one validation of both.
+"""Helper configuration of a client target: its Python records, its JSON value, and the one validation of both.
 
-Python records are projected into the tree a YAML file gives, so both inputs share every diagnostic and the same
-normalized metadata. Selectors and request targets are the runtime records generated helpers use.
+The JSON value is an object mapping each helper's name to its definition. Python records are projected into the tree
+that value gives, so both inputs share every diagnostic and the same normalized metadata. Selectors and request
+targets are the runtime records generated helpers use.
 """
 
 from __future__ import annotations
 
-from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from enum import Enum
@@ -106,10 +106,8 @@ KINDS: Final = (
 )
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
-_MERGE: Final = "tag:yaml.org,2002:merge"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
@@ -582,7 +580,6 @@ HelperDefinition: TypeAlias = (
 class ProtocolConfiguration:
     """The helpers of a client target by their names, in declaration order."""
 
-    schema_version: Literal[1] = 1
     helpers: Mapping[str, HelperDefinition]
 
     def __post_init__(self) -> None:
@@ -628,7 +625,6 @@ _RECORDS: Final = frozenset({
     OperationCompletion,
     UploadAbort,
     ResumableUploadHelper,
-    ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (LiteralValue, "literal"): "json",
@@ -639,7 +635,6 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (PollingHelper, "cancelled"): "json",
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
-    (ProtocolConfiguration, "helpers"): "mapping",
 }
 
 
@@ -722,7 +717,7 @@ def _literal_problem(value: object) -> str | None:
 
 
 def project(configuration: ProtocolConfiguration) -> object:
-    """Project Python records into the tree a YAML file gives; any other object becomes a value validation refuses."""
+    """Project Python records into the tree a JSON value gives; any other object becomes a value validation refuses."""
     from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
         BodySelector,
         BodyTarget,
@@ -782,7 +777,7 @@ def project(configuration: ProtocolConfiguration) -> object:
                 pass
         return FOREIGN
 
-    return convert(configuration)
+    return convert(configuration.helpers, "mapping")
 
 
 def protocol_problems(configuration: ProtocolConfiguration) -> list[Diagnostic]:
@@ -809,103 +804,23 @@ def load_protocols(
     return helpers, base, problems
 
 
-def _file_problem(message: str) -> list[Diagnostic]:
-    return [_diagnostic("E_CONFIG_VALUE", _ROOT, f"The protocol configuration file {message}")]
-
-
 def _read(path: Path) -> tuple[object, list[Diagnostic]]:
-    """Read one UTF-8 YAML document without anchors, aliases, merge keys, repeated keys, or deep nesting."""
-    from datamodel_code_generator.util import (  # noqa: PLC0415
-        get_safe_loader,
-        get_yaml_parse_errors,
-        record_watch_dependency,
-    )
+    """Read a JSON object from a file as JSON configuration options read theirs, refusing deep nesting first."""
+    from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
+    from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
 
     record_watch_dependency(path)
     try:
-        text = path.read_bytes().decode("utf-8")
-    except OSError:
-        return None, _file_problem("cannot be read")
-    except UnicodeDecodeError:
-        return None, _file_problem("is not UTF-8")
-    try:
-        return _compose(get_safe_loader(), text)
-    except (*get_yaml_parse_errors(), RecursionError):
-        return None, _file_problem("is not YAML")
-
-
-def _compose(loader_type: Any, text: str) -> tuple[object, list[Diagnostic]]:
-    """Check the document's events, then compose, check, and construct it; a loader may refuse text when built."""
-    events = loader_type(text)
-    try:
-        problem = _event_problem(events)
-    finally:
-        events.dispose()
-    if problem is not None:
-        return None, _file_problem(problem)
-    loader = loader_type(text)
-    try:
-        if (node := loader.get_single_node()) is None:
-            return None, []
-        if problems := _node_problems(node):
-            return None, problems
-        return loader.construct_document(node), []
-    finally:
-        loader.dispose()
-
-
-def _event_problem(loader: Any) -> str | None:
-    """Refuse anchors, which aliases need, and nesting deeper than any composer handles alike, from the events."""
-    import yaml  # noqa: PLC0415
-
-    depth = 0
-    while loader.check_event():
-        event = loader.get_event()
-        if getattr(event, "anchor", None) is not None:
-            return "uses a YAML anchor or alias"
-        if isinstance(event, yaml.CollectionStartEvent) and (depth := depth + 1) > _MAX_DEPTH:
-            return f"nests collections deeper than {_MAX_DEPTH} levels"
-        if isinstance(event, yaml.CollectionEndEvent):
-            depth -= 1
-    return None
-
-
-def _node_problems(root: object) -> list[Diagnostic]:
-    """Walk the composed nodes once, refusing merge keys and keys a mapping repeats."""
-    import yaml  # noqa: PLC0415
-
-    problems: list[Diagnostic] = []
-    pending: deque[tuple[object, str]] = deque([(root, _ROOT)])
-    while pending:
-        node, at = pending.popleft()
-        if isinstance(node, yaml.SequenceNode):
-            pending.extend((item, f"{at}[{index}]") for index, item in enumerate(node.value))
-        elif isinstance(node, yaml.MappingNode):
-            keys: set[tuple[str, str]] = set()
-            bracketed = at.rpartition(".")[2] in _BRACKETED
-            for key, item in node.value:
-                if not isinstance(key, yaml.ScalarNode):
-                    pending.extend(((key, at), (item, at)))
-                    continue
-                if key.tag == _MERGE:
-                    return [*problems, *_file_problem("uses a YAML merge key")]
-                if (key.tag, key.value) in keys:
-                    problems.append(_diagnostic("E_CONFIG_VALUE", at, f"{at} repeats the key {key.value!r}"))
-                keys.add((key.tag, key.value))
-                pending.append((item, f"{at}[{key.value!r}]" if bracketed else f"{at}.{key.value}"))
-    return problems
+        return validate_json_value_or_file(str(path), option_name=_ROOT, max_depth=_MAX_DEPTH), []
+    except JsonConfigError as error:
+        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error))]
 
 
 def validate(tree: object) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
     """Validate a helper configuration tree, returning its valid helpers and every problem in declaration order."""
     validator = _Validator()
-    envelope = validator.record(
-        tree,
-        _ROOT,
-        {"schema_version": (validator.version, REQUIRED), "helpers": (validator.helpers, REQUIRED)},
-        "a mapping",
-    )
-    return (() if envelope is INVALID else envelope["helpers"]), validator.problems
+    helpers = validator.helpers(tree, _ROOT)
+    return (() if helpers is INVALID else helpers), validator.problems
 
 
 def _choices(values: tuple[str, ...]) -> str:
@@ -936,9 +851,7 @@ class _Validator:  # noqa: PLR0904
         if not isinstance(value, Mapping):
             return self.value(at, f"{at} must be {noun}")
         for key in value:
-            if not isinstance(key, str):
-                self.value(at, f"{at} has the key {key!r}, which is not a string")
-            elif key not in spec:
+            if key not in spec:
                 self.problems.append(_diagnostic("E_CONFIG_UNKNOWN", f"{at}.{key}", f"{at} has no key {key!r}"))
         result: Tree = {}
         for key, (convert, default) in spec.items():
@@ -948,7 +861,7 @@ class _Validator:  # noqa: PLR0904
                 result[key] = self.value(f"{at}.{key}", f"{at} needs {key!r}")
             elif default is not OMITTED:
                 result[key] = default
-        known = all(isinstance(key, str) and key in spec for key in value)
+        known = all(key in spec for key in value)
         return result if known and all(item is not INVALID for item in result.values()) else INVALID
 
     def tagged(self, value: object, at: str, key: str, variants: Mapping[str, Spec], noun: str) -> Tree | _Invalid:
@@ -976,9 +889,6 @@ class _Validator:  # noqa: PLR0904
                 return self.value(f"{at}[{index}]", f"{at}[{index}] repeats {what}")
             seen.add(key)
         return values
-
-    def version(self, value: object, at: str) -> object:
-        return value if type(value) is int and value == 1 else self.value(at, f"{at} must be 1")
 
     def boolean(self, value: object, at: str) -> object:
         return value if type(value) is bool else self.value(at, f"{at} must be a boolean")
@@ -1157,7 +1067,7 @@ class _Validator:  # noqa: PLR0904
 
         return convert
 
-    def helpers(self, value: object, at: str) -> object:
+    def helpers(self, value: object, at: str) -> tuple[Helper, ...] | _Invalid:
         """Validate each helper in declaration order, refusing invalid and colliding names."""
         if not isinstance(value, Mapping):
             return self.value(at, f"{at} must be a mapping")

@@ -5,12 +5,13 @@ render pydantic_v2.BaseModel default
   #   filename:  legacy-global-parameters.yaml
   
   from __future__ import annotations
-  from pydantic import BaseModel, RootModel
+  from typing_extensions import TypeAliasType
   from typing import Optional
+  from pydantic import BaseModel
   
   
-  class FieldPetsGetQueryTenantParameter(RootModel[str]):
-      root: str
+  
+  FieldPetsGetQueryTenantParameter = TypeAliasType("FieldPetsGetQueryTenantParameter", str)
   
   
   class FieldPetsGetResponse(BaseModel):

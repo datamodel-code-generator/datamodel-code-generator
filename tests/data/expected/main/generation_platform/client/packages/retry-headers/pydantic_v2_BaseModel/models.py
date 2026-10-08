@@ -4,10 +4,9 @@
 from __future__ import annotations
 
 from pydantic import RootModel
+from typing_extensions import TypeAliasType
 
-
-class FieldParameterPostHeaderXRequestKeyParameter(RootModel[str]):
-    root: str
+FieldParameterPostHeaderXRequestKeyParameter = TypeAliasType("FieldParameterPostHeaderXRequestKeyParameter", str)
 
 
 class FieldParameterPostResponse(RootModel[str]):
@@ -74,8 +73,7 @@ class FieldIgnoredPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldDirectionPostHeaderXRetryControlParameter(RootModel[str]):
-    root: str
+FieldDirectionPostHeaderXRetryControlParameter = TypeAliasType("FieldDirectionPostHeaderXRetryControlParameter", str)
 
 
 class FieldDirectionPostResponse(RootModel[str]):

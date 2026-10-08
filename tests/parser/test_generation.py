@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from inline_snapshot import snapshot
 
+from datamodel_code_generator.enums import TargetPydanticVersion
 from datamodel_code_generator.imports import IMPORT_DECIMAL, IMPORT_LIST, IMPORT_SET
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
 from datamodel_code_generator.model.dataclass import DataClass as StandardDataClass
@@ -20,9 +21,6 @@ from datamodel_code_generator.model.msgspec import Struct as MsgspecStruct
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField, RootModel, RootModelTypeAlias
 from datamodel_code_generator.model.pydantic_v2.base_model import Constraints as PydanticConstraints
 from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass as PydanticDataClass
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
-)
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport
 from datamodel_code_generator.model.typed_dict import TypedDict
 from datamodel_code_generator.parser.generation import (
@@ -107,7 +105,12 @@ def _base_model(name: str = "Model", fields: list[DataModelField] | None = None)
     return BaseModel(fields=fields or [], reference=Reference(path=name, original_name=name, name=name))
 
 
-def _dict_key_reference_classes(model_type: type[DataModel], *, include_dict_keys: bool = False) -> frozenset[str]:
+def _dict_key_reference_classes(
+    model_type: type[DataModel],
+    *,
+    include_dict_keys: bool = False,
+    target_pydantic_version: TargetPydanticVersion | None = None,
+) -> frozenset[str]:
     reference_model = Reference(path="Model", original_name="Model", name="Model")
     reference_value = Reference(path="Value", original_name="Value", name="Value")
     reference_key = Reference(path="Key", original_name="Key", name="Key")
@@ -115,7 +118,14 @@ def _dict_key_reference_classes(model_type: type[DataModel], *, include_dict_key
         data_types=[DataType(reference=reference_value)],
         dict_key=DataType(reference=reference_key),
     )
-    model = model_type(fields=[DataModelFieldBase(data_type=data_type)], reference=reference_model)
+    extra_template_data: defaultdict[str, dict[str, object]] = defaultdict(dict)
+    if target_pydantic_version is not None:
+        extra_template_data["Model"]["target_pydantic_version"] = target_pydantic_version
+    model = model_type(
+        fields=[DataModelFieldBase(data_type=data_type)],
+        reference=reference_model,
+        extra_template_data=extra_template_data,
+    )
     store = GenerationStore()
     store.register_model(model)
     if include_dict_keys:
@@ -344,7 +354,7 @@ def test_generation_index_combines_root_collapse_reference_usage() -> None:
     wrappers, direct_refs = store.index.root_collapse_reference_usage(
         reference_inner,
         excluded_model=wrapper_model,
-        root_model_type=RootModel,
+        is_root_model=lambda model: isinstance(model, RootModel),
     )
 
     assert {
@@ -548,41 +558,34 @@ def test_generation_store_records_nested_and_dict_key_roles() -> None:
 
 
 @pytest.mark.parametrize(
-    ("model_type", "include_dict_key_reference"),
+    "target_pydantic_version",
+    [None, TargetPydanticVersion.V2, TargetPydanticVersion.V2_11, TargetPydanticVersion.V2_12],
+    ids=["unset", "2", "2.11", "2.12"],
+)
+@pytest.mark.parametrize(
+    ("model_type", "builtin_pydantic_model"),
     [
-        pytest.param(
-            BaseModel,
-            PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
-            id="pydantic-v2-base-model",
-        ),
-        pytest.param(
-            RootModel,
-            PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
-            id="pydantic-v2-root-model",
-        ),
-        pytest.param(
-            RootModelTypeAlias,
-            PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
-            id="pydantic-v2-root-model-type-alias",
-        ),
-        pytest.param(
-            PydanticDataClass,
-            PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
-            id="pydantic-v2-dataclass",
-        ),
+        pytest.param(BaseModel, True, id="pydantic-v2-base-model"),
+        pytest.param(RootModel, True, id="pydantic-v2-root-model"),
+        pytest.param(RootModelTypeAlias, True, id="pydantic-v2-root-model-type-alias"),
+        pytest.param(PydanticDataClass, True, id="pydantic-v2-dataclass"),
         pytest.param(StandardDataClass, False, id="standard-dataclass"),
         pytest.param(TypeAliasTypeBackport, False, id="pydantic-v2-auxiliary-type-alias"),
     ],
 )
 def test_generation_index_dict_key_reference_policy_matrix(
     model_type: type[DataModel],
-    include_dict_key_reference: bool,
+    builtin_pydantic_model: bool,
+    target_pydantic_version: TargetPydanticVersion | None,
 ) -> None:
-    """Only built-in Pydantic v2 models follow the installed-version dependency policy."""
+    """Only built-in Pydantic v2 models targeting Pydantic before 2.8 order dict-key references first."""
+    include_dict_key_reference = builtin_pydantic_model and target_pydantic_version is TargetPydanticVersion.V2
     expected = frozenset({"Key", "Value"} if include_dict_key_reference else {"Value"})
 
-    assert _dict_key_reference_classes(model_type) == expected
-    assert _dict_key_reference_classes(model_type, include_dict_keys=True) == frozenset({"Key", "Value"})
+    assert _dict_key_reference_classes(model_type, target_pydantic_version=target_pydantic_version) == expected
+    assert _dict_key_reference_classes(
+        model_type, include_dict_keys=True, target_pydantic_version=target_pydantic_version
+    ) == frozenset({"Key", "Value"})
 
 
 def test_generation_index_external_pydantic_subclasses_do_not_inherit_dict_key_reference_policy() -> None:
@@ -595,8 +598,8 @@ def test_generation_index_external_pydantic_subclasses_do_not_inherit_dict_key_r
         pass
 
     assert [
-        _dict_key_reference_classes(ExternalBaseModel),
-        _dict_key_reference_classes(ExternalDataClass),
+        _dict_key_reference_classes(ExternalBaseModel, target_pydantic_version=TargetPydanticVersion.V2),
+        _dict_key_reference_classes(ExternalDataClass, target_pydantic_version=TargetPydanticVersion.V2),
     ] == [frozenset({"Value"}), frozenset({"Value"})]
 
 
@@ -911,7 +914,7 @@ def test_generation_index_exposes_root_collapse_helpers_independently() -> None:
     missing_wrappers, missing_collapse_direct_refs = store.index.root_collapse_reference_usage(
         reference_unknown,
         excluded_model=base_model,
-        root_model_type=RootModel,
+        is_root_model=lambda model: isinstance(model, RootModel),
     )
 
     assert {

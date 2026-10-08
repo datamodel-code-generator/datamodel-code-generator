@@ -1,0 +1,108 @@
+{
+  "numbers.next": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "next_url",
+      "read": {"from": "body", "pointer": "/number"},
+      "end": [{"kind": "missing"}, {"kind": "value", "value": 0}]
+    }
+  },
+  "status.next": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "next_url", "read": {"from": "status"}, "end": [{"kind": "value", "value": 204}]}
+  },
+  "nullable.next": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "next_url",
+      "read": {"from": "body", "pointer": "/maybe_next"},
+      "end": [{"kind": "missing"}, {"kind": "value", "value": 1}]
+    }
+  },
+  "undeclared.next": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "next_url", "read": {"from": "body", "pointer": "/after"}, "end": [{"kind": "missing"}]}
+  },
+  "bodiless.next": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "next_url",
+      "read": {"from": "body", "pointer": "/next"},
+      "end": [{"kind": "missing"}],
+      "repeat_request_body": true
+    }
+  },
+  "undeclared.links": {
+    "kind": "pagination",
+    "operation": "/paths/~1searches/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "spaced.links": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link", "rel": "next page"}
+  },
+  "quoted.links": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link", "rel": "urn:\"next\""}
+  },
+  "written.links": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"},
+    "bindings": [
+      {"target": {"in": "query", "name": "limit"}, "value": {"literal": 2}},
+      {"target": {"in": "header", "name": "X-Trace"}, "value": {"literal": 3}},
+      {
+        "target": {"in": "cookie", "name": "session"},
+        "value": {"source": "previous", "selector": {"from": "header", "name": "X-Snapshot"}}
+      },
+      {"target": {"in": "header", "name": "x-trace"}, "value": {"literal": "a"}}
+    ]
+  },
+  "fetched.searches": {
+    "kind": "pagination",
+    "operation": "/paths/~1searches/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "next_url", "read": {"from": "body", "pointer": "/next"}, "end": [{"kind": "missing"}]},
+    "bindings": [{"target": {"in": "body", "pointer": "/token"}, "value": {"literal": "t"}}]
+  },
+  "repeated.searches": {
+    "kind": "pagination",
+    "operation": "/paths/~1searches/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "next_url",
+      "read": {"from": "header", "name": "X-Next"},
+      "end": [{"kind": "missing"}],
+      "repeat_request_body": true
+    },
+    "bindings": [{"target": {"in": "body", "pointer": "/token"}, "value": {"literal": 5}}]
+  }
+}

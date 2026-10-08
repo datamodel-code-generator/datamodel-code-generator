@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.data.python.client_generation import SOURCE, copy_references, generate_client
-from tests.data.python.fixture_server import AsyncLocalTransport, FixtureServer, Injected, LocalTransport
+from tests.data.python.fixture_server import AsyncLocalTransport, FixtureServer, Injected, LocalTransport, stop_servers
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -319,6 +319,7 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
         copied = os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1"
         scenario(importlib.import_module(package) if copied else import_generated(package), lines)
     finally:
+        stop_servers()
         sys.path.remove(str(root))
         forget_generated(package)
     return _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"

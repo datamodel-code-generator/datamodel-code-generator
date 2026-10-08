@@ -31,15 +31,13 @@ DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS
 DOC_INPUT = "generation_platform/fastapi/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/fastapi/cli/options"
 UNSUPPORTED = (
-    "E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not "
+    "Error: --output-model-type: The fastapi target does not "
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
 )
-CONFLICT = "E_CONFIG_CONFLICT error config: --generate-server cannot be used with"
-NOT_WRITABLE = (
-    "E_CONFIG_VALUE error config: --diagnostics-json cannot be written: it is not a file in an existing directory\n"
-)
-READ_OR_WRITTEN = "E_CONFIG_CONFLICT error config: --diagnostics-json names a file the generation reads or writes\n"
-OTHER_FILE = "E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report\n"
+CONFLICT = "Error: --generate-server cannot be used with"
+NOT_WRITABLE = "Error: --diagnostics-json cannot be written: it is not a file in an existing directory\n"
+READ_OR_WRITTEN = "Error: --diagnostics-json names a file the generation reads or writes\n"
+OTHER_FILE = "Error: --diagnostics-json names an existing file that is not a report\n"
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -674,8 +672,7 @@ def test_fastapi_cli_target_python(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            "E_CONFIG_VALUE error config model_config.target_python_version: "
-            "The fastapi target needs a target Python version of 3.11 or later\n"
+            "Error: --target-python-version: The fastapi target needs a target Python version of 3.11 or later\n"
         ),
         output_should_not_exist=True,
     )
@@ -710,7 +707,10 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
     [
         (
             ["--watch", "--output-format", "json", "--diagnostics-json", "-"],
-            f"{CONFLICT} --watch\n{CONFLICT} --output-format json\n",
+            (
+                "Error: --generate-server cannot be used with --watch; "
+                "--generate-server cannot be used with --output-format json\n"
+            ),
             "conflicts-report.txt",
         ),
         (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n", None),
@@ -832,7 +832,8 @@ def test_fastapi_cli_job_changed(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            "Error: could not publish batch output: E_STATE_CHANGED: The file changed after the target was planned\n"
+            f"Error: could not publish batch output: {(Path.cwd() / 'server' / '.dcg-target-manifest.json').as_posix()}"
+            ": The file changed after the target was planned\n"
         ),
     )
     assert_output(
@@ -848,7 +849,7 @@ def test_fastapi_cli_job_changed(
         (
             "pyproject-jobs.toml",
             ["--job", "server", "--diagnostics-json", "report.json"],
-            "E_CONFIG_CONFLICT error config: --diagnostics-json cannot be used with --job or --all-jobs\n",
+            "Error: --diagnostics-json cannot be used with --job or --all-jobs\n",
         ),
         (
             "pyproject-model-jobs.toml",
@@ -962,7 +963,7 @@ def test_fastapi_cli_report_replaced(
         extra_args=_server("--check", "--diagnostics-json", "diagnostics.json"),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr="E_CONFIG_VALUE error config: --diagnostics-json cannot be written: Permission denied\n",
+        expected_stderr="Error: --diagnostics-json cannot be written: Permission denied\n",
     )
 
 
@@ -972,12 +973,12 @@ def test_fastapi_cli_report_replaced(
         (["--output-model-type", "msgspec.Struct"], UNSUPPORTED, None),
         (
             ["--emit-model-metadata", "metadata"],
-            "E_MODEL_CONFIG error config: Model metadata output requires a file path, not a directory\n",
+            "Error: Model metadata output requires a file path, not a directory\n",
             None,
         ),
         (
             ["--dependency-format", "requirements", "--diagnostics-json", "-"],
-            "E_CONFIG_CONFLICT error config: --dependency-format cannot be used with --diagnostics-json -\n",
+            "Error: --dependency-format cannot be used with --diagnostics-json -\n",
             "format-report.txt",
         ),
     ],
@@ -1425,36 +1426,102 @@ def test_fastapi_cli_options(
     assert_file_content(tmp_path / "server" / generated, f"cli/options/{expected}")
 
 
-@pytest.mark.abnormal_path("no input makes the FastAPI target raise while rendering")
+@pytest.mark.parametrize("report", [False, True])
 def test_fastapi_cli_failures(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report an unresolved reference and a renderer that stops, writing nothing either way."""
+    """Report an unresolved reference and an unexpected formatter failure without publishing files."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("broken.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--strict-refs"),
+        extra_args=_server("--strict-refs", *(["--diagnostics-json", "-"] if report else [])),
         copy_files=[(SOURCE / "unresolved-ref.yaml", tmp_path / "broken.yaml")],
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "unresolved.txt")
+    captured = capsys.readouterr()
+    assert_output(captured.err, EXPECTED / "cli" / "unresolved.txt")
+    if report:
+        assert_output(captured.out, EXPECTED / "cli" / "unresolved-report.txt")
 
-    def stop(*_args: object) -> None:
-        msg = "The renderer stopped"
-        raise RuntimeError(msg)
-
-    monkeypatch.setattr("datamodel_code_generator._fastapi.target.FastAPITarget.render", stop)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server(),
+        extra_args=_server("--custom-formatters", "tests.data.python.custom_formatters.stop"),
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="E_GENERATION_FAILURE error target: RuntimeError: The renderer stopped\n",
+        expected_stderr_contains="RuntimeError: The formatter stopped\n",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
+def test_fastapi_cli_model_error_context(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    options: list[str] = []
+    output = Path("models.py")
+    stderr = "Error: "
+    match case:
+        case "class-name":
+            options = [
+                "--custom-formatters",
+                "tests.data.python.custom_formatters.stop",
+                "--custom-formatters-kwargs",
+                '{"class_name": "1Xyz"}',
+            ]
+            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
+        case "encoding":
+            (tmp_path / "pets.yaml").write_bytes(b"\xff")
+            stderr = "Error: Unable to decode input using encoding 'utf-8': "
+        case "lock":
+            (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
+            options = ["--lockfile", "api.lock"]
+            stderr = "Error: Unable to read remote lock "
+        case _:
+            (tmp_path / "occupied").write_text("occupied\n", encoding="utf-8")
+            output = Path("occupied/models.py")
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=output,
+        input_file_type="openapi",
+        extra_args=_server(*options),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=stderr,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("report", [False, True])
+def test_fastapi_cli_unowned_manifest(
+    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    (server := tmp_path / "server").mkdir()
+    (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
+    (server / "application.py").write_text("# User application\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*(["--diagnostics-json", "-"] if report else [])),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "unowned-report.txt" if report else None,
+        expected_stderr=(
+            "W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: "
+            "The manifest has an old or unknown format, so the target owns no files and deletes none\n"
+            "Error: application.py: An unmanaged file occupies a path the target owns\n"
+        ),
         output_should_not_exist=True,
     )

@@ -1,3 +1,1 @@
-APIGenerationError
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/File/properties/queue: The dataclasses.dataclass converter has no conversion for the deque[int] type
-diagnostic MC_CODEC_UNSUPPORTED /components/schemas/File/properties/by_id: The Id key type has no dataclasses.dataclass conversion
+Error: /components/schemas/File/properties/queue: The dataclasses.dataclass converter has no conversion for the deque[int] type; /components/schemas/File/properties/by_id: The Id key type has no dataclasses.dataclass conversion

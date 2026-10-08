@@ -9,8 +9,6 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldNestedGetQueryCursorParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -43,7 +41,7 @@ class NestedResource:
     def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
@@ -66,7 +64,7 @@ class NestedWithResponse:
     def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
@@ -89,7 +87,7 @@ class NestedWithRawResponse:
     def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -112,7 +110,7 @@ class NestedWithStreamingResponse:
     def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

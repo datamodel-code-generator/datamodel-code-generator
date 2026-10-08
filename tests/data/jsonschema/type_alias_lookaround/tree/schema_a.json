@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {"$ref": "#/$defs/Code"}
+  },
+  "$defs": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$"}
+  }
+}

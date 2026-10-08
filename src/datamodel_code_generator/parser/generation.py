@@ -474,10 +474,9 @@ class GenerationIndex:
         self._reset_reference_classes_cache_if_needed()
         if (reference_classes := self._reference_classes_cache.get(model_id)) is not None:
             return reference_classes
-        model_type = model.__class__
         include_dict_key_references = (
-            include_dict_key_reference_classes := model_type._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
-        ) is not None and include_dict_key_reference_classes(model_type)
+            include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
+        ) is not None and include_dict_key_reference_classes(model)
         reference_classes = frozenset(
             reference.path
             for data_type_id in facts.data_types_by_model.get(model_id, ())
@@ -543,7 +542,7 @@ class GenerationIndex:
         reference: Reference,
         *,
         excluded_model: DataModel,
-        root_model_type: type[DataModel],
+        is_root_model: Callable[[DataModel], bool],
     ) -> tuple[list[DataModel], list[DataTypeFact]]:
         """Return wrapper models and direct non-wrapper refs for root collapse checks."""
         facts = self._facts()
@@ -557,7 +556,7 @@ class GenerationIndex:
         for data_type_id in data_type_ids:
             fact = facts.data_type_facts[data_type_id]
             owner = facts.model_facts[fact.owner_model].model
-            if isinstance(owner, root_model_type):
+            if is_root_model(owner):
                 if id(owner) not in wrapper_ids:
                     wrapper_ids.add(id(owner))
                     wrappers.append(owner)
