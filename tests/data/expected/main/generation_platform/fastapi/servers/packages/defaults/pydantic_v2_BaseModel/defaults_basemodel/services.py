@@ -30,4 +30,7 @@ class UntaggedService(Protocol):
         tags: defaults_basemodel_models.Tags,
         labels: defaults_basemodel_models.FieldValuesGetQueryLabelsParameter,
         rows: defaults_basemodel_models.FieldValuesGetQueryRowsParameter | None,
+        marks: defaults_basemodel_models.Tags,
+        notes: defaults_basemodel_models.Notes,
+        extras: defaults_basemodel_models.FieldValuesGetQueryExtrasParameter | None,
     ) -> None | HTTPResult[None] | Response: ...

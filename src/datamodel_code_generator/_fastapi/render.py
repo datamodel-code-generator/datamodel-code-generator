@@ -14,7 +14,14 @@ from datamodel_code_generator._fastapi._compiled_templates import router as rout
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.naming import normalize
-from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
+from datamodel_code_generator._fastapi.plan import (
+    CONSTRAINED,
+    Default,
+    RootDefault,
+    default_media,
+    fact,
+    symbol_imports,
+)
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -804,6 +811,12 @@ def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     return f"[{', '.join(module.types.literal(item) for item in value.items if isinstance(item, LiteralScalar))}]"
 
 
+def _root_default(module: Module, value: FinalPythonType, default: RootDefault) -> str:
+    """Return a root model of the schema's default, unvalidated as pydantic leaves defaults, or with its own."""
+    model = module.annotation(value)
+    return f"{model}()" if default.literal is None else f"{model}.model_construct({_default(module, default.literal)})"
+
+
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
     """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
     assert parameter is not None
@@ -833,8 +846,8 @@ def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argum
             entries.append(("adapter=", _adapter(module, parameter.type)))
         if isinstance(parameter.default, (LiteralScalar, LiteralSequence)):
             entries.append(("default=", _default(module, parameter.default)))
-        elif parameter.default is Default.MODEL and parameter.type is not None:
-            entries.append(("default=", f"{module.annotation(parameter.type)}()"))
+        elif isinstance(parameter.default, RootDefault) and parameter.type is not None:
+            entries.append(("default=", _root_default(module, parameter.type, parameter.default)))
         arguments.append(
             Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
         )

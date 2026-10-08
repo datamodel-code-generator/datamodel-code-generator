@@ -17,6 +17,10 @@ class Tags(RootModel[list[str]]):
     root: list[str] = Field(['a'], min_length=1)
 
 
+class Notes(RootModel[list[str]]):
+    root: list[str] = Field(default_factory=list)
+
+
 FieldValuesGetQueryDepthParameter = TypeAliasType(
     "FieldValuesGetQueryDepthParameter", Annotated[int, Field(ge=0)] | None
 )
@@ -51,4 +55,13 @@ FieldValuesGetQueryRowsParameter = TypeAliasType(
     Annotated[
         list[int] | None, Field(..., min_length=1)
     ],
+)
+
+
+FieldValuesGetQueryMarksParameter = TypeAliasType("FieldValuesGetQueryMarksParameter", Tags)
+
+
+FieldValuesGetQueryExtrasParameter = TypeAliasType(
+    "FieldValuesGetQueryExtrasParameter",
+    Annotated[list[str], Field(default_factory=list)],
 )

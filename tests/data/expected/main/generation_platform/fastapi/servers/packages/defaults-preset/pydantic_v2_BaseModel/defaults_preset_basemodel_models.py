@@ -12,8 +12,8 @@ class Size(RootModel[int]):
     root: Annotated[int, Field(ge=1)] = 10
 
 
-class Tags(RootModel[list[str] | None]):
-    root: Annotated[list[str] | None, Field(min_length=1)] = ['a']
+class Notes(RootModel[list[str]]):
+    root: Annotated[list[str], Field(default_factory=list)]
 
 
 type FieldValuesGetQueryDepthParameter = Annotated[int | None, Field(ge=0)]
@@ -40,3 +40,11 @@ type FieldValuesGetQueryLabelsParameter = Annotated[
 
 
 type FieldValuesGetQueryRowsParameter = Annotated[list[int] | None, Field(min_length=1)]
+
+
+type FieldValuesGetQueryMarksParameter = Annotated[list[str], Field(min_length=1)]
+
+
+type FieldValuesGetQueryExtrasParameter = Annotated[
+    list[str], Field(default_factory=list)
+]
