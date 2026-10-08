@@ -91,6 +91,20 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/schema_validators_multiple_aliases_property_count.json": (
         "opt-in schema-validator e2e fixture; payload validation intentionally uses default generation"
     ),
+    "jsonschema/rust_only_syntax.json": (
+        "Rust-only regex syntax that Python's re rejects or warns about; test_main_rust_only_syntax validates it"
+    ),
+    "jsonschema/rust_unsupported_atomic_group.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.11+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_end_of_string.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.14+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_python_rejected.json": (
+        "patterns both regex engines reject fail to import under either engine"
+    ),
     "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_type.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,

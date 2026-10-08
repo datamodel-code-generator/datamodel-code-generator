@@ -497,14 +497,14 @@ else:
 
 
 def _compiled_python_pattern(
-    pattern: object, prefix: str | None, prepared: dict[str, PythonRuntimeExpression]
+    pattern: object, data_type: DataType, prefix: str | None, prepared: dict[str, PythonRuntimeExpression]
 ) -> PythonRuntimeExpression | None:
     """Keep a Python pattern independent of its consuming model's config.
 
     A ``None`` prefix selects every pattern that needs Python's engine, as ``has_lookaround_pattern`` does.
     """
     if not isinstance(pattern, str) or not (
-        _needs_python_regex_engine(pattern) if prefix is None else pattern.startswith(prefix)
+        _needs_python_regex_engine(pattern, data_type) if prefix is None else pattern.startswith(prefix)
     ):
         return None
     pattern = str(pattern)
@@ -523,7 +523,7 @@ def _prepare_field_python_pattern(
     if isinstance(field.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression) or not (
         isinstance(field, _PydanticBaseDataModelField)
         and isinstance(field.constraints, Constraints)
-        and (pattern := _compiled_python_pattern(field.constraints.pattern, prefix, prepared))
+        and (pattern := _compiled_python_pattern(field.constraints.pattern, field.data_type, prefix, prepared))
         and not field._has_anyurl_outside_container()  # noqa: SLF001
     ):
         return False
@@ -539,7 +539,7 @@ def _prepare_python_patterns(
     _prepare_field_python_pattern(field, prefix, prepared)
     for data_type in field.data_type.all_data_types:
         if data_type.kwargs and (
-            pattern := _compiled_python_pattern(data_type.kwargs.get("pattern"), prefix, prepared)
+            pattern := _compiled_python_pattern(data_type.kwargs.get("pattern"), data_type, prefix, prepared)
         ):
             data_type.kwargs["pattern"] = pattern
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
@@ -554,7 +554,7 @@ def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntime
     nested = [_copy_alias_data_type(nested_type, prepared) for nested_type in data_type.data_types]
     dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared)
     kwargs = data_type.kwargs
-    pattern = _compiled_python_pattern(kwargs.get("pattern"), None, prepared) if kwargs else None
+    pattern = _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared) if kwargs else None
     base = (
         _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
         if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
@@ -913,9 +913,92 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
-def _needs_python_regex_engine(pattern: str) -> bool:
-    """Return whether a pattern needs Python's ``re`` because pydantic-core's Rust engine rejects it."""
-    return _LOOKAROUND_PATTERN.search(pattern) is not None
+_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+_UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
+_REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
+_REGEX_TOKEN: re.Pattern[str] = re.compile(
+    rf"{_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
+    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
+    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)",
+    re.DOTALL,
+)
+_REGEX_CLASS_TOKEN: re.Pattern[str] = re.compile(rf"\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])", re.DOTALL)
+_RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
+_RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
+_RUST_REJECTED_FLAGS = frozenset("aL")
+_CONTAINER_DATA_TYPE_FLAGS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
+_PY_310 = (3, 10)
+_PY_311 = (3, 11)
+_PY_314 = (3, 14)
+
+
+def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
+    """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
+    if (escape := match["escape"]) is not None:
+        return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
+    if (flags := match["flags"]) is not None:
+        return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
+    if group := match["group"]:
+        return True, _PY_311 if group == ">" else _PY_310
+    return match["brace"] is not None, _PY_311 if match["possessive"] else _PY_310
+
+
+def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
+    r"""Return whether the Rust regex crate rejects a pattern's syntax, and the oldest Python that parses it.
+
+    The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so it never reports a
+    pattern Rust accepts. Capture names such as ``(?P<ids[]>...)``, nested and POSIX character classes, braced
+    escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
+    consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
+    octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
+    ``a`` and ``L`` flags, and braces that cannot start a counted repetition. Atomic groups and possessive
+    quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
+    whitespace and comments the scan does not model.
+    """
+    rejected = False
+    minimum_python = _PY_310
+    depth = 0
+    position = 0
+    while (match := (_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
+        position = match.end()
+        if depth or match["open"]:
+            depth += bool(match["open"]) - bool(depth and match["close"])
+            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES
+            continue
+        if (requirements := _regex_token_requirements(match)) is None:
+            return None
+        rejected |= requirements[0]
+        minimum_python = max(minimum_python, requirements[1])
+    return (rejected, minimum_python)
+
+
+def _string_pattern_data_type(data_type: DataType) -> DataType | None:
+    """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``."""
+    if data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False):
+        return data_type
+    if (
+        data_type.type is None
+        and (members := data_type.data_types)
+        and not any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
+        and all(_string_pattern_data_type(member) is member for member in members)
+    ):
+        return members[0]
+    return None
+
+
+def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
+    """Return whether an emitted pattern needs Python's ``re``.
+
+    Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns
+    and keyed on the target Python version, so the output never depends on the installed pydantic-core or on
+    the Python running the generator. A pattern Python's ``re`` also rejects fails at import either way.
+    """
+    if _LOOKAROUND_PATTERN.search(pattern) is not None:
+        return True
+    if (string_type := _string_pattern_data_type(data_type)) is None:
+        return False
+    scan = _scan_regex_syntax(pattern)
+    return scan is not None and scan[0] and string_type.python_version.version_key >= scan[1]
 
 
 if TYPE_CHECKING:
@@ -998,7 +1081,10 @@ def has_lookaround_pattern(
     follow_references: bool = False,
     _visited: set[int] | None = None,
 ) -> bool:
-    """Check if any field has a regex pattern with lookaround assertions.
+    """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
+
+    This covers lookaround assertions and, for string patterns pydantic compiles, any other syntax
+    pydantic-core's Rust engine rejects, such as backreferences.
 
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
@@ -1008,13 +1094,13 @@ def has_lookaround_pattern(
         _visited = set()
     for field in fields:
         pattern = isinstance(field.constraints, Constraints) and field.constraints.pattern
-        if pattern and _needs_python_regex_engine(pattern):
+        if pattern and _needs_python_regex_engine(pattern, field.data_type):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern)
-            if pattern and _needs_python_regex_engine(pattern):
+            if pattern and _needs_python_regex_engine(pattern, data_type):
                 return True
             if not follow_references or data_type.reference is None:
                 continue

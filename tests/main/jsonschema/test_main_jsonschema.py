@@ -15350,6 +15350,253 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
 
 
 @pytest.mark.benchmark
+@pytest.mark.parametrize(
+    ("args", "expected_file", "doubled_path"),
+    [
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            "rust_unsupported_pattern_pydantic_v2.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
+            "rust_unsupported_pattern_pydantic_v2_annotated.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "rust_unsupported_pattern_pydantic_v2_field_constraints.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.dataclass"],
+            "rust_unsupported_pattern_pydantic_v2_dataclass.py",
+            ("doubled",),
+        ),
+    ],
+)
+def test_main_rust_unsupported_pattern(
+    args: list[str], expected_file: str, doubled_path: tuple[str, ...], output_file: Path
+) -> None:
+    """Patterns pydantic-core's Rust engine rejects, such as backreferences, select Python's regex engine.
+
+    Lookaround and plain patterns keep their existing output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=args,
+        force_exec_validation=True,
+    )
+    for path in (("pair",), doubled_path):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_pattern_{path[0]}",
+            model_name="Model",
+            valid_json=json.dumps({path[0]: "aa"}),
+            invalid_json=json.dumps({path[0]: "ab"}),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=path,
+            expected_attribute_value="aa",
+        )
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    ("args", "expected_file"),
+    [
+        ([], "rust_unsupported_pattern_non_string_pydantic_v2.py"),
+        (["--use-annotated"], "rust_unsupported_pattern_non_string_pydantic_v2_annotated.py"),
+    ],
+)
+def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
+    """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
+
+    The ``uri`` pattern is dropped for ``AnyUrl`` and pydantic ignores ``bytes`` patterns, so the
+    model keeps Rust semantics: Unicode classes compile and ``$`` does not match before a final newline.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rust_unsupported_pattern_non_string",
+        model_name="Model",
+        valid_json='{"code": "abc"}',
+        invalid_json=json.dumps({"code": "abc\n"}),
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("code",),
+        expected_attribute_value="abc",
+    )
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("target_pydantic_version", ["2", "2.12"])
+def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file: Path) -> None:
+    """Syntax no pydantic-core release supports selects Python's regex engine, detected statically.
+
+    Escaped characters and character class members never trigger it, and neither does syntax newer
+    pydantic-core releases accept. The target Pydantic version does not change the decision.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_syntax_pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-pydantic-version",
+            target_pydantic_version,
+        ],
+    )
+    for model_name, valid, invalid in (
+        ("Backreference", "aa", "ab"),
+        ("NamedBackreference", "bb", "bc"),
+        ("Conditional", "<a>", "<a"),
+        ("EndOfString", "abc", "abc\n"),
+        ("Comment", "abc", "ABC"),
+        ("NamedCharacter", "aa", "ab"),
+        ("ClassBackspace", "\b", "b"),
+        ("ClassOctal", "AA", "B"),
+        ("AsciiFlag", "abc", "\u00e9"),
+        ("OmittedMinimum", "ab", "abcd"),
+        ("LiteralBrace", "{ab}", "ab"),
+        ("EscapedBackslash", "\\1", "1"),
+        ("EscapedGroup", "(?>ab)", "ab"),
+        ("ClassMembers", "(?>{", "a"),
+        ("EscapedBrace", "{ab}", "ab"),
+        ("CountedRepetition", "ab", "abcd"),
+        ("ClassEscapedBackslash", "\\b", "a"),
+        ("EscapedSlash", "a/b", "ab"),
+        ("AngleNamedGroup", "2024", "24"),
+        ("Possessive", "abc", "abc\n"),
+        ("ScopedAsciiFlag", "abc", "\u00e9"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+def test_main_rust_only_syntax(output_file: Path) -> None:
+    r"""Rust-only syntax keeps pydantic-core's default regex engine and Rust semantics.
+
+    Counted repetitions with whitespace, braced escapes such as ``\p{L}``, ``\x{41}`` and ``\b{start}``,
+    nested character classes, and capture names with brackets are Rust syntax that Python's ``re`` reads
+    differently or rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_only_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_only_syntax_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    for model_name, valid, invalid in (
+        ("BraceWhitespace", "ab", "abcd"),
+        ("UnicodeProperty", "\u00e9", "1"),
+        ("WordBoundary", "abc", "123"),
+        ("HexBrace", "AA", "B"),
+        ("NestedClass", "a{", "1"),
+        ("BracketedCaptureName", "12", "a"),
+        ("ClassBeforeCaptureName", "m>x", "a>x"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_only_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+@pytest.mark.parametrize(
+    ("fixture", "target_python_version", "expected_file", "switched"),
+    [
+        ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
+        ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.13",
+            "rust_unsupported_end_of_string_py313.py",
+            False,
+            marks=BLACK_PY313_SKIP,
+        ),
+        pytest.param(
+            "rust_unsupported_end_of_string",
+            "3.14",
+            "rust_unsupported_end_of_string_py314.py",
+            True,
+            marks=BLACK_PY314_SKIP,
+        ),
+    ],
+)
+def test_main_rust_unsupported_target_python(
+    fixture: str, target_python_version: str, expected_file: str, switched: bool, output_file: Path
+) -> None:
+    r"""Python-only regex syntax selects Python's regex engine only when the target Python's ``re`` parses it.
+
+    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The decision
+    depends on ``--target-python-version``, never on the Python running the generator. Switched models are
+    imported when the running Python is at least the target.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+        ],
+        skip_code_validation=not switched,
+        force_exec_validation=switched,
+    )
+
+
+def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
+    """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
+
+    Such a model fails at import with either engine, and the decision never depends on the Python running the
+    generator: unknown character names, global flags after the start, non-ASCII conditional references,
+    overflowing repetitions, and deeply nested groups are switched without compiling the pattern. Verbose
+    patterns keep the default engine because the scan does not model their whitespace and comments.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.benchmark
 def test_main_nested_lookaround_array_generic_container(output_file: Path) -> None:
     """Test lookaround pattern with --use-generic-container-types for Sequence path."""
     run_main_and_assert(

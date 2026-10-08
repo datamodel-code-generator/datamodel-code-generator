@@ -420,6 +420,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
                     case _:
                         constraint_import = IMPORT_STRING_CONSTRAINTS
                 data_type = AnnotatedStringDataType.from_import(constraint_import, kwargs=data_type_kwargs)
+                data_type.python_version = self.python_version
                 data_type._set_runtime_expression_imports(_ANNOTATED_STRING_IMPORTS)  # noqa: SLF001
                 return data_type
             return self.data_type.from_import(IMPORT_CONSTR, kwargs=data_type_kwargs)
