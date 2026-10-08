@@ -352,7 +352,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
     ) -> DataType:
         """Get float data type with constraints (confloat, PositiveFloat, etc.)."""
         data_type_kwargs = self.transform_kwargs(kwargs, number_kwargs)
-        strict = StrictTypes.float in self.strict_types and not kwargs.get("string_format")
+        strict = StrictTypes.float in self.strict_types
         if data_type_kwargs:
             # Use Decimal instead of float when multipleOf is present to avoid floating-point precision issues
             if self.use_decimal_for_multiple_of and "multiple_of" in data_type_kwargs:
@@ -453,7 +453,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.get_data_str_type(types, **kwargs)
         if types in {Types.int32, Types.int64, Types.integer}:
             return self.get_data_int_type(types, **kwargs)
-        if types in {Types.float, Types.double, Types.number, Types.time}:
+        if types in {Types.float, Types.double, Types.number, Types.time} and not kwargs.get("string_format"):
             return self.get_data_float_type(types, **kwargs)
         if types == Types.decimal:
             return self.get_data_decimal_type(types, **kwargs)

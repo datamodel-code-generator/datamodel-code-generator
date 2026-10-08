@@ -810,15 +810,20 @@ def load_protocols(
 
 
 def _read(path: Path) -> tuple[object, list[Diagnostic]]:
-    """Read a JSON object from a file as JSON configuration options read theirs, refusing deep nesting first."""
-    from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
+    """Read a helper file as --client-protocols reads it, with that option's messages."""
+    from datamodel_code_generator.json_config import (  # noqa: PLC0415
+        JsonConfigError,
+        JsonConfigSpecs,
+        load_json_config_field,
+    )
     from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
 
     record_watch_dependency(path)
     try:
-        return validate_json_value_or_file(str(path), option_name=_ROOT, max_depth=_MAX_DEPTH), []
+        return load_json_config_field("client_protocols", str(path)), []
     except JsonConfigError as error:
-        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error))]
+        option = JsonConfigSpecs.by_field_name["client_protocols"].option_name
+        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error).replace(option, _ROOT))]
 
 
 def validate(tree: object) -> tuple[tuple[Helper, ...], list[Diagnostic]]:

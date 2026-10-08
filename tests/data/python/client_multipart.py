@@ -160,6 +160,7 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for label, parts in (
         ("stored id read", ((_NAMED % b"id", b"4"),)),
         ("stored id read of an extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"))),
+        ("stored id read of a repeated extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"), (_NAMED % b"x", b"2"))),
     ):
         exchange.respond(raw_response(202, _form(*parts), form))
         record(lines, label, api.forms.read_parts)
@@ -200,6 +201,7 @@ def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for label, status, parts in (
         ("upload read without its photo", 200, (title,)),
         ("upload read of a title twice", 200, (title, title, photo)),
+        ("upload read of title text that is not UTF-8", 200, ((_NAMED % b"title", b"\xff"), photo)),
         ("upload read of a count that is no integer", 200, (title, photo, (_NAMED % b"count", b"x"))),
         ("upload read of an extra that is no integer", 200, (title, photo, (_NAMED % b"bonus", b"x"))),
         ("upload read of broken JSON", 200, (title, photo, (_NAMED % b"meta" + _JSON, b"{"))),
