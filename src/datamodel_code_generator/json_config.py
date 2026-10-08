@@ -231,9 +231,13 @@ def _path_is_file(path: Path) -> bool:
         return False
 
 
+def json_file(value: str | Path) -> Path | None:
+    """Return the file a JSON option value names, or None for inline JSON."""
+    return path if _path_is_file(path := Path(value).expanduser()) else None
+
+
 def _read_json_or_inline(value: str) -> str:
-    path = Path(value).expanduser()
-    if not _path_is_file(path):
+    if (path := json_file(value)) is None:
         return value
 
     try:
@@ -440,14 +444,9 @@ def load_json_config_field(
     return None if raw is None else spec.validate(raw)
 
 
-def validate_json_value_or_file(
-    value: str, *, option_name: str = "", max_depth: int | None = None
-) -> dict[str, object]:
-    """Parse and validate a JSON object or JSON file path for argparse-compatible callers.
-
-    With max_depth, text that opens more arrays and objects at once is refused before parsing.
-    """
-    raw = _load_json_source(value, option_name=option_name, max_depth=max_depth)
+def validate_json_value_or_file(value: str, *, option_name: str = "") -> dict[str, object]:
+    """Parse and validate a JSON object or JSON file path for argparse-compatible callers."""
+    raw = _load_json_source(value, option_name=option_name)
     if not isinstance(raw, dict):
         msg = f"Expected a JSON object, got {type(raw).__name__}"
         raise JsonConfigError(msg)

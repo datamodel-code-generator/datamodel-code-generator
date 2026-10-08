@@ -918,7 +918,9 @@ Set the client settings of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to their settings. An operation reference is the
 JSON pointer of the path item method, such as `/paths/~1pets/get`, optionally after a document and `#`, such as
-`pets.yaml#/paths/~1pets/get`. The settings are `resource`, `name`, `parameter_names` (keyed by location and name,
+`pets.yaml#/paths/~1pets/get`. A relative document resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table. The settings are
+`resource`, `name`, `parameter_names` (keyed by location and name,
 such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`,
 `body_arguments`, which overrides `--client-body-arguments`, `body_field_names` (keyed by media type, then property,
 such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `request_id_header`, `success_statuses`,
@@ -1829,8 +1831,9 @@ Declare the protocol helpers of the client package (experimental).
 
 The JSON object, inline or in a file, maps each helper's name to the definition of a pagination, polling, stream,
 WebSocket, cache, upload, or webhook helper, as the Python client guide describes. Relative documents that its
-references name resolve against the working directory for a command-line value, and against the pyproject.toml
-directory for the `client-protocols` key, which may also be a table.
+references name resolve against the directory of the JSON file that holds them, on the command line and for the
+`client-protocols` key alike. For inline JSON they resolve against the working directory, and for a table of the
+`client-protocols` key against the pyproject.toml directory.
 
 **Option relationships:**
 
@@ -3672,8 +3675,10 @@ Set the handler mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
-pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. A relative
+document resolves against the JSON file that holds the reference, or without a file against the working directory,
+and against the pyproject.toml directory for a table. In pyproject.toml, `server-handler-modes` is a table, and a
+command-line value replaces the whole table.
 
 **Option relationships:**
 

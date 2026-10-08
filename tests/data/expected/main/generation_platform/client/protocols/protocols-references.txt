@@ -2,7 +2,7 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   E_OPERATION_REF config protocols['users.unknown'].operation /paths/~1people/get: protocols['users.unknown'].operation '/paths/~1people/get' selects no root path operation that --openapi-include-paths keeps
-  E_OPERATION_REF config protocols['users.external'].operation /paths/~1users/get: protocols['users.external'].operation '/paths/~1users/get' in '../helpers-external.yaml' selects no root path operation that --openapi-include-paths keeps
+  E_OPERATION_REF config protocols['users.external'].operation /paths/~1users/get: protocols['users.external'].operation '/paths/~1users/get' in '../helpers-external.yaml' (<root>/pydantic_v2_BaseModel/helpers-external.yaml) selects no root path operation that --openapi-include-paths keeps
   E_OPERATION_REF config protocols['users.created'].operation /webhooks/userCreated/post: protocols['users.created'].operation '/webhooks/userCreated/post' selects no root path operation that --openapi-include-paths keeps
   E_OPERATION_REF config protocols['audit.all'].operation /paths/~1admin~1audit/get: protocols['audit.all'].operation '/paths/~1admin~1audit/get' selects no root path operation that --openapi-include-paths keeps
   E_CONFIG_VALUE config protocols['users.schema'].item_schema: protocols['users.schema'].item_schema names a document outside the accepted input

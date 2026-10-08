@@ -99,7 +99,10 @@ class _Resolver:
         return document_identity(document, self.base)
 
     def link(self, link: Link) -> Iterator[Diagnostic]:
-        """Resolve one operation reference, and check each request target it takes."""
+        """Resolve one operation reference, and check each request target it takes.
+
+        An unresolved reference names its document as written and, for a path, the file it resolved to.
+        """
         reference = link.ref
         try:
             document = self.identity(reference.document)
@@ -107,7 +110,10 @@ class _Resolver:
             yield _undocumented(link.at, reference.document)
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
-            named = "" if reference.document is None else f" in {reference.document!r}"
+            named = ""
+            if (written := reference.document) is not None:
+                path = (self.base / written).resolve()
+                named = f" in {written!r} ({path.as_posix()})" if document == path.as_uri() else f" in {written!r}"
             message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return

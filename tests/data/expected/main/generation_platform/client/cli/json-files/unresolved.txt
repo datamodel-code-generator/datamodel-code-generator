@@ -1,0 +1,1 @@
+Error: /paths/~1pets/get: --client-protocols['pets.all'].operation '/paths/~1pets/get' in 'missing.yaml' (<root>/api/missing.yaml) selects no root path operation; /paths/~1pets/get: --client-protocols['pets.remote'].operation '/paths/~1pets/get' in 'https://example.com/options.yaml' selects no root path operation

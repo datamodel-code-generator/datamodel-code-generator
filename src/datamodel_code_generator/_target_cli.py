@@ -284,16 +284,25 @@ def _refused(flags: list[str], selector: str) -> APIGenerationError:
     return APIGenerationError(tuple(_conflict(f"{selector} cannot be used with {flag}") for flag in flags))
 
 
-def _base(namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:
-    """Return the directory a setting's documents resolve against: pyproject.toml's for its keys, else the cwd."""
+def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:
+    """Return the directory that the documents a setting names resolve against.
+
+    A setting read from a JSON file resolves against that file's directory. Inline JSON and tables resolve against
+    the pyproject.toml directory for its keys, and against the working directory for options.
+    """
+    if (source := config._json_sources.get(field)) is not None:  # noqa: SLF001
+        from datamodel_code_generator.json_config import json_file  # noqa: PLC0415
+
+        if (file := json_file(source)) is not None:
+            return (Path.cwd() / file).parent
     return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
 
 
 def _server(config: Any, namespace: Namespace, pyproject_path: Path | None) -> tuple[FastAPITarget, FastAPIConfig]:
     """Map the --server-* settings onto the server configuration, leaving unset ones at their defaults.
 
-    Documents named in operation references resolve against the pyproject.toml directory for settings read from it,
-    and against the working directory for settings given on the command line.
+    Documents named in operation references resolve against the JSON file that holds the setting, else against the
+    pyproject.toml directory for settings read from it and the working directory for settings given as options.
     """
     from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
@@ -303,10 +312,10 @@ def _server(config: Any, namespace: Namespace, pyproject_path: Path | None) -> t
     }
     for name in _OPERATION_SETTINGS:
         if (entries := getattr(config, field := f"server_{name}")) is not None:
-            root = _base(namespace, pyproject_path, field)
+            root = _base(config, namespace, pyproject_path, field)
             values[name] = {_operation(key, root): value for key, value in entries.items()}
     if (responses := config.server_primary_responses) is not None:
-        root = _base(namespace, pyproject_path, "server_primary_responses")
+        root = _base(config, namespace, pyproject_path, "server_primary_responses")
         values["primary_responses"] = {
             _operation(key, root): ResponseChoice(status_code=choice.status_code, media_type=choice.media_type)
             for key, choice in responses.items()
@@ -336,9 +345,9 @@ def _client(
     if (names := config.client_resource_names) is not None:
         values["resource_names"] = tuple(ResourceName(tag=tag, namespace=name) for tag, name in names.items())
     if (entries := config.client_operations) is not None:
-        root = _base(namespace, pyproject_path, "client_operations")
+        root = _base(config, namespace, pyproject_path, "client_operations")
         values["operations"] = operation_configs(entries, partial(_operation, base=root))
-    return ClientTarget(_base(namespace, pyproject_path, "client_protocols")), ClientGenerationConfig(
+    return ClientTarget(_base(config, namespace, pyproject_path, "client_protocols")), ClientGenerationConfig(
         output=config.client_output,
         package=config.client_package,
         model_package=config.client_model_package,

@@ -142,6 +142,7 @@ from datamodel_code_generator._cli_config import (
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._project_config import (
+    _PYPROJECT_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
@@ -281,16 +282,23 @@ def _create_config(
     pyproject_config: Mapping[str, Any],
     cli_config_args: Mapping[str, _RawConfigValue],
 ) -> Config:
-    """Create the final CLI config while preserving pyproject/CLI validation order."""
+    """Create the final CLI config while preserving pyproject/CLI validation order.
+
+    The config keeps the text or path each JSON option was given as: a JSON file is the base of the paths it names.
+    """
     config_class = _get_config_class()
-    if not pyproject_config:
-        return config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    if pyproject_config:
+        from argparse import Namespace as ArgNamespace  # noqa: PLC0415
 
-    from argparse import Namespace as ArgNamespace  # noqa: PLC0415
-
-    config = config_class.model_validate(pyproject_config)
-    cli_namespace = ArgNamespace(**cli_config_args)
-    config.merge_args(cli_namespace)
+        config = config_class.model_validate(pyproject_config)
+        config.merge_args(ArgNamespace(**cli_config_args))
+    else:
+        config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    config._json_sources = {  # noqa: SLF001
+        name: value
+        for name in _PYPROJECT_JSON_CONFIG_FIELDS
+        if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
+    }
     return config
 
 

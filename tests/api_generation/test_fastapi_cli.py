@@ -410,6 +410,39 @@ def test_fastapi_cli_pyproject_paths(
     )
 
 
+@pytest.mark.parametrize(
+    ("pyproject", "arguments"),
+    [
+        (
+            [],
+            [
+                *("--input", "../api/pets.yaml", "--input-file-type", "openapi", "--output", "../models.py"),
+                *_server("--server-handler-modes", "../api/modes.json", output="../server"),
+            ],
+        ),
+        (["pyproject-json-files.toml"], []),
+    ],
+    ids=["option", "pyproject"],
+)
+def test_fastapi_cli_json_file_documents(
+    pyproject: list[str],
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve the documents that the operation references of a JSON file name against the file's directory."""
+    project, work = tmp_path / "project", tmp_path / "project" / "work"
+    work.mkdir(parents=True)
+    shutil.copytree(CLI / "json-files", project / "api")
+    shutil.copy2(SOURCE / "pets.yaml", project / "api" / "pets.yaml")
+    for name in pyproject:
+        shutil.copy2(CLI / name, project / "pyproject.toml")
+    monkeypatch.chdir(work)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
+
+
 def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
     """Print the server options of a command line as [tool.datamodel-codegen] keys, like model options."""
     run_main_with_args(
@@ -1480,8 +1513,10 @@ methods. `--server-handler-modes` overrides it for single operations.""",
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
-pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.""",
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. A relative
+document resolves against the JSON file that holds the reference, or without a file against the working directory,
+and against the pyproject.toml directory for a table. In pyproject.toml, `server-handler-modes` is a table, and a
+command-line value replaces the whole table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
                 golden_output=f"{DOC_OUTPUT}/handler-modes/services.py",
