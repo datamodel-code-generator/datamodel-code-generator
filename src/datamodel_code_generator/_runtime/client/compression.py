@@ -99,4 +99,4 @@ def gzipped_source(source: BodySource) -> BodySource:
     return source.encoded(_GzipAttempt, _AsyncGzipAttempt)
 
 
-GZIP: Final = RequestCoding("gzip", gzipped_attempt, gzipped_source, gzipped_source)
+GZIP: Final = RequestCoding("gzip", gzipped_attempt, gzipped_source)

@@ -99,13 +99,6 @@ def _closing(stream: _ClosingStream) -> object:
     return injected(lambda _: httpx2.Response(200, headers={"content-type": "application/json"}, stream=stream))
 
 
-def _sent_then_failed(request: httpx2.Request) -> httpx2.Response:
-    """Fail in the transport after the whole request body was read from the SDK."""
-    del request
-    msg = "Transport failed after reading the body"
-    raise RuntimeError(msg)
-
-
 class _InterruptedStream(httpx2.AsyncByteStream):
     """A response that reports a read failure after its reader is cancelled."""
 

@@ -163,14 +163,14 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
 
 
 class _Download:
-    """One temporary download whose file operations finish sequentially."""
+    """One temporary download and the chunks waiting for its next write."""
 
     def __init__(self) -> None:
         self.created: tuple[BinaryIO, Path] | None = None
         self.parts: list[bytes] = []
         self.size = 0
 
-    async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
+    def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
         self.created = created = _created(path, overwrite)
         return created
 
@@ -719,8 +719,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
         """Write the decoded body to a file object, or to a path through a temporary file moved there on success.
 
-        A file object is written on the event loop. A path's file is created, written about CHUNK bytes at a time, and
-        moved in a thread, one file operation after another.
+        Both are written with ordinary blocking file calls on the event loop; a path's file is written about CHUNK
+        bytes at a time.
         """
         if isinstance(target, (str, PathLike)):
             await self._download(Path(target), overwrite=overwrite)
@@ -749,7 +749,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         download = _Download()
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
-            created = await download.create(path, overwrite)
+            created = download.create(path, overwrite)
             chunks = self._iterate(action="stream_to", decoded=True)
             async with aclosing(chunks):
                 async for chunk in chunks:

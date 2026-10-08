@@ -50,7 +50,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary, quiet_close
+from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import (
     async_response_bytes,
     native_async_client,
@@ -584,28 +584,6 @@ def _compressed(
         ("Content-Encoding", coding.token),
     ))
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
-
-
-def _abandoned(
-    call: Call,
-    owned: tuple[BodySource | None, BodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            call.retry_blocked |= not _discarded(resource.close, failure)
-
-
-async def _aabandoned(
-    call: Call,
-    owned: tuple[BodySource | None, BodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed asyncio call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            await call.cleanup(resource.aclose, error=failure)
 
 
 def strip_credentials(
@@ -1356,30 +1334,6 @@ def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTr
     return resolved
 
 
-def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
-    try:
-        close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-async def _areleased(close: Callable[[], Awaitable[None]], operation_id: str | None, call_id: str) -> None:
-    try:
-        await close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-def _discarded(close: Callable[[], object], error: BaseException) -> bool:
-    """Run a close while an error propagates, keeping its failure beside that error."""
-    if (failure := quiet_close(close)) is None:
-        return True
-    if not isinstance(failure, Exception) and isinstance(error, Exception):
-        raise failure
-    add_secondary(error, failure)
-    return False
-
-
 @contextmanager
 def _streamed(opened: Callable[[], RawResponse]) -> Generator[RawResponse, None, None]:
     """Send on entering the block and yield the streaming response, which leaving the block closes."""
@@ -1732,7 +1686,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], T],
         opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
@@ -1755,20 +1709,15 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
-                source, entry = source if coding is None else coding.source(source), None
+                if coding is not None:
+                    source = coding.source(source)
 
             result = self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
-            failure = call.failure(error)
-            _abandoned(call, (source, entry), failure)
-            raise failure from None
-        if source is not None:
-            try:
-                _released(source.close, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, RawResponse):
-                    result.discard(error)
-                raise
+            raise call.failure(error) from None
+        finally:
+            if (owner := source or entry) is not None:
+                owner.close()
         return result
 
     def _exchange(
@@ -2428,7 +2377,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
@@ -2451,20 +2400,15 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry, asynchronous=True)
-                source, entry = source if coding is None else coding.async_source(source), None
+                if coding is not None:
+                    source = coding.source(source)
 
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
-            failure = call.failure(error)
-            await _aabandoned(call, (source, entry), failure)
-            raise failure from None
-        if source is not None:
-            try:
-                await _areleased(source.aclose, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, AsyncRawResponse):
-                    await result.discard(error)
-                raise
+            raise call.failure(error) from None
+        finally:
+            if (owner := source or entry) is not None:
+                owner.close()
         return result
 
     async def _exchange(

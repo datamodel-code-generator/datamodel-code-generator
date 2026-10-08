@@ -61,37 +61,15 @@ class _AsyncSigner(_Signatures):
         return self.fields(request)
 
 
-class _Attempt:
-    def __init__(self, events: list[str], *, known: bool) -> None:
-        self.events = events
-        self.known = known
-
-    @property
-    def content_length(self) -> int | None:
-        self.events.append("length")
-        return 19 if self.known else None
-
-    @property
-    def content_type(self) -> str | None:
-        self.events.append("type")
-        return "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        self.events.append("read")
-        yield b"chunk-one"
-        yield b"\x00chunk-two"
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        for chunk in self.iter_bytes():
-            yield chunk
-
-    def close(self) -> None:
-        self.events.append("close")
-
-    async def aclose(self) -> None:
-        self.close()
+def _chunks(events: list[str]) -> Iterator[bytes]:
+    events.append("read")
+    yield b"chunk-one"
+    yield b"\x00chunk-two"
 
 
+async def _achunks(events: list[str]) -> AsyncIterator[bytes]:
+    for chunk in _chunks(events):
+        yield chunk
 
 
 def _operation(
@@ -113,9 +91,10 @@ def _operation(
     if label == "typed-known":
         return lambda: resource.signed_body(body=b"signed\x00bytes")
     body: object = b"encoded\x00bytes"
-    if label != "raw-encoded":
-        attempt = _Attempt(events, known=label == "raw-known")
-        body = io.BytesIO(b"chunk-one\x00chunk-two") if label == "raw-known" else (attempt.aiter_bytes() if asynchronous else attempt.iter_bytes())
+    if label == "raw-known":
+        body = io.BytesIO(b"chunk-one\x00chunk-two")
+    elif label != "raw-encoded":
+        body = _achunks(events) if asynchronous else _chunks(events)
     return lambda: api.request_raw(
         "PUT", origin + "/raw/%7e/%2F?dup=one&dup=two&blank=&plus=+&space=%20&slash=%2f", body=body
     )

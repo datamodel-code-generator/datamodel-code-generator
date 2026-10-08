@@ -505,9 +505,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
-@pytest.mark.abnormal_path(
-    "Portable external file-opening and unlink failures exercise cancellation cleanup."
-)
+@pytest.mark.abnormal_path("Portable external file-opening and unlink failures exercise cancellation cleanup.")
 async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Cancel after conventional file creation and report an abnormal unlink failure."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"

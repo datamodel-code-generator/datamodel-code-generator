@@ -590,7 +590,7 @@ class DecodeError(SDKError):
 
 
 def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
-    """Return the failure of a binary input that cannot rewind for sending."""
+    """Return the failure of a binary input that cannot be opened or rewound for sending."""
     return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
 
 

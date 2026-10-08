@@ -443,11 +443,14 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-Pass binary files, `Path` objects, iterables of bytes, or (for async calls) async iterables directly.
+A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
+`bytes`; async calls also accept an async iterable of `bytes`. Bytes and seekable files, including paths, are sent
+with `Content-Length` from the file's current position; other inputs use chunked transfer encoding.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
-The SDK opens and closes paths for the call. Consumed nonseekable inputs cannot replay and are never buffered or
-spooled implicitly. Multipart can replay when all its file parts can. Body factories, attempt protocols, digest
-metadata, freshness ledgers and explicit ownership adapters are removed.
+The SDK opens a path when the body is first sent and closes it when the call ends; a path that cannot be opened
+raises a request `DecodeError` with the reason `unencodable` before sending. Consumed nonseekable inputs cannot replay
+and are never buffered or spooled implicitly. Multipart can replay when all its file parts can. Async calls read
+files with ordinary blocking reads of at most 64 KiB on the event loop.
 
 ## Redirects and transport construction
 
@@ -516,8 +519,7 @@ acquisition remains allowed. These callbacks start no builtin token exchange.
 Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
 They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
 sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
-`signing_failed` preserves callback failures without transport retry. Signer body digests and digest declarations
-are removed.
+`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting

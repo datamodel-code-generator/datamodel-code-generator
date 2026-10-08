@@ -6,16 +6,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
-from .errors import DecodeError, add_secondary
-from .multipart import (
-    AsyncMultipartAttempt,
-    MultipartAttempt,
-    MultipartSource,
-    is_file_part,
-    is_multipart,
-    quiet_close,
-    raise_cleanup,
-)
+from .errors import DecodeError
+from .multipart import AsyncMultipartAttempt, MultipartAttempt, MultipartSource, is_file_part, is_multipart
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -30,7 +22,6 @@ class RequestCoding:
     token: str
     attempt: Callable[[EncodedAttempt, Callable[[], None]], EncodedAttempt]
     source: Callable[[BodySource], BodySource]
-    async_source: Callable[[BodySource], BodySource]
 
 
 def _inputs(body: object) -> Iterator[object]:
@@ -66,13 +57,10 @@ class BodyBindings:
         return source
 
     def close(self) -> None:
-        """Release SDK-opened paths and entry references."""
+        """Close the files this call opened from paths."""
         entries, self._entries = self._entries, {}
-        raise_cleanup([error for _, source in entries.values() if (error := quiet_close(source.close)) is not None])
-
-    async def aclose(self) -> None:
-        """Release conventional files in async mode."""
-        self.close()
+        for _, source in entries.values():
+            source.close()
 
 
 def capture_body(body: object) -> BodyBindings | None:
@@ -127,29 +115,19 @@ class BodySource:
         return self._aencode(attempt) if self._aencode is not None else attempt
 
     def close(self) -> None:
-        """Release call-owned paths."""
+        """Close the files this call opened from paths."""
         self._bindings.close()
-
-    async def aclose(self) -> None:
-        """Release call-owned paths in async mode."""
-        await self._bindings.aclose()
 
 
 def bind_body(content: object, *, entry: BodyBindings | None = None, asynchronous: bool = False) -> BodySource:
     """Bind the encoded layout without buffering native streams."""
     bindings = BodyBindings() if entry is None else entry
-    try:
-        multipart = isinstance(content, MultipartSource)
-        inputs: Iterable[object]
-        if isinstance(content, MultipartSource):
-            inputs = content.ainputs() if asynchronous else content.inputs()
-        else:
-            inputs = (content,)
-        pieces = [
-            piece if isinstance(piece, bytes) else bindings.bind(piece, asynchronous=asynchronous) for piece in inputs
-        ]
-        return BodySource(pieces, bindings, multipart=multipart)
-    except BaseException as error:
-        if (failure := quiet_close(bindings.close)) is not None:
-            add_secondary(error, failure)
-        raise
+    inputs: Iterable[object]
+    if isinstance(content, MultipartSource):
+        inputs = content.ainputs() if asynchronous else content.inputs()
+    else:
+        inputs = (content,)
+    pieces = [
+        piece if isinstance(piece, bytes) else bindings.bind(piece, asynchronous=asynchronous) for piece in inputs
+    ]
+    return BodySource(pieces, bindings, multipart=isinstance(content, MultipartSource))

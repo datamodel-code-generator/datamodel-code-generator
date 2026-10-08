@@ -528,9 +528,7 @@ def _sync_admission(package: ModuleType, lines: list[str]) -> None:
             record(
                 lines,
                 label,
-                lambda: api.pets.photos.upload(
-                    pet_id=_photo(package), body=payload, options=request
-                ),
+                lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=request),
             )
             lines.append(
                 f"    {limiter.usage.report} payload={payload.opened} "
@@ -811,9 +809,7 @@ async def _async_admission(package: ModuleType, lines: list[str]) -> None:
             await arecord(
                 lines,
                 label,
-                lambda: api.pets.photos.upload(
-                    pet_id=_photo(package), body=payload, options=request
-                ),
+                lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=request),
             )
             lines.append(
                 f"    {limiter.usage.report} payload={payload.opened} "

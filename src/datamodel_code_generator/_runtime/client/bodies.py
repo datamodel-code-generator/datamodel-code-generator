@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Iterable, Mapping
-from os import PathLike
+from os import SEEK_END, PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO, TypeAlias, cast
+from typing import IO, TYPE_CHECKING, Final, TypeAlias, cast
 
 from typing_extensions import TypeIs
 
@@ -44,13 +44,18 @@ if TYPE_CHECKING:
             """Yield bytes for one asynchronous request stream."""
 
 
-SyncBinaryBody: TypeAlias = bytes | BinaryIO | PathLike[str] | Iterable[bytes]
+SyncBinaryBody: TypeAlias = bytes | IO[bytes] | PathLike[str] | Iterable[bytes]
 AsyncBinaryBody: TypeAlias = SyncBinaryBody | AsyncIterable[bytes]
+_NOT_CHUNKS: Final = (str, bytearray, memoryview, Mapping)
+
+
+def _is_file(value: object) -> bool:
+    return callable(getattr(value, "read", None)) and not isinstance(value, AsyncIterable)
 
 
 def is_file_input(value: object) -> bool:
-    """Identify paths and readable file objects without opening or consuming them."""
-    return not isinstance(value, bytes) and (isinstance(value, PathLike) or callable(getattr(value, "read", None)))
+    """Identify paths and synchronously read file objects without opening or consuming them."""
+    return isinstance(value, PathLike) or _is_file(value)
 
 
 def is_binary_input(value: object) -> TypeIs[SyncBinaryBody]:
@@ -58,13 +63,13 @@ def is_binary_input(value: object) -> TypeIs[SyncBinaryBody]:
     return (
         isinstance(value, bytes)
         or is_file_input(value)
-        or (isinstance(value, Iterable) and not isinstance(value, (str, Mapping)))
+        or (isinstance(value, Iterable) and not isinstance(value, _NOT_CHUNKS))
     )
 
 
 def is_async_binary_input(value: object) -> TypeIs[AsyncBinaryBody]:
     """Accept synchronous inputs and native async iterables."""
-    return is_binary_input(value) or isinstance(value, AsyncIterable)
+    return isinstance(value, AsyncIterable) or is_binary_input(value)
 
 
 class EncodedAttempt:
@@ -97,27 +102,23 @@ class BinarySource:
 
     def __init__(self, content: AsyncBinaryBody) -> None:
         self._input = content
-        self._file = cast("BinaryIO", content) if callable(getattr(content, "read", None)) else None
+        self._file = cast("IO[bytes]", content) if _is_file(content) else None
         self._owned = False
         self._used = False
         self._offset: int | None = None
         self.content_length: int | None = None
         if self._file is not None:
-            self._position()
+            self._measure(self._file)
 
-    def _position(self) -> None:
-        file = cast("BinaryIO", self._file)
+    def _measure(self, file: IO[bytes]) -> None:
+        """Keep a seekable file's offset and remaining length, as HTTPX2 frames a file."""
         try:
-            self._offset = file.tell()
-        except OSError:
+            offset = file.tell()
+            end = file.seek(0, SEEK_END)
+            file.seek(offset)
+        except (AttributeError, OSError):
             return
-        try:
-            end = file.seek(0, 2)
-        except OSError:
-            self._offset = None
-            return
-        file.seek(self._offset)
-        self.content_length = end - self._offset
+        self._offset, self.content_length = offset, max(0, end - offset)
 
     @property
     def replayable(self) -> bool:
@@ -127,9 +128,12 @@ class BinarySource:
     def open(self) -> BinaryContent:
         """Open a path lazily and rewind a seekable file before sending."""
         if isinstance(self._input, PathLike) and self._file is None:
-            self._file = Path(self._input).open("rb")  # noqa: SIM115 - The call owns the file until its final cleanup.
-            self._owned = True
-            self._position()
+            try:
+                file = Path(self._input).open("rb")  # noqa: SIM115 - The call owns the file until its final cleanup.
+            except OSError as error:
+                raise body_failure(reason="unencodable", cause=error) from error
+            self._file, self._owned = file, True
+            self._measure(file)
         if self._file is not None and self._offset is not None:
             try:
                 self._file.seek(self._offset)

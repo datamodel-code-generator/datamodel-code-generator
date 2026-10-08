@@ -22,12 +22,12 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_async_binary_input, is_binary_input
-from .errors import DecodeError, add_secondary
+from .errors import DecodeError
 from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
     from typing import Any, Protocol
 
     from ..model_codecs.media import JSONValue, LexicalKind
@@ -552,30 +552,6 @@ class AsyncMultipartAttempt:
             else:
                 async for chunk in piece.aiter_bytes():
                     yield chunk
-
-
-def quiet_close(close: Callable[[], object]) -> BaseException | None:
-    try:
-        close()
-    except BaseException as error:  # noqa: BLE001
-        return error
-    return None
-
-
-async def quiet_aclose(close: Callable[[], Awaitable[None]]) -> BaseException | None:
-    try:
-        await close()
-    except BaseException as error:  # noqa: BLE001
-        return error
-    return None
-
-
-def raise_cleanup(failures: list[BaseException]) -> None:
-    if failures:
-        first = next((failure for failure in failures if not isinstance(failure, Exception)), failures[0])
-        for failure in failures:
-            add_secondary(first, failure)
-        raise first
 
 
 def _is_field(value: object) -> TypeIs[FieldPart[object]]:

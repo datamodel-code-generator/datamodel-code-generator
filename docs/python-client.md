@@ -2829,8 +2829,8 @@ session may additionally stop before its next step when its total budget has exp
 body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
 `response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
 Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
-existing target unchanged. Async file operations run one at a time in a thread, and a cancelled caller still waits for
-the running one, so file work finishes before the file is released, closed or rewound. Saved buffered bytes remain usable after the call completes.
+existing target unchanged. Async calls write with the same blocking file calls on the event loop. Saved buffered bytes
+remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -2961,9 +2961,8 @@ Closing a root refuses new calls from the root and its views. It closes its crea
 a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
 and callers close their streaming responses with `with` or `async with`.
 
-Responses, body attempts and limiter permits are released in `finally`. A later release failure is attached to the
-primary error; with no primary error, the release failure propagates. Async file work runs in a thread and settles
-before its file is released, closed or rewound, also when the caller is cancelled.
+Responses and limiter permits are released in `finally`. A later release failure is attached to the primary error;
+with no primary error, the release failure propagates. A file the call opened from a path is closed when the call ends.
 
 ## Errors
 
@@ -2990,14 +2989,14 @@ is the `cause`. A final status declared neither as a success nor as an error, su
 `APIStatusError` with the reason `unexpected_status`.
 
 A request `DecodeError` has the reason `unencodable`, with the argument's path as `location` and never its value, or
-`body_not_replayable`, `body_in_use`, `body_changed`, or `digest_unavailable` at the `location` `("body",)`. A response
+`body_not_replayable` at the `location` `("body",)`. A response
 `DecodeError` has the reason `invalid_syntax`, `invalid_value` when the model or schema refuses the value,
 `unexpected_media_type` with the response's `media_type`, `forbidden_body`, `missing_body`, `invalid_framing`,
 `invalid_header` with the `location` `("header", name)`, or `response_too_large` with its `limit` and `observed` size.
 `AuthError` has the reason `provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`,
 `timeout`, `reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
 
-A failing callback raises `SDKError` itself with the reason `limiter_failed`, `body_factory_failed`, or `hook_failed`
+A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed`
 and the callback's exception as `cause`. A hook that fails after the call completed keeps that success as the error's
 `completed_result`, which is `None` otherwise. Helpers raise `ProtocolError` and the subclasses described with each
 helper.
@@ -3204,11 +3203,25 @@ Immutable bytes and JSON encoding results are retained and reused without rerunn
 The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
 fixes its boundary once per logical call and can replay only if every part can replay.
 
-Pass binary files, `Path` objects and iterables of bytes directly; async calls also accept async iterables.
-Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
-Paths are opened lazily and closed by the call. Consumed nonseekable inputs cannot replay and are never buffered or
-spooled implicitly. Multipart can replay when every file part can. File reads use chunks of at most 64 KiB, including
-conventional binary files passed to async calls.
+A binary body, and the content of a multipart `FilePart`, is `bytes`, a binary file object, an `os.PathLike` path
+such as `Path`, or an iterable of `bytes`; async calls also accept an async iterable of `bytes`. A `str` is not read as
+a path, and `bytearray` and `memoryview` are refused: pass `bytes`. Bytes and seekable files, including paths, are sent
+with `Content-Length`, counted from a file's current position; other files and iterables are sent with chunked
+transfer encoding.
+
+A file object stays open and belongs to the caller: the call reads from its position at call entry and leaves it
+wherever the last read ended. A path is opened when the body is first sent and closed when the call ends; a path that
+cannot be opened raises a request `DecodeError` with the reason `unencodable` and the `OSError` as `cause`, before
+anything is sent. Files are read in chunks of at most 64 KiB. Async calls read file objects and paths with the same
+blocking reads on the event loop, as HTTPX2 reads multipart files; pass an async iterable to keep slow storage off the
+loop.
+
+A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
+position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
+sending. An iterable, an async iterable or a file that cannot seek is read once and is never buffered or spooled: after
+it was read, the call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay
+when every file part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with
+that failure as `cause`.
 
 ```python
 from pathlib import Path
@@ -3222,8 +3235,8 @@ def upload_file(client: Client, url: str, path: Path) -> bytes:
     return response.read()
 ```
 
-Public body factories, attempt protocols and contexts, declared body digests, freshness ledgers and explicit ownership
-adapters are removed. Callers manage the lifetime and concurrent use of their own files and iterables.
+The experimental runtime no longer has `FileBody`, `StreamBody`, `BodyFactory` or their async counterparts; pass the
+file, path or iterable itself. Callers manage the lifetime and concurrent use of their own files and iterables.
 
 ## Redirects and transport construction
 
@@ -3468,8 +3481,7 @@ def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> by
 
 This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
 are rebuilt for every attempt and redirect hop. Unsigned calls do not invoke signer/provider callbacks.
-`SignerCapabilities.requires_body_digest` and `SigningInput.body_digest` are removed; the SDK does not pre-read or
-hash binary inputs for signing.
+A signer does not receive the body or a digest of it: the SDK never pre-reads or hashes a body for signing.
 
 Credential values, signing inputs, and returned signature values are omitted from their representations and from
 hook events. A credential or signature placed in the query is part of the request URL, which HTTPX2 logs at INFO level

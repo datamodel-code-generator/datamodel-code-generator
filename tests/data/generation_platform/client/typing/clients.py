@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from pathlib import Path
 from ssl import SSLContext, create_default_context
-from typing import BinaryIO, Literal
+from typing import IO, BinaryIO, Literal
 
 import httpx2
 from typing_extensions import assert_type
@@ -148,8 +148,10 @@ async def raw_async(
 
 
 
-def bodies(client: Client, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
-    inputs: tuple[SyncBinaryBody, ...] = (b"\x00", file, Path("photo.png"), [b"a", b"b"], iter([b"a"]))
+def bodies(
+    client: Client, file: BinaryIO, spooled: IO[bytes], photo: FieldPetsPetIdPhotoPutPathPetIdParameter
+) -> None:
+    inputs: tuple[SyncBinaryBody, ...] = (b"\x00", file, spooled, Path("photo.png"), [b"a", b"b"], iter([b"a"]))
     for body in inputs:
         client.pets.photos.upload(pet_id=photo, body=body)
     client.request_raw("PUT", "https://example.com/file", body=Path("photo.png"))

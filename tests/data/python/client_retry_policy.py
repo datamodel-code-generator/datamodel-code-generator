@@ -362,26 +362,11 @@ _STARTED: Final = (
 )
 
 
-class _Attempt:
-    """A body attempt that sends a first chunk, then fails as its source breaks while the request is on the wire."""
-
-    content_length = None
-    content_type = "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        yield b"partial"
-        message = "body source failed mid-send"
-        raise OSError(message)
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        for chunk in self.iter_bytes():
-            yield chunk
-
-    def close(self) -> None:
-        pass
-
-    async def aclose(self) -> None:
-        pass
+def _broken() -> Iterator[bytes]:
+    """Send a first chunk, then fail as the source breaks while the request is on the wire."""
+    yield b"partial"
+    message = "body source failed mid-send"
+    raise OSError(message)
 
 
 def _delivered(result: object) -> tuple[object, ...]:
@@ -458,7 +443,7 @@ def _started(package: ModuleType, options: ModuleType, lines: list[str]) -> None
 
     def factory() -> Iterator[bytes]:
         opened.append("consumed")
-        yield from _Attempt().iter_bytes()
+        yield from _broken()
 
     config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
     with exchange.client() as native, package.Client(http_client=native, options=config) as api:
@@ -514,7 +499,7 @@ async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) 
 
     async def factory() -> AsyncIterator[bytes]:
         opened.append("consumed")
-        for chunk in _Attempt().iter_bytes():
+        for chunk in _broken():
             yield chunk
 
     config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))

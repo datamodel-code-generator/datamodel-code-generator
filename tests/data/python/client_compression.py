@@ -308,9 +308,7 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(_created())
         await arecord(lines, "async declared", lambda: api.items.create_item(body=harness.item()))
         exchange.respond(raw_response(503), _stored())
-        await arecord(
-            lines, "async file retried", lambda: api.items.put_blob(body=io.BytesIO(b"file"))
-        )
+        await arecord(lines, "async file retried", lambda: api.items.put_blob(body=io.BytesIO(b"file")))
         exchange.respond(_stored())
         await arecord(lines, "async stream", lambda: api.items.put_blob(body=chunks()))
         exchange.respond(_stored())
