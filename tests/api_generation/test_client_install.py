@@ -52,7 +52,10 @@ def test_client_install(
 
     case = json.loads((PUBLICATION / "profiles.json").read_text(encoding="utf-8"))[profile]
     shutil.copy2(PUBLICATION / "pyproject-host.toml", tmp_path / "pyproject.toml")
-    source = SOURCE / case["input"]
+    for name in (case["input"], *case.get("references", ())):
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SOURCE / name, tmp_path / name)
+    source = tmp_path / case["input"]
     arguments = [
         "--generate-client",
         "httpx2",
@@ -74,7 +77,7 @@ def test_client_install(
         "--disable-timestamp",
     ]
     if protocols := case.get("config", {}).get("protocols"):
-        arguments.extend(("--client-protocols", str(SOURCE / protocols)))
+        arguments.extend(("--client-protocols", str(tmp_path / protocols)))
     if operations := case.get("config", {}).get("operations"):
         arguments.extend((
             "--client-operations",
