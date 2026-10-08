@@ -1,12 +1,13 @@
 """Publish target candidates through staged sources and a reversible journal."""
 
-# ruff: noqa: EM101, EM102, SLF001, PERF203, TRY003, TRY301
+# ruff: noqa: EM101, EM102, SLF001, PERF203, TRY003
 
 from __future__ import annotations
 
 import os
 import stat
 from contextlib import ExitStack, suppress
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator._api_manifest import observe_file, sha256
@@ -19,7 +20,7 @@ from datamodel_code_generator._api_types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator import _publication
@@ -36,6 +37,16 @@ class BatchEntry(NamedTuple):
 
     action: BatchAction
     file: StagedFile
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlannedTarget:
+    """A rendered target and the state of every file it plans, which its later publication rechecks."""
+
+    project: GeneratedProject
+    observed: dict[Path, Observed]
+    cwd: Path
+    timestamp: str | None
 
 
 def new_file_mode(directory_fd: int | None, directory: Path) -> int:
@@ -242,6 +253,11 @@ def publish_batch(entries: Sequence[BatchEntry]) -> None:
     _publish_batch_at(entries)
 
 
+def _destination(target: Path) -> Path:
+    """Return the concrete file a target path names, through the links of its directory."""
+    return target.parent.resolve(strict=False) / target.name
+
+
 def _base(path: Path) -> Path:
     while not path.is_dir():
         path = path.parent
@@ -273,7 +289,7 @@ class _Batch:
     def entry(self, artifact: GeneratedArtifact, target: Path, lock: RemoteReferenceLock | None) -> BatchEntry:
         from datamodel_code_generator._publication import StagedFile  # ruff: ignore[import-outside-top-level]
 
-        resolved = target.parent.resolve(strict=False) / target.name
+        resolved = _destination(target)
         file = StagedFile(None, target, resolved, self.anchor(base := _base(resolved.parent)))
         match artifact.action, artifact.content:
             case "write", _ if lock is not None and isinstance(staged := lock.stage(self.staging(base)), StagedFile):
@@ -294,6 +310,76 @@ def _record(artifact: GeneratedArtifact, digest: str, size: int) -> ArtifactReco
     )
 
 
+def _entries(
+    batch: _Batch,
+    artifacts: Sequence[GeneratedArtifact],
+    observed: Mapping[Path, Observed],
+    cwd: Path,
+    lock: RemoteReferenceLock | None,
+) -> list[BatchEntry]:
+    """Stage every change among the planned artifacts, then recheck all their files."""
+    entries = [
+        batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
+        for artifact in artifacts
+        if artifact.action != "unchanged"
+    ]
+    if changed := [
+        artifact for artifact in artifacts if observe_file(location := cwd / artifact.path) != observed[location]
+    ]:
+        raise APIGenerationError(
+            tuple(
+                Diagnostic(
+                    code="E_STATE_CHANGED",
+                    severity="error",
+                    stage="publication",
+                    message="The file changed after the target was planned",
+                    artifact_path=artifact.path.as_posix(),
+                    target_id=artifact.target_id,
+                )
+                for artifact in changed
+            )
+        )
+    return entries
+
+
+def _unshared(
+    job: str, target: PlannedTarget, models: dict[Path, tuple[str, GeneratedArtifact]]
+) -> Iterator[GeneratedArtifact]:
+    """Yield the artifacts of a job's target that no earlier job plans.
+
+    Jobs that share a models output plan each of its files once, and must plan the same content for it.
+    """
+    for artifact in target.project.artifacts:
+        if artifact.kind != "model":
+            yield artifact
+            continue
+        owner, planned = models.setdefault(_destination(target.cwd / artifact.path), (job, artifact))
+        if planned is artifact:
+            yield artifact
+        elif planned.sha256 != artifact.sha256:
+            raise APIGenerationError((
+                Diagnostic(
+                    code="E_PATH_COLLISION",
+                    severity="error",
+                    stage="publication",
+                    message=f"Jobs '{owner}' and '{job}' generate different models",
+                    artifact_path=artifact.path.as_posix(),
+                ),
+            ))
+
+
+def publish_planned(files: Iterable[StagedFile], targets: Sequence[tuple[str, PlannedTarget]]) -> None:
+    """Publish staged files and the changes that the named jobs planned through one reversible journal."""
+    with ExitStack() as stack:
+        batch = _Batch(stack)
+        entries = [BatchEntry("write", file) for file in files]
+        models: dict[Path, tuple[str, GeneratedArtifact]] = {}
+        for job, target in targets:
+            artifacts = tuple(_unshared(job, target, models))
+            entries.extend(_entries(batch, artifacts, target.observed, target.cwd, None))
+        publish_batch(entries)
+
+
 def publish_project(
     project: GeneratedProject,
     observed: Mapping[Path, Observed],
@@ -303,32 +389,8 @@ def publish_project(
 ) -> GenerationReport:
     """Stage every change, recheck all planned files, then publish one reversible journal."""
     with ExitStack() as stack:
-        batch = _Batch(stack)
         try:
-            entries = [
-                batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
-                for artifact in project.artifacts
-                if artifact.action != "unchanged"
-            ]
-            if changed := [
-                artifact
-                for artifact in project.artifacts
-                if observe_file(location := cwd / artifact.path) != observed[location]
-            ]:
-                raise APIGenerationError(
-                    tuple(
-                        Diagnostic(
-                            code="E_STATE_CHANGED",
-                            severity="error",
-                            stage="publication",
-                            message="The file changed after the target was planned",
-                            artifact_path=artifact.path.as_posix(),
-                            target_id=artifact.target_id,
-                        )
-                        for artifact in changed
-                    )
-                )
-            publish_batch(entries)
+            publish_batch(_entries(_Batch(stack), project.artifacts, observed, cwd, lock))
         except BaseException:
             if lock is not None:
                 with suppress(OSError):
