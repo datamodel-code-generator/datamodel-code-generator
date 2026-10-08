@@ -17,6 +17,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _label,
     _listed,
     _Pages,
+    _parameter_key,
     _problem,
     _target_key,
     credential_place,
@@ -352,10 +353,7 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
             yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, reopen)
             return
         key = _target_key(write)
-        if any(
-            item.required and _target_key({"in": item.location, "name": item.wire_name}) == key
-            for item in reopen.parameters
-        ):
+        if any(item.required and _parameter_key(item.location, item.wire_name) == key for item in reopen.parameters):
             message = f"The cursor of {name!r} can be cleared, which {place}, a required one, cannot omit"
             yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
             return
