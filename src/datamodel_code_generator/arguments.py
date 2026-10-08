@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 from argparse import (
-    SUPPRESS,
     ArgumentParser,
     ArgumentTypeError,
     BooleanOptionalAction,
@@ -1635,18 +1634,6 @@ target_options.add_argument(
     default=None,
     help="Argument names per operation reference, each keyed by location and name such as query:limit, "
     "as inline JSON or a JSON file path (experimental).",
-)
-target_options.add_argument(
-    "--diagnostics-json",
-    default=SUPPRESS,
-    metavar="PATH",
-    help="Write the selected target's diagnostics as JSON to PATH, or to stdout with -.",
-)
-target_options.add_argument(
-    "--dependency-format",
-    choices=["uv", "requirements"],
-    default=SUPPRESS,
-    help="Print what adds the generated package to a project as a uv add command (default) or requirements lines.",
 )
 
 __all__ = [

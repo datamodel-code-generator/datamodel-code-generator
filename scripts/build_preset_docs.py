@@ -362,7 +362,7 @@ from pathlib import Path
 from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
 from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
 
-report = generate_fastapi(
+generate_fastapi(
     Path("openapi.yaml"),
     model_config=GenerateConfig(
         output=Path("models.py"),
@@ -373,8 +373,6 @@ report = generate_fastapi(
     ),
     config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
 )
-for record in report.written_files:
-    print(record.path)
 ```
 """
 
