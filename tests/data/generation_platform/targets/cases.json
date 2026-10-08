@@ -219,7 +219,10 @@
       {"render": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
       {"render": {"model": {"output": "server/__init__.py"}}},
       {"render": {"model": {"output": "server/routers"}}},
-      {"render": {"model": {"output": "server/services.py/models.py"}}}
+      {"render": {"model": {"output": "server/services.py/models.py"}}},
+      {"render": {"model": {"output": "server/routers.py"}}},
+      {"render": {"model": {"output": "server/services/models.py"}}},
+      {"render": {"model": {"output": "server.py"}}}
     ]
   },
   "nested-models": {

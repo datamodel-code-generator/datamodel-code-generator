@@ -251,7 +251,7 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
                 continue
             staged_root = staging / kind
             staged_root.mkdir()
-            non_python: list[tuple[Path, Path]] = []
+            non_python: list[tuple[Path, Path, str]] = []
             for artifact in project.artifacts:
                 path = artifact.path
                 if artifact.kind == kind:
@@ -263,9 +263,9 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
                 staged.parent.mkdir(parents=True, exist_ok=True)
                 staged.write_bytes(artifact.content)
                 if is_directory and path.suffix != ".py":
-                    non_python.append((staged, path))
+                    non_python.append((staged, path, encoding if artifact.kind == "model" else "utf-8"))
             comparisons = [(staged_root if is_directory else staged_root / output.name, output, is_directory, encoding)]
-            comparisons.extend((staged, path, False, "utf-8") for staged, path in non_python)
+            comparisons.extend((staged, path, False, codec) for staged, path, codec in non_python)
             for generated, actual, directory_output, codec in comparisons:
                 try:
                     compared = _compare_generated_outputs(

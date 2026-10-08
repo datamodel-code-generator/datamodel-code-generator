@@ -41,6 +41,7 @@ CONFLICT = "Error: --generate-server cannot be used with"
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
+LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -1027,6 +1028,46 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
         expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
         assert_no_stderr=True,
     )
+
+
+@pytest.mark.parametrize("name", LAYOUT_ERRORS)
+def test_fastapi_cli_layout_errors(
+    name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a model file at a server file's path and a module beside a generated package directory of its name.
+
+    Python would import the package directory instead of the module, so nothing is written.
+    """
+    case = LAYOUT_ERRORS[name]
+    monkeypatch.chdir(tmp_path)
+    source = case.get("input", "pets.yaml")
+    shutil.copy2((CLI if "input" in case else SOURCE) / source, tmp_path / source)
+    run_main_and_assert(
+        input_path=Path(source),
+        output_path=Path(case["output"]),
+        input_file_type="openapi",
+        extra_args=_server(*case["arguments"], output=case.get("server", "server")),
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+    )
+    written = sorted(path.name for path in tmp_path.iterdir() if path.name != source)
+    assert_output(f"{capsys.readouterr().err}written {written}\n", EXPECTED / "cli" / "layout-errors" / f"{name}.txt")
+
+
+def test_fastapi_cli_nested_models_example(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run the documented command that keeps the models inside the server package, then find nothing to change."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(SOURCE / "pets.yaml", tmp_path / "api.yaml")
+    arguments = json.loads((CLI / "nested-models-example.json").read_text(encoding="utf-8"))
+    run_main_with_args(
+        arguments,
+        capsys=capsys,
+        expected_stderr=(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+    )
+    run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
+    assert_output(_methods(tmp_path / "app" / "server" / "services.py"), EXPECTED / "cli" / "nested-models-example.txt")
 
 
 def test_fastapi_cli_nested_job(
