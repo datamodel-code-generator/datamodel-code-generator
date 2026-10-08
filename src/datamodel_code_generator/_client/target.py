@@ -104,8 +104,9 @@ class ClientTarget:
         backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
+        facts = ModelFacts(request.batch)
         try:
-            plan = Planner(request, config, wire).plan()
+            plan = Planner(request, config, wire, facts).plan()
         except PlanError as error:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
@@ -120,7 +121,6 @@ class ClientTarget:
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
-        facts = ModelFacts(batch)
         codecs = plan_client_codecs(batch, wire, backend, uses, facts)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:

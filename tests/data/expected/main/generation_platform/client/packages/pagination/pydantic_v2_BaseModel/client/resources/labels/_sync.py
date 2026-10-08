@@ -9,9 +9,6 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldLabelSetsGetQueryAfterParameter as _dcg_type_1
-from models import FieldLabelsGetQueryAfterParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -44,7 +41,7 @@ class LabelsResource:
     def list_labels(
         self,
         *,
-        after: _dcg_type_0 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
@@ -59,7 +56,7 @@ class LabelsResource:
     def list_label_sets(
         self,
         *,
-        after: _dcg_type_1 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelSetsResponse:
@@ -82,7 +79,7 @@ class LabelsWithResponse:
     def list_labels(
         self,
         *,
-        after: _dcg_type_0 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
@@ -97,7 +94,7 @@ class LabelsWithResponse:
     def list_label_sets(
         self,
         *,
-        after: _dcg_type_1 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelSetsResponse]:
@@ -120,7 +117,7 @@ class LabelsWithRawResponse:
     def list_labels(
         self,
         *,
-        after: _dcg_type_0 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -135,7 +132,7 @@ class LabelsWithRawResponse:
     def list_label_sets(
         self,
         *,
-        after: _dcg_type_1 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -158,7 +155,7 @@ class LabelsWithStreamingResponse:
     def list_labels(
         self,
         *,
-        after: _dcg_type_0 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -173,7 +170,7 @@ class LabelsWithStreamingResponse:
     def list_label_sets(
         self,
         *,
-        after: _dcg_type_1 | Unset = UNSET,
+        after: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

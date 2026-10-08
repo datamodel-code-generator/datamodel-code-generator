@@ -11,7 +11,6 @@ from typing import Protocol
 import models
 from fastapi.responses import Response
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 
@@ -22,7 +21,7 @@ class PetsService(Protocol):
     async def list_pets(
         self,
         *,
-        limit: int | Unset,
+        limit: int,
     ) -> (
         models.FieldPetsGetResponse
         | HTTPResult[models.FieldPetsGetResponse]

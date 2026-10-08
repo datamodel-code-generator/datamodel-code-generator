@@ -57,6 +57,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "default": "ten",
               "title": "Count"
             }
           },
@@ -213,6 +214,7 @@
               "maximum": 50,
               "minimum": -3000000000,
               "description": "Page size.",
+              "default": 10,
               "title": "Limit"
             },
             "description": "Page size."
@@ -233,6 +235,7 @@
             "required": false,
             "schema": {
               "type": "boolean",
+              "default": false,
               "title": "Flag"
             }
           },

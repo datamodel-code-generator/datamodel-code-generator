@@ -11,3 +11,14 @@ helpers:
       write: {in: query, name: cursor}
       end: [{kind: missing}]
       empty_string: end
+  users.offsets:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Code}
+    continuation:
+      kind: offset
+      write: {in: query, name: offset}
+      first: 0
+      step: {literal: 2}
+      has_more: {from: body, pointer: /has_more}

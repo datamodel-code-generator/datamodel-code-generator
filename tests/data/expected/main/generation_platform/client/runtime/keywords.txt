@@ -5,4 +5,13 @@
   > GET https://keywords.example.com/search?kwargs=b
     [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   search without args = Operation0Arguments(kwargs=None)
-  search keywords kwargs!, args, response_media_type, options
+  > GET https://keywords.example.com/search?kwargs=c&args=0
+    [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search with args past the schema = Operation0Arguments(kwargs='found')
+  > GET https://keywords.example.com/search?kwargs=d&code=ab
+    [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search with a code = Operation0Arguments(kwargs=None)
+  search with a code the root model refuses ! DecodeError: DecodeError(operation_id='search', call_id='<call>', reason='unencodable', location='query.code') [operation_id='search', location=('query', 'code'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=1 validation error for Code
+  String should have at most 2 characters [type=string_too_long, input_value='abc', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_too_long] unencodable
+  search keywords kwargs!, args, code, response_media_type, options

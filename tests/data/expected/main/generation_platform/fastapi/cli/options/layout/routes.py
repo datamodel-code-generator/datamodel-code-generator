@@ -13,7 +13,6 @@ from fastapi.responses import Response
 from ._generated import contract
 from ._generated.contract import OperationDependencies
 from ._runtime.server.application import Dependency, Wiring, build
-from ._runtime.server.requests import absent, present
 from ._runtime.server.responses import dispatch
 from .services import Service
 
@@ -21,14 +20,8 @@ from .services import Service
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     list_pets_handler = wiring.handlers['list_pets']
 
-    def list_pets(
-        *,
-        limit: Annotated[int, Query(alias='limit', default_factory=absent)],
-    ) -> object:
-        return dispatch(
-            list_pets_handler(limit=present(limit)),
-            contract.ListPets.RESPONSES,
-        )
+    def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
+        return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
 
     router.add_api_route(
         '/pets',
