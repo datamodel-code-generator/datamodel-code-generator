@@ -208,6 +208,16 @@
       {"render": {}}
     ]
   },
+  "nested-mount-point": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"mkdir": "server/routers"},
+      {"generate": {}},
+      {"tree": null},
+      {"leftovers": null}
+    ]
+  },
   "publish-lock": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "lockfile": "locks/remote.lock", "update_lock": true},
