@@ -1,3 +1,2 @@
 # querystring-version
-APIGenerationError
-diagnostic MC_PARAMETER_ENCODING /paths/~1search/get/parameters/0: Querystring parameters require OpenAPI 3.2
+Error: /paths/~1search/get/parameters/0: Querystring parameters require OpenAPI 3.2

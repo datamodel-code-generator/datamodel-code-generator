@@ -1,13 +1,13 @@
 ordinary run without a target: exit 0, target modules []
-primitive generate: E_FASTAPI_BACKEND_UNSUPPORTED
-primitive render: E_FASTAPI_BACKEND_UNSUPPORTED
-empty generate: E_FASTAPI_BACKEND_UNSUPPORTED
-empty render: E_FASTAPI_BACKEND_UNSUPPORTED
-unselected generate: E_FASTAPI_BACKEND_UNSUPPORTED
-unselected render: E_FASTAPI_BACKEND_UNSUPPORTED
-primitive check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
-empty check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
-unselected check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
-empty sentinel: Error
+primitive generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+primitive render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+unselected generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+unselected render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+primitive check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+unselected check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty sentinel: Error: `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`
 imported []
 written []

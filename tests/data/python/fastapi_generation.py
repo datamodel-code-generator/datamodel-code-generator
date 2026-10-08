@@ -9,10 +9,9 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import Any, TypeAlias, get_type_hints
 
-from datamodel_code_generator import DataModelType, GenerateConfig, _runtime
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.fastapi import (
-    APIGenerationError,
     Diagnostic,
     FastAPIConfig,
     GeneratedProject,
@@ -113,8 +112,8 @@ def _render(
         project = render_fastapi(
             source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
         )
-    except APIGenerationError as error:
-        return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    except Error as error:
+        return [f"  Error: {error}"]
     encoding = case.get("model", {}).get("encoding", "utf-8")
     lines: list[str] = []
     files: list[str] = []
@@ -173,8 +172,8 @@ def fastapi_config_report(case_name: str, root: Path) -> str:
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         config = fastapi_config(case, root)
-    except APIGenerationError as error:
-        return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
+    except Error as error:
+        return f"Error: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
 
 

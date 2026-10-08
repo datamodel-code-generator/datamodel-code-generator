@@ -1,10 +1,7 @@
 # collision
 render
-  APIGenerationError
-  E_PATH_COLLISION error ownership server/__INIT__.py: Two generated files resolve to the same path
+  Error: server/__INIT__.py: Two generated files resolve to the same path
 render
-  APIGenerationError
-  E_PATH_COLLISION error config output: The target package and the model output must not contain each other
+  Error: The target package and the model output must not contain each other
 render
-  APIGenerationError
-  E_PATH_COLLISION error config output: The target package and the model output must not contain each other
+  Error: The target package and the model output must not contain each other

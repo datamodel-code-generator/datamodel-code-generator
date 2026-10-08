@@ -211,8 +211,7 @@ def _run(
             filename, pointer, location = cycles[spec["input"]["path"]]
             return "  " + cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
         if isinstance(error, APIGenerationError):
-            lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
-            return "\n".join(lines).replace(root.resolve().as_posix(), "<root>")
+            return f"  Error: {error}".replace(root.resolve().as_posix(), "<root>")
         if isinstance(error, PublicationRollbackError):
             unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
             cause = type(error.__cause__).__name__
@@ -381,8 +380,8 @@ def target_config_report(case_name: str) -> str:
     values = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         config = _config(values)
-    except APIGenerationError as error:
-        return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
+    except Error as error:
+        return f"Error: {error}\n"
     return "".join(
         f"{item.name}={value.as_posix() if isinstance(value := getattr(config, item.name), Path) else value!r}\n"
         for item in fields(config)

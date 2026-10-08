@@ -1,4 +1,3 @@
 # relative-failure
 render
-  APIGenerationError
-  E_CONFIG_VALUE error config input: A persistent path cannot be expressed relative to the target root
+  Error: input: A persistent path cannot be expressed relative to the target root

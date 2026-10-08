@@ -1,4 +1,3 @@
 # template-invalid
 render pydantic_v2.BaseModel
-  APIGenerationError
-  F_TEMPLATE_INVALID target model_config.custom_template_dir: fastapi/services.jinja2 line 6: unexpected end of template, expected 'end of statement block'.
+  Error: --custom-template-dir: fastapi/services.jinja2 line 6: unexpected end of template, expected 'end of statement block'.
