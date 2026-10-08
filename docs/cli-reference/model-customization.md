@@ -5466,13 +5466,18 @@ default to None.
 
 Target Pydantic version for generated code compatibility.
 
-The `--target-pydantic-version` flag controls Pydantic version-specific config:
+The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
+Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **2**: Uses `populate_by_name=True` (compatible with Pydantic 2.0-2.10)
-- **2.11**: Uses `validate_by_name=True` (for Pydantic 2.11+)
-- **2.12**: Uses `validate_by_name=True` and allows features that require Pydantic 2.12+
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
+- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+  `json_schema_extra` for deprecated fields, and dictionary-key models defined first
+- **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
+  `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
+- **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 
-This prevents breaking changes when generated code is used on older Pydantic versions.
+See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
 !!! tip "Usage"
 

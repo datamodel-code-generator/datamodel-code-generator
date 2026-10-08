@@ -42,10 +42,6 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import base as model_base
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK,
-    PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA,
-)
 from datamodel_code_generator.reference import get_singular_name
 from tests.conftest import (
     HttpxGetMockFactory,
@@ -71,16 +67,20 @@ from tests.main.conftest import (
     LEGACY_BLACK_SKIP,
     MSGSPEC_LEGACY_BLACK_SKIP,
     OPEN_API_DATA_PATH,
+    TARGET_PYDANTIC_VERSION_CASES,
     TIMESTAMP,
     _generated_model,
     _generated_package_module,
     assert_generated_model_json_invalid,
     assert_generated_model_json_validation,
+    installed_pydantic_runs_target,
     run_generate_file_and_assert,
     run_main_and_assert,
     run_main_url_and_assert,
     run_main_with_args,
     run_main_with_system_exit,
+    target_pydantic_args,
+    target_pydantic_expected_suffix,
 )
 from tests.main.openapi.conftest import EXPECTED_OPENAPI_PATH, assert_file_content
 
@@ -4062,6 +4062,18 @@ def test_main_openapi_allof_required_inherited_model_references(
             ),
             id="pydantic-v2-dataclass-annotated-legacy-template",
         ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_alias_fallback",
+            ("--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-target-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_annotated_alias_fallback",
+            ("--use-annotated", "--field-constraints", "--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-annotated-target-2",
+        ),
     ],
 )
 def test_main_openapi_allof_required_inherited_dataclass_metadata(
@@ -4071,17 +4083,15 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
     additional_args: tuple[str, ...],
 ) -> None:
     """Preserve explicit field metadata and exact dataclass ordering across required overrides."""
-    expected_output_name = (
-        f"{expected_name}_alias_fallback"
-        if output_model_type == DataModelType.PydanticV2Dataclass.value and PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK
-        else expected_name
+    runs = output_model_type != DataModelType.PydanticV2Dataclass.value or installed_pydantic_runs_target(
+        "2" if "--target-pydantic-version" in additional_args else None
     )
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_required_inherited_dataclass_metadata.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
-        expected_file=f"output_model_types/allof_required_inherited_dataclass_metadata_{expected_output_name}.py",
+        expected_file=f"output_model_types/allof_required_inherited_dataclass_metadata_{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--formatters",
@@ -4097,7 +4107,10 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        skip_code_validation=not runs,
     )
+    if not runs:
+        return
 
     match model_type := DataModelType(output_model_type):
         case DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass | DataModelType.DataclassesDataclass:
@@ -9807,18 +9820,24 @@ def test_main_openapi_deprecated_field(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    not PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA,
-    reason="Pydantic 2.7+ supports Field(deprecated=...) directly",
-)
-def test_main_openapi_deprecated_field_pydantic26(output_file: Path) -> None:
-    """Test OpenAPI deprecated fields stay importable before native Pydantic support."""
+@pytest.mark.parametrize("target_pydantic_version", TARGET_PYDANTIC_VERSION_CASES)
+def test_main_openapi_deprecated_field_pydantic26(output_file: Path, target_pydantic_version: str | None) -> None:
+    """Keep deprecated fields in json_schema_extra before Pydantic 2.7 and use Field(deprecated=) for newer targets."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "deprecated_field.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        assert_func=assert_file_content,
+        expected_file=f"deprecated_field_{target_pydantic_expected_suffix(target_pydantic_version)}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
+            *target_pydantic_args(target_pydantic_version),
+        ],
         force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
     )
 
 

@@ -15,19 +15,12 @@ from types import MappingProxyType, NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 from warnings import warn
 
-from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, ValidationError, field_validator, model_validator
-from pydantic.alias_generators import to_camel, to_pascal, to_snake
 
 from datamodel_code_generator import Error
-from datamodel_code_generator.enums import AliasGenerator, TargetPydanticVersion, _is_pydantic_version_at_least
-from datamodel_code_generator.imports import (
-    IMPORT_ANNOTATED,
-    IMPORT_ANY,
-    IMPORT_DICT,
-    IMPORT_UNION,
-    Import,
-)
+from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator.enums import AliasGenerator
+from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
@@ -41,7 +34,7 @@ from datamodel_code_generator.model.base import (
     _uses_original_template_loader,
     get_effective_fields,
 )
-from datamodel_code_generator.model.field_name import PydanticFieldNameResolver
+from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
 from datamodel_code_generator.model.pydantic_base import (
     BaseModelBase,
@@ -85,8 +78,10 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA,
-    _get_dict_key_reference_classes_capability,
+    PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
+    PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
+    _includes_dict_key_reference_classes,
+    model_target_supports,
 )
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -456,7 +451,7 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
     return safe_items
 
 
-_PYDANTIC_V2_BASE_FIELD_KEYS: frozenset[str] = frozenset({
+_PYDANTIC_V2_DEFAULT_FIELD_KEYS: frozenset[str] = frozenset({
     "default",
     "default_factory",
     "alias",
@@ -488,12 +483,6 @@ _PYDANTIC_V2_BASE_FIELD_KEYS: frozenset[str] = frozenset({
     "max_length",
     "union_mode",
 })
-
-
-if PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA:
-    _PYDANTIC_V2_DEFAULT_FIELD_KEYS = _PYDANTIC_V2_BASE_FIELD_KEYS
-else:
-    _PYDANTIC_V2_DEFAULT_FIELD_KEYS = _PYDANTIC_V2_BASE_FIELD_KEYS | {"deprecated"}
 
 
 def _compiled_python_pattern(
@@ -840,7 +829,12 @@ class DataModelField(_PydanticBaseDataModelField):
                 data["serialization_alias"] = serialization_alias
 
         # **extra is not supported in pydantic 2.0
-        extra_field_keys = tuple(k for k in data if k not in self._DEFAULT_FIELD_KEYS)
+        extra_field_keys = tuple(
+            k
+            for k in data
+            if k not in self._DEFAULT_FIELD_KEYS
+            and (k != "deprecated" or not model_target_supports(self.parent, PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM))
+        )
         existing_json_schema_extra = data.get("json_schema_extra") or {}
         json_schema_extra = {
             **existing_json_schema_extra,
@@ -1114,16 +1108,14 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
     """Respect configured namespaces for actual attribute collisions, retaining warning-only aliases."""
     if name == "model_config" or name.startswith("_"):
         return True
-    if not hasattr(PydanticBaseModel, name):
+    if name not in PYDANTIC_BASE_MODEL_ATTRIBUTES:
         return False
     model = cast("DataModel", field.parent)
-    match model.extra_template_data.get("target_pydantic_version"):
-        case TargetPydanticVersion() | str() as target_version if not _is_pydantic_version_at_least(
-            target_version, "2.10"
-        ):
-            namespaces = ("model_",)
-        case _:
-            namespaces = ("model_validate", "model_dump")
+    namespaces = (
+        ("model_validate", "model_dump")
+        if model_target_supports(model, PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM)
+        else ("model_",)
+    )
     pending = [model]
     while pending:
         model = pending.pop()
@@ -1269,7 +1261,7 @@ class BaseModel(BaseModelBase):
     SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
     SUPPORTS_ARBITRARY_TYPES_ALLOWED: ClassVar[bool] = True
     CUSTOM_TEMPLATE_ADAPTER = staticmethod(_adapt_legacy_pydantic_extra_template)
-    _INCLUDE_DICT_KEY_REFERENCE_CLASSES = _get_dict_key_reference_classes_capability()
+    _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
     _TYPED_EXTRA_DICT_KEY_CAPABILITY = staticmethod(_supports_pydantic_typed_extra_dict_key)
     TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
