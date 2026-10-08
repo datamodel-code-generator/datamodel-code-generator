@@ -71,6 +71,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "setting-errors",
         "empty",
         "querystring",
+        "self-references",
         "evolution",
         "validation-ambiguous",
         "fields",
