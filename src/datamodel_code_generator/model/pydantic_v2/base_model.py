@@ -805,11 +805,8 @@ class DataModelField(_PydanticBaseDataModelField):
         if self.use_frozen_field and self.read_only:
             data["frozen"] = True
 
-        if "union_mode" in data:
-            if self.data_type.is_union:
-                data["union_mode"] = data.pop("union_mode").value
-            else:
-                data.pop("union_mode")
+        if (union_mode := data.pop("union_mode", None)) and self.data_type.is_union and "discriminator" not in data:
+            data["union_mode"] = union_mode.value
 
         self._update_alias_for_alias_generator(data)
         has_alias = "alias" in data
