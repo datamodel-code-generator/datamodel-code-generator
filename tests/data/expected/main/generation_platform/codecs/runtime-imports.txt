@@ -14,7 +14,7 @@ client/errors.py: ..protocols.references, .responses, __future__, datetime, enum
 client/events.py: ..model_codecs.unset, .errors, .hooks, .logical, .options, .responses, __future__, collections.abc, dataclasses, inspect, types, typing, urllib.parse
 client/grants.py: .auth, .auth_policy, .errors, .oauth, .options, .refresh, __future__, collections.abc, httpx2, inspect, typing, typing_extensions
 client/hooks.py: .errors, __future__, collections.abc, dataclasses, types, typing
-client/logical.py: .errors, .options, .timing, __future__, anyio, asyncio, collections.abc, time, typing, uuid
+client/logical.py: .errors, .options, .timing, __future__, anyio, asyncio, collections.abc, functools, time, typing, uuid
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, codecs, collections.abc, typing
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .errors, .media, .responses, __future__, collections.abc, functools, os, re, typing, typing_extensions
 client/native.py: .errors, .options, .timing, __future__, collections.abc, httpx2, typing

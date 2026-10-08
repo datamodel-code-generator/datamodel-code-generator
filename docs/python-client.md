@@ -2831,7 +2831,9 @@ body is complete. A handle whose body is already being read or is gone raises `C
 Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
 existing target unchanged. In async calls these file calls run one at a time in a worker thread, and a cancelled
 caller waits for the running one before the temporary file is removed, so a partly written file never takes the
-target's name. Saved buffered bytes remain usable after the call completes.
+target's name. A cancellation that arrives while the final move is running lets that move finish: the call then
+raises the cancellation although the complete file is at the target, replacing an existing one under
+`overwrite=True`. Saved buffered bytes remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -3210,14 +3212,16 @@ one way, and nothing is buffered or spooled to make a one-shot input replayable.
 | --- | --- | --- | --- | --- |
 | `bytes` | sync, async | Sent as given. | `Content-Length` | Yes |
 | Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
-| `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length` | Yes |
+| `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length`; chunked when its file cannot seek, such as a FIFO | Yes; no when its file cannot seek |
 | Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 | Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
 | Async iterable of `bytes` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 
-A `str` is not read as a path. `str`, `bytearray`, `memoryview`, text-mode files, a file that is already closed, and
-a path that cannot be opened raise a request `DecodeError` with the reason `unencodable` before anything is sent; the
-underlying `OSError` or `ValueError` is the `cause`. Pass `bytes`, or a file opened in binary mode.
+A `str` is not read as a path. `str`, `bytearray`, `memoryview`, synchronous text-mode files, a synchronous file
+that is already closed, and a path that cannot be opened raise a request `DecodeError` with the reason `unencodable`
+before anything is sent; the underlying `OSError` or `ValueError` is the `cause`. Pass `bytes`, or a file opened in
+binary mode. An async file object is not inspected before it is read: one opened in text mode or already closed fails
+while the request is being sent, as `APIConnectionError` with that failure as `cause`.
 
 A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. The call sends
 the bytes between the position and the end it measured at call entry, also when the file grows afterwards. A path

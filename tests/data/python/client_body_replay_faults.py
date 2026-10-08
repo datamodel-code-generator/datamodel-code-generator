@@ -77,6 +77,11 @@ class _Held(io.BytesIO):
         self.released.wait(5)
         return True
 
+    def opened(self) -> _Held:
+        if self.held("open"):
+            self.events.append("open left")
+        return self
+
     def read(self, size: int | None = -1, /) -> bytes:
         if self.held("read"):
             self.events.append("read left")
@@ -209,20 +214,22 @@ async def _async_thread_faults(package: ModuleType, data: dict[str, Any], lines:
     """Finish the read running in a thread before a cancelled call closes the file it opened from a path."""
     exchange = Exchange([])
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
-        for label, cancellations, failure in (
-            ("cancelled while a path is read", 1, None),
-            ("cancelled twice while a path is read", 2, None),
-            ("cancelled while a path read fails", 1, OSError("read failed")),
+        for label, cancellations, failure, hold in (
+            ("cancelled while a path is read", 1, None, "read"),
+            ("cancelled twice while a path is read", 2, None, "read"),
+            ("cancelled while a path read fails", 1, OSError("read failed"), "read"),
+            ("every task cancelled while a path is opened", 1, None, "open"),
         ):
             events: list[str] = []
-            held = _Held(data["payload"].encode(), events, failure)
+            held = _Held(data["payload"].encode(), events, failure, hold)
             with pytest.MonkeyPatch.context() as fault:
-                fault.setattr(Path, "open", _opening(_PATHS, [], lambda held=held: held))
+                fault.setattr(Path, "open", _opening(_PATHS, [], held.opened))
                 exchange.respond(_STORED)
                 upload = asyncio.ensure_future(api.request_raw("PUT", data["url"], body=_PATHS[0]))
                 await held.entered.wait()
                 for _ in range(cancellations):
-                    upload.cancel()
+                    for task in asyncio.all_tasks() - {asyncio.current_task()} if hold == "open" else (upload,):
+                        task.cancel()
                     await asyncio.sleep(0)
                 events.append(f"cancelled done={upload.done()} closed={held.closed}")
                 held.released.set()
