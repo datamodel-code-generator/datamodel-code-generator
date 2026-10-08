@@ -647,16 +647,20 @@ _SURFACES: Final = {
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
 
-Default: TypeAlias = Literal["required", "unset", "none"]
+Default: TypeAlias = Literal["required", "unset", "none", "value"]
 
 
 @dataclass(frozen=True, slots=True)
 class _Argument:
-    """One keyword argument of an operation method: its name, its type spelled in one module, and its default."""
+    """One keyword argument of an operation method: its name, its type spelled in one module, and its default.
+
+    A `value` default is the literal `value` spells.
+    """
 
     name: str
     annotation: str
     default: Default = "required"
+    value: str = "None"
 
     def parameter(self, module: Module) -> str:
         """Return the argument as a keyword parameter of a signature."""
@@ -667,7 +671,7 @@ class _Argument:
                 return f"{self.name}: {self.annotation} = {module.local('options', 'UNSET')}"
             case _:
                 pass
-        return f"{self.name}: {self.annotation} = None"
+        return f"{self.name}: {self.annotation} = {self.value}"
 
     def key(self, module: Module) -> str:
         """Return the argument as a key of a TypedDict, which a call may omit unless the argument is required."""
@@ -682,6 +686,8 @@ class _Argument:
                 return f"kwargs[{self.name!r}]"
             case "unset":
                 return f"kwargs.get({self.name!r}, {module.local('options', 'UNSET')})"
+            case "value":
+                return f"kwargs.get({self.name!r}, {self.value})"
             case _:
                 pass
         return f"kwargs.get({self.name!r})"
@@ -1057,10 +1063,18 @@ class _Typing:
         return _union(_Typing.spell(module, value) for value in key.values)
 
     def argument(self, module: Module, parameter: ParameterSpec) -> str:
-        """Return the type of one parameter's keyword argument, with Unset when the parameter is optional."""
+        """Return the type of one parameter's keyword argument, with Unset when it is optional without a default.
+
+        A model type is spelled as the type its argument takes, through its aliases and root models.
+        """
         kind = media_kind(parameter.plan.content_media_type) if parameter.plan.content_media_type else "json"
-        surface = self.surface(module, "json" if kind == "form" else kind, parameter.use)
-        return surface if parameter.required else f"{surface} | {module.local('options', 'Unset')}"
+        key = self.key("json" if kind == "form" else kind, parameter.use)
+        surface = self.spell(
+            module, _Model(parameter.argument) if isinstance(key, _Model) and parameter.argument is not None else key
+        )
+        if parameter.required or parameter.default is not None:
+            return surface
+        return f"{surface} | {module.local('options', 'Unset')}"
 
     def surface(self, module: Module, kind: str, use: TypeUseBinding | None) -> str:
         """Return the payload type of one media or parameter: its model type, or schema-less surface."""
@@ -1268,10 +1282,13 @@ class _Resources(_Typing):
         )
 
     def parameter(self, module: Module, parameter: ParameterSpec) -> _Argument:
-        """Return one argument of an operation method: optional ones default to UNSET."""
-        return _Argument(
-            parameter.python_name, self.argument(module, parameter), "required" if parameter.required else "unset"
-        )
+        """Return one argument of an operation method: optional ones default to their schema's default, or UNSET."""
+        annotation = self.argument(module, parameter)
+        if parameter.required:
+            return _Argument(parameter.python_name, annotation)
+        if (default := parameter.default) is None:
+            return _Argument(parameter.python_name, annotation, "unset")
+        return _Argument(parameter.python_name, annotation, "value", repr(default.value))
 
     def requests(
         self, module: Module, spec: OperationSpec, *, asynchronous: bool
@@ -1875,6 +1892,8 @@ class _Registry(_Typing):
         entries: list[tuple[str, Doc]] = [("plan=", parameter_plan(module.local, parameter.plan))]
         if (use := parameter.use) is not None and use.id in self.accessors:
             entries.append(("codec=", self.codec(module, use)))
+            if parameter.converts:
+                entries.append(("converts=", "True"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: Module, media: MediaSpec) -> Group:

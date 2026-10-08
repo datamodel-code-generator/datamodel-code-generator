@@ -597,13 +597,13 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
     def page(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
-        limit: _dcg_type_1 | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_3, ListUsersResponse]:
+    ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
             self._core,
@@ -1293,8 +1293,8 @@ keywords, never field arguments, without the parameter the helper writes the con
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0,
-        x_name: _dcg_type_1 | Unset = UNSET,
+        tus_resumable: str,
+        x_name: str | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1529,12 +1529,12 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
     def open(
         self,
         *,
-        topic: _dcg_type_0 | Unset = UNSET,
-        last_event_id: _dcg_type_1 | Unset = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_2]:
+    ) -> EventStream[_dcg_type_0]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -1700,7 +1700,7 @@ once and returns the stream:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_3]:
+    ) -> EventStream[_dcg_type_0]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
             self._core,
@@ -1842,11 +1842,11 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
     def open(
         self,
         *,
-        topic: _dcg_type_0 | Unset = UNSET,
+        topic: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_1]:
+    ) -> EventStream[_dcg_type_0]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -1937,12 +1937,12 @@ URL, the parameters, the servers, and the security. `connect` takes the operatio
     def connect(
         self,
         *,
-        room: _dcg_type_0,
-        since: _dcg_type_1 | Unset = UNSET,
+        room: str,
+        since: int | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_2, _dcg_type_3]:
+    ) -> WebSocketSession[_dcg_type_0, _dcg_type_1]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
@@ -2147,9 +2147,9 @@ With asyncio, `fetch` is a coroutine:
     def fetch(
         self,
         *,
-        fields: _dcg_type_0 | Unset = UNSET,
-        accept_language: _dcg_type_1 | Unset = UNSET,
-        user_id: _dcg_type_2,
+        fields: str | Unset = UNSET,
+        accept_language: str | Unset = UNSET,
+        user_id: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -2318,30 +2318,30 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
-    ) -> _dcg_type_7: ...
+    ) -> _dcg_type_2: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_7: ...
+    ) -> _dcg_type_2: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_8: ...
+    ) -> _dcg_type_3: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
@@ -2397,7 +2397,7 @@ TypedDict with the keys you forward. The module also holds the list of keywords 
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -2405,7 +2405,7 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -2413,7 +2413,7 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -2421,7 +2421,7 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6
+    pet_id: int
     response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -2585,8 +2585,8 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7,
+        pet_id: int,
+        body: _dcg_type_5,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -2596,7 +2596,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -2607,7 +2607,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -2618,7 +2618,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -2628,8 +2628,8 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
-        body: _dcg_type_7 | Unset = UNSET,
+        pet_id: int,
+        body: _dcg_type_5 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -2722,6 +2722,16 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   object in a style-encoded parameter or a form member is left out as an omitted value is: it writes no query pair,
   header, cookie, or part. A path segment cannot be left out, so an empty array or object in a path parameter fails
   with a request `DecodeError` before anything is sent.
+- **Parameter arguments.** A parameter whose model type is a type alias or a root model takes the type it stands for,
+  such as `limit: int` or `tags: list[str]`, never the alias or the root model. An alias's argument is sent as given,
+  without validation. With Pydantic models, an argument whose parameter is a root model is built into it before it is
+  sent, which checks it as the root model's constructor does: a value it refuses fails with a request `DecodeError`
+  with the reason `unencodable`.
+- **Parameter defaults.** An optional parameter whose schema declares a boolean, number, or string default of its
+  builtin type, alone or with null, defaults to it, such as `limit: int = 20`; any other optional parameter defaults to
+  `UNSET`. A parameter with such a default is always sent, with the default when the call omits it: the client pins
+  the default it was generated with, so a later change of the server's default does not apply until you regenerate,
+  and a default that breaks its own schema's constraints is sent as it is.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `DecodeError` with the reason `invalid_value`. Read-only and write-only behavior follows the generated model options.

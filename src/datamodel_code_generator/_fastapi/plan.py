@@ -42,6 +42,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.imports import Import
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -94,6 +95,26 @@ _SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "ob
 _SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
 _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
+_CONSTRAINTS: Final = frozenset({
+    "allow_inf_nan",
+    "decimal_places",
+    "ge",
+    "gt",
+    "le",
+    "lt",
+    "max_digits",
+    "max_length",
+    "min_length",
+    "multiple_of",
+    "pattern",
+})
+_CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
+    (None, "bytes"): "conbytes",
+    ("decimal", "Decimal"): "condecimal",
+    (None, "float"): "confloat",
+    (None, "int"): "conint",
+    (None, "str"): "constr",
+}
 CONSTRAINED: Final = frozenset({
     ("pydantic", "conbytes"),
     ("pydantic", "condecimal"),
@@ -636,30 +657,81 @@ class Planner:  # noqa: PLR0904
     def parameter_type(
         self, use: TypeUseBinding | None
     ) -> tuple[FinalPythonType | None, Default | LiteralScalar | LiteralSequence]:
-        """Return a parameter's type and default through the root models and aliases whose type alone validates."""
-        value = None if use is None else use.type
+        """Return a parameter's type and default through the root models and aliases whose type alone validates.
+
+        The parameter schema's own boolean, number, or string default comes first, since an alias carries none and a
+        referenced root model's is not the parameter's; one of an enum stays the model's.
+        """
         default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
+        if use is None or use.type is None:
+            return None, default
+        value = use.type
         seen: set[SymbolId] = set()
         while (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
             and self.symbols[value.symbol].kind in {"root", "alias"}
             and (facts := self.facts.get(value.symbol)) is not None
-            and self.plain(value.symbol, facts)
+            and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
-            value = facts.type
+            value = plain
             default = _default(facts) if default is Default.ABSENT else default
+        if (
+            seen
+            and use.schema is not None
+            and (isinstance(value, LiteralType) or not self.literal(value))
+            and (literal := self.wire.default(use.schema)) is not None
+        ):
+            default = literal
         return value, default
 
-    def plain(self, symbol: SymbolId, facts: ModelFieldFacts) -> bool:
-        """Return whether a root model or alias validates exactly as its type alone: no constraint or config."""
+    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
+        """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
+
+        Its documentation keywords are left to the parameter's own; any other keyword, a constrained container, or a
+        setting returns None.
+        """
         settings = () if (model := self.symbols[symbol].facts) is None else model.configuration
-        return (
-            all(name in _DOCUMENTATION for name, _ in facts.backend.emitted.constructor_keywords)
-            and not any(setting.present for setting in settings)
-            and type_reason(facts.type, self.imports) is None
+        keywords = facts.backend.emitted.constructor_keywords
+        constraints = tuple(item for item in keywords if item[0] in _CONSTRAINTS)
+        if (
+            any(setting.present for setting in settings)
+            or any(name not in _CONSTRAINTS and name not in _DOCUMENTATION for name, _ in keywords)
+            or type_reason(facts.type, self.imports) is not None
+        ):
+            return None
+        value = self.nested(facts.type, seen | {symbol})
+        if not constraints:
+            return value
+        base = (
+            (None, value.name)
+            if isinstance(value, BuiltinType)
+            else (value.import_.from_, value.import_.import_)
+            if isinstance(value, ImportedType)
+            else None
         )
+        if (constructor := _CONSTRUCTORS.get(base)) is None:
+            return None
+        return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), constraints)
+
+    def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
+        """Return a type with each alias among its members and arguments replaced by the type it validates as."""
+        match value:
+            case GeneratedSymbolType() if (
+                value.symbol not in seen
+                and self.symbols[value.symbol].kind == "alias"
+                and (facts := self.facts.get(value.symbol)) is not None
+                and (plain := self.plain(value.symbol, facts, seen)) is not None
+            ):
+                return plain
+            case GenericType():
+                return replace(value, arguments=tuple(self.nested(item, seen) for item in value.arguments))
+            case UnionType():
+                return replace(value, members=tuple(self.nested(item, seen) for item in value.members))
+            case _:
+                pass
+        return value
 
     def kind(self, value: FinalPythonType) -> ValueKind | None:
         """Return whether FastAPI reads a parameter type as a scalar, as a sequence of scalars, or as neither."""
