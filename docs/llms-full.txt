@@ -387,7 +387,7 @@ class Species(StrEnum):
 
 class Pet(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     name: Annotated[str, Field(description="The pet's name")]
     species: Species = Species.dog
@@ -5948,8 +5948,13 @@ class Pet:
 
 Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
 `datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
-run on. Leaving it unset gives the newest supported forms, the same as the newest choice (`2.12`). Pass
-`--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+
+When the target is unset:
+
+- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
+  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
 
 | Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
 | --- | --- | --- |
@@ -5959,7 +5964,10 @@ run on. Leaving it unset gives the newest supported forms, the same as the newes
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected for every `model_` name | Rejected only for `model_validate*` and `model_dump*` names |
-| `--allow-population-by-field-name` (2.11+) | `populate_by_name=True` | `validate_by_name=True` |
+
+| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| --- | --- | --- |
+| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
@@ -12584,7 +12592,7 @@ new projects. The preset name pins generated Python syntax and backports.
 
     class Person(BaseModel):
         model_config = ConfigDict(
-            validate_by_name=True,
+            populate_by_name=True,
         )
         first_name: Annotated[
             str | None, Field(alias='firstName', description="The person's first name.")
@@ -13096,7 +13104,7 @@ Pydantic v2 BaseModel output and omits matching per-field aliases.
 
     class AliasGeneratorModel(BaseModel):
         model_config = ConfigDict(
-            validate_by_name=True,
+            populate_by_name=True,
             alias_generator=to_camel,
         )
         first_name: str
@@ -13715,7 +13723,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Pet(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             id: int
             name: str
@@ -13728,7 +13736,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class User(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             id: int
             name: str
@@ -13749,7 +13757,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Error(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             code: int
             message: str
@@ -13757,7 +13765,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Api(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             apiKey: str | None = Field(
                 None, description='To be used as a dataset parameter value'
@@ -13779,14 +13787,14 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Event(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             name: str | None = None
 
 
         class Result(BaseModel):
             model_config = ConfigDict(
-                validate_by_name=True,
+                populate_by_name=True,
             )
             event: Event | None = None
         ```
@@ -18437,7 +18445,8 @@ Target Pydantic version for generated code compatibility.
 The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
 Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **unset**: the newest supported forms, the same as the newest choice (`2.12`)
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
 - **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
@@ -22245,7 +22254,7 @@ match the generated Python type.
 
     class Invoice(BaseModel):
         model_config = ConfigDict(
-            validate_by_name=True,
+            populate_by_name=True,
         )
         amount: Decimal = '12.340'
         invalid_amount: Decimal = 'not-a-decimal'
@@ -44978,8 +44987,9 @@ a reason to delete every existing compatibility branch.
 
 The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
 `model/pydantic_v2/version.py` keys every generated-code boundary on `--target-pydantic-version`. Leaving it unset
-means the newest choice (the newest supported forms); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime
-floor therefore cannot change generated output.
+gives the newest supported feature forms, while config key naming keeps its existing rule (`populate_by_name` unless
+the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime floor therefore cannot
+change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
 | --- | --- | --- |

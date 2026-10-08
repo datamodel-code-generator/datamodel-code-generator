@@ -4556,7 +4556,8 @@ def test_target_python_version_outputs(output_file: Path) -> None:
 The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
 Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **unset**: the newest supported forms, the same as the newest choice (`2.12`)
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
 - **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
@@ -4580,7 +4581,7 @@ def test_target_pydantic_version(output_file: Path) -> None:
     """Target Pydantic version for generated code compatibility.
 
     The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
-    Output never depends on the Pydantic installed with datamodel-code-generator; unset means the newest choice.
+    Output never depends on the Pydantic installed with datamodel-code-generator; unset uses the newest feature forms.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",

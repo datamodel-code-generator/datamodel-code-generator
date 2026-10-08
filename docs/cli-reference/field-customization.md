@@ -2273,7 +2273,7 @@ match the generated Python type.
 
     class Invoice(BaseModel):
         model_config = ConfigDict(
-            validate_by_name=True,
+            populate_by_name=True,
         )
         amount: Decimal = '12.340'
         invalid_amount: Decimal = 'not-a-decimal'

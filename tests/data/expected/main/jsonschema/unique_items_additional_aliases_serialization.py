@@ -251,7 +251,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 class AdditionalAliases(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
-        validate_by_name=True,
+        populate_by_name=True,
         alias_generator=to_camel,
     )
     __annotations__ = {

@@ -82,8 +82,13 @@ class Pet:
 
 Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
 `datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
-run on. Leaving it unset gives the newest supported forms, the same as the newest choice (`2.12`). Pass
-`--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+
+When the target is unset:
+
+- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
+  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
 
 | Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
 | --- | --- | --- |
@@ -93,7 +98,10 @@ run on. Leaving it unset gives the newest supported forms, the same as the newes
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected for every `model_` name | Rejected only for `model_validate*` and `model_dump*` names |
-| `--allow-population-by-field-name` (2.11+) | `populate_by_name=True` | `validate_by_name=True` |
+
+| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| --- | --- | --- |
+| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 

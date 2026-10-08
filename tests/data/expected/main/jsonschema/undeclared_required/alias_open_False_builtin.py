@@ -9,6 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field
 class Root(BaseModel):
     model_config = ConfigDict(
         extra='allow',
-        validate_by_name=True,
+        populate_by_name=True,
     )
     renamed: int | None = Field(4, alias='known')

@@ -17,11 +17,10 @@ PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM: Final = "2.7"
 PYDANTIC_V2_DICT_KEY_FORWARD_REF_MINIMUM: Final = "2.8"
 PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM: Final = "2.10"
 PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM: Final = "2.10"
-PYDANTIC_V2_VALIDATE_BY_NAME_MINIMUM: Final = "2.11"
 
 
 def target_supports(target_version: TargetPydanticVersion | str | None, minimum: str) -> bool:
-    """Return whether every Pydantic the target allows has a feature added in ``minimum``; unset is the newest."""
+    """Return whether the target allows a feature form added in ``minimum``; unset allows the newest forms."""
     return _is_pydantic_version_at_least(
         NEWEST_TARGET_PYDANTIC_VERSION if target_version is None else target_version, minimum
     )

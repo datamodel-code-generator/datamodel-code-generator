@@ -10,7 +10,7 @@ from pydantic import ConfigDict, Field
 
 class BaseModel(_BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
 
 

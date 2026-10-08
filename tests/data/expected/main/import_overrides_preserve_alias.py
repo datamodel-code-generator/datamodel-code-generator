@@ -12,7 +12,7 @@ from pydantic import ConfigDict, Field, conint
 
 class BaseModel(_BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
 
 

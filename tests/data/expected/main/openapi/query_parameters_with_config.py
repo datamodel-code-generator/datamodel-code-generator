@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class Account(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
-        validate_by_name=True,
+        populate_by_name=True,
     )
     id: str | None = None
     account_type: str | None = None
@@ -27,7 +27,7 @@ class FilterType(Enum):
 class AccountsGetParametersQuery(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
-        validate_by_name=True,
+        populate_by_name=True,
     )
     page_size_: Annotated[int | None, Field(alias='page[size]')] = None
     filter_type_: Annotated[FilterType | None, Field(alias='filter[type]')] = None

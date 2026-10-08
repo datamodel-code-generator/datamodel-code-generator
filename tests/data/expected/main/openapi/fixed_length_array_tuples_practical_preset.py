@@ -10,21 +10,21 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class InlineObjectItem(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     value: str
 
 
 class RefValue(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     id: int
 
 
 class FixedLengthArrayTuples(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     vector: Annotated[list[float], Field(max_length=3, min_length=3)]
     all_of_vector: Annotated[list[str], Field(alias='allOfVector')]

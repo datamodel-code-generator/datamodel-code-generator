@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_VALIDATE_BY_NAME_MINIMUM, target_supports
+from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -66,11 +66,14 @@ def get_config_attributes(
     config_attributes_v2_11: list[ConfigAttribute],
 ) -> list[ConfigAttribute]:
     """Get config attributes based on target Pydantic version."""
-    return (
-        config_attributes_v2_11
-        if target_supports(extra_template_data.get("target_pydantic_version"), PYDANTIC_V2_VALIDATE_BY_NAME_MINIMUM)
-        else config_attributes_v2
-    )
+    target_version = extra_template_data.get("target_pydantic_version")
+    match target_version:
+        case TargetPydanticVersion() | str() if _is_pydantic_version_at_least(
+            target_version, TargetPydanticVersion.V2_11
+        ):
+            return config_attributes_v2_11
+        case _:
+            return config_attributes_v2
 
 
 def build_base_config_parameters(

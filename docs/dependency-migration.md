@@ -103,8 +103,9 @@ a reason to delete every existing compatibility branch.
 
 The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
 `model/pydantic_v2/version.py` keys every generated-code boundary on `--target-pydantic-version`. Leaving it unset
-means the newest choice (the newest supported forms); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime
-floor therefore cannot change generated output.
+gives the newest supported feature forms, while config key naming keeps its existing rule (`populate_by_name` unless
+the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime floor therefore cannot
+change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
 | --- | --- | --- |

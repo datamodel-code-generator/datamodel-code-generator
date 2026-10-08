@@ -20,7 +20,7 @@ class IntTwo(Enum):
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     str_one: StrOne = '1'
     int_two: IntTwo = 2

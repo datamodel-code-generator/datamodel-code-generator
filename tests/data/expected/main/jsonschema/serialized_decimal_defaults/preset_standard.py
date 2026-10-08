@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 class Invoice(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     amount: Decimal = Decimal('12.340')
     invalid_amount: Decimal = 'not-a-decimal'

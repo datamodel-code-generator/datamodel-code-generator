@@ -9,7 +9,7 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
 
 class Pet(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     id: int
     name: str
@@ -22,7 +22,7 @@ class Pets(RootModel[list[Pet]]):
 
 class User(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     id: int
     name: str
@@ -43,7 +43,7 @@ class Rules(RootModel[list[str]]):
 
 class Error(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     code: int
     message: str
@@ -51,7 +51,7 @@ class Error(BaseModel):
 
 class Api(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     apiKey: str | None = Field(
         None, description='To be used as a dataset parameter value'
@@ -73,13 +73,13 @@ class Apis(RootModel[list[Api]]):
 
 class Event(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     name: str | None = None
 
 
 class Result(BaseModel):
     model_config = ConfigDict(
-        validate_by_name=True,
+        populate_by_name=True,
     )
     event: Event | None = None
