@@ -792,7 +792,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "ÿ",
+        "content": "\u00ff",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }

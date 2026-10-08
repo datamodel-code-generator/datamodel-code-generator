@@ -186,6 +186,7 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
             ("X-Flag", "false"),
             ("X-Counts", "05,+1,1.0"),
             ("X-Entry", "value=known,unknown=extra"),
+            ("X-Entry", "value=known,unknown=first,unknown=last"),
             ("X-Closed", "value=known,unknown=extra"),
         ):
             exchange.respond(raw_response(204, **{name: value}))

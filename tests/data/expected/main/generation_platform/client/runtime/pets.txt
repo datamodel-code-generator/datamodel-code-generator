@@ -297,7 +297,7 @@
   list response = Response([{'id': 1, 'name': 'cat', 'tag': None}], 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
-  header x-rate = '10'
+  header x-rate = 10
   header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
