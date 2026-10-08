@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info: {title: Defaults, version: "1.0"}
+paths:
+  /values:
+    get:
+      operationId: getValues
+      parameters:
+        - {name: depth, in: query, schema: {type: [integer, "null"], minimum: 0, default: 3}}
+        - {name: size, in: query, schema: {$ref: "#/components/schemas/Size"}}
+        - {name: bounded, in: query, schema: {type: integer, minimum: 0, default: 2}}
+        - {name: page, in: query, schema: {type: integer, default: 1}}
+        - {name: words, in: query, schema: {type: array, items: {type: string, minLength: 1}, default: [a]}}
+        - {name: X-Level, in: header, schema: {type: integer, minimum: 0, default: 4}}
+        - {name: tags, in: query, schema: {$ref: "#/components/schemas/Tags"}}
+        - {name: labels, in: query, schema: {type: array, minItems: 1, items: {type: string}, default: [x]}}
+        - {name: rows, in: query, schema: {type: [array, "null"], minItems: 1, items: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Size: {type: integer, minimum: 1, default: 10}
+    Tags: {type: array, minItems: 1, items: {type: string}, default: [a]}

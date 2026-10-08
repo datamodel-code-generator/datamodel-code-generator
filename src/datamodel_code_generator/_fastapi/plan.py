@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeIs
 
@@ -62,6 +62,7 @@ if TYPE_CHECKING:
         ModelFieldFacts,
         OperationContract,
         SymbolId,
+        TypeArgument,
         TypeUseBinding,
         TypeUseId,
         WireDeclaration,
@@ -94,9 +95,17 @@ _APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header"
 _SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "object"})
 _SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
 _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
-_STRICT: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt", "confloat", "conint"})
+_STRICT_TYPES: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt"})
+_STRICT_CONSTRUCTORS: Final = frozenset({"confloat", "conint"})
+_STRICT_BYTES: Final = frozenset({"StrictBytes"})
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
+_LITERAL_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
+    bool: "bool",
+    int: "int",
+    float: "float",
+    str: "str",
+}
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
     "decimal_places",
@@ -116,7 +125,11 @@ _CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
     (None, "float"): "confloat",
     (None, "int"): "conint",
     (None, "str"): "constr",
+    ("pydantic", "StrictFloat"): "confloat",
+    ("pydantic", "StrictInt"): "conint",
+    ("pydantic", "StrictStr"): "constr",
 }
+_PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
 CONSTRAINED: Final = frozenset({
     ("pydantic", "conbytes"),
     ("pydantic", "condecimal"),
@@ -144,10 +157,15 @@ _DEFAULT_STATUS: Final = 200
 
 
 class Default(Enum):
-    """Whether a request must send a native argument, or the handler receives None for an absent one."""
+    """What an argument without a literal default takes when the request omits it.
+
+    A required native argument takes nothing, an absent one None, and one whose type stays a root model with a
+    default takes that model's own default.
+    """
 
     REQUIRED = "required"
     ABSENT = "absent"
+    MODEL = "model"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -630,6 +648,12 @@ class Planner:  # noqa: PLR0904
         use = self.bound(self.use(_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)
+        if value is not None and plan is not None and plan.content_media_type is None and _strict(value, _STRICT_BYTES):
+            message = (
+                f"The {location} parameter {name!r} of {_label(operation)} is strict bytes, which rejects the text "
+                "a parameter carries"
+            )
+            self.problems.append(_problem("F_PARAMETER_UNSUPPORTED", message, declaration.use_site))
         kind = (
             None
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
@@ -661,8 +685,10 @@ class Planner:  # noqa: PLR0904
     ) -> tuple[FinalPythonType | None, Default | LiteralScalar | LiteralSequence]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
-        The parameter schema's own boolean, number, or string default comes first, since an alias carries none and a
-        referenced root model's is not the parameter's; one of an enum stays the model's.
+        The parameter schema's own default comes first when it is a boolean, number, or string, or a list of them,
+        since an alias may carry none and a referenced root model's is not the parameter's; one of an enum stays
+        the model's. A declared default does not depend on how the model spells the type: a type that stays a root
+        model takes that model's own default, and any other type the schema's.
         """
         default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
         if use is None or use.type is None:
@@ -679,11 +705,13 @@ class Planner:  # noqa: PLR0904
             seen.add(value.symbol)
             value = plain
             default = _default(facts) if default is Default.ABSENT else default
+        if isinstance(value, GeneratedSymbolType) and self.symbols[value.symbol].kind == "root":
+            wrapped = self.facts.get(value.symbol)
+            return value, Default.MODEL if wrapped is not None and wrapped.has_default else default
         if (
-            seen
-            and use.schema is not None
+            use.schema is not None
             and (isinstance(value, LiteralType) or not self.literal(value))
-            and (literal := self.wire.default(use.schema)) is not None
+            and (literal := _literal(self.wire.schema(use.schema)[1].get("default"))) is not None
         ):
             default = literal
         return value, default
@@ -691,31 +719,21 @@ class Planner:  # noqa: PLR0904
     def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
         """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
 
-        Its documentation keywords are left to the parameter's own; any other keyword, a constrained container, or a
-        setting returns None.
+        A scalar that may be None is constrained the same way, so each spelling of the model gives one type. Its
+        documentation keywords are left to the parameter's own and a default factory to the default; any other
+        keyword, a constrained container, or a setting returns None.
         """
         settings = () if (model := self.symbols[symbol].facts) is None else model.configuration
         keywords = facts.backend.emitted.constructor_keywords
         constraints = tuple(item for item in keywords if item[0] in _CONSTRAINTS)
         if (
             any(setting.present for setting in settings)
-            or any(name not in _CONSTRAINTS and name not in _DOCUMENTATION for name, _ in keywords)
+            or any(name not in _PLAIN_KEYWORDS for name, _ in keywords)
             or type_reason(facts.type, self.imports) is not None
         ):
             return None
         value = self.nested(facts.type, seen | {symbol})
-        if not constraints:
-            return value
-        base = (
-            (None, value.name)
-            if isinstance(value, BuiltinType)
-            else (value.import_.from_, value.import_.import_)
-            if isinstance(value, ImportedType)
-            else None
-        )
-        if (constructor := _CONSTRUCTORS.get(base)) is None:
-            return None
-        return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), constraints)
+        return _constrained(value, constraints) if constraints else value
 
     def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
         """Return a type with each alias among its members and arguments replaced by the type it validates as."""
@@ -1086,20 +1104,59 @@ def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | 
     )
 
 
-def _strict(value: FinalPythonType) -> bool:
-    """Return whether a type holds a strict int, float, or bool: a pydantic Strict type or strict constrained one."""
+def _constrained(value: FinalPythonType, constraints: tuple[tuple[str, TypeArgument], ...]) -> FinalPythonType | None:
+    """Return a scalar with its constraints as a constrained scalar, a pydantic Strict one as a strict constrained one.
+
+    A union of one scalar and None constrains the scalar; any other type returns None.
+    """
+    base: tuple[str | None, str] | None = None
+    match value:
+        case UnionType() if len(scalars := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+            if (scalar := _constrained(scalars[0], constraints)) is None:
+                return None
+            return replace(value, members=tuple(scalar if item is scalars[0] else item for item in value.members))
+        case BuiltinType():
+            base = (None, value.name)
+        case ImportedType():
+            base = (value.import_.from_, value.import_.import_)
+        case _:
+            pass
+    if base is None or (constructor := _CONSTRUCTORS.get(base)) is None:
+        return None
+    keywords = (*constraints, _STRICT_KEYWORD) if base[0] == "pydantic" else constraints
+    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords)
+
+
+def _strict(value: FinalPythonType, types: frozenset[str] = _STRICT_TYPES) -> bool:
+    """Return whether a type holds one of pydantic's Strict types: by default a strict int, float, or bool.
+
+    A constrained int or float with strict=True is one of the default ones.
+    """
     match value:
         case UnionType():
-            return any(map(_strict, value.members))
+            return any(_strict(item, types) for item in value.members)
         case GenericType():
-            return any(map(_strict, value.arguments))
+            return any(_strict(item, types) for item in value.arguments)
         case ImportedType():
-            return value.import_.from_ == "pydantic" and value.import_.import_ in _STRICT
+            return value.import_.from_ == "pydantic" and value.import_.import_ in types
         case ConstructorType():
-            return _STRICT_KEYWORD in value.keywords and _strict(value.callable)
+            return (
+                types is _STRICT_TYPES
+                and _STRICT_KEYWORD in value.keywords
+                and value.callable.import_.import_ in _STRICT_CONSTRUCTORS
+            )
         case _:
             pass
     return False
+
+
+def _literal(value: WireValue) -> LiteralScalar | LiteralSequence | None:
+    """Return a JSON boolean, number, or string, or a list of them, as a literal."""
+    if isinstance(value, tuple):
+        items = tuple(item for element in value if isinstance(item := _literal(element), LiteralScalar))
+        return LiteralSequence("list", items) if len(items) == len(value) else None
+    kind = _LITERAL_KINDS.get(type(value))
+    return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
 
 
 def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:

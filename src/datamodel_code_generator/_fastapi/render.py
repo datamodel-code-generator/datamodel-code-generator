@@ -833,6 +833,8 @@ def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argum
             entries.append(("adapter=", _adapter(module, parameter.type)))
         if isinstance(parameter.default, (LiteralScalar, LiteralSequence)):
             entries.append(("default=", _default(module, parameter.default)))
+        elif parameter.default is Default.MODEL and parameter.type is not None:
+            entries.append(("default=", f"{module.annotation(parameter.type)}()"))
         arguments.append(
             Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
         )

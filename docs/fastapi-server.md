@@ -349,8 +349,11 @@ The generated models are the runtime contract. Routes declare the model types di
 `Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
 `response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
 parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
-validates the same, so the method receives the value; the default is the one the model declares. How strictly a
-value follows the OpenAPI document is decided by the model generation options, not by the server.
+validates the same, so the method receives the value. A default that the parameter's schema declares reaches the
+method whenever the request omits the parameter, however the model options spell the type, such as with
+`--use-annotated` or `--field-constraints`; a parameter whose type stays a root model receives that model with its
+own default. How strictly a value follows the OpenAPI document is decided by the model generation options, not by
+the server.
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
@@ -358,6 +361,14 @@ form-style cookies, header and path arrays, objects, enums and literals of non-s
 numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
 and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
 the method as its model, with uploads read to `bytes`.
+
+An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
+spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
+or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
+query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
+parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an

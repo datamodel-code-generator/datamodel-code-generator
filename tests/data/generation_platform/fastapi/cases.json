@@ -124,6 +124,14 @@
   "media-errors": {
     "input": "media-errors.yaml"
   },
+  "parameter-errors": {
+    "input": "parameter-errors.yaml",
+    "model": {
+      "strict_types": [
+        "bytes"
+      ]
+    }
+  },
   "selector-errors": {
     "input": "pets.yaml",
     "config": {

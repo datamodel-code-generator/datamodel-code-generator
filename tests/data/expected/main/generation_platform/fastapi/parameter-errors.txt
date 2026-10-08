@@ -1,0 +1,8 @@
+# parameter-errors
+render pydantic_v2.BaseModel
+  Error: /paths/~1blobs~1{id}/put/parameters/0: The path parameter 'id' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries; /paths/~1blobs~1{id}/put/parameters/1: The query parameter 'part' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries; /paths/~1blobs~1{id}/put/parameters/2: The query parameter 'parts' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries; /paths/~1blobs~1{id}/put/parameters/3: The header parameter 'X-Blob' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries; /paths/~1blobs~1{id}/put/parameters/4: The cookie parameter 'blob' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries
+  F_PARAMETER_UNSUPPORTED target /paths/~1blobs~1{id}/put/parameters/0: The path parameter 'id' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries
+  F_PARAMETER_UNSUPPORTED target /paths/~1blobs~1{id}/put/parameters/1: The query parameter 'part' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries
+  F_PARAMETER_UNSUPPORTED target /paths/~1blobs~1{id}/put/parameters/2: The query parameter 'parts' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries
+  F_PARAMETER_UNSUPPORTED target /paths/~1blobs~1{id}/put/parameters/3: The header parameter 'X-Blob' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries
+  F_PARAMETER_UNSUPPORTED target /paths/~1blobs~1{id}/put/parameters/4: The cookie parameter 'blob' of PUT /blobs/{id} is strict bytes, which rejects the text a parameter carries

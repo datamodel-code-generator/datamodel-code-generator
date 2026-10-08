@@ -36,16 +36,16 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
         model = {**model, "custom_template_dir": SOURCE / directory}
     generate_fastapi(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(
-            output=root / f"{package}_models{'' if case.get('modular') else '.py'}",
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=DataModelType(backend),
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
+        model_config=GenerateConfig(**{
+            "output": root / f"{package}_models{'' if case.get('modular') else '.py'}",
+            "input_file_type": "openapi",
+            "target_python_version": "3.11",
+            "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+            "output_model_type": DataModelType(backend),
+            "disable_timestamp": True,
+            "formatters": [Formatter.BUILTIN],
             **model,
-        ),
+        }),
         config=fastapi_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},
             root,

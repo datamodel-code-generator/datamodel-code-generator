@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: {title: Parameter errors, version: "1.0"}
+paths:
+  /blobs/{id}:
+    put:
+      operationId: putBlob
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: binary}}
+        - {name: part, in: query, schema: {type: string, format: binary}}
+        - {name: parts, in: query, schema: {type: array, items: {type: string, format: binary}}}
+        - {name: X-Blob, in: header, schema: {type: string, format: binary}}
+        - {name: blob, in: cookie, schema: {type: string, format: binary}}
+        - {name: note, in: query, schema: {type: string}}
+        - {name: packed, in: query, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        "204": {description: Done.}

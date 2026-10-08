@@ -1,0 +1,14 @@
+# defaults-preset
+serve pydantic_v2.BaseModel
+service UntaggedService: get_values
+service UntaggedService without its methods: TypeError
+> GET /values
+  get_values(depth=3, size=10, bounded=2, page=1, words=['a'], x_level=4, tags=Tags(root=['a']), labels=['x'], rows=None)
+< 204 - b''
+> GET /values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2
+  get_values(depth=5, size=3, bounded=4, page=2, words=['x', 'y'], x_level=6, tags=Tags(root=['t']), labels=['l'], rows=[1, 2])
+< 204 - b''
+> GET /values?depth=-1&size=0&bounded=-1
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "depth"]}, {"type": "greater_than_equal", "loc": ["query", "size"]}, {"type": "greater_than_equal", "loc": ["query", "bounded"]}]
+> GET /values?words=&tags=
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "words", 0]}]
