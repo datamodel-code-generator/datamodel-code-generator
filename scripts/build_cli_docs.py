@@ -374,8 +374,6 @@ MANUAL_OPTION_DESCRIPTIONS = {
     "--overwrite-skill": "Replace an existing Agent Skill installation",
     "--list-deprecations": "List registered deprecations and scheduled breaking changes",
     "--list-experimental": "List registered experimental features",
-    "--diagnostics-json": "Write the generation target's diagnostics as JSON",
-    "--dependency-format": "Print the generation target's dependencies for uv or a requirements file",
 }
 
 # Regex pattern for detecting MkDocs Material admonitions in docstrings
