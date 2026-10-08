@@ -257,8 +257,6 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--all-jobs`](utility-options.md#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](utility-options.md#debug) | Show debug messages during code generation |
-| [`--dependency-format`](utility-options.md#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
-| [`--diagnostics-json`](utility-options.md#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](utility-options.md#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--help`](utility-options.md#help) | Show help message and exit |
 | [`--install-skill`](utility-options.md#install-skill) | Install the bundled Agent Skill (experimental) |
@@ -313,9 +311,7 @@ All options sorted alphabetically:
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
-- [`--dependency-format`](utility-options.md#dependency-format) - Print the generation target's dependencies for uv or a requirements file
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
-- [`--diagnostics-json`](utility-options.md#diagnostics-json) - Write the generation target's diagnostics as JSON
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix) - Disable appending 'Item' suffix to array item types.
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports) - Prevent automatic addition of __future__ imports in generate...

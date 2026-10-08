@@ -2963,6 +2963,60 @@ def test_check_file_differs(output_file: Path) -> None:
     )
 
 
+def test_check_suffixless_file_matches(tmp_path: Path) -> None:
+    """Test --check returns OK when a single-module output without a suffix matches."""
+    input_path = DATA_PATH / "jsonschema" / "person.json"
+    output_path = tmp_path / "model"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+        expected_file="person.py",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.OK,
+    )
+
+
+def test_check_suffixless_file_differs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check returns DIFF when a single-module output without a suffix differs."""
+    output_path = tmp_path / "model"
+    output_path.write_text("# Different content\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.DIFF,
+    )
+    assert_output(
+        capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
+        EXPECTED_MAIN_PATH / "check" / "suffixless_file_differs.txt",
+    )
+
+
+def test_check_suffixless_file_does_not_exist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check returns DIFF when a single-module output without a suffix does not exist."""
+    output_path = tmp_path / "model"
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.DIFF,
+    )
+    assert_output(
+        capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
+        EXPECTED_MAIN_PATH / "check" / "suffixless_file_does_not_exist.txt",
+    )
+
+
 def test_check_with_stdout_output(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --check with stdout output returns error."""
     run_main_and_assert(

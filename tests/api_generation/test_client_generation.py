@@ -77,6 +77,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "fields-structural",
         "fields-unpack",
         "fields-errors",
+        "fields-both",
         "fields-cycle",
         "fields-optional-models",
         "type-spellings",
@@ -224,6 +225,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("caching", True),
         ("compression", True),
         ("empty", True),
+        ("fields-both", True),
         ("media", True),
         ("ndjson", True),
         ("pagination", True),
@@ -395,7 +397,7 @@ def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Pat
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
     shutil.copy2(SOURCE / "pets.yaml", generated / "pets.yaml")
-    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
+    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I", "N999"]\n', encoding="utf-8")
     model = {"formatters": formatters}
     generate_client(generated / "pets.yaml", generated, "client", "pydantic_v2.BaseModel", model=model)
     shutil.copytree(generated, copy)
