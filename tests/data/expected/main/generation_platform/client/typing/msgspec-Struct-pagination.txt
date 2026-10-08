@@ -1,58 +1,61 @@
 mypy pets and pagination.py: clean
 pyright pets and pagination.py: clean
 ty pets and pagination.py: clean
-pagination_negative.py 17 marked lines
-mypy pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 call-overload
-  16 misc
-  17 assignment
+pagination_negative.py 18 marked lines
+mypy pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  16 call-overload
+  17 misc
   18 assignment
-  19 arg-type
-  20 call-arg
-  21 arg-type
+  19 assignment
+  20 arg-type
+  21 call-arg
   22 arg-type
-  23 misc
-  24 attr-defined
-  25 misc
-  26 assignment
-  27 arg-type
+  23 arg-type
+  24 misc
+  25 attr-defined
+  26 misc
+  27 assignment
   28 arg-type
   29 arg-type
-  30 assignment
-  31 arg-type
-pyright pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 reportArgumentType
-  16 reportGeneralTypeIssues
-  17 reportAssignmentType
+  30 arg-type
+  31 assignment
+  32 arg-type
+  38 arg-type
+pyright pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  16 reportArgumentType
+  17 reportGeneralTypeIssues
   18 reportAssignmentType
-  19 reportArgumentType
-  20 reportCallIssue
-  21 reportArgumentType
+  19 reportAssignmentType
+  20 reportArgumentType
+  21 reportCallIssue
   22 reportArgumentType
-  23 reportAttributeAccessIssue
+  23 reportArgumentType
   24 reportAttributeAccessIssue
-  25 reportGeneralTypeIssues
-  26 reportAssignmentType
-  27 reportArgumentType
+  25 reportAttributeAccessIssue
+  26 reportGeneralTypeIssues
+  27 reportAssignmentType
   28 reportArgumentType
   29 reportArgumentType
-  30 reportAssignmentType
-  31 reportArgumentType
-ty pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 invalid-argument-type
-  16 invalid-await
-  17 invalid-assignment
+  30 reportArgumentType
+  31 reportAssignmentType
+  32 reportArgumentType
+  38 reportArgumentType
+ty pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  16 invalid-argument-type
+  17 invalid-await
   18 invalid-assignment
-  19 invalid-argument-type
-  20 unknown-argument
-  21 invalid-argument-type
+  19 invalid-assignment
+  20 invalid-argument-type
+  21 unknown-argument
   22 invalid-argument-type
-  23 invalid-assignment
-  24 unresolved-attribute
-  25 invalid-await
-  26 invalid-assignment
-  27 invalid-argument-type
+  23 invalid-argument-type
+  24 invalid-assignment
+  25 unresolved-attribute
+  26 invalid-await
+  27 invalid-assignment
   28 invalid-argument-type
   29 invalid-argument-type
-  30 invalid-assignment
-  31 invalid-argument-type
+  30 invalid-argument-type
+  31 invalid-assignment
+  32 invalid-argument-type
+  38 invalid-argument-type

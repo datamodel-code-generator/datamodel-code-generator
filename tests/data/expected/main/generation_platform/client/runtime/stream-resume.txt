@@ -301,7 +301,7 @@ SSE body cursors
     1 tick id=None retry=None data=Tick{'seq': 1} raw='{"seq": 1}'
   < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='transport', sequence=1) [operation_id='streamFeed', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
-  ticks saved {"arguments": [], "body": [{"topic": "t"}, "application/json", null], "bound": [], "cursor": 1, "expires_at": null}
+  ticks saved {"arguments": [[]], "body": [{"topic": "t"}, "application/json", null], "bound": [], "cursor": 1, "expires_at": null}
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","after":1}'
   resumed writing the body
   < closed
@@ -373,8 +373,8 @@ refusals
   > POST https://api.example.com/search-feed?api_key=secret last-event-id=None body=b'{"topic":"t"}'
   checkpoint of credential querystring ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
   < closed
-  > POST https://api.example.com/search-feed?sig=echoed last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of signer querystring field ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  > POST https://api.example.com/search-feed?term=news last-event-id=None body=b'{"topic":"t"}'
+  checkpoint of ordinary querystring with a signer = 'ResumeState'
   < closed
   ticks cleared cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   ticks cursor replaced by an object ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error

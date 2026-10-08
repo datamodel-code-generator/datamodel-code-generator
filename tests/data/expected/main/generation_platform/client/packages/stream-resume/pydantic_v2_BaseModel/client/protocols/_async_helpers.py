@@ -44,6 +44,11 @@ class AsyncProtocolHelpers:
         return AsyncSearchesProtocols(self._core)
 
     @cached_property
+    def feed(self) -> AsyncFeedProtocols:
+        """The feed protocol helpers."""
+        return AsyncFeedProtocols(self._core)
+
+    @cached_property
     def events(self) -> AsyncEventsProtocols:
         """The events protocol helpers."""
         return AsyncEventsProtocols(self._core)
@@ -57,11 +62,6 @@ class AsyncProtocolHelpers:
     def records(self) -> AsyncRecordsProtocols:
         """The records protocol helpers."""
         return AsyncRecordsProtocols(self._core)
-
-    @cached_property
-    def feed(self) -> AsyncFeedProtocols:
-        """The feed protocol helpers."""
-        return AsyncFeedProtocols(self._core)
 
     @cached_property
     def topics(self) -> AsyncTopicsProtocols:
@@ -85,6 +85,24 @@ class AsyncSearchesProtocols:
     def ticks(self) -> AsyncSearchesTicksSse:
         """The searches.ticks SSE helper."""
         return AsyncSearchesTicksSse(self._core)
+
+
+class AsyncFeedProtocols:
+    """The feed protocol helpers."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def live(self) -> AsyncFeedLiveSse:
+        """The feed.live SSE helper."""
+        return AsyncFeedLiveSse(self._core)
+
+    @cached_property
+    def ticks(self) -> AsyncFeedTicksSse:
+        """The feed.ticks SSE helper."""
+        return AsyncFeedTicksSse(self._core)
 
 
 class AsyncEventsProtocols:
@@ -134,19 +152,6 @@ class AsyncRecordsProtocols:
     def all(self) -> AsyncRecordsAllNdjson:
         """The records.all NDJSON helper."""
         return AsyncRecordsAllNdjson(self._core)
-
-
-class AsyncFeedProtocols:
-    """The feed protocol helpers."""
-
-    def __init__(self, core: AsyncClientCore) -> None:
-        """Keep the client core its helpers send through."""
-        self._core = core
-
-    @cached_property
-    def ticks(self) -> AsyncFeedTicksSse:
-        """The feed.ticks SSE helper."""
-        return AsyncFeedTicksSse(self._core)
 
 
 class AsyncTopicsProtocols:
@@ -243,6 +248,54 @@ class AsyncSearchesTicksSse:
         )
 
 
+class AsyncFeedLiveSse:
+    """The feed.live SSE helper of POST /feed."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        last_event_id: str | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_1]:
+        """Open the event stream of POST /feed, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_1,
+            (last_event_id,),
+            body=body,
+            media_type=media_type,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_1]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_1,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
 class AsyncEventsLiveSse:
     """The events.live SSE helper of GET /events."""
 
@@ -263,7 +316,7 @@ class AsyncEventsLiveSse:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_1,
+            _plans.STREAM_2,
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
@@ -281,7 +334,7 @@ class AsyncEventsLiveSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_1,
+            _plans.STREAM_2,
             state,
             stream_options=stream_options,
             options=options,
@@ -309,7 +362,7 @@ class AsyncEventsPlainSse:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_2,
+            _plans.STREAM_3,
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
@@ -337,7 +390,7 @@ class AsyncEventsTrackedSse:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_3,
+            _plans.STREAM_4,
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
@@ -355,7 +408,7 @@ class AsyncEventsTrackedSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_3,
+            _plans.STREAM_4,
             state,
             stream_options=stream_options,
             options=options,
@@ -383,7 +436,7 @@ class AsyncRoomsLiveSse:
         """Open the event stream of GET /rooms/{room}{shard}, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_4,
+            _plans.STREAM_5,
             (room, shard, last_event_id),
             stream_options=stream_options,
             options=options,
@@ -401,7 +454,7 @@ class AsyncRoomsLiveSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_4,
+            _plans.STREAM_5,
             state,
             stream_options=stream_options,
             options=options,
@@ -427,7 +480,7 @@ class AsyncRecordsAllNdjson:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_5,
+            _plans.STREAM_6,
             (after,),
             stream_options=stream_options,
             options=options,
@@ -445,7 +498,7 @@ class AsyncRecordsAllNdjson:
         """Reopen the NDJSON stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_5,
+            _plans.STREAM_6,
             state,
             stream_options=stream_options,
             options=options,
@@ -463,6 +516,7 @@ class AsyncFeedTicksSse:
     async def open(
         self,
         *,
+        last_event_id: str | Unset = UNSET,
         body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
@@ -472,8 +526,8 @@ class AsyncFeedTicksSse:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_6,
-            (),
+            _plans.STREAM_7,
+            (last_event_id,),
             body=body,
             media_type=media_type,
             stream_options=stream_options,
@@ -492,7 +546,7 @@ class AsyncFeedTicksSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_6,
+            _plans.STREAM_7,
             state,
             stream_options=stream_options,
             options=options,
@@ -520,7 +574,7 @@ class AsyncTopicsMarksSse:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_7,
+            _plans.STREAM_8,
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
@@ -538,7 +592,7 @@ class AsyncTopicsMarksSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_7,
+            _plans.STREAM_8,
             state,
             stream_options=stream_options,
             options=options,
@@ -566,7 +620,7 @@ class AsyncMarksScopedSse:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_8,
+            _plans.STREAM_9,
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
@@ -584,7 +638,7 @@ class AsyncMarksScopedSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_8,
+            _plans.STREAM_9,
             state,
             stream_options=stream_options,
             options=options,
@@ -612,7 +666,7 @@ class AsyncMarksNamedSse:
         """Open the event stream of GET /named-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_9,
+            _plans.STREAM_10,
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
@@ -630,7 +684,7 @@ class AsyncMarksNamedSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_9,
+            _plans.STREAM_10,
             state,
             stream_options=stream_options,
             options=options,
@@ -658,7 +712,7 @@ class AsyncMarksDeepSse:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_10,
+            _plans.STREAM_11,
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
@@ -676,7 +730,7 @@ class AsyncMarksDeepSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_10,
+            _plans.STREAM_11,
             state,
             stream_options=stream_options,
             options=options,
@@ -704,7 +758,7 @@ class AsyncMarksBoundSse:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_11,
+            _plans.STREAM_12,
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
@@ -722,7 +776,7 @@ class AsyncMarksBoundSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_11,
+            _plans.STREAM_12,
             state,
             stream_options=stream_options,
             options=options,
@@ -750,7 +804,7 @@ class AsyncMarksDeepboundSse:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_12,
+            _plans.STREAM_13,
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
@@ -768,7 +822,7 @@ class AsyncMarksDeepboundSse:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
-            _plans.STREAM_12,
+            _plans.STREAM_13,
             state,
             stream_options=stream_options,
             options=options,

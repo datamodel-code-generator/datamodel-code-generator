@@ -475,6 +475,10 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             origins.update((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)
         return frozenset(origins)
 
+    def follow_query(self, operation: OperationPlan[object], options: RequestOptions | None) -> frozenset[str]:
+        """Return the query fields a followed URL a caller gives is kept and sent without, as a server's is."""
+        return self._secret_positions(operation, options)[1]
+
     def _secret_positions(
         self, operation: OperationPlan[object] | None, options: RequestOptions | None
     ) -> tuple[frozenset[str], frozenset[str]]:
@@ -521,7 +525,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
         They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
         other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
-        call giving one cannot be checkpointed. The body is one the request a stream reopens with just encoded.
+        call giving one cannot be checkpointed.
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
@@ -534,7 +538,11 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if request is None or isinstance(body, Unset):
             return saved, None
         media, sent = request.selected(operation.operation_id, media_type)
-        return saved, (media.dump(body), media.media_type, None if sent == media.media_type else sent)
+        try:
+            wire = media.dump(body)
+        except request_errors(media.codec) as error:
+            raise request_decode_error(operation, ("body",), error) from None
+        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
     def restored_request(

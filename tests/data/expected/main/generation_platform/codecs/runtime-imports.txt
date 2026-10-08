@@ -46,7 +46,7 @@ protocols/cache.py: ..client.errors, ..client.media, ..client.native, ..client.o
 protocols/cache_stores.py: ..client.errors, .caches, .options, __future__, collections, threading
 protocols/caches.py: ..client.responses, __future__, dataclasses, datetime, math, typing, typing_extensions
 protocols/client.py: ..client.client, ..client.errors, ..client.logical, ..client.native, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.retry, ..client.security, ..client.timing, ..client.urls, ..model_codecs.media, ..model_codecs.unset, .options, .references, __future__, collections.abc, dataclasses, functools, httpx2, typing, urllib.parse
-protocols/errors.py: ..client.errors, ..client.responses, ..model_codecs.media, .records, .references, .resume, .sources, __future__, collections.abc, datetime, types, typing, typing_extensions
+protocols/errors.py: ..client.errors, ..client.responses, .records, .references, .resume, .sources, __future__, collections.abc, datetime, types, typing, typing_extensions
 protocols/links.py: __future__, collections.abc, re, string, typing
 protocols/options.py: ..client.errors, ..client.options, ..client.timing, ..model_codecs.unset, .caches, .origins, .websocket_types, __future__, collections.abc, dataclasses, inspect, keyword, re, ssl, sys, types, typing, typing_extensions, urllib.parse
 protocols/origins.py: ..client.urls, .records, __future__, dataclasses

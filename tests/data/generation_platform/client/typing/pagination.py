@@ -13,7 +13,6 @@ from pets.protocols import (
     Pager,
     PaginationOptions,
     ProtocolProgress,
-    ResumeState,
 )
 from pets.responses import ResponseInfo
 from pets.model_codecs import JSONValue
@@ -53,22 +52,25 @@ def pages(client: Client, query: UserQuery) -> None:
     del items, progress, wider
 
 
-def checkpoints(client: Client, limit: SessionLimitError, cycle: PaginationCycleError) -> None:
-    """Checkpoint a pager and resume its helper with the same item and page types."""
+def checkpoints(client: Client) -> None:
+    """Checkpoint a pager, and resume its helper after a limit or a cycle with the same item and page types."""
     helper = client.protocols.users.all
-    state = helper.iterate().checkpoint()
-    assert_type(state, JSONValue)
-    resumed = helper.resume(
-        state,
-        pagination_options=PaginationOptions(max_items=10),
-        options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
-    )
-    assert_type(resumed, Pager[User, ListUsersResponse])
-    assert_type(cycle.resume_state, JSONValue)
-    assert_type(client.protocols.labels.all.resume(cycle.resume_state), Pager[Label, ListLabelsResponse])
-    if not isinstance(saved := limit.resume_state, ResumeState):
-        assert_type(client.protocols.labels.all.resume(saved), Pager[Label, ListLabelsResponse])
+    pager = helper.iterate(pagination_options=PaginationOptions(max_items=10))
+    try:
+        for user in pager:
+            assert_type(user, User)
+    except (SessionLimitError, PaginationCycleError):
+        state = pager.checkpoint()
+        assert_type(state, JSONValue)
+        resumed = helper.resume(
+            state,
+            pagination_options=PaginationOptions(max_items=10),
+            options=RequestOptions(),
+            session_options=SessionOptions(total_timeout=30),
+        )
+        assert_type(resumed, Pager[User, ListUsersResponse])
+    labels = client.protocols.labels.all
+    assert_type(labels.resume(labels.page().continuation), Pager[Label, ListLabelsResponse])
 
 
 async def async_pages(client: AsyncClient) -> None:

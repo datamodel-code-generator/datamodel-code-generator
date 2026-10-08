@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     from ..client.urls import Origin
     from .client import AsyncClientCore, ClientCore
     from .references import OperationRef
-    from .writes import ReadPaths
+    from .writes import ReadPaths, Writes
 
 __all__ = (
     "AsyncPager",
@@ -252,9 +252,14 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "headers", headers)
         object.__setattr__(self, "queries", queries)
         object.__setattr__(self, "dotted", read_paths(self.call, sources))
-        if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
-            continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
-        object.__setattr__(self, "continued", continued)
+        object.__setattr__(self, "continued", _later(rule, continued))
+
+
+def _later(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan, continued: OperationPlan[P]) -> OperationPlan[P]:
+    """Return the operation of a page after the first: a GET without a body for a followed URL that repeats none."""
+    if isinstance(rule, (CursorPlan, CountPlan)) or (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
+        return continued
+    return replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -582,12 +587,14 @@ class _Walk(Generic[T, P]):
 
     Its continuations are remembered by digest along the line of pages it extends. A walk that follows a server's URLs
     keeps the origins it may follow them to once its first fetch resolves them. It keeps the link before its last page,
-    whose continuation a checkpoint gives while that page has items left.
+    whose continuation a checkpoint gives while that page has items left, and a resumed walk the operation, writes, and
+    values of its first request.
     """
 
     __slots__ = (
         "core",
         "delivered",
+        "first",
         "limits",
         "link",
         "origins",
@@ -621,6 +628,7 @@ class _Walk(Generic[T, P]):
         self.seed: bytes | None = None
         self.previous: _Link | None = None
         self.paths: dict[str, str] | None = None
+        self.first: tuple[OperationPlan[P], Writes, tuple[JSONValue, ...]] | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched and the items delivered so far."""
@@ -659,14 +667,13 @@ class _Walk(Generic[T, P]):
         """Return the identifier of the walk's session once it started."""
         return None if (session := self.session) is None else session.session_id
 
-    def limit(self, limit: int, kind: Literal["items", "pages"], remaining: int = 0) -> SessionLimitError:
-        """Return the error of a session limit reached while pages remain, keeping the page boundary to resume at."""
+    def limit(self, limit: int, kind: Literal["items", "pages"]) -> SessionLimitError:
+        """Return the error of a session limit reached while pages remain."""
         plan = self.plan
         return SessionLimitError(
             kind=kind,
             limit=limit,
             progress=self.progress(),
-            resume_state=self.checkpoint(remaining),
             helper_id=plan.helper_id,
             operation=plan.operation,
             parent_session_id=self.session_id(),
@@ -706,7 +713,6 @@ class _Walk(Generic[T, P]):
             raise PaginationCycleError(
                 page_index=link.index,
                 first_seen_page_index=link.seen,
-                resume_state=self.checkpoint(),
                 location=rule.read,
                 helper_id=plan.helper_id,
                 operation=plan.operation,
@@ -726,10 +732,14 @@ class _Walk(Generic[T, P]):
     def operation(self) -> OperationPlan[P]:
         """Return the operation the next page calls: the helper's for the first page, its continued one after it.
 
+        A resumed walk's first page calls the operation that takes only what a resumed request writes.
+
         The first page of an offset or page-number helper reads the position the caller's own value for its target
         gives, from the parameter or the JSON body media the position is written to.
         """
         plan = self.plan
+        if (first := self.first) is not None and cast("_Link", self.link).index < 0:
+            return first[0]
         if self.link is not None:
             return plan.continued
         if not isinstance(plan.continuation, CountPlan):
@@ -831,30 +841,18 @@ class _Walk(Generic[T, P]):
 
         Each binding's value and then the cursor or position replace a parameter's argument, or are written by pointer
         into the caller's querystring or body; a helper that follows a server's URLs writes no cursor and returns the
-        URL the last page gave.
+        URL the last page gave. A resumed walk's first request writes its literal bindings and the continuation only.
         """
         request = self.request
         if (link := self.link) is None:
             return request.arguments, request.body, None
         plan = self.plan
         follows = plan.follows
-        if link.index < 0:
-            writes = [
-                (write, binding.literal)
-                for write, binding in zip(plan.writes[: len(plan.bindings)], plan.bindings, strict=True)
-                if binding.selector is None
-            ]
-            if not follows:
-                writes.append((plan.writes[-1], link.cursor))
-            arguments, body = written(
-                tuple(write for write, _ in writes),
-                request.arguments,
-                request.body,
-                tuple(value for _, value in writes),
-            )
+        if (first := self.first) is not None and link.index < 0:
+            _, writes, values = first
         else:
-            values = link.bound if follows else (*link.bound, link.cursor)
-            arguments, body = written(plan.writes, request.arguments, request.body, values)
+            writes, values = plan.writes, link.bound if follows else (*link.bound, link.cursor)
+        arguments, body = written(writes, request.arguments, request.body, values)
         return arguments, body, cast("str", link.cursor) if follows else None
 
     def bound(self, wire: JSONValue, info: ResponseInfo) -> tuple[JSONValue, ...]:
@@ -938,8 +936,7 @@ class _Walk(Generic[T, P]):
         """
         previous = self.previous = self.link
         index = 0 if previous is None else previous.index + 1
-        continuation = page.continuation
-        digest = None if continuation is None else sha256(canonical_json(continuation)).digest()
+        digest = None if isinstance(cursor, Missing) else sha256(canonical_json(cursor)).digest()
         history = _line(previous)
         if (seed := self.seed) is not None and previous is None:
             history.seen[seed] = 0
@@ -960,7 +957,7 @@ class _Walk(Generic[T, P]):
         object.__setattr__(page, "_link", link)  # noqa: PLC2801 - Link the sealed page once, as its helper fetched it.
         return page
 
-    def checkpoint(self, remaining: int = 0) -> JSONValue:
+    def checkpoint(self, remaining: int) -> JSONValue:
         """Return the server continuation at the next page boundary, None before the first page and after the last.
 
         A partially consumed page is restarted at its preceding boundary.
@@ -989,6 +986,28 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     return link
 
 
+def _first(plan: PaginationPlan[T, P], state: JSONValue) -> tuple[OperationPlan[P], Writes, tuple[JSONValue, ...]]:
+    """Return the operation of a resumed walk's first request, where it writes, and the values it writes.
+
+    It writes the helper's literal bindings and then the continuation, unless the continuation is the URL it follows.
+    A target a response would fill is not written, so the operation encodes the caller's argument there as a call does.
+    """
+    literals = tuple(binding for binding in plan.bindings if binding.selector is None)
+    values = tuple(binding.literal for binding in literals)
+    rule = plan.continuation
+    if isinstance(rule, (CursorPlan, CountPlan)):
+        values = (*values, state)
+    if len(literals) == len(plan.bindings):
+        return plan.continued, plan.writes, values
+    from .writes import targeted  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    targets = [binding.target for binding in literals]
+    if isinstance(rule, (CursorPlan, CountPlan)):
+        targets.append(rule.write)
+    continued, writes, _, _ = targeted(plan.call, targets)
+    return _later(rule, continued), writes, values
+
+
 def _restored(
     core: ClientCore | AsyncClientCore,
     plan: PaginationPlan[T, P],
@@ -996,24 +1015,29 @@ def _restored(
     request: _Request,
     limits: _Limits,
 ) -> _Walk[T, P]:
-    """Start a fresh traversal at a server continuation using the caller's operation arguments."""
+    """Start a fresh traversal at a server continuation using the caller's operation arguments.
+
+    A count must be a nonnegative integer, and a followed URL is checked as a server's and kept without the query
+    fields the client's authentication places itself.
+    """
     walk = _Walk(plan, request, limits, core)
     if state is None:
         return walk
     rule = plan.continuation
     if isinstance(rule, CountPlan) and (not isinstance(state, int) or isinstance(state, bool) or state < 0):
         raise _invalid(plan, ("state",))
-    if plan.follows:
+    if isinstance(rule, (NextUrlPlan, LinkPlan)):
         if not isinstance(state, str):
             raise _invalid(plan, ("state",))
-        assert isinstance(rule, (NextUrlPlan, LinkPlan))
         walk.origins = core.follow_origins(plan.call, limits.options)
-        state = _followed(plan, rule.read, state, state, None, walk.origins, frozenset())
+        stripped = core.follow_query(plan.call, limits.options)
+        state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
         digest = sha256(canonical_json(state)).digest()
     except (TypeError, ValueError):
         raise _invalid(plan, ("state",)) from None
     walk.seed = digest
+    walk.first = _first(plan, state)
     walk.link = _Link(plan.fingerprint, request, -1, 0, state, (), digest, None, None, _History({digest: 0}, -1))
     return walk
 
@@ -1120,7 +1144,7 @@ class _Traversal(Generic[T, P]):
         walk = self._walk
         if (limit := walk.limits.max_items) is not None and walk.delivered >= limit:
             self._state = _State.FAILED
-            raise walk.limit(limit, "items", remaining=len(self._items) - self._position)
+            raise walk.limit(limit, "items")
         walk.delivered += 1
         self._position += 1
         return self._items[self._position - 1]
@@ -1510,7 +1534,7 @@ def resume_pages(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> Pager[T, P]:
-    """Return a pager continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
+    """Return a pager continuing after a server continuation in a session of its own, checking its form now.
 
     It sends nothing until iterated. The caller supplies the operation arguments and any request body again.
     """
@@ -1530,7 +1554,7 @@ def aresume_pages(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> AsyncPager[T, P]:
-    """Return an asyncio pager continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
+    """Return an asyncio pager continuing after a server continuation in a session of its own, checking its form now.
 
     It sends nothing until iterated. The caller supplies the operation arguments and any request body again.
     """

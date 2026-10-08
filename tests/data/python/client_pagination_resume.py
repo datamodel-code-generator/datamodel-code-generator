@@ -15,7 +15,7 @@ from tests.data.python.client_pagination import (
     progress,
     user_page,
 )
-from tests.data.python.client_runtime import Exchange, describe, record, request_body, run
+from tests.data.python.client_runtime import Exchange, json_response, record, request_body, run
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -34,19 +34,6 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _bodies(harness, api, exchange, lines)
         _limits(harness, api, exchange, lines)
     run(lambda: _async_resume(harness, lines))
-
-
-def _stopped(lines: list[str], label: str, pager: Any) -> object:
-    """Report the items a pager yields before the failure that stops it, and return the continuation it keeps."""
-    seen: list[str] = []
-    try:
-        seen.extend(item_id(item) for item in pager)
-    except Exception as error:  # noqa: BLE001
-        state = getattr(error, "resume_state", None)
-        lines.append(f"  {label} {seen} ! {describe(error)} resume_state={state!r}")
-        return state
-    lines.append(f"  {label} {seen}")
-    return None
 
 
 def _cursors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -91,7 +78,9 @@ def _cursors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
     drained(lines, "fetching checkpoint preserves traversal", active)
 
     exchange.respond(user_page("4", next_cursor="a"))
-    _stopped(lines, "resumed cursor cycle", helper.resume("a"))
+    cycling = helper.resume("a")
+    drained(lines, "resumed cursor cycle", cycling)
+    record(lines, "cycle checkpoint", cycling.checkpoint)
     none = harness.protocols.PaginationOptions(max_items=0)
     drained(lines, "resumed zero item limit sends nothing", helper.resume("a", pagination_options=none))
     folder = harness.argument("listArchive", "path", "cursor", "a1")
@@ -125,6 +114,12 @@ def _counts(api: Any, exchange: Exchange, lines: list[str]) -> None:
     record(lines, "initial offset", partial.checkpoint)
     record(lines, "partial offset item", lambda: item_id(next(partial)))
     record(lines, "partial offset boundary", partial.checkpoint)
+    helper = api.protocols.users.pages
+    exchange.respond(user_page("1", "2", total=3), user_page("3", total=3))
+    drained(lines, "total ends a first run at its last page", helper.iterate())
+    for label, past in (("an empty page", user_page(total=3)), ("an error", json_response(404, {"detail": "no page"}))):
+        exchange.respond(user_page("3", total=3), past)
+        drained(lines, f"total resumed counts from its page to {label}", helper.resume(2))
 
 
 def _urls(api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -149,12 +144,11 @@ def _urls(api: Any, exchange: Exchange, lines: list[str]) -> None:
             ("wrong type", 2),
         ):
             record(lines, f"{name} {label}", lambda value=value, helper=helper: helper.resume(value))
-    exchange.respond(user_page("3"))
-    drained(
-        lines,
-        "supplied URL removes echoed key",
-        api.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&api_key=server-secret"),
-    )
+    supplied = api.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&api_key=server-secret")
+    state = supplied.checkpoint()
+    lines.append(f"  supplied URL checkpoint={state!r} key kept={'api_key' in state}")
+    exchange.respond(user_page("3", next=f"{_SERVER}/users?cursor=a&api_key=server-secret"))
+    drained(lines, "supplied URL removes echoed key", supplied)
 
 
 def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -179,33 +173,37 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     drained(lines, "caller resupplies binding", api.protocols.users.snapshot.resume(pager.checkpoint(), x_trace="s1"))
     exchange.respond(user_page("4"))
     drained(lines, "literal binding on resumed first page", api.protocols.users.limited.resume("a", limit=9))
+    since = harness.argument("listUsers", "query", "since", "2026-01-02")
+    exchange.respond(user_page("5", next_cursor="b", since="2026-01-03"), user_page("6"))
+    drained(lines, "typed binding target keeps the caller's argument", api.protocols.users.since.resume("a", since=since))
 
 
 def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     helper = api.protocols.users.all
     pager = helper.iterate(pagination_options=harness.protocols.PaginationOptions(max_pages=1))
     exchange.respond(user_page("1", next_cursor="a"))
-    state = _stopped(lines, "page limit", pager)
+    drained(lines, "page limit", pager)
     record(lines, "limited checkpoint", pager.checkpoint)
     exchange.respond(user_page("2"))
     drained(
         lines,
         "resume starts fresh page limit",
-        helper.resume(state, pagination_options=harness.protocols.PaginationOptions(max_pages=1)),
+        helper.resume(pager.checkpoint(), pagination_options=harness.protocols.PaginationOptions(max_pages=1)),
     )
     pager = helper.iterate(pagination_options=harness.protocols.PaginationOptions(max_items=1))
     exchange.respond(user_page("1", "2", next_cursor="a"))
-    state = _stopped(lines, "item limit at partial page", pager)
+    drained(lines, "item limit at partial page", pager)
     record(lines, "limited partial boundary", pager.checkpoint)
     exchange.respond(user_page("1", "2"))
     drained(
         lines,
         "caller chooses larger item limit",
-        helper.resume(state, pagination_options=harness.protocols.PaginationOptions(max_items=2)),
+        helper.resume(pager.checkpoint(), pagination_options=harness.protocols.PaginationOptions(max_items=2)),
     )
     pager = helper.iterate(pagination_options=harness.protocols.PaginationOptions(max_items=3))
     exchange.respond(user_page("1", "2", next_cursor="a"), user_page("3", "4", next_cursor="b"))
-    _stopped(lines, "item limit keeps the boundary before its page", pager)
+    drained(lines, "item limit in a later page", pager)
+    record(lines, "limited boundary before its page", pager.checkpoint)
 
 
 async def _async_resume(harness: Harness, lines: list[str]) -> None:

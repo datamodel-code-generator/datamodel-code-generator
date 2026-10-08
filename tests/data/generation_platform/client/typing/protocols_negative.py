@@ -75,8 +75,8 @@ def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet]
     SessionLimitError(kind="bytes", limit=1, progress={})  # error
     SessionLimitError(kind="pages", limit=1, progress={"bytes": 1})  # error
     StreamResumeExhaustedError(kind="pages", limit=1, progress={})  # error
-    StreamResumeExhaustedError(kind="reconnects", limit=1, progress={}, resume_state="cursor")  # error
     PaginationCycleError(page_index=1, first_seen_page_index=0, condition="inconsistent")  # error
+    PaginationCycleError(page_index=1, first_seen_page_index=0, resume_state=state)  # error
     IncompleteFrameError(buffered_bytes=1, sequence=0, condition="eof")  # error
     PollWaitLimitError(kind="interval", required_wait=1, limit=0)  # error
     StreamInterruptedError(condition="closed", sequence=0, resume_state=state)  # error

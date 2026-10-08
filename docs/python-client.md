@@ -284,10 +284,10 @@ Invalid field values raise `ValueError`.
 |---|---|---|
 | `ProtocolDataError` | `ProtocolError` | `condition: Literal['missing', 'null', 'type', 'value', 'malformed', 'inconsistent'] = 'value'`, `location: Selector \| RequestTarget \| None = None` |
 | `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
-| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: S \| None = None`; `S` is what the helper resumes from, a pager's `JSONValue` continuation or a `ResumeState` |
-| `StreamResumeExhaustedError` | `SessionLimitError[ResumeState]` | The same fields; `kind` is always `reconnects` |
+| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: ResumeState \| None = None` |
+| `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is always `reconnects` |
 | `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'expired', 'malformed']` |
-| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`, `resume_state: JSONValue = None`; `condition` is always `inconsistent` |
+| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`; `condition` is always `inconsistent` |
 | `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
 | `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float`, `resume_state: ResumeState \| None = None` |
 | `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
@@ -793,13 +793,17 @@ that value with the operation's arguments and any request body again, as `iterat
 session of its own that sends nothing until it is iterated; it is not awaited, even on `AsyncClient`.
 
 ```python
+from pkg.errors import SessionLimitError
+from pkg.protocols import PaginationOptions
+
 with Client() as client:
     helper = client.protocols.users.all
-    pager = helper.iterate(limit=20)
-    first_page = next(pager.iter_pages())
-    continuation = pager.checkpoint()
-    if continuation is not None:
-        for user in helper.resume(continuation, limit=20):
+    pager = helper.iterate(limit=20, pagination_options=PaginationOptions(max_pages=5))
+    try:
+        for user in pager:
+            print(user.id)
+    except SessionLimitError:
+        for user in helper.resume(pager.checkpoint(), limit=20):
             print(user.id)
 ```
 
@@ -812,19 +816,27 @@ pager fetches the page again and repeats the items already delivered from it; it
 between pages. `resume(None, ...)` starts at the caller's own first request, as `iterate` does. A checkpoint remains
 available after a pager fails or is closed, and a pager fetching a page raises `ProtocolStateError`.
 
+A pager stopped by `SessionLimitError` or `PaginationCycleError` is resumed from its `checkpoint()` like any other;
+the errors themselves carry no continuation, and a pager's `SessionLimitError.resume_state` is None. A page fetched with
+`page` or `next_page` continues from its own `continuation`. An item limit that stops inside a page leaves the
+continuation before that page, None inside the first one, so resuming with a `max_items` below the page size delivers
+the same items again; raise the limit, or limit pages instead.
+
 A resumed pager counts its pages and items from zero against its own limits, its session's timeout and deadline start
-afresh, and it detects cycles from the given continuation on. `SessionLimitError` and `PaginationCycleError` keep the
-continuation of where the pager stopped as `resume_state`. The first resumed request writes the continuation and the
-helper's literal bindings; a binding that reads a response has no value yet, so its target keeps the caller's argument,
-and an `initial` binding is read from the first resumed page. A page-number helper that ends at a total counts the
-items from the resumed page on, so it ends at the first page without items instead.
+afresh, and it detects cycles from the given continuation on. The first resumed request writes the continuation and the
+helper's literal bindings; a binding that reads a response has no value yet, so its target takes the caller's argument,
+encoded as in any call, and an `initial` binding is read from the first resumed page. A page-number helper that ends at
+a total counts the items from the resumed page on: where a first run ends at the page that completes the total without
+another request, a resumed one asks for the page after it and ends there when that page has no items, or fails with
+whatever error the server answers for a page past the end.
 
 An offset or page number must be a nonnegative integer and a next URL a string, or `resume` raises
 `ConfigurationError(field_path=("state",), reason="invalid_value")`, as it does for a value that is not JSON. A next URL
 is checked as a server's: it must be absolute, without a fragment or user information, and name the origin of the
 server or one `ProtocolSecurityContext.allowed_origins` lists, or `resume` raises `ProtocolDataError` before anything
-is sent. The query fields the client's authentication places itself are removed from it, and a request to an allowed
-origin other than the server's carries credentials only as a server's next URL would. A cursor written to a path
+is sent. The query fields the client's authentication places itself are removed from it at once, so the pager's
+`checkpoint()` and its requests are without them, and a request to an allowed origin other than the server's carries
+credentials only as a server's next URL would. A cursor written to a path
 parameter is refused as any call's path value is when it makes its segment a dot segment.
 
 ### Generation checks

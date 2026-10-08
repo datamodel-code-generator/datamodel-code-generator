@@ -290,6 +290,13 @@ See the runtime reference for their limits.
     "path": "/search-feed"
   },
   {
+    "helper": "feed.live",
+    "kind": "sse",
+    "operation": "feed.stream_feed",
+    "method": "POST",
+    "path": "/feed"
+  },
+  {
     "helper": "events.live",
     "kind": "sse",
     "operation": "events.stream_events",

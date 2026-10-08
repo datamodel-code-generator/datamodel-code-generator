@@ -147,6 +147,10 @@ paths:
     post:
       operationId: streamFeed
       tags: [feed]
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
       requestBody:
         required: true
         content:
@@ -314,6 +318,7 @@ components:
       properties:
         topic: {type: string}
         after: {type: integer}
+        payload: {}
     Problem:
       type: object
       properties:

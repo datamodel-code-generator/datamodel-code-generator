@@ -317,7 +317,7 @@ mypy protocols_negative.py: 36/36 marked lines with one error, 0 elsewhere, 0 in
   75 arg-type
   76 dict-item
   77 arg-type
-  78 arg-type
+  78 call-arg
   79 call-arg
   80 call-arg
   81 arg-type
@@ -354,7 +354,7 @@ pyright protocols_negative.py: 36/36 marked lines with one error, 0 elsewhere, 0
   75 reportArgumentType
   76 reportArgumentType
   77 reportArgumentType
-  78 reportArgumentType
+  78 reportCallIssue
   79 reportCallIssue
   80 reportCallIssue
   81 reportArgumentType
@@ -391,7 +391,7 @@ ty protocols_negative.py: 36/36 marked lines with one error, 0 elsewhere, 0 in o
   75 invalid-argument-type
   76 invalid-argument-type
   77 invalid-argument-type
-  78 invalid-argument-type
+  78 unknown-argument
   79 unknown-argument
   80 unknown-argument
   81 invalid-argument-type

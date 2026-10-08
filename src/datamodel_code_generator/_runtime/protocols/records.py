@@ -1,4 +1,4 @@
-"""Selectors, request targets, continuations, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
+"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
 
 from __future__ import annotations
 

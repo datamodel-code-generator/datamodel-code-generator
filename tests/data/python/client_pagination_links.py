@@ -162,6 +162,8 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         user_page("1", next="?page=2", token="t1"), user_page("2", next="?page=3", token="t2"), user_page("3")
     )
     drained(lines, "repeated body", searches.repeated.iterate(body=body))
+    exchange.respond(user_page("2", next="?page=3", token="t2"), user_page("3"))
+    drained(lines, "resumed with a body binding", searches.repeated.resume(f"{_SERVER}/searches?page=2", body=body))
     exchange.respond(user_page("1", next="?page=2"), user_page("2"))
     drained(lines, "fetched without the body", searches.fetched.iterate(body=body))
 

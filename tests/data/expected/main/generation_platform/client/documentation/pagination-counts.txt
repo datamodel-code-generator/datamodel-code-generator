@@ -429,10 +429,10 @@ in a session of its own that sends nothing until it is iterated. A continuation 
 body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
 repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
 starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
-continuation and the helper's literal bindings, a binding that reads a response keeps the caller's argument, and an
-`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins and
-without the credentials the client places itself. `SessionLimitError` and `PaginationCycleError` keep the continuation
-of where the pager stopped as `resume_state`.
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or
+`PaginationCycleError` resumes from its `checkpoint()`; the errors carry no continuation.
 
 ## Request compression
 

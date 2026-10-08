@@ -185,6 +185,11 @@
   > POST https://api.example.com/v1/searches?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 26] b'{"query":"a","token":"t2"}'
   repeated body ['1', '2', '3']
+  > POST https://api.example.com/v1/searches?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  > POST https://api.example.com/v1/searches?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 26] b'{"query":"a","token":"t2"}'
+  resumed with a body binding ['2', '3']
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
   > GET https://api.example.com/v1/searches?page=2

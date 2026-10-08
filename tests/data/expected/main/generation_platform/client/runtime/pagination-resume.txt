@@ -34,7 +34,8 @@
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state='a'
+  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -73,6 +74,21 @@
   partial offset boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total ends a first run at its last page ['1', '2', '3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an empty page ['3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
   follow server URL='https://api.example.com/v1/users?cursor=a'
   > GET https://api.example.com/v1/users?cursor=a
@@ -97,9 +113,10 @@
   linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3']
+  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -120,16 +137,21 @@
   > GET https://api.example.com/v1/users?cursor=a&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal binding on resumed first page ['4']
+  > GET https://api.example.com/v1/users?cursor=a&since=2026-01-02
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b&since=2026-01-03
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error resume_state='a'
+  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error resume_state=None
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -138,7 +160,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit keeps the boundary before its page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error resume_state='a'
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
   > GET https://api.example.com/v1/users?limit=2
@@ -186,7 +209,8 @@
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state='a'
+  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -225,6 +249,21 @@
   partial offset boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total ends a first run at its last page ['1', '2', '3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an empty page ['3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
   follow server URL='https://api.example.com/v1/users?cursor=a'
   > GET https://api.example.com/v1/users?cursor=a
@@ -249,9 +288,10 @@
   linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3']
+  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -272,16 +312,21 @@
   > GET https://api.example.com/v1/users?cursor=a&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal binding on resumed first page ['4']
+  > GET https://api.example.com/v1/users?cursor=a&since=2026-01-02
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b&since=2026-01-03
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error resume_state='a'
+  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error resume_state=None
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -290,7 +335,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit keeps the boundary before its page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error resume_state='a'
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
   > GET https://api.example.com/v1/users?limit=2
@@ -338,7 +384,8 @@
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state='a'
+  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -377,6 +424,21 @@
   partial offset boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total ends a first run at its last page ['1', '2', '3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an empty page ['3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
   follow server URL='https://api.example.com/v1/users?cursor=a'
   > GET https://api.example.com/v1/users?cursor=a
@@ -401,9 +463,10 @@
   linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3']
+  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -424,16 +487,21 @@
   > GET https://api.example.com/v1/users?cursor=a&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal binding on resumed first page ['4']
+  > GET https://api.example.com/v1/users?cursor=a&since=2026-01-02
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b&since=2026-01-03
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error resume_state='a'
+  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error resume_state=None
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -442,7 +510,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit keeps the boundary before its page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error resume_state='a'
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
   > GET https://api.example.com/v1/users?limit=2
@@ -490,7 +559,8 @@
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state='a'
+  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -529,6 +599,21 @@
   partial offset boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total ends a first run at its last page ['1', '2', '3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an empty page ['3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
   follow server URL='https://api.example.com/v1/users?cursor=a'
   > GET https://api.example.com/v1/users?cursor=a
@@ -553,9 +638,10 @@
   linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3']
+  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -576,16 +662,21 @@
   > GET https://api.example.com/v1/users?cursor=a&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal binding on resumed first page ['4']
+  > GET https://api.example.com/v1/users?cursor=a&since=2026-01-02
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b&since=2026-01-03
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error resume_state='a'
+  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error resume_state=None
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -594,7 +685,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit keeps the boundary before its page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error resume_state='a'
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
   > GET https://api.example.com/v1/users?limit=2
@@ -642,7 +734,8 @@
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state='a'
+  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -681,6 +774,21 @@
   partial offset boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total ends a first run at its last page ['1', '2', '3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an empty page ['3']
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
   follow server URL='https://api.example.com/v1/users?cursor=a'
   > GET https://api.example.com/v1/users?cursor=a
@@ -705,9 +813,10 @@
   linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3']
+  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -728,16 +837,21 @@
   > GET https://api.example.com/v1/users?cursor=a&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal binding on resumed first page ['4']
+  > GET https://api.example.com/v1/users?cursor=a&since=2026-01-02
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b&since=2026-01-03
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error resume_state='a'
+  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error resume_state=None
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -746,7 +860,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit keeps the boundary before its page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error resume_state='a'
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
   > GET https://api.example.com/v1/users?limit=2

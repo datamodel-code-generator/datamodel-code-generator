@@ -27,7 +27,6 @@ from ..client.errors import (
     error_time,
 )
 from ..client.responses import HeadersView, ResponseInfo
-from ..model_codecs.media import JSONValue
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -73,7 +72,6 @@ __all__ = (
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
-S_co = TypeVar("S_co", covariant=True, default=JSONValue | ResumeState)
 
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 _SessionLimitKind: TypeAlias = Literal["pages", "items", "polls", "reconnects", "parts"]
@@ -248,11 +246,8 @@ class ProtocolStateError(ProtocolError):
         return (*super()._details(), ("state", self.state), ("action", self.action))
 
 
-class SessionLimitError(ProtocolError, Generic[S_co]):
-    """A finite session cap reached while continuation remains; partial progress is never a success.
-
-    Its resume state is what the helper that raised it resumes from: a pager's server continuation, or a ResumeState.
-    """
+class SessionLimitError(ProtocolError):
+    """A finite session cap reached while continuation remains; partial progress is never a success."""
 
     kind: _SessionLimitKind
 
@@ -262,7 +257,7 @@ class SessionLimitError(ProtocolError, Generic[S_co]):
         kind: _SessionLimitKind,
         limit: int,
         progress: ProtocolProgress,
-        resume_state: S_co | None = None,
+        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -272,10 +267,11 @@ class SessionLimitError(ProtocolError, Generic[S_co]):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep the exhausted cap, a read-only copy of the progress, and any resume state."""
+        """Keep the exhausted cap, a read-only copy of the progress, and any exportable resume state."""
         error_choice(kind, _SESSION_LIMIT_KINDS, "kind")
         error_count(limit, "limit")
         copied = _progress(progress)
+        _resume_state(resume_state)
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -295,7 +291,7 @@ class SessionLimitError(ProtocolError, Generic[S_co]):
         return (*super()._details(), ("kind", self.kind), ("limit", self.limit))
 
 
-class StreamResumeExhaustedError(SessionLimitError[ResumeState]):
+class StreamResumeExhaustedError(SessionLimitError):
     """Automatic stream reconnection that exhausted its reconnect budget; it never ends as a normal EOF."""
 
     def __init__(  # noqa: PLR0913
@@ -340,7 +336,6 @@ class PaginationCycleError(ProtocolDataError):
         *,
         page_index: int,
         first_seen_page_index: int,
-        resume_state: JSONValue = None,
         location: Selector | RequestTarget | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
@@ -368,7 +363,6 @@ class PaginationCycleError(ProtocolDataError):
         )
         self.page_index = page_index
         self.first_seen_page_index = first_seen_page_index
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (

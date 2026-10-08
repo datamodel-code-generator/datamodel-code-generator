@@ -44,7 +44,6 @@ from pets.protocols import (
     WSOptions,
     import_state,
 )
-from pets.model_codecs import JSONValue
 from pets.responses import ResponseInfo
 from pets_models import Pet
 from typing_extensions import assert_type
@@ -125,17 +124,12 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     assert_type(text_failure.snapshot, PollSnapshot[str])
     remote = StreamRemoteError[Pet](event_type="error", data=snapshot.data, sequence=1)
     assert_type(remote.data, Pet)
-    limit = SessionLimitError[ResumeState](kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
+    limit = SessionLimitError(kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
     assert_type(limit.progress, Mapping[ProgressKey, int])
     assert_type(limit.resume_state, ResumeState | None)
-    paged = SessionLimitError[JSONValue](kind="items", limit=1, progress={}, resume_state={"after": "pet-1"})
-    position: JSONValue = paged.resume_state
     exhausted = StreamResumeExhaustedError(kind="reconnects", limit=5, progress={"reconnects": 5})
     assert_type(exhausted.kind, Literal["pages", "items", "polls", "reconnects", "parts"])
-    assert_type(exhausted.resume_state, ResumeState | None)
     cycle = PaginationCycleError(page_index=2, first_seen_page_index=0, location=BodySelector(pointer="/next"))
-    assert_type(cycle.resume_state, JSONValue)
-    del position
     assert_type(cycle.location, Selector | RequestTarget | None)
     wait = PollWaitLimitError(kind="wait", required_wait=120, limit=60)
     assert_type(wait.required_wait, float)
