@@ -156,17 +156,20 @@ def test_fastapi_cli_check_outputs(
     """Compare real model and target text without publishing or changing any output file.
 
     A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
+    A case can name its model and server outputs, with the arguments that give their import paths.
     """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
-    output = Path("models" if case.get("modular") else "models.py")
+    output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
+    server = case.get("server", "server")
+    notice = EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)
     source = Path("pets.yaml")
     if case.get("modular") or case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / case.get("source", "modular.yaml")
     encoding = case.get("encoding", "utf-8")
-    options: list[str] = ["--encoding", encoding]
+    options: list[str] = ["--encoding", encoding, *case.get("arguments", ())]
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
@@ -175,9 +178,9 @@ def test_fastapi_cli_check_outputs(
             input_path=source,
             input_file_type="openapi",
             output_path=output,
-            extra_args=_server(*options),
+            extra_args=_server(*options, output=server),
             capsys=capsys,
-            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+            expected_stderr=notice.read_text(encoding="utf-8"),
         )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
@@ -199,9 +202,9 @@ def test_fastapi_cli_check_outputs(
             input_path=source,
             input_file_type="openapi",
             output_path=output,
-            extra_args=_server(*options, *case.get("options", ())),
+            extra_args=_server(*options, *case.get("options", ()), output=server),
             capsys=capsys,
-            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+            expected_stderr=notice.read_text(encoding="utf-8"),
         )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
@@ -221,7 +224,7 @@ def test_fastapi_cli_check_outputs(
                 *options,
                 *case.get("options", ()),
                 *(["--output-format", "json"] if structured else []),
-                output=str(base / "server"),
+                output=str(base / server),
             ),
             capsys=capsys,
             expected_exit=Exit.ERROR if "error" in case else Exit.DIFF if changed else Exit.OK,
@@ -938,6 +941,25 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
         expected_exit=Exit.DIFF,
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
+        assert_no_stderr=True,
+    )
+
+
+def test_fastapi_cli_nested_job(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models of a server job inside its own package, as a single run can, then check both as one tree."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-nested-jobs.toml")
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_file_content(tmp_path / "server" / "models.py", PACKAGE / "models.py")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "server" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
+    run_main_with_args(
+        ["--all-jobs", "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check" / "extra-python.txt",
         assert_no_stderr=True,
     )
 

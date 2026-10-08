@@ -228,16 +228,6 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput(ROOT_URN, cwd)
 
 
-def _check_layout(config: TargetConfig, output: Path, cwd: Path) -> None:
-    package, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
-    if package == models or package in models.parents or models in package.parents:
-        raise config_error(
-            code="E_PATH_COLLISION",
-            option_path="output",
-            message="The target package and the model output must not contain each other",
-        )
-
-
 def _remote_lock(
     input_: _GenerationInput, config: GenerateConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
@@ -285,7 +275,6 @@ def _generate_models(
     source = _root_input(input_, cwd)
     output = config.output
     assert output is not None
-    _check_layout(target, output, cwd)
     prepared, lock = _remote_lock(input_, config, cwd)
     output = prepared.output
     assert output is not None
@@ -374,6 +363,10 @@ def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContra
     )
 
 
+def _collision_key(path: Path) -> str:
+    return unicodedata.normalize("NFC", str(path)).casefold()
+
+
 class _Planner:
     def __init__(
         self, models: _Models, effective: GenerateConfig, config: TargetConfig, generator: TargetGenerator
@@ -417,12 +410,20 @@ class _Planner:
         return (self.artifact(lock.path, "remote_lock", content),)
 
     def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
-        seen: set[str] = set()
-        problems: list[Diagnostic] = []
+        """Refuse a path that two files resolve to, and a file at a path that is the directory of another file."""
+        parents: dict[Path, Path] = {}
+        directories: set[str] = set()
+        keys: list[str] = []
         for artifact in artifacts:
             location = self.cwd / artifact.path
-            key = unicodedata.normalize("NFC", str(location.parent.resolve() / location.name)).casefold()
-            if key in seen:
+            if (parent := parents.get(location.parent)) is None:
+                parent = parents[location.parent] = location.parent.resolve()
+                directories.update(_collision_key(directory) for directory in (parent, *parent.parents))
+            keys.append(_collision_key(parent / location.name))
+        seen: set[str] = set()
+        problems: list[Diagnostic] = []
+        for artifact, key in zip(artifacts, keys, strict=True):
+            if key in seen or key in directories:
                 problems.append(
                     Diagnostic(
                         code="E_PATH_COLLISION",

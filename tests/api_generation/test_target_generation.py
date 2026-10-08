@@ -47,6 +47,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "publish",
         "publish-lock",
         "collision",
+        "nested-models",
+        "nested-package",
         "directory",
         "layout-embedded",
         "model-dependencies",

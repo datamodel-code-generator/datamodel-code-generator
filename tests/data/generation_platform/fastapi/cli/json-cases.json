@@ -15,5 +15,11 @@
     "write": {"server/routers/__init__.py": "# Someone else's module.\n", "server/.dcg-target-manifest.json": "{\"format\": 1}\n"},
     "outside_payload": ["server/.dcg-target-manifest.json"]
   },
+  "models-in-package": {"model": "server/models.py", "options": ["--server-model-package", "server.models"]},
+  "modular-models-in-package": {
+    "source": "modular.yaml",
+    "model": "server/models",
+    "options": ["--server-model-package", "server.models"]
+  },
   "metadata-lock": {"options": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "outside_payload": ["metadata.json", "api.lock"]}
 }

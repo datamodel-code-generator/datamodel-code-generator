@@ -763,7 +763,8 @@ def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
 def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     """Validate all selected jobs before any job starts generation.
 
-    Jobs that each generate a target may name one models output, which they must then generate identically.
+    Jobs that each generate a target may name one models output, which they must then generate identically. A job
+    may keep its models inside its server output, or the server output inside its models directory.
     """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
@@ -795,7 +796,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
                 and first_kind == second_kind == "output"
                 and target_jobs.issuperset((first_job, second_job))
             )
-            if shares_models or not _paths_overlap_or_samefile(first_path, second_path):
+            nests_models = first_job == second_job and {first_kind, second_kind} == {"output", "server output"}
+            if shares_models or nests_models or not _paths_overlap_or_samefile(first_path, second_path):
                 continue
             msg = (
                 f"Jobs '{first_job}' ({first_kind}: {first_path}) and '{second_job}' "

@@ -192,8 +192,30 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
-      {"render": {"model": {"output": "server/models.py"}}},
-      {"render": {"model": {"output": "."}}}
+      {"render": {"model": {"output": "server/__init__.py"}}},
+      {"render": {"model": {"output": "server/routers"}}},
+      {"render": {"model": {"output": "server/services.py/models.py"}}}
+    ]
+  },
+  "nested-models": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "server/models.py"},
+    "config": {"model_package": "example.server.models"},
+    "steps": [
+      {"render": {}},
+      {"generate": {}},
+      {"render": {}},
+      {"generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}},
+      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
+    ]
+  },
+  "nested-package": {
+    "input": {"path": "modular.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "models"},
+    "config": {"output": "models/server", "package": "example.models.server", "model_package": "example.models"},
+    "steps": [
+      {"generate": {}},
+      {"render": {}}
     ]
   },
   "directory": {

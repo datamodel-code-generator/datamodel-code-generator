@@ -3,8 +3,11 @@ render
   Error: server/__INIT__.py: Two generated files resolve to the same path
   E_PATH_COLLISION error ownership server/__INIT__.py: Two generated files resolve to the same path
 render
-  Error: The target package and the model output must not contain each other
-  E_PATH_COLLISION error config output: The target package and the model output must not contain each other
+  Error: server/__init__.py: Two generated files resolve to the same path
+  E_PATH_COLLISION error ownership server/__init__.py: Two generated files resolve to the same path
 render
-  Error: The target package and the model output must not contain each other
-  E_PATH_COLLISION error config output: The target package and the model output must not contain each other
+  Error: server/routers: Two generated files resolve to the same path
+  E_PATH_COLLISION error ownership server/routers: Two generated files resolve to the same path
+render
+  Error: server/services.py: Two generated files resolve to the same path
+  E_PATH_COLLISION error ownership server/services.py: Two generated files resolve to the same path
