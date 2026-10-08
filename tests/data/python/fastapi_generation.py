@@ -183,7 +183,10 @@ def fastapi_config_report(case_name: str, root: Path) -> str:
 
 
 def fastapi_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited owned file."""
+    """Resolve the entry points' annotations, render, generate twice, then generate over edited owned files.
+
+    The last step regenerates two packages in one process under the default warning action.
+    """
     hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
     lines = [
         f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
@@ -199,7 +202,7 @@ def fastapi_api_report(root: Path) -> str:
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
     )
-    config = fastapi_config({}, root)
+    config, other = fastapi_config({}, root), fastapi_config({"output": f"other/{PACKAGE}"}, root)
     project = render_fastapi(source, model_config=model, config=config)
     lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
     for _ in range(2):
@@ -225,4 +228,13 @@ def fastapi_api_report(root: Path) -> str:
             else:
                 lines.append(f"filter {action}: {len(recorded)} warnings")
         lines.append(f"filter {action}: readme restored {readme.read_bytes() == original}")
-    return "\n".join(lines) + "\n"
+    packages = [(model, config), (model.model_copy(update={"output": root / "other" / "models.py"}), other)]
+    generate_fastapi(source, model_config=packages[1][0], config=other)
+    for _, package in packages:
+        (package.output / "README.md").write_text("# edited\n", encoding="utf-8")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("default", UserWarning)
+        for package_model, package in packages:
+            generate_fastapi(source, model_config=package_model, config=package)
+    lines.extend(f"filter default: {item.category.__name__}: {item.message}" for item in recorded)
+    return "\n".join(lines).replace(root.as_posix(), "<root>") + "\n"

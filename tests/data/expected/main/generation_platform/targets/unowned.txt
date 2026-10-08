@@ -18,7 +18,7 @@ render
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['write']
-  UserWarning: .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  TargetStateWarning: server/.dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
 generate
   returned None
 tree
@@ -38,7 +38,7 @@ tree
   server/services.py
   server/stale.py
   13 runtime modules ['present']
-  UserWarning: .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  TargetStateWarning: server/.dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
 tree
   models.py
   server/.dcg-target-manifest.json
