@@ -13975,6 +13975,51 @@ def test_main_jsonschema_collapse_root_models_property_names_reference(output_fi
     )
 
 
+@pytest.mark.parametrize(
+    ("schema_name", "model_name", "extra_args"),
+    [
+        pytest.param("collapse_root_models_lookaround", "Holder", [], id="fields"),
+        pytest.param("collapse_root_models_lookaround", "Holder", ["--use-type-alias"], id="fields-type-alias"),
+        pytest.param("collapse_root_models_lookaround_root", "Holder", [], id="root-model"),
+        pytest.param("collapse_root_models_lookaround_inheritance", "Child", [], id="inheritance"),
+        pytest.param("collapse_root_models_lookaround_discriminator", "Root", [], id="discriminator"),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_lookaround(
+    output_file: Path, schema_name: str, model_name: str, extra_args: list[str]
+) -> None:
+    """Select Python's regex engine for lookaround patterns that collapsed root models leave in final field types.
+
+    A child gets its own config as for inline fields, and a discriminator that replaces the inlined pattern with a
+    ``Literal`` leaves the default engine, so ``$`` still rejects a trailing newline.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{schema_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{schema_name}.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--collapse-root-models",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"output_{schema_name}_{len(extra_args)}",
+        model_name=model_name,
+        valid_json=(DATA_PATH / f"payloads/{schema_name}_valid.json").read_text(),
+        invalid_json=(DATA_PATH / f"payloads/{schema_name}_invalid.json").read_text(),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
 def test_main_jsonschema_rename_preserves_source_alias(output_file: Path) -> None:
     """Do not replace an explicit source alias while avoiding a class-name collision."""
     run_main_and_assert(

@@ -1544,6 +1544,32 @@ class BaseModel(BaseModelBase):
         super().invalidate_render_caches()
         self.__dict__.pop(self._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY, None)
 
+    def refresh_field_config(self) -> None:
+        """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
+
+        Collapsed root models inline their patterns; a config that already names an engine is kept.
+        """
+        if not has_lookaround_pattern(self.fields):
+            return
+        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        if "regex_engine" in config_parameters:
+            return
+        config_parameters["regex_engine"] = '"python-re"'
+        self._set_config(config_parameters)
+        self.invalidate_render_caches()
+
+    def _set_config(self, config_parameters: dict[str, Any]) -> None:
+        """Store the ConfigDict rendered as ``model_config``."""
+        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
+
+        self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
+        self._set_internal_template_data(
+            _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
+            _safe_config_dict_items(self.extra_template_data["config"]),
+        )
+        if IMPORT_CONFIG_DICT not in self._additional_imports:
+            self._additional_imports.append(IMPORT_CONFIG_DICT)
+
     @classmethod
     def invalidate_module_code_cache(cls, models: list[DataModel]) -> None:
         """Discard the one module plan after parser-side import collision renames."""
@@ -2034,14 +2060,7 @@ class BaseModel(BaseModelBase):
             config_parameters["json_schema_extra"] = {**existing, **model_extras}
 
         if config_parameters:
-            from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
-
-            self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
-            self._set_internal_template_data(
-                _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-                _safe_config_dict_items(self.extra_template_data["config"]),
-            )
-            self._additional_imports.append(IMPORT_CONFIG_DICT)
+            self._set_config(config_parameters)
         else:
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)

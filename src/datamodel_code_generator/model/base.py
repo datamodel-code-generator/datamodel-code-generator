@@ -2459,6 +2459,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if dedup_key_cache := getattr(self, "_dedup_key_cache", None):
             dedup_key_cache.clear()
 
+    def refresh_field_config(self) -> None:
+        """Update config derived from field types once the parser has finished replacing them."""
+
     @property
     def reference_classes(self) -> frozenset[str]:
         """Get all referenced class paths used by this model."""
