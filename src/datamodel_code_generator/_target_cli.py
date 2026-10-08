@@ -101,7 +101,7 @@ def _run(  # noqa: PLR0913, PLR0917
         timestamp = next((earlier.timestamp for _, earlier, _ in batch if earlier.timestamp is not None), None)
         planned = plan_target(source, model_config=effective, config=target, generator=generator, timestamp=timestamp)
         if json_output:
-            print(_target_json(planned.project, config.output, target.output, config.encoding))  # noqa: T201
+            print(_target_json(planned.project, config.output, config.encoding))  # noqa: T201
         batch.append((job, planned, _next_step(target, planned.project.dependencies)))
         return _OK
     if json_output:
@@ -109,7 +109,7 @@ def _run(  # noqa: PLR0913, PLR0917
         from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
 
         planner, project = _plan(source, effective, target, generator, publish=True)
-        output = _target_json(project, config.output, target.output, config.encoding)
+        output = _target_json(project, config.output, config.encoding)
         publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)
         print(output)  # noqa: T201
         dependencies = project.dependencies
@@ -136,9 +136,17 @@ def _shown(path: Path) -> str:
     return shown(path, Path.cwd()).as_posix()
 
 
-def _target_json(project: GeneratedProject, models: Path, target: Path, encoding: str) -> str:
-    """Emit rendered model and target text, read like their published files, with the existing generation payload."""
-    import os  # noqa: PLC0415
+def _payload_base(project: GeneratedProject, models: Path) -> Path:
+    """Return the directory payload paths are relative to, as in the model payload: the model output or its parent."""
+    rendered = [artifact.path for artifact in project.artifacts if artifact.kind == "model"]
+    return models.parent if models in rendered or (not rendered and models.suffix) else models
+
+
+def _target_json(project: GeneratedProject, models: Path, encoding: str) -> str:
+    """Emit rendered model and target text, read like their published files, with the existing generation payload.
+
+    As in the model payload, a path is relative to the model output directory; a file outside it has an absolute path.
+    """
     from io import BytesIO, TextIOWrapper  # noqa: PLC0415
 
     from datamodel_code_generator._structured_output import GeneratedFilePayload, generation_output_json  # noqa: PLC0415
@@ -152,13 +160,10 @@ def _target_json(project: GeneratedProject, models: Path, target: Path, encoding
         for artifact in project.artifacts
         if artifact.kind in {"model", "target"} and (content := artifact.content) is not None
     ]
-    try:
-        parent = Path(os.path.commonpath((models.parent, target.parent)))
-    except ValueError:
-        parent = None
+    base = _payload_base(project, models)
     files = [
         GeneratedFilePayload(
-            path=(path.absolute() if parent is None else path.relative_to(parent)).as_posix(),
+            path=shown(path, base).as_posix(),
             content=TextIOWrapper(BytesIO(content), encoding=codec).read(),
         )
         for path, content, codec in sorted(artifacts, key=lambda artifact: artifact[0].parts)
@@ -167,7 +172,10 @@ def _target_json(project: GeneratedProject, models: Path, target: Path, encoding
 
 
 def _compare_target(project: GeneratedProject, models: Path, target: Path, encoding: str) -> OutputComparison:
-    """Compare rendered text and Python output roots through the model comparison path."""
+    """Compare rendered text and Python output roots through the model comparison path.
+
+    Labels stay relative to the working directory; each difference names its file like the generation payload.
+    """
     from tempfile import TemporaryDirectory  # noqa: PLC0415
 
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
@@ -178,9 +186,10 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
 
     differences: list[CheckDifferencePayload] = []
     contents: list[str] = []
+    base, cwd = _payload_base(project, models), Path.cwd()
     with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
         staging = Path(directory)
-        for kind, output, is_directory in (("model", models, not models.suffix), ("target", target, True)):
+        for kind, output, is_directory in (("model", models, base == models), ("target", target, True)):
             if not is_directory and not any(artifact.kind == kind for artifact in project.artifacts):
                 continue
             staged_root = staging / kind
@@ -212,7 +221,10 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
                 except UnicodeError as error:
                     message = f"{_shown(actual)}: Output is not text in encoding {codec!r}: {error}"
                     raise Error(message) from error
-                differences.extend(compared.differences)
+                differences.extend(
+                    difference.model_copy(update={"path": shown(cwd / difference.path, base).as_posix()})
+                    for difference in compared.differences
+                )
                 if content := compared.content:
                     contents.append(content if content.endswith("\n") else content + "\n")
     return OutputComparison(differences=differences, content="".join(contents))
