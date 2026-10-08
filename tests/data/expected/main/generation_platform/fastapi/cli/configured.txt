@@ -164,7 +164,8 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         page_size: Annotated[int, Field(ge=1, le=100), Query(
             alias='limit',
             description='Page size.',
-        )] = 20,
+            default_factory=absent,
+        )],
         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
         kind: Annotated[models.FieldPetsGetQueryKindParameter, Query(
             alias='kind',
@@ -184,7 +185,7 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         return dispatch(
             list_all_handler(
                 request=request,
-                page_size=page_size,
+                page_size=present(page_size),
                 tags=present(tags),
                 kind=present(kind),
                 trace=present(trace),
@@ -441,7 +442,7 @@ class AnimalsService(Protocol):
         self,
         *,
         request: Request,
-        page_size: int,
+        page_size: int | Unset,
         tags: list[str] | Unset,
         kind: models.FieldPetsGetQueryKindParameter | Unset,
         trace: uuid.UUID | Unset,

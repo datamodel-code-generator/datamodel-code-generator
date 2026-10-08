@@ -24,7 +24,7 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        limit: int,
+        limit: int | Unset,
         tags: list[str] | Unset,
         kind: models.FieldPetsGetQueryKindParameter | Unset,
         x_request_id: uuid.UUID | Unset,

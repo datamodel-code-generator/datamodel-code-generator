@@ -5,11 +5,11 @@ render pydantic_v2.BaseModel default
   #   filename:  session-parameter-override.json
   
   from __future__ import annotations
-  from pydantic import RootModel
+  from typing_extensions import TypeAliasType
   
   
-  class PageParameter(RootModel[int]):
-      root: int
+  
+  PageParameter = TypeAliasType("PageParameter", int)
   model_bindings.py
   codec_0 models.PageParameter
 render pydantic_v2.dataclass default

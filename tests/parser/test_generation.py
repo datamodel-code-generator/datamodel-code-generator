@@ -344,7 +344,7 @@ def test_generation_index_combines_root_collapse_reference_usage() -> None:
     wrappers, direct_refs = store.index.root_collapse_reference_usage(
         reference_inner,
         excluded_model=wrapper_model,
-        root_model_type=RootModel,
+        is_root_model=lambda model: isinstance(model, RootModel),
     )
 
     assert {
@@ -911,7 +911,7 @@ def test_generation_index_exposes_root_collapse_helpers_independently() -> None:
     missing_wrappers, missing_collapse_direct_refs = store.index.root_collapse_reference_usage(
         reference_unknown,
         excluded_model=base_model,
-        root_model_type=RootModel,
+        is_root_model=lambda model: isinstance(model, RootModel),
     )
 
     assert {

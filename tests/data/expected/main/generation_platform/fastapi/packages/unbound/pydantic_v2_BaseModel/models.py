@@ -3,23 +3,25 @@
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, BaseModel, RootModel, conint
+from typing import Annotated
+
+from pydantic import AwareDatetime, BaseModel, Field
+from typing_extensions import TypeAliasType
 
 
 class Value(BaseModel):
     id: int
 
 
-class FieldValuesIdGetPathIdParameter(RootModel[conint(ge=1)]):
-    root: conint(ge=1)
+FieldValuesIdGetPathIdParameter = TypeAliasType(
+    "FieldValuesIdGetPathIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
-class FieldValuesIdGetQueryAtParameter(RootModel[AwareDatetime]):
-    root: AwareDatetime
+FieldValuesIdGetQueryAtParameter = TypeAliasType("FieldValuesIdGetQueryAtParameter", AwareDatetime)
 
 
-class FieldValuesIdGetQueryTagsParameter(RootModel[list[str]]):
-    root: list[str]
+FieldValuesIdGetQueryTagsParameter = TypeAliasType("FieldValuesIdGetQueryTagsParameter", list[str])
 
 
 class FieldValuesIdGetHeaderXLabelParameter(BaseModel):

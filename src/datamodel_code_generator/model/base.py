@@ -2082,6 +2082,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return the model type used for nested constrained values."""
         return configured_root_model_type
 
+    @classmethod
+    def resolve_type_alias_model_type(
+        cls,
+        configured_root_model_type: type[DataModel],
+        target_python_version: PythonVersion,  # noqa: ARG003
+    ) -> type[DataModel]:
+        """Return the model type that --use-type-alias selects for a root value."""
+        return configured_root_model_type
+
     @staticmethod
     def store_additional_properties_value(
         extra_template_data: dict[str, Any],

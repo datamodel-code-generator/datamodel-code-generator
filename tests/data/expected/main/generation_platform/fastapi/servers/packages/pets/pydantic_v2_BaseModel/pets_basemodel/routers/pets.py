@@ -29,7 +29,8 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         limit: Annotated[int, Field(ge=1, le=100), Query(
             alias='limit',
             description='Page size.',
-        )] = 20,
+            default_factory=absent,
+        )],
         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
         kind: Annotated[pets_basemodel_models.FieldPetsGetQueryKindParameter, Query(
             alias='kind',
@@ -48,7 +49,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     ) -> object:
         return dispatch(
             list_pets_handler(
-                limit=limit,
+                limit=present(limit),
                 tags=present(tags),
                 kind=present(kind),
                 x_request_id=present(x_request_id),

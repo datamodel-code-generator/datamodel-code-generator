@@ -110,6 +110,7 @@ if TYPE_CHECKING:
     from jinja2 import Template
     from typing_extensions import TypedDict, Unpack
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
@@ -1271,6 +1272,19 @@ class BaseModel(BaseModelBase):
         from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport  # noqa: PLC0415
 
         return TypeAliasTypeBackport
+
+    @classmethod
+    def resolve_type_alias_model_type(
+        cls,
+        configured_root_model_type: type[DataModel],
+        target_python_version: PythonVersion,
+    ) -> type[DataModel]:
+        """Replace a RootModel wrapper with the alias form that --use-type-alias selects."""
+        if not configured_root_model_type.IS_ROOT_MODEL:
+            return configured_root_model_type
+        from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement  # noqa: PLC0415
+
+        return TypeStatement if target_python_version.has_type_statement else TypeAliasTypeBackport
 
     @classmethod
     def prepare_module_code(cls, models: list[DataModel]) -> None:

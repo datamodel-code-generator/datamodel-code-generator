@@ -3,60 +3,47 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel
+from typing_extensions import TypeAliasType
+
+FieldUsersIdGetPathIdParameter = TypeAliasType("FieldUsersIdGetPathIdParameter", int)
 
 
-class FieldUsersIdGetPathIdParameter(RootModel[int]):
-    root: int
+FieldUsersIdGetQueryIdParameter = TypeAliasType("FieldUsersIdGetQueryIdParameter", int)
 
 
-class FieldUsersIdGetQueryIdParameter(RootModel[int]):
-    root: int
+FieldUsersIdGetQueryBodyParameter = TypeAliasType("FieldUsersIdGetQueryBodyParameter", str)
 
 
-class FieldUsersIdGetQueryBodyParameter(RootModel[str]):
-    root: str
+FieldUsersIdGetHeaderMediaTypeParameter = TypeAliasType("FieldUsersIdGetHeaderMediaTypeParameter", str)
 
 
-class FieldUsersIdGetHeaderMediaTypeParameter(RootModel[str]):
-    root: str
+FieldUsersIdGetQueryDcgP0Parameter = TypeAliasType("FieldUsersIdGetQueryDcgP0Parameter", str)
 
 
-class FieldUsersIdGetQueryDcgP0Parameter(RootModel[str]):
-    root: str
+FieldUsersIdGetQueryParametersParameter = TypeAliasType("FieldUsersIdGetQueryParametersParameter", str)
 
 
-class FieldUsersIdGetQueryParametersParameter(RootModel[str]):
-    root: str
+FieldUsersIdGetCookieSessionParameter = TypeAliasType("FieldUsersIdGetCookieSessionParameter", str)
 
 
-class FieldUsersIdGetCookieSessionParameter(RootModel[str]):
-    root: str
+FieldUsersIdGetQueryGetUserByIdHandlerParameter = TypeAliasType("FieldUsersIdGetQueryGetUserByIdHandlerParameter", str)
 
 
-class FieldUsersIdGetQueryGetUserByIdHandlerParameter(RootModel[str]):
-    root: str
+FieldUsersIdPutPathIdParameter = TypeAliasType("FieldUsersIdPutPathIdParameter", int)
 
 
-class FieldUsersIdPutPathIdParameter(RootModel[int]):
-    root: int
-
-
-class FieldUsersIdPutQueryPrincipalParameter(RootModel[str]):
-    root: str
+FieldUsersIdPutQueryPrincipalParameter = TypeAliasType("FieldUsersIdPutQueryPrincipalParameter", str)
 
 
 class FieldUsersIdPutRequest(BaseModel):
     id: str | None = None
 
 
-class FieldFilesFileNameDcgP0GetPathFileNameParameter(RootModel[str]):
-    root: str
+FieldFilesFileNameDcgP0GetPathFileNameParameter = TypeAliasType("FieldFilesFileNameDcgP0GetPathFileNameParameter", str)
 
 
-class FieldFilesFileNameDcgP0GetPathDcgP0Parameter(RootModel[str]):
-    root: str
+FieldFilesFileNameDcgP0GetPathDcgP0Parameter = TypeAliasType("FieldFilesFileNameDcgP0GetPathDcgP0Parameter", str)
 
 
-class FieldFilesFileNameDcgP0GetQueryLimitParameter(RootModel[int]):
-    root: int
+FieldFilesFileNameDcgP0GetQueryLimitParameter = TypeAliasType("FieldFilesFileNameDcgP0GetQueryLimitParameter", int)
