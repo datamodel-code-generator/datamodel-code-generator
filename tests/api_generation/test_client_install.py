@@ -86,18 +86,19 @@ def test_client_install(
             }),
         ))
     monkeypatch.chdir(tmp_path)
+    dependency_kind = (
+        "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
+    )
+    notice = (EXPECTED / f"{profile}-{dependency_kind}-dependencies.txt").read_text(encoding="utf-8")
     run_main_and_assert(
         input_path=source,
         output_path=Path("publication_client_models.py"),
         input_file_type="openapi",
         extra_args=arguments,
+        capsys=capsys,
+        expected_stderr=notice,
     )
-    printed = capsys.readouterr()
-    dependency_kind = (
-        "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
-    )
-    assert_output(printed.out + printed.err, EXPECTED / f"{profile}-{dependency_kind}-dependencies.txt")
-    command = shlex.split(next(line.strip() for line in printed.out.splitlines() if line.strip().startswith("uv add ")))
+    command = shlex.split(notice.splitlines()[-1])
     subprocess.run(
         [*command, "--no-sync", "--resolution", "lowest-direct", "--python", sys.executable],
         cwd=tmp_path,

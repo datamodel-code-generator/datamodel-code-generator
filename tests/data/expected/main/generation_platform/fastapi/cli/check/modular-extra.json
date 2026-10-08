@@ -1,0 +1,1 @@
+"{\n  \"version\": 1,\n  \"format\": \"json\",\n  \"kind\": \"check\",\n  \"success\": false,\n  \"content\": \"EXTRA: models/extra.py (no longer generated)\\n\",\n  \"differences\": [\n    {\n      \"kind\": \"extra\",\n      \"path\": \"models/extra.py\",\n      \"message\": \"EXTRA: models/extra.py (no longer generated)\",\n      \"diff\": null\n    }\n  ]\n}\n"

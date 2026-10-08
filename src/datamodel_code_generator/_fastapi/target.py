@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_manifest import shown
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, DocumentationAnnotationWarning
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.documentation import Documentation
@@ -72,11 +74,11 @@ class FastAPITarget:
             templates=FastAPITemplates.custom(request.model_config, request.target_id, request.cwd),
             docs=docs,
         )
-        return TargetRender(
-            files=renderer.files(),
-            dependencies=_dependencies(plan, request.models),
-            diagnostics=tuple(docs.problems),
-        )
+        files = renderer.files()
+        for problem in docs.problems:
+            output = shown(config.output, request.cwd).as_posix()
+            warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
+        return TargetRender(files=files, dependencies=_dependencies(plan, request.models))
 
 
 def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
