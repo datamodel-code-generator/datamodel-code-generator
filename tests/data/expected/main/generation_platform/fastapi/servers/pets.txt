@@ -10,7 +10,7 @@ build async: HandlerConfigurationError: The store.get_inventory method is asynch
 build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
 build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
-  list_pets(limit=UNSET, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
   list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
@@ -62,7 +62,7 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
 > GET /pets
 < 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=UNSET, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]
@@ -89,7 +89,7 @@ build async: HandlerConfigurationError: The store.get_inventory method is asynch
 build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
 build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
-  list_pets(limit=UNSET, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
   list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
@@ -141,7 +141,7 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
 > GET /pets
 < 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=UNSET, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]
