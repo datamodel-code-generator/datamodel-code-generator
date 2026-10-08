@@ -16,25 +16,27 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 05 = FieldValuesGetResponse204XCountHeader(root=5)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count +1 = FieldValuesGetResponse204XCountHeader(root=1)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 1.0 = FieldValuesGetResponse204XCountHeader(root=1)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical boolean at /')] invalid_header
+  native X-Flag TRUE = FieldValuesGetResponse204XFlagHeader(root=True)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag false = FieldValuesGetResponse204XFlagHeader(root=False)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Counts 05,+1,1.0 = FieldValuesGetResponse204XCountsHeader(root=[5, 1, 1])
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Entry value=known,unknown=extra = Entry(value='known')
@@ -55,46 +57,42 @@ unknown
   native numeric X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for enum[FieldValuesGetResponse204XRatioHeader]
+  Input should be 0.5 or 2.2 [type=enum, input_value='２.２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native numeric X-Score 2.2 = FieldValuesGetResponse204XScoreHeader(root=2.2)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e3 = FieldValuesGetResponse204XScoreHeader(root=1000.0)
+  native numeric X-Score 1e999 = FieldValuesGetResponse204XScoreHeader(root=inf)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score .5 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XScoreHeader
+  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='１２.３', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/float_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score inf ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١٢', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score nan ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='１２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e999 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=2 validation errors for FieldValuesGetResponse204XCountsHeader
+0
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
+1
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 1_000 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 0x10 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  async native X-Count = FieldValuesGetResponse204XCountHeader(root=1)
   async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -117,25 +115,27 @@ unknown
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 05 = 5
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count +1 = 1
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 1.0 = 1
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for int
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical boolean at /')] invalid_header
+  native X-Flag TRUE = True
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag false = False
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Counts 05,+1,1.0 = [5, 1, 1]
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Entry value=known,unknown=extra = Entry(value='known')
@@ -156,46 +156,42 @@ unknown
   native numeric X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for enum[FieldValuesGetResponse204XRatioHeader]
+  Input should be 0.5 or 2.2 [type=enum, input_value='２.２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native numeric X-Score 2.2 = 2.2
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e3 = 1000.0
+  native numeric X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score .5 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for float
+  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='１２.３', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/float_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score inf ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for int
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١٢', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score nan ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for int
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='１２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e999 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=2 validation errors for list[int]
+0
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
+1
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='２', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 1_000 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 0x10 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  async native X-Count = 1
   async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -216,25 +212,25 @@ unknown
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 05 = '05'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count +1 = '+1'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 1.0 = '1.0'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count many = 'many'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical boolean at /')] invalid_header
+  native X-Flag TRUE = 'TRUE'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag false = False
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Counts 05,+1,1.0 = ['05', '+1', '1.0']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Entry value=known,unknown=extra = Entry(value='known')
@@ -252,46 +248,28 @@ unknown
   native numeric X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("'２.２' is not a valid FieldValuesGetResponse204XRatioHeader")] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native numeric X-Score 2.2 = 2.2
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e3 = 1000.0
+  native numeric X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score .5 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Score １２.３ = '１２.３'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score inf ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count ١٢ = '١٢'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score nan ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count １２ = '１２'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e999 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Counts ١,２ = ['١', '２']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 1_000 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 0x10 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  async native X-Count = '+1'
   async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -312,25 +290,25 @@ unknown
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 05 = '05'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count +1 = '+1'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 1.0 = '1.0'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count many = 'many'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical boolean at /')] invalid_header
+  native X-Flag TRUE = 'TRUE'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag false = False
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Counts 05,+1,1.0 = ['05', '+1', '1.0']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Entry value=known,unknown=extra = {'value': 'known', 'unknown': 'extra'}
@@ -348,46 +326,28 @@ unknown
   native numeric X-Ratio 0.5 = 0.5
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Ratio ２.２ = '２.２'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native numeric X-Score 2.2 = 2.2
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e3 = 1000.0
+  native numeric X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score .5 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Score １２.３ = '１２.３'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score inf ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count ١٢ = '١٢'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score nan ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count １２ = '１２'
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e999 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Counts ١,２ = ['١', '２']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 1_000 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 0x10 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  async native X-Count = '+1'
   async native X-Entry = {'value': 'known', 'unknown': 'extra'}
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -408,25 +368,25 @@ unknown
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count 1.0 = 1
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical boolean at /')] invalid_header
+  native X-Flag TRUE = True
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag false = False
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$[0]`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Entry value=known,unknown=extra = Entry(value='known')
@@ -444,46 +404,28 @@ unknown
   native numeric X-Ratio 0.5 ! TypeError: Enums must contain either all str or all int values - type `<enum 'FieldValuesGetResponse204XRatioHeader'>` is not supported []
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Ratio ２.２ ! TypeError: Enums must contain either all str or all int values - type `<enum 'FieldValuesGetResponse204XRatioHeader'>` is not supported []
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native numeric X-Score 2.2 = 2.2
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e3 = 1000.0
+  native numeric X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score .5 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `float`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score inf ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score nan ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score 1e999 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
+  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$[0]`')] invalid_header
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical number at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 1_000 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count 0x10 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native numeric X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
-  > GET https://api.example.com/values
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
   async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
