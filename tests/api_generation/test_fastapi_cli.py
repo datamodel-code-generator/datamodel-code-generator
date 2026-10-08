@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import warnings
 from pathlib import Path
@@ -224,19 +223,11 @@ def test_fastapi_cli_check_outputs(
     )
 
 
-@pytest.mark.parametrize(
-    "case_name",
-    [
-        pytest.param(name, marks=pytest.mark.abnormal_path("portable fixtures cannot create different output drives"))
-        if JSON_CASES[name].get("different_volumes")
-        else name
-        for name in JSON_CASES
-    ],
-)
+@pytest.mark.parametrize("case_name", JSON_CASES)
 def test_fastapi_cli_generation_json(
     case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Parse one generation payload and compare every reported text file with its published output."""
+    """Pin the one generation payload a run prints, whose paths compose with its output like the model payload."""
     case = JSON_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -267,12 +258,6 @@ def test_fastapi_cli_generation_json(
     if case.get("unowned"):
         server.mkdir()
         (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
-    if case.get("different_volumes"):
-
-        def different_drives(_: object) -> str:
-            raise ValueError
-
-        monkeypatch.setattr(os.path, "commonpath", different_drives)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
@@ -283,26 +268,20 @@ def test_fastapi_cli_generation_json(
             skip_code_validation=encoding != "utf-8",
         )
     captured = capsys.readouterr()
-    payload = json.loads(captured.out)
-    parent = Path("generated" if case_name == "nested-output" else ".")
-    lines = [
-        f"version {payload['version']}; format {payload['format']}; kind {payload['kind']}",
-        f"output {payload['output']}",
-    ]
-    for item in payload["files"]:
-        path = parent / item["path"]
-        codec = encoding if path.suffix == ".py" else "utf-8"
-        lines.append(f"file {item['path']}; matches published {item['content'] == path.read_text(encoding=codec)}")
-    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
-    lines.extend(
-        f"outside payload {name}; published {(tmp_path / name).is_file()}; "
-        f"listed {any(item['path'] == name for item in payload['files'])}"
-        for name in case.get("outside_payload", ())
-    )
     assert_output(captured.err, DEPENDENCIES)
     assert_output(
-        "\n".join(lines).replace(tmp_path.as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json" / f"{case_name}.txt"
+        captured.out.replace(tmp_path.as_posix(), "<root>"),
+        EXPECTED / "cli" / "json" / f"{case.get('payload', case_name)}.txt",
     )
+    assert_output(
+        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
+        EXPECTED / "cli" / ("unowned-warning.txt" if case.get("unowned") else "no-warning.txt"),
+    )
+    if case.get("package"):
+        assert_file_content(tmp_path / model, PACKAGE / "models.py")
+        assert_directory_content(tmp_path / server, PACKAGE / "server")
+    for name in case.get("published", ()):
+        assert_file_content(tmp_path / name, EXPECTED / "cli" / "json" / "published" / f"{name}.txt")
 
 
 def test_fastapi_cli_pyproject(

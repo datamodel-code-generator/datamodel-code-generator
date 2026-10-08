@@ -259,10 +259,13 @@ the model and server output directories. CRLF and LF compare equally. Unrelated 
 does not warn that it would overwrite an edited owned file.
 
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
-stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. File
-paths are relative to the common parent of the configured outputs when those paths share one, otherwise they
-are absolute. The target manifest, model metadata, and remote lock are outside the payload. The dependency
-notice goes to stderr, along with errors and Python warnings.
+stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
+the model payload, a file path is relative to the model output directory, which is `output` for a model directory
+and its parent for a single model file, so `output` and the path give the file on disk. A file outside that
+directory, such as a server package beside a model directory, has an absolute path. Paths use forward slashes.
+`--check --output-format json` names the files the same way in `differences[].path`, while the diff labels stay
+relative to the working directory. The target manifest, model metadata, and remote lock are outside the payload.
+The dependency notice goes to stderr, along with errors and Python warnings.
 
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a

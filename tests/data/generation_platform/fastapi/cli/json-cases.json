@@ -1,15 +1,14 @@
 {
-  "default": {},
-  "nested-output": {"model": "generated/models.py", "server": "generated/server"},
-  "separate-parents": {"model": "models/models.py", "server": "service/server"},
-  "absolute": {"absolute": true},
-  "mixed-paths": {"absolute_server": true},
-  "different-volumes": {"different_volumes": true},
+  "default": {"package": true},
+  "nested-output": {"model": "generated/models.py", "server": "generated/server", "package": true},
+  "separate-parents": {"model": "models/models.py", "server": "service/server", "package": true},
+  "absolute": {"absolute": true, "payload": "default", "package": true},
+  "mixed-paths": {"absolute_server": true, "payload": "default", "package": true},
   "modular": {"source": "modular.yaml", "model": "models"},
   "empty-models": {"source": "empty.yaml"},
   "latin-1": {"encoding": "latin-1", "templates": true, "options": ["--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]},
-  "crlf-header": {"options": ["--custom-file-header", "# first\r\n# second"]},
-  "warning": {"unowned": true},
+  "carriage-return-header": {"options": ["--custom-file-header", "# first\r# second"]},
+  "warning": {"unowned": true, "payload": "default", "package": true},
   "stale-owned": {"repeat": true, "options": ["--openapi-include-paths", "/pets"]},
-  "metadata-lock": {"options": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "outside_payload": ["metadata.json", "api.lock"]}
+  "metadata-lock": {"options": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "payload": "default", "package": true, "published": ["metadata.json", "api.lock"]}
 }

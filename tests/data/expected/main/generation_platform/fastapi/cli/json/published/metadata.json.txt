@@ -1,0 +1,373 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Pet",
+      "name": "Pet",
+      "module": "",
+      "source_ref": "pets.yaml#/components/schemas/Pet",
+      "source_path": [
+        "components",
+        "schemas",
+        "Pet"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "int",
+          "required": true
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "tag",
+          "alias": "tag",
+          "original_name": "tag",
+          "type": "str | None",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "NewPet",
+      "name": "NewPet",
+      "module": "",
+      "source_ref": "pets.yaml#/components/schemas/NewPet",
+      "source_path": [
+        "components",
+        "schemas",
+        "NewPet"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "constr(min_length=1)",
+          "required": true
+        },
+        {
+          "name": "tag",
+          "alias": "tag",
+          "original_name": "tag",
+          "type": "str | None",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Error",
+      "name": "Error",
+      "module": "",
+      "source_ref": "pets.yaml#/components/schemas/Error",
+      "source_path": [
+        "components",
+        "schemas",
+        "Error"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "code",
+          "alias": "code",
+          "original_name": "code",
+          "type": "int",
+          "required": true
+        },
+        {
+          "name": "message",
+          "alias": "message",
+          "original_name": "message",
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetQueryLimitParameter",
+      "name": "FieldPetsGetQueryLimitParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/0/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "0",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "Annotated[int, Field(ge=1, le=100)]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetQueryTagsParameter",
+      "name": "FieldPetsGetQueryTagsParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/1/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "1",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "list[str]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetQueryKindParameter",
+      "name": "FieldPetsGetQueryKindParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/2/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "2",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "cat",
+          "alias": "cat",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        },
+        {
+          "name": "dog",
+          "alias": "dog",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetHeaderXRequestIdParameter",
+      "name": "FieldPetsGetHeaderXRequestIdParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/3/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "3",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "UUID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetQuerySinceParameter",
+      "name": "FieldPetsGetQuerySinceParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/4/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "4",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "AwareDatetime",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetCookieSessionParameter",
+      "name": "FieldPetsGetCookieSessionParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/parameters/5/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "parameters",
+        "5",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsGetResponse",
+      "name": "FieldPetsGetResponse",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "paths",
+        "/pets",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "list[Pet]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsMineGetResponse",
+      "name": "FieldPetsMineGetResponse",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets~1mine/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "paths",
+        "/pets/mine",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "list[Pet]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsPetIdGetPathPetIdParameter",
+      "name": "FieldPetsPetIdGetPathPetIdParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets~1%7BpetId%7D/get/parameters/0/schema",
+      "source_path": [
+        "paths",
+        "/pets/%7BpetId%7D",
+        "get",
+        "parameters",
+        "0",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "Annotated[int, Field(ge=1)]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldPetsPetIdDeletePathPetIdParameter",
+      "name": "FieldPetsPetIdDeletePathPetIdParameter",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1pets~1%7BpetId%7D/delete/parameters/0/schema",
+      "source_path": [
+        "paths",
+        "/pets/%7BpetId%7D",
+        "delete",
+        "parameters",
+        "0",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "Annotated[int, Field(ge=1)]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "FieldStoreInventoryGetResponse",
+      "name": "FieldStoreInventoryGetResponse",
+      "module": "",
+      "source_ref": "pets.yaml#/paths/~1store~1inventory/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "paths",
+        "/store/inventory",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "dict[str, int]",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
