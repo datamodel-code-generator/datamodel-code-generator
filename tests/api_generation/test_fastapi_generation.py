@@ -98,7 +98,7 @@ def test_fastapi_config(case: str, tmp_path: Path) -> None:
 
 
 def test_fastapi_api(tmp_path: Path) -> None:
-    """Resolve the public annotations, render and generate twice, then refuse to render over an edited file."""
+    """Resolve the public annotations, render and generate twice, then warn about each package's edited file."""
     assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
 
 

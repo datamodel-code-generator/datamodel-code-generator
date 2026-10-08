@@ -19,6 +19,7 @@ __all__ = [
     "Diagnostic",
     "DiagnosticSeverity",
     "DiagnosticStage",
+    "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationReport",
@@ -26,7 +27,9 @@ __all__ = [
     "OperationSelector",
     "PublicationRollbackError",
     "SchemaRef",
+    "TargetEditWarning",
     "TargetKind",
+    "TargetStateWarning",
 ]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
@@ -55,6 +58,18 @@ class SchemaRef:
 
 
 OperationSelector: TypeAlias = OperationRef | str
+
+
+class TargetStateWarning(UserWarning):
+    """Warn that a target manifest of an old or unknown format owns no files."""
+
+
+class TargetEditWarning(UserWarning):
+    """Warn that a generation discards a change to a file the target owns."""
+
+
+class DocumentationAnnotationWarning(UserWarning):
+    """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
 class PublicationRollbackError(OSError):

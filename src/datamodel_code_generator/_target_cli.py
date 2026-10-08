@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_manifest import document_identity
+from datamodel_code_generator._api_manifest import document_identity, shown
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
 if TYPE_CHECKING:
@@ -87,13 +87,13 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
 
 def _shown(path: Path) -> str:
     """Return a path relative to the working directory when it lies inside it."""
-    cwd = Path.cwd()
-    return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
+    return shown(path, Path.cwd()).as_posix()
 
 
 def _target_json(project: GeneratedProject, models: Path, target: Path, encoding: str) -> str:
-    """Emit rendered model and target text with the existing generation payload."""
+    """Emit rendered model and target text, read like their published files, with the existing generation payload."""
     import os  # noqa: PLC0415
+    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
 
     from datamodel_code_generator._structured_output import GeneratedFilePayload, generation_output_json  # noqa: PLC0415
 
@@ -113,9 +113,9 @@ def _target_json(project: GeneratedProject, models: Path, target: Path, encoding
     files = [
         GeneratedFilePayload(
             path=(path.absolute() if parent is None else path.relative_to(parent)).as_posix(),
-            content=content.decode(codec),
+            content=TextIOWrapper(BytesIO(content), encoding=codec).read(),
         )
-        for path, content, codec in sorted(artifacts)
+        for path, content, codec in sorted(artifacts, key=lambda artifact: artifact[0].parts)
     ]
     return generation_output_json(files, output=models.as_posix())
 
