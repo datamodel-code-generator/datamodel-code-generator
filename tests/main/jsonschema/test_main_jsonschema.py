@@ -2317,8 +2317,41 @@ def test_main_alias_generator_pydantic_v2(output_file: Path) -> None:
     )
 
 
-def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Reject --alias-generator for non-Pydantic v2 output models."""
+@pytest.mark.parametrize("target_pydantic_version", TARGET_PYDANTIC_VERSION_CASES)
+@pytest.mark.parametrize("alias_generator", ["to_camel", "to_pascal", "to_snake"])
+def test_main_alias_generator_target_pydantic_version(
+    output_file: Path, alias_generator: str, target_pydantic_version: str | None
+) -> None:
+    """Pin every field alias for --target-pydantic-version 2 so aliases never depend on the runtime generator."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_target_pydantic.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"alias_generator_target_pydantic/{alias_generator}_{target_pydantic_version or 'unset'}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            alias_generator,
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    payload = (JSON_DATA_PATH / "alias_generator_target_pydantic.json").read_text()
+    with _generated_model(output_file, "alias_generator_target_pydantic", "Account") as model:
+        assert_output(
+            model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_target_pydantic" / "round_trip.txt",
+        )
+
+
+@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])
+def test_main_alias_generator_requires_pydantic_v2(
+    output_file: Path, capsys: pytest.CaptureFixture[str], output_model_type: str
+) -> None:
+    """Reject --alias-generator for output models other than Pydantic v2 BaseModel."""
     run_main_with_args(
         [
             "--input",
@@ -2328,7 +2361,7 @@ def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: py
             "--input-file-type",
             "jsonschema",
             "--output-model-type",
-            "dataclasses.dataclass",
+            output_model_type,
             "--alias-generator",
             "to_camel",
         ],
@@ -2340,14 +2373,20 @@ def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: py
     )
 
 
-def test_main_alias_generator_no_alias(output_file: Path) -> None:
-    """Keep --no-alias behavior when --alias-generator is enabled."""
+@pytest.mark.parametrize(
+    ("target_pydantic_version", "expected_file"),
+    [(None, "alias_generator_no_alias.py"), ("2", "alias_generator_no_alias_target_2.py")],
+)
+def test_main_alias_generator_no_alias(
+    output_file: Path, target_pydantic_version: str | None, expected_file: str
+) -> None:
+    """Keep --no-alias behavior when --alias-generator is enabled, pinning the generated aliases for target 2."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="alias_generator_no_alias.py",
+        expected_file=expected_file,
         extra_args=[
             "--snake-case-field",
             "--alias-generator",
@@ -2355,6 +2394,7 @@ def test_main_alias_generator_no_alias(output_file: Path) -> None:
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--no-alias",
+            *target_pydantic_args(target_pydantic_version),
         ],
     )
 

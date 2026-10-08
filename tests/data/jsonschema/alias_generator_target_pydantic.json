@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Account",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string"
+    },
+    "userID": {
+      "type": "integer"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "Name": {
+      "type": "string"
+    },
+    "HTTPResponse": {
+      "type": "integer"
+    },
+    "kebab-case": {
+      "type": "string"
+    },
+    "owner": {
+      "$ref": "#/definitions/Owner"
+    }
+  },
+  "required": [
+    "firstName",
+    "userID"
+  ],
+  "definitions": {
+    "Owner": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "owner_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "displayName"
+      ]
+    }
+  }
+}

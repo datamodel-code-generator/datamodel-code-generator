@@ -69,6 +69,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
+    PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
@@ -735,6 +736,8 @@ class DataModelField(_PydanticBaseDataModelField):
             if serialization_alias != self.name:
                 data["serialization_alias"] = serialization_alias
 
+        self._pin_generated_alias_for_target(data)
+
         # **extra is not supported in pydantic 2.0
         extra_field_keys = tuple(
             k
@@ -766,6 +769,18 @@ class DataModelField(_PydanticBaseDataModelField):
             data.pop("alias", None)
             return
         data["alias"] = wire_name
+
+    def _pin_generated_alias_for_target(self, data: dict[str, Any]) -> None:
+        """Set the 2.8+ generated alias on a field without one when the target predates those generator algorithms."""
+        if (
+            "alias" in data
+            or self.name is None
+            or self.is_pydantic_extra_field
+            or (generator_name := self._alias_generator_name_from_parent()) is None
+            or model_target_supports(self.parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
+        ):
+            return
+        data["alias"] = _generate_alias(generator_name, self.name)
 
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:
