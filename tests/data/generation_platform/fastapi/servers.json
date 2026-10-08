@@ -356,6 +356,58 @@
       {
         "method": "GET",
         "url": "/items/1?levels=1&levels=2"
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[unknown]=extra",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=05",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=%2B1",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=1.0",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=%EF%BC%92.%EF%BC%92"
+      },
+      {
+        "method": "GET",
+        "url": "/items/%D9%A1"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?levels=%EF%BC%91"
+      },
+      {
+        "method": "GET",
+        "url": "/notes/%D9%A7"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=1e999"
       }
     ],
     "package_snapshots": []
