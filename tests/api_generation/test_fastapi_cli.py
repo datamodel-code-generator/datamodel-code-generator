@@ -194,7 +194,7 @@ def test_fastapi_cli_check_outputs(
         (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding=encoding)
     for name in case.get("crlf", ()):
-        (path := tmp_path / name).write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline="\r\n")
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
