@@ -135,7 +135,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import camel_to_snake, record_watch_dependency
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._types import ParserConfigDict
     from datamodel_code_generator.config import ParserConfig
@@ -2280,17 +2280,22 @@ def _remap_imports(imports: Imports, overrides: Mapping[str, str]) -> None:
         raise Error(str(e)) from e
 
 
+def _is_generic_class_container(data_type: DataType) -> bool:
+    """Return whether the type subscripts a generic class, whose arguments mypy resolves eagerly."""
+    return (
+        data_type.is_list
+        or data_type.is_dict
+        or data_type.is_set
+        or data_type.is_frozen_set
+        or data_type.is_mapping
+        or data_type.is_sequence
+        or (data_type.is_tuple and data_type.use_standard_collections)
+    )
+
+
 def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -> Iterator[tuple[DataModel, bool]]:
     """Yield each referenced deferrable alias with whether a container encloses the reference."""
-    in_container = in_container or any((
-        data_type.is_list,
-        data_type.is_dict,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-    ))
+    in_container = in_container or _is_generic_class_container(data_type)
     if (
         (reference := data_type.reference)
         and isinstance(source := reference.source, DataModel)
@@ -2301,21 +2306,19 @@ def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -
         yield from _iter_alias_references(child, in_container=in_container)
 
 
-@dataclass(frozen=True)
-class _AliasReferenceCycles:
-    """Reference cycles among a module's deferrable aliases that pass only through containers."""
-
-    cycles: Mapping[int, int]
-
-    def defers(self, model: DataModel, forward_references: Iterable[DataModel]) -> bool:
-        """Return whether the model forward-references an alias on its own container cycle."""
-        if (cycle := self.cycles.get(id(model))) is None:
-            return False
-        return any(self.cycles.get(id(source)) == cycle for source in forward_references)
+def _iter_outermost_containers(
+    data_type: DataType, wrappers: tuple[DataType, ...] = ()
+) -> Iterator[tuple[DataType, tuple[DataType, ...]]]:
+    """Yield each container no other container encloses, with the types that wrap it."""
+    if _is_generic_class_container(data_type):
+        yield data_type, wrappers
+        return
+    for child in data_type.data_types:
+        yield from _iter_outermost_containers(child, (*wrappers, data_type))
 
 
-def _alias_reference_cycles(models: Sequence[DataModel]) -> _AliasReferenceCycles:
-    """Find the cycles among aliases whose every reference is a container item."""
+def _alias_reference_cycles(models: Sequence[DataModel]) -> dict[int, int]:
+    """Map each alias on a cycle whose every reference is a container item to that cycle."""
     aliases: dict[ModulePath, DataModel] = {}
     graph: ModuleGraph = {}
     pending = [model for model in models if model.DEFERS_RECURSIVE_TYPE_HINT]
@@ -2329,9 +2332,23 @@ def _alias_reference_cycles(models: Sequence[DataModel]) -> _AliasReferenceCycle
                 if in_container:
                     graph[key].add((target.path,))
                     pending.append(target)
-    return _AliasReferenceCycles(
-        cycles={id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc},
-    )
+    return {id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc}
+
+
+def _iter_cycle_containers(
+    data_type: DataType, cycle: int, cycles: Mapping[int, int], forward_references: Collection[int]
+) -> Iterator[tuple[DataType, tuple[DataType, ...], set[bool]]]:
+    """Yield each outermost container with its wrappers and whether its cycle references are forward ones."""
+    for container, wrappers in _iter_outermost_containers(data_type):
+        yield (
+            container,
+            wrappers,
+            {
+                id(nested) in forward_references
+                for nested in container.all_data_types
+                if nested.reference and cycles.get(id(nested.reference.source)) == cycle
+            },
+        )
 
 
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
@@ -5005,9 +5022,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     @staticmethod
     def __forward_references(
         field: DataModelFieldBase, model: DataModel, model_index: Mapping[str, int], index: int
-    ) -> list[tuple[DataType, str, DataModel]]:
+    ) -> list[tuple[DataType, str]]:
         """Collect the field's references to same-module models declared at or after the model."""
-        forward_references: list[tuple[DataType, str, DataModel]] = []
+        forward_references: list[tuple[DataType, str]] = []
         for data_type in field.data_type.all_data_types:
             if not data_type.reference:
                 continue
@@ -5021,8 +5038,52 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             name = data_type.reference.short_name
             source_index = model_index.get(name)
             if source_index is not None and source_index >= index:
-                forward_references.append((data_type, name, source))
+                forward_references.append((data_type, name))
         return forward_references
+
+    @classmethod
+    def __deferrable_alias_cycles(cls, models: Sequence[DataModel], model_index: Mapping[str, int]) -> dict[int, int]:
+        """Find the container cycles among aliases that quoted containers resolve for mypy and pyright alike.
+
+        mypy cannot resolve a cycle of aliases that only reference each other as container items, unless
+        the containers holding the forward references are strings. pyright cannot resolve an alias declared
+        earlier on the cycle from inside such a string, so a cycle with a container that references it both
+        forward and backward keeps its names quoted one by one.
+        """
+        cycles = _alias_reference_cycles(models)
+        unresolvable: set[int] = set()
+        for index, model in enumerate(models):
+            if (cycle := cycles.get(id(model))) is None:
+                continue
+            for field in model.fields:
+                forward = {id(data_type) for data_type, _ in cls.__forward_references(field, model, model_index, index)}
+                if any(len(kinds) > 1 for *_, kinds in _iter_cycle_containers(field.data_type, cycle, cycles, forward)):
+                    unresolvable.add(cycle)
+        return {alias: cycle for alias, cycle in cycles.items() if cycle not in unresolvable}
+
+    @staticmethod
+    def __defer_recursive_containers(
+        field: DataModelFieldBase,
+        model: DataModel,
+        alias_cycles: Mapping[int, int],
+        forward_references: Iterable[tuple[DataType, str]],
+    ) -> set[int]:
+        """Quote each outermost container that forward-references the model's cycle and return what it holds.
+
+        A string cannot be an operand of ``|``, so the container and its wrappers stop using the union operator.
+        """
+        deferred: set[int] = set()
+        if (cycle := alias_cycles.get(id(model))) is None:
+            return deferred
+        forward = {id(data_type) for data_type, _ in forward_references}
+        for container, wrappers, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward):
+            if True not in kinds:
+                continue
+            container._set_forward_reference(True)  # noqa: FBT003, SLF001
+            for quoted in (container, *wrappers):
+                quoted.use_union_operator = False
+            deferred.update(id(nested) for nested in container.all_data_types)
+        return deferred
 
     @classmethod
     def __update_type_aliases(
@@ -5041,7 +5102,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         (e.g. Ruff F821) and older runtimes do not trip over the forward reference.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
-        alias_cycles: _AliasReferenceCycles | None = None
+        alias_cycles: Mapping[int, int] | None = None
 
         for i, model in enumerate(models):
             is_type_alias_or_root = isinstance(model, TypeAliasBase) or _is_pydantic_v2_root_model(
@@ -5067,14 +5128,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 if not (forward_references := cls.__forward_references(field, model, model_index, i)):
                     continue
-                quote = '"'
+                deferred: set[int] = set()
                 if model.DEFERS_RECURSIVE_TYPE_HINT:
-                    alias_cycles = alias_cycles or _alias_reference_cycles(models)
-                    if alias_cycles.defers(model, (source for *_, source in forward_references)):
-                        field.defer_recursive_type_hint()
-                        quote = ""
-                for data_type, name, _ in forward_references:
-                    data_type.alias = f"{quote}{name}{quote}"
+                    if alias_cycles is None:
+                        alias_cycles = cls.__deferrable_alias_cycles(models, model_index)
+                    deferred = cls.__defer_recursive_containers(field, model, alias_cycles, forward_references)
+                for data_type, name in forward_references:
+                    data_type.alias = name if id(data_type) in deferred else f'"{name}"'
                     cls.__disable_union_operator_for_forward_ref(data_type)
                 has_aliased_forward_ref = True
 

@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, Union
+from typing import Literal, NotRequired, Optional, TypedDict, Union
 
-from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
 JsonValue = TypeAliasType(
@@ -15,16 +14,11 @@ JsonValue = TypeAliasType(
 )
 
 
-class Leaf(BaseModel):
+class Leaf(TypedDict):
     name: str
 
 
-Nested = TypeAliasType(
-    "Nested",
-    Annotated[
-        Union[int, "list[Nested]"], Field(..., description='Nested integer lists')
-    ],
-)
+Nested = TypeAliasType("Nested", Union[int, "list[Nested]"])
 
 
 Quoted = TypeAliasType(
@@ -43,29 +37,24 @@ Pair = TypeAliasType("Pair", Union[str, "tuple[str, Pair]"])
 Branch = TypeAliasType("Branch", Union[Leaf, "list[Branch]"])
 
 
-class Document(BaseModel):
-    value: JsonValue | None = None
-    branch: Branch | None = None
-    nested: Nested | None = None
-    quoted: Quoted | None = None
-    forest: Forest | None = None
-    grove: Grove | None = None
-    node: Node | None = None
-    expr: Expr | None = None
-    matrix: Matrix | None = None
-    pair: Pair | None = None
-    chain: Chain | None = None
+class Document(TypedDict):
+    value: NotRequired[JsonValue]
+    branch: NotRequired[Branch]
+    nested: NotRequired[Nested]
+    quoted: NotRequired[Quoted]
+    forest: NotRequired[Forest]
+    grove: NotRequired[Grove]
+    node: NotRequired[Node]
+    expr: NotRequired[Expr]
+    matrix: NotRequired[Matrix]
+    pair: NotRequired[Pair]
+    chain: NotRequired[Chain]
 
 
-Forest = TypeAliasType(
-    "Forest",
-    Annotated[Union[str, "list[Tree]"], Field(..., description='Trees or a leaf name')],
-)
+Forest = TypeAliasType("Forest", Union[str, "list[Tree]"])
 
 
-Tree = TypeAliasType(
-    "Tree", Annotated[list[Forest], Field(..., description='Branches of a forest')]
-)
+Tree = TypeAliasType("Tree", list[Forest])
 
 
 Grove = TypeAliasType("Grove", Union[int, "Hub", "Left"])
@@ -102,6 +91,3 @@ Link = TypeAliasType("Link", Union[int, list[Union[Chain, "Knot"]]])
 
 
 Knot = TypeAliasType("Knot", list[Chain])
-
-
-Document.model_rebuild()

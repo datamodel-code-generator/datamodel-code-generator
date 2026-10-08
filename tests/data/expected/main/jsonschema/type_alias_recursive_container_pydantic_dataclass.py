@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 JsonValue = TypeAliasType(
@@ -15,7 +16,8 @@ JsonValue = TypeAliasType(
 )
 
 
-class Leaf(BaseModel):
+@dataclass
+class Leaf:
     name: str
 
 
@@ -43,7 +45,8 @@ Pair = TypeAliasType("Pair", Union[str, "tuple[str, Pair]"])
 Branch = TypeAliasType("Branch", Union[Leaf, "list[Branch]"])
 
 
-class Document(BaseModel):
+@dataclass
+class Document:
     value: JsonValue | None = None
     branch: Branch | None = None
     nested: Nested | None = None
@@ -102,6 +105,3 @@ Link = TypeAliasType("Link", Union[int, list[Union[Chain, "Knot"]]])
 
 
 Knot = TypeAliasType("Knot", list[Chain])
-
-
-Document.model_rebuild()

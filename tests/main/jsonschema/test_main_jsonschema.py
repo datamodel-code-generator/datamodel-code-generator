@@ -11793,16 +11793,26 @@ def test_main_jsonschema_type_alias_py312(output_file: Path) -> None:
     reason="Installed black doesn't support the new 'type' statement",
 )
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("output_model_type", "target_python_version", "alias_option", "expected_file"),
     [
-        ("3.10", "type_alias_recursive_container.py"),
-        ("3.12", "type_alias_recursive_container_py312.py"),
+        ("pydantic_v2.BaseModel", "3.10", "--use-type-alias", "type_alias_recursive_container.py"),
+        ("pydantic_v2.BaseModel", "3.12", "--use-type-alias", "type_alias_recursive_container_py312.py"),
+        (
+            "pydantic_v2.BaseModel",
+            "3.11",
+            "--no-use-standard-collections",
+            "type_alias_recursive_container_typing_collections.py",
+        ),
+        ("pydantic_v2.dataclass", "3.11", "--use-type-alias", "type_alias_recursive_container_pydantic_dataclass.py"),
+        ("dataclasses.dataclass", "3.11", "--use-type-alias-type", "type_alias_recursive_container_dataclass.py"),
+        ("typing.TypedDict", "3.11", "--use-type-alias-type", "type_alias_recursive_container_typed_dict.py"),
+        ("msgspec.Struct", "3.11", "--use-type-alias-type", "type_alias_recursive_container_msgspec.py"),
     ],
 )
 def test_main_jsonschema_type_alias_recursive_container(
-    output_file: Path, target_python_version: str, expected_file: str
+    output_file: Path, output_model_type: str, target_python_version: str, alias_option: str, expected_file: str
 ) -> None:
-    """Quote a TypeAliasType value as a whole when it recurses into its own alias."""
+    """Quote the containers of a TypeAliasType value that recurse into its own alias cycle."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json",
         output_path=output_file,
@@ -11811,10 +11821,11 @@ def test_main_jsonschema_type_alias_recursive_container(
         expected_file=expected_file,
         extra_args=[
             "--use-type-alias",
+            alias_option,
             "--target-python-version",
             target_python_version,
             "--output-model-type",
-            "pydantic_v2.BaseModel",
+            output_model_type,
             "--enum-field-as-literal",
             "all",
         ],

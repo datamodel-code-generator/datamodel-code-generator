@@ -20,7 +20,13 @@ type Nested = Annotated[
 ]
 
 
-type Quoted = Literal["it's", '\\d'] | list[Quoted]
+type Quoted = str | list[Literal["it's", '\\d'] | Quoted]
+
+
+type Matrix = float | list[Matrix] | dict[str, list[Matrix]] | None
+
+
+type Pair = str | tuple[str, Pair]
 
 
 type Branch = Leaf | list[Branch]
@@ -34,6 +40,10 @@ class Document(BaseModel):
     forest: Forest | None = None
     grove: Grove | None = None
     node: Node | None = None
+    expr: Expr | None = None
+    matrix: Matrix | None = None
+    pair: Pair | None = None
+    chain: Chain | None = None
 
 
 type Forest = Annotated[
@@ -60,6 +70,24 @@ type Node = int | NodeList
 
 
 type NodeList = list[Node]
+
+
+type Expr = int | list[Term]
+
+
+type Term = str | list[Factor] | list[Expr]
+
+
+type Factor = bool | list[Term]
+
+
+type Chain = str | list[Link]
+
+
+type Link = int | list[Chain | Knot]
+
+
+type Knot = list[Chain]
 
 
 Document.model_rebuild()

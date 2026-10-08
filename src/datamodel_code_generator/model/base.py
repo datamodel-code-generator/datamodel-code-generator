@@ -697,22 +697,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return self.data_type.use_union_operator
 
     @property
-    def defers_recursive_type_hint(self) -> bool:
-        """Whether the type hint is one forward reference because it recurses into its alias."""
-        return self.__dict__.get("_defers_recursive_type_hint", False)
-
-    def defer_recursive_type_hint(self) -> None:
-        """Render the type hint as one forward reference instead of quoting the names inside it."""
-        self.__dict__["_defers_recursive_type_hint"] = True
-        self._invalidate_parent_render_caches()
-
-    @property
     def type_hint(self) -> str:
         """Get the type hint string for this field, including nullability."""
-        type_hint = self._type_hint_from_data_type(self.data_type)
-        if not self.defers_recursive_type_hint:
-            return type_hint
-        return repr(type_hint) if '"' in type_hint or "\\" in type_hint else f'"{type_hint}"'
+        return self._type_hint_from_data_type(self.data_type)
 
     def _type_hint_from_data_type(self, data_type: DataType) -> str:  # noqa: PLR0911
         """Get the type hint string for a field data type, including nullability."""

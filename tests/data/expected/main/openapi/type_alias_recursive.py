@@ -24,7 +24,7 @@ ElementaryType = TypeAliasType("ElementaryType", bool | str | int | float | None
 
 
 JsonType = TypeAliasType(
-    "JsonType", "Union[ElementaryType, list[JsonType], dict[str, JsonType]]"
+    "JsonType", Union[ElementaryType, "list[JsonType]", "dict[str, JsonType]"]
 )
 
 

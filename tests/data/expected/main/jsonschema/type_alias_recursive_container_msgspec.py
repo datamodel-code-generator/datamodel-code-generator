@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from msgspec import UNSET, Meta, Struct, UnsetType
 from typing_extensions import TypeAliasType
 
 JsonValue = TypeAliasType(
@@ -15,15 +15,13 @@ JsonValue = TypeAliasType(
 )
 
 
-class Leaf(BaseModel):
+class Leaf(Struct):
     name: str
 
 
 Nested = TypeAliasType(
     "Nested",
-    Annotated[
-        Union[int, "list[Nested]"], Field(..., description='Nested integer lists')
-    ],
+    Annotated[Union[int, "list[Nested]"], Meta(description='Nested integer lists')],
 )
 
 
@@ -37,34 +35,31 @@ Matrix = TypeAliasType(
 )
 
 
-Pair = TypeAliasType("Pair", Union[str, "tuple[str, Pair]"])
-
-
 Branch = TypeAliasType("Branch", Union[Leaf, "list[Branch]"])
 
 
-class Document(BaseModel):
-    value: JsonValue | None = None
-    branch: Branch | None = None
-    nested: Nested | None = None
-    quoted: Quoted | None = None
-    forest: Forest | None = None
-    grove: Grove | None = None
-    node: Node | None = None
-    expr: Expr | None = None
-    matrix: Matrix | None = None
-    pair: Pair | None = None
-    chain: Chain | None = None
+class Document(Struct):
+    value: JsonValue | UnsetType = UNSET
+    branch: Branch | UnsetType = UNSET
+    nested: Nested | UnsetType = UNSET
+    quoted: Quoted | UnsetType = UNSET
+    forest: Forest | UnsetType = UNSET
+    grove: Grove | UnsetType = UNSET
+    node: Node | UnsetType = UNSET
+    expr: Expr | UnsetType = UNSET
+    matrix: Matrix | UnsetType = UNSET
+    pair: Pair | UnsetType = UNSET
+    chain: Chain | UnsetType = UNSET
 
 
 Forest = TypeAliasType(
     "Forest",
-    Annotated[Union[str, "list[Tree]"], Field(..., description='Trees or a leaf name')],
+    Annotated[Union[str, "list[Tree]"], Meta(description='Trees or a leaf name')],
 )
 
 
 Tree = TypeAliasType(
-    "Tree", Annotated[list[Forest], Field(..., description='Branches of a forest')]
+    "Tree", Annotated[list[Forest], Meta(description='Branches of a forest')]
 )
 
 
@@ -95,6 +90,14 @@ Term = TypeAliasType("Term", Union[str, "list[Factor]", list[Expr]])
 Factor = TypeAliasType("Factor", bool | list[Term])
 
 
+Pair1 = TypeAliasType(
+    "Pair1", Annotated[tuple[str, "Pair"], Meta(max_length=2, min_length=2)]
+)
+
+
+Pair = TypeAliasType("Pair", str | Pair1)
+
+
 Chain = TypeAliasType("Chain", Union[str, list["Link"]])
 
 
@@ -102,6 +105,3 @@ Link = TypeAliasType("Link", Union[int, list[Union[Chain, "Knot"]]])
 
 
 Knot = TypeAliasType("Knot", list[Chain])
-
-
-Document.model_rebuild()
