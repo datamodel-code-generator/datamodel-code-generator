@@ -59,6 +59,8 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
 `pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so the served document shows its
+schema as `anyOf` of the type and `null`.
 For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 

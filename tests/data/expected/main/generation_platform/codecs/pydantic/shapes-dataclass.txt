@@ -1,5 +1,5 @@
 animal-client-cat: native Cat(id=3, name=None, nick_name=None, meow=True) json={"id":3,"name":null,"nick-name":null,"meow":true}
-animal-server-dog-extra: HTTP 422 {"detail":[{"type":"missing","loc":["body","union[Cat,Dog]","Cat","id"],"msg":"Field required","input":{"meow":true,"bark":1}},{"type":"unexpected_keyword_argument","loc":["body","union[Cat,Dog]","Cat","bark"],"msg":"Unexpected keyword argument","input":1},{"type":"missing","loc":["body","union[Cat,Dog]","Dog","id"],"msg":"Field required","input":{"meow":true,"bark":1}},{"type":"none_required","loc":["body","none"],"msg":"Input should be None","input":{"meow":true,"bark":1}}]}
+animal-server-dog-extra: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required","input":{"meow":true,"bark":1}},{"type":"unexpected_keyword_argument","loc":["body","Cat","bark"],"msg":"Unexpected keyword argument","input":1},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required","input":{"meow":true,"bark":1}}]}
 animal-client-decode-dog: native Dog(id=2, name=None, nick_name=None, bark=3) json={"id":2,"name":null,"nick-name":null,"bark":3}
 animal-server-encode-dog: native Dog(id=2, name=None, nick_name=None, bark=3) json={"id":2,"name":null,"nick-name":null,"bark":3}
 animal-client-decode-null: native None json=null
