@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -192,6 +194,12 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(raw_response(204, **{name: value}))
             info = api.native_headers.with_raw_response.get_values().info
             record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+        numbers = Path(__file__).parents[1] / "generation_platform/client/native-numbers.json"
+        for name, value in json.loads(numbers.read_text(encoding="utf-8"))["headers"]:
+            content = ((name.encode(), value.encode()),)
+            exchange.respond(lambda _, content=content: httpx2.Response(204, headers=content))
+            info = api.native_headers.with_raw_response.get_values().info
+            record(lines, f"native numeric {name} {value}", lambda: types.decode_get_values_header(info, name=name))
         run(lambda: _async_native_headers(package, types, lines))
         exchange.respond(raw_response(204))
         record(lines, "nullable model from fields", lambda: api.native_headers.save_value(value="saved"))
