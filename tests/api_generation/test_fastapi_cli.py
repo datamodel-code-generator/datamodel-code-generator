@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import warnings
 from pathlib import Path
@@ -38,6 +39,7 @@ CONFLICT = "Error: --generate-server cannot be used with"
 NOT_WRITABLE = "Error: --diagnostics-json cannot be written: it is not a file in an existing directory\n"
 READ_OR_WRITTEN = "Error: --diagnostics-json names a file the generation reads or writes\n"
 OTHER_FILE = "Error: --diagnostics-json names an existing file that is not a report\n"
+CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -118,7 +120,8 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check"),
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stderr="write models.py\n",
+        expected_stdout_path=EXPECTED / "cli" / "check-model.txt",
+        assert_no_stderr=True,
     )
     (tmp_path / "server" / "README.md").unlink()
     run_main_and_assert(
@@ -128,7 +131,8 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check"),
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stderr="write models.py\nwrite server/README.md\n",
+        expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
+        assert_no_stderr=True,
     )
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -141,6 +145,90 @@ def test_fastapi_cli_generate(
         expected_file=PACKAGE / "models.py",
     )
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
+
+
+@pytest.mark.parametrize("case_name", CHECK_CASES)
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_check_outputs(
+    case_name: str,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compare real model and target text without publishing or changing any output file."""
+    case = CHECK_CASES[case_name]
+    if case.get("json_only") and not structured:
+        pytest.skip("This conflict requires JSON output")
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    output = Path("models" if case.get("modular") else "models.py")
+    source = Path("pets.yaml")
+    if case.get("modular") or case.get("source"):
+        shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
+        source = Path("spec") / case.get("source", "modular.yaml")
+    encoding = case.get("encoding", "utf-8")
+    options: list[str] = ["--encoding", encoding]
+    if case.get("templates"):
+        shutil.copytree(CLI / "check-templates", tmp_path / "templates")
+        options.extend(["--custom-template-dir", "templates"])
+    run_main_and_assert(
+        input_path=source,
+        input_file_type="openapi",
+        output_path=output,
+        extra_args=_server(*options),
+        capsys=capsys,
+        expected_stdout_path=DEPENDENCIES,
+    )
+    for name in case.get("remove", ()):
+        if (path := tmp_path / name).is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    for name, text in case.get("append", {}).items():
+        path = tmp_path / name
+        path.write_bytes(path.read_bytes() + text.encode(encoding))
+    for name, text in case.get("write", {}).items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding=encoding)
+    for name in case.get("crlf", ()):
+        (path := tmp_path / name).write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    for name in case.get("binary", ()):
+        (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    if case.get("nested"):
+        monkeypatch.chdir(tmp_path / "server")
+    base = Path("..") if case.get("nested") else Path()
+    changed = any(key in case for key in ("remove", "append", "binary", "changed"))
+    changed |= "write" in case and any(name.endswith(".py") and "__pycache__" not in name for name in case["write"])
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("error", UserWarning)
+        run_main_and_assert(
+            input_path=base / source,
+            input_file_type="openapi",
+            output_path=base / output,
+            extra_args=_server(
+                "--check",
+                *options,
+                *case.get("options", ()),
+                *(["--output-format", "json"] if structured else []),
+                output=str(base / "server"),
+            ),
+            capsys=capsys,
+            expected_exit=Exit.ERROR if "error" in case else Exit.DIFF if changed else Exit.OK,
+            expected_stderr_contains=f"Error: {case['error']}" if "error" in case else None,
+            assert_no_stderr="error" not in case,
+            expected_stdout_path=(
+                EXPECTED / "cli" / "check" / f"{case_name}.{'json' if structured else 'txt'}"
+                if "error" not in case
+                else None
+            ),
+            skip_code_validation=encoding != "utf-8",
+        )
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    assert_output(
+        f"files unchanged {before == after}; warnings {len(recorded)}\n", EXPECTED / "cli" / "check-unchanged.txt"
+    )
 
 
 def test_fastapi_cli_pyproject(

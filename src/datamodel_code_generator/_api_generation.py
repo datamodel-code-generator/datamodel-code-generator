@@ -505,7 +505,7 @@ class _Planner:
             "files": manifest_files(plans),
         }
 
-    def project(self) -> GeneratedProject:
+    def project(self, *, warn_edits: bool = True) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
         self.operations = {operation.id.use_site.pointer: operation for operation in operations}
@@ -557,7 +557,8 @@ class _Planner:
         )
         self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
-        hand_edits(state, plans)
+        if warn_edits:
+            hand_edits(state, plans)
         return GeneratedProject(
             target=generator.kind,
             artifacts=artifacts,
@@ -682,7 +683,12 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
 
 
 def _plan(
-    input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+    input_: _GenerationInput,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    *,
+    warn_edits: bool = True,
 ) -> tuple[_Planner, GeneratedProject]:
     effective = prepare_target(input_, model_config, generator)
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
@@ -691,16 +697,21 @@ def _plan(
     models = _run_models(input_, effective, config)
     try:
         planner = _Planner(models, effective, config, generator)
-        return planner, planner.project()
+        return planner, planner.project(warn_edits=warn_edits)
     finally:
         models.product.close()
 
 
 def render_target(
-    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+    input_: _GenerationInput,
+    *,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    warn_edits: bool = True,
 ) -> GeneratedProject:
     """Render one target and its models once, returning every publication candidate without writing it."""
-    return _plan(input_, model_config, config, generator)[1]
+    return _plan(input_, model_config, config, generator, warn_edits=warn_edits)[1]
 
 
 def generate_target(

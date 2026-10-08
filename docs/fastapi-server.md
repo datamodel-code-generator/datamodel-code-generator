@@ -254,6 +254,12 @@ lacks a new method; your own modules are never touched. `--check` renders everyt
 with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
 for an error; `render_fastapi` returns the same artifacts, each with its action.
 
+`--check` uses the model output comparison: it prints unified diffs and missing or extra file messages to stdout.
+It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
+the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
+`--check --output-format json` uses the same check payload as model generation. Checking publishes nothing and
+does not warn that it would overwrite an edited owned file.
+
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another

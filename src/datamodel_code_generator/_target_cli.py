@@ -19,9 +19,11 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Sequence
 
-    from datamodel_code_generator._api_types import OperationSelector
+    from datamodel_code_generator.__main__ import OutputComparison
+    from datamodel_code_generator._api_types import GeneratedProject, OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._structured_output import CheckDifferencePayload
 
 _OK: Final = 0
 _DIFF: Final = 1
@@ -74,6 +76,7 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
         _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
+        _write_comparison_output,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._api_generation import generate_target, prepare_target, render_target  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
@@ -83,8 +86,10 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         (pyproject_path, config.input, config.output, config.emit_model_metadata, lockfile),
         (config.server_output, config.output),
     )
-    if flags := _flags(namespace, config, _CONFLICTS):
+    if flags := _flags(namespace, config, _CONFLICTS, json_supported=config.check):
         raise _refused(flags)
+    if namespace.output_format == "json" and report.destination == "-":
+        raise APIGenerationError((_conflict("--output-format json cannot be used with --diagnostics-json -"),))
     if (form := vars(namespace).get("dependency_format")) is not None and report.destination == "-":
         raise APIGenerationError((_conflict("--dependency-format cannot be used with --diagnostics-json -"),))
     target = _server_config(config, namespace, pyproject_path)
@@ -94,11 +99,10 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         prepare_target("", effective, generator)
         source = sys.stdin.read()
     if config.check:
-        project = render_target(source, model_config=effective, config=target, generator=generator)
-        changes = [artifact for artifact in project.artifacts if artifact.action != "unchanged"]
-        for artifact in changes:
-            print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
-        return _DIFF if changes else _OK
+        project = render_target(source, model_config=effective, config=target, generator=generator, warn_edits=False)
+        comparison = _compare_target(project, config.output, target.output, config.encoding)
+        _write_comparison_output(comparison, namespace.output_format)
+        return _DIFF if comparison.differences else _OK
     generated = generate_target(source, model_config=effective, config=target, generator=generator)
     if report.destination != "-":
         print(_next_step(target, generated.dependencies, form))  # noqa: T201
@@ -109,6 +113,58 @@ def _shown(path: Path) -> str:
     """Return a path relative to the working directory when it lies inside it."""
     cwd = Path.cwd()
     return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
+
+
+def _compare_target(project: GeneratedProject, models: Path, target: Path, encoding: str) -> OutputComparison:
+    """Compare rendered text and Python output roots through the model comparison path."""
+    from tempfile import TemporaryDirectory  # noqa: PLC0415
+
+    from datamodel_code_generator.__main__ import (  # noqa: PLC0415
+        OutputComparison,
+        OutputComparisonOptions,
+        _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
+    )
+
+    differences: list[CheckDifferencePayload] = []
+    contents: list[str] = []
+    with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
+        staging = Path(directory)
+        for kind, output, is_directory in (("model", models, not models.suffix), ("target", target, True)):
+            if not is_directory and not any(artifact.kind == kind for artifact in project.artifacts):
+                continue
+            staged_root = staging / kind
+            staged_root.mkdir()
+            non_python: list[tuple[Path, Path]] = []
+            for artifact in project.artifacts:
+                if artifact.kind != kind or artifact.content is None:
+                    continue
+                path = artifact.path
+                staged = staged_root / (path.relative_to(output) if is_directory else path.name)
+                staged.parent.mkdir(parents=True, exist_ok=True)
+                staged.write_bytes(artifact.content)
+                if is_directory and path.suffix != ".py":
+                    non_python.append((staged, path))
+            comparisons = [(staged_root if is_directory else staged_root / output.name, output, is_directory, encoding)]
+            comparisons.extend((staged, path, False, "utf-8") for staged, path in non_python)
+            for generated, actual, directory_output, codec in comparisons:
+                try:
+                    compared = _compare_generated_outputs(
+                        generated,
+                        actual,
+                        codec,
+                        OutputComparisonOptions(
+                            is_directory_output=directory_output,
+                            single_file_display_path=_shown(actual),
+                            directory_display_path=_shown(actual),
+                        ),
+                    )
+                except UnicodeError as error:
+                    message = f"{_shown(actual)}: Output is not text in encoding {codec!r}: {error}"
+                    raise Error(message) from error
+                differences.extend(compared.differences)
+                if content := compared.content:
+                    contents.append(content if content.endswith("\n") else content + "\n")
+    return OutputComparison(differences=differences, content="".join(contents))
 
 
 def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...], form: str | None) -> str:
@@ -124,9 +180,11 @@ def _jobs(namespace: Namespace, pyproject_path: Path | None, report: _Report) ->
     raise _refused(_flags(namespace, namespace, _JOBS))
 
 
-def _flags(namespace: Namespace, source: object, options: tuple[tuple[str, str], ...]) -> list[str]:
+def _flags(
+    namespace: Namespace, source: object, options: tuple[tuple[str, str], ...], *, json_supported: bool = False
+) -> list[str]:
     flags = [flag for name, flag in options if getattr(source, name)]
-    return [*flags, "--output-format json"] if namespace.output_format == "json" else flags
+    return [*flags, "--output-format json"] if namespace.output_format == "json" and not json_supported else flags
 
 
 def _refused(flags: list[str]) -> APIGenerationError:
