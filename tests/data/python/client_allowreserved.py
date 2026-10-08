@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
-from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, argument, raw_response, record, run
+from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, argument, import_generated_client, raw_response, record, run
 from tests.data.python.fixture_server import stop_servers
-from tests.data.python.generated_packages import forget_generated, import_generated
+from tests.data.python.generated_packages import forget_generated
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,7 +37,7 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
         sys.path.insert(0, str(destination))
         lines = [f"# {case} {backend}"]
         try:
-            reserved_paths(import_generated(package), lines)
+            reserved_paths(import_generated_client(package), lines)
         finally:
             stop_servers()
             sys.path.remove(str(destination))

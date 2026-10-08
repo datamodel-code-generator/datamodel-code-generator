@@ -20,6 +20,7 @@ from datamodel_code_generator._client.pagination import (
     _overlaps,
     _page_use,
     _Pages,
+    _parameter_key,
     _problem,
     _target_key,
     credential_place,
@@ -341,7 +342,7 @@ class _Polls:
             unwritten = (
                 location not in locations
                 if location == "querystring"
-                else _target_key({"in": location, "name": parameter.wire_name}) not in written
+                else _parameter_key(location, parameter.wire_name) not in written
             )
             if parameter.required and unwritten:
                 message = (

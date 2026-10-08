@@ -57,9 +57,7 @@ unknown
   native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for enum[FieldValuesGetResponse204XRatioHeader]
-  Input should be 0.5 or 2.2 [type=enum, input_value='２.２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_header
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = FieldValuesGetResponse204XScoreHeader(root=2.2)
@@ -68,49 +66,31 @@ unknown
   native X-Score 1e999 = FieldValuesGetResponse204XScoreHeader(root=inf)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XScoreHeader
-  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='１２.３', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/float_parsing] invalid_header
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١٢', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='１２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=2 validation errors for FieldValuesGetResponse204XCountsHeader
-0
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
-1
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes = FieldValuesGetResponse204XFlagHeader(root=True)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-When yesterday ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-When') [operation_id='getValues', location=('header', 'X-When'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XWhenHeader
-  Input should be a valid datetime or date, input is too short [type=datetime_from_date_parsing, input_value='yesterday', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/datetime_from_date_parsing] invalid_header
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError['datetime_from_date_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Id not-a-uuid ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Id') [operation_id='getValues', location=('header', 'X-Id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XIdHeader
-  Input should be a valid UUID, invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `n` at 1 [type=uuid_parsing, input_value='not-a-uuid', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/uuid_parsing] invalid_header
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError['uuid_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Amount 1.50 = FieldValuesGetResponse204XAmountHeader(root=Decimal('1.50'))
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Amount abc ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Amount') [operation_id='getValues', location=('header', 'X-Amount'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XAmountHeader
-  Input should be a valid decimal [type=decimal_parsing, input_value='abc', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/decimal_parsing] invalid_header
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError['decimal_parsing']
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
@@ -201,9 +181,7 @@ unknown
   native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for enum[FieldValuesGetResponse204XRatioHeader]
-  Input should be 0.5 or 2.2 [type=enum, input_value='２.２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_header
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -212,49 +190,31 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for float
-  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='１２.３', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/float_parsing] invalid_header
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for int
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١٢', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for int
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='１２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=2 validation errors for list[int]
-0
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='١', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
-1
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='２', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes = True
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-When yesterday ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-When') [operation_id='getValues', location=('header', 'X-When'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for datetime
-  Input should be a valid datetime or date, input is too short [type=datetime_from_date_parsing, input_value='yesterday', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/datetime_from_date_parsing] invalid_header
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError['datetime_from_date_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Id not-a-uuid ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Id') [operation_id='getValues', location=('header', 'X-Id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for uuid
-  Input should be a valid UUID, invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `n` at 1 [type=uuid_parsing, input_value='not-a-uuid', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/uuid_parsing] invalid_header
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError['uuid_parsing']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Amount 1.50 = Decimal('1.50')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Amount abc ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Amount') [operation_id='getValues', location=('header', 'X-Amount'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for decimal
-  Input should be a valid decimal [type=decimal_parsing, input_value='abc', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/decimal_parsing] invalid_header
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError['decimal_parsing']
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
@@ -338,7 +298,7 @@ unknown
   native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid number literal: '２.２'")] invalid_header
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -347,31 +307,31 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid number literal: '１２.３'")] invalid_header
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '١٢'")] invalid_header
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '１２'")] invalid_header
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '١'")] invalid_header
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag yes ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid boolean literal: 'yes'")] invalid_header
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-When yesterday ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-When') [operation_id='getValues', location=('header', 'X-When'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid isoformat string: 'yesterday'")] invalid_header
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValueError("Invalid isoformat string: 'yesterday'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Id not-a-uuid ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Id') [operation_id='getValues', location=('header', 'X-Id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError('badly formed hexadecimal UUID string')] invalid_header
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValueError('badly formed hexadecimal UUID string')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Amount 1.50 = Decimal('1.50')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Amount abc ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Amount') [operation_id='getValues', location=('header', 'X-Amount'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])] invalid_header
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
@@ -380,22 +340,22 @@ unknown
   native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=05', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_value
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="count"\r\n\r\n05\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_value
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'score=1_000', truncated=False, cause=ValueError("Invalid number literal: '1_000'")] invalid_value
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="score"\r\n\r\n1_000\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid number literal: '1_000'")] invalid_value
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'active': 'True'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'active=True', truncated=False, cause=ValueError("Invalid boolean literal: 'True'")] invalid_value
+  native form {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'active': 'True'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="active"\r\n\r\nTrue\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid boolean literal: 'True'")] invalid_value
+  native parts {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
@@ -455,7 +415,7 @@ unknown
   native X-Ratio 0.5 = 0.5
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Ratio') [operation_id='getValues', location=('header', 'X-Ratio'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid number literal: '２.２'")] invalid_header
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -464,31 +424,31 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid number literal: '１２.３'")] invalid_header
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '١٢'")] invalid_header
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '１２'")] invalid_header
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '١'")] invalid_header
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag yes ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid boolean literal: 'yes'")] invalid_header
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-When yesterday ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-When') [operation_id='getValues', location=('header', 'X-When'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid isoformat string: 'yesterday'")] invalid_header
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValueError("Invalid isoformat string: 'yesterday'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Id not-a-uuid ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Id') [operation_id='getValues', location=('header', 'X-Id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError('badly formed hexadecimal UUID string')] invalid_header
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValueError('badly formed hexadecimal UUID string')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Amount 1.50 = Decimal('1.50')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Amount abc ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Amount') [operation_id='getValues', location=('header', 'X-Amount'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])] invalid_header
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'count': '5', 'score': '1.5', 'active': 'true'} = {'count': 5, 'score': 1.5, 'active': True}
@@ -497,22 +457,22 @@ unknown
   native parts {'count': '5', 'score': '1.5', 'active': 'true'} = {'count': 5, 'score': 1.5, 'active': True}
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=05', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_value
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="count"\r\n\r\n05\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_value
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'score=1_000', truncated=False, cause=ValueError("Invalid number literal: '1_000'")] invalid_value
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="score"\r\n\r\n1_000\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid number literal: '1_000'")] invalid_value
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'active': 'True'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'active=True', truncated=False, cause=ValueError("Invalid boolean literal: 'True'")] invalid_value
+  native form {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'active': 'True'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="active"\r\n\r\nTrue\r\n--b--\r\n', truncated=False, cause=ValueError("Invalid boolean literal: 'True'")] invalid_value
+  native parts {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
@@ -566,13 +526,13 @@ unknown
   native X-Closed value=known,unknown=extra = ClosedEntry(value='known')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio 2.2 ! TypeError: Enums must contain either all str or all int values - type `<enum 'FieldValuesGetResponse204XRatioHeader'>` is not supported []
+  native X-Ratio 2.2 ! TypeError None cause=None
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio 0.5 ! TypeError: Enums must contain either all str or all int values - type `<enum 'FieldValuesGetResponse204XRatioHeader'>` is not supported []
+  native X-Ratio 0.5 ! TypeError None cause=None
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! TypeError: Enums must contain either all str or all int values - type `<enum 'FieldValuesGetResponse204XRatioHeader'>` is not supported []
+  native X-Ratio ２.２ ! TypeError None cause=None
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -581,31 +541,31 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Score') [operation_id='getValues', location=('header', 'X-Score'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `float`, got `str`')] invalid_header
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$[0]`')] invalid_header
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Flag yes ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Expected `bool`, got `str`')] invalid_header
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-When yesterday ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-When') [operation_id='getValues', location=('header', 'X-When'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Invalid RFC3339 encoded datetime')] invalid_header
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Id not-a-uuid ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Id') [operation_id='getValues', location=('header', 'X-Id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Invalid UUID')] invalid_header
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Amount 1.50 = Decimal('1.50')
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Amount abc ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Amount') [operation_id='getValues', location=('header', 'X-Amount'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValidationError('Invalid decimal string')] invalid_header
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
@@ -614,16 +574,16 @@ unknown
   native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=05', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$.count`')] invalid_value
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValidationError
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'count': '05'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="count"\r\n\r\n05\r\n--b--\r\n', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$.count`')] invalid_value
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValidationError
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getForm', call_id='<call>', reason='invalid_value') [operation_id='getForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'score=1_000', truncated=False, cause=ValidationError('Expected `float`, got `str` - at `$.score`')] invalid_value
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValidationError
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'score': '1_000'} ! DecodeError: DecodeError(status_code=200, operation_id='getParts', call_id='<call>', reason='invalid_value') [operation_id='getParts', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'--b\r\nContent-Disposition: form-data; name="score"\r\n\r\n1_000\r\n--b--\r\n', truncated=False, cause=ValidationError('Expected `float`, got `str` - at `$.score`')] invalid_value
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValidationError
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   native form {'active': 'True'} = Numbers(count=UNSET, score=UNSET, active=True)

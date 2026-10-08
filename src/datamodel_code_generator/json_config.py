@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
+from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
@@ -23,6 +24,9 @@ JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
 JsonConfigFieldName: TypeAlias = Literal[
     "aliases",
     "base_class_map",
+    "client_operations",
+    "client_protocols",
+    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",
@@ -43,6 +47,9 @@ JsonConfigFieldName: TypeAlias = Literal[
 JsonConfigOptionName: TypeAlias = Literal[
     "--aliases",
     "--base-class-map",
+    "--client-operations",
+    "--client-protocols",
+    "--client-resource-names",
     "--custom-formatters-kwargs",
     "--default-values",
     "--duplicate-name-suffix",
@@ -102,6 +109,18 @@ class LegacyExtraTemplateDataConfig(RootModel[dict[str, Any]]):
     """Legacy extra template data mapping accepted during strict-validation migration."""
 
 
+class ClientOperationsConfig(RootModel[dict[str, dict[str, Any]]]):
+    """Client settings keyed by operation reference; the client target validates their members."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
+class ClientProtocolsConfig(RootModel[dict[str, Any]]):
+    """Client helper definitions keyed by helper name; the client target validates them."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
 class ServerHandlerModesConfig(RootModel[dict[str, Literal["sync", "async"]]]):
     """Handler modes of server operations, keyed by operation reference."""
 
@@ -142,6 +161,8 @@ JsonConfigStrictModel: TypeAlias = (
     | type[DuplicateNameSuffixConfig]
     | type[DefaultValuesConfig]
     | type[ExtraTemplateDataConfig]
+    | type[ClientOperationsConfig]
+    | type[ClientProtocolsConfig]
     | type[ServerHandlerModesConfig]
     | type[ServerBodyModesConfig]
     | type[ServerPrimaryResponsesConfig]
@@ -158,6 +179,9 @@ class JsonConfigSchemasPayload(BaseModel):
 
     aliases: StringOrStringListMappingConfig | None = Field(default=None)
     base_class_map: StringOrStringListMappingConfig | None = Field(default=None, alias="base-class-map")
+    client_operations: ClientOperationsConfig | None = Field(default=None, alias="client-operations")
+    client_protocols: ClientProtocolsConfig | None = Field(default=None, alias="client-protocols")
+    client_resource_names: StringMappingConfig | None = Field(default=None, alias="client-resource-names")
     custom_formatters_kwargs: StringMappingConfig | None = Field(default=None, alias="custom-formatters-kwargs")
     default_values: DefaultValuesConfig | None = Field(default=None, alias="default-values")
     duplicate_name_suffix: DuplicateNameSuffixConfig | None = Field(default=None, alias="duplicate-name-suffix")
@@ -207,9 +231,13 @@ def _path_is_file(path: Path) -> bool:
         return False
 
 
+def _json_file(value: str | Path) -> Path | None:
+    """Return the file a JSON option value names, or None for inline JSON."""
+    return path if _path_is_file(path := Path(value).expanduser()) else None
+
+
 def _read_json_or_inline(value: str) -> str:
-    path = Path(value).expanduser()
-    if not _path_is_file(path):
+    if (path := _json_file(value)) is None:
         return value
 
     try:
@@ -284,6 +312,7 @@ class JsonConfigSpec:
     load_error_name: JsonConfigErrorName | None = None
     validation_error_name: JsonConfigErrorName | None = None
     validation_error_message: str | None = None
+    max_depth: int | None = None
 
     def validate(self, raw: Any) -> Any:
         """Validate a loaded JSON value and return the normalized config value."""
@@ -345,6 +374,11 @@ class JsonConfigSpecs:
             ),
         ),
         "base_class_map": JsonConfigSpec("--base-class-map", StringOrStringListMappingConfig),
+        "client_operations": JsonConfigSpec("--client-operations", ClientOperationsConfig),
+        "client_protocols": JsonConfigSpec(
+            "--client-protocols", ClientProtocolsConfig, max_depth=CLIENT_PROTOCOLS_MAX_DEPTH
+        ),
+        "client_resource_names": JsonConfigSpec("--client-resource-names", StringMappingConfig),
         "custom_formatters_kwargs": JsonConfigSpec(
             "--custom-formatters-kwargs",
             StringMappingConfig,
@@ -404,18 +438,15 @@ def load_json_config_field(
 ) -> Any:
     """Load and validate a JSON configuration field by Config field name."""
     spec = JsonConfigSpecs.by_field_name[field_name]
-    raw = _load_json_source(value, option_name=spec.option_name, load_error_name=spec.load_error_name)
+    raw = _load_json_source(
+        value, option_name=spec.option_name, load_error_name=spec.load_error_name, max_depth=spec.max_depth
+    )
     return None if raw is None else spec.validate(raw)
 
 
-def validate_json_value_or_file(
-    value: str, *, option_name: str = "", max_depth: int | None = None
-) -> dict[str, object]:
-    """Parse and validate a JSON object or JSON file path for argparse-compatible callers.
-
-    With max_depth, text that opens more arrays and objects at once is refused before parsing.
-    """
-    raw = _load_json_source(value, option_name=option_name, max_depth=max_depth)
+def validate_json_value_or_file(value: str, *, option_name: str = "") -> dict[str, object]:
+    """Parse and validate a JSON object or JSON file path for argparse-compatible callers."""
+    raw = _load_json_source(value, option_name=option_name)
     if not isinstance(raw, dict):
         msg = f"Expected a JSON object, got {type(raw).__name__}"
         raise JsonConfigError(msg)
