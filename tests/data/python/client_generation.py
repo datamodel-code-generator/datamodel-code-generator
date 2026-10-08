@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+    from datamodel_code_generator._api_types import GeneratedArtifact
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
@@ -47,9 +48,15 @@ _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
-def artifact_text(content: bytes, encoding: str = "utf-8") -> str:
-    """Decode a rendered file as reading its written text file does, so its lines end with LF on every platform."""
-    return io.TextIOWrapper(io.BytesIO(content), encoding=encoding).read()
+def artifact_text(artifact: GeneratedArtifact, encoding: str = "utf-8") -> str:
+    """Decode a rendered file: a target file as reading its written text file does, a model file byte for byte.
+
+    The lines of a target file then end with LF on every platform, while model files keep the bytes that the
+    comparisons with ordinary model generation need.
+    """
+    if artifact.kind != "target":
+        return artifact.content.decode(encoding)
+    return io.TextIOWrapper(io.BytesIO(artifact.content), encoding=encoding).read()
 
 
 def _selector(value: object) -> object:
@@ -212,14 +219,14 @@ def _render(
         return [f"  Error: {error}"]
     lines: list[str] = []
     for artifact in project.artifacts:
-        path, content = (root / artifact.path).relative_to(root), artifact.content or b""
+        path = (root / artifact.path).relative_to(root)
         if documents is not None and path.suffix in {".md", ".toml"}:
-            documents[path.as_posix()] = artifact_text(content)
+            documents[path.as_posix()] = artifact_text(artifact)
         match path.suffix, path.parts:
             case _, parts if "_runtime" in parts:
                 continue
             case ".py", parts:
-                modules[parts] = artifact_text(content, case.get("model", {}).get("encoding", "utf-8"))
+                modules[parts] = artifact_text(artifact, case.get("model", {}).get("encoding", "utf-8"))
             case _:
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
@@ -269,7 +276,7 @@ def render_client(
         lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
         return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
     modules: Modules = {
-        path.parts: artifact_text(artifact.content)
+        path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
@@ -328,7 +335,7 @@ def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) 
 
 
 def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
-    """Report whether ordinary generation writes each backend's already-rendered model text."""
+    """Report whether ordinary generation matches each backend's already-rendered model bytes."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     matches: list[bool] = []
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
@@ -337,11 +344,10 @@ def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, M
         source = _prepare_input(case, attempt)
         with _working_directory(case, attempt):
             generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
+        ordinary = {path.relative_to(attempt).parts: path.read_bytes() for path in attempt.rglob("*.py")}
         encoding = case.get("model", {}).get("encoding", "utf-8")
-        ordinary = {
-            path.relative_to(attempt).parts: path.read_text(encoding=encoding) for path in attempt.rglob("*.py")
-        }
-        matches.append(bool(ordinary) and ordinary == rendered.get(name, {}))
+        target = {parts: content.encode(encoding) for parts, content in rendered.get(name, {}).items()}
+        matches.append(bool(ordinary) and ordinary == target)
     return f"{bool(matches) and all(matches)}\n"
 
 
