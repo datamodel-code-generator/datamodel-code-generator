@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
@@ -47,6 +47,7 @@ _STATIC_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str | None, str]]
     ("pydantic", "conint"): (None, "int"),
     ("pydantic", "constr"): (None, "str"),
 }
+_STATIC_SCALARS: Final = {name: BuiltinType(name) for name in ("bytes", "float", "int", "str")}
 
 
 def static_scalar(value: FinalPythonType) -> FinalPythonType:
@@ -54,8 +55,8 @@ def static_scalar(value: FinalPythonType) -> FinalPythonType:
     match value:
         case ConstructorType() if (
             target := _STATIC_CONSTRUCTORS.get((value.callable.import_.from_, value.callable.import_.import_))
-        ) and target[0] is None:
-            return BuiltinType(cast("Literal['bytes', 'float', 'int', 'str']", target[1]))
+        ) and (scalar := _STATIC_SCALARS.get(target[1])):
+            return scalar
         case _:
             pass
     return value
