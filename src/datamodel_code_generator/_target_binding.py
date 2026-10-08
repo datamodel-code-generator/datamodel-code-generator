@@ -1,9 +1,9 @@
 """Bind target operations to the emitted models through recorded model replacements.
 
-Only target generation imports this module. A target parser records five events: the two reference redirects of the
-generation store, the API schema acquisitions with their engine keys, and each emitted module's final models. After
-parsing, `bind_operations` reads the final model graph and the loaded API documents once, before disposal, and returns
-an immutable contract batch.
+Only target generation imports this module. A target parser records the two reference redirects of the generation
+store, the API schema acquisitions with their engine keys, the operations and reference objects its walk resolves, and
+each emitted module's final models. After parsing, `bind_operations` reads the final model graph and these records
+once, before disposal, and returns an immutable contract batch.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from dataclasses import dataclass, replace
 from decimal import Decimal
 from keyword import iskeyword
 from math import isfinite
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
 from datamodel_code_generator._generation_contract import AttemptId
@@ -81,7 +81,6 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.parser.generation import GenerationStore
-from datamodel_code_generator.parser.openapi import OPERATION_NAMES
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
@@ -234,8 +233,34 @@ class RecordingGenerationStore(GenerationStore):
         super().redirect_model_reference_users(model, models, new_reference)
 
 
+@dataclass(slots=True)
+class _WalkedPathItem:
+    """A path item under the walk: where the document spells it and the parameters its operations share."""
+
+    declaration: _Declaration
+    raw: dict[str, YamlValue]
+    use_site: ApiDeclarationId
+    origin: _Declaration
+    shared: dict[int, _Declaration] | None = None
+
+
+@dataclass(slots=True)
+class _WalkedOperation:
+    """An operation as the target parser walked it, with the parameters in effect in their order."""
+
+    raw: dict[str, YamlValue]
+    declaration: _Declaration
+    use_site: _Declaration
+    origin: _Declaration
+    item: _WalkedPathItem
+    parent: int | None
+    security: YamlValue
+    shared: dict[int, _Declaration]
+    parameters: list[tuple[_Declaration, _Declaration, dict[str, YamlValue]]]
+
+
 class TargetApiOpenAPIParser(ApiOpenAPIParser):
-    """Record API schema acquisitions and emitted modules for one target generation attempt."""
+    """Record API schema acquisitions, walked operations and emitted modules for one target generation attempt."""
 
     _generation_store_factory = staticmethod(RecordingGenerationStore.create_with_results)
 
@@ -245,11 +270,101 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         *,
         config: OpenAPIParserConfig | None = None,
     ) -> None:
-        """Start with no acquisitions or emitted modules."""
+        """Start with no acquisitions, walked operations or emitted modules."""
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
+        self.operations: list[_WalkedOperation] = []
+        self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
+        self._walked_items: list[_WalkedPathItem] = []
+        self._walked_operations: list[int] = []
+        self._callback_origin: _Declaration | None = None
         super().__init__(source, config=config)
+
+    def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
+        """Record the declaration a reference object resolves to."""
+        target = super()._resolve_api_object(value, path)
+        if target.value is not value:
+            self.resolutions[_declaration(self._declaration_id(path))] = (
+                _declaration(target.declaration),
+                target.value,
+            )
+        return target
+
+    def _walk_path_item(
+        self,
+        target: Any,
+        use_site: ApiDeclarationId,
+        prefix: str,
+        global_parameters: list[ApiParameterDeclaration],
+    ) -> None:
+        """Keep where the document spells the path item while its operations are walked."""
+        origin = (
+            _declaration(use_site)
+            if (callback := self._callback_origin) is None
+            else _child(callback, use_site.tokens[-1])
+        )
+        self._walked_items.append(_WalkedPathItem(_declaration(target.declaration), target.value, use_site, origin))
+        super()._walk_path_item(target, use_site, prefix, global_parameters)
+        self._walked_items.pop()
+
+    def _walk_api_operation(
+        self,
+        operation: dict[str, YamlValue],
+        path: list[str],
+        use_site: ApiDeclarationId,
+        prefix: str,
+        common: tuple[list[ApiParameterDeclaration], list[ApiParameterDeclaration]],
+    ) -> None:
+        """Record the operation before its parameters, callbacks and their operations are walked."""
+        item = self._walked_items[-1]
+        if (shared := item.shared) is None:
+            shared = item.shared = {id(entry.target): _declaration(entry.occurrence) for entry in common[0]}
+            shared.update(
+                (id(entry.target), _child(item.origin, "parameters", entry.occurrence.tokens[-1]))
+                for entry in common[1]
+            )
+        self.operations.append(
+            _WalkedOperation(
+                operation,
+                _declaration(self._declaration_id(path)),
+                _declaration(use_site),
+                _child(item.origin, *use_site.tokens[len(item.use_site.tokens) :]),
+                item,
+                self._walked_operations[-1] if self._walked_operations else None,
+                self._api_security,
+                shared,
+                [],
+            )
+        )
+        self._walked_operations.append(len(self.operations) - 1)
+        super()._walk_api_operation(operation, path, use_site, prefix, common)
+        self._walked_operations.pop()
+
+    def _walk_parameter(self, name: str, target: Any, *, header: bool = False, role: SchemaRole = "parameter") -> None:
+        """Record each parameter in effect for the operation under the walk at its place in the document."""
+        if self._walked_operations and role == "parameter" and not header:
+            operation = self.operations[self._walked_operations[-1]]
+            operation.parameters.append((
+                operation.shared.get(id(target))
+                or _child(operation.origin, "parameters", str(len(operation.parameters))),
+                _declaration(target.declaration),
+                target.value,
+            ))
+        super()._walk_parameter(name, target, header=header, role=role)
+
+    def _walk_callback(
+        self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: ApiDeclarationId
+    ) -> None:
+        """Keep where the document spells the callback while its path items are walked."""
+        previous = self._callback_origin
+        self._callback_origin = (
+            _child(self.operations[self._walked_operations[-1]].origin, "callbacks", path[-1])
+            if self._walked_operations
+            else _declaration(use_site)
+        )
+        super()._walk_callback(raw, path, prefix, use_site)
+        self._callback_origin = previous
 
     def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
         """Record the declaration's engine key, even when it was already generated."""
@@ -289,9 +404,11 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         return result
 
     def release_records(self) -> None:
-        """Drop the recorded graph anchors."""
+        """Drop the recorded graph anchors and borrowed source nodes."""
         self.acquisitions.clear()
         self.module_outputs.clear()
+        self.operations.clear()
+        self.resolutions.clear()
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
 
@@ -2090,7 +2207,11 @@ class _SchemaUses(_Models):
 
 
 class _Contracts(_SchemaUses):
-    """Walk the accepted API documents as the target parser walked them, binding every type use."""
+    """Bind every type use of the operations the target parser walked."""
+
+    def declared(self, declaration: _Declaration, raw: YamlValue) -> tuple[_Declaration, dict[str, YamlValue]]:
+        """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
+        return self.parser.resolutions.get(declaration) or (declaration, _mapping(raw))
 
     def metadata(
         self,
@@ -2236,8 +2357,8 @@ class _Contracts(_SchemaUses):
 
     def parameter(  # noqa: PLR0913
         self,
-        raw: YamlValue,
-        declaration: _Declaration,
+        declared: _Declaration,
+        value: dict[str, YamlValue],
         use_site: _Declaration,
         owner: OperationId,
         role: TypeUseRole,
@@ -2246,7 +2367,6 @@ class _Contracts(_SchemaUses):
         status: str | None = None,
         media: str | None = None,
     ) -> WireDeclaration:
-        declared, value = self.schemas.resolve(declaration, raw)
         wire_name = name if name is not None else str(value.get("name", ""))
         location = str(value["in"]) if "in" in value else None
         schemas = (
@@ -2301,8 +2421,7 @@ class _Contracts(_SchemaUses):
     ) -> tuple[WireDeclaration, ...]:
         return tuple(
             self.parameter(
-                value,
-                _child(declaration, name),
+                *self.declared(_child(declaration, name), value),
                 _child(use_site, name),
                 owner,
                 role,
@@ -2317,7 +2436,7 @@ class _Contracts(_SchemaUses):
     def response(
         self, raw: YamlValue, declaration: _Declaration, use_site: _Declaration, owner: OperationId, status: str
     ) -> WireDeclaration:
-        declared, value = self.schemas.resolve(declaration, raw)
+        declared, value = self.declared(declaration, raw)
         content = self.media(value.get("content"), declared, use_site, owner, "response_body", status=status)
         headers = self.headers(
             value.get("headers"),
@@ -2341,140 +2460,21 @@ class _Contracts(_SchemaUses):
             children=(*content, *headers, *links),
         )
 
-    def walk(self) -> tuple[OperationContract, ...]:
-        """Walk paths, webhooks, path item and callback components in the target parser's order."""
-        self.operations: list[OperationContract] = []
-        self.active: set[_Declaration] = set()
-        self.completed: set[_Declaration] = set()
-        self.contexts: list[tuple[_Declaration, _Declaration]] = []
-        parser = self.parser
-        for document in parser._api_documents:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-            if document not in parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-                continue
-            specification = self.schemas.documents[document]
-            self.security = specification.get("security")
-            root = _Declaration(document, ())
-            paths = _mapping(specification.get("paths"))
-            shared = self.parameter_entries(paths.get("parameters", []), _child(root, "paths", "parameters"))
-            for name, value in paths.items():
-                if name == "parameters" or name.startswith("x-") or not parser._matches_path_pattern(name):  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-                    continue
-                self.path_item(value, _child(root, "paths", name), _child(root, "paths", name), shared, None)
-            for name, value in _mapping(specification.get("webhooks")).items():
-                self.path_item(value, _child(root, "webhooks", name), _child(root, "webhooks", name), [], None)
-            components = _mapping(specification.get("components"))
-            for name, value in _mapping(components.get("pathItems")).items():
-                declaration = _child(root, "components", "pathItems", name)
-                self.path_item(value, declaration, declaration, [], None)
-            for name, value in _mapping(components.get("callbacks")).items():
-                declaration = _child(root, "components", "callbacks", name)
-                self.callback(value, declaration, name, declaration, None)
-        return tuple(self.operations)
+    def operations(self) -> tuple[OperationContract, ...]:
+        """Bind the operations in the order the target parser walked them, each before its callbacks' operations."""
+        contracts: list[OperationContract] = []
+        for walked in self.parser.operations:
+            parent = None if walked.parent is None else contracts[walked.parent].id
+            contracts.append(self.operation(walked, len(contracts), parent))
+        return tuple(contracts)
 
-    def original_use(self, declaration: _Declaration) -> _Declaration:
-        for target, original in reversed(self.contexts):
-            if declaration.document == target.document and declaration.tokens[: len(target.tokens)] == target.tokens:
-                return _Declaration(original.document, (*original.tokens, *declaration.tokens[len(target.tokens) :]))
-        return declaration
-
-    def parameter_entries(
-        self, raw: YamlValue, declaration: _Declaration
-    ) -> list[tuple[tuple[str, str], _Declaration, _Declaration, dict[str, YamlValue], dict[str, YamlValue]]]:
-        entries = []
-        for index, value in enumerate(raw if isinstance(raw, list) else ()):
-            occurrence = _child(declaration, str(index))
-            target, resolved = self.schemas.resolve(occurrence, value)
-            if resolved.get("in") == "querystring" and "name" not in resolved:
-                key = "", "querystring"
-            else:
-                key = str(resolved.get("name")), str(resolved.get("in"))
-                if key[1] == "header":
-                    key = key[0].lower(), key[1]
-            entries.append((key, occurrence, target, _mapping(value), resolved))
-        return entries
-
-    def path_item(
-        self,
-        raw: YamlValue,
-        occurrence: _Declaration,
-        use_site: _Declaration,
-        shared: list[tuple[tuple[str, str], _Declaration, _Declaration, dict[str, YamlValue], dict[str, YamlValue]]],
-        parent: OperationId | None,
-    ) -> None:
-        target, value = self.schemas.resolve(occurrence, raw)
-        if target in self.active or target in self.completed:
-            return
-        self.active.add(target)
-        self.contexts.append((target, self.original_use(occurrence)))
-        try:
-            common = (*shared, *self.parameter_entries(value.get("parameters", []), _child(target, "parameters")))
-            item_schema = self.parser.schema_features.media_item_schema
-            for method, operation in value.items():
-                if method in OPERATION_NAMES or (method == "query" and item_schema):
-                    self.operation(_mapping(operation), target, (method,), use_site, common, parent)
-                elif method == "additionalOperations" and item_schema:
-                    for additional, extra in _mapping(operation).items():
-                        self.operation(_mapping(extra), target, (method, additional), use_site, common, parent)
-            self.completed.add(target)
-        finally:
-            self.contexts.pop()
-            self.active.discard(target)
-
-    def callback(
-        self,
-        raw: YamlValue,
-        occurrence: _Declaration,
-        name: str,
-        use_site: _Declaration,
-        parent: OperationId | None,
-    ) -> None:
-        target, value = self.schemas.resolve(occurrence, raw)
-        if target in self.active or target in self.completed:
-            return
-        self.active.add(target)
-        self.contexts.append((target, self.original_use(occurrence)))
-        try:
-            for expression, item in value.items():
-                if expression.startswith("x-"):
-                    continue
-                child_use = _Declaration(use_site.document, (*use_site.tokens, "callbacks", name, expression))
-                self.path_item(item, _child(target, expression), child_use, [], parent)
-            self.completed.add(target)
-        finally:
-            self.contexts.pop()
-            self.active.discard(target)
-
-    @staticmethod
-    def path_of(declaration: _Declaration) -> _Declaration:
-        tail = -2 if len(declaration.tokens) > 1 and declaration.tokens[-2] == "additionalOperations" else -1
-        return _Declaration(declaration.document, declaration.tokens[:tail])
-
-    def operation(  # ruff: ignore[too-many-arguments, too-many-positional-arguments, too-many-locals]
-        self,
-        raw: dict[str, YamlValue],
-        item: _Declaration,
-        tokens: tuple[str, ...],
-        item_use: _Declaration,
-        common: tuple[
-            tuple[tuple[str, str], _Declaration, _Declaration, dict[str, YamlValue], dict[str, YamlValue]], ...
-        ],
-        parent: OperationId | None,
-    ) -> None:
-        declaration = _child(item, *tokens)
-        use_site = _Declaration(item_use.document, (*item_use.tokens, *tokens))
-        own = self.parameter_entries(raw.get("parameters", []), _child(declaration, "parameters"))
-        overridden = {entry[0] for entry in own}
-        effective = [*own, *(entry for entry in common if entry[0] not in overridden)]
-        effective_operation: dict[str, YamlValue] = raw
-        if common:
-            effective_operation = {**raw, "parameters": [entry[3] for entry in effective]}
+    def operation(  # ruff: ignore[too-many-locals]
+        self, walked: _WalkedOperation, order: int, parent: OperationId | None
+    ) -> OperationContract:
         locate = self.schemas.location
+        raw, declaration, use_site, item = walked.raw, walked.declaration, walked.use_site, walked.item
         kind: Literal["path", "webhook", "callback"] = (
-            "callback"
-            if parent is not None
-            else "webhook"
-            if use_site.tokens and use_site.tokens[0] == "webhooks"
-            else "path"
+            "callback" if parent is not None else "webhook" if use_site.tokens[0] == "webhooks" else "path"
         )
         identity = OperationId(
             locate(use_site, "use"),
@@ -2482,16 +2482,15 @@ class _Contracts(_SchemaUses):
             parent,
             locate(_Declaration(use_site.document, use_site.tokens[:-1]), "use") if parent is not None else None,
         )
-        order = len(self.operations)
         parameters = tuple(
-            self.parameter(value, target, self.original_use(occurrence), identity, "parameter")
-            for _, occurrence, target, _, value in effective
+            self.parameter(target, value, used, identity, "parameter")
+            for used, target, value in walked.parameters
             if target not in self.ignored_declarations
         )
         body: WireDeclaration | None = None
         if "requestBody" in raw:
             used = _child(use_site, "requestBody")
-            declared, value = self.schemas.resolve(_child(declaration, "requestBody"), raw["requestBody"])
+            declared, value = self.declared(_child(declaration, "requestBody"), raw["requestBody"])
             body = WireDeclaration(
                 "request_body",
                 None,
@@ -2513,55 +2512,54 @@ class _Contracts(_SchemaUses):
         )
         callbacks = tuple(
             self.metadata(
-                "callback", name, _child(declaration, "callbacks", name), _child(use_site, "callbacks", name), callback
+                "callback",
+                name,
+                _child(declaration, "callbacks", name),
+                _child(use_site, "callbacks", name),
+                callback,
             )
             for name, callback in _mapping(raw.get("callbacks")).items()
         )
-        facts = _facts(effective_operation, _OPERATION_FACTS, declaration)
-        if self.security is not None and "security" not in raw:
-            facts = (*facts, *_facts({"security": self.security}, ("security",), _Declaration(use_site.document, ())))
-        if "servers" not in effective_operation:
-            path_item = _mapping(self.schemas.borrow(self.path_of(declaration)))
-            root = _mapping(self.schemas.documents.get(use_site.document))
+        root = _Declaration(use_site.document, ())
+        facts = _facts(raw, _OPERATION_FACTS, declaration)
+        if walked.security is not None and "security" not in raw:
+            facts = (*facts, *_facts({"security": walked.security}, ("security",), root))
+        if "servers" not in raw:
             facts = (
                 *facts,
-                *_facts(
-                    path_item if "servers" in path_item else root,
-                    ("servers",),
-                    self.path_of(declaration) if "servers" in path_item else _Declaration(use_site.document, ()),
+                *(
+                    _facts(item.raw, ("servers",), item.declaration)
+                    if "servers" in item.raw
+                    else _facts(self.schemas.documents[use_site.document], ("servers",), root)
                 ),
             )
-        self.operations.append(
-            OperationContract(
-                identity,
-                DeclarationId(locate(declaration, "declaration")),
-                declaration.tokens[-1],
-                self.path_of(use_site).tokens[-1] if use_site.tokens else "",
-                "operationId" in raw,
-                "security" in raw,
-                "servers" in raw,
-                order,
-                facts,
-                parameters,
-                body,
-                responses,
-                callbacks,
-                tuple(
-                    IgnoredDeclaration(
-                        locate(declaration, "declaration"),
-                        locate(ignored_use or use_site, "use"),
-                        ignored.owner,
-                        ignored.media,
-                        ignored.wire_name,
-                        ignored.reason,
-                    )
-                    for declaration, ignored_use, ignored in self.ignored
-                    if ignored_use == use_site
-                ),
-            )
+        return OperationContract(
+            identity,
+            DeclarationId(locate(declaration, "declaration")),
+            declaration.tokens[-1],
+            item.use_site.tokens[-1],
+            "operationId" in raw,
+            "security" in raw,
+            "servers" in raw,
+            order,
+            facts,
+            parameters,
+            body,
+            responses,
+            callbacks,
+            tuple(
+                IgnoredDeclaration(
+                    locate(ignored_declaration, "declaration"),
+                    locate(use_site, "use"),
+                    ignored.owner,
+                    ignored.media,
+                    ignored.wire_name,
+                    ignored.reason,
+                )
+                for ignored_declaration, ignored_use, ignored in self.ignored
+                if ignored_use == use_site
+            ),
         )
-        for name, callback in _mapping(raw.get("callbacks")).items():
-            self.callback(callback, _child(declaration, "callbacks", name), name, use_site, identity)
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         declarations: list[WireDeclaration] = []
@@ -2595,7 +2593,7 @@ def bind_operations(
     builder.field_facts(symbols)
     symbols = builder.extra_items(symbols)
     fields = builder.field_bindings(symbols)
-    operations = builder.walk()
+    operations = builder.operations()
     builder.schema_uses()
     builder.helper_uses()
     builder.extras()
@@ -2649,6 +2647,6 @@ if TYPE_CHECKING:
         def tokens(self) -> tuple[str, ...]:
             """The raw JSON pointer tokens."""
 
-    from datamodel_code_generator.parser.openapi_scope import SchemaRole
+    from datamodel_code_generator.parser.openapi_scope import ApiDeclarationId, ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType

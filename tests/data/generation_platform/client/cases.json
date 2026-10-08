@@ -923,6 +923,15 @@
       ]
     ]
   },
+  "self-references": {
+    "input": "self-references.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "paths": {
     "input": "paths.yaml"
   },
