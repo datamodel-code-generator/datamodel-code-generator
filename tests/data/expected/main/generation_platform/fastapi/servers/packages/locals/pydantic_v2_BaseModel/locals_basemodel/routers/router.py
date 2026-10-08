@@ -8,7 +8,6 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, Query, params
 from fastapi.responses import Response
-from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract as contract_1
 from .._generated.contract import OperationDependencies
@@ -27,10 +26,10 @@ def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
 
     def wiring(
         *,
-        router: Annotated[str | SkipJsonSchema[None], Query(alias='router')] = None,
-        contract: Annotated[str | SkipJsonSchema[None], Query(alias='contract')] = None,
-        dispatch: Annotated[str | SkipJsonSchema[None], Query(alias='dispatch')] = None,
-        checked: Annotated[str | SkipJsonSchema[None], Query(alias='checked')] = None,
+        router: Annotated[str | None, Query(alias='router')] = None,
+        contract: Annotated[str | None, Query(alias='contract')] = None,
+        dispatch: Annotated[str | None, Query(alias='dispatch')] = None,
+        checked: Annotated[str | None, Query(alias='checked')] = None,
         parameters: Annotated[contract_1.Wiring.Parameters, Depends(contract_1.Wiring.PARAMETERS)],
     ) -> object:
         return dispatch_1(

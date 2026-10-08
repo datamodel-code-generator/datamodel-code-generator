@@ -10,7 +10,6 @@ render
   write target server/routers/store.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
@@ -28,7 +27,6 @@ render
   unchanged target server/routers/store.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
@@ -36,15 +34,14 @@ render
   11 runtime modules ['unchanged']
 {
   "files": {
-    "README.md": "sha256:b5bca40b97691b8fb54280fa09048ce0ab486f83e80eda4e7dc510a60cdf5d44",
-    "__init__.py": "sha256:7fb3cc0c993a313222d7307b95a26f5e8a560072f131a3ba1473e902b9d7744c",
+    "README.md": "sha256:a49c74c3a84b18ff069700c1e5263b5fe7264463c3ae043b4d090d24b9cdd132",
+    "__init__.py": "sha256:e9800951765c1338d57d02ec62573b3f578eada873bddeeacd37cb1bb8b0a9b3",
     "_generated/__init__.py": "sha256:127bc60f3ef1e2ddd8b669ab9c7b3cb57de5934795098da506ec0a1575d1eb42",
-    "_generated/contract.py": "sha256:9ce5ef3d05d87d14e67cbda03666efb05ffca76ae6803004ade36be8a3a98b7e",
-    "application.py": "sha256:6c5f1afab51d62804bc3468deca64b04294237fb619bb2184e58ac7a826b2086",
-    "errors.py": "sha256:4938449ac4f9b24c1545f1b4abfe5223f0794f373849415069476f9345c4c52d",
+    "_generated/contract.py": "sha256:23f807baaf4c995a04e853f8fc4f6173ab8d64b3d619bd2a19b55bbac3cf6450",
+    "application.py": "sha256:8f9ed0c1dbcafb16363263ef474dff112f7ca143991b9a1e6c0dcd2a4b52d848",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:94e9d794cb6a198e823fc5418d95ec05b141ce17bf15bb10b06ccba44a7a4e27",
-    "routers/store.py": "sha256:4b0d691fb9ec0a462db9214776c79ed10e6700be840dbff033180571f6e1e602",
+    "routers/store.py": "sha256:c86bee72cec54a22fad3807d64a3403d3e3759adfe86a69903da2daf0ed40163",
     "services.py": "sha256:6d380e8489a419c4bce850e4bef935a17f48fa87ca10c9e5ce951dd9f58e11df"
   },
   "format": 1,

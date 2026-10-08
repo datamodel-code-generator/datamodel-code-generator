@@ -8,7 +8,6 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, Query, Security, params
 from fastapi.responses import Response
-from pydantic.json_schema import SkipJsonSchema
 
 from .. import security
 from .._generated import contract
@@ -47,17 +46,11 @@ def _add_router(router_1: APIRouter, wiring_1: Wiring) -> None:
     def router(
         *,
         principal: Annotated[object, Depends(router_principal_1)],
-        wiring: Annotated[str | SkipJsonSchema[None], Query(alias='wiring')] = None,
-        router_handler: Annotated[str | SkipJsonSchema[None], Query(
-            alias='router_handler',
-        )] = None,
-        router_principal: Annotated[str | SkipJsonSchema[None], Query(
-            alias='router_principal',
-        )] = None,
-        router_authorize: Annotated[str | SkipJsonSchema[None], Query(
-            alias='router_authorize',
-        )] = None,
-        api_key: Annotated[str | SkipJsonSchema[None], Query(alias='api_key')] = None,
+        wiring: Annotated[str | None, Query(alias='wiring')] = None,
+        router_handler: Annotated[str | None, Query(alias='router_handler')] = None,
+        router_principal: Annotated[str | None, Query(alias='router_principal')] = None,
+        router_authorize: Annotated[str | None, Query(alias='router_authorize')] = None,
+        api_key: Annotated[str | None, Query(alias='api_key')] = None,
         parameters_1: Annotated[contract.Router.Parameters, Depends(contract.Router.PARAMETERS)],
     ) -> object:
         return dispatch(

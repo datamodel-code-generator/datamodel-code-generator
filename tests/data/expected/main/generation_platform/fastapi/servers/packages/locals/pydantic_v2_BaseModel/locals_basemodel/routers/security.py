@@ -8,7 +8,6 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, Query, Security, params
 from fastapi.responses import Response
-from pydantic.json_schema import SkipJsonSchema
 
 from .. import security as security_2
 from .._generated import contract
@@ -43,8 +42,8 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
     def authenticate(
         *,
         principal: Annotated[object, Depends(authenticate_principal)],
-        security: Annotated[str | SkipJsonSchema[None], Query(alias='security')] = None,
-        authenticate_handler: Annotated[str | SkipJsonSchema[None], Query(
+        security: Annotated[str | None, Query(alias='security')] = None,
+        authenticate_handler: Annotated[str | None, Query(
             alias='authenticate_handler',
         )] = None,
     ) -> object:
