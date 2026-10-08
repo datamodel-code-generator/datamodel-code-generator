@@ -11405,10 +11405,10 @@ A server option on the command line applies to every selected job and takes prec
 profile, and the base table, as a model option does; every selected job must then select the server.
 
 `server-output`, like `output`, must not overlap the outputs of other jobs or contain the remote lock file. Server
-jobs can share their models, though: jobs that each select the server may name the same `output`, spelled the same
-way, which the batch writes once. They must generate the same models for it, so give them the same input and model
-settings; a model-only job cannot share its `output`. The server jobs of a batch write one generation timestamp,
-unless `--disable-timestamp` leaves it out.
+jobs can share their models, though: jobs that each select the server may name the same `output`, which the batch
+writes once. They must generate the same models for it, so give them the same input and model settings; a model-only
+job cannot share its `output`. The server jobs of a batch write one generation timestamp, unless
+`--disable-timestamp` leaves it out.
 
 The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
 nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
@@ -11469,7 +11469,9 @@ leaves it out, as for model generation; one run heads every file with the same t
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
 directory when the paths name the same input and outputs. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
-uses it, or the default `datamodel-codegen.lock` exists.
+uses it, or the default `datamodel-codegen.lock` exists. As for model generation, it must not overlap the input or
+the model output, and it must lie outside the server output directory; a run with such a lock path stops before it
+generates anything.
 
 Several targets can share one models module: with the same input, whose file name the model header records, the
 same model options, including the same `--openapi-include-paths`, and `--disable-timestamp`, each run writes the same

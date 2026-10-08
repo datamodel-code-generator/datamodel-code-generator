@@ -875,8 +875,12 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
     [
         (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
         (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
+        (
+            ["--update-lock", "--lockfile", "server/api.lock"],
+            "Remote lock for 'command' ({lock}) overlaps server output for 'command': {server}\n",
+        ),
     ],
-    ids=["watch", "diff"],
+    ids=["watch", "diff", "lock-in-server-output"],
 )
 def test_fastapi_cli_conflicts(
     arguments: list[str],
@@ -885,8 +889,9 @@ def test_fastapi_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor before writing anything."""
+    """Refuse options the target cannot honor, and a remote lock inside the server output, before writing anything."""
     monkeypatch.chdir(tmp_path)
+    root = tmp_path.resolve()
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -895,7 +900,7 @@ def test_fastapi_cli_conflicts(
         copy_files=_inputs(tmp_path, "pyproject-target.toml"),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=stderr,
+        expected_stderr=stderr.format(lock=root / "server" / "api.lock", server=root / "server"),
         output_should_not_exist=True,
     )
     assert_output(
@@ -1092,11 +1097,6 @@ def test_fastapi_cli_job_changed(
             "Error: could not publish batch output: {shared}: Jobs 'server' and 'admin' generate different models\n",
         ),
         (
-            "pyproject-case-models-jobs.toml",
-            ["--all-jobs"],
-            "Error: could not publish batch output: {cased}: Two generated files resolve to the same path\n",
-        ),
-        (
             "pyproject-jobs.toml",
             ["--all-jobs", "--update-lock", "--lockfile", "server/README.md"],
             "Remote lock for 'server' ({lock}) overlaps server output for 'server': {server}\n",
@@ -1109,7 +1109,6 @@ def test_fastapi_cli_job_changed(
         "overlap",
         "model-job-shares-output",
         "differing-models",
-        "models-differing-in-case",
         "lock-in-server-output",
     ],
 )
@@ -1124,7 +1123,7 @@ def test_fastapi_cli_jobs(
     """Refuse what a server job cannot honor, and publish nothing of a batch whose later job fails.
 
     Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs or
-    hold the remote lock. Only server jobs can share a models output, which they must spell and generate identically.
+    hold the remote lock. Only server jobs can share a models output, which they must generate identically.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
@@ -1138,7 +1137,6 @@ def test_fastapi_cli_jobs(
             server=root / "server",
             models=root / "models.py",
             shared=(Path.cwd() / "models.py").as_posix(),
-            cased=(Path.cwd() / "Models.py").as_posix(),
             lock=root / "server" / "README.md",
         ),
     )

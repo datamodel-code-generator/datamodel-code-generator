@@ -6,6 +6,7 @@ import ast
 import os
 import sys
 import tempfile
+import unicodedata
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -21,9 +22,7 @@ from datamodel_code_generator._api_manifest import (
     PlannedFile,
     RootInput,
     canonical_document,
-    collision_key,
     config_error,
-    destination,
     document_identity,
     hand_edits,
     manifest_files,
@@ -477,7 +476,9 @@ class _Planner:
         seen: set[str] = set()
         problems: list[Diagnostic] = []
         for artifact in artifacts:
-            if (key := collision_key(destination(self.cwd / artifact.path))) in seen:
+            location = self.cwd / artifact.path
+            key = unicodedata.normalize("NFC", str(location.parent.resolve() / location.name)).casefold()
+            if key in seen:
                 problems.append(
                     Diagnostic(
                         code="E_PATH_COLLISION",

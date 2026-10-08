@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import unicodedata
 import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -74,16 +73,6 @@ def observe(data: bytes | None) -> Observed:
 def observe_file(path: Path) -> Observed:
     """Observe the regular file at *path* as it is now."""
     return observe(path.read_bytes() if path.is_file() else None)
-
-
-def destination(location: Path) -> Path:
-    """Return the concrete file a path names, through the links of its directory."""
-    return location.parent.resolve() / location.name
-
-
-def collision_key(file: Path) -> str:
-    """Return the key two concrete files share when a supported file system takes them for one file."""
-    return unicodedata.normalize("NFC", str(file)).casefold()
 
 
 def target_identity(kind: TargetKind, package: str) -> str:

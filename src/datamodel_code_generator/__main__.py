@@ -2636,8 +2636,17 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if config.generate_server is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
-        job_locks = None if _batch_targets is None else cast("_RemoteLockTransaction | None", _remote_locks)
-        lock = None if job_locks is None else job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
+        lock = None
+        if _batch_targets is None:
+            try:
+                _validate_remote_lock_preflight(
+                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
+                )
+            except Error as e:
+                print(str(e), file=sys.stderr)  # noqa: T201
+                return Exit.ERROR
+        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
+            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
         return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
 
     if config.watch and config.check:

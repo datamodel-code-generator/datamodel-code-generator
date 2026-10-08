@@ -10,7 +10,7 @@ from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, cast
 
-from datamodel_code_generator._api_manifest import collision_key, destination, observe_file, sha256
+from datamodel_code_generator._api_manifest import observe_file, sha256
 from datamodel_code_generator._api_types import (
     APIGenerationError,
     ArtifactRecord,
@@ -253,6 +253,11 @@ def publish_batch(entries: Sequence[BatchEntry]) -> None:
     _publish_batch_at(entries)
 
 
+def _destination(target: Path) -> Path:
+    """Return the concrete file a target path names, through the links of its directory."""
+    return target.parent.resolve(strict=False) / target.name
+
+
 def _base(path: Path) -> Path:
     while not path.is_dir():
         path = path.parent
@@ -284,7 +289,7 @@ class _Batch:
     def entry(self, artifact: GeneratedArtifact, target: Path, lock: RemoteReferenceLock | None) -> BatchEntry:
         from datamodel_code_generator._publication import StagedFile  # ruff: ignore[import-outside-top-level]
 
-        resolved = destination(target)
+        resolved = _destination(target)
         file = StagedFile(None, target, resolved, self.anchor(base := _base(resolved.parent)))
         match artifact.action, artifact.content:
             case "write", _ if lock is not None and isinstance(staged := lock.stage(self.staging(base)), StagedFile):
@@ -337,43 +342,30 @@ def _entries(
     return entries
 
 
-class _SharedModel(NamedTuple):
-    """The first plan of a models file that jobs of one batch share."""
-
-    job: str
-    destination: Path
-    artifact: GeneratedArtifact
-
-
-def _collision(artifact: GeneratedArtifact, message: str) -> APIGenerationError:
-    return APIGenerationError((
-        Diagnostic(
-            code="E_PATH_COLLISION",
-            severity="error",
-            stage="publication",
-            message=message,
-            artifact_path=artifact.path.as_posix(),
-        ),
-    ))
-
-
-def _unshared(job: str, target: PlannedTarget, models: dict[str, _SharedModel]) -> Iterator[GeneratedArtifact]:
+def _unshared(
+    job: str, target: PlannedTarget, models: dict[Path, tuple[str, GeneratedArtifact]]
+) -> Iterator[GeneratedArtifact]:
     """Yield the artifacts of a job's target that no earlier job plans.
 
-    Jobs that share a models output plan each of its files once, under one spelling and with the same content.
+    Jobs that share a models output plan each of its files once, and must plan the same content for it.
     """
     for artifact in target.project.artifacts:
         if artifact.kind != "model":
             yield artifact
             continue
-        file = destination(target.cwd / artifact.path)
-        shared = models.setdefault(collision_key(file), _SharedModel(job, file, artifact))
-        if shared.artifact is artifact:
+        owner, planned = models.setdefault(_destination(target.cwd / artifact.path), (job, artifact))
+        if planned is artifact:
             yield artifact
-        elif str(shared.destination) != str(file):
-            raise _collision(artifact, "Two generated files resolve to the same path")
-        elif shared.artifact.sha256 != artifact.sha256:
-            raise _collision(artifact, f"Jobs '{shared.job}' and '{job}' generate different models")
+        elif planned.sha256 != artifact.sha256:
+            raise APIGenerationError((
+                Diagnostic(
+                    code="E_PATH_COLLISION",
+                    severity="error",
+                    stage="publication",
+                    message=f"Jobs '{owner}' and '{job}' generate different models",
+                    artifact_path=artifact.path.as_posix(),
+                ),
+            ))
 
 
 def publish_planned(files: Iterable[StagedFile], targets: Sequence[tuple[str, PlannedTarget]]) -> None:
@@ -381,7 +373,7 @@ def publish_planned(files: Iterable[StagedFile], targets: Sequence[tuple[str, Pl
     with ExitStack() as stack:
         batch = _Batch(stack)
         entries = [BatchEntry("write", file) for file in files]
-        models: dict[str, _SharedModel] = {}
+        models: dict[Path, tuple[str, GeneratedArtifact]] = {}
         for job, target in targets:
             artifacts = tuple(_unshared(job, target, models))
             entries.extend(_entries(batch, artifacts, target.observed, target.cwd, None))
