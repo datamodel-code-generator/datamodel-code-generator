@@ -74,6 +74,11 @@
             "in_": "query",
             "name": "limit",
             "python_name": "b"
+          },
+          {
+            "in_": [],
+            "name": "limit",
+            "python_name": "c"
           }
         ],
         "request_media_type": "json",
@@ -106,7 +111,9 @@
     "resource_names": "pets",
     "operations": "all",
     "default_base_url": "https://[invalid",
-    "server_base_url": 5
+    "server_base_url": 5,
+    "signature_style": [],
+    "body_arguments": {}
   },
   "invalid-parameter-names": {
     "operations": [
@@ -142,6 +149,10 @@
         "ref": "/paths/~1pets/get",
         "body_arguments": "fields",
         "body_field_names": "tag"
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "body_arguments": []
       }
     ]
   },

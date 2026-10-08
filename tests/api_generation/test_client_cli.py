@@ -495,7 +495,10 @@ def test_client_cli_json_errors(
                     '"#/paths/~1pets/get": {"parameter_names": ["limit"]}, '
                     '"other.yaml#/paths/~1pets/get": {"body_field_names": {"application/json": "tag"}}, '
                     '"/paths/~1cats/get": {"runtime": {"idempotency": {"header": "Key"}}}, '
-                    '"/paths/~1dogs/get": {"runtime": "fast"}}'
+                    '"/paths/~1dogs/get": {"runtime": "fast"}, '
+                    '"/paths/~1owls/get": {"runtime": null}, '
+                    '"/paths/~1bats/get": {"parameter_names": null}, '
+                    '"/paths/~1apes/get": {"body_field_names": null}}'
                 ),
             ],
         ),
@@ -543,6 +546,19 @@ def test_client_cli_setting_errors(
         output_should_not_exist=True,
     )
     assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+
+
+@pytest.mark.parametrize("form", ["pyproject", "options"])
+def test_client_cli_member_types(
+    form: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report each wrong-typed member of an operation's settings, from pyproject.toml tables or the same options."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *(["pyproject-types.toml"] if form == "pyproject" else []))
+    run_main_with_args(
+        [] if form == "pyproject" else client_cli_arguments(CLI / "pyproject-types.toml"), expected_exit=Exit.ERROR
+    )
+    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / "types.txt")
 
 
 @pytest.mark.parametrize(

@@ -34,6 +34,7 @@ OPTION_PREFIX: Final = "client"
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
+_RETRY_SAFETIES: Final = frozenset({"method_default", "idempotent", "never"})
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
 
@@ -128,9 +129,9 @@ class ClientGenerationConfig(TargetConfig):
             yield _diagnostic("E_CONFIG_VALUE", "transport", "transport must be 'httpx2'")
         yield from _resource_name_problems(self.resource_names)
         yield from _operation_problems(self.operations, self.body_arguments)
-        if self.signature_style not in _SIGNATURE_STYLES:
+        if not _one_of(self.signature_style, _SIGNATURE_STYLES):
             yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
-        if self.body_arguments not in _BODY_ARGUMENTS:
+        if not _one_of(self.body_arguments, _BODY_ARGUMENTS):
             yield _diagnostic("E_CONFIG_VALUE", "body_arguments", "body_arguments must be 'body' or 'both'")
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
@@ -192,6 +193,10 @@ def _text(value: object) -> bool:
     return isinstance(value, str)
 
 
+def _one_of(value: object, choices: frozenset[str]) -> bool:
+    return isinstance(value, str) and value in choices
+
+
 def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
     if not _tuple_of(value, ResourceName):
         yield _diagnostic("E_CONFIG_VALUE", "resource_names", "resource_names must be a tuple of ResourceName records")
@@ -220,7 +225,7 @@ def _operation_problems(value: object, default: object) -> Iterator[Diagnostic]:
 
 def _field_name_problems(item: ClientOperationConfig, default: object, at: str) -> Iterator[Diagnostic]:
     """Refuse an invalid body mode, and field names that are malformed, repeated, or for a body-only operation."""
-    if item.body_arguments is not None and item.body_arguments not in _BODY_ARGUMENTS:
+    if item.body_arguments is not None and not _one_of(item.body_arguments, _BODY_ARGUMENTS):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", "body_arguments must be 'body', 'both', or None")
     names = item.body_field_names
     if not _tuple_of(names, BodyFieldName):
@@ -277,11 +282,7 @@ def _runtime_problems(runtime: object, at: str) -> Iterator[Diagnostic]:
     for name in ("request_id_header", "retry_after_ms_header", "should_retry_header"):
         if (value := getattr(runtime, name)) is not None and not token(value):
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.{name}", f"{name} must be a header name")
-    if not isinstance(runtime.retry_safety, str) or runtime.retry_safety not in {
-        "method_default",
-        "idempotent",
-        "never",
-    }:
+    if not _one_of(runtime.retry_safety, _RETRY_SAFETIES):
         yield _diagnostic(
             "E_CONFIG_VALUE", f"{at}.retry_safety", "retry_safety must be 'method_default', 'idempotent', or 'never'"
         )
@@ -334,7 +335,7 @@ def _parameter_name_problems(value: object, at: str) -> Iterator[Diagnostic]:
         return
     seen: set[tuple[str, str]] = set()
     for index, item in enumerate(value):
-        if item.in_ not in _LOCATIONS or not _text(item.name) or not identifier(item.python_name):
+        if not _one_of(item.in_, _LOCATIONS) or not _text(item.name) or not identifier(item.python_name):
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"{at}[{index}]", "A parameter name needs a location, a wire name, and an identifier"
             )
@@ -389,19 +390,19 @@ def _entry(ref: OperationSelector, value: object, at: str) -> ClientOperationCon
 
 def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientOperationConfig:
     values: dict[str, Any] = dict(_members(value, at, _OPERATION_KEYS))
-    if (names := values.get("parameter_names")) is not None:
+    if "parameter_names" in values:
         values["parameter_names"] = tuple(
             _parameter_name(key, python_name, f"{at}.parameter_names")
-            for key, python_name in _object(names, f"{at}.parameter_names").items()
+            for key, python_name in _object(values["parameter_names"], f"{at}.parameter_names").items()
         )
-    if (fields_ := values.get("body_field_names")) is not None:
+    if "body_field_names" in values:
         values["body_field_names"] = tuple(
             BodyFieldName(media_type=media_type, name=name, python_name=python_name)
-            for media_type, names in _object(fields_, f"{at}.body_field_names").items()
+            for media_type, names in _object(values["body_field_names"], f"{at}.body_field_names").items()
             for name, python_name in _object(names, f"{at}.body_field_names[{media_type!r}]").items()
         )
-    if (runtime := values.get("runtime")) is not None:
-        values["runtime"] = _runtime(runtime, f"{at}.runtime")
+    if "runtime" in values:
+        values["runtime"] = _runtime(values["runtime"], f"{at}.runtime")
     return ClientOperationConfig(ref=ref, **values)
 
 

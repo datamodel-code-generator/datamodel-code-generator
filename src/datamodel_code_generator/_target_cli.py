@@ -37,7 +37,7 @@ _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _SERVER_SETTINGS: Final = ("layout", "handler_mode", "include_request", "body_mode", "router_names")
 _OPERATION_SETTINGS: Final = ("handler_modes", "body_modes", "operation_names", "parameter_names")
-_INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\]")
+_INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 _CLIENT_SETTINGS: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
@@ -82,7 +82,10 @@ def run_target(
 
 
 def _keyed(error: Exception, config: Any) -> Exception:
-    """Name the operation and resource client settings in an error by the keys they were given under."""
+    """Name the operation and resource client settings in an error by the keys they were given under.
+
+    A parameter name is named by its location and name, and a body field name by its media type and property.
+    """
     if not isinstance(error, APIGenerationError) or config.generate_client is None:
         return error
     keys = {
@@ -93,7 +96,16 @@ def _keyed(error: Exception, config: Any) -> Exception:
     def keyed(item: Diagnostic) -> Diagnostic:
         if (path := item.option_path) is None or (found := _INDEXED.match(path)) is None:
             return item
-        return replace(item, option_path=f"{found[1]}[{keys[found[1]][int(found[2])]!r}]{path[found.end() :]}")
+        named = f"{found[1]}[{(key := keys[found[1]][int(found[2])])!r}]"
+        if (member := found[3]) is not None:
+            names = config.client_operations[key][member]
+            spelled = (
+                [f"[{name!r}]" for name in names]
+                if member == "parameter_names"
+                else [f"[{media!r}][{name!r}]" for media, fields in names.items() for name in fields]
+            )
+            named += f".{member}{spelled[int(found[4])]}"
+        return replace(item, option_path=f"{named}{path[found.end() :]}")
 
     if (diagnostics := tuple(map(keyed, error.diagnostics))) == error.diagnostics:
         return error
