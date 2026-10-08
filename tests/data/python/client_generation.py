@@ -614,6 +614,12 @@ def _regenerate(source: Path, root: Path) -> list[str]:
     ]
 
 
+def _written_as_text(path: Path, scratch: Path) -> bool:
+    """Return whether a file holds what a text-mode write of its text leaves, with the line ending of the platform."""
+    scratch.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return scratch.read_bytes() == path.read_bytes()
+
+
 def client_regeneration_report(root: Path) -> str:
     """Regenerate a package from a changed API over user code, an edited generated file, and a foreign file.
 
@@ -641,4 +647,10 @@ def client_regeneration_report(root: Path) -> str:
         f"  pets/_client.py still edited {generated.read_text(encoding='utf-8') == edited}",
         f"  pets/resources/orders/__init__.py still foreign {foreign.read_text(encoding='utf-8') == written}",
     ))
+    scratch = root / "text-mode-copy"
+    files = [root / "pets_models.py", *(path for path in (root / "pets").rglob("*") if path.is_file())]
+    lines.append(
+        "  generated files written like text files "
+        f"{all(_written_as_text(path, scratch) for path in files if path != extensions)}"
+    )
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"

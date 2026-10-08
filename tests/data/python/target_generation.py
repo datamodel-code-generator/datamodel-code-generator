@@ -230,6 +230,21 @@ class _Scenario:
         (self.root / path).mkdir(parents=True)
         self.lines.append(f"mkdir {path}")
 
+    def rewrite(self, value: list[Any]) -> None:
+        newline, paths = value
+        for path in paths:
+            (location := self.root / path).write_text(
+                location.read_text(encoding="utf-8"), encoding="utf-8", newline=newline
+            )
+        self.lines.append(f"rewrite with {newline!r} line endings {paths}")
+
+    def newlines(self, paths: list[str]) -> None:
+        for path in paths:
+            (copy := self.root / "spec" / "text-mode-copy").write_text(
+                (location := self.root / path).read_text(encoding="utf-8"), encoding="utf-8"
+            )
+            self.lines.append(f"written like a text file {path}: {copy.read_bytes() == location.read_bytes()}")
+
     def leftovers(self, _: None) -> None:
         hidden = sorted(path.relative_to(self.root).as_posix() for path in self.root.rglob(".*"))
         self.lines.append(f"leftovers {[_PRIVATE.sub('<private>', path) for path in hidden]}")

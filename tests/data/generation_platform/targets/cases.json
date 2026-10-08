@@ -178,6 +178,21 @@
       {"render": {}}
     ]
   },
+  "newlines": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]},
+      {"render": {}},
+      {"rewrite": ["\r\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]]},
+      {"generate": {}},
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]},
+      {"rewrite": ["\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]]},
+      {"generate": {}},
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]}
+    ]
+  },
   "mount-points": {
     "input": {"path": "modular.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "models", "lockfile": "remote.lock", "update_lock": true},

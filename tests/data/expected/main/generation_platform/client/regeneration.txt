@@ -74,3 +74,4 @@
   pets/extensions.py unchanged True
   pets/_client.py still edited False
   pets/resources/orders/__init__.py still foreign False
+  generated files written like text files True

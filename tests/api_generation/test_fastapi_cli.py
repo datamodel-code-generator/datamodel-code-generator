@@ -243,8 +243,9 @@ def test_fastapi_cli_check_outputs(
     for name, text in case.get("write", {}).items():
         (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding=encoding)
-    for name in case.get("crlf", ()):
-        (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline="\r\n")
+    endings = [*((name, "\r\n") for name in case.get("crlf", ())), *((name, "\n") for name in case.get("lf", ()))]
+    for name, newline in endings:
+        (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline=newline)
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
     if case.get("regenerate"):
