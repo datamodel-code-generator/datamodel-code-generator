@@ -1556,6 +1556,10 @@ def _write_results_to_output(  # noqa: PLR0913
             )
             for name, result in sorted(results.items())
         }
+        if config._logical_output is None and output.is_dir():  # noqa: SLF001
+            from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
+
+            warn_shadowed_modules(modules)
 
     for path, (body, future_imports, filename) in modules.items():
         if not path.parent.exists():
@@ -1892,6 +1896,7 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0912, PLR0914, PLR0915
                         target_artifact,
                         resolved_artifact_parent / target_artifact.name,
                         anchor,
+                        standalone=True,
                     )
                 )
             elif staged_artifact.exists():

@@ -18,6 +18,8 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, NamedTuple, cast
 
+from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
@@ -39,7 +41,11 @@ class PublicationAnchor(NamedTuple):
 
 
 class StagedFile(NamedTuple):
-    """One staged source and its immutable concrete publication destination."""
+    """One staged source and its immutable concrete publication destination.
+
+    A standalone file is a whole output the caller named rather than a member of an output directory, and is
+    published without looking for a package directory beside it.
+    """
 
     staged_file: Path | None
     target: Path
@@ -47,6 +53,7 @@ class StagedFile(NamedTuple):
     anchor: PublicationAnchor | None = None
     source_directory_fd: int | None = None
     source_name: str | None = None
+    standalone: bool = False
 
 
 class _PublishedFile(NamedTuple):
@@ -722,13 +729,17 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
 
 
 def publish_staged_files(files: Iterable[tuple[Path, Path] | StagedFile]) -> None:
-    """Publish a validated journal through descriptor-bound destinations on POSIX."""
+    """Publish a validated journal through descriptor-bound destinations on POSIX.
+
+    A module of an output directory that an existing package directory shadows is reported as a warning first.
+    """
     planned_files = tuple(_planned_staged_file(file) for file in files)
     seen_targets: set[Path] = set()
     for file in planned_files:
         if file.resolved_target in seen_targets:
             raise OSError(f"duplicate staged publication target: {file.target}")
         seen_targets.add(file.resolved_target)
+    warn_shadowed_modules(file.resolved_target for file in planned_files if not file.standalone)
     if os.name == "nt":  # pragma: no cover - Windows keeps a checked lexical fallback
         _publish_staged_files_by_path(planned_files)
         return

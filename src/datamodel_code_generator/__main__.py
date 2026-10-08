@@ -1485,10 +1485,15 @@ def _structured_output_json_schema() -> str:
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
     if is_directory_output:
-        for generated_file in sorted(generated_output.rglob("*")):
-            if not generated_file.is_file():
-                continue
-            target = actual_output / generated_file.relative_to(generated_output)
+        from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
+
+        targets = {
+            generated_file: actual_output / generated_file.relative_to(generated_output)
+            for generated_file in sorted(generated_output.rglob("*"))
+            if generated_file.is_file()
+        }
+        warn_shadowed_modules(targets.values())
+        for generated_file, target in targets.items():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(generated_file, target)
         return
@@ -1917,6 +1922,7 @@ def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
                 staged_plan.output,
                 cast("Path", staged_plan.plan.resolved_output_parent) / staged_plan.output.name,
                 staged_plan.output_anchor,
+                standalone=True,
             )
         else:
             for generated_file in sorted(staged_plan.staged_output.rglob("*")):
@@ -1934,6 +1940,7 @@ def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
             staged_plan.model_metadata,
             cast("Path", staged_plan.plan.resolved_model_metadata_parent) / staged_plan.model_metadata.name,
             staged_plan.model_metadata_anchor,
+            standalone=True,
         )
 
 
