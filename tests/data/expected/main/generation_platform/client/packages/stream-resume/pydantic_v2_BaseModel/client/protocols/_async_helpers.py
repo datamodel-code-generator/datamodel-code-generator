@@ -31,7 +31,8 @@ from models import Message as _dcg_type_3
 from models import Record as _dcg_type_9
 from models import Tick as _dcg_type_11
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.streams import (
     AsyncEventStream,
@@ -46,9 +47,9 @@ from . import StreamOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def events(self) -> AsyncEventsProtocols:

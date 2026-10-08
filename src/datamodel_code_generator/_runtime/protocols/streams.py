@@ -67,13 +67,13 @@ if TYPE_CHECKING:
     from types import TracebackType
     from typing import TypeAlias
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
     from ..model_codecs.media import JSONValue
+    from .client import AsyncClientCore, ClientCore
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector

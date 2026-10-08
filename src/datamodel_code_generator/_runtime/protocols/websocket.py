@@ -64,11 +64,11 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
     from types import TracebackType
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan, OutboundModelCodec
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
+    from .client import AsyncClientCore, ClientCore
     from .records import ProtocolProgress
     from .references import OperationRef
     from .websocket_types import (

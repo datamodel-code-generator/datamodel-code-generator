@@ -33,11 +33,10 @@ loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if 
 print('client imports load protocols=' + repr(loaded))
 errors = importlib.import_module(sys.argv[2] + '.errors')
 options = importlib.import_module(sys.argv[2] + '.options')
-names = importlib.import_module(sys.argv[2] + '._runtime.protocols.names')
-print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options), 'ProtocolClientOptions' in dir(names))))
+print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options))))
 print('dir loads nothing=' + repr(sys.argv[2] + '._runtime.protocols.options' not in sys.modules and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules))
 print('protocol errors loaded on use=' + repr(errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'))
-print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), options.ProtocolClientOptions is names.ProtocolClientOptions, 'ProtocolClientOptions' in vars(options), 'ProtocolClientOptions' in vars(names))))
+print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), 'ProtocolClientOptions' in vars(options))))
 module = importlib.import_module(sys.argv[2] + '.protocols')
 optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgspec', 'anyio')
 print('optional imports=' + repr([name for name in optional if name in sys.modules]))
@@ -672,11 +671,9 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         ("request protocols None", lambda: options.RequestOptions(protocols=None)),
     ):
         record(lines, label, create)
-    names = importlib.import_module(f"{package.__name__}._runtime.protocols.names")
     for label, module in (
         ("options", options),
         ("errors", importlib.import_module(f"{package.__name__}.errors")),
-        ("names", names),
     ):
         record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
         record(

@@ -13,7 +13,8 @@ from models import FieldRoomsRoomSocketGetQuerySinceParameter as _dcg_type_1
 from models import FieldSecureSocketGetHeaderXTraceParameter as _dcg_type_4
 from models import ServerMessage as _dcg_type_3
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.websocket import WebSocketSession, connect_socket
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import WSOptions, _plans
@@ -22,9 +23,9 @@ from . import WSOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def rooms(self) -> RoomsProtocols:

@@ -1,9 +1,9 @@
 # pets-protocols pydantic_v2.BaseModel
-  client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=['_runtime.protocols.references']
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -448,8 +448,6 @@
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -465,11 +463,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = FieldPetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
 # pets-protocols pydantic_v2.dataclass
-  client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=['_runtime.protocols.references']
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -914,8 +912,6 @@
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -931,11 +927,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols dataclasses.dataclass
-  client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=['_runtime.protocols.references']
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1380,8 +1376,6 @@
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -1397,11 +1391,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols typing.TypedDict
-  client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=['_runtime.protocols.references']
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1846,8 +1840,6 @@
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_typing_typeddict._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -1863,11 +1855,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [{'id': 2, 'name': 'dog'}]
 # pets-protocols msgspec.Struct
-  client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=['_runtime.protocols.references']
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -2312,8 +2304,6 @@
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_msgspec_struct._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''

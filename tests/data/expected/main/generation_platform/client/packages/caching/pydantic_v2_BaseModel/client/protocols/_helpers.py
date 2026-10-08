@@ -15,9 +15,10 @@ from models import FieldUsersUserIdGetHeaderAcceptLanguageParameter as _dcg_type
 from models import FieldUsersUserIdGetPathUserIdParameter as _dcg_type_2
 from models import FieldUsersUserIdGetQueryFieldsParameter as _dcg_type_0
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.cache import fetch
 from .._runtime.protocols.caches import CacheResult
+from .._runtime.protocols.client import ClientCore
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
@@ -28,9 +29,9 @@ from . import CacheOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def users(self) -> UsersProtocols:

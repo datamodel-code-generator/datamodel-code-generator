@@ -7,7 +7,9 @@ import importlib
 import json
 import re
 import zlib
+from dataclasses import fields as dataclass_fields
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -103,7 +105,6 @@ from tests.data.python.client_webhooks import webhook_backends, webhook_verifica
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from pathlib import Path
     from types import ModuleType
 
 
@@ -372,8 +373,15 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
-    exchange = Exchange(lines)
+    runtime = Path(package.__file__).parent / "_runtime" / "protocols"
+    optional = ("client", "caches", "names", "options", "origins", "websocket_types")
     (options,) = _modules(package, "options")
+    option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
+    lines.extend((
+        f"  helper modules copied={[name for name in optional if (runtime / f'{name}.py').is_file()]}",
+        f"  helper options field={'protocols' in option_fields}",
+    ))
+    exchange = Exchange(lines)
     with (
         exchange.client() as http,
         package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api,

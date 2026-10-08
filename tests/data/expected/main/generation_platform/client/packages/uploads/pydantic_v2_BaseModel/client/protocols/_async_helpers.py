@@ -11,7 +11,8 @@ from models import FieldFilesPostHeaderTusResumableParameter as _dcg_type_0
 from models import FieldFilesPostHeaderUploadLengthParameter as _dcg_type_2
 from models import FieldFilesPostHeaderXNameParameter as _dcg_type_1
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.uploads import (
     AsyncUploadHandle,
@@ -26,9 +27,9 @@ from . import UploadOptions, UploadSource, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def files(self) -> AsyncFilesProtocols:

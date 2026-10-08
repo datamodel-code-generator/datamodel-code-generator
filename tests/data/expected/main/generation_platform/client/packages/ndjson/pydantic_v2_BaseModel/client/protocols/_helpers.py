@@ -14,7 +14,8 @@ from models import FieldRecordsGetQueryTopicParameter as _dcg_type_0
 from models import Record as _dcg_type_1
 from models import SearchQuery as _dcg_type_4
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
@@ -23,9 +24,9 @@ from . import StreamOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def records(self) -> RecordsProtocols:

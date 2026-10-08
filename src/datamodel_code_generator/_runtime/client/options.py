@@ -18,7 +18,6 @@ from typing_extensions import TypeIs
 
 from ..model_codecs.media import json_bytes
 from ..model_codecs.unset import UNSET, Unset
-from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
 from .errors import ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
@@ -629,17 +628,17 @@ class ClientOptions(_Options):
 
     compression: Literal["gzip"] | None = "gzip"
     transport: TransportOptions | Unset = UNSET
-    protocols: protocol_names.ProtocolClientOptions | Unset | None = UNSET
     clock: Clock | Unset = UNSET
 
     def __post_init__(self) -> None:
-        """Validate ordinary options and the client-only construction settings, loading protocol types only if set."""
+        """Validate ordinary options and the client-only construction settings."""
         _Options.__post_init__(self)
         object.__setattr__(self, "compression", _compression(self.compression))
         checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
         checked_instance(self.clock, (Clock, Unset), ("clock",))
-        if self.protocols is not None and not isinstance(self.protocols, Unset):
-            checked_instance(self.protocols, (protocol_names.ProtocolClientOptions,), ("protocols",))
+
+    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+        """Check settings supplied by a declared helper client."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
