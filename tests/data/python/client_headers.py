@@ -164,6 +164,8 @@ async def _async_headers(package: ModuleType, lines: list[str]) -> None:
 def native_boundaries(package: ModuleType, lines: list[str]) -> None:
     """Decode content headers natively and assemble a nullable model body from its fields."""
     types = importlib.import_module(f"{package.__name__}.types.native_headers")
+    codecs = importlib.import_module(f"{package.__name__}.model_codecs")
+    lines.append(f"  public codec exports {codecs.__all__}")
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         for label, header in (
@@ -175,6 +177,31 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
             info = api.native_headers.with_raw_response.get_values().info
             record(lines, label, lambda: types.decode_get_values_header(info, name="X-Value"))
             record(lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional"))
+        for name, value in (
+            ("X-Count", "05"),
+            ("X-Count", "+1"),
+            ("X-Count", "1.0"),
+            ("X-Count", "many"),
+            ("X-Flag", "TRUE"),
+            ("X-Flag", "false"),
+            ("X-Counts", "05,+1,1.0"),
+            ("X-Entry", "value=known,unknown=extra"),
+            ("X-Closed", "value=known,unknown=extra"),
+        ):
+            exchange.respond(raw_response(204, **{name: value}))
+            info = api.native_headers.with_raw_response.get_values().info
+            record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+        run(lambda: _async_native_headers(package, types, lines))
         exchange.respond(raw_response(204))
         record(lines, "nullable model from fields", lambda: api.native_headers.save_value(value="saved"))
         exchange.responders.clear()
+
+
+async def _async_native_headers(package: ModuleType, types: ModuleType, lines: list[str]) -> None:
+    """Convert header text through the same model codecs on the async client."""
+    exchange = Exchange(lines)
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+        exchange.respond(raw_response(204, **{"X-Count": "+1", "X-Entry": "value=known,unknown=extra"}))
+        info = (await api.native_headers.with_raw_response.get_values()).info
+        for name in ("X-Count", "X-Entry"):
+            record(lines, f"async native {name}", lambda: types.decode_get_values_header(info, name=name))

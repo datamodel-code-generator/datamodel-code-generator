@@ -344,6 +344,34 @@
       {
         "method": "GET",
         "url": "/items/1?levels=1&levels=2"
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[unknown]=extra",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=05",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=%2B1",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=1.0",
+        "headers": {
+          "Cookie": "session=abc"
+        }
       }
     ],
     "package_snapshots": []
@@ -542,7 +570,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "\u00ff",
+        "content": "ÿ",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }

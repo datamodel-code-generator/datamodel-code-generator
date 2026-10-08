@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, plain, typed
+from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, plain
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
     from typing import Any, Protocol
 
-    from ..model_codecs.media import JSONValue, LexicalKind
+    from ..model_codecs.media import JSONValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
 
     class PartCodec(Protocol):
@@ -884,7 +884,7 @@ def _json_part(part: DecodedPart[bytes]) -> bool:
 def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:
     if kind == "json" or _json_part(part):
         return json_value(part.value)
-    return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
+    return part.value.decode(charset(part.content_type or ""))
 
 
 def decode_parts(
@@ -967,10 +967,10 @@ def file_part(
     return PartDecoder(name, _content, repeated=repeated, required=required, excluded=excluded)
 
 
-def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> object:
+def _part_text(part: DecodedPart[bytes]) -> str:
     try:
-        return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
-    except (CodecError, ValueError) as error:
+        return part.value.decode(charset(part.content_type or ""))
+    except ValueError as error:
         raise PartSyntaxError(error) from None
 
 
@@ -978,7 +978,7 @@ def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> 
     try:
         if kind == "json" or _json_part(part):
             return codec.decode(part.value)
-        return codec.convert(plain(_part_text(part, kind)))
+        return codec.convert(_part_text(part))
     except codec.errors as error:
         if codec.malformed(error):
             raise PartSyntaxError(error) from None

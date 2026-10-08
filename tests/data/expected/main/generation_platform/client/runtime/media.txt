@@ -4,7 +4,10 @@
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_value') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=1 validation error for FieldFormsPostResponse
+count
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_value
   > POST https://media.example.com/api/pairs
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
@@ -63,7 +66,7 @@ secret
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
   read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header', location='header.X-Draft') [operation_id='readDocument', location=('header', 'X-Draft'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Draft
 secret
-  Field required [type=missing, input_value={'id': 1, 'title': 'h'}, input_type=dict]
+  Field required [type=missing, input_value={'id': '1', 'title': 'h'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_header
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
@@ -130,10 +133,10 @@ secret
 # media dataclasses.dataclass
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form = FieldFormsPostResponse(name='a b', count=2)
+  form = FieldFormsPostResponse(name='a b', count='2')
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
+  form invalid = FieldFormsPostResponse(name=None, count='many')
   > POST https://media.example.com/api/pairs
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
