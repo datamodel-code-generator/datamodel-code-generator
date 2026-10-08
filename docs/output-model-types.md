@@ -97,7 +97,7 @@ When the target is unset:
 | Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
-| Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected for every `model_` name | Rejected only for `model_validate*` and `model_dump*` names |
+| Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 
 | Config key naming | Unset, `2` | `2.11`, `2.12` |
 | --- | --- | --- |

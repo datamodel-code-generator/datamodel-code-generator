@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
-from pydantic.alias_generators import to_camel, to_pascal, to_snake
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
