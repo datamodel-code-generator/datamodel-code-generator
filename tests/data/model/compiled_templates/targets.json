@@ -1,0 +1,852 @@
+{
+  "client": {
+    "client.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
+          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
+          "defaults": "ClientOptions()",
+          "name": "Client",
+          "core": "SyncCore",
+          "request_options": "RequestOptions",
+          "coroutine": "",
+          "binary": "BinaryBody",
+          "unset": "Unset",
+          "unset_value": "UNSET",
+          "raw": "RawResponse",
+          "wait": "",
+          "cached_property": "cached_property",
+          "protocols": null,
+          "protocols_module": ".protocols",
+          "resources": [
+            {
+              "name": "pets",
+              "namespace": "pets",
+              "class_name": "Pets",
+              "module": ".resources.pets"
+            },
+            {
+              "name": "日本",
+              "namespace": "日本",
+              "class_name": "UnicodeResource",
+              "module": ".resources.unicode"
+            }
+          ],
+          "class_docstring": "Client API {braces}",
+          "options": "ClientOptions",
+          "http_client": "HTTPClient",
+          "lifecycle": "    def close(self) -> None:\n        self._core.close()",
+          "manager": "AbstractContextManager"
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
+          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
+          "defaults": "ClientOptions()",
+          "name": "Client",
+          "core": "SyncCore",
+          "request_options": "RequestOptions",
+          "coroutine": "",
+          "binary": "BinaryBody",
+          "unset": "Unset",
+          "unset_value": "UNSET",
+          "raw": "RawResponse",
+          "wait": "",
+          "cached_property": "cached_property",
+          "protocols": null,
+          "protocols_module": ".protocols",
+          "resources": [],
+          "class_docstring": "Client API {braces}",
+          "options": "ClientOptions",
+          "http_client": "HTTPClient",
+          "lifecycle": "    def close(self) -> None:\n        self._core.close()",
+          "manager": "AbstractContextManager"
+        }
+      },
+      {
+        "name": "async_protocols",
+        "context": {
+          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
+          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
+          "defaults": "ClientOptions()",
+          "name": "AsyncClient",
+          "core": "AsyncCore",
+          "request_options": "RequestOptions",
+          "coroutine": "async ",
+          "binary": "BinaryBody",
+          "unset": "Unset",
+          "unset_value": "UNSET",
+          "raw": "RawResponse",
+          "wait": "await ",
+          "cached_property": "cached_property",
+          "protocols": "AsyncProtocols",
+          "protocols_module": ".protocols",
+          "resources": [
+            {
+              "name": "pets",
+              "namespace": "pets",
+              "class_name": "Pets",
+              "module": ".resources.pets"
+            },
+            {
+              "name": "日本",
+              "namespace": "日本",
+              "class_name": "UnicodeResource",
+              "module": ".resources.unicode"
+            }
+          ],
+          "class_docstring": "Client API {braces}",
+          "options": "ClientOptions",
+          "http_client": "HTTPClient",
+          "lifecycle": "    async def aclose(self) -> None:\n        await self._core.aclose()",
+          "manager": "AbstractAsyncContextManager"
+        }
+      }
+    ],
+    "resource.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "views": [
+            {
+              "name": "Pets",
+              "docstring": "Pets {braces}",
+              "members": [
+                "    def get(self) -> Pet:\n        return self._core.get()",
+                "    def list(self) -> list[Pet]:\n        return self._core.list()"
+              ]
+            },
+            {
+              "name": "AsyncPets",
+              "docstring": "Async pets 日本",
+              "members": [
+                "    async def get(self) -> Pet:\n        return await self._core.get()"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "views": []
+        }
+      },
+      {
+        "name": "empty_members",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "views": [
+            {
+              "name": "Pets",
+              "docstring": "Pets {braces}",
+              "members": []
+            }
+          ]
+        }
+      }
+    ],
+    "types.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Types 日本 {braces}",
+          "imports": "from typing import TypedDict",
+          "sections": [
+            "class First(TypedDict):\n    value: str",
+            "class Second(TypedDict):\n    value: int"
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Types 日本 {braces}",
+          "imports": "from typing import TypedDict",
+          "sections": []
+        }
+      }
+    ],
+    "readme.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "package": "client",
+          "reference": "runtime.md",
+          "signature_style": "explicit",
+          "body_arguments": "body",
+          "backend": "pydantic_v2.BaseModel",
+          "model_package": "models",
+          "contracts": "{\"path\": \"/pets\"}",
+          "operations": [
+            {
+              "name": "get",
+              "method": "GET",
+              "path": "/pets/{petId}",
+              "body_arguments": "body",
+              "media": []
+            },
+            {
+              "name": "create",
+              "method": "POST",
+              "path": "/pets",
+              "body_arguments": "body",
+              "media": [
+                {
+                  "media_type": "application/json"
+                },
+                {
+                  "media_type": "text/plain"
+                }
+              ]
+            },
+            {
+              "name": "update",
+              "method": "PUT",
+              "path": "/pets",
+              "body_arguments": "both",
+              "media": [
+                {
+                  "media_type": "application/json",
+                  "fields": [
+                    {
+                      "name": "name",
+                      "required": true
+                    },
+                    {
+                      "name": "tag",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "media_type": "application/x-www-form-urlencoded",
+                  "fields": [],
+                  "reason": "its model has no writable field"
+                }
+              ]
+            }
+          ],
+          "helpers": "{\"helper\": \"events\"}",
+          "stream_label": "SSE and NDJSON",
+          "resumes": true,
+          "sockets": true,
+          "kinds": [
+            "pagination",
+            "polling",
+            "cache",
+            "resumable_upload",
+            "sse",
+            "ndjson",
+            "websocket"
+          ],
+          "compression": "{\"gzip\": [\"create\"]}",
+          "dependencies": [
+            "httpx2>=2,<3",
+            "pydantic>=2"
+          ],
+          "security": [
+            "api_key",
+            "bearer"
+          ],
+          "capabilities": [
+            "pagination",
+            "sse"
+          ],
+          "runtime": [
+            {
+              "package": "client",
+              "modules": [
+                "client.py",
+                "native.py"
+              ]
+            },
+            {
+              "package": "protocols",
+              "modules": [
+                "pagination.py"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "minimal",
+        "context": {
+          "package": "client",
+          "reference": "runtime.md",
+          "signature_style": "explicit",
+          "body_arguments": "body",
+          "backend": "pydantic_v2.BaseModel",
+          "model_package": "models",
+          "contracts": "{\"path\": \"/pets\"}",
+          "operations": [],
+          "helpers": "",
+          "stream_label": "SSE and NDJSON",
+          "resumes": true,
+          "sockets": true,
+          "kinds": [
+            "pagination",
+            "polling",
+            "cache",
+            "resumable_upload",
+            "sse",
+            "ndjson",
+            "websocket"
+          ],
+          "compression": "",
+          "dependencies": [],
+          "security": [],
+          "capabilities": [],
+          "runtime": []
+        }
+      },
+      {
+        "name": "unpack",
+        "context": {
+          "package": "client",
+          "reference": "runtime.md",
+          "signature_style": "unpack",
+          "body_arguments": "both",
+          "backend": "pydantic_v2.BaseModel",
+          "model_package": "models",
+          "contracts": "{\"path\": \"/pets\"}",
+          "operations": [
+            {
+              "name": "get",
+              "method": "GET",
+              "path": "/pets/{petId}",
+              "body_arguments": "body",
+              "media": []
+            },
+            {
+              "name": "create",
+              "method": "POST",
+              "path": "/pets",
+              "body_arguments": "body",
+              "media": [
+                {
+                  "media_type": "application/json"
+                },
+                {
+                  "media_type": "text/plain"
+                }
+              ]
+            },
+            {
+              "name": "update",
+              "method": "PUT",
+              "path": "/pets",
+              "body_arguments": "both",
+              "media": [
+                {
+                  "media_type": "application/json",
+                  "fields": [
+                    {
+                      "name": "name",
+                      "required": true
+                    },
+                    {
+                      "name": "tag",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "media_type": "application/x-www-form-urlencoded",
+                  "fields": [],
+                  "reason": "its model has no writable field"
+                }
+              ]
+            }
+          ],
+          "helpers": "{\"helper\": \"events\"}",
+          "stream_label": "SSE and NDJSON",
+          "resumes": true,
+          "sockets": true,
+          "kinds": [
+            "pagination",
+            "polling",
+            "cache",
+            "resumable_upload",
+            "sse",
+            "ndjson",
+            "websocket"
+          ],
+          "compression": "{\"gzip\": [\"create\"]}",
+          "dependencies": [
+            "httpx2>=2,<3",
+            "pydantic>=2"
+          ],
+          "security": [
+            "api_key",
+            "bearer"
+          ],
+          "capabilities": [
+            "pagination",
+            "sse"
+          ],
+          "runtime": [
+            {
+              "package": "client",
+              "modules": [
+                "client.py",
+                "native.py"
+              ]
+            },
+            {
+              "package": "protocols",
+              "modules": [
+                "pagination.py"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "stream_without_resume",
+        "context": {
+          "package": "client",
+          "reference": "runtime.md",
+          "signature_style": "explicit",
+          "body_arguments": "body",
+          "backend": "pydantic_v2.BaseModel",
+          "model_package": "models",
+          "contracts": "{\"path\": \"/pets\"}",
+          "operations": [
+            {
+              "name": "get",
+              "method": "GET",
+              "path": "/pets/{petId}",
+              "body_arguments": "body",
+              "media": []
+            },
+            {
+              "name": "create",
+              "method": "POST",
+              "path": "/pets",
+              "body_arguments": "body",
+              "media": [
+                {
+                  "media_type": "application/json"
+                },
+                {
+                  "media_type": "text/plain"
+                }
+              ]
+            },
+            {
+              "name": "update",
+              "method": "PUT",
+              "path": "/pets",
+              "body_arguments": "both",
+              "media": [
+                {
+                  "media_type": "application/json",
+                  "fields": [
+                    {
+                      "name": "name",
+                      "required": true
+                    },
+                    {
+                      "name": "tag",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "media_type": "application/x-www-form-urlencoded",
+                  "fields": [],
+                  "reason": "its model has no writable field"
+                }
+              ]
+            }
+          ],
+          "helpers": "{\"sse\": {}}",
+          "stream_label": "SSE",
+          "resumes": false,
+          "sockets": false,
+          "kinds": [
+            "sse"
+          ],
+          "compression": "",
+          "dependencies": [
+            "httpx2>=2,<3",
+            "pydantic>=2"
+          ],
+          "security": [
+            "api_key",
+            "bearer"
+          ],
+          "capabilities": [
+            "pagination",
+            "sse"
+          ],
+          "runtime": [
+            {
+              "package": "client",
+              "modules": [
+                "client.py",
+                "native.py"
+              ]
+            },
+            {
+              "package": "protocols",
+              "modules": [
+                "pagination.py"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "custom_helper",
+        "context": {
+          "package": "client",
+          "reference": "runtime.md",
+          "signature_style": "explicit",
+          "body_arguments": "body",
+          "backend": "pydantic_v2.BaseModel",
+          "model_package": "models",
+          "contracts": "{\"path\": \"/pets\"}",
+          "operations": [
+            {
+              "name": "get",
+              "method": "GET",
+              "path": "/pets/{petId}",
+              "body_arguments": "body",
+              "media": []
+            },
+            {
+              "name": "create",
+              "method": "POST",
+              "path": "/pets",
+              "body_arguments": "body",
+              "media": [
+                {
+                  "media_type": "application/json"
+                },
+                {
+                  "media_type": "text/plain"
+                }
+              ]
+            },
+            {
+              "name": "update",
+              "method": "PUT",
+              "path": "/pets",
+              "body_arguments": "both",
+              "media": [
+                {
+                  "media_type": "application/json",
+                  "fields": [
+                    {
+                      "name": "name",
+                      "required": true
+                    },
+                    {
+                      "name": "tag",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "media_type": "application/x-www-form-urlencoded",
+                  "fields": [],
+                  "reason": "its model has no writable field"
+                }
+              ]
+            }
+          ],
+          "helpers": "{\"custom\": {}}",
+          "stream_label": null,
+          "resumes": true,
+          "sockets": false,
+          "kinds": [],
+          "compression": "{\"gzip\": [\"create\"]}",
+          "dependencies": [
+            "httpx2>=2,<3",
+            "pydantic>=2"
+          ],
+          "security": [
+            "api_key",
+            "bearer"
+          ],
+          "capabilities": [
+            "pagination",
+            "sse"
+          ],
+          "runtime": [
+            {
+              "package": "client",
+              "modules": [
+                "client.py",
+                "native.py"
+              ]
+            },
+            {
+              "package": "protocols",
+              "modules": [
+                "pagination.py"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "fastapi": {
+    "application.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "imports": "from typing import Final\nfrom fastapi import FastAPI",
+          "final": "Final",
+          "routes": "(route_a, route_b)",
+          "options": "AppOptions",
+          "info": "AppOptions(title=\"日本 {braces}\")",
+          "build_signature": "def build_router(*, pets: Pets, authorize: Authorize):",
+          "build": "build",
+          "services": "{\"pets\": pets}",
+          "settings": [
+            "authorize",
+            "dependencies"
+          ],
+          "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
+          "fastapi": "FastAPI",
+          "arguments": [
+            "pets",
+            "authorize",
+            "dependencies"
+          ],
+          "exports": [
+            "\"create_app\"",
+            "\"build_router\""
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "imports": "from typing import Final\nfrom fastapi import FastAPI",
+          "final": "Final",
+          "routes": "()",
+          "options": "AppOptions",
+          "info": "AppOptions()",
+          "build_signature": "def build_router(*, pets: Pets, authorize: Authorize):",
+          "build": "build",
+          "services": "{}",
+          "settings": [],
+          "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
+          "fastapi": "FastAPI",
+          "arguments": [],
+          "exports": []
+        }
+      }
+    ],
+    "router.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Routes 日本 {braces}",
+          "imports": "from fastapi import APIRouter",
+          "api_router": "APIRouter",
+          "wiring": "Wiring",
+          "routes": [
+            {
+              "adder": "add_get",
+              "handler": "handle_get",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "method": "get",
+              "name": "\"get\"",
+              "principal": "async def principal() -> str:\n        return \"principal\"",
+              "signature": "async def get(*, pet_id: int) -> Pet:",
+              "body": "return await handle_get(pet_id=pet_id)",
+              "registration": "router.add_api_route(\"/pets/{pet_id}\", get, methods=[\"GET\"])"
+            },
+            {
+              "adder": "add_list",
+              "handler": "handle_get",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "method": "get",
+              "name": "\"get\"",
+              "principal": null,
+              "signature": "async def get(*, pet_id: int) -> Pet:",
+              "body": "return await handle_get(pet_id=pet_id)",
+              "registration": "router.add_api_route(\"/pets/{pet_id}\", get, methods=[\"GET\"])"
+            }
+          ],
+          "final": "Final",
+          "literal": "(add_list,)",
+          "templated": "(add_get,)",
+          "signature": "def build_router(*, pets: Pets):",
+          "group": "pets",
+          "build": "build",
+          "services": "{\"pets\": pets}",
+          "settings": [
+            "authorize",
+            "dependencies"
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Routes 日本 {braces}",
+          "imports": "from fastapi import APIRouter",
+          "api_router": "APIRouter",
+          "wiring": "Wiring",
+          "routes": [],
+          "final": "Final",
+          "literal": "()",
+          "templated": "()",
+          "signature": "def build_router(*, pets: Pets):",
+          "group": "pets",
+          "build": "build",
+          "services": "{\"pets\": pets}",
+          "settings": []
+        }
+      }
+    ],
+    "services.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
+          "typevar": "TypeVar",
+          "abstract": "abstractmethod",
+          "protocols": [
+            {
+              "name": "Pets",
+              "base": "Protocol[PrincipalT_contra]",
+              "docstring": "Pets 日本 {braces}",
+              "methods": [
+                "async def get(self, *, pet_id: int) -> Pet: ...",
+                "async def list(self) -> list[Pet]: ..."
+              ]
+            },
+            {
+              "name": "Other",
+              "base": "Protocol",
+              "docstring": "Other",
+              "methods": []
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
+          "typevar": null,
+          "abstract": "abstractmethod",
+          "protocols": []
+        }
+      },
+      {
+        "name": "no_typevar",
+        "context": {
+          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
+          "typevar": null,
+          "abstract": "abstractmethod",
+          "protocols": [
+            {
+              "name": "Other",
+              "base": "Protocol",
+              "docstring": "Other",
+              "methods": [
+                "def get(self) -> str: ..."
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "readme.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "title": "API 日本 {braces}",
+          "package": "server",
+          "model_package": "models",
+          "backend": "pydantic_v2.BaseModel",
+          "operations": [
+            {
+              "service": "Pets",
+              "name": "get",
+              "method": "GET",
+              "path": "/pets/{id}",
+              "key": "get"
+            },
+            {
+              "service": "Pets",
+              "name": "create",
+              "method": "POST",
+              "path": "/pets",
+              "key": "create"
+            }
+          ],
+          "schemes": [
+            {
+              "name": "bearer",
+              "credential": "bearer token"
+            },
+            {
+              "name": "api_key",
+              "credential": "API key"
+            }
+          ],
+          "protocols": "Pets, Other",
+          "services": [
+            {
+              "implementation": "PetService",
+              "protocol": "Pets",
+              "secured": true,
+              "methods": "get and create"
+            },
+            {
+              "implementation": "OtherService",
+              "protocol": "Other",
+              "secured": false,
+              "methods": "list"
+            }
+          ],
+          "arguments": "pets=PetService(), authorize=authorize",
+          "forms": true,
+          "raw_request": true
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "title": "API 日本 {braces}",
+          "package": "server",
+          "model_package": "models",
+          "backend": "pydantic_v2.BaseModel",
+          "operations": [],
+          "schemes": [],
+          "protocols": "",
+          "services": [],
+          "arguments": "",
+          "forms": false,
+          "raw_request": false
+        }
+      }
+    ]
+  }
+}
