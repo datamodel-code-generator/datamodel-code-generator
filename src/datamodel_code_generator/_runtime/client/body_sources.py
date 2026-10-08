@@ -56,11 +56,10 @@ class BodyBindings:
         self._entries[id(body)] = body, source
         return source
 
-    def close(self) -> None:
-        """Close the files this call opened from paths."""
+    def close(self) -> list[OSError]:
+        """Close every file this call opened from a path and return the failures."""
         entries, self._entries = self._entries, {}
-        for _, source in entries.values():
-            source.close()
+        return [failure for _, source in entries.values() if (failure := source.close()) is not None]
 
 
 def capture_body(body: object) -> BodyBindings | None:
@@ -114,9 +113,9 @@ class BodySource:
         attempt = AsyncMultipartAttempt(pieces) if self._multipart else cast("AsyncContent", pieces[0])
         return self._aencode(attempt) if self._aencode is not None else attempt
 
-    def close(self) -> None:
-        """Close the files this call opened from paths."""
-        self._bindings.close()
+    def close(self) -> list[OSError]:
+        """Close every file this call opened from a path and return the failures."""
+        return self._bindings.close()
 
 
 def bind_body(content: object, *, entry: BodyBindings | None = None, asynchronous: bool = False) -> BodySource:

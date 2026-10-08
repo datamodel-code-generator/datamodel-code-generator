@@ -1280,7 +1280,7 @@ class _Resources(_Typing):
     ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
-        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A body declared in a
+        A binary body takes the bytes, file, path, and iterable inputs of the client's mode. A body declared in a
         media range such as image/* takes the concrete media type a call sends within it as any string, and a body
         without declared media takes nothing.
         """
@@ -3284,13 +3284,15 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
-`bytes`; async calls also accept an async iterable of `bytes`. Bytes and seekable files, including paths, are sent
-with `Content-Length` from the file's current position; other inputs use chunked transfer encoding.
+`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
+`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, text-mode or closed files and
+paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
-The SDK opens a path when the body is first sent and closes it when the call ends; a path that cannot be opened
-raises a request `DecodeError` with the reason `unencodable` before sending. Consumed nonseekable inputs cannot replay
-and are never buffered or spooled implicitly. Multipart can replay when all its file parts can. Async calls read
-files with ordinary blocking reads of at most 64 KiB on the event loop.
+The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
+async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
+all its file parts can. Files are read at most 64 KiB at a time: synchronous files and paths with ordinary blocking
+reads, on the event loop in async calls, and async files with `await read(65536)`, never line by line.
 
 ## Redirects and transport construction
 
@@ -3387,10 +3389,9 @@ No operation of this package declares request compression, so every request is s
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
-accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.

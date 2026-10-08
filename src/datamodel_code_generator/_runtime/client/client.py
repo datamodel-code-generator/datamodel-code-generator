@@ -149,7 +149,6 @@ _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
-_BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
 _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
@@ -584,6 +583,20 @@ def _compressed(
         ("Content-Encoding", coding.token),
     ))
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
+
+
+def _close_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
+    if owner is None or not (failures := owner.close()):
+        return
+    if error is not None:
+        add_secondary(error, *failures)
+        return
+    failure = SDKError(
+        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failures.pop(0)
+    )
+    add_secondary(failure, *failures)
+    raise failure
 
 
 def strip_credentials(
@@ -1714,10 +1727,15 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
             result = self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
-            raise call.failure(error) from None
-        finally:
-            if (owner := source or entry) is not None:
-                owner.close()
+            failure = call.failure(error)
+            _close_body(source or entry, call, failure)
+            raise failure from None
+        try:
+            _close_body(source or entry, call)
+        except SDKError as error:
+            if isinstance(result, RawResponse):
+                result.discard(error)
+            raise
         return result
 
     def _exchange(
@@ -2405,10 +2423,15 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
-            raise call.failure(error) from None
-        finally:
-            if (owner := source or entry) is not None:
-                owner.close()
+            failure = call.failure(error)
+            _close_body(source or entry, call, failure)
+            raise failure from None
+        try:
+            _close_body(source or entry, call)
+        except SDKError as error:
+            if isinstance(result, AsyncRawResponse):
+                await result.discard(error)
+            raise
         return result
 
     async def _exchange(

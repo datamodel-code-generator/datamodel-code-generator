@@ -292,13 +292,13 @@ class _Content:
                 return view.nbytes
         return max(file.seek(0, SEEK_END) - self.base, 0)
 
-    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes | memoryview:
-        """Return up to `length` bytes from an offset of the content, fewer only at its end, in one buffer."""
+    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes:
+        """Return up to `length` bytes from an offset of the content, fewer only at its end, as the bytes sent."""
         if (file := self.file) is None:
             with memoryview(cast("bytes", self.source)) as view, view.cast("B") as flat:
                 return flat[start : start + length].tobytes()
         file.seek(self.base + start)
-        buffer = memoryview(bytearray(length))
+        parts: list[bytes] = []
         got = 0
         while got < length:
             data = cast("object", file.read(min(length - got, _READ)))
@@ -306,9 +306,9 @@ class _Content:
                 raise _invalid(plan, ("source",), "wrong_capability")
             if not data:
                 break
-            buffer[got : got + len(data)] = data
+            parts.append(data)
             got += len(data)
-        return buffer[:got]
+        return b"".join(parts)
 
 
 def _content(plan: UploadPlan[T, C], source: object) -> _Content:
@@ -602,7 +602,7 @@ class _Upload(Generic[T]):
             return False
         raise self._offset_error(end, remote, info)
 
-    def _buffer(self) -> tuple[memoryview, int]:
+    def _buffer(self) -> tuple[bytes, int]:
         """Read the unconfirmed bytes of the chunk holding the confirmed offset, and return them with the chunk's end.
 
         The last chunk is read with one byte more, to find content past its end. Content whose size is not the upload's
@@ -613,7 +613,7 @@ class _Upload(Generic[T]):
         content = self._content
         data = content.read(self._plan, start, end - start + (end == size))
         if len(data) == end - start:
-            return memoryview(data), end
+            return data, end
         with self._guard:
             self._changed = True
         plan = self._plan
@@ -625,11 +625,9 @@ class _Upload(Generic[T]):
             parent_session_id=self._session.session_id,
         )
 
-    def _append_request(
-        self, payload: object, data: memoryview
-    ) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+    def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan = self._plan
-        arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, data)))[0]
+        arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, payload)))[0]
         return lambda: (arguments, payload, None)
 
     def _probe_request(self) -> tuple[tuple[object, ...], object, None]:
@@ -820,14 +818,13 @@ class UploadHandle(_Upload[T]):
         start = self._confirmed
         buffer, end = self._buffer()
         while self._confirmed < end:
-            unconfirmed = buffer[self._confirmed - start :]
-            payload = bytes(unconfirmed)
+            payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
                 self._core.execute_page(
                     self._plan,
                     self._plan.appended.call,
-                    self._append_request(payload, unconfirmed),
+                    self._append_request(payload),
                     _ignored,
                     body=payload,
                     media_type=None,
@@ -994,14 +991,13 @@ class AsyncUploadHandle(_Upload[T]):
         start = self._confirmed
         buffer, end = self._buffer()
         while self._confirmed < end:
-            unconfirmed = buffer[self._confirmed - start :]
-            payload = bytes(unconfirmed)
+            payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
                 await self._core.execute_page(
                     self._plan,
                     self._plan.appended.call,
-                    self._append_request(payload, unconfirmed),
+                    self._append_request(payload),
                     _ignored,
                     body=payload,
                     media_type=None,

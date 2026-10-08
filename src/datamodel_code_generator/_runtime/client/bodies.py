@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Iterable, Mapping
-from os import SEEK_END, PathLike
+from inspect import iscoroutinefunction
+from io import TextIOBase
+from os import SEEK_END, PathLike, fsdecode
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Final, TypeAlias, cast
 
@@ -14,7 +16,7 @@ from .errors import body_failure
 
 if TYPE_CHECKING:
     from abc import abstractmethod
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
     from typing import Protocol
 
     class SyncContent(Protocol):
@@ -46,11 +48,19 @@ if TYPE_CHECKING:
 
 SyncBinaryBody: TypeAlias = bytes | IO[bytes] | PathLike[str] | Iterable[bytes]
 AsyncBinaryBody: TypeAlias = SyncBinaryBody | AsyncIterable[bytes]
-_NOT_CHUNKS: Final = (str, bytearray, memoryview, Mapping)
+_NOT_BINARY: Final = (str, bytearray, memoryview, Mapping, TextIOBase)
 
 
 def _is_file(value: object) -> bool:
-    return callable(getattr(value, "read", None)) and not isinstance(value, AsyncIterable)
+    return callable(read := getattr(value, "read", None)) and not iscoroutinefunction(read)
+
+
+def _async_read(value: object) -> Callable[[int], Awaitable[bytes]] | None:
+    return (
+        cast("Callable[[int], Awaitable[bytes]]", read)
+        if iscoroutinefunction(read := getattr(value, "read", None))
+        else None
+    )
 
 
 def is_file_input(value: object) -> bool:
@@ -59,17 +69,15 @@ def is_file_input(value: object) -> bool:
 
 
 def is_binary_input(value: object) -> TypeIs[SyncBinaryBody]:
-    """Accept native synchronous binary inputs."""
-    return (
-        isinstance(value, bytes)
-        or is_file_input(value)
-        or (isinstance(value, Iterable) and not isinstance(value, _NOT_CHUNKS))
+    """Accept native synchronous binary inputs, never text or a mutable buffer."""
+    return isinstance(value, bytes) or (
+        not isinstance(value, _NOT_BINARY) and (is_file_input(value) or isinstance(value, Iterable))
     )
 
 
 def is_async_binary_input(value: object) -> TypeIs[AsyncBinaryBody]:
-    """Accept synchronous inputs and native async iterables."""
-    return isinstance(value, AsyncIterable) or is_binary_input(value)
+    """Accept synchronous inputs, async files with an awaitable read, and native async iterables."""
+    return isinstance(value, AsyncIterable) or _async_read(value) is not None or is_binary_input(value)
 
 
 class EncodedAttempt:
@@ -98,11 +106,12 @@ class EncodedAttempt:
 class BinarySource:
     """Keep an input's entry offset and own only files opened from paths."""
 
-    __slots__ = ("_file", "_input", "_offset", "_owned", "_used", "content_length")
+    __slots__ = ("_aread", "_file", "_input", "_offset", "_owned", "_used", "content_length")
 
     def __init__(self, content: AsyncBinaryBody) -> None:
         self._input = content
         self._file = cast("IO[bytes]", content) if _is_file(content) else None
+        self._aread = _async_read(content)
         self._owned = False
         self._used = False
         self._offset: int | None = None
@@ -118,6 +127,8 @@ class BinarySource:
             file.seek(offset)
         except (AttributeError, OSError):
             return
+        except ValueError as error:
+            raise body_failure(reason="unencodable", cause=error) from error
         self._offset, self.content_length = offset, max(0, end - offset)
 
     @property
@@ -129,7 +140,7 @@ class BinarySource:
         """Open a path lazily and rewind a seekable file before sending."""
         if isinstance(self._input, PathLike) and self._file is None:
             try:
-                file = Path(self._input).open("rb")  # noqa: SIM115 - The call owns the file until its final cleanup.
+                file = Path(fsdecode(self._input)).open("rb")  # noqa: SIM115 - The call owns it until its end.
             except OSError as error:
                 raise body_failure(reason="unencodable", cause=error) from error
             self._file, self._owned = file, True
@@ -142,19 +153,26 @@ class BinarySource:
         return BinaryContent(self)
 
     def chunks(self) -> Iterator[bytes]:
-        """Read a file conventionally or consume the caller's iterable."""
+        """Read a file's measured bytes in bounded chunks, or consume the caller's iterable."""
         self._used = True
-        if self._file is not None:
-            if self._offset is not None:
-                self._file.seek(self._offset)
-            while chunk := self._file.read(CHUNK):
-                yield chunk
-        else:
+        if (file := self._file) is None:
             yield from cast("Iterable[bytes]", self._input)
+            return
+        if self._offset is not None:
+            file.seek(self._offset)
+        left = self.content_length
+        while left != 0 and (chunk := file.read(CHUNK if left is None else min(CHUNK, left))):
+            yield chunk
+            if left is not None:
+                left -= len(chunk)
 
     async def achunks(self) -> AsyncIterator[bytes]:
-        """Consume a native async iterable or read conventional binary input."""
-        if isinstance(self._input, AsyncIterable):
+        """Read an async file in bounded chunks, consume an async iterable, or read conventional binary input."""
+        if (read := self._aread) is not None:
+            self._used = True
+            while chunk := await read(CHUNK):
+                yield chunk
+        elif isinstance(self._input, AsyncIterable):
             self._used = True
             async for chunk in self._input:
                 yield chunk
@@ -162,12 +180,16 @@ class BinarySource:
             for chunk in self.chunks():
                 yield chunk
 
-    def close(self) -> None:
-        """Close an SDK-opened path while leaving caller files open."""
+    def close(self) -> OSError | None:
+        """Close an SDK-opened path and return its failure, while leaving caller files open."""
         if self._owned and self._file is not None:
             file, self._file = self._file, None
             self._owned = False
-            file.close()
+            try:
+                file.close()
+            except OSError as error:
+                return error
+        return None
 
 
 class BinaryContent:

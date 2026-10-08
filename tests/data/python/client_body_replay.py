@@ -38,6 +38,14 @@ class _File(io.BytesIO):
         self.reads.append(size)
         return super().read(size)
 
+    def write(self, content: bytes, /, *, at_end: bool = False) -> int:
+        position = self.tell()
+        if at_end:
+            super().seek(0, io.SEEK_END)
+        written = super().write(content)
+        super().seek(position)
+        return written
+
     def close(self) -> None:
         self.closes += 1
         super().close()
@@ -87,12 +95,14 @@ class _Replies:
         for index, status in enumerate(statuses):
 
             def respond(request: httpx2.Request, status: int = status, index: int = index) -> httpx2.Response:
-                self.requests.append((
-                    request.method,
-                    request.url.raw_path,
-                    request.headers.get("content-type"),
-                    request.content,
-                ))
+                self.requests.append(
+                    (
+                        request.method,
+                        request.url.raw_path,
+                        request.headers.get("content-type"),
+                        request.content,
+                    )
+                )
                 if change is not None and index == 0:
                     change()
                 fields = {"Content-Type": "text/plain"}
@@ -142,6 +152,12 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
         record(lines, "next call offset", lambda: api.retry.post_idempotent(body=file))
         replies.report(lines)
         file.close()
+        grown = _File(data["payload"].encode())
+        replies.reset(*data["retry"], change=lambda: grown.write(b"-grown", at_end=True))
+        record(lines, "file grown between attempts", lambda: api.retry.post_idempotent(body=grown))
+        replies.report(lines)
+        lines.append(f"    grown file size={len(grown.getvalue())} reads={grown.reads}")
+        grown.close()
         path = Path(directory) / "body.bin"
         path.write_bytes(data["payload"].encode())
         replies.reset(*data["hops"])

@@ -2961,8 +2961,8 @@ Closing a root refuses new calls from the root and its views. It closes its crea
 a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
 and callers close their streaming responses with `with` or `async with`.
 
-Responses and limiter permits are released in `finally`. A later release failure is attached to the primary error;
-with no primary error, the release failure propagates. A file the call opened from a path is closed when the call ends.
+Responses, files opened from paths and limiter permits are released in `finally`. A later release failure is attached
+to the primary error; with no primary error, the release failure propagates.
 
 ## Errors
 
@@ -3006,7 +3006,7 @@ helper.
 `RetryOptions` applies on clients, views, and calls. Its fields merge independently; omitted fields inherit, while a
 status set replaces the inherited set. `retry=None` is invalid. Automatic retries require a candidate failure or
 status, operation safety, replayable input, and enough time. JSON/model decoding, arbitrary callbacks,
-body-factory programming errors, cancellation, and logical deadlines never restart a request.
+cancellation, and logical deadlines never restart a request.
 
 | Field | Effective default | Meaning |
 |---|---|---|
@@ -3188,10 +3188,9 @@ The generated README lists the operations that accept a coding.
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
-accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3203,25 +3202,38 @@ Immutable bytes and JSON encoding results are retained and reused without rerunn
 The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
 fixes its boundary once per logical call and can replay only if every part can replay.
 
-A binary body, and the content of a multipart `FilePart`, is `bytes`, a binary file object, an `os.PathLike` path
-such as `Path`, or an iterable of `bytes`; async calls also accept an async iterable of `bytes`. A `str` is not read as
-a path, and `bytearray` and `memoryview` are refused: pass `bytes`. Bytes and seekable files, including paths, are sent
-with `Content-Length`, counted from a file's current position; other files and iterables are sent with chunked
-transfer encoding.
+A binary body, and the content of a multipart `FilePart`, is one of the inputs below. Each is consumed in exactly
+one way, and nothing is buffered or spooled to make a one-shot input replayable.
 
-A file object stays open and belongs to the caller: the call reads from its position at call entry and leaves it
-wherever the last read ended. A path is opened when the body is first sent and closed when the call ends; a path that
-cannot be opened raises a request `DecodeError` with the reason `unencodable` and the `OSError` as `cause`, before
-anything is sent. Files are read in chunks of at most 64 KiB. Async calls read file objects and paths with the same
-blocking reads on the event loop, as HTTPX2 reads multipart files; pass an async iterable to keep slow storage off the
-loop.
+| Input | Calls | How it is read | Framing | Sent again |
+| --- | --- | --- | --- | --- |
+| `bytes` | sync, async | Sent as given. | `Content-Length` | Yes |
+| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
+| `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length` | Yes |
+| Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
+| Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
+| Async iterable of `bytes` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
+
+A `str` is not read as a path. `str`, `bytearray`, `memoryview`, text-mode files, a file that is already closed, and
+a path that cannot be opened raise a request `DecodeError` with the reason `unencodable` before anything is sent; the
+underlying `OSError` or `ValueError` is the `cause`. Pass `bytes`, or a file opened in binary mode.
+
+A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. The call sends
+the bytes between the position and the end it measured at call entry, also when the file grows afterwards. A path
+the call opened is closed when the call ends; if that close fails, the failure is attached to an error already
+propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
+
+Async calls read synchronous file objects and paths with the same blocking reads on the event loop, as HTTPX2 reads
+multipart files. To keep slow storage off the loop, pass an async file object, for example
+`await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async file is read in
+64 KiB chunks even though iterating it would yield lines.
 
 A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
 position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
-sending. An iterable, an async iterable or a file that cannot seek is read once and is never buffered or spooled: after
-it was read, the call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay
-when every file part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with
-that failure as `cause`.
+sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
+call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
+part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
+`cause`.
 
 ```python
 from pathlib import Path

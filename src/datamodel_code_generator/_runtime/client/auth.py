@@ -287,7 +287,7 @@ class RequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     def sign(self, request: SigningInput) -> SignatureFields:
@@ -300,7 +300,7 @@ class AsyncRequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     async def sign(self, request: SigningInput) -> SignatureFields:
