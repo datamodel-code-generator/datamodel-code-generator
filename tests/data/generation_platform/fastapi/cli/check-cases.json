@@ -1,0 +1,23 @@
+{
+  "unchanged": {},
+  "empty-models": {"source": "empty.yaml"},
+  "missing-root": {"remove": ["server"]},
+  "missing-model": {"remove": ["models.py"]},
+  "changed-python": {"append": {"server/services.py": "# changed\n"}},
+  "changed-readme": {"append": {"server/README.md": "\nChanged documentation.\n"}},
+  "missing-readme": {"remove": ["server/README.md"]},
+  "missing-marker": {"remove": ["server/py.typed"]},
+  "extra-python": {"write": {"server/extensions.py": "# User extension\n"}},
+  "extra-nested-python": {"write": {"server/deep/extra.py": "# Stale module\n"}},
+  "ignore-unrendered-text": {"write": {"server/notes.txt": "User notes\n"}},
+  "ignore-bytecode-python": {"write": {"server/__pycache__/extra.py": "# cache\n"}},
+  "crlf": {"crlf": ["models.py", "server/services.py", "server/README.md"]},
+  "non-text-python": {"binary": ["server/services.py"], "error": "server: Output is not text in encoding 'utf-8'"},
+  "non-text-readme": {"binary": ["server/README.md"], "error": "server/README.md: Output is not text in encoding 'utf-8'"},
+  "latin-1": {"encoding": "latin-1", "append": {"server/services.py": "# Café\n"}, "templates": true},
+  "nested-cwd": {"nested": true, "append": {"server/README.md": "\nChanged documentation.\n"}},
+  "modular": {"modular": true},
+  "modular-extra": {"modular": true, "write": {"models/extra.py": "# stale model\n"}},
+  "modular-missing": {"modular": true, "remove": ["models"]},
+  "stale-owned": {"options": ["--openapi-include-paths", "/pets"], "changed": true}
+}
