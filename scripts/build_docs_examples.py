@@ -156,12 +156,11 @@ def report_lines(path: Path, *prefixes: str) -> str:
     return "\n".join(selected)
 
 
-def yaml_helpers(path: Path, *names: str) -> str:
-    """Return a helper file's lines before its helpers, then the definitions of the named helpers in file order."""
-    head, _, body = read_text(path).partition("helpers:\n")
-    definitions = re.split(r"\n(?=  \S)", body)
-    kept = [block for block in definitions if block.split(":", 1)[0].strip() in names]
-    return f"{head}helpers:\n" + "\n".join(kept)
+def json_helpers(path: Path, *names: str) -> str:
+    """Return a helper file's object with only the definitions of the named helpers, in file order."""
+    members = re.split(r",\n(?=  \")", read_text(path).removeprefix("{\n").removesuffix("\n}"))
+    kept = [member for member in members if json.loads(member.partition(":")[0]) in names]
+    return "{\n" + ",\n".join(kept) + "\n}"
 
 
 def directory_files(path: Path) -> list[Path]:
@@ -381,11 +380,11 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.protocols.yaml",
+            example_id="python-client.protocols.json",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
-                "yaml",
-                yaml_helpers(CLIENT_DATA / "protocols" / "disabled.yaml", "users.all", "jobs.run", "records.watch"),
+                "json",
+                json_helpers(CLIENT_DATA / "protocols" / "disabled.json", "users.all", "jobs.run", "records.watch"),
             ),
         ),
         DocsExample(
@@ -457,7 +456,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         DocsExample(
             example_id="python-client.polling.tracked",
             path=DOCS / "python-client.md",
-            render=lambda: fenced("yaml", yaml_helpers(CLIENT_DATA / "protocols" / "polling.yaml", "jobs.tracked")),
+            render=lambda: fenced("json", json_helpers(CLIENT_DATA / "protocols" / "polling.json", "jobs.tracked")),
         ),
         DocsExample(
             example_id="python-client.polling.diagnostics",
@@ -523,10 +522,10 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.streams.resume-yaml",
+            example_id="python-client.streams.resume-json",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
-                "yaml", yaml_helpers(CLIENT_DATA / "protocols" / "stream-resume.yaml", "events.live", "events.tracked")
+                "json", json_helpers(CLIENT_DATA / "protocols" / "stream-resume.json", "events.live", "events.tracked")
             ),
         ),
         DocsExample(
@@ -591,9 +590,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.cache.yaml",
+            example_id="python-client.cache.json",
             path=DOCS / "python-client.md",
-            render=lambda: fenced("yaml", yaml_helpers(CLIENT_DATA / "protocols" / "caching.yaml", "users.profile")),
+            render=lambda: fenced("json", json_helpers(CLIENT_DATA / "protocols" / "caching.json", "users.profile")),
         ),
         DocsExample(
             example_id="python-client.cache.helper",
@@ -680,10 +679,10 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.webhooks.yaml",
+            example_id="python-client.webhooks.json",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
-                "yaml", yaml_helpers(CLIENT_DATA / "protocols" / "webhooks.yaml", "standard.message")
+                "json", json_helpers(CLIENT_DATA / "protocols" / "webhooks.json", "standard.message")
             ),
         ),
         DocsExample(
@@ -694,21 +693,21 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.webhooks.public-keys-yaml",
+            example_id="python-client.webhooks.public-keys-json",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
-                "yaml",
-                yaml_helpers(
-                    CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "rfc8032.ed25519", "wycheproof.rsa"
+                "json",
+                json_helpers(
+                    CLIENT_DATA / "protocols" / "webhook-public-keys.json", "rfc8032.ed25519", "wycheproof.rsa"
                 ),
             ),
         ),
         DocsExample(
-            example_id="python-client.webhooks.adapter-yaml",
+            example_id="python-client.webhooks.adapter-json",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
-                "yaml",
-                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-adapters.yaml", "stripe.event", "unsigned.event"),
+                "json",
+                json_helpers(CLIENT_DATA / "protocols" / "webhook-adapters.json", "stripe.event", "unsigned.event"),
             ),
         ),
         DocsExample(

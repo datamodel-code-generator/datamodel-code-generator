@@ -19,7 +19,12 @@ from datamodel_code_generator.__main__ import Exit, main
 from tests.conftest import assert_output
 from tests.main.conftest import EXPECTED_MAIN_PATH
 
-from .constants import PAYLOAD_CLASS_NAME, PAYLOAD_CODEGEN_WARNING_FILES, PAYLOAD_TARGET_PYTHON_VERSION
+from .constants import (
+    PAYLOAD_CLASS_NAME,
+    PAYLOAD_CODEGEN_WARNING_FILES,
+    PAYLOAD_TARGET_PYDANTIC_VERSION,
+    PAYLOAD_TARGET_PYTHON_VERSION,
+)
 from .models import PayloadBackend
 
 if TYPE_CHECKING:
@@ -141,6 +146,8 @@ def _payload_codegen_args(case: SchemaCase, input_path: Path, output_path: Path,
     ]
     if case.input_file_type == "openapi":
         args.extend(["--openapi-scopes", "schemas", "--strict-nullable"])
+    if backend in {PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS}:
+        args.extend(["--target-pydantic-version", PAYLOAD_TARGET_PYDANTIC_VERSION])
     args.extend(case.backend_extra_args.get(backend, ()))
     return args
 

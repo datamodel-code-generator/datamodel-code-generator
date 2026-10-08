@@ -9,4 +9,4 @@ signature_style='explicit'
 body_arguments='body'
 default_base_url=None
 server_base_url=None
-protocols=PurePosixPath('config/client-protocols.yaml')
+protocols=PurePosixPath('config/client-protocols.json')

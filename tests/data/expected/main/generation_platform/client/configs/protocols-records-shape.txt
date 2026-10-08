@@ -1,2 +1,2 @@
 APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers: protocols.helpers must be a mapping
+  E_CONFIG_VALUE config protocols: protocols must be a mapping

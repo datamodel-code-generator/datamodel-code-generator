@@ -1,0 +1,493 @@
+{
+  "checks.later": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202, 201, 404],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "remote_cancel": {"operation": "/paths/~1archives/post"},
+    "expires_at": {"from": "body", "pointer": "/progress"}
+  },
+  "checks.poll": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports/post",
+    "bindings": [],
+    "state": {"from": "status"},
+    "pending": [202],
+    "succeeded": [200],
+    "result": {"kind": "none"}
+  },
+  "checks.states": {
+    "kind": "polling",
+    "create": "/paths/~1exports/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports~1status/get",
+    "bindings": [],
+    "state": {"from": "body", "pointer": "/state"},
+    "pending": ["zero"],
+    "succeeded": [1],
+    "failed": [true],
+    "result": {"kind": "none"}
+  },
+  "checks.unread": {
+    "kind": "polling",
+    "create": "/paths/~1exports/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports~1status/get",
+    "bindings": [],
+    "state": {"from": "header", "name": "X-State"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "checks.bindings": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {"target": {"in": "cookie", "name": "session"}, "value": {"literal": "s1"}},
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      },
+      {"target": {"in": "path", "name": "jobId"}, "value": {"literal": "j1"}},
+      {
+        "target": {"in": "query", "name": "verbose"},
+        "value": {"source": "input", "selector": {"from": "body", "pointer": "/verbose"}}
+      },
+      {
+        "target": {"in": "query", "name": "since"},
+        "value": {"source": "previous", "selector": {"from": "body", "pointer": "/nothing"}}
+      },
+      {
+        "target": {"in": "header", "name": "X-Trace"},
+        "value": {"source": "previous", "selector": {"from": "body", "pointer": "/progress"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "checks.dots": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [{"target": {"in": "path", "name": "jobId"}, "value": {"literal": ".."}}],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "checks.bodyless": {
+    "kind": "polling",
+    "create": "/paths/~1exports/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "checks.required": {
+    "kind": "polling",
+    "create": "/paths/~1exports/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports~1find/get",
+    "bindings": [],
+    "state": {"from": "body", "pointer": "/state"},
+    "pending": [0],
+    "succeeded": [1],
+    "result": {"kind": "operation", "operation": "/paths/~1reports/post"}
+  },
+  "checks.unwritten": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1notes/post",
+      "bindings": [{"target": {"in": "body", "pointer": ""}, "value": {"literal": "note"}}]
+    }
+  },
+  "checks.overlaps": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1reports/post",
+      "bindings": [
+        {
+          "target": {"in": "body", "pointer": "/job"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        },
+        {"target": {"in": "body", "pointer": ""}, "value": {"literal": {"job": "j1"}}}
+      ]
+    }
+  },
+  "checks.fetch": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "operation", "operation": "/paths/~1exports/post"}
+  },
+  "checks.header": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "header", "name": "X-State"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.union": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/labels/rows"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.absent": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/nothing"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.missing_schema": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Missing"}
+    }
+  },
+  "checks.other_schema": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/export"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.none_immediate": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "immediate_result": {
+      "statuses": [200],
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.immediate": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/summary"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    },
+    "immediate_result": {
+      "statuses": [201],
+      "selector": {"from": "body", "pointer": "/export"},
+      "schema": {"pointer": "/components/schemas/ExportState"}
+    }
+  },
+  "checks.immediate_models": {
+    "kind": "polling",
+    "create": "/paths/~1exports/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports~1status/get",
+    "bindings": [],
+    "state": {"from": "body", "pointer": "/state"},
+    "pending": [0],
+    "succeeded": [1],
+    "result": {"kind": "operation", "operation": "/paths/~1reports~1latest/get"},
+    "immediate_result": {
+      "statuses": [200],
+      "selector": {"from": "body", "pointer": "/rows"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.immediate_header": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1jobs~1{jobId}~1report/get",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "jobId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    },
+    "immediate_result": {
+      "statuses": [200],
+      "selector": {"from": "header", "name": "Retry-After"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.progress": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/progress"},
+      "schema": {"pointer": "/components/schemas/Job/properties/progress"}
+    },
+    "immediate_result": {
+      "statuses": [200],
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.credentials": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      },
+      {
+        "target": {"in": "header", "name": "x-api-key"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      },
+      {"target": {"in": "query", "name": "api_key"}, "value": {"literal": "k1"}}
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1exports~1status/get",
+      "bindings": [
+        {
+          "target": {"in": "querystring", "name": "criteria", "pointer": "/api_key"},
+          "value": {"source": "previous", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    }
+  },
+  "checks.no_success": {
+    "kind": "polling",
+    "create": "/paths/~1archives/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1exports~1status/get",
+    "bindings": [],
+    "state": {"from": "body", "pointer": "/state"},
+    "pending": [0],
+    "succeeded": [1],
+    "result": {"kind": "operation", "operation": "/paths/~1reports~1latest/get"},
+    "immediate_result": {
+      "statuses": [200],
+      "selector": {"from": "body", "pointer": "/rows"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    }
+  },
+  "checks.media": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1archives~1search/post",
+      "bindings": [
+        {
+          "target": {"in": "body", "pointer": "/job"},
+          "value": {"source": "previous", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    }
+  },
+  "checks.cancel": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "remote_cancel": {
+      "operation": "/paths/~1jobs~1{jobId}/delete",
+      "bindings": [
+        {
+          "target": {"in": "header", "name": "X-Reason"},
+          "value": {"source": "previous", "selector": {"from": "body", "pointer": "/progress"}}
+        }
+      ]
+    },
+    "expires_at": {"from": "header", "name": "Expires"}
+  }
+}

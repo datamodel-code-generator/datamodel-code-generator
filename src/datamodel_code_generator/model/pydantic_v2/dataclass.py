@@ -5,6 +5,7 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 
 from __future__ import annotations
 
+import keyword
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
@@ -34,10 +35,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONFIG_DICT,
     IMPORT_PYDANTIC_DATACLASS,
 )
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK,
-    _get_dict_key_reference_classes_capability,
-)
+from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes
 from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
@@ -92,7 +90,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
-    _INCLUDE_DICT_KEY_REFERENCE_CLASSES = _get_dict_key_reference_classes_capability()
+    _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
     # frozen/allow_mutation are handled as dataclass decorator arguments, not ConfigDict
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [
         ConfigAttribute("allow_population_by_field_name", "populate_by_name", False),  # noqa: FBT003
@@ -211,6 +209,7 @@ class _PydanticDataclassField(DataModelFieldV2):
         "kw_only",
         "repr",
     })
+    _ALIASES_REQUIRE_ASSIGNMENT: ClassVar[bool] = False
 
     def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
         """Use dataclass-safe factories for mutable schema defaults."""
@@ -242,7 +241,7 @@ class _PydanticDataclassField(DataModelFieldV2):
     def _requires_dataclass_field_assignment(self, plan: _PydanticFieldRenderPlan) -> bool:
         """Check assignment policy using an already computed render plan."""
         return bool(
-            (PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK and (self.validation_aliases or self.serialization_alias))
+            (self._ALIASES_REQUIRE_ASSIGNMENT and (self.validation_aliases or self.serialization_alias))
             or self._has_forced_field_assignment
             or not self._DATACLASS_ASSIGNMENT_KEYS.isdisjoint(self.extras)
             or plan.default_factory
@@ -330,36 +329,32 @@ class _PydanticDataclassField(DataModelFieldV2):
         return tuple(import_ for import_ in imports if import_ != IMPORT_ANNOTATED)
 
 
-if PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK:
-    import keyword
+class DataModelField(_PydanticDataclassField):
+    """Field implementation for Pydantic v2 dataclass models.
 
-    class DataModelField(_PydanticDataclassField):
-        """Field implementation for Pydantic v2 dataclass models.
+    Inherits pydantic v2 Field() constraint handling from DataModelFieldV2.
+    """
 
-        Inherits pydantic v2 Field() constraint handling from DataModelFieldV2.
-        """
 
-        def __init__(self, **data: Any) -> None:
-            """Initialize and make non-identifier aliases safe for dataclass signatures."""
-            super().__init__(**data)
-            if self.alias is None or (self.alias.isidentifier() and not keyword.iskeyword(self.alias)):
-                return
+class DataModelFieldBackport(DataModelField):
+    """Dataclass field for targets before Pydantic 2.4, which rejects non-identifier dataclass aliases."""
 
-            validation_aliases = list(self.validation_aliases or ())
-            if self.alias not in validation_aliases:
-                validation_aliases.insert(0, self.alias)
-            if self.serialization_alias is None:
-                self.serialization_alias = self.alias
-            self.validation_aliases = validation_aliases
-            self.alias = None
+    _ALIASES_REQUIRE_ASSIGNMENT: ClassVar[bool] = True
 
-else:
+    def __init__(self, **data: Any) -> None:
+        """Initialize and make non-identifier aliases safe for dataclass signatures."""
+        super().__init__(**data)
+        if self.alias is None or (self.alias.isidentifier() and not keyword.iskeyword(self.alias)):
+            return
 
-    class DataModelField(_PydanticDataclassField):
-        """Field implementation for Pydantic v2 dataclass models.
-
-        Inherits pydantic v2 Field() constraint handling from DataModelFieldV2.
-        """
+        validation_aliases = list(self.validation_aliases or ())
+        if self.alias not in validation_aliases:
+            validation_aliases.insert(0, self.alias)
+        if self.serialization_alias is None:
+            self.serialization_alias = self.alias
+        self.validation_aliases = validation_aliases
+        self.alias = None
 
 
 _rebuild_model_with_datamodel_namespace(DataModelField)
+_rebuild_model_with_datamodel_namespace(DataModelFieldBackport)

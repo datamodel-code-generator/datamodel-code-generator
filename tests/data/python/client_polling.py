@@ -448,6 +448,10 @@ async def _async_clocked(harness: Polling, lines: list[str]) -> None:
         exchange.respond(job("queued", 202), job("done"))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         await astep(lines, "async interval on a frozen clock", handle.status)
+        exchange.respond(job("queued", 202), job("done"))
+        unlimited = harness.session(total_timeout=None)
+        handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE), session_options=unlimited)
+        await astep(lines, "async interval without a deadline on a frozen clock", handle.status)
 
 
 async def _async_polling(harness: Polling, lines: list[str]) -> None:

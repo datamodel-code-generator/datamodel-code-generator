@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
-
 from datamodel_code_generator.model import DataModelFieldBase
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.model.pydantic_v2.base_model import Constraints, has_lookaround_pattern
-from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass, DataModelField
+from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass, DataModelField, DataModelFieldBackport
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONFIG_DICT
 from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType, StrictTypes, Types
 
@@ -173,13 +170,9 @@ def test_data_model_field() -> None:
     assert field.required is True
 
 
-@pytest.mark.skipif(
-    not PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK,
-    reason="Pydantic 2.4+ accepts non-identifier dataclass aliases without generator fallback",
-)
 def test_data_model_field_keeps_existing_alias_fallback_state_pydantic20() -> None:
     """Test fallback does not duplicate aliases or overwrite serialization aliases."""
-    field = DataModelField(
+    field = DataModelFieldBackport(
         name="test_field",
         data_type=DataType(type="str"),
         required=True,
