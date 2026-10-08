@@ -24,7 +24,7 @@
 -    root: dict[str, int]
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -18,23 +18,12 @@
+@@ -17,23 +17,12 @@
  from .._runtime.server.requests import ParameterAdapter, ParameterArgument
  from .._runtime.server.responses import Declared, OperationResponses
  
@@ -49,7 +49,7 @@
      },
      total=False,
  )
-@@ -101,74 +90,3 @@
+@@ -100,74 +89,3 @@
              ),
          },
      )
@@ -187,9 +187,9 @@
 -from fastapi.responses import Response
 +from fastapi import APIRouter, Body, Depends, Header, Query
  from pydantic import Field
+ from pydantic.json_schema import SkipJsonSchema
  
- from .._generated import contract
-@@ -103,85 +102,11 @@
+@@ -100,85 +99,11 @@
      )
  
  
@@ -278,7 +278,7 @@
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -42,35 +42,3 @@
+@@ -41,35 +41,3 @@
          *,
          body: models.NewPet,
      ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
