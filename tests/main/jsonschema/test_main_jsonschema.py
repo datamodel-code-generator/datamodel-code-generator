@@ -5228,7 +5228,10 @@ def test_main_jsonschema_combine_one_of_object(output_file: Path) -> None:
     options=["--union-mode"],
     option_description="""Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-The `--union-mode` flag configures the code generation behavior.""",
+The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+Discriminated unions are not given a `union_mode`: Pydantic validates them by
+their discriminator tag, a separate mode that cannot be combined with
+`smart` or `left_to_right`.""",
     input_schema="jsonschema/combine_any_of_object.json",
     cli_args=["--union-mode", "left_to_right", "--output-model-type", "pydantic_v2.BaseModel"],
     golden_output="jsonschema/combine_any_of_object_left_to_right.py",
@@ -5238,7 +5241,10 @@ def test_main_jsonschema_combine_any_of_object(
 ) -> None:
     """Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-    The `--union-mode` flag configures the code generation behavior.
+    The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+    Discriminated unions are not given a `union_mode`: Pydantic validates them by
+    their discriminator tag, a separate mode that cannot be combined with
+    `smart` or `left_to_right`.
     """
     extra_args = ["--output-model-type", output_model]
     if union_mode is not None:
@@ -12185,6 +12191,27 @@ def test_main_jsonschema_type_alias_recursive_default_list(output_file: Path) ->
     )
 
 
+def test_main_jsonschema_type_alias_recursive_default_list_pydantic_v2_dataclass(output_file: Path) -> None:
+    """Import Field for list default factories on type alias fields in pydantic dataclasses."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_default_list.json",
+        output_path=output_file,
+        input_file_type=None,
+        assert_func=assert_file_content,
+        expected_file="type_alias_recursive_default_list_pydantic_v2_dataclass.py",
+        extra_args=[
+            "--use-type-alias",
+            "--use-annotated",
+            "--field-constraints",
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     int(black.__version__.split(".")[0]) < 23,
     reason="Installed black doesn't support the new 'type' statement",
@@ -12955,6 +12982,41 @@ def test_main_jsonschema_reuse_model_same_name_references(output_dir: Path) -> N
         runtime_validation_module="main",
         runtime_validation_model_name="Main",
         runtime_validation_data={"sized": {"field": {"size": 1}}, "named": {"field": {"name": "one"}}},
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        pytest.param("collapse_reuse_models_cross_module_users", [], id="module"),
+        pytest.param("collapse_reuse_models_cross_module_users_tree", ["--reuse-scope", "tree"], id="tree"),
+        pytest.param(
+            "collapse_reuse_models_cross_module_users_tree",
+            ["--reuse-scope", "tree", "--use-type-alias"],
+            id="tree-type-alias",
+        ),
+    ],
+)
+def test_main_jsonschema_collapse_reuse_models_cross_module_users(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Point users in other modules at the kept model when a duplicate is collapsed within its module."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_reuse_models_cross_module_users",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module="holder",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"entry": {"name": "one"}, "local": {"name": "two"}},
     )
 
 

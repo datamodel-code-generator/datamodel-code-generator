@@ -251,6 +251,11 @@ waits and limits on the client clock
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   async interval on a frozen clock = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  async interval without a deadline on a frozen clock = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
 async lifecycle
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

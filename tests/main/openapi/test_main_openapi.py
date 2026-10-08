@@ -736,6 +736,42 @@ def test_main_openapi_discriminator_oneof_short_mapping(output_file: Path) -> No
     )
 
 
+@pytest.mark.parametrize("union_mode", ["left_to_right", "smart"])
+def test_main_openapi_discriminator_union_mode(union_mode: str, output_file: Path) -> None:
+    """Keep union_mode off discriminated unions, which pydantic validates by tag instead."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_union_mode.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / f"union_mode_{union_mode}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--union-mode",
+            union_mode,
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"generated_discriminator_union_mode_{union_mode}",
+        model_name="Pet",
+        valid_json='{"petType":"dog","barks":1.5}',
+        invalid_json='{"petType":"bird"}',
+        expected_error_type="union_tag_invalid",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"generated_discriminator_union_mode_owner_{union_mode}",
+        model_name="Owner",
+        valid_json='{"pet":{"petType":"cat","meows":3},"nickname":"Rex"}',
+        invalid_json='{"pet":{"petType":"bird"}}',
+        expected_error_type="union_tag_invalid",
+    )
+
+
 def test_main_openapi_discriminator_state_isolated_per_document(output_dir: Path) -> None:
     """Do not apply one input document's discriminator metadata to another."""
     run_main_and_assert(
@@ -9156,6 +9192,40 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
         output_path=output_dir,
         expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_inheritance",
         input_file_type="openapi",
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        pytest.param("dot_notation_collapse_reuse_models", [], id="module"),
+        pytest.param(
+            "dot_notation_collapse_reuse_models_tree",
+            ["--reuse-scope", "tree", "--use-type-alias"],
+            id="tree-type-alias",
+        ),
+    ],
+)
+def test_main_openapi_dot_notation_collapse_reuse_models(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Point users in other dotted modules at the kept model when a duplicate is collapsed within its module."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_collapse_reuse_models.yaml",
+        output_path=output_dir,
+        expected_directory=EXPECTED_OPENAPI_PATH / expected_name,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module="holder",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"entry": {"name": "one"}, "local": {"name": "two"}},
     )
 
 

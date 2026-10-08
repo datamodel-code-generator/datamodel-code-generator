@@ -3155,7 +3155,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     break
 
                 for canonical, duplicate in duplicates:
-                    self.generation_store.redirect_model_reference_users(duplicate, models, canonical.reference)
+                    self.generation_store.redirect_reference_users(duplicate.reference, canonical.reference)
                     for child in duplicate.reference.iter_data_model_children():
                         self.generation_store.set_base_classes(
                             child,

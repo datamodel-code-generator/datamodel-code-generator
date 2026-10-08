@@ -1,20 +1,19 @@
 # protocols-names
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers[1]: protocols.helpers has the key 1, which is not a string
-  E_CONFIG_VALUE config protocols.helpers[None]: protocols.helpers has the key None, which is not a string
-  E_CONFIG_VALUE config protocols.helpers['users..all']: The helper name 'users..all' must be Python identifiers separated by dots, without keywords
-  E_CONFIG_VALUE config protocols.helpers['users.all.']: The helper name 'users.all.' must be Python identifiers separated by dots, without keywords
-  E_CONFIG_VALUE config protocols.helpers['class.all']: The helper name 'class.all' must be Python identifiers separated by dots, without keywords
-  E_CONFIG_VALUE config protocols.helpers['_private']: The helper name '_private' cannot use the part '_private'
-  E_CONFIG_VALUE config protocols.helpers['users._all']: The helper name 'users._all' cannot use the part '_all'
-  E_CONFIG_VALUE config protocols.helpers['ｕsers.fullwidth']: The helper name 'ｕsers.fullwidth' cannot use the part 'ｕsers'
-  E_CONFIG_VALUE config protocols.helpers['files.COM1']: The helper name 'files.COM1' cannot use the part 'COM1'
-  E_NAME_COLLISION config protocols.helpers['Users.All']: The helper names 'users.all' and 'Users.All' collide
-  E_NAME_COLLISION config protocols.helpers['users']: The helper names 'users.all' and 'users' collide
-  E_NAME_COLLISION config protocols.helpers['users.all.more']: The helper names 'users.all' and 'users.all.more' collide
-  E_CONFIG_VALUE config protocols.helpers['broken']: protocols.helpers['broken'] must be a helper definition
-  E_CONFIG_VALUE config protocols.helpers['kindless'].kind: protocols.helpers['kindless'] needs 'kind'
-  E_CONFIG_VALUE config protocols.helpers['graphql'].kind: protocols.helpers['graphql'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
-  E_CONFIG_VALUE config protocols.helpers['typed'].kind: protocols.helpers['typed'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
-  E_CONFIG_VALUE config protocols.helpers['toggled'].enabled: protocols.helpers['toggled'].enabled must be a boolean
+  E_CONFIG_VALUE config protocols['1']: The helper name '1' must be Python identifiers separated by dots, without keywords
+  E_CONFIG_VALUE config protocols['users..all']: The helper name 'users..all' must be Python identifiers separated by dots, without keywords
+  E_CONFIG_VALUE config protocols['users.all.']: The helper name 'users.all.' must be Python identifiers separated by dots, without keywords
+  E_CONFIG_VALUE config protocols['class.all']: The helper name 'class.all' must be Python identifiers separated by dots, without keywords
+  E_CONFIG_VALUE config protocols['_private']: The helper name '_private' cannot use the part '_private'
+  E_CONFIG_VALUE config protocols['users._all']: The helper name 'users._all' cannot use the part '_all'
+  E_CONFIG_VALUE config protocols['ｕsers.fullwidth']: The helper name 'ｕsers.fullwidth' cannot use the part 'ｕsers'
+  E_CONFIG_VALUE config protocols['files.COM1']: The helper name 'files.COM1' cannot use the part 'COM1'
+  E_NAME_COLLISION config protocols['Users.All']: The helper names 'users.all' and 'Users.All' collide
+  E_NAME_COLLISION config protocols['users']: The helper names 'users.all' and 'users' collide
+  E_NAME_COLLISION config protocols['users.all.more']: The helper names 'users.all' and 'users.all.more' collide
+  E_CONFIG_VALUE config protocols['broken']: protocols['broken'] must be a helper definition
+  E_CONFIG_VALUE config protocols['kindless'].kind: protocols['kindless'] needs 'kind'
+  E_CONFIG_VALUE config protocols['graphql'].kind: protocols['graphql'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
+  E_CONFIG_VALUE config protocols['typed'].kind: protocols['typed'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
+  E_CONFIG_VALUE config protocols['toggled'].enabled: protocols['toggled'].enabled must be a boolean

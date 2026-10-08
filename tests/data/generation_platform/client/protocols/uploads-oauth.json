@@ -1,0 +1,45 @@
+{
+  "files.finish": {
+    "kind": "resumable_upload",
+    "profile": "offset",
+    "create": {
+      "operation": "/paths/~1files/post",
+      "size": {"in": "header", "name": "Upload-Length"},
+      "expires_at": {"from": "body", "pointer": "/expires"}
+    },
+    "probe": {
+      "operation": "/paths/~1files~1{fileId}~1status/get",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ],
+      "remote_offset": {"from": "body", "pointer": "/offset"}
+    },
+    "append": {
+      "operation": "/paths/~1files~1{fileId}/patch",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        },
+        {"target": {"in": "header", "name": "Tus-Resumable"}, "value": {"literal": "1.0.0"}}
+      ],
+      "offset": {"in": "header", "name": "Upload-Offset"}
+    },
+    "max_chunk_bytes": 8,
+    "partial_commit": "forbidden",
+    "completion": {
+      "kind": "operation",
+      "operation": "/paths/~1files~1{fileId}~1complete/post",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ],
+      "result_schema": {"pointer": "/components/schemas/Stored"}
+    }
+  }
+}
