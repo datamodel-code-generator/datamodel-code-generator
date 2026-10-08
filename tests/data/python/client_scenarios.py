@@ -448,6 +448,8 @@ def media(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "form", lambda: api.forms.submit_form(body=form))
         record(lines, "form invalid", lambda: api.forms.submit_form(body=form))
+        exchange.respond(raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded"))
+        record(lines, "form repeated undeclared member", lambda: api.forms.submit_form(body=form))
         exchange.respond(
             raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
             raw_response(200, b"a=%zz", "application/x-www-form-urlencoded"),
