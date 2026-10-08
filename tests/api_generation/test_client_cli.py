@@ -512,7 +512,13 @@ def test_client_cli_json_errors(
                 ),
             ],
         ),
-        ("protocols", ["--client-protocols", '{"pets.all": {"kind": "pagination"}, "Bad": {"kind": "teleport"}}']),
+        (
+            "protocols",
+            [
+                *("--client-protocols", '{"pets.all": {"kind": "pagination"}, "Bad": {"kind": "teleport"}}'),
+                *("--client-operations", '{"/paths/~1pets/get": {"name": "list_all"}}'),
+            ],
+        ),
         (
             "references",
             [

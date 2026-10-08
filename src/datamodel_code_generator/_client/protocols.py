@@ -21,6 +21,7 @@ from datamodel_code_generator._client.naming import folded, helper_name_problem,
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator.json_config import CLIENT_PROTOCOLS_MAX_DEPTH
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -111,7 +112,7 @@ _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
-_MAX_DEPTH: Final = 64
+_MAX_DEPTH: Final = CLIENT_PROTOCOLS_MAX_DEPTH
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 
 

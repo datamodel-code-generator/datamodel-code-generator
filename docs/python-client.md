@@ -101,8 +101,8 @@ datamodel-codegen --client-operations '{"/paths/~1pets/get": {"name": "list_all"
 ```
 
 A member the client does not know, or a value it cannot use, stops generation with `Error:` and exit code 2, naming
-the setting, such as `--client-operations[0].runtime.retry_safety` for the first operation entry; the Python API
-raises `APIGenerationError`.
+the setting by the key it was given under, such as `--client-operations['/paths/~1pets/get'].runtime.retry_safety`;
+the Python API raises `APIGenerationError`.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.

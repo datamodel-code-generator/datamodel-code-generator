@@ -1,1 +1,1 @@
-Error: --client-operations[0].ref: The operation setting '/paths/~1cats/get' selects no root path operation; --client-operations[1].ref: The operation setting '/paths/~1pets/get' selects no root path operation
+Error: --client-operations['/paths/~1cats/get'].ref: The operation setting '/paths/~1cats/get' selects no root path operation; --client-operations['other.yaml#/paths/~1pets/get'].ref: The operation setting '/paths/~1pets/get' selects no root path operation

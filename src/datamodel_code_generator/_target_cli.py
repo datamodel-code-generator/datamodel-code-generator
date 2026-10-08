@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import traceback
 from collections.abc import Mapping
+from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, NoReturn
 
@@ -34,6 +37,7 @@ _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _SERVER_SETTINGS: Final = ("layout", "handler_mode", "include_request", "body_mode", "router_names")
 _OPERATION_SETTINGS: Final = ("handler_modes", "body_modes", "operation_names", "parameter_names")
+_INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\]")
 _CLIENT_SETTINGS: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
@@ -72,9 +76,30 @@ def run_target(
             else _run(args, namespace, config, pyproject_path, report)
         )
     except Exception as error:  # noqa: BLE001
-        report.failure(error, encoding=config.encoding)
+        report.failure(_keyed(error, config), encoding=config.encoding)
         code = _ERROR
     return code if report.write() else _ERROR
+
+
+def _keyed(error: Exception, config: Any) -> Exception:
+    """Name the operation and resource client settings in an error by the keys they were given under."""
+    if not isinstance(error, APIGenerationError) or config.generate_client is None:
+        return error
+    keys = {
+        "operations": list(config.client_operations or ()),
+        "resource_names": list(config.client_resource_names or ()),
+    }
+
+    def keyed(item: Diagnostic) -> Diagnostic:
+        if (path := item.option_path) is None or (found := _INDEXED.match(path)) is None:
+            return item
+        return replace(item, option_path=f"{found[1]}[{keys[found[1]][int(found[2])]!r}]{path[found.end() :]}")
+
+    if (diagnostics := tuple(map(keyed, error.diagnostics))) == error.diagnostics:
+        return error
+    from datamodel_code_generator._client.config import OPTION_PREFIX  # noqa: PLC0415
+
+    return APIGenerationError(diagnostics, option_prefix=OPTION_PREFIX)
 
 
 def _selected(config: Any) -> tuple[str, str]:
@@ -201,7 +226,7 @@ def _client(
         values["resource_names"] = tuple(ResourceName(tag=tag, namespace=name) for tag, name in names.items())
     if (entries := config.client_operations) is not None:
         root = _base(namespace, pyproject_path, "client_operations")
-        values["operations"] = operation_configs({_operation(key, root): entry for key, entry in entries.items()})
+        values["operations"] = operation_configs(entries, partial(_operation, base=root))
     return ClientTarget(_base(namespace, pyproject_path, "client_protocols")), ClientGenerationConfig(
         output=config.client_output,
         package=config.client_package,

@@ -19,7 +19,7 @@ from datamodel_code_generator._target_config import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.protocols import ProtocolConfiguration
@@ -367,12 +367,14 @@ def _members(value: object, at: str, keys: frozenset[str]) -> Mapping[str, Any]:
     return members
 
 
-def operation_configs(entries: Mapping[OperationSelector, object]) -> tuple[ClientOperationConfig, ...]:
-    """Read the JSON settings of each operation into its record; the client settings then validate their values.
+def operation_configs(
+    entries: Mapping[str, object], selector: Callable[[str], OperationSelector]
+) -> tuple[ClientOperationConfig, ...]:
+    """Read the JSON settings of each operation reference into its record; the client settings validate the values.
 
     Parameters are keyed by location and name, such as `query:limit`, and body fields by media type, then property.
     """
-    read = [_entry(ref, entry, f"operations[{index}]") for index, (ref, entry) in enumerate(entries.items())]
+    read = [_entry(selector(key), entry, f"operations[{key!r}]") for key, entry in entries.items()]
     if problems := tuple(item for item in read if isinstance(item, Diagnostic)):
         raise APIGenerationError(problems, option_prefix=OPTION_PREFIX)
     return tuple(item for item in read if isinstance(item, ClientOperationConfig))

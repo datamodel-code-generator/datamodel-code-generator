@@ -16,6 +16,7 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
 DEFAULT_ENCODING = "utf-8"
+CLIENT_PROTOCOLS_MAX_DEPTH = 64
 JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
