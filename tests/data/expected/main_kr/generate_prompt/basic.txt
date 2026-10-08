@@ -741,11 +741,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         override --treat-dot-as-module or --no-treat-dot-as-
                         module.
   --target-pydantic-version {2,2.11,2.12}
-                        Target Pydantic version for generated code. '2':
-                        Pydantic 2.0+ compatible (default, uses
-                        populate_by_name). '2.11': Pydantic 2.11+ (uses
-                        validate_by_name). '2.12': Pydantic 2.12+ (supports
-                        MISSING sentinel).
+                        Oldest Pydantic version the generated code must
+                        support. Unset: the newest supported feature forms,
+                        with populate_by_name config like '2'. '2': Pydantic
+                        2.0+ compatible (uses populate_by_name). '2.11':
+                        Pydantic 2.11+ (uses validate_by_name). '2.12':
+                        Pydantic 2.12+ (supports MISSING sentinel).
   --target-python-version {3.10,3.11,3.12,3.13,3.14}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module

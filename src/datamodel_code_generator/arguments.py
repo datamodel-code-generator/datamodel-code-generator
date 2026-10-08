@@ -92,7 +92,7 @@ def _external_ref_mapping(value: str) -> str:
             "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
         )
         raise ArgumentTypeError(msg)
-    file_path, python_package = value.split("=", maxsplit=1)
+    file_path, python_package = value.rsplit("=", maxsplit=1)
     if not file_path.strip() or not python_package.strip():
         msg = f"Invalid --external-ref-mapping format: {value!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
         raise ArgumentTypeError(msg)
@@ -542,8 +542,9 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--target-pydantic-version",
-    help="Target Pydantic version for generated code. "
-    "'2': Pydantic 2.0+ compatible (default, uses populate_by_name). "
+    help="Oldest Pydantic version the generated code must support. "
+    "Unset: the newest supported feature forms, with populate_by_name config like '2'. "
+    "'2': Pydantic 2.0+ compatible (uses populate_by_name). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel).",
     choices=[v.value for v in TargetPydanticVersion],

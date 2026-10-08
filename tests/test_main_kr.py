@@ -1260,6 +1260,91 @@ def test_generate_cli_command_reconstructs_false_boolean_optional_actions(
     validate_generated_code(command_output.read_text(), str(command_output), do_exec=True)
 
 
+def test_generate_cli_command_with_mapping_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --generate-cli-command prints table options in the form their CLI options accept."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+aliases = {"first name" = "first_name", id = ["id_", "identifier"]}
+extra-template-data = {Person = {comment = "it's ü $HOME"}}
+dataclass-arguments = {frozen = true, kw_only = false}
+external-ref-mapping = {"../common/a b.yaml" = "pkg.models", "$HOME/other.yaml" = "pkg.other"}
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
+
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--generate-cli-command"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "mapping_options.txt",
+        )
+
+
+def test_generate_cli_command_skips_empty_external_ref_mapping(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --generate-cli-command omits an empty external-ref-mapping table."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+external-ref-mapping = {}
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
+
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--generate-cli-command"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "empty_external_ref_mapping.txt",
+        )
+
+
+def test_generate_cli_command_reconstructs_mapping_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test reconstructed CLI commands apply table options like the pyproject configuration."""
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "person.json", tmp_path / "schema.json")
+    shutil.copy(DATA_PATH / "config" / "mapping_round_trip.toml", tmp_path / "pyproject.toml")
+    config_output = tmp_path / "from-config.py"
+    command_output = tmp_path / "from-command.py"
+
+    with chdir(tmp_path):
+        run_main_with_args(["--output", str(config_output)])
+        run_main_with_args(["--generate-cli-command", "--output-format", "json"], capsys=capsys)
+        generated_command = json.loads(capsys.readouterr().out)
+        run_main_with_args([
+            *generated_command["arguments"][1:],
+            "--ignore-pyproject",
+            "--output",
+            str(command_output),
+        ])
+
+    assert_file_content(config_output, "generate_cli_command/mapping_round_trip.py")
+    assert_file_content(command_output, "generate_cli_command/mapping_round_trip.py")
+    validate_generated_code(command_output.read_text(), str(command_output), do_exec=True)
+
+
+def test_generate_cli_command_reconstructs_external_ref_mapping_with_equals_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test a reconstructed external-ref-mapping keeps a file path that contains `=`."""
+    shutil.copytree(DATA_PATH / "config" / "external_ref_mapping_round_trip", tmp_path, dirs_exist_ok=True)
+    config_output = tmp_path / "from-config.py"
+    command_output = tmp_path / "from-command.py"
+
+    with chdir(tmp_path):
+        run_main_with_args(["--output", str(config_output)])
+        run_main_with_args(["--generate-cli-command", "--output-format", "json"], capsys=capsys)
+        generated_command = json.loads(capsys.readouterr().out)
+        run_main_with_args([
+            *generated_command["arguments"][1:],
+            "--ignore-pyproject",
+            "--output",
+            str(command_output),
+        ])
+
+    assert_file_content(config_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+    assert_file_content(command_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+
+
 def test_generate_cli_command_excludes_excluded_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-cli-command excludes options like debug, version, etc."""
     pyproject_toml = """
@@ -4553,13 +4638,18 @@ def test_target_python_version_outputs(output_file: Path) -> None:
     options=["--target-pydantic-version"],
     option_description="""Target Pydantic version for generated code compatibility.
 
-The `--target-pydantic-version` flag controls Pydantic version-specific config:
+The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
+Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **2**: Uses `populate_by_name=True` (compatible with Pydantic 2.0-2.10)
-- **2.11**: Uses `validate_by_name=True` (for Pydantic 2.11+)
-- **2.12**: Uses `validate_by_name=True` and allows features that require Pydantic 2.12+
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
+- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+  `json_schema_extra` for deprecated fields, and dictionary-key models defined first
+- **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
+  `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
+- **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 
-This prevents breaking changes when generated code is used on older Pydantic versions.""",
+See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.""",
     input_schema="jsonschema/person.json",
     cli_args=[
         "--target-pydantic-version",
@@ -4575,13 +4665,8 @@ This prevents breaking changes when generated code is used on older Pydantic ver
 def test_target_pydantic_version(output_file: Path) -> None:
     """Target Pydantic version for generated code compatibility.
 
-    The `--target-pydantic-version` flag controls Pydantic version-specific config:
-
-    - **2**: Uses `populate_by_name=True` (compatible with Pydantic 2.0-2.10)
-    - **2.11**: Uses `validate_by_name=True` (for Pydantic 2.11+)
-    - **2.12**: Uses `validate_by_name=True` and allows features that require Pydantic 2.12+
-
-    This prevents breaking changes when generated code is used on older Pydantic versions.
+    The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
+    Output never depends on the Pydantic installed with datamodel-code-generator; unset uses the newest feature forms.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",

@@ -1,0 +1,82 @@
+{
+  "Codes": [
+    {
+      "payload": [
+        {
+          "ka": 1
+        }
+      ],
+      "errors": []
+    },
+    {
+      "payload": [
+        {
+          "za": 1
+        }
+      ],
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": [],
+      "errors": [
+        "too_short"
+      ]
+    }
+  ],
+  "Holder": [
+    {
+      "payload": {
+        "name": "abc",
+        "codes": [
+          {
+            "ka": 1
+          }
+        ],
+        "many": [
+          [
+            {
+              "kb": 2
+            }
+          ]
+        ]
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "name": "badly"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "codes": [
+          {
+            "za": 1
+          }
+        ]
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "many": [
+          [
+            {
+              "za": 1
+            }
+          ]
+        ]
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ]
+}

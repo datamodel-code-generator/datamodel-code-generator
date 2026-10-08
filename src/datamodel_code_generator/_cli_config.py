@@ -325,7 +325,7 @@ def _get_config_class() -> type[Config]:
                             "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
                         )
                         raise Error(msg)
-                    file_path, python_package = item.split("=", maxsplit=1)
+                    file_path, python_package = item.rsplit("=", maxsplit=1)
                     file_path = file_path.strip()
                     python_package = python_package.strip()
                     if not file_path or not python_package:

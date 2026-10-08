@@ -1022,6 +1022,11 @@ def _pyproject_toml_value(key: str, value: object) -> TomlValue:
 
     if key not in JsonConfigSpecs.by_field_name or not isinstance(value, Mapping):
         return cast("TomlValue", value)
+    return _compact_json(value)
+
+
+def _compact_json(value: Mapping[str, Any]) -> str:
+    """Serialize a mapping option as the compact JSON text its CLI option accepts."""
     return json.dumps(_json_ready(value), ensure_ascii=False, separators=(",", ":"))
 
 
@@ -1286,6 +1291,13 @@ def _format_cli_value(value: str | list[str]) -> str:
     return f'"{value}"' if " " in value else value
 
 
+def _format_cli_mapping(key: str, value: Mapping[str, Any]) -> str:
+    """Format a pyproject table as the argument its CLI option accepts."""
+    if key == "external_ref_mapping":
+        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
+    return shlex.quote(_compact_json(value))
+
+
 @lru_cache(maxsize=1)
 def _negative_boolean_options() -> dict[str, str]:
     """Index parser-defined negative flags only when command generation needs them."""
@@ -1318,6 +1330,9 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
                 parts.append(negative_option)
         elif isinstance(value, list):
             parts.extend((f"--{cli_key}", _format_cli_value(cast("list[str]", value))))
+        elif isinstance(value, Mapping):
+            if argument := _format_cli_mapping(key, value):
+                parts.extend((f"--{cli_key}", argument))
         else:
             parts.extend((f"--{cli_key}", _format_cli_value(str(value))))
 

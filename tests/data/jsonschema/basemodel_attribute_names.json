@@ -1,0 +1,9 @@
+{
+  "title": "AttributeNames",
+  "type": "object",
+  "properties": {
+    "mro": {"type": "string"},
+    "register": {"type": "string"},
+    "__name__": {"type": "string"}
+  }
+}

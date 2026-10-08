@@ -252,6 +252,8 @@ class ModuleSplitMode(Enum):
 class TargetPydanticVersion(Enum):
     """Target Pydantic version for generated code.
 
+    An unset target emits the newest supported feature forms and keeps the populate_by_name config naming of V2.
+
     V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).
     V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).

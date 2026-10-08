@@ -64,6 +64,8 @@ from .payload_validation import codegen as payload_codegen
 from .payload_validation.conformance import _msgspec_type_statement_exclusion_reason
 from .payload_validation.constants import (
     PAYLOAD_TARGET_PYTHON_VERSION,
+    PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
 )
@@ -124,17 +126,20 @@ PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN = Version(PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION)
 PydanticV2LegacyRuntimeExclusions: TypeAlias = Mapping[PayloadBackend, Mapping[str, str]]
 PydanticV2LegacyRuntimeExclusionGroups: TypeAlias = Sequence[tuple[Version, PydanticV2LegacyRuntimeExclusions]]
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN, PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
 )
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_0_RUNTIME_MAX, PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
@@ -765,15 +770,21 @@ def test_pydantic_v2_float_multiple_of_exclusions_are_version_gated(
     assert exclusion_reason is None
 
 
-@pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
+@pytest.mark.parametrize(
+    ("backend", "min_version"),
+    [
+        (PayloadBackend.PYDANTIC_V2, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
+        (PayloadBackend.PYDANTIC_V2_DATACLASS, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN),
+    ],
+)
 @pytest.mark.allow_direct_assert
 def test_pydantic_v2_legacy_runtime_cross_module_lookaround_exclusions_are_version_gated(
-    backend: PayloadBackend,
+    backend: PayloadBackend, min_version: Version
 ) -> None:
-    """Cross-module RootModel lookaround validators need Pydantic 2.5+ for both Pydantic backends."""
+    """Cross-module lookaround validators need Pydantic 2.5+, or 2.8+ for compiled dataclass alias patterns."""
     case = SCHEMA_CASE_BY_ID["jsonschema/schema_validators_runtime_root_cross_module/a.json"]
     assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, Version("2.0.3"))
-    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN) is None
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, min_version) is None
 
 
 @pytest.mark.parametrize(
@@ -781,6 +792,11 @@ def test_pydantic_v2_legacy_runtime_cross_module_lookaround_exclusions_are_versi
     [
         ("jsonschema/false_reference_fast_path.json", Version("2.9.2"), PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN),
         ("jsonschema/use_decimal_for_multiple_of.json", Version("2.0.3"), PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
+        (
+            "jsonschema/root_alias_constraints/lookaround.json",
+            Version("2.7.4"),
+            PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
+        ),
     ],
 )
 @pytest.mark.allow_direct_assert
@@ -1344,13 +1360,20 @@ def test_payload_runtime_pydantic_version_witnesses(
     validate_with_source_schema(case, adapter.dump_python(validated, mode="json"))
 
 
-def test_payload_runtime_dataclass_lookaround_gap(tmp_path: Path) -> None:
-    """A bare dataclass alias has no regex-engine config even on modern Pydantic."""
+@pytest.mark.skipif(
+    PYDANTIC_RUNTIME_VERSION < PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
+    reason="Pydantic before 2.8.0 cannot validate compiled patterns",
+)
+def test_payload_runtime_dataclass_lookaround_alias(tmp_path: Path) -> None:
+    """A bare dataclass alias compiles its lookaround pattern, so it validates without a consuming dataclass."""
     case = SCHEMA_CASE_BY_ID["jsonschema/root_alias_constraints/lookaround.json"]
-    with pytest.raises(PayloadAdapterError, match="look-around"):
-        generate_payload_runtime(
-            case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2_DATACLASS
-        )
+    runtime = generate_payload_runtime(
+        case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2_DATACLASS
+    )
+    validate_with_source_schema(case, "a")
+    runtime.validate_python("a")
+    with pytest.raises(ValidationError, match="string_pattern_mismatch"):
+        runtime.validate_python("b")
 
 
 @pytest.mark.parametrize(

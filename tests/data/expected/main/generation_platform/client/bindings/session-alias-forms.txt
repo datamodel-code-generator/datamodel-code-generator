@@ -7,8 +7,8 @@ render pydantic_v2.BaseModel py311
   from __future__ import annotations
   from types import NoneType
   from typing_extensions import TypeAliasType
-  from pydantic import BaseModel, constr
-  from typing import Any
+  from pydantic import BaseModel, Field
+  from typing import Annotated, Any
   from types import NoneType
   
   
@@ -21,7 +21,7 @@ render pydantic_v2.BaseModel py311
   
   
   
-  NullUnion = TypeAliasType("NullUnion", constr(min_length=3) | None)
+  NullUnion = TypeAliasType("NullUnion", Annotated[str, Field(min_length=3)] | None)
   
   
   
@@ -146,8 +146,8 @@ render pydantic_v2.BaseModel py312
   
   from __future__ import annotations
   from types import NoneType
-  from pydantic import BaseModel, constr
-  from typing import Any
+  from pydantic import BaseModel, Field
+  from typing import Annotated, Any
   from types import NoneType
   
   
@@ -160,7 +160,7 @@ render pydantic_v2.BaseModel py312
   
   
   
-  type NullUnion = constr(min_length=3) | None
+  type NullUnion = Annotated[str, Field(min_length=3)] | None
   
   
   
@@ -265,10 +265,10 @@ render pydantic_v2.dataclass py311
   from __future__ import annotations
   from types import NoneType
   from typing_extensions import TypeAliasType
-  from pydantic import constr
-  from typing import Any
+  from typing import Annotated, Any
   from types import NoneType
   from pydantic.dataclasses import dataclass
+  from pydantic import Field
   
   
   
@@ -280,7 +280,7 @@ render pydantic_v2.dataclass py311
   
   
   
-  NullUnion = TypeAliasType("NullUnion", constr(min_length=3) | None)
+  NullUnion = TypeAliasType("NullUnion", Annotated[str, Field(min_length=3)] | None)
   
   
   
@@ -390,10 +390,10 @@ render pydantic_v2.dataclass py312
   
   from __future__ import annotations
   from types import NoneType
-  from pydantic import constr
-  from typing import Any
+  from typing import Annotated, Any
   from types import NoneType
   from pydantic.dataclasses import dataclass
+  from pydantic import Field
   
   
   
@@ -405,7 +405,7 @@ render pydantic_v2.dataclass py312
   
   
   
-  type NullUnion = constr(min_length=3) | None
+  type NullUnion = Annotated[str, Field(min_length=3)] | None
   
   
   
