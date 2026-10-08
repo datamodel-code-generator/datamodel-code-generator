@@ -158,9 +158,9 @@ def test_client_cli_precedence(
 def test_client_cli_pyproject_paths(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Resolve the documents of pyproject.toml operation references and helpers against its directory.
+    """Resolve the documents of pyproject.toml tables of operation references and helpers against its directory.
 
-    Command-line operation references and helpers resolve against the working directory.
+    Inline JSON operation references and helpers on the command line resolve against the working directory.
     """
     project, work = tmp_path / "project", tmp_path / "project" / "work"
     work.mkdir(parents=True)
@@ -200,6 +200,100 @@ def test_client_cli_pyproject_protocols_file(
     monkeypatch.chdir(work)
     run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES)
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/options/protocols/_helpers.py")
+
+
+def _json_files(root: Path, *pyproject: str) -> None:
+    """Copy the JSON files that name options.yaml as their sibling, and the document, into a directory of a root.
+
+    One more helper file names its missing document by an absolute path.
+    """
+    shutil.copytree(CLI / "json-files", directory := root / "api")
+    shutil.copy2(CLI / "options.yaml", directory / "options.yaml")
+    helpers = json.loads((directory / "unresolved.json").read_text(encoding="utf-8"))
+    helpers["pets.all"]["operation"]["document"] = (directory.resolve() / "missing.yaml").as_posix()
+    (directory / "absolute.json").write_text(json.dumps({"pets.all": helpers["pets.all"]}), encoding="utf-8")
+    for name in pyproject:
+        shutil.copy2(CLI / name, root / "pyproject.toml")
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "arguments"),
+    [
+        (
+            [],
+            [
+                *("--input", "{project}/api/options.yaml", "--input-file-type", "openapi", *OPTIONS),
+                *("--output", "{project}/models.py", "--generate-client", "httpx2", *PACKAGES),
+                *("--client-output", "{project}/client", "--client-protocols", "{project}/api/protocols.json"),
+                *("--client-operations", "{project}/api/operations.json"),
+            ],
+        ),
+        (
+            [],
+            [
+                *("--input", "../api/options.yaml", "--input-file-type", "openapi", *OPTIONS),
+                *("--output", "../models.py", "--generate-client", "httpx2", *PACKAGES),
+                *("--client-output", "../client", "--client-protocols", "../api/protocols.json"),
+                *("--client-operations", "../api/operations.json"),
+            ],
+        ),
+        (["pyproject-json-files.toml"], []),
+        (["pyproject-json-files-jobs.toml"], ["--job", "client"]),
+    ],
+    ids=["absolute", "relative", "pyproject", "job"],
+)
+def test_client_cli_json_file_documents(
+    pyproject: list[str],
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve the documents that a JSON file of helpers or operations names against the file's directory.
+
+    The file is an option with an absolute or a relative path, or a key of pyproject.toml or of one of its jobs.
+    """
+    project, work = tmp_path / "project", tmp_path / "project" / "work"
+    work.mkdir(parents=True)
+    _json_files(project, *pyproject)
+    monkeypatch.chdir(work)
+    run_main_with_args(
+        [argument.format(project=project) for argument in arguments], capsys=capsys, expected_stderr=DEPENDENCIES
+    )
+    assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/json-files/_helpers.py")
+    assert_output(_methods(project / SYNC, tmp_path), EXPECTED / "cli" / "json-files" / "documents.txt")
+
+
+@pytest.mark.parametrize(
+    ("name", "option"),
+    [
+        ("unresolved", "--client-protocols"),
+        ("absolute", "--client-protocols"),
+        ("list", "--client-protocols"),
+        ("unresolved-operations", "--client-operations"),
+    ],
+)
+def test_client_cli_json_file_errors(
+    name: str, option: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Name the file that a document of a helper or operations file resolved to, an absolute one once.
+
+    A helper file that holds no object is refused like the same inline JSON.
+    """
+    monkeypatch.chdir(tmp_path)
+    _json_files(tmp_path)
+    run_main_and_assert(
+        input_path=Path("api/options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, option, f"api/{name}.json"],
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+    )
+    assert_output(
+        capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
+        EXPECTED / "cli" / "json-files" / f"{name}.txt",
+    )
 
 
 def test_client_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
@@ -683,7 +777,10 @@ def test_client_cli_setting_errors(
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+    assert_output(
+        capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
+        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
+    )
 
 
 @pytest.mark.parametrize("form", ["pyproject", "options"])
@@ -842,7 +939,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
 
 The JSON object, inline or in a file, maps operation references to their settings. An operation reference is the
 JSON pointer of the path item method, such as `/paths/~1pets/get`, optionally after a document and `#`, such as
-`pets.yaml#/paths/~1pets/get`. The settings are `resource`, `name`, `parameter_names` (keyed by location and name,
+`pets.yaml#/paths/~1pets/get`. A relative document resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table. The settings are
+`resource`, `name`, `parameter_names` (keyed by location and name,
 such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`,
 `body_arguments`, which overrides `--client-body-arguments`, `body_field_names` (keyed by media type, then property,
 such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `request_id_header`, `success_statuses`,
@@ -904,8 +1003,9 @@ against the document's URL when it is read from one.""",
 
 The JSON object, inline or in a file, maps each helper's name to the definition of a pagination, polling, stream,
 WebSocket, cache, upload, or webhook helper, as the Python client guide describes. Relative documents that its
-references name resolve against the working directory for a command-line value, and against the pyproject.toml
-directory for the `client-protocols` key, which may also be a table.""",
+references name resolve against the directory of the JSON file that holds them, on the command line and for the
+`client-protocols` key alike. For inline JSON they resolve against the working directory, and for a table of the
+`client-protocols` key against the pyproject.toml directory.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-protocols", "protocols.json"],
                 golden_output=f"{DOC_OUTPUT}/protocols/_helpers.py",

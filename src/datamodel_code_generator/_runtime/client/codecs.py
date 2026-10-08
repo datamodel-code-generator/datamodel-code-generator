@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Generic, NoReturn, cast
 
 from typing_extensions import TypeVar
 
-from ..model_codecs.media import media_kind, plain
+from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET, Unset
 from .errors import response_failure
@@ -87,6 +87,6 @@ class ResponseHeaders(Generic[T_co, M_co]):
             wire = decode_parameter(plan, RawParameter(location="header", fragments=fragments))
             if isinstance(wire, Unset):
                 return branch.missing(info, self._operation_id, name)
-            return codec.decode(cast("str", wire).encode()) if native_json else codec.convert(plain(wire))
+            return codec.decode(cast("str", wire).encode()) if native_json else codec.text(wire)
         except errors as error:
             raise _header_failure(info, self._operation_id, name, error) from None

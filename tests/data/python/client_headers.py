@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import importlib
+import json
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
+from urllib.parse import urlencode
 
 import httpx2
 
@@ -20,10 +23,12 @@ from tests.data.python.client_runtime import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import ModuleType
 
 _RAW: Final = "https://raw.example.com/items"
 _BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
+_PART: Final = '--b\r\nContent-Disposition: form-data; name="{}"\r\n\r\n{}\r\n'
 
 
 def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
@@ -161,9 +166,27 @@ async def _async_headers(package: ModuleType, lines: list[str]) -> None:
     await http.aclose()
 
 
+def _text_outcome(call: Callable[[], object]) -> str:
+    """Report a value, or a failure by its reason, location and cause without a validating backend's own wording."""
+    try:
+        return f"= {call()!r}"
+    except Exception as error:  # noqa: BLE001
+        cause = getattr(error, "cause", None)
+        if hasattr(cause, "errors"):
+            detail = f"{type(cause).__name__}{[item['type'] for item in cause.errors()]}"
+        elif type(cause).__module__ in {"builtins", "decimal"}:
+            detail = repr(cause)
+        else:
+            detail = type(cause).__name__
+        place = ".".join(getattr(error, "location", None) or ())
+        return f"! {type(error).__name__} {getattr(error, 'reason', None)} {place} cause={detail}".replace("  ", " ")
+
+
 def native_boundaries(package: ModuleType, lines: list[str]) -> None:
     """Decode content headers natively and assemble a nullable model body from its fields."""
     types = importlib.import_module(f"{package.__name__}.types.native_headers")
+    codecs = importlib.import_module(f"{package.__name__}.model_codecs")
+    lines.append(f"  public codec exports {codecs.__all__}")
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         for label, header in (
@@ -175,6 +198,46 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
             info = api.native_headers.with_raw_response.get_values().info
             record(lines, label, lambda: types.decode_get_values_header(info, name="X-Value"))
             record(lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional"))
+        for name, value in (
+            ("X-Count", "05"),
+            ("X-Count", "+1"),
+            ("X-Count", "1.0"),
+            ("X-Count", "many"),
+            ("X-Flag", "TRUE"),
+            ("X-Flag", "false"),
+            ("X-Counts", "05,+1,1.0"),
+            ("X-Entry", "value=known,unknown=extra"),
+            ("X-Entry", "value=known,unknown=first,unknown=last"),
+            ("X-Closed", "value=known,unknown=extra"),
+        ):
+            exchange.respond(raw_response(204, **{name: value}))
+            info = api.native_headers.with_raw_response.get_values().info
+            record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+        source = Path(__file__).parents[1] / "generation_platform/client/native-text.json"
+        cases = json.loads(source.read_text(encoding="utf-8"))
+        for name, value in cases["headers"]:
+            content = ((name.encode(), value.encode()),)
+            exchange.respond(lambda _, content=content: httpx2.Response(204, headers=content))
+            info = api.native_headers.with_raw_response.get_values().info
+            read = _text_outcome(lambda: types.decode_get_values_header(info, name=name))
+            lines.append(f"  native {name} {value} {read}")
+        for fields in cases["forms"]:
+            exchange.respond(raw_response(200, urlencode(fields).encode(), "application/x-www-form-urlencoded"))
+            lines.append(f"  native form {fields} {_text_outcome(api.native_headers.get_form)}")
+            parts = "".join(_PART.format(name, value) for name, value in fields.items())
+            exchange.respond(raw_response(200, f"{parts}--b--\r\n".encode(), "multipart/form-data; boundary=b"))
+            lines.append(f"  native parts {fields} {_text_outcome(api.native_headers.get_parts)}")
+        run(lambda: _async_native_headers(package, types, lines))
         exchange.respond(raw_response(204))
         record(lines, "nullable model from fields", lambda: api.native_headers.save_value(value="saved"))
         exchange.responders.clear()
+
+
+async def _async_native_headers(package: ModuleType, types: ModuleType, lines: list[str]) -> None:
+    """Convert header text through the same model codecs on the async client."""
+    exchange = Exchange(lines)
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+        exchange.respond(raw_response(204, **{"X-Count": "+1", "X-Entry": "value=known,unknown=extra"}))
+        info = (await api.native_headers.with_raw_response.get_values()).info
+        for name in ("X-Count", "X-Entry"):
+            record(lines, f"async native {name}", lambda: types.decode_get_values_header(info, name=name))
