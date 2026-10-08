@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, Final, Generic, cast
 
 from typing_extensions import TypeVar
 
+from .media import plain
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -54,6 +56,10 @@ class PydanticCodec(Generic[T]):
     def convert(self, value: object) -> T:
         """Construct from a parsed parameter or non-JSON body through Pydantic."""
         return cast("T", _adapter(self.type).validate_python(value))
+
+    def text(self, value: object) -> T:
+        """Construct from header, form, or part text, leaving text that is no JSON literal to Pydantic."""
+        return cast("T", _adapter(self.type).validate_python(plain(value)))
 
     def assemble(self, fields: Mapping[str, object]) -> T:
         """Construct the native model from field arguments addressed by their wire aliases."""
@@ -123,6 +129,12 @@ class MsgspecCodec(Generic[T]):
         from msgspec import convert  # ruff: ignore[import-outside-top-level] - Only the selected backend is installed.
 
         return cast("T", convert(value, type=self.type, strict=False))
+
+    def text(self, value: object) -> T:
+        """Construct from header, form, or part text, leaving text that is no JSON literal to msgspec."""
+        from msgspec import convert  # ruff: ignore[import-outside-top-level] - Only the selected backend is installed.
+
+        return cast("T", convert(plain(value), type=self.type, strict=False))
 
     def assemble(self, fields: Mapping[str, object]) -> T:
         """Construct a Struct from the supplied field arguments and its own defaults."""
