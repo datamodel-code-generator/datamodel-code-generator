@@ -307,6 +307,33 @@ def abroken(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_AsyncBrokenStream())
 
 
+def import_generated_client(package: str) -> ModuleType:
+    """Import a client's copied runtime when requested, otherwise use the covered source runtime."""
+    return import_generated(package, copied=os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1")
+
+
+def client_copied_runtime_report(root: Path) -> str:
+    """Call a generated client and locate every runtime module that call actually imported."""
+    def scenario(package: ModuleType, lines: list[str]) -> None:
+        exchange = Exchange([])
+        exchange.respond(json_response(200, {"id": 7, "name": "copied"}))
+        with exchange.client(trust_env=False) as native, package.Client(http_client=native) as api:
+            pet = api.pets.get_pet(pet_id=7)
+            lines.append(f"  response {pet.id} {pet.name}")
+            server = exchange.server
+        runtime = [
+            module
+            for name, module in sys.modules.items()
+            if name.startswith(f"{package.__name__}._runtime") and getattr(module, "__file__", None)
+        ]
+        from pathlib import Path
+
+        lines.append(f"  runtime copied {bool(runtime) and all(Path(module.__file__).is_relative_to(root) for module in runtime)}")
+        lines.append(f"  server failures {server.failures if server else []}")
+
+    return generated("pets", "pydantic_v2.BaseModel", root, scenario)
+
+
 def generated(case_name: str, backend: str, root: Path, scenario: Callable[[ModuleType, list[str]], None]) -> str:
     """Generate one fixture's package for a backend, run a scenario against it, and return the cleaned report."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
@@ -314,10 +341,9 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     root.mkdir(parents=True, exist_ok=True)
     _generate(case, backend, root, package)
     sys.path.insert(0, str(root))
-    lines = [f"# {case_name} {backend}"]
+    lines = [f"# {case.get('expected', case_name)} {backend}"]
     try:
-        copied = os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1"
-        scenario(importlib.import_module(package) if copied else import_generated(package), lines)
+        scenario(import_generated_client(package), lines)
     finally:
         stop_servers()
         sys.path.remove(str(root))

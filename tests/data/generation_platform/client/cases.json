@@ -3647,6 +3647,32 @@
     },
     "modules": false
   },
+  "querystring-targets": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-targets.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-targets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-querystring-target-checks": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-target-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-target-checks.json"
+    },
+    "modules": false
+  },
   "webhooks": {
     "input": "webhooks.yaml",
     "references": [
@@ -4764,6 +4790,31 @@
       "body_arguments": "both"
     }
   },
+  "parameter-kinds": {
+    "input": "parameter-kinds.yaml"
+  },
+  "parameter-kinds-decimal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "use_decimal_for_multiple_of": true
+    }
+  },
+  "parameter-kinds-literal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "enum_field_as_literal": "all"
+    }
+  },
+  "parameter-kinds-strict": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    }
+  },
   "templates": {
     "input": "pets.yaml",
     "references": [
@@ -4846,5 +4897,41 @@
         "paths"
       ]
     }
+  },
+  "caching-oauth": {
+    "input": "caching-oauth.json",
+    "references": [
+      "caching.yaml",
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*",
+        "/oauth"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ],
+    "expected": "caching"
   }
 }

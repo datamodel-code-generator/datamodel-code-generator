@@ -9,10 +9,12 @@ import shutil
 import warnings
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
+from functools import partial
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
+from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -35,9 +37,10 @@ from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+    from datamodel_code_generator._api_types import GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
@@ -156,6 +159,33 @@ def generate_client(
         ),
         generator=ClientTarget(),
     )
+
+
+def client_render_call(
+    source: Path,
+    root: Path,
+    package: str,
+    backend: str,
+    model: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> Callable[[], GeneratedProject]:
+    """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
+    return partial(
+        public_client.render_client,
+        source,
+        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
+        config=client_config(
+            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        ),
+    )
+
+
+def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
+    """Render a publication profile with all copied files and its dependency report."""
+    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
+    return client_render_call(
+        _prepare_input(case, root), root, "publication_client", backend, case.get("model"), case.get("config")
+    )()
 
 
 def _diagnostic(item: Diagnostic) -> str:
