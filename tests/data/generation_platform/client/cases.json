@@ -3647,6 +3647,32 @@
     },
     "modules": false
   },
+  "querystring-targets": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-targets.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-targets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-querystring-target-checks": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-target-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-target-checks.json"
+    },
+    "modules": false
+  },
   "webhooks": {
     "input": "webhooks.yaml",
     "references": [
