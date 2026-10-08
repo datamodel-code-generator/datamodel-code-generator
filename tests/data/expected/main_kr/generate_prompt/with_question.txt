@@ -217,6 +217,17 @@ How do I convert enums to Literal types?
 - `--watch-delay`: Set debounce delay in seconds for watch mode.
 
 ### Target Generation Options
+- `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
+- `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
+- `--client-model-package`: Name the import path of the models the client package imports (experimental).
+- `--client-operations`: Set the client settings of single operations (experimental).
+- `--client-output`: Write the client package to this directory (experimental).
+- `--client-package`: Name the import path of the client package (experimental).
+- `--client-protocols`: Declare the protocol helpers of the client package (experimental).
+- `--client-resource-names`: Name the resources of tags (experimental).
+- `--client-server-base-url`: Resolve relative server URLs against this base URL (experimental).
+- `--client-signature-style`: Declare the arguments of the operation methods (experimental).
+- `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
 - `--no-server-include-request`
 - `--server-body-mode`: Choose how service methods receive request bodies (experimental).
@@ -955,6 +966,43 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   -h, --help            show this help message and exit
 
 [36;1mTarget generation options (experimental)[0m:
+  --client-body-arguments {body,both}
+                        Take request bodies as one body argument (default) or
+                        also as field arguments (experimental).
+  --client-default-base-url CLIENT_DEFAULT_BASE_URL
+                        Server URL of the operations that declare no servers
+                        (experimental).
+  --client-model-package CLIENT_MODEL_PACKAGE
+                        Import path of the models that --output generates
+                        (experimental).
+  --client-operations CLIENT_OPERATIONS
+                        Settings per operation reference, such as
+                        /paths/~1pets/get, as inline JSON or a JSON file path;
+                        their body_arguments overrides --client-body-arguments
+                        (experimental).
+  --client-output CLIENT_OUTPUT
+                        Directory of the generated client package
+                        (experimental).
+  --client-package CLIENT_PACKAGE
+                        Import path of the generated client package
+                        (experimental).
+  --client-protocols CLIENT_PROTOCOLS
+                        Pagination, polling, stream, WebSocket, cache, upload,
+                        and webhook helpers by name, as inline JSON or a JSON
+                        file path (experimental).
+  --client-resource-names CLIENT_RESOURCE_NAMES
+                        Resource namespaces keyed by tag, such as {"pets":
+                        "store.pets"}, as inline JSON or a JSON file path
+                        (experimental).
+  --client-server-base-url CLIENT_SERVER_BASE_URL
+                        Base URL that relative server URLs of the document
+                        resolve against (experimental).
+  --client-signature-style {explicit,unpack}
+                        Declare operation arguments as keywords (default) or
+                        as one Unpack[TypedDict] (experimental).
+  --generate-client {httpx2}
+                        Generate an HTTPX2 client package for the models; the
+                        --client-* options configure it (experimental).
   --generate-server {fastapi}
                         Generate a FastAPI server package for the models; the
                         --server-* options configure it (experimental).
