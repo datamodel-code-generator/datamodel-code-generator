@@ -398,17 +398,22 @@ own placeholder names.
 
 The application keeps FastAPI's defaults for its documentation endpoints and for the shape of its error
 responses, with one difference: a request that fails validation answers `422` with FastAPI's `{"detail": [...]}`
-records without their `input` and `ctx`, so the response carries each record's `type`, `loc`, and `msg` and does not
-repeat what the request sent. Parameters and bodies that adapters read answer with the same three keys.
+records without their `input` and `ctx`: the response carries each record's `type`, `loc`, and `msg`, so it
+does not return the rejected value as such. `loc` and `msg` are still pydantic's and can hold text the client
+chose: a key of a mapping or an unexpected field in `loc`, a discriminator tag in `msg`, and whatever a validator
+of your own puts in its error message. Parameters and bodies that adapters read answer with the same three keys.
 
 - `create_app` registers the handler, `validation_error_handler`, through FastAPI's `exception_handlers`. Pass
-  your own `exception_handlers` to send other error bodies; an entry for `RequestValidationError` replaces the
-  package's.
+  your own `exception_handlers` to send other error bodies, for example ones without `loc` and `msg`; an entry
+  for `RequestValidationError` replaces the package's.
 - An application of your own that includes `build_router(...)` keeps FastAPI's default records, with `input` and
   `ctx`, unless you register the handler: `app.add_exception_handler(RequestValidationError,
   validation_error_handler)`, imported from the generated package.
 - Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
-  result that fails its response model. That error goes to the server log with the values it rejected.
+  result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
+  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
+- The served document describes validation errors with FastAPI's own `ValidationError` schema, in which `loc`,
+  `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies conform to it.
 - `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and
   `/openapi.json`.
 - The `server` response header is the ASGI server's, not the application's; uvicorn leaves it out with

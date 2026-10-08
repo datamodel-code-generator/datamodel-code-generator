@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
 
 from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
@@ -42,10 +42,14 @@ Route: TypeAlias = tuple[str, Callable[[APIRouter, Wiring], None]]
 
 
 async def validation_error_handler(  # noqa: RUF029 - Starlette runs a synchronous handler in the threadpool.
-    _: Request, error: RequestValidationError
+    _: Request, error: Exception
 ) -> JSONResponse:
-    """Answer 422 with FastAPI's records without what the request sent: their type, location, and message."""
-    records = [{key: value for key, value in record.items() if key not in _REQUEST_VALUES} for record in error.errors()]
+    """Answer 422 with the type, location, and message of each of FastAPI's records, without its input and context.
+
+    The error is the RequestValidationError the handler is registered for; Starlette types every handler's as Exception.
+    """
+    errors = cast("RequestValidationError", error).errors()
+    records = [{key: value for key, value in record.items() if key not in _REQUEST_VALUES} for record in errors]
     return JSONResponse({"detail": jsonable_encoder(records)}, status_code=422)
 
 

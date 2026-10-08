@@ -168,7 +168,8 @@ Operations with the `request` body mode receive the Starlette `Request` and read
 ## Production settings
 
 A request that fails validation answers `422` with FastAPI's `{"detail": [...]}` records.
-`create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, so the response does not repeat what the request sent.
+`create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, so the response does not return the rejected value as such.
+`loc` and `msg` are pydantic's and can still hold text the client chose: a mapping key or an unexpected field name, a discriminator tag, or the message of a validator of your own.
 An application of your own that includes `build_router(...)` keeps FastAPI's records; register the same handler with `app.add_exception_handler(RequestValidationError, validation_error_handler)`, importing `validation_error_handler` from `server`.
 To send other error bodies, pass FastAPI's `exception_handlers` to `create_app`; its entry for `RequestValidationError` replaces the package's.
 A result that fails its response model answers `500` without details, and the error, with the values, goes to the server log, as in any FastAPI application.
@@ -245,7 +246,8 @@ Native parameters follow FastAPI, which takes the last value of a repeated singl
 ## Production settings
 
 A request that fails validation answers `422` with FastAPI's `{"detail": [...]}` records.
-`create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, so the response does not repeat what the request sent.
+`create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, so the response does not return the rejected value as such.
+`loc` and `msg` are pydantic's and can still hold text the client chose: a mapping key or an unexpected field name, a discriminator tag, or the message of a validator of your own.
 An application of your own that includes `build_router(...)` keeps FastAPI's records; register the same handler with `app.add_exception_handler(RequestValidationError, validation_error_handler)`, importing `validation_error_handler` from `server`.
 To send other error bodies, pass FastAPI's `exception_handlers` to `create_app`; its entry for `RequestValidationError` replaces the package's.
 A result that fails its response model answers `500` without details, and the error, with the values, goes to the server log, as in any FastAPI application.
