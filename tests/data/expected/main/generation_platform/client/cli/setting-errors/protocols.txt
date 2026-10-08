@@ -1,5 +1,1 @@
-E_CONFIG_VALUE error config protocols['pets.all'].operation: protocols['pets.all'] needs 'operation'
-E_CONFIG_VALUE error config protocols['pets.all'].items: protocols['pets.all'] needs 'items'
-E_CONFIG_VALUE error config protocols['pets.all'].item_schema: protocols['pets.all'] needs 'item_schema'
-E_CONFIG_VALUE error config protocols['pets.all'].continuation: protocols['pets.all'] needs 'continuation'
-E_CONFIG_VALUE error config protocols['Bad'].kind: protocols['Bad'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
+Error: --client-protocols['pets.all'].operation: protocols['pets.all'] needs 'operation'; --client-protocols['pets.all'].items: protocols['pets.all'] needs 'items'; --client-protocols['pets.all'].item_schema: protocols['pets.all'] needs 'item_schema'; --client-protocols['pets.all'].continuation: protocols['pets.all'] needs 'continuation'; --client-protocols['Bad'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'

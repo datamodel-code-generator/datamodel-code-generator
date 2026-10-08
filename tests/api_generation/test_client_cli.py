@@ -27,7 +27,7 @@ CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/client/cli/options"
-CONFLICT = "E_CONFIG_CONFLICT error config: --generate-client cannot be used with"
+CONFLICT = "Error: --generate-client cannot be used with"
 SYNC = "client/resources/pets/_sync.py"
 
 assert_file_content = create_assert_file_content(EXPECTED)

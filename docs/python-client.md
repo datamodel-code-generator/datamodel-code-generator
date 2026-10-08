@@ -100,8 +100,9 @@ such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, to the s
 datamodel-codegen --client-operations '{"/paths/~1pets/get": {"name": "list_all"}}'
 ```
 
-A member the client does not know receives `E_CONFIG_UNKNOWN`, and a value it cannot use `E_CONFIG_VALUE`, each with
-the option path of the setting, such as `operations[0].runtime.retry_safety` for the first operation entry.
+A member the client does not know, or a value it cannot use, stops generation with `Error:` and exit code 2, naming
+the setting, such as `--client-operations[0].runtime.retry_safety` for the first operation entry; the Python API
+raises `APIGenerationError`.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
