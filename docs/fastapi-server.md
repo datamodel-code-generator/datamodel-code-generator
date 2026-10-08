@@ -79,7 +79,7 @@ class Pets(PetsService):
 app = create_app(pets=Pets())
 ```
 
-Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your project,
+Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your project,
 including what the models import, such as `email-validator` for `format: email` and `python-ulid` for
 `format: ulid`. It names only the minimum version each one needs, so uv adds the latest release and your lock file
 keeps it. Run it, then start the application with an ASGI server:
@@ -88,9 +88,6 @@ keeps it. Run it, then start the application with an ASGI server:
 uv add uvicorn
 uv run uvicorn app:app
 ```
-
-With [`--dependency-format requirements`](cli-reference/manual/dependency-format.md#dependency-format), generation
-prints the lines of a requirements file instead, for pip or `uv pip`.
 
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
@@ -194,8 +191,7 @@ directory, and command-line paths are relative to the working directory.
 
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
-of `pyproject.toml` are validated like model keys, but have no effect while no server is selected. Batch jobs
-(`--job`, `--all-jobs`) cannot generate a server yet.
+of `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
 
 The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
 path references has no URL and is not served. To leave paths out, pass
@@ -219,6 +215,57 @@ document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`
 ```bash
 datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 ```
+
+## Batch jobs
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the server generates it as a single run
+with the same settings does, so one `pyproject.toml` can describe model-only jobs and server jobs together. Put
+`generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
+models only.
+
+```toml
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+
+[tool.datamodel-codegen.profiles.server]
+generate-server = "fastapi"
+server-package = "app.server"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.schemas]
+input = "openapi.yaml"
+output = "client/schemas.py"
+
+[tool.datamodel-codegen.jobs.server]
+profile = "server"
+input = "openapi.yaml"
+output = "app/models.py"
+server-output = "app/server"
+```
+
+```bash
+datamodel-codegen --all-jobs
+datamodel-codegen --job server --server-handler-mode async
+datamodel-codegen --all-jobs --check
+```
+
+A server option on the command line applies to every selected job and takes precedence over the job table, its
+profile, and the base table, as a model option does; every selected job must then select the server.
+
+`server-output`, like `output`, must not overlap the outputs of other jobs or contain the remote lock file. Server
+jobs can share their models, though: jobs that each select the server may name the same `output`, which the batch
+writes once. They must generate the same models for it, so give them the same input and model settings; a model-only
+job cannot share its `output`. The server jobs of a batch write one generation timestamp, unless
+`--disable-timestamp` leaves it out.
+
+The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
+nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
+planned changed in the meantime; the `uv add` notice of each package follows the publication on stderr. `--check`
+compares every job as a single run does and exits with 1 when any of them would change. With `--output-format json`,
+a server job adds the generation or check payload of a single server run to the batch document. Server jobs refuse
+`--watch`, as a single server run does.
 
 ## The generated package
 
@@ -272,7 +319,9 @@ leaves it out, as for model generation; one run heads every file with the same t
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
 directory when the paths name the same input and outputs. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
-uses it, or the default `datamodel-codegen.lock` exists.
+uses it, or the default `datamodel-codegen.lock` exists. As for model generation, it must not overlap the input or
+the model output, and it must lie outside the server output directory; a run with such a lock path stops before it
+generates anything.
 
 Several targets can share one models module: with the same input, whose file name the model header records, the
 same model options, including the same `--openapi-include-paths`, and `--disable-timestamp`, each run writes the same
@@ -374,10 +423,10 @@ A template that does not parse or render stops the run with an `Error` that name
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
 directory, so the model templates must keep the class and field names, as the requirements above describe.
 
-## Diagnostics
+## Errors and warnings
 
 The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
-messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
+messages in order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
 Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `TargetEditWarning`,
@@ -385,9 +434,3 @@ Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `Targ
 carry. Each message starts with the output path, spelled relative to the working directory when it lies inside
 it, so every generated package reports its own files. They respect `--disable-warnings` and Python warning
 filters, and are not returned as diagnostic records.
-
-[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
-records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
-document. Ordinary model generation errors receive `E_GENERATION_FAILURE` with stage `target`; the record's
-message includes the original exception type and message. For example, an unresolved reference is reported as
-`Error: Unresolved local $ref targets: ...` on stderr and as `E_GENERATION_FAILURE` in the JSON document.
