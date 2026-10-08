@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
+from math import isfinite
 from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
 
@@ -30,6 +31,8 @@ _PARAMETER: Final = re.compile(
     rf";[ \t]*(?P<name>{_HTTP_WORD})=(?P<value>{_HTTP_WORD}|"
     r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
 )
+_INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
 
@@ -281,15 +284,20 @@ def _integer_text(value: int) -> str:
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:
-    """Decode a declared scalar's wire text, leaving invalid values to the model."""
+    """Read one canonical lexical form back into its declared JSON scalar kind."""
     if kind == "string":
         return text
-    if kind == "boolean":
-        return text == "true" if text in {"true", "false"} else text
-    try:
-        return int(text) if kind == "integer" else float(text)
-    except ValueError:
-        return text
+    if kind == "boolean" and text in {"true", "false"}:
+        return text == "true"
+    if kind != "boolean" and _INTEGER.fullmatch(text):
+        try:
+            return int(text)
+        except ValueError:
+            msg = "An integer exceeds the interpreter's decimal conversion limit"
+            raise CodecResourceLimitError(msg) from None
+    if kind == "number" and _NUMBER.fullmatch(text) and isfinite(number := float(text)):
+        return number
+    raise issue(code="parameter.lexical", message=f"The value is not a canonical {kind}")
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:
