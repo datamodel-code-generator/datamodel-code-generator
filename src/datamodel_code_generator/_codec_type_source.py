@@ -117,8 +117,8 @@ class LexicalKinds:
 
     An int, float or bool leaf has its own kind: as the builtin, a constrained or strict form of it, or the member
     type of an enum or literal. The text of any other scalar leaf is the model's to read, and so is that of a union
-    with such a leaf. A model, a container, an enum or literal of several kinds, and a union of several kinds none of
-    which reads text as it is, have no kind.
+    with such a leaf. A model, a container, null alone, an enum or literal of several kinds, and a union of several
+    kinds none of which reads text as it is, have no kind.
     """
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
@@ -249,13 +249,13 @@ def _kind(kinds: set[LexicalKind | None], *, mixed: bool) -> LexicalKind | None:
     """Return the one kind of a leaf's kinds, taking an int beside a float as a number.
 
     Several other kinds are the string kind when `mixed` admits them and one of them is the string kind, whose leaf
-    reads the text as it is; the members of one enum or literal admit none. A leaf of null alone is the model's to read.
+    reads the text as it is; the members of one enum or literal admit none. A leaf of null alone has no kind.
     """
     if kinds == _INTEGER_NUMBER:
         return "number"
     if len(kinds) == 1:
         return kinds.pop()
-    return "string" if not kinds or (mixed and "string" in kinds and None not in kinds) else None
+    return "string" if mixed and "string" in kinds and None not in kinds else None
 
 
 class Namespace:

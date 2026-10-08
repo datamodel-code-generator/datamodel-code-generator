@@ -63,6 +63,9 @@ paths:
         - {name: label, in: header, schema: {allOf: [{type: string}, {minLength: 1}]}}
         - {name: either, in: header, schema: {type: [integer, boolean]}}
         - {name: choice, in: header, schema: {enum: [1, a]}}
+        - {name: nothing, in: header, schema: {type: "null"}}
+        - {name: nullOnly, in: header, schema: {enum: [null]}}
+        - {name: none, in: header, schema: {type: [string, "null"], enum: [null]}}
       responses:
         "200":
           description: ok

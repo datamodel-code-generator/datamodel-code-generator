@@ -927,15 +927,11 @@ def _shape(
 def _additional(
     planner: _WirePlanner, schema: YamlValue, source: SourceLocation, location: SourceLocation, *, form: bool
 ) -> FieldPlan | None:
-    match schema:
-        case False:
-            return None
-        case True:
-            return FieldPlan("", "string")
-        case dict() if not schema:
-            return FieldPlan("", "string")
-        case _:
-            return _field(planner, _at(location, "additionalProperties"), "", source, location, form=form)
+    if schema is False:
+        return None
+    if schema is True or schema == {}:
+        return FieldPlan("", "string")
+    return _field(planner, _at(location, "additionalProperties"), "", source, location, form=form)
 
 
 def _field(
