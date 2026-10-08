@@ -303,6 +303,7 @@ class B(BaseModel):
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(base_dir))
+    monkeypatch.delitem(sys.modules, "my_app", raising=False)
 
 
 def _run_jsonschema_dict(
