@@ -1,9 +1,154 @@
-# Python Client (In Development)
+# Python Client Generation
 
-!!! warning "Not available from the CLI yet"
-    The HTTPX2 client generator is still being built. Its settings below are fields of the client's flat target
-    configuration file and of `ClientGenerationConfig`; the `--generate-client` command line entry point and the
-    matching `--client-*` options ship with its release, together with a link to this page from the navigation.
+!!! warning "Experimental"
+
+    HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See
+    [Experimental Features](experimental.md).
+
+`--generate-client httpx2` generates the models of one OpenAPI document with the usual model options and, in the
+same run, an HTTPX2 client package for its operations: a `Client` and an `AsyncClient` with a resource for each tag
+and a method for each operation. Every generated file is regenerated on each run.
+
+## Quick start
+
+Set the client options in `[tool.datamodel-codegen]` of `pyproject.toml`, next to the model options:
+
+```toml
+[tool.datamodel-codegen]
+input = "openapi.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+```
+
+Then run `datamodel-codegen` without arguments to generate the models and the client, or pass the same settings as
+options:
+
+```bash
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --output models.py \
+  --output-model-type pydantic_v2.BaseModel \
+  --openapi-scopes schemas api \
+  --target-python-version 3.11 \
+  --generate-client httpx2 \
+  --client-output client \
+  --client-package client \
+  --client-model-package models
+```
+
+Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
+project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
+emits the model generation and check payloads, as with `--generate-server`.
+
+## Client settings
+
+Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pyproject.toml`, and a field of
+`ClientGenerationConfig` for the [Python API](#python-api):
+
+| Option | `pyproject.toml` key | `ClientGenerationConfig` field | Default |
+|---|---|---|---|
+| `--generate-client httpx2` | `generate-client` | `transport` | off; `"httpx2"` in Python |
+| `--client-output` | `client-output` | `output` | required |
+| `--client-package` | `client-package` | `package` | required |
+| `--client-model-package` | `client-model-package` | `model_package` | required |
+| `--client-signature-style` | `client-signature-style` | `signature_style` | `"explicit"` |
+| `--client-body-arguments` | `client-body-arguments` | `body_arguments` | `"body"` |
+| `--client-resource-names` | `client-resource-names` | `resource_names` | none |
+| `--client-operations` | `client-operations` | `operations` | none |
+| `--client-default-base-url` | `client-default-base-url` | `default_base_url` | none |
+| `--client-server-base-url` | `client-server-base-url` | `server_base_url` | none |
+| `--client-protocols` | `client-protocols` | `protocols` | none |
+
+`--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
+of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file. A value on the
+command line takes precedence over the selected profile, which takes precedence over the base table, and a
+command-line table replaces the whole table of `pyproject.toml`. An operation's own `body_arguments` takes precedence
+over `--client-body-arguments`, wherever each comes from. Paths in `pyproject.toml`, including the JSON files, are
+relative to its directory, and command-line paths are relative to the working directory. The documents that
+operation references and helpers name are relative to the JSON file that holds them, however the file is given, as
+a `$ref` is relative to its document; a file given through a symbolic link uses the link's directory. Without a
+file, they are relative to the `pyproject.toml` directory for its tables, and to the working directory for inline
+JSON on the command line.
+
+`--client-resource-names` maps a tag to the dotted namespace of the resource its operations join, such as
+`{"pets": "store.pets"}`. `--client-operations` maps an operation reference, the JSON pointer of the path item method
+such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, to the settings of that operation:
+
+| Member | Value |
+|---|---|
+| `resource` | The dotted namespace of the operation's resource |
+| `name` | The method name |
+| `parameter_names` | Argument names keyed by location and name, such as `{"query:limit": "page_size"}` |
+| `request_media_type`, `response_media_type` | The default media types of the body and of the result |
+| `description` | The method docstring |
+| `body_arguments` | `"body"` or `"both"`, over `--client-body-arguments` |
+| `body_field_names` | Keyword names of body fields, keyed by media type, then property, such as `{"application/json": {"petName": "pet_name"}}` |
+| `runtime` | `request_id_header`, `success_statuses`, `retry_safety`, `idempotency` (`{"header_name": "Idempotency-Key"}`), `retry_after_ms_header`, `should_retry_header`, `auth_challenge_less_401`, and `accepted_content_encodings` |
+
+```toml
+[tool.datamodel-codegen.client-operations]
+"/paths/~1pets/get" = { name = "list_all", parameter_names = { "query:limit" = "page_size" } }
+"/paths/~1pets/post" = { runtime = { idempotency = { header_name = "Idempotency-Key" } } }
+```
+
+```bash
+datamodel-codegen --client-operations '{"/paths/~1pets/get": {"name": "list_all"}}'
+```
+
+A member the client does not know, or a value it cannot use, stops generation with `Error:` and exit code 2, naming
+the setting by the key it was given under, such as `--client-operations['/paths/~1pets/get'].runtime.retry_safety`;
+the Python API raises `APIGenerationError`.
+
+`--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
+option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
+`--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
+selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
+no client is selected.
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the client generates it as a single run
+does, under the rules of [server jobs](fastapi-server.md#batch-jobs): `client-output` must not overlap the outputs of
+other jobs or contain the remote lock file, and client jobs refuse `--watch`. Jobs that each select a server or a
+client may name the same models `output`, which the batch writes once; they must generate the same models for it.
+
+## Python API
+
+`datamodel_code_generator.client` has the same entry points, `generate_client` and `render_client`, which take the
+model settings as a `GenerateConfig` and the client settings as a `ClientGenerationConfig`:
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import GenerateConfig, OpenAPIScope
+from datamodel_code_generator.client import ClientGenerationConfig, generate_client
+
+generate_client(
+    Path("openapi.yaml"),
+    model_config=GenerateConfig(
+        output=Path("models.py"),
+        input_file_type="openapi",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        target_python_version="3.11",
+    ),
+    config=ClientGenerationConfig(output=Path("client"), package="client", model_package="models"),
+)
+```
+
+`generate_client` publishes every change together and returns `None`, like model generation; `render_client` returns
+the `GeneratedProject` without writing it. The records `ClientGenerationConfig` takes, such as `ClientOperationConfig`,
+`ResourceName`, and `RuntimeOperationMetadata`, and the helper records of a `ProtocolConfiguration`, are imported
+from `datamodel_code_generator.client`. So are the warnings of the
+[server target](fastapi-server.md#errors-and-warnings), such as the `TargetEditWarning` for an owned file edited
+since the last generation.
+
+## Requirements
 
 Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
 version; a target below 3.11, including the default 3.10, is refused with `E_CONFIG_VALUE`.
@@ -12,7 +157,8 @@ Settings of the generated client that change how its methods are declared or che
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 
 The model's `openapi_scopes` must include `api`, so that the models cover the parameters, bodies, and responses of
-the operations; without it, generation raises `datamodel_code_generator.Error`. The client keeps every model setting
+the operations; without it, generation stops with `Error: --generate-client requires --openapi-scopes to include api`
+and exit code 2, and the Python API raises `datamodel_code_generator.Error`. The client keeps every model setting
 as given, including the generation timestamp, which `disable_timestamp` leaves out. The client files are headed,
 formatted, and encoded like the model files, by the same model settings: `formatters`, `custom_formatters` and
 `custom_formatters_kwargs`, `custom_file_header`, `custom_file_header_path` and `custom_file_header_mode`,
@@ -340,23 +486,32 @@ upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNS
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
-| `protocols` | A helper file path, a `ProtocolConfiguration`, or none | None | Target file: `protocols = "client-protocols.json"`, relative to the target file; Python: a `Path`, relative to the working directory, or a `ProtocolConfiguration` record |
+| `protocols` | A helper file path, a JSON object, a `ProtocolConfiguration`, or none | None | `--client-protocols helpers.json` or inline JSON; `client-protocols = "helpers.json"` or a table in `pyproject.toml`; Python: a `Path`, a mapping, or a `ProtocolConfiguration` record. The documents a helper file names are relative to the file in all three; those of inline JSON, a mapping, or a record are relative to the working directory, and those of a `pyproject.toml` table to its directory |
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.toml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.pyproject -->
 <!-- fmt: off -->
 
 ```toml
-schema_version = 1
-output = "client"
-package = "client"
-model_package = "models"
-protocols = "client-protocols.json"
+[tool.datamodel-codegen]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-protocols = "protocols.json"
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.toml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.pyproject -->
 
-A setting that is neither a path nor a `ProtocolConfiguration` fails with `E_CONFIG_VALUE`. The helper file is read
+A Python setting that is neither a path, a mapping, nor a `ProtocolConfiguration` fails with `E_CONFIG_VALUE`. The helper file is read
 only when the target is generated, so its problems are reported then, with the target's identity. Without
 `protocols`, nothing is read.
 
@@ -456,7 +611,8 @@ The file holds one JSON object mapping each helper's name to its definition, in 
 - The file is read as JSON options such as `--aliases` read a JSON file: UTF-8 text parsed by Python's `json`
   module, so a key repeated in one object keeps its last value. A file that cannot be read, text that is not JSON,
   including a path that names no file, and a value that is not an object fail with `E_CONFIG_VALUE` and the message
-  those options give, such as `Invalid JSON for protocols: ...` or `Expected a JSON object, got list`. Before parsing,
+  `--client-protocols` gives, such as `Invalid JSON for protocols: ...` or
+  `Invalid protocols: Input should be a valid dictionary`. Before parsing,
   text that opens more than 64 arrays and objects at once fails the same way, with
   `Invalid JSON for protocols: nests collections deeper than 64 levels`. `NaN` and `Infinity`, which the parser
   accepts, are not JSON values for a literal.
@@ -473,7 +629,7 @@ The file holds one JSON object mapping each helper's name to its definition, in 
 
 | Value | Forms |
 |---|---|
-| Operation reference | An RFC 6901 pointer string to a root path operation, or `{pointer, document?}`. A document names the root input, relative to the helper file, or to the working directory for Python records |
+| Operation reference | An RFC 6901 pointer string to a root path operation, or `{pointer, document?}`. A document names the root input, relative to the helper file, or without a file to the working directory, or to the `pyproject.toml` directory for its table |
 | Schema reference | `{pointer, document?}` with an RFC 6901 pointer; an omitted document is the root input. A document, resolved as for operation references, must be one of the accepted input's documents |
 | Selector | `{from: body, pointer}`, an RFC 6901 pointer over wire names; `{from: header, name, occurrence?}` with `occurrence` `single` (default) or `all`; or `{from: status}`. `all` is accepted only in a binding value |
 | Request target | `{in: path\|query\|header\|cookie, name}`, `{in: querystring, name, pointer}` with the declared querystring's name, or `{in: body, pointer}` |
@@ -547,7 +703,8 @@ E_NAME_COLLISION target protocols['jobs.run'] /paths/~1jobs/post: The polling he
 
 ### Python records
 
-`ProtocolConfiguration(helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+`ProtocolConfiguration(helpers={...})`, imported with its records from `datamodel_code_generator.client`, takes
+`PaginationHelper`, `PollingHelper`, `StreamHelper`,
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
 `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
@@ -2295,7 +2452,7 @@ E_CONFIG_VALUE config protocols['secure.varying'].vary_allowlist[2] /paths/~1sec
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
-| `signature_style` | `"explicit"`, `"unpack"` | `"explicit"` | Target file: `signature_style = "unpack"`; Python: `ClientGenerationConfig(signature_style="unpack")` |
+| `signature_style` | `"explicit"`, `"unpack"` | `"explicit"` | `--client-signature-style unpack`; `pyproject.toml`: `client-signature-style = "unpack"`; Python: `ClientGenerationConfig(signature_style="unpack")` |
 
 It is one choice for the whole package: there is no per-operation setting and no call-time switch. It changes only
 how methods are declared. The calls a method accepts, the requests it sends, its results, and its errors are the same
@@ -2500,8 +2657,8 @@ take them next to the body argument, on every view of the method.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
-| `body_arguments` | `"body"`, `"both"` | `"body"` | Target file: `body_arguments = "both"`; Python: `ClientGenerationConfig(body_arguments="both")`; one operation: `ClientOperationConfig(body_arguments=...)`, where `None` inherits the package's |
-| `body_field_names` | `BodyFieldName` records | `()` | One operation: `ClientOperationConfig(body_field_names=(BodyFieldName(media_type=..., name=..., python_name=...),))` |
+| `body_arguments` | `"body"`, `"both"` | `"body"` | `--client-body-arguments both`; `pyproject.toml`: `client-body-arguments = "both"`; Python: `ClientGenerationConfig(body_arguments="both")`; one operation: its `body_arguments` member of `--client-operations`, or `ClientOperationConfig(body_arguments=...)`, where `None` inherits the package's |
+| `body_field_names` | Property names by media type | none | One operation: its `body_field_names` member of `--client-operations`, such as `{"application/json": {"tag": "pet_tag"}}`, or `ClientOperationConfig(body_field_names=(BodyFieldName(media_type=..., name=..., python_name=...),))` |
 
 With `"both"`, a JSON body whose model is `NewPet` takes either call:
 
@@ -2510,29 +2667,41 @@ client.pets.create_pet(body=NewPet(name="Mimi", kind=Kind.cat), media_type="appl
 client.pets.create_pet(name="Mimi", kind=Kind.cat, media_type="application/json")
 ```
 
-The target file takes the same fields:
+In `pyproject.toml`, the same settings are:
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.toml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.pyproject -->
 <!-- fmt: off -->
 
 ```toml
-schema_version = 1
-output = "client"
-package = "client"
-model_package = "models"
-body_arguments = "both"
+[tool.datamodel-codegen]
+input = "fields.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+openapi-include-paths = ["/pets*", "/owners"]
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-body-arguments = "both"
 
-[[operations]]
-ref = "/paths/~1pets~1{petId}/put"
+[tool.datamodel-codegen.client-operations."/paths/~1pets/post".body_field_names]
+"application/json" = { tag = "pet_tag" }
+"application/x-www-form-urlencoded" = { tag = "pet_tag" }
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets~1{petId}~1visits/post"]
+body_field_names = { "application/json" = { options = "visit_options" } }
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets~1{petId}~1owner/put"]
 body_arguments = "body"
-
-[[operations]]
-ref = "/paths/~1pets/post"
-body_field_names = [{ media_type = "application/json", name = "tag", python_name = "pet_tag" }]
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.toml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.pyproject -->
 
 ### Which bodies take fields
 
@@ -3056,73 +3225,40 @@ acquisition; after handoff, body failures terminate that stream and never issue 
 
 ### Declare API guarantees during generation
 
-The generator entrypoint remains internal during development. This example uses the current internal generator;
-there is no released client CLI or public client-generator facade yet. It assumes `api.yaml` declares
-`POST /orders` and generates its model package alongside the client.
+Operation guarantees are set per operation in `--client-operations`, or `client-operations` of `pyproject.toml`.
+This example assumes `api.yaml` declares `POST /orders`:
+
+```toml
+[tool.datamodel-codegen.client-operations."/paths/~1orders/post".runtime]
+retry_safety = "method_default"
+retry_after_ms_header = "X-Retry-In-Ms"
+should_retry_header = "X-Retry-Permitted"
+idempotency = { header_name = "Idempotency-Key" }
+```
+
+With the [Python API](#python-api), the same operation setting is a record:
 
 ```python
-from pathlib import Path
-
-from datamodel_code_generator import GenerateConfig, OpenAPIScope
-from datamodel_code_generator._api_generation import generate_target
-from datamodel_code_generator._client.config import (
-    ClientGenerationConfig,
+from datamodel_code_generator.client import (
     ClientOperationConfig,
     IdempotencyMetadata,
     RuntimeOperationMetadata,
 )
-from datamodel_code_generator._client.target import ClientTarget
-from datamodel_code_generator.format import Formatter
 
-
-generate_target(
-    Path("api.yaml"),
-    model_config=GenerateConfig(
-        output=Path("build/order_models.py"),
-        input_file_type="openapi",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        formatters=[Formatter.BUILTIN],
+operation = ClientOperationConfig(
+    ref="/paths/~1orders/post",
+    runtime=RuntimeOperationMetadata(
+        idempotency=IdempotencyMetadata(header_name="Idempotency-Key"),
+        retry_after_ms_header="X-Retry-In-Ms",
+        should_retry_header="X-Retry-Permitted",
     ),
-    config=ClientGenerationConfig(
-        output=Path("build/orders"),
-        package="orders",
-        model_package="order_models",
-        operations=(
-            ClientOperationConfig(
-                ref="/paths/~1orders/post",
-                runtime=RuntimeOperationMetadata(
-                    idempotency=IdempotencyMetadata(
-                        header_name="Idempotency-Key",
-                    ),
-                    retry_after_ms_header="X-Retry-In-Ms",
-                    should_retry_header="X-Retry-Permitted",
-                ),
-            ),
-        ),
-    ),
-    generator=ClientTarget(),
 )
-```
-
-The corresponding flat target-file entry is:
-
-```toml
-[[operations]]
-ref = "/paths/~1orders/post"
-
-[operations.runtime]
-retry_safety = "method_default"
-retry_after_ms_header = "X-Retry-In-Ms"
-should_retry_header = "X-Retry-Permitted"
-
-[operations.runtime.idempotency]
-header_name = "Idempotency-Key"
 ```
 
 Only `header_name` is required for idempotency. The key header must be an HTTP token and cannot share
 an outgoing position with an effective parameter or authentication header. The two response control headers must
 have distinct names. Header comparisons ignore ASCII case; outgoing and incoming positions are independent.
-Unknown TOML keys receive `E_CONFIG_UNKNOWN`; malformed values receive `E_CONFIG_VALUE`, and ownership conflicts
+Unknown keys receive `E_CONFIG_UNKNOWN`; malformed values receive `E_CONFIG_VALUE`, and ownership conflicts
 receive `E_CONFIG_CONFLICT`. The generated README lists only the finalized selected operations and their contracts.
 
 ### Supply and retain an idempotency key
@@ -3161,24 +3297,18 @@ across eligible retries.
 `RuntimeOperationMetadata.accepted_content_encodings: tuple[str, ...] = ()` lists the request content codings an
 operation accepts. Values are HTTP tokens compared in lowercase, without duplicates; `gzip` is the only coding with a
 builtin encoder, so another value, including `identity`, receives `E_CONFIG_VALUE`, and a repeated one
-`E_CONFIG_CONFLICT`. With the internal generator entry point shown in
-[Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+`E_CONFIG_CONFLICT`. As in [Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+
+```toml
+[tool.datamodel-codegen.client-operations]
+"/paths/~1items/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+```
 
 ```python
 ClientOperationConfig(
     ref="/paths/~1items/post",
     runtime=RuntimeOperationMetadata(accepted_content_encodings=("gzip",)),
 )
-```
-
-The flat target-file entry is:
-
-```toml
-[[operations]]
-ref = "/paths/~1items/post"
-
-[operations.runtime]
-accepted_content_encodings = ["gzip"]
 ```
 
 The generated README lists the operations that accept a coding.
@@ -3415,28 +3545,23 @@ Bearer invalid-token challenge, or the explicit operation declaration below, and
 replayability, retry count, and the original deadline. `max_retries=0` prevents that resend, while initial
 credential acquisition is still allowed. These callbacks add no implicit token HTTP traffic.
 
-Use the existing internal generation API to declare an API-specific challenge-less 401 contract. It is false unless
+Declare an API-specific challenge-less 401 contract in the operation's `runtime` setting. It is false unless
 explicitly set and is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation.
 It allows token-expired recovery after a 401 without a challenge, subject to the retry rules above.
 It is not a client option or an inferred response behavior.
 
+```toml
+[tool.datamodel-codegen.client-operations]
+"/paths/~1challenge-less/get" = { runtime = { auth_challenge_less_401 = true } }
+```
+
 ```python
-from datamodel_code_generator._client.config import ClientOperationConfig, RuntimeOperationMetadata
+from datamodel_code_generator.client import ClientOperationConfig, RuntimeOperationMetadata
 
 operation = ClientOperationConfig(
     ref="/paths/~1challenge-less/get",
     runtime=RuntimeOperationMetadata(auth_challenge_less_401=True),
 )
-```
-
-The equivalent field in an existing target TOML file is:
-
-```toml
-[[operations]]
-ref = "/paths/~1challenge-less/get"
-
-[operations.runtime]
-auth_challenge_less_401 = true
 ```
 
 ### Sign the finalized request

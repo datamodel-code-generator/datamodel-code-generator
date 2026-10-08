@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "batch",
+  "jobs": [
+    {
+      "name": "nested",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": false,
+        "content": "MISSING: nested/models.py (file does not exist but should be generated)\nMISSING: nested/server/README.md (file does not exist but should be generated)\n",
+        "differences": [
+          {
+            "kind": "missing",
+            "path": "models.py",
+            "message": "MISSING: nested/models.py (file does not exist but should be generated)",
+            "diff": null
+          },
+          {
+            "kind": "missing",
+            "path": "server/README.md",
+            "message": "MISSING: nested/server/README.md (file does not exist but should be generated)",
+            "diff": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "modular",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": false,
+        "content": "MISSING: modular/models/pets.py (should be generated)\nMISSING: modular/server/services.py (should be generated)\n",
+        "differences": [
+          {
+            "kind": "missing",
+            "path": "pets.py",
+            "message": "MISSING: modular/models/pets.py (should be generated)",
+            "diff": null
+          },
+          {
+            "kind": "missing",
+            "path": "<root>/modular/server/services.py",
+            "message": "MISSING: modular/server/services.py (should be generated)",
+            "diff": null
+          }
+        ]
+      }
+    }
+  ]
+}
