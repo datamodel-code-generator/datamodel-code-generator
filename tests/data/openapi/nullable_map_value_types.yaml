@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value types
+  version: "1.0"
+paths:
+  /scores:
+    post:
+      operationId: replaceScores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: [object, "null"]
+              additionalProperties:
+                type: integer
+      responses:
+        "200":
+          description: The stored scores.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scores"
+components:
+  schemas:
+    Player:
+      type: object
+      properties:
+        name:
+          type: string
+    Scores:
+      type: [object, "null"]
+      additionalProperties:
+        type: integer
+    NullFirstScores:
+      type: ["null", object]
+      additionalProperties:
+        type: integer
+    ObjectOnlyScores:
+      type: [object]
+      additionalProperties:
+        type: integer
+    Players:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Player"
+    Teams:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          captain:
+            $ref: "#/components/schemas/Player"
+    Rounds:
+      type: [object, "null"]
+      additionalProperties:
+        type: array
+        items:
+          type: integer
+    Seasons:
+      type: [object, "null"]
+      additionalProperties:
+        type: [object, "null"]
+        additionalProperties:
+          type: number
+    Labels:
+      type: [object, "null"]
+      additionalProperties:
+        type: string
+        minLength: 1
+    Board:
+      type: object
+      required:
+        - scores
+      properties:
+        scores:
+          type: [object, "null"]
+          additionalProperties:
+            type: integer
+        players:
+          type: [object, "null"]
+          additionalProperties:
+            $ref: "#/components/schemas/Player"
+        teams:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              captain:
+                $ref: "#/components/schemas/Player"
+        history:
+          type: array
+          items:
+            type: [object, "null"]
+            additionalProperties:
+              type: integer
+        plain:
+          type: object
+          additionalProperties:
+            type: integer
+        nullable_array:
+          type: [array, "null"]
+          items:
+            type: integer
+        untyped:
+          type: [object, "null"]
+          additionalProperties: true
