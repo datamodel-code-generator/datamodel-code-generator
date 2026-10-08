@@ -1,35 +1,34 @@
 # protocols-shared-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['items.type'].items: protocols.helpers['items.type'].items must be a selector
-  E_CONFIG_VALUE config protocols.helpers['items.header'].items.from: protocols.helpers['items.header'].items.from must be 'body'
-  E_CONFIG_VALUE config protocols.helpers['items.untagged'].items.from: protocols.helpers['items.untagged'].items needs 'from'
-  E_CONFIG_VALUE config protocols.helpers['items.pointer'].items: protocols.helpers['items.pointer'].items: pointer is not in its required form
-  E_CONFIG_UNKNOWN config protocols.helpers['items.unknown'].items.name: protocols.helpers['items.unknown'].items has no key 'name'
-  E_CONFIG_VALUE config protocols.helpers['schema.pointer'].item_schema.pointer: protocols.helpers['schema.pointer'].item_schema.pointer must be an RFC 6901 pointer
-  E_CONFIG_VALUE config protocols.helpers['schema.key'].item_schema: protocols.helpers['schema.key'].item_schema has the key 1, which is not a string
-  E_CONFIG_VALUE config protocols.helpers['schema.type'].item_schema: protocols.helpers['schema.type'].item_schema must be a schema reference
-  E_CONFIG_VALUE config protocols.helpers['operation.missing'].operation.pointer: protocols.helpers['operation.missing'].operation needs 'pointer'
-  E_CONFIG_VALUE config protocols.helpers['operation.type'].operation: protocols.helpers['operation.type'].operation must be an operation reference
-  E_CONFIG_VALUE config protocols.helpers['operation.absent'].operation: protocols.helpers['operation.absent'] needs 'operation'
-  E_CONFIG_UNKNOWN config protocols.helpers['helper.unknown'].extra: protocols.helpers['helper.unknown'] has no key 'extra'
-  E_CONFIG_VALUE config protocols.helpers['bindings.type'].bindings: protocols.helpers['bindings.type'].bindings must be a list
-  E_CONFIG_VALUE config protocols.helpers['binding.type'].bindings[0]: protocols.helpers['binding.type'].bindings[0] must be a binding
-  E_CONFIG_VALUE config protocols.helpers['binding.state'].bindings[0].value.source: protocols.helpers['binding.state'].bindings[0].value.source must be 'input', 'initial' or 'previous'
-  E_CONFIG_VALUE config protocols.helpers['binding.literal'].bindings[0].value.literal: protocols.helpers['binding.literal'].bindings[0].value.literal must be a JSON value
-  E_CONFIG_UNKNOWN config protocols.helpers['binding.value'].bindings[0].value.source: protocols.helpers['binding.value'].bindings[0].value has no key 'source'
-  E_CONFIG_VALUE config protocols.helpers['target.location'].bindings[0].target.in: protocols.helpers['target.location'].bindings[0].target.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
-  E_CONFIG_VALUE config protocols.helpers['target.name'].bindings[0].target: protocols.helpers['target.name'].bindings[0].target: name is not in its required form
-  E_CONFIG_VALUE config protocols.helpers['selector.occurrence'].continuation.read.occurrence: protocols.helpers['selector.occurrence'].continuation.read.occurrence can be 'all' only in a binding value
-  E_CONFIG_VALUE config protocols.helpers['selector.choice'].continuation.read.occurrence: protocols.helpers['selector.choice'].continuation.read.occurrence must be 'single' or 'all'
-  E_CONFIG_VALUE config protocols.helpers['selector.name'].continuation.read: protocols.helpers['selector.name'].continuation.read: name is not in its required form
-  E_CONFIG_VALUE config protocols.helpers['end.null'].continuation.end[0].value: protocols.helpers['end.null'].continuation.end[0].value is null; use kind 'null'
-  E_CONFIG_VALUE config protocols.helpers['end.repeated'].continuation.end[1]: protocols.helpers['end.repeated'].continuation.end[1] repeats an end condition
-  E_CONFIG_VALUE config protocols.helpers['end.empty'].continuation.end: protocols.helpers['end.empty'].continuation.end must be a nonempty list
-  E_CONFIG_VALUE config protocols.helpers['end.kind'].continuation.end[0].kind: protocols.helpers['end.kind'].continuation.end[0].kind must be 'missing', 'null' or 'value'
-  E_CONFIG_VALUE config protocols.helpers['end.type'].continuation.end[0]: protocols.helpers['end.type'].continuation.end[0] must be an end
-  E_CONFIG_VALUE config protocols.helpers['link.header'].continuation.header: protocols.helpers['link.header'].continuation.header must be a header name
-  E_CONFIG_VALUE config protocols.helpers['link.rel'].continuation.rel: protocols.helpers['link.rel'].continuation.rel must be a nonempty UTF-8 string
-  E_CONFIG_VALUE config protocols.helpers['binding.pairs'].bindings[0].value.literal: protocols.helpers['binding.pairs'].bindings[0].value.literal must be a JSON value
-  E_CONFIG_VALUE config protocols.helpers['operation.pointer'].operation: protocols.helpers['operation.pointer'].operation must be an RFC 6901 pointer
-  E_CONFIG_VALUE config protocols.helpers['schema.syntax'].item_schema.pointer: protocols.helpers['schema.syntax'].item_schema.pointer must be an RFC 6901 pointer
+  E_CONFIG_VALUE config protocols['items.type'].items: protocols['items.type'].items must be a selector
+  E_CONFIG_VALUE config protocols['items.header'].items.from: protocols['items.header'].items.from must be 'body'
+  E_CONFIG_VALUE config protocols['items.untagged'].items.from: protocols['items.untagged'].items needs 'from'
+  E_CONFIG_VALUE config protocols['items.pointer'].items: protocols['items.pointer'].items: pointer is not in its required form
+  E_CONFIG_UNKNOWN config protocols['items.unknown'].items.name: protocols['items.unknown'].items has no key 'name'
+  E_CONFIG_VALUE config protocols['schema.pointer'].item_schema.pointer: protocols['schema.pointer'].item_schema.pointer must be an RFC 6901 pointer
+  E_CONFIG_UNKNOWN config protocols['schema.key'].item_schema.1: protocols['schema.key'].item_schema has no key '1'
+  E_CONFIG_VALUE config protocols['schema.type'].item_schema: protocols['schema.type'].item_schema must be a schema reference
+  E_CONFIG_VALUE config protocols['operation.missing'].operation.pointer: protocols['operation.missing'].operation needs 'pointer'
+  E_CONFIG_VALUE config protocols['operation.type'].operation: protocols['operation.type'].operation must be an operation reference
+  E_CONFIG_VALUE config protocols['operation.absent'].operation: protocols['operation.absent'] needs 'operation'
+  E_CONFIG_UNKNOWN config protocols['helper.unknown'].extra: protocols['helper.unknown'] has no key 'extra'
+  E_CONFIG_VALUE config protocols['bindings.type'].bindings: protocols['bindings.type'].bindings must be a list
+  E_CONFIG_VALUE config protocols['binding.type'].bindings[0]: protocols['binding.type'].bindings[0] must be a binding
+  E_CONFIG_VALUE config protocols['binding.state'].bindings[0].value.source: protocols['binding.state'].bindings[0].value.source must be 'input', 'initial' or 'previous'
+  E_CONFIG_VALUE config protocols['binding.literal'].bindings[0].value.literal: protocols['binding.literal'].bindings[0].value.literal must be a JSON value
+  E_CONFIG_UNKNOWN config protocols['binding.value'].bindings[0].value.source: protocols['binding.value'].bindings[0].value has no key 'source'
+  E_CONFIG_VALUE config protocols['target.location'].bindings[0].target.in: protocols['target.location'].bindings[0].target.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
+  E_CONFIG_VALUE config protocols['target.name'].bindings[0].target: protocols['target.name'].bindings[0].target: name is not in its required form
+  E_CONFIG_VALUE config protocols['selector.occurrence'].continuation.read.occurrence: protocols['selector.occurrence'].continuation.read.occurrence can be 'all' only in a binding value
+  E_CONFIG_VALUE config protocols['selector.choice'].continuation.read.occurrence: protocols['selector.choice'].continuation.read.occurrence must be 'single' or 'all'
+  E_CONFIG_VALUE config protocols['selector.name'].continuation.read: protocols['selector.name'].continuation.read: name is not in its required form
+  E_CONFIG_VALUE config protocols['end.null'].continuation.end[0].value: protocols['end.null'].continuation.end[0].value is null; use kind 'null'
+  E_CONFIG_VALUE config protocols['end.repeated'].continuation.end[1]: protocols['end.repeated'].continuation.end[1] repeats an end condition
+  E_CONFIG_VALUE config protocols['end.empty'].continuation.end: protocols['end.empty'].continuation.end must be a nonempty list
+  E_CONFIG_VALUE config protocols['end.kind'].continuation.end[0].kind: protocols['end.kind'].continuation.end[0].kind must be 'missing', 'null' or 'value'
+  E_CONFIG_VALUE config protocols['end.type'].continuation.end[0]: protocols['end.type'].continuation.end[0] must be an end
+  E_CONFIG_VALUE config protocols['link.header'].continuation.header: protocols['link.header'].continuation.header must be a header name
+  E_CONFIG_VALUE config protocols['link.rel'].continuation.rel: protocols['link.rel'].continuation.rel must be a nonempty UTF-8 string
+  E_CONFIG_VALUE config protocols['operation.pointer'].operation: protocols['operation.pointer'].operation must be an RFC 6901 pointer
+  E_CONFIG_VALUE config protocols['schema.syntax'].item_schema.pointer: protocols['schema.syntax'].item_schema.pointer must be an RFC 6901 pointer

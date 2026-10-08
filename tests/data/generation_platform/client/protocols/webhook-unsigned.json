@@ -1,0 +1,12 @@
+{
+  "unsigned.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "none"}
+  },
+  "adapted.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "adapter", "timestamp": "none", "delivery_id": "none"}
+  }
+}

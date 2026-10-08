@@ -1,19 +1,19 @@
 # protocols-stream-resume-checks
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_header'].resume.cursor /paths/~1events/get: The cursor of 'checks.cursor_header' reads a header, where only a body pointer reads an event's cursor
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_absent'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/id' of 'checks.cursor_absent' names no property of any event schema
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_required'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/seq' of 'checks.cursor_required' names no property of '/components/schemas/Created'
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_types'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_types' reads integer values, which the header parameter 'Last-Event-ID' of GET /events does not accept
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_cookie'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_cookie' writes the cookie 'session', which carries credentials no helper writes
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cursor_path'].resume.write /paths/~1streams~1{streamId}/get: The cursor of 'checks.cursor_path' is written to the path parameter 'streamId' of GET /streams/{streamId}, which is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cleared_body'].resume.write /paths/~1feed/post: The cursor of 'checks.cleared_body' can be cleared, which only a header or query parameter can omit; writing it to the request body of POST /feed is not supported yet
-  E_CONFIG_VALUE config protocols.helpers['checks.cleared_required'].resume.write /paths/~1replay/get: The cursor of 'checks.cleared_required' can be cleared, which the query parameter 'from' of GET /replay, a required one, cannot omit
-  E_CONFIG_VALUE config protocols.helpers['checks.reopen_media'].resume.reopen_operation /paths/~1records/get: GET /records declares no text/event-stream success response for the SSE helper 'checks.reopen_media' to reopen its stream with
-  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[0].value.selector /paths/~1events/get: The binding 0 of 'checks.bindings' reads the body of the 200 response of GET /events, which is no JSON model
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].resume.bindings[1].value.source /paths/~1streams~1{streamId}/get: The binding 1 of 'checks.bindings' reads the helper's input, which is not supported yet
-  E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].resume.bindings[2].target /paths/~1streams~1{streamId}/get: The binding 2 of 'checks.bindings' writes the same target as its cursor
-  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
-  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
-  E_CONFIG_VALUE config protocols.helpers['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
-  E_CONFIG_VALUE config protocols.helpers['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols['checks.cursor_header'].resume.cursor /paths/~1events/get: The cursor of 'checks.cursor_header' reads a header, where only a body pointer reads an event's cursor
+  E_CONFIG_VALUE config protocols['checks.cursor_absent'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/id' of 'checks.cursor_absent' names no property of any event schema
+  E_CONFIG_VALUE config protocols['checks.cursor_required'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/seq' of 'checks.cursor_required' names no property of '/components/schemas/Created'
+  E_CONFIG_VALUE config protocols['checks.cursor_types'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_types' reads integer values, which the header parameter 'Last-Event-ID' of GET /events does not accept
+  E_CONFIG_VALUE config protocols['checks.cursor_cookie'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_cookie' writes the cookie 'session', which carries credentials no helper writes
+  E_CLIENT_UNSUPPORTED target protocols['checks.cursor_path'].resume.write /paths/~1streams~1{streamId}/get: The cursor of 'checks.cursor_path' is written to the path parameter 'streamId' of GET /streams/{streamId}, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols['checks.cleared_body'].resume.write /paths/~1feed/post: The cursor of 'checks.cleared_body' can be cleared, which only a header or query parameter can omit; writing it to the request body of POST /feed is not supported yet
+  E_CONFIG_VALUE config protocols['checks.cleared_required'].resume.write /paths/~1replay/get: The cursor of 'checks.cleared_required' can be cleared, which the query parameter 'from' of GET /replay, a required one, cannot omit
+  E_CONFIG_VALUE config protocols['checks.reopen_media'].resume.reopen_operation /paths/~1records/get: GET /records declares no text/event-stream success response for the SSE helper 'checks.reopen_media' to reopen its stream with
+  E_CONFIG_VALUE config protocols['checks.bindings'].resume.bindings[0].value.selector /paths/~1events/get: The binding 0 of 'checks.bindings' reads the body of the 200 response of GET /events, which is no JSON model
+  E_CLIENT_UNSUPPORTED target protocols['checks.bindings'].resume.bindings[1].value.source /paths/~1streams~1{streamId}/get: The binding 1 of 'checks.bindings' reads the helper's input, which is not supported yet
+  E_CONFIG_CONFLICT config protocols['checks.bindings'].resume.bindings[2].target /paths/~1streams~1{streamId}/get: The binding 2 of 'checks.bindings' writes the same target as its cursor
+  E_CONFIG_VALUE config protocols['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
+  E_CONFIG_VALUE config protocols['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
+  E_CONFIG_VALUE config protocols['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
+  E_CONFIG_VALUE config protocols['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes

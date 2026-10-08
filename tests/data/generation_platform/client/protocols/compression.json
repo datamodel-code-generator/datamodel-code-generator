@@ -1,0 +1,128 @@
+{
+  "items.search_all": {
+    "kind": "pagination",
+    "operation": "/paths/~1search/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  },
+  "items.feed_all": {
+    "kind": "pagination",
+    "operation": "/paths/~1feed/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {"kind": "next_url", "read": {"from": "body", "pointer": "/next"}, "end": [{"kind": "missing"}]}
+  },
+  "items.listing": {
+    "kind": "pagination",
+    "operation": "/paths/~1items/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["running"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Outcome"}
+    },
+    "interval": {"seconds": 1}
+  },
+  "events.watch": {
+    "kind": "sse",
+    "operation": "/paths/~1events/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"}
+  },
+  "checks.run": {
+    "kind": "polling",
+    "create": "/paths/~1checks/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1checks~1status/post",
+    "bindings": [
+      {
+        "target": {"in": "body", "pointer": "/id"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["running"],
+    "succeeded": ["done"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Outcome"}
+    },
+    "interval": {"seconds": 1}
+  },
+  "events.resumable": {
+    "kind": "sse",
+    "operation": "/paths/~1events/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "delivery": "at_least_once",
+      "cursor": "event_id",
+      "write": {"in": "query", "name": "cursor"},
+      "reopen_operation": "/paths/~1events/post"
+    }
+  },
+  "events.tail": {
+    "kind": "sse",
+    "operation": "/paths/~1events/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "delivery": "at_least_once",
+      "cursor": "event_id",
+      "reopen_operation": "/paths/~1events/get",
+      "write": {"in": "query", "name": "cursor"}
+    }
+  },
+  "events.push": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "delivery": "at_least_once",
+      "reopen_operation": "/paths/~1events/post",
+      "cursor": {"from": "body", "pointer": "/text"},
+      "missing": "error",
+      "null": "error",
+      "write": {"in": "body", "pointer": "/text"}
+    }
+  }
+}
