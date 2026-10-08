@@ -17,7 +17,6 @@ from datamodel_code_generator.api_types import (
     Diagnostic,
     GeneratedArtifact,
     GeneratedProject,
-    GenerationReport,
     OperationRef,
     PublicationRollbackError,
     SchemaRef,
@@ -27,14 +26,12 @@ from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Publ
 GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any]
 
 
-def generate_fastapi(
-    input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig
-) -> GenerationReport:
+def generate_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig) -> None:
     """Generate the models and the server package once, then publish every change together."""
     from datamodel_code_generator._api_generation import generate_target  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
-    return generate_target(input_, model_config=model_config, config=config, generator=FastAPITarget())
+    generate_target(input_, model_config=model_config, config=config, generator=FastAPITarget())
 
 
 def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, config: FastAPIConfig) -> GeneratedProject:
@@ -53,7 +50,6 @@ __all__ = [
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationInput",
-    "GenerationReport",
     "OperationRef",
     "PublicationRollbackError",
     "ResponseChoice",

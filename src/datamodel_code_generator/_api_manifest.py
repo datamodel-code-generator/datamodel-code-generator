@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cache
@@ -201,7 +202,6 @@ class TargetState:
 
     files: Mapping[PurePosixPath, str] = field(default_factory=lambda: MappingProxyType({}))
     snapshot: Observed = None
-    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 def _is_hash(value: object) -> TypeIs[str]:
@@ -260,15 +260,11 @@ def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState
         manifest = None
     if (owned := _owned(manifest, kind, package)) is not None:
         return TargetState(files=MappingProxyType(owned), snapshot=observe(data))
-    unowned = Diagnostic(
-        code="W_STATE_UNOWNED",
-        severity="warning",
-        stage="ownership",
-        message="The manifest has an old or unknown format, so the target owns no files and deletes none",
-        artifact_path=MANIFEST_NAME,
-        target_id=target_identity(kind, package),
+    warnings.warn(
+        f"{MANIFEST_NAME}: The manifest has an old or unknown format, so the target owns no files and deletes none",
+        stacklevel=2,
     )
-    return TargetState(snapshot=observe(data), diagnostics=(unowned,))
+    return TargetState(snapshot=observe(data))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -330,26 +326,23 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
         if path not in kept and (content := current(path)) is not None
     )
     if conflicts:
-        raise APIGenerationError((*state.diagnostics, *conflicts))
+        raise APIGenerationError(tuple(conflicts))
     return tuple(plans)
 
 
-def hand_edits(state: TargetState, plans: Sequence[FilePlan], target_id: str) -> tuple[Diagnostic, ...]:
+def hand_edits(state: TargetState, plans: Sequence[FilePlan]) -> None:
     """Warn about each owned file whose bytes differ from the hash its last generation recorded."""
-    return tuple(
-        Diagnostic(
-            code="W_TARGET_EDITED",
-            severity="warning",
-            stage="ownership",
-            message="The owned file changed since the last generation, and this generation discards the change",
-            artifact_path=plan.path.as_posix(),
-            target_id=target_id,
-        )
-        for plan in plans
-        if (observed := plan.observed) is not None
-        and (recorded := state.files.get(plan.path)) is not None
-        and observed[0] != recorded
-    )
+    for plan in plans:
+        if (
+            (observed := plan.observed) is not None
+            and (recorded := state.files.get(plan.path)) is not None
+            and observed[0] != recorded
+        ):
+            warnings.warn(
+                f"{plan.path.as_posix()}: The owned file changed since the last generation, "
+                "and this generation discards the change",
+                stacklevel=2,
+            )
 
 
 def manifest_files(plans: Sequence[FilePlan]) -> JSONObject:

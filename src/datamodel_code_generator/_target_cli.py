@@ -95,13 +95,11 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         source = sys.stdin.read()
     if config.check:
         project = render_target(source, model_config=effective, config=target, generator=generator)
-        report.extend(project.diagnostics)
         changes = [artifact for artifact in project.artifacts if artifact.action != "unchanged"]
         for artifact in changes:
             print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
         return _DIFF if changes else _OK
     generated = generate_target(source, model_config=effective, config=target, generator=generator)
-    report.extend(generated.diagnostics)
     if report.destination != "-":
         print(_next_step(target, generated.dependencies, form))  # noqa: T201
     return _OK
@@ -228,24 +226,10 @@ class _Report:
             self.destination = None
             raise APIGenerationError((_conflict("--diagnostics-json names an existing file that is not a report"),))
 
-    def extend(self, diagnostics: Iterable[Diagnostic]) -> None:
-        for diagnostic in diagnostics:
-            self.diagnostics.append(diagnostic)
-            location = diagnostic.option_path or diagnostic.source_pointer or diagnostic.artifact_path
-            where = "" if location is None else f" {location}"
-            print(  # noqa: T201
-                f"{diagnostic.code} {diagnostic.severity} {diagnostic.stage}{where}: {diagnostic.message}",
-                file=sys.stderr,
-            )
-
     def failure(self, error: Exception, *, encoding: str = "utf-8") -> None:
         """Print ordinary target errors and preserve the model CLI's hints and unexpected-error traceback."""
         if isinstance(error, APIGenerationError):
-            for diagnostic in error.diagnostics:
-                if diagnostic.severity == "error":
-                    self.diagnostics.append(diagnostic)
-                else:
-                    self.extend((diagnostic,))
+            self.diagnostics.extend(error.diagnostics)
         else:
             self.diagnostics.append(
                 Diagnostic(

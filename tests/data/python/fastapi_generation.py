@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import warnings
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import Any, TypeAlias, get_type_hints
@@ -17,7 +18,6 @@ from datamodel_code_generator.fastapi import (
     FastAPIConfig,
     GeneratedProject,
     GenerationInput,
-    GenerationReport,
     OperationRef,
     ResponseChoice,
     generate_fastapi,
@@ -140,7 +140,6 @@ def _render(
                 shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
                 files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
         lines.append(line)
-    lines.extend(_diagnostic(item) for item in project.diagnostics)
     return [*lines, *files]
 
 
@@ -156,15 +155,18 @@ def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False)
     rendered: dict[str, Modules] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
-        lines.extend(
-            _render(
-                case,
-                backend,
-                root / (name := backend.replace(".", "_")),
-                modules := {},
-                builtin_sources=builtin_sources,
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            lines.extend(
+                _render(
+                    case,
+                    backend,
+                    root / (name := backend.replace(".", "_")),
+                    modules := {},
+                    builtin_sources=builtin_sources,
+                )
             )
-        )
+        lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
         if modules:
             rendered[name] = modules
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
@@ -185,7 +187,7 @@ def fastapi_api_report(root: Path) -> str:
     hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
     lines = [
         f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
-        for function, result in ((generate_fastapi, GenerationReport), (render_fastapi, GeneratedProject))
+        for function, result in ((generate_fastapi, type(None)), (render_fastapi, GeneratedProject))
     ]
     source = shutil.copy2(SOURCE / "pets.yaml", root / "api.yaml")
     model = GenerateConfig(
@@ -201,9 +203,26 @@ def fastapi_api_report(root: Path) -> str:
     project = render_fastapi(source, model_config=model, config=config)
     lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
     for _ in range(2):
-        report = generate_fastapi(source, model_config=model, config=config)
-        lines.append(f"generate wrote {len(report.written_files)} and kept {len(report.unchanged_files)}")
-    (root / PACKAGE / "README.md").write_text("# edited\n", encoding="utf-8")
-    report = generate_fastapi(source, model_config=model, config=config)
-    lines.append(f"generate rewrote {[item.path.relative_to(root).as_posix() for item in report.written_files]}")
+        result = generate_fastapi(source, model_config=model, config=config)
+        files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+        lines.append(f"generate returned {result}; files {files}")
+    readme = root / PACKAGE / "README.md"
+    original = readme.read_bytes()
+    readme.write_text("# edited\n", encoding="utf-8")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        result = generate_fastapi(source, model_config=model, config=config)
+    lines.append(f"generate returned {result}; readme restored {readme.read_bytes() == original}")
+    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+    for action in ("ignore", "error"):
+        readme.write_text("# edited\n", encoding="utf-8")
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter(action, UserWarning)
+            try:
+                generate_fastapi(source, model_config=model, config=config)
+            except UserWarning as error:
+                lines.append(f"filter {action}: {type(error).__name__}: {error}")
+            else:
+                lines.append(f"filter {action}: {len(recorded)} warnings")
+        lines.append(f"filter {action}: readme restored {readme.read_bytes() == original}")
     return "\n".join(lines) + "\n"

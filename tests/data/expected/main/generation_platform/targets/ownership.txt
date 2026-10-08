@@ -54,7 +54,7 @@ render
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']
-  W_TARGET_EDITED warning ownership routers/pets.py: The owned file changed since the last generation, and this generation discards the change
+  UserWarning: routers/pets.py: The owned file changed since the last generation, and this generation discards the change
 publish
 render
   target=fastapi schema_version=1

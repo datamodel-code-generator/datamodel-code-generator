@@ -118,7 +118,6 @@ class TargetRender:
 
     files: tuple[RenderedFile, ...]
     dependencies: tuple[str, ...] = ()
-    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 class TargetGenerator(Protocol):
@@ -558,14 +557,10 @@ class _Planner:
         )
         self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
+        hand_edits(state, plans)
         return GeneratedProject(
             target=generator.kind,
             artifacts=artifacts,
-            diagnostics=(
-                *state.diagnostics,
-                *rendered.diagnostics,
-                *hand_edits(state, plans, self.target_id),
-            ),
             generator_version=self.version,
             runtime_revision=self.revision,
             dependencies=rendered.dependencies,

@@ -1384,8 +1384,9 @@ def test_fastapi_cli_model_error_context(
 
 
 @pytest.mark.parametrize("report", [False, True])
+@pytest.mark.parametrize("disabled", [False, True])
 def test_fastapi_cli_unowned_manifest(
-    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    report: bool, disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
     monkeypatch.chdir(tmp_path)
@@ -1393,18 +1394,22 @@ def test_fastapi_cli_unowned_manifest(
     (server := tmp_path / "server").mkdir()
     (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
     (server / "application.py").write_text("# User application\n", encoding="utf-8")
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server(*(["--diagnostics-json", "-"] if report else [])),
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "unowned-report.txt" if report else None,
-        expected_stderr=(
-            "W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: "
-            "The manifest has an old or unknown format, so the target owns no files and deletes none\n"
-            "Error: application.py: An unmanaged file occupies a path the target owns\n"
-        ),
-        output_should_not_exist=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=Path("pets.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=_server(
+                *(["--diagnostics-json", "-"] if report else []), *(["--disable-warnings"] if disabled else [])
+            ),
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stdout_path=EXPECTED / "cli" / "unowned-report.txt" if report else None,
+            expected_stderr="Error: application.py: An unmanaged file occupies a path the target owns\n",
+            output_should_not_exist=True,
+        )
+    assert_output(
+        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
+        EXPECTED / "cli" / ("no-warning.txt" if disabled else "unowned-warning.txt"),
     )

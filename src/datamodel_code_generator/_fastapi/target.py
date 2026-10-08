@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
@@ -72,11 +73,10 @@ class FastAPITarget:
             templates=FastAPITemplates.custom(request.model_config, request.target_id, request.cwd),
             docs=docs,
         )
-        return TargetRender(
-            files=renderer.files(),
-            dependencies=_dependencies(plan, request.models),
-            diagnostics=tuple(docs.problems),
-        )
+        files = renderer.files()
+        for problem in docs.problems:
+            warnings.warn(problem, stacklevel=2)
+        return TargetRender(files=files, dependencies=_dependencies(plan, request.models))
 
 
 def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
