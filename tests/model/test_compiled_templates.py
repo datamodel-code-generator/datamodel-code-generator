@@ -73,6 +73,7 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[2]
 EXPECTED_PATH = ROOT / "tests/data/expected/model/compiled_templates"
+TEMPLATE_SETS = dict(zip(("model", "fastapi", "client"), template_sets(), strict=True))
 
 
 def _reference(name: str) -> Reference:
@@ -765,9 +766,13 @@ def _runtime_edge_output() -> str:
     )
 
 
-@pytest.mark.parametrize("template_dir", [entry[0] for entry in template_sets()], ids=["model", "fastapi", "client"])
-def test_template_inventory_is_derived_from_all_builtin_sources(template_dir: Path) -> None:
+@pytest.mark.parametrize(
+    ("template_set", "expected"),
+    [("model", "inventory.txt"), ("fastapi", "fastapi_inventory.txt"), ("client", "client_inventory.txt")],
+)
+def test_template_inventory_is_derived_from_all_builtin_sources(template_set: str, expected: str) -> None:
     """The checked-in inventory records every currently supported template feature."""
+    template_dir = TEMPLATE_SETS[template_set][0]
     inventory = template_compiler_inventory.inventory_templates(template_dir)
     template_paths = "\n".join(
         path.relative_to(template_dir).as_posix()
@@ -781,13 +786,7 @@ def test_template_inventory_is_derived_from_all_builtin_sources(template_dir: Pa
         f"template count: {len(template_compiler_inventory.iter_template_paths(template_dir))}\n"
         f"{template_paths}\n\n{features}\n"
     )
-    assert_output(
-        output,
-        EXPECTED_PATH
-        / (
-            "inventory.txt" if template_dir == TEMPLATE_DIR else f"{template_dir.parent.name.lstrip('_')}_inventory.txt"
-        ),
-    )
+    assert_output(output, EXPECTED_PATH / expected)
 
 
 def test_inventory_rejects_new_features_with_path_line_and_compiler_guidance(tmp_path: Path) -> None:
@@ -1140,14 +1139,12 @@ def test_every_built_in_template_matches_its_jinja_oracle() -> None:
     assert_output(_render_all_builtin_templates(compiled=True), expected)
 
 
-@pytest.mark.parametrize(
-    ("template_dir", "output_dir"), [entry[:2] for entry in template_sets()[1:]], ids=["fastapi", "client"]
-)
-def test_target_templates_match_jinja_oracle(template_dir: Path, output_dir: Path) -> None:
+@pytest.mark.parametrize("target", ["fastapi", "client"])
+def test_target_templates_match_jinja_oracle(target: str) -> None:
     """Compare shipped renderer bytes with Jinja before a formatter can hide template differences."""
     from jinja2 import FileSystemLoader
 
-    target = template_dir.parent.name.lstrip("_")
+    template_dir, output_dir = TEMPLATE_SETS[target][:2]
     cases = json.loads((ROOT / "tests/data/model/compiled_templates/targets.json").read_text(encoding="utf-8"))[target]
     environment = build_environment()
     environment.loader = FileSystemLoader(str(template_dir))
