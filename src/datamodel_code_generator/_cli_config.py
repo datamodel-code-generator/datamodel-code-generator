@@ -198,11 +198,8 @@ def _get_config_class() -> type[Config]:
             """Load the client helpers from inline JSON or a JSON file path, refusing deep nesting before parsing."""
             if not isinstance(value, str | Path):
                 return value
-            from datamodel_code_generator.json_config import (  # noqa: PLC0415
-                CLIENT_PROTOCOLS_MAX_DEPTH,
-                JsonConfigError,
-                validate_json_value_or_file,
-            )
+            from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH  # noqa: PLC0415
+            from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
 
             try:
                 return validate_json_value_or_file(
