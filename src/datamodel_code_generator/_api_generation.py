@@ -42,7 +42,6 @@ from datamodel_code_generator._api_types import (
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
-    attach_diagnostic,
 )
 
 if TYPE_CHECKING:
@@ -187,26 +186,9 @@ def prepare_target(
             option_path="model_config.output",
             message=f"The {generator.kind} target needs model_config.output",
         )
-    try:
-        effective = _prepare_generate_facade_config(model_config)
-    except Error as error:
-        attach_diagnostic(
-            error, Diagnostic(code="E_MODEL_CONFIG", severity="error", stage="config", message=str(error))
-        )
-        raise
+    effective = _prepare_generate_facade_config(model_config)
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
-        error = Error(requirement)
-        attach_diagnostic(
-            error,
-            Diagnostic(
-                code="E_MODEL_CONFIG",
-                severity="error",
-                stage="config",
-                message=requirement,
-                option_path="model_config.openapi_scopes",
-            ),
-        )
-        raise error
+        raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
         raise config_error(
@@ -707,17 +689,11 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
 def _plan(
     input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> tuple[_Planner, GeneratedProject]:
-    from datamodel_code_generator import Error  # noqa: PLC0415
-
     effective = prepare_target(input_, model_config, generator)
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
         effective._generation_timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
-    try:
-        models = _run_models(input_, effective, config)
-    except Error as error:
-        attach_diagnostic(error, Diagnostic(code="E_MODEL_PARSE", severity="error", stage="model", message=str(error)))
-        raise
+    models = _run_models(input_, effective, config)
     try:
         planner = _Planner(models, effective, config, generator)
         return planner, planner.project()
