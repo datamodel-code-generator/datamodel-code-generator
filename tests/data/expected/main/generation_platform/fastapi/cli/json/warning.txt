@@ -25,4 +25,4 @@ file server/routers/__init__.py; matches published True
 file server/routers/pets.py; matches published True
 file server/routers/store.py; matches published True
 file server/services.py; matches published True
-UserWarning: .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+TargetStateWarning: server/.dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
