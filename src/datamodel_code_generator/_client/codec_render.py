@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
@@ -167,42 +166,12 @@ def render_model_bindings(plan: ClientCodecs) -> RenderedBindings:
     return _Renderer(plan).render()
 
 
-def _import(module: str, names: tuple[str, ...]) -> str:
-    line = f"from ._runtime.model_codecs.{module} import {', '.join(names)}"
-    if len(line) < _WIDTH:
-        return line
-    return f"from ._runtime.model_codecs.{module} import (\n" + "".join(f"    {name},\n" for name in names) + ")"
-
-
 def render_model_codecs() -> str:
-    """Expose only the values and lexical errors the client's API needs."""
-    exports = (
-        (
-            "errors",
-            ("CodecError", "CodecResourceLimitError", "ParameterEncodingError", "WireIssue", "WireValidationError"),
-        ),
-        ("media", ("JSONValue",)),
-        (
-            "parameters",
-            (
-                "EncodedParameterContribution",
-                "FragmentContribution",
-                "ParameterFragment",
-                "ParameterLocation",
-                "QueryStringContribution",
-                "RawParameter",
-            ),
-        ),
-        ("unset", ("UNSET", "Unset")),
-    )
-    names = sorted(name for _, group in exports for name in group)
-    return "\n".join([
-        '"""Public JSON values, lexical codec errors, and parameter records."""',
-        "",
-        *starmap(_import, exports),
-        "",
-        "__all__ = [",
-        *(f"    {name!r}," for name in names),
-        "]",
-        "",
-    ])
+    """Expose the JSON value type and the sentinel for an omitted argument."""
+    return '''"""JSON values and omitted arguments used by the generated client."""
+
+from ._runtime.model_codecs.media import JSONValue
+from ._runtime.model_codecs.unset import UNSET, Unset
+
+__all__ = ["JSONValue", "UNSET", "Unset"]
+'''

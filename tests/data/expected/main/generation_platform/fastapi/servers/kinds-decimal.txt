@@ -15,7 +15,8 @@ service UntaggedService without its methods: TypeError
   get_values(amount=UNSET, amounts=UNSET, x_amounts=UNSET, step=UNSET, steps=UNSET, ratio=UNSET, level=UNSET, mixed=UNSET, mixeds=UNSET, codes=UNSET, counts=UNSET, filter=Filter(price=Decimal('12345678901234567890.123'), count=3))
 < 204 - b''
 > GET /values?ratio=2.2
-< 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]
+  get_values(amount=UNSET, amounts=UNSET, x_amounts=UNSET, step=UNSET, steps=UNSET, ratio=<FieldValuesGetQueryRatioParameter.number_2_2: 2.2>, level=UNSET, mixed=UNSET, mixeds=UNSET, codes=UNSET, counts=UNSET, filter=UNSET)
+< 204 - b''
 > GET /values?amount=abc
 < 422 application/json [{"type": "decimal_parsing", "loc": ["query", "amount"]}]
 > GET /values?amounts=1.50,abc
