@@ -71,7 +71,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "setting-errors",
         "empty",
         "querystring",
-        "self-references",
+        "references",
         "evolution",
         "validation-ambiguous",
         "fields",
@@ -267,6 +267,7 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
+        ("references", "self-references", "reference-spellings"),
     ],
 )
 def test_client_helper_spellings(first: str, second: str, expected: str, tmp_path: Path) -> None:

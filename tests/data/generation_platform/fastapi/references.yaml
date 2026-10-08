@@ -7,19 +7,19 @@ security:
 paths:
   /pets:
     parameters:
-      - {$ref: "https://example.com/apis/v1/openapi.yaml#/components/parameters/Trace"}
+      - {$ref: "#/components/parameters/Trace"}
     get:
       operationId: listPets
       parameters:
-        - {$ref: "https://example.com/apis/v1/openapi.yaml#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Limit"}
         - {$ref: "references-library.yaml#/components/parameters/Page"}
       responses:
-        "200": {$ref: "https://example.com/apis/v1/openapi.yaml#/components/responses/Pets"}
+        "200": {$ref: "#/components/responses/Pets"}
     post:
       operationId: createPet
       security:
         - library_key: []
-      requestBody: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/requestBodies/Pet"}
+      requestBody: {$ref: "#/components/requestBodies/Pet"}
       responses:
         "201":
           description: Created.
@@ -27,16 +27,16 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/Pet"}
           links:
-            pets: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/links/Pets"}
+            pets: {$ref: "#/components/links/Pets"}
             owners: {$ref: "references-library.yaml#/components/links/Alias"}
       callbacks:
-        created: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/callbacks/Created"}
+        created: {$ref: "#/components/callbacks/Created"}
   /owners:
-    $ref: "https://example.com/apis/v1/openapi.yaml#/components/pathItems/Owners"
+    $ref: "#/components/pathItems/Owners"
 components:
   securitySchemes:
     bearer: {type: http, scheme: bearer}
-    bearer_alias: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/securitySchemes/bearer"}
+    bearer_alias: {$ref: "#/components/securitySchemes/bearer"}
     library_key: {$ref: "references-library.yaml#/components/securitySchemes/alias"}
   parameters:
     Limit: {name: limit, in: query, schema: {type: integer, minimum: 1}}
@@ -51,7 +51,7 @@ components:
     Pets:
       description: The pets.
       headers:
-        X-Total: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/headers/Total"}
+        X-Total: {$ref: "#/components/headers/Total"}
       content:
         application/json:
           schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
@@ -63,7 +63,7 @@ components:
     Created:
       "{$request.body#/url}":
         post:
-          requestBody: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/requestBodies/Pet"}
+          requestBody: {$ref: "#/components/requestBodies/Pet"}
           responses:
             "204": {description: Received.}
   pathItems:
@@ -71,7 +71,7 @@ components:
       get:
         operationId: listOwners
         parameters:
-          - {$ref: "https://example.com/apis/v1/openapi.yaml#/components/parameters/Limit"}
+          - {$ref: "#/components/parameters/Limit"}
         responses:
           "200":
             description: The owners.
