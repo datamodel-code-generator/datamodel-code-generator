@@ -158,6 +158,10 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
         replies.report(lines)
         lines.append(f"    grown file size={len(grown.getvalue())} reads={grown.reads}")
         grown.close()
+        gone = _File(data["payload"].encode())
+        replies.reset(*data["retry"], change=gone.close)
+        record(lines, "file closed between attempts", lambda: api.retry.post_idempotent(body=gone))
+        replies.report(lines)
         path = Path(directory) / "body.bin"
         path.write_bytes(data["payload"].encode())
         replies.reset(*data["hops"])

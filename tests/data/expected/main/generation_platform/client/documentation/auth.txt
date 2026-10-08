@@ -601,8 +601,10 @@ paths that cannot be opened raise a request `DecodeError` with the reason `unenc
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
 async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
-all its file parts can. Files are read at most 64 KiB at a time: synchronous files and paths with ordinary blocking
-reads, on the event loop in async calls, and async files with `await read(65536)`, never line by line.
+all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
+read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
+loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+call running in a thread before it closes the file.
 
 ## Redirects and transport construction
 

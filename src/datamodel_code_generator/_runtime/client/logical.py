@@ -15,6 +15,7 @@ from .errors import (
     DeadlinePhase,
     DeliveryState,
     SDKError,
+    add_secondary,
     kept_primary,
 )
 from .timing import Budget, ResolvedTimeoutOptions
@@ -26,8 +27,31 @@ if TYPE_CHECKING:
     from .timing import Clock
 
 ErrorT = TypeVar("ErrorT", bound=SDKError)
+T = TypeVar("T")
 
 _REACHED: Final = (DeliveryState.NOT_SENT, DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
+
+
+async def in_thread(function: Callable[..., T], *arguments: object) -> T:
+    """Run a blocking file call in a thread and return or raise only once it has finished.
+
+    A cancelled caller still waits for the running call, so a file is never closed, moved or removed under it; the
+    first cancellation then propagates, with a failure of that call beside it.
+    """
+    import asyncio  # noqa: PLC0415 - Only an asyncio call that opens a path reaches a thread.
+
+    work = asyncio.ensure_future(asyncio.to_thread(function, *arguments))
+    cancelled: asyncio.CancelledError | None = None
+    while not work.done():
+        try:
+            await asyncio.wait((work,))
+        except asyncio.CancelledError as error:  # noqa: PERF203 - Every cancellation waits for the same call.
+            cancelled = cancelled or error
+    if cancelled is None:
+        return work.result()
+    if (failure := work.exception()) is not None:
+        add_secondary(cancelled, failure)
+    raise cancelled
 
 
 class OperationSession:

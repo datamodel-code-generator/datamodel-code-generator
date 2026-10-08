@@ -61,6 +61,11 @@ class BodyBindings:
         entries, self._entries = self._entries, {}
         return [failure for _, source in entries.values() if (failure := source.close()) is not None]
 
+    async def aclose(self) -> list[OSError]:
+        """Close every file this call opened from a path, each in a thread, and return the failures."""
+        entries, self._entries = self._entries, {}
+        return [failure for _, source in entries.values() if (failure := await source.aclose()) is not None]
+
 
 def capture_body(body: object) -> BodyBindings | None:
     """Capture file offsets without consuming other request values."""
@@ -108,7 +113,7 @@ class BodySource:
     async def aopen(self) -> AsyncContent:
         """Prepare one asynchronous native stream."""
         pieces: list[bytes | AsyncContent] = [
-            piece if isinstance(piece, bytes) else piece.open() for piece in self._pieces
+            piece if isinstance(piece, bytes) else await piece.aopen() for piece in self._pieces
         ]
         attempt = AsyncMultipartAttempt(pieces) if self._multipart else cast("AsyncContent", pieces[0])
         return self._aencode(attempt) if self._aencode is not None else attempt
@@ -116,6 +121,10 @@ class BodySource:
     def close(self) -> list[OSError]:
         """Close every file this call opened from a path and return the failures."""
         return self._bindings.close()
+
+    async def aclose(self) -> list[OSError]:
+        """Close every file this call opened from a path, each in a thread, and return the failures."""
+        return await self._bindings.aclose()
 
 
 def bind_body(content: object, *, entry: BodyBindings | None = None, asynchronous: bool = False) -> BodySource:

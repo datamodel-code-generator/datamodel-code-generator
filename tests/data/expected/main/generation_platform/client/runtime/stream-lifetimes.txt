@@ -29,8 +29,11 @@
   async borrowed file open True at 65545 True
   async file object while iterating ConfigurationError secondary [] then read 196608
   async consumed to existing 196608 ConfigurationError secondary [] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
-  async cancelled once opened CancelledError ('cancelled once opened',) notes [] closed [True] partial files 0
-  async removal denied CancelledError ('cancelled once opened',) notes ['Secondary cleanup failure: PermissionError'] closed [True] partial files 1
+  async cancelled once opened CancelledError ('cancelled once opened',) closed [True] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
+  async cancelled while opening CancelledError notes [] partial files 0
+  async removal denied CancelledError notes ['Secondary cleanup failure: PermissionError'] partial files 1
+  async read while opening ConfigurationError secondary [] then read 196608 partial files 0
+  async cancelled while writing CancelledError events ['write entered', 'cancelled done=False', 'write left', 'closed'] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async full disk room 0 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async full disk room 1 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async file object write OSError secondary [] then b'pong'

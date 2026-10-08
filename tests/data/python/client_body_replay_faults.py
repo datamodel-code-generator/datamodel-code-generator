@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import io
 import json
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
@@ -58,14 +60,38 @@ class _Unclosable(io.BytesIO):
         raise OSError("close failed")
 
 
-def _opening(paths: tuple[Path, ...], content: bytes, files: list[_Unclosable]) -> Callable[..., object]:
-    """Open the scenario's paths as files whose close fails, and any other path as it is."""
+class _Held(io.BytesIO):
+    """A file the call opened from a path whose first read waits in its thread until the scenario lets it go."""
+
+    def __init__(self, content: bytes, events: list[str], failure: OSError | None) -> None:
+        super().__init__(content)
+        self.events, self.failure = events, failure
+        self.loop = asyncio.get_running_loop()
+        self.entered, self.released = asyncio.Event(), threading.Event()
+
+    def read(self, size: int | None = -1, /) -> bytes:
+        if not self.released.is_set():
+            self.events.append("read entered")
+            self.loop.call_soon_threadsafe(self.entered.set)
+            self.released.wait(5)
+            self.events.append("read left")
+            if self.failure is not None:
+                raise self.failure
+        return super().read(size)
+
+    def close(self) -> None:
+        self.events.append("closed")
+        super().close()
+
+
+def _opening(paths: tuple[Path, ...], files: list[Any], make: Callable[[], object]) -> Callable[..., object]:
+    """Open the scenario's paths as the files it makes, and any other path as it is."""
     original = Path.open
 
     def opened(self: Path, *arguments: Any, **keywords: Any) -> object:
         if self not in paths:
             return original(self, *arguments, **keywords)
-        files.append(file := _Unclosable(content))
+        files.append(file := make())
         return file
 
     return opened
@@ -95,7 +121,7 @@ def _close_faults(package: ModuleType, options: ModuleType, data: dict[str, Any]
         package.Client(http_client=native, options=config) as api,
         pytest.MonkeyPatch.context() as fault,
     ):
-        fault.setattr(Path, "open", _opening(_PATHS, data["payload"].encode(), files))
+        fault.setattr(Path, "open", _opening(_PATHS, files, lambda: _Unclosable(data["payload"].encode())))
         for label, response, call in (
             (
                 "close failure after a typed result",
@@ -131,7 +157,7 @@ async def _async_close_faults(package: ModuleType, options: ModuleType, data: di
     exchange = Exchange([])
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
         with pytest.MonkeyPatch.context() as fault:
-            fault.setattr(Path, "open", _opening(_PATHS, data["payload"].encode(), files))
+            fault.setattr(Path, "open", _opening(_PATHS, files, lambda: _Unclosable(data["payload"].encode())))
             for label, response, call in (
                 (
                     "async close failure after a typed result",
@@ -161,6 +187,38 @@ async def _async_close_faults(package: ModuleType, options: ModuleType, data: di
                     _closed(lines, label, error, files)
                 else:
                     _closed(lines, label, None, files)
+
+
+@pytest.mark.abnormal_path("A read of a real file cannot be held in its thread while the caller is cancelled.")
+async def _async_thread_faults(package: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
+    """Finish the read running in a thread before a cancelled call closes the file it opened from a path."""
+    exchange = Exchange([])
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
+        for label, cancellations, failure in (
+            ("cancelled while a path is read", 1, None),
+            ("cancelled twice while a path is read", 2, None),
+            ("cancelled while a path read fails", 1, OSError("read failed")),
+        ):
+            events: list[str] = []
+            held = _Held(data["payload"].encode(), events, failure)
+            with pytest.MonkeyPatch.context() as fault:
+                fault.setattr(Path, "open", _opening(_PATHS, [], lambda held=held: held))
+                exchange.respond(_STORED)
+                upload = asyncio.ensure_future(api.request_raw("PUT", data["url"], body=_PATHS[0]))
+                await held.entered.wait()
+                for _ in range(cancellations):
+                    upload.cancel()
+                    await asyncio.sleep(0)
+                events.append(f"cancelled done={upload.done()} closed={held.closed}")
+                held.released.set()
+                try:
+                    await upload
+                except asyncio.CancelledError as error:
+                    result = f"CancelledError notes {error.__dict__.get('__notes__', [])}"
+                else:
+                    result = "returned"
+            exchange.responders.clear()
+            lines.append(f"  {label}: {result} events={events}")
 
 
 @pytest.mark.abnormal_path(
@@ -193,6 +251,7 @@ def body_replay_faults(package: ModuleType, lines: list[str]) -> None:
     _close_faults(package, options, data, lines)
     run(lambda: _async_faults(package, options, data, lines))
     run(lambda: _async_close_faults(package, options, data, lines))
+    run(lambda: _async_thread_faults(package, data, lines))
 
 
 async def _async_faults(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:

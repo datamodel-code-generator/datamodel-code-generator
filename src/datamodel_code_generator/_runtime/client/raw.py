@@ -30,6 +30,7 @@ from .errors import (
     response_failure,
     too_large,
 )
+from .logical import in_thread
 from .media import charset
 
 if TYPE_CHECKING:
@@ -163,7 +164,7 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
 
 
 class _Download:
-    """One temporary download and the chunks waiting for its next write."""
+    """One temporary download, kept where its thread created it, and the chunks waiting for its next write."""
 
     def __init__(self) -> None:
         self.created: tuple[BinaryIO, Path] | None = None
@@ -185,7 +186,7 @@ class _Download:
 
     async def discard(self) -> None:
         if self.created is not None:
-            _discarded(self.created)
+            await in_thread(_discarded, self.created)
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -719,8 +720,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
         """Write the decoded body to a file object, or to a path through a temporary file moved there on success.
 
-        Both are written with ordinary blocking file calls on the event loop; a path's file is written about CHUNK
-        bytes at a time.
+        A file object is written on the event loop. A path's file is created, written about CHUNK bytes at a time,
+        and moved in a thread, one file call after another.
         """
         if isinstance(target, (str, PathLike)):
             await self._download(Path(target), overwrite=overwrite)
@@ -740,22 +741,23 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._end("failed", error)
 
     async def _download(self, path: Path, *, overwrite: bool) -> None:
-        """Write the body through a temporary conventional binary file.
+        """Write the body to a path through a temporary file, one file call at a time in a thread.
 
-        A failure ends the stream and removes the unfinished file before it propagates.
+        A cancelled caller waits for the running file call. A failure ends the stream and removes the unfinished file
+        before it propagates.
         """
         self._downloadable()
 
         download = _Download()
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
-            created = download.create(path, overwrite)
+            created = await in_thread(download.create, path, overwrite)
             chunks = self._iterate(action="stream_to", decoded=True)
             async with aclosing(chunks):
                 async for chunk in chunks:
                     if (data := download.add(chunk)) is not None:
-                        created[0].write(data)
-            _committed(created, b"".join(download.parts), path, overwrite)
+                        await in_thread(created[0].write, data)
+            await in_thread(_committed, created, b"".join(download.parts), path, overwrite)
         except BaseException as error:
             try:
                 if chunks is not None:

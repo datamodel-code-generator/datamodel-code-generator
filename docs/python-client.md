@@ -2829,8 +2829,9 @@ session may additionally stop before its next step when its total budget has exp
 body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
 `response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
 Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
-existing target unchanged. Async calls write with the same blocking file calls on the event loop. Saved buffered bytes
-remain usable after the call completes.
+existing target unchanged. In async calls these file calls run one at a time in a worker thread, and a cancelled
+caller waits for the running one before the temporary file is removed, so a partly written file never takes the
+target's name. Saved buffered bytes remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -3223,10 +3224,23 @@ the bytes between the position and the end it measured at call entry, also when 
 the call opened is closed when the call ends; if that close fails, the failure is attached to an error already
 propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
 
-Async calls read synchronous file objects and paths with the same blocking reads on the event loop, as HTTPX2 reads
-multipart files. To keep slow storage off the loop, pass an async file object, for example
-`await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async file is read in
-64 KiB chunks even though iterating it would yield lines.
+Sync calls do all file I/O on the calling thread. In async calls, where the file I/O runs depends on who opened the
+file:
+
+| File | Async call |
+| --- | --- |
+| A path given as a body or `FilePart`, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A synchronous file object the caller opened | `tell`, `seek` and each `read` of at most 64 KiB block the event loop, as HTTPX2 reads multipart files. |
+| An async file object | `await read(65536)` on the event loop; the file decides where its I/O runs. |
+| `stream_to(path)` | The temporary file is created, written about 64 KiB at a time, moved to the target, or removed in a worker thread. |
+| `stream_to(file_object)` | Each `write` blocks the event loop. |
+
+Only one file call of a body or download runs at a time, so memory stays bounded by the chunk size. When a call is
+cancelled or times out while a file call is running in a thread, the call waits for that one file call to finish
+before it closes, moves or removes the file, and then lets the cancellation propagate; a failure of that file call
+is named in a note on the cancellation. To keep a slow caller-opened file off the loop, pass its path, an async file
+object such as `await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async
+file is read in 64 KiB chunks even though iterating it would yield lines.
 
 A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
 position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of

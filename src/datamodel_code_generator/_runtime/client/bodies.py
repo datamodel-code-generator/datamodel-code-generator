@@ -13,6 +13,7 @@ from typing_extensions import TypeIs
 
 from .coding import CHUNK
 from .errors import body_failure
+from .logical import in_thread
 
 if TYPE_CHECKING:
     from abc import abstractmethod
@@ -103,6 +104,10 @@ class EncodedAttempt:
         yield self.content
 
 
+def _step(chunks: Iterator[bytes]) -> bytes | None:
+    return next(chunks, None)
+
+
 class BinarySource:
     """Keep an input's entry offset and own only files opened from paths."""
 
@@ -148,9 +153,13 @@ class BinarySource:
         if self._file is not None and self._offset is not None:
             try:
                 self._file.seek(self._offset)
-            except OSError as error:
+            except (OSError, ValueError) as error:
                 raise body_failure(reason="body_not_replayable", cause=error) from error
         return BinaryContent(self)
+
+    async def aopen(self) -> BinaryContent:
+        """Open and rewind a path's file in a thread; a caller's file is rewound where the call runs."""
+        return await in_thread(self.open) if isinstance(self._input, PathLike) else self.open()
 
     def chunks(self) -> Iterator[bytes]:
         """Read a file's measured bytes in bounded chunks, or consume the caller's iterable."""
@@ -167,11 +176,20 @@ class BinarySource:
                 left -= len(chunk)
 
     async def achunks(self) -> AsyncIterator[bytes]:
-        """Read an async file in bounded chunks, consume an async iterable, or read conventional binary input."""
+        """Read an async file or a path's file in bounded chunks, or consume the caller's iterable or file.
+
+        A file this call opened from a path is read in a thread, one chunk at a time; a caller's file is read where
+        the call runs.
+        """
         if (read := self._aread) is not None:
             self._used = True
             while chunk := await read(CHUNK):
                 yield chunk
+        elif self._owned:
+            chunks, left = self.chunks(), self.content_length
+            while left != 0 and (chunk := await in_thread(_step, chunks)) is not None:
+                yield chunk
+                left = None if left is None else left - len(chunk)
         elif isinstance(self._input, AsyncIterable):
             self._used = True
             async for chunk in self._input:
@@ -190,6 +208,10 @@ class BinarySource:
             except OSError as error:
                 return error
         return None
+
+    async def aclose(self) -> OSError | None:
+        """Close an SDK-opened path in a thread and return its failure."""
+        return await in_thread(self.close) if self._owned else None
 
 
 class BinaryContent:

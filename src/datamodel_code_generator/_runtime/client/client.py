@@ -587,7 +587,18 @@ def _compressed(
 
 def _close_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
     """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
-    if owner is None or not (failures := owner.close()):
+    if owner is not None:
+        _close_failed(owner.close(), call, error)
+
+
+async def _aclose_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
+    if owner is not None:
+        _close_failed(await owner.aclose(), call, error)
+
+
+def _close_failed(failures: list[OSError], call: Call, error: BaseException | None) -> None:
+    if not failures:
         return
     if error is not None:
         add_secondary(error, *failures)
@@ -2424,11 +2435,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            _close_body(source or entry, call, failure)
+            await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
             raise failure from None
         try:
-            _close_body(source or entry, call)
-        except SDKError as error:
+            await _aclose_body(source or entry, call)
+        except BaseException as error:
             if isinstance(result, AsyncRawResponse):
                 await result.discard(error)
             raise
