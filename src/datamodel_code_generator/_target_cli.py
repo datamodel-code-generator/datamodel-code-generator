@@ -86,7 +86,7 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         (pyproject_path, config.input, config.output, config.emit_model_metadata, lockfile),
         (config.server_output, config.output),
     )
-    if flags := _flags(namespace, config, _CONFLICTS, json_supported=config.check):
+    if flags := _flags(namespace, config, _CONFLICTS, json_supported=True):
         raise _refused(flags)
     if namespace.output_format == "json" and report.destination == "-":
         raise APIGenerationError((_conflict("--output-format json cannot be used with --diagnostics-json -"),))
@@ -103,9 +103,19 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         comparison = _compare_target(project, config.output, target.output, config.encoding)
         _write_comparison_output(comparison, namespace.output_format)
         return _DIFF if comparison.differences else _OK
-    generated = generate_target(source, model_config=effective, config=target, generator=generator)
+    if namespace.output_format == "json":
+        from datamodel_code_generator._api_generation import _plan  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+        from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
+
+        planner, project = _plan(source, effective, target, generator)
+        output = _target_json(project, config.output, target.output, config.encoding)
+        publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)
+        print(output)  # noqa: T201
+        dependencies = project.dependencies
+    else:
+        dependencies = generate_target(source, model_config=effective, config=target, generator=generator).dependencies
     if report.destination != "-":
-        print(_next_step(target, generated.dependencies, form))  # noqa: T201
+        print(_next_step(target, dependencies, form), file=sys.stderr if namespace.output_format == "json" else None)
     return _OK
 
 
@@ -113,6 +123,35 @@ def _shown(path: Path) -> str:
     """Return a path relative to the working directory when it lies inside it."""
     cwd = Path.cwd()
     return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
+
+
+def _target_json(project: GeneratedProject, models: Path, target: Path, encoding: str) -> str:
+    """Emit rendered model and target text with the existing generation payload."""
+    import os  # noqa: PLC0415
+
+    from datamodel_code_generator._structured_output import GeneratedFilePayload, generation_output_json  # noqa: PLC0415
+
+    artifacts = [
+        (
+            artifact.path,
+            content,
+            encoding if artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"} else "utf-8",
+        )
+        for artifact in project.artifacts
+        if artifact.kind in {"model", "target"} and (content := artifact.content) is not None
+    ]
+    try:
+        parent = Path(os.path.commonpath((models.parent, target.parent)))
+    except ValueError:
+        parent = None
+    files = [
+        GeneratedFilePayload(
+            path=(path.absolute() if parent is None else path.relative_to(parent)).as_posix(),
+            content=content.decode(codec),
+        )
+        for path, content, codec in sorted(artifacts)
+    ]
+    return generation_output_json(files, output=models.as_posix())
 
 
 def _compare_target(project: GeneratedProject, models: Path, target: Path, encoding: str) -> OutputComparison:
