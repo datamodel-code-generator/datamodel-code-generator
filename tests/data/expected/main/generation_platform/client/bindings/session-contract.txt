@@ -104,7 +104,9 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   
-  from pydantic import ConfigDict, Field, conint
+  from typing import Annotated
+  
+  from pydantic import ConfigDict, Field
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -122,7 +124,7 @@ render pydantic_v2.dataclass default
       message: str
   
   
-  PageParameter = TypeAliasType("PageParameter", conint(ge=0))
+  PageParameter = TypeAliasType("PageParameter", Annotated[int, Field(ge=0)])
   
   
   FieldRecordsIdPostHeaderTraceParameter = TypeAliasType(

@@ -247,7 +247,7 @@ render pydantic_v2.dataclass default
   from typing import Annotated, Any, Dict, List, Literal, Optional, Tuple, Union
   from typing_extensions import TypeAliasType
   from uuid import UUID
-  from pydantic import Field, conint, constr
+  from pydantic import Field, constr
   from pydantic.dataclasses import dataclass
   
   
@@ -264,19 +264,19 @@ render pydantic_v2.dataclass default
   
   
   
-  SingleAnyValue = TypeAliasType("SingleAnyValue", constr(min_length=2))
+  SingleAnyValue = TypeAliasType("SingleAnyValue", Annotated[str, Field(min_length=2)])
   
   
   
-  SingleOneValue = TypeAliasType("SingleOneValue", constr(min_length=2))
+  SingleOneValue = TypeAliasType("SingleOneValue", Annotated[str, Field(min_length=2)])
   
   
   
-  MixedValue = TypeAliasType("MixedValue", Union[constr(min_length=2), conint(ge=0)])
+  MixedValue = TypeAliasType("MixedValue", Union[Annotated[str, Field(min_length=2)], Annotated[int, Field(ge=0)]])
   
   
   
-  TupleValueItem = TypeAliasType("TupleValueItem", constr(min_length=2))
+  TupleValueItem = TypeAliasType("TupleValueItem", Annotated[str, Field(min_length=2)])
   
   
   
@@ -378,7 +378,7 @@ render pydantic_v2.dataclass default
   
   
   
-  TupleValueItem1 = TypeAliasType("TupleValueItem1", constr(min_length=1))
+  TupleValueItem1 = TypeAliasType("TupleValueItem1", Annotated[str, Field(min_length=1)])
   
   
   
