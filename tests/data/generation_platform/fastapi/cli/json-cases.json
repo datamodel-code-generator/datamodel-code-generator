@@ -8,6 +8,7 @@
   "modular": {"source": "modular.yaml", "model": "models"},
   "empty-models": {"source": "empty.yaml"},
   "latin-1": {"encoding": "latin-1", "templates": true, "options": ["--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]},
+  "crlf-header": {"options": ["--custom-file-header", "# first\r\n# second"]},
   "warning": {"unowned": true},
   "stale-owned": {"repeat": true, "options": ["--openapi-include-paths", "/pets"]},
   "metadata-lock": {"options": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "outside_payload": ["metadata.json", "api.lock"]}
