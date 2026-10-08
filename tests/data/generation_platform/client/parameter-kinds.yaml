@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info: {title: Parameter kinds read from model types, version: '1'}
+servers: [{url: https://api.example.com}]
+paths:
+  /values:
+    get:
+      operationId: getValues
+      tags: [values]
+      parameters:
+        - {name: amount, in: query, schema: {type: number, format: decimal}}
+        - {name: amounts, in: query, schema: {type: array, items: {type: number, format: decimal}}}
+        - {name: step, in: query, schema: {type: number, multipleOf: 0.01}}
+        - {name: ratio, in: query, schema: {type: number, enum: [2.2, 0.5]}}
+        - {name: level, in: query, schema: {type: integer, enum: [1, 2]}}
+        - {name: count, in: query, schema: {type: integer, minimum: 0}}
+        - {name: flag, in: query, schema: {type: boolean}}
+        - {name: mixed, in: query, schema: {anyOf: [{type: integer}, {type: string}]}}
+      responses:
+        '204':
+          description: The same values as headers.
+          headers:
+            X-Amount: {schema: {type: number, format: decimal}}
+            X-Amounts: {schema: {type: array, items: {type: number, format: decimal}}}
+            X-Step: {schema: {type: number, multipleOf: 0.01}}
+            X-Ratio: {schema: {type: number, enum: [2.2, 0.5]}}
+            X-Level: {schema: {type: integer, enum: [1, 2]}}
+            X-Count: {schema: {type: integer, minimum: 0}}
+            X-Flag: {schema: {type: boolean}}
+            X-Mixed: {schema: {anyOf: [{type: integer}, {type: string}]}}
+    post:
+      operationId: saveValues
+      tags: [values]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Values'}
+      responses:
+        '200':
+          description: The saved values as form fields or as parts.
+          content:
+            application/x-www-form-urlencoded:
+              schema: {$ref: '#/components/schemas/Values'}
+            multipart/form-data:
+              schema: {$ref: '#/components/schemas/Values'}
+components:
+  schemas:
+    Values:
+      type: object
+      additionalProperties: false
+      properties:
+        amount: {type: number, format: decimal}
+        amounts: {type: array, items: {type: number, format: decimal}}
+        step: {type: number, multipleOf: 0.01}
+        level: {type: integer, enum: [1, 2]}
+        count: {type: integer, minimum: 0}
+        flag: {type: boolean}
+        mixed: {anyOf: [{type: integer}, {type: string}]}
+        either: {type: [integer, string]}
