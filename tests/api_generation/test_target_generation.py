@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import sys
@@ -155,6 +156,26 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
     report = target_render_report("publish-failure", tmp_path, monkeypatch)
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
+
+
+@pytest.mark.abnormal_path("a rename fails with EXDEV only between filesystems, which needs a mounted output")
+def test_target_generate_mount_points(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write into output directories that are mount points: each file is staged inside the directory it goes to.
+
+    The replacement refuses, as the operating system does, every move from outside a mount point into it.
+    """
+    mounts = {tmp_path.resolve() / name for name in ("models", "server")}
+    replace = _publication._replace_source
+
+    def replaced(file: _publication.StagedFile, *args: object) -> None:
+        source = None if file.staged_file is None else file.staged_file.resolve()
+        for mount in mounts.intersection(file.resolved_target.parents):
+            if source is not None and mount not in source.parents:
+                raise OSError(errno.EXDEV, "Invalid cross-device link", str(source))
+        replace(file, *args)
+
+    monkeypatch.setattr(_publication, "_replace_source", replaced)
+    assert_output(target_render_report("mount-points", tmp_path, monkeypatch), EXPECTED / "mount-points.txt")
 
 
 @pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")

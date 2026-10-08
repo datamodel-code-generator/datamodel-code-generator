@@ -144,6 +144,39 @@ def test_fastapi_cli_generate(
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_check_read_only(
+    structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Check a package whose directories cannot be written to: a check creates nothing inside the output it compares."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        input_file_type="openapi",
+        output_path=Path("models.py"),
+        extra_args=_server(),
+        capsys=capsys,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+    )
+    directories = [tmp_path / "server", *(path for path in (tmp_path / "server").rglob("*") if path.is_dir())]
+    for directory in directories:
+        directory.chmod(0o555)
+    try:
+        run_main_and_assert(
+            input_path=Path("pets.yaml"),
+            input_file_type="openapi",
+            output_path=Path("models.py"),
+            extra_args=_server("--check", *(["--output-format", "json"] if structured else [])),
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_stdout_path=EXPECTED / "cli" / "check" / f"unchanged.{'json' if structured else 'txt'}",
+        )
+    finally:
+        for directory in directories:
+            directory.chmod(0o755)
+
+
 @pytest.mark.parametrize("case_name", CHECK_CASES)
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_check_outputs(
@@ -1638,12 +1671,15 @@ def test_fastapi_cli_failures(
     )
 
 
-@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
+@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent", "publication"])
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
     case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files."""
+    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files.
+
+    A failed publication is reported as by the model runs that publish through the same journal.
+    """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     options: list[str] = []
@@ -1665,6 +1701,9 @@ def test_fastapi_cli_model_error_context(
             (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
             options = ["--lockfile", "api.lock"]
             stderr = "Error: Unable to read remote lock "
+        case "publication":
+            (tmp_path / "server" / "services.py").mkdir(parents=True)
+            stderr = "Error: could not publish batch output: [Errno 21] Is a directory: "
         case _:
             (tmp_path / "occupied").write_text("occupied\n", encoding="utf-8")
             output = Path("occupied/models.py")

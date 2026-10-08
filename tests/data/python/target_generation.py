@@ -230,6 +230,10 @@ class _Scenario:
         (self.root / path).mkdir(parents=True)
         self.lines.append(f"mkdir {path}")
 
+    def leftovers(self, _: None) -> None:
+        hidden = sorted(path.relative_to(self.root).as_posix() for path in self.root.rglob(".*"))
+        self.lines.append(f"leftovers {[_PRIVATE.sub('<private>', path) for path in hidden]}")
+
     def tree(self, _: None) -> None:
         self.lines.append("tree")
         files = [

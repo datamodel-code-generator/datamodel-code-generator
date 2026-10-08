@@ -505,9 +505,11 @@ class PlannedTarget:
 
 
 def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack: ExitStack) -> list[StagedFile]:
-    """Stage every changed file beside its output, as an atomic model run stages its files for one journal.
+    """Stage every changed file for the model journal, in a private directory that the stack removes.
 
-    A file that already holds its bytes is left out, so an unchanged target stages nothing and writes nothing.
+    The directory lies in the deepest existing directory of the output it stages for, so the journal renames each
+    file within one filesystem, also into an output directory that is a mount point. A file that already holds its
+    bytes is left out, so an unchanged target stages nothing and writes nothing.
     """
     if not (changed := [artifact for artifact in artifacts if artifact.action == "write"]):
         return []
@@ -531,10 +533,11 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
             continue
         destination = (directory := target.directory(artifact)) or artifact.path
         if (place := places.get(destination)) is None:
-            location = cwd / destination.expanduser()
+            location = cwd / destination
             resolved = location.resolve() if directory else location.parent.resolve() / location.name
             stack.callback(close_anchor, anchor := publication_anchor(resolved))
-            place = places[destination] = (_staging(stack, destination, cwd), resolved, anchor)
+            staging = stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=anchor.path))
+            place = places[destination] = (Path(staging), resolved, anchor)
         staging, resolved, anchor = place
         (source := staging / str(len(files))).write_bytes(artifact.content)
         files.append(StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor))
@@ -542,20 +545,8 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
 
 
 def publish_target(target: PlannedTarget) -> None:
-    """Publish every changed file together through the model journal, which rolls back on an I/O error."""
-    lock = target.lock
-    with ExitStack() as stack:
-        try:
-            if files := _stage(target, target.project.artifacts, stack):
-                from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
-
-                publish_staged_files(files)
-        except BaseException:
-            if lock is not None:
-                _quietly(lock.discard_stage)
-            raise
-    if lock is not None:
-        lock.mark_committed()
+    """Publish every changed file of one target together through the model journal."""
+    publish_planned((), (("", target),))
 
 
 def _unshared(
@@ -586,15 +577,28 @@ def _unshared(
 
 
 def publish_planned(files: Iterable[StagedFile], targets: Sequence[tuple[str, PlannedTarget]]) -> None:
-    """Publish a batch's staged files and the changes its server jobs planned through the batch's one journal."""
-    from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+    """Publish staged files and the changes the named targets planned through one model journal.
 
+    The journal rolls every file back on an I/O error. The remote lock update of a target that owns one is published
+    with the files, and discarded when they are not published.
+    """
+    locks = [lock for _, target in targets if (lock := target.lock) is not None]
     with ExitStack() as stack:
-        staged = list(files)
-        models: dict[Path, tuple[str, GeneratedArtifact]] = {}
-        for job, target in targets:
-            staged.extend(_stage(target, _unshared(job, target, models), stack))
-        publish_staged_files(staged)
+        try:
+            staged = list(files)
+            models: dict[Path, tuple[str, GeneratedArtifact]] = {}
+            for job, target in targets:
+                staged.extend(_stage(target, _unshared(job, target, models), stack))
+            if staged:
+                from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+
+                publish_staged_files(staged)
+        except BaseException:
+            for lock in locks:
+                _quietly(lock.discard_stage)
+            raise
+    for lock in locks:
+        lock.mark_committed()
 
 
 def _quietly(cleanup: Callable[[], None]) -> None:
