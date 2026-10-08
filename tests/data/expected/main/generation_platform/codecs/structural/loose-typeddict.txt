@@ -1,2 +1,1 @@
-APIGenerationError
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1loose/put/requestBody: The union members are both JSON objects, which the typing.TypedDict converter cannot tell apart
+Error: /paths/~1loose/put/requestBody: The union members are both JSON objects, which the typing.TypedDict converter cannot tell apart

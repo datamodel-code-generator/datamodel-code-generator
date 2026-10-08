@@ -36,9 +36,8 @@ def _write(root: Path) -> None:
 
 
 def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
-    from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
+    from datamodel_code_generator import DataModelType, Error, GenerateConfig, OpenAPIScope
     from datamodel_code_generator.fastapi import (
-        APIGenerationError,
         FastAPIConfig,
         generate_fastapi,
         render_fastapi,
@@ -57,8 +56,8 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
     entry = render_fastapi if mode == "render" else generate_fastapi
     try:
         entry(root / f"{name}.yaml", model_config=model, config=config)
-    except APIGenerationError as error:
-        return ", ".join(item.code for item in error.diagnostics)
+    except Error as error:
+        return f"Error: {error}"
     except Exception as error:  # noqa: BLE001
         return type(error).__name__
     return "ok"
@@ -69,7 +68,15 @@ def _cli(root: Path, name: str, backend: str) -> str:
 
     arguments = [
         *("--input", str(root / f"{name}.yaml"), "--input-file-type", "openapi", "--openapi-scopes", "schemas", "api"),
-        *("--output", str(root / "models.py"), "--output-model-type", backend, "--target-python-version", "3.11", "--check"),
+        *(
+            "--output",
+            str(root / "models.py"),
+            "--output-model-type",
+            backend,
+            "--target-python-version",
+            "3.11",
+            "--check",
+        ),
         *("--generate-server", "fastapi", "--server-output", str(root / "server")),
         *("--server-package", "server", "--server-model-package", "models"),
         *(f"--openapi-include-paths={path}" for path in INCLUDED.get(name, ())),
@@ -77,7 +84,7 @@ def _cli(root: Path, name: str, backend: str) -> str:
     stderr = StringIO()
     with redirect_stderr(stderr):
         code = main(arguments)
-    return f"exit {int(code)} {stderr.getvalue().split(' ', 1)[0]}"
+    return f"exit {int(code)} {stderr.getvalue().strip()}"
 
 
 def _ordinary(root: Path) -> str:

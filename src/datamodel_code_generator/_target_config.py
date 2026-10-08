@@ -51,11 +51,12 @@ class TargetConfig:
     model_package: str
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
+    _option_prefix: ClassVar[str | None] = None
 
     def __post_init__(self) -> None:
         """Reject values and combinations the shared contract does not allow, in field order."""
         if diagnostics := tuple(self._problems()):
-            raise APIGenerationError(diagnostics)
+            raise APIGenerationError(diagnostics, option_prefix=self._option_prefix)
 
     def _problems(self) -> Iterator[Diagnostic]:
         if not isinstance(self.output, Path):
