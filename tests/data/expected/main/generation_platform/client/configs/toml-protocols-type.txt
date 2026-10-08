@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config protocols: protocols must be a string
