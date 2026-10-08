@@ -1,0 +1,1 @@
+error: unrecognized arguments: --diagnostics-json diagnostics.json

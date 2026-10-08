@@ -1,0 +1,830 @@
+=== client.jinja2 / populated
+"""Client 日本 {braces} \\ \"quotes\""""
+
+from __future__ import annotations
+
+from typing import Final
+from .options import ClientOptions, RequestOptions
+
+_DEFAULTS = ClientOptions()
+
+
+class ClientView:
+    """Typed operations and request option layers sharing the root's native client."""
+
+    _core: SyncCore
+
+    @classmethod
+    def _from_core(cls, core: SyncCore) -> ClientView:
+        view = cls.__new__(cls)
+        view._core = core
+        return view
+
+    def with_options(self, options: RequestOptions) -> ClientView:
+        """Return a typed view with these request options layered on the current settings."""
+        return ClientView._from_core(self._core.view(options))
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
+        return self._core.request_raw(method, url, body=body, options=options)
+
+    @cached_property
+    def with_streaming_response(self) -> ClientWithStreamingResponse:
+        """Raw requests that send on entering a block that streams the response."""
+        return ClientWithStreamingResponse(self._core)
+
+    @cached_property
+    def pets(self) -> Pets:
+        """The pets operations."""
+        from .resources.pets import Pets
+
+        return Pets(self._core)
+
+    @cached_property
+    def 日本(self) -> UnicodeResource:
+        """The 日本 operations."""
+        from .resources.unicode import UnicodeResource
+
+        return UnicodeResource(self._core)
+
+
+class Client(ClientView):
+    """Client API {braces}"""
+
+    def __init__(
+        self,
+        *,
+        options: ClientOptions | None = None,
+        http_client: HTTPClient | Unset | None = UNSET,
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = SyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+
+    def close(self) -> None:
+        self._core.close()
+
+
+class ClientWithStreamingResponse:
+    """Raw requests to any absolute URL that send on entering a block that streams the response."""
+
+    def __init__(self, core: SyncCore) -> None:
+        """Keep the client core the requests send through."""
+        self._core = core
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Return a block that sends the request on entry and yields its streaming response until exit."""
+        return self._core.stream_raw(method, url, body=body, options=options)
+
+=== client.jinja2 / empty
+"""Client 日本 {braces} \\ \"quotes\""""
+
+from __future__ import annotations
+
+from typing import Final
+from .options import ClientOptions, RequestOptions
+
+_DEFAULTS = ClientOptions()
+
+
+class ClientView:
+    """Typed operations and request option layers sharing the root's native client."""
+
+    _core: SyncCore
+
+    @classmethod
+    def _from_core(cls, core: SyncCore) -> ClientView:
+        view = cls.__new__(cls)
+        view._core = core
+        return view
+
+    def with_options(self, options: RequestOptions) -> ClientView:
+        """Return a typed view with these request options layered on the current settings."""
+        return ClientView._from_core(self._core.view(options))
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
+        return self._core.request_raw(method, url, body=body, options=options)
+
+    @cached_property
+    def with_streaming_response(self) -> ClientWithStreamingResponse:
+        """Raw requests that send on entering a block that streams the response."""
+        return ClientWithStreamingResponse(self._core)
+
+
+class Client(ClientView):
+    """Client API {braces}"""
+
+    def __init__(
+        self,
+        *,
+        options: ClientOptions | None = None,
+        http_client: HTTPClient | Unset | None = UNSET,
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = SyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+
+    def close(self) -> None:
+        self._core.close()
+
+
+class ClientWithStreamingResponse:
+    """Raw requests to any absolute URL that send on entering a block that streams the response."""
+
+    def __init__(self, core: SyncCore) -> None:
+        """Keep the client core the requests send through."""
+        self._core = core
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Return a block that sends the request on entry and yields its streaming response until exit."""
+        return self._core.stream_raw(method, url, body=body, options=options)
+
+=== client.jinja2 / async_protocols
+"""Client 日本 {braces} \\ \"quotes\""""
+
+from __future__ import annotations
+
+from typing import Final
+from .options import ClientOptions, RequestOptions
+
+_DEFAULTS = ClientOptions()
+
+
+class AsyncClientView:
+    """Typed operations and request option layers sharing the root's native client."""
+
+    _core: AsyncCore
+
+    @classmethod
+    def _from_core(cls, core: AsyncCore) -> AsyncClientView:
+        view = cls.__new__(cls)
+        view._core = core
+        return view
+
+    def with_options(self, options: RequestOptions) -> AsyncClientView:
+        """Return a typed view with these request options layered on the current settings."""
+        return AsyncClientView._from_core(self._core.view(options))
+
+    async def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
+        return await self._core.request_raw(method, url, body=body, options=options)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncClientWithStreamingResponse:
+        """Raw requests that send on entering a block that streams the response."""
+        return AsyncClientWithStreamingResponse(self._core)
+
+    @cached_property
+    def pets(self) -> Pets:
+        """The pets operations."""
+        from .resources.pets import Pets
+
+        return Pets(self._core)
+
+    @cached_property
+    def 日本(self) -> UnicodeResource:
+        """The 日本 operations."""
+        from .resources.unicode import UnicodeResource
+
+        return UnicodeResource(self._core)
+
+    @cached_property
+    def protocols(self) -> AsyncProtocols:
+        """The protocol helpers of this API, by their dotted names."""
+        from .protocols import AsyncProtocols
+
+        return AsyncProtocols(self._core)
+
+
+class AsyncClient(AsyncClientView):
+    """Client API {braces}"""
+
+    def __init__(
+        self,
+        *,
+        options: ClientOptions | None = None,
+        http_client: HTTPClient | Unset | None = UNSET,
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = AsyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+
+    async def aclose(self) -> None:
+        await self._core.aclose()
+
+
+class AsyncClientWithStreamingResponse:
+    """Raw requests to any absolute URL that send on entering a block that streams the response."""
+
+    def __init__(self, core: AsyncCore) -> None:
+        """Keep the client core the requests send through."""
+        self._core = core
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BinaryBody | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[RawResponse]:
+        """Return a block that sends the request on entry and yields its streaming response until exit."""
+        return self._core.stream_raw(method, url, body=body, options=options)
+
+=== readme.jinja2 / populated
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `get`: `GET /pets/{petId}`, no request body
+- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
+- `update`: `PUT /pets`, body arguments `both`
+  - `application/json`: `body=` or the fields `name` (required), `tag`
+  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+An SSE and NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
+server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints.
+A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints.
+A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
+sends the request, revalidating a stale entry. See the runtime
+reference for their limits.
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
+`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
+holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
+
+```json
+{"helper": "events"}
+```
+
+## Request compression
+
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+
+```json
+{"gzip": ["create"]}
+```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2,<3`
+- `pydantic>=2`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | `api_key`, `bearer` |
+| Helpers | `pagination`, `sse` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `client`: `client.py`, `native.py`
+- `protocols`: `pagination.py`
+
+=== readme.jinja2 / minimal
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+This package has no operations.
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | none |
+| Helpers | none |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+
+=== readme.jinja2 / unpack
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `unpack` |
+| `body_arguments` | `both` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method takes `**kwargs` typed as `Unpack` of a `TypedDict`, which `_generated/client_arguments.py`
+declares, and checks the keywords it receives before sending.
+A request body whose media is JSON or a URL-encoded form of an object model is given as `body=` or as the keyword
+arguments of its fields, unless an operation's `body_arguments` is `body`.
+
+## Operations
+
+- `get`: `GET /pets/{petId}`, no request body
+- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
+- `update`: `PUT /pets`, body arguments `both`
+  - `application/json`: `body=` or the fields `name` (required), `tag`
+  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+An SSE and NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
+server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints.
+A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints.
+A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
+sends the request, revalidating a stale entry. See the runtime
+reference for their limits.
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
+`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
+holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
+
+```json
+{"helper": "events"}
+```
+
+## Request compression
+
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+
+```json
+{"gzip": ["create"]}
+```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2,<3`
+- `pydantic>=2`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | `api_key`, `bearer` |
+| Helpers | `pagination`, `sse` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `client`: `client.py`, `native.py`
+- `protocols`: `pagination.py`
+
+=== readme.jinja2 / stream_without_resume
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `get`: `GET /pets/{petId}`, no request body
+- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
+- `update`: `PUT /pets`, body arguments `both`
+  - `application/json`: `body=` or the fields `name` (required), `tag`
+  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response.
+
+```json
+{"sse": {}}
+```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2,<3`
+- `pydantic>=2`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | `api_key`, `bearer` |
+| Helpers | `pagination`, `sse` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `client`: `client.py`, `native.py`
+- `protocols`: `pagination.py`
+
+=== readme.jinja2 / custom_helper
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `get`: `GET /pets/{petId}`, no request body
+- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
+- `update`: `PUT /pets`, body arguments `both`
+  - `application/json`: `body=` or the fields `name` (required), `tag`
+  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+See the runtime reference for their limits.
+
+```json
+{"custom": {}}
+```
+
+## Request compression
+
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+
+```json
+{"gzip": ["create"]}
+```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2,<3`
+- `pydantic>=2`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | `api_key`, `bearer` |
+| Helpers | `pagination`, `sse` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `client`: `client.py`, `native.py`
+- `protocols`: `pagination.py`
+
+=== resource.jinja2 / populated
+"""Resource 日本 {braces}"""
+
+from __future__ import annotations
+
+from .core import Core
+
+
+class Pets:
+    """Pets {braces}"""
+
+    def __init__(self, core: Core) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get(self) -> Pet:
+        return self._core.get()
+
+    def list(self) -> list[Pet]:
+        return self._core.list()
+
+
+class AsyncPets:
+    """Async pets 日本"""
+
+    def __init__(self, core: Core) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def get(self) -> Pet:
+        return await self._core.get()
+
+=== resource.jinja2 / empty
+"""Resource 日本 {braces}"""
+
+from __future__ import annotations
+
+from .core import Core
+
+=== resource.jinja2 / empty_members
+"""Resource 日本 {braces}"""
+
+from __future__ import annotations
+
+from .core import Core
+
+
+class Pets:
+    """Pets {braces}"""
+
+    def __init__(self, core: Core) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+=== types.jinja2 / populated
+"""Types 日本 {braces}"""
+
+from __future__ import annotations
+
+from typing import TypedDict
+
+
+class First(TypedDict):
+    value: str
+
+
+class Second(TypedDict):
+    value: int
+
+=== types.jinja2 / empty
+"""Types 日本 {braces}"""
+
+from __future__ import annotations
+
+from typing import TypedDict

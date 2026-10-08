@@ -1,0 +1,19 @@
+template count: 4
+client.jinja2
+readme.jinja2
+resource.jinja2
+types.jinja2
+
+nodes: Compare, Const, For, Getattr, If, Name, Not, Operand, Output, Template, TemplateData
+filters:
+tests:
+globals:
+loop_attributes: last
+assignments:
+for_targets: Name
+macros:
+includes:
+imports_and_inheritance:
+undefined_usage:
+namespaces:
+mapping_dot_accesses:
