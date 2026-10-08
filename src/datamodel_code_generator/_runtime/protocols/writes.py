@@ -147,7 +147,9 @@ def targeted(
                 queries.add(target.name)
         spec = parameters[index]
         parameters[index] = (
-            replace(spec, codec=None) if pointer is None else PatchedParameter(plan=spec.plan, codec=spec.codec)
+            replace(spec, codec=None)
+            if pointer is None
+            else PatchedParameter(plan=spec.plan, codec=spec.codec, converts=spec.converts)
         )
         writes.append((index, pointer))
     body = call.body

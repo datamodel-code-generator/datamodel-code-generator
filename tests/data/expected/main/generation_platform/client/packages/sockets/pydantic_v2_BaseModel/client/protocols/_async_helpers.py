@@ -7,11 +7,8 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import ClientMessage as _dcg_type_2
-from models import FieldRoomsRoomSocketGetPathRoomParameter as _dcg_type_0
-from models import FieldRoomsRoomSocketGetQuerySinceParameter as _dcg_type_1
-from models import FieldSecureSocketGetHeaderXTraceParameter as _dcg_type_4
-from models import ServerMessage as _dcg_type_3
+from models import ClientMessage as _dcg_type_0
+from models import ServerMessage as _dcg_type_1
 
 from .._runtime.client.client import AsyncClientCore
 from .._runtime.protocols.websocket import AsyncWebSocketSession, aconnect_socket
@@ -91,12 +88,12 @@ class AsyncRoomsChatWebsocket:
     async def connect(
         self,
         *,
-        room: _dcg_type_0,
-        since: _dcg_type_1 | Unset = UNSET,
+        room: str,
+        since: int | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[_dcg_type_2, _dcg_type_3]:
+    ) -> AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return await aconnect_socket(
             self._core,
@@ -143,7 +140,7 @@ class AsyncSecureChatWebsocket:
     async def connect(
         self,
         *,
-        x_trace: _dcg_type_4 | Unset = UNSET,
+        x_trace: str | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

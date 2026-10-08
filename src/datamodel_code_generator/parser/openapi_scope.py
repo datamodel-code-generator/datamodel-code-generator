@@ -7,7 +7,7 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
-from typing import ClassVar, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias
 from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
 
 from typing_extensions import Unpack
@@ -33,6 +33,9 @@ from datamodel_code_generator.parser.openapi_media import (
 )
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
+
+if TYPE_CHECKING:
+    from datamodel_code_generator.model import DataModel
 
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
 
@@ -175,6 +178,12 @@ class ApiOpenAPIParser(OpenAPIParser):
         if OpenAPIScope.Api not in self.open_api_scopes:
             msg = "ApiOpenAPIParser requires OpenAPIScope.Api"
             raise Error(msg)
+        self._schema_root_type = self.data_model_root_type
+        self._parameter_root_type = self.data_model_type.resolve_type_alias_model_type(
+            self.data_model_root_type, self.target_python_version
+        )
+        self._parameter_root_models: set[DataModel] = set()
+        self._claimed_models = 0
 
     def _declaration_id(self, path: Sequence[str]) -> ApiDeclarationId:
         ref = self.model_resolver.join_path(tuple(path))
@@ -214,11 +223,29 @@ class ApiOpenAPIParser(OpenAPIParser):
             validated_schema=validated_schema,
             projection=projection,
         )
+        self._claim_parameter_root_models()
         self.declaration_frames.append(frame)
+        previous = self.data_model_root_type
+        self.data_model_root_type = self._parameter_root_type if frame.role == "parameter" else self._schema_root_type
         try:
             yield frame
         finally:
+            self._claim_parameter_root_models()
             self.declaration_frames.pop()
+            self.data_model_root_type = previous
+
+    def _claim_parameter_root_models(self) -> None:
+        """Record the parameter aliases registered since the previous declaration frame boundary."""
+        models = self.generation_store.models
+        if self.data_model_root_type is not self._schema_root_type:
+            self._parameter_root_models.update(
+                model for model in models[self._claimed_models :] if isinstance(model, self.data_model_root_type)
+            )
+        self._claimed_models = len(models)
+
+    def _is_root_model(self, model: DataModel) -> bool:
+        """Treat parameter aliases as roots, as --use-type-alias does."""
+        return isinstance(model, self.data_model_root_type) or model in self._parameter_root_models
 
     def _parse_raw_or_validated_obj(
         self,
@@ -700,6 +727,8 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._api_security = None
             self._active_api_objects.clear()
             self._completed_api_objects.clear()
+            self._parameter_root_models.clear()
+            self._claimed_models = 0
             self.model_resolver.original_refs.clear()
 
     def _walk_api_operation(  # noqa: PLR0914

@@ -9,8 +9,6 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
-
 from .... import _operations
 from ...._runtime.client.client import ClientCore
 from ....bodies import SyncBinaryBody
@@ -44,7 +42,7 @@ class PetsPhotosResource:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -71,7 +69,7 @@ class PetsPhotosWithResponse:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -98,7 +96,7 @@ class PetsPhotosWithRawResponse:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -125,7 +123,7 @@ class PetsPhotosWithStreamingResponse:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,

@@ -6,6 +6,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 from pydantic import BaseModel, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Pet(BaseModel):
@@ -27,9 +28,7 @@ class FieldGreetingsGetResponse(RootModel[str]):
     root: str
 
 
-class FieldDocumentsIdGetPathIdParameter(RootModel[int]):
-    root: int
+FieldDocumentsIdGetPathIdParameter = TypeAliasType("FieldDocumentsIdGetPathIdParameter", int)
 
 
-class FieldPetsIdGetPathIdParameter(RootModel[int]):
-    root: int
+FieldPetsIdGetPathIdParameter = TypeAliasType("FieldPetsIdGetPathIdParameter", int)

@@ -61,6 +61,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "default-server",
         "implicit-server",
         "names",
+        "names-unpack",
         "name-errors",
         "method-collisions",
         "child-collision",

@@ -5,20 +5,11 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum, StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import (
-    AwareDatetime,
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    RootModel,
-    confloat,
-    conint,
-    constr,
-)
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Filter(BaseModel):
@@ -33,54 +24,55 @@ class Point(BaseModel):
     x: int
 
 
-class FieldItemsItemIdPartsPartGetPathItemIdParameter(
-    RootModel[conint(ge=-10, lt=100)]
-):
-    root: conint(ge=-10, lt=100)
+FieldItemsItemIdPartsPartGetPathItemIdParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetPathItemIdParameter",
+    Annotated[int, Field(ge=-10, lt=100)],
+)
 
 
-class FieldItemsItemIdPartsPartGetPathPartParameter(
-    RootModel[constr(min_length=1, max_length=8)]
-):
-    root: constr(min_length=1, max_length=8)
+FieldItemsItemIdPartsPartGetPathPartParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetPathPartParameter",
+    Annotated[str, Field(min_length=1, max_length=8)],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryLimitParameter(
-    RootModel[conint(ge=-3000000000, le=50)]
-):
-    root: conint(ge=-3000000000, le=50) = 10
+FieldItemsItemIdPartsPartGetQueryLimitParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetQueryLimitParameter",
+    Annotated[int, Field(ge=-3000000000, le=50)],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryRatioParameter(
-    RootModel[confloat(multiple_of=0.5)]
-):
-    root: confloat(multiple_of=0.5) = Field(..., title='Ratio')
+FieldItemsItemIdPartsPartGetQueryRatioParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetQueryRatioParameter",
+    Annotated[Annotated[float, Field(multiple_of=0.5)], Field(..., title='Ratio')],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryFlagParameter(RootModel[bool]):
-    root: bool = False
+FieldItemsItemIdPartsPartGetQueryFlagParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryFlagParameter", bool)
 
 
-class FieldItemsItemIdPartsPartGetQueryTagsParameterItem(
-    RootModel[constr(max_length=4)]
-):
-    root: constr(max_length=4)
+FieldItemsItemIdPartsPartGetQueryTagsParameterItem = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetQueryTagsParameterItem",
+    Annotated[str, Field(max_length=4)],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryTagsParameter(
-    RootModel[list[FieldItemsItemIdPartsPartGetQueryTagsParameterItem]]
-):
-    root: list[FieldItemsItemIdPartsPartGetQueryTagsParameterItem] = Field(
-        ['a'], min_length=1, validate_default=True
-    )
+FieldItemsItemIdPartsPartGetQueryTagsParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetQueryTagsParameter",
+    Annotated[
+        list[FieldItemsItemIdPartsPartGetQueryTagsParameterItem],
+        Field(['a'], min_length=1),
+    ],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryDayParameter(RootModel[date]):
-    root: date = Field(..., examples=['2024-01-01'])
+FieldItemsItemIdPartsPartGetQueryDayParameter = TypeAliasType(
+    "FieldItemsItemIdPartsPartGetQueryDayParameter",
+    Annotated[date, Field(..., examples=['2024-01-01'])],
+)
 
 
-class FieldItemsItemIdPartsPartGetQueryRefParameter(RootModel[UUID]):
-    root: UUID
+FieldItemsItemIdPartsPartGetQueryRefParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryRefParameter", UUID)
 
 
 class FieldItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
@@ -88,73 +80,60 @@ class FieldItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
     slow = 'slow'
 
 
-class FieldItemsItemIdPartsPartGetQueryLevelParameter(RootModel[Literal[3]]):
-    root: Literal[3]
+FieldItemsItemIdPartsPartGetQueryLevelParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryLevelParameter", Literal[3])
 
 
-class FieldItemsItemIdPartsPartGetHeaderXTraceParameter(RootModel[str]):
-    root: str
+FieldItemsItemIdPartsPartGetHeaderXTraceParameter = TypeAliasType("FieldItemsItemIdPartsPartGetHeaderXTraceParameter", str)
 
 
-class FieldItemsItemIdPartsPartGetQueryRequestParameter(RootModel[str]):
-    root: str
+FieldItemsItemIdPartsPartGetQueryRequestParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryRequestParameter", str)
 
 
-class FieldItemsItemIdPartsPartGetQueryPartParameter(RootModel[str]):
-    root: str
+FieldItemsItemIdPartsPartGetQueryPartParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryPartParameter", str)
 
 
-class FieldItemsItemIdPartsPartGetQueryField2faParameter(RootModel[str]):
-    root: str
+FieldItemsItemIdPartsPartGetQueryField2faParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryField2faParameter", str)
 
 
 class FieldItemsItemIdPartsPartGetResponse(RootModel[str]):
     root: str
 
 
-class FieldAdaptersGetCookieSessionParameter(RootModel[str]):
-    root: str
+FieldAdaptersGetCookieSessionParameter = TypeAliasType("FieldAdaptersGetCookieSessionParameter", str)
 
 
-class FieldAdaptersGetQueryIdsParameter(RootModel[list[int]]):
-    root: list[int]
+FieldAdaptersGetQueryIdsParameter = TypeAliasType("FieldAdaptersGetQueryIdsParameter", list[int])
 
 
-class FieldAdaptersGetHeaderXIdsParameter(RootModel[list[int]]):
-    root: list[int]
+FieldAdaptersGetHeaderXIdsParameter = TypeAliasType("FieldAdaptersGetHeaderXIdsParameter", list[int])
 
 
 class FieldAdaptersGetQueryBlobParameter(BaseModel):
     pass
 
 
-class FieldAdaptersGetQueryCodeParameter(RootModel[constr(pattern=r'^[A-Z]+$')]):
-    root: constr(pattern=r'^[A-Z]+$')
+FieldAdaptersGetQueryCodeParameter = TypeAliasType(
+    "FieldAdaptersGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
+)
 
 
-class FieldAdaptersGetQueryMailParameter(RootModel[EmailStr]):
-    root: EmailStr
+FieldAdaptersGetQueryMailParameter = TypeAliasType("FieldAdaptersGetQueryMailParameter", EmailStr)
 
 
-class FieldAdaptersGetQueryOtherParameter(RootModel[str]):
-    root: str
+FieldAdaptersGetQueryOtherParameter = TypeAliasType("FieldAdaptersGetQueryOtherParameter", str)
 
 
 class FieldAdaptersGetQueryNoneParameter(Enum):
     NoneType_None = None
 
 
-class FieldAdaptersGetQueryCountParameter(RootModel[int]):
-    root: int = 'ten'
+FieldAdaptersGetQueryCountParameter = TypeAliasType("FieldAdaptersGetQueryCountParameter", int)
 
 
-class FieldAdaptersGetQueryStampParameter(RootModel[AwareDatetime]):
-    root: AwareDatetime
+FieldAdaptersGetQueryStampParameter = TypeAliasType("FieldAdaptersGetQueryStampParameter", AwareDatetime)
 
 
-class FieldAdaptersGetQueryPageParameter(RootModel[int]):
-    root: int = 1
+FieldAdaptersGetQueryPageParameter = TypeAliasType("FieldAdaptersGetQueryPageParameter", int)
 
 
-class FieldRepeatIdAgainIdGetPathIdParameter(RootModel[int]):
-    root: int
+FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)

@@ -693,6 +693,53 @@
       ]
     }
   },
+  "names-unpack": {
+    "input": "names.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_sync.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1files~1{fileName}.{ext}/get",
+          "parameter_names": [
+            {
+              "in_": "header",
+              "name": "2fa",
+              "python_name": "two_factor"
+            }
+          ]
+        }
+      ],
+      "resource_names": [
+        {
+          "tag": "Pet Store",
+          "namespace": "store"
+        }
+      ],
+      "signature_style": "unpack"
+    }
+  },
   "name-errors": {
     "input": "name-errors.yaml"
   },

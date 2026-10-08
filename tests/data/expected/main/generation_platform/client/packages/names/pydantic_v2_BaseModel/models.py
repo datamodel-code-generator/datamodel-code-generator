@@ -3,20 +3,15 @@
 
 from __future__ import annotations
 
-from pydantic import RootModel
+from typing_extensions import TypeAliasType
+
+FieldFilesFileNameExtGetPathFileNameParameter = TypeAliasType("FieldFilesFileNameExtGetPathFileNameParameter", str)
 
 
-class FieldFilesFileNameExtGetPathFileNameParameter(RootModel[str]):
-    root: str
+FieldFilesFileNameExtGetPathExtParameter = TypeAliasType("FieldFilesFileNameExtGetPathExtParameter", str)
 
 
-class FieldFilesFileNameExtGetPathExtParameter(RootModel[str]):
-    root: str
+FieldFilesFileNameExtGetQueryClassParameter = TypeAliasType("FieldFilesFileNameExtGetQueryClassParameter", str)
 
 
-class FieldFilesFileNameExtGetQueryClassParameter(RootModel[str]):
-    root: str
-
-
-class FieldFilesFileNameExtGetHeaderField2faParameter(RootModel[str]):
-    root: str
+FieldFilesFileNameExtGetHeaderField2faParameter = TypeAliasType("FieldFilesFileNameExtGetHeaderField2faParameter", str | None)
