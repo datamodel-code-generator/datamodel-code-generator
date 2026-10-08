@@ -13,13 +13,15 @@ from urllib.parse import ParseResult
 from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
 from datamodel_code_generator.api_types import (
     APIGenerationError,
-    ArtifactRecord,
     Diagnostic,
+    DocumentationAnnotationWarning,
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
     PublicationRollbackError,
     SchemaRef,
+    TargetEditWarning,
+    TargetStateWarning,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -44,8 +46,8 @@ def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, con
 
 __all__ = [
     "APIGenerationError",
-    "ArtifactRecord",
     "Diagnostic",
+    "DocumentationAnnotationWarning",
     "FastAPIConfig",
     "GeneratedArtifact",
     "GeneratedProject",
@@ -54,6 +56,8 @@ __all__ = [
     "PublicationRollbackError",
     "ResponseChoice",
     "SchemaRef",
+    "TargetEditWarning",
+    "TargetStateWarning",
     "generate_fastapi",
     "render_fastapi",
 ]

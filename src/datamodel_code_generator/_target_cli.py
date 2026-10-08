@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 from typing_extensions import TypeIs
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_manifest import document_identity
+from datamodel_code_generator._api_manifest import document_identity, shown
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
 if TYPE_CHECKING:
@@ -121,8 +121,7 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
 
 def _shown(path: Path) -> str:
     """Return a path relative to the working directory when it lies inside it."""
-    cwd = Path.cwd()
-    return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
+    return shown(path, Path.cwd()).as_posix()
 
 
 def _target_json(project: GeneratedProject, models: Path, target: Path, encoding: str) -> str:
@@ -301,7 +300,7 @@ def _unwritable(reason: str) -> Diagnostic:
 
 
 class _Report:
-    """Print diagnostics to stderr as they arrive and write them as JSON when asked to."""
+    """Collect the diagnostics of a failed run and write them as JSON when asked to."""
 
     def __init__(self, destination: str | None) -> None:
         self.destination = destination

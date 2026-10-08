@@ -157,7 +157,7 @@ The rendered project lists the package's runtime requirement specifiers in `depe
 prints as a `uv add` command. Neither public result contains diagnostic records.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
 `datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
-model generation errors keep their own types and messages. The records, errors, and codec
+model generation errors keep their own types and messages. The records, errors, warnings, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
@@ -244,9 +244,10 @@ when they differ. Run generators that share output files one at a time.
 
 The manifest records the generator version, the target kind and package, the model output and one hash of the model
 files, and the hash of every file the target owns. Generation overwrites the owned files, deletes the ones it no longer
-plans, and emits a Python warning about an owned file edited since the last generation; `--check` reports it as a
-difference. A manifest of an older or unknown format owns nothing: generation emits a Python warning and deletes
-no file. `--disable-warnings` and Python warning filters suppress these warnings as for model generation.
+plans, and emits a `TargetEditWarning` about an owned file edited since the last generation; `--check` reports it
+as a difference. A manifest of an older or unknown format owns nothing: generation emits a `TargetStateWarning`
+and deletes no file. `--disable-warnings` and Python warning filters suppress these warnings as for model
+generation.
 
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
@@ -378,10 +379,12 @@ directory, so the model templates must keep the class and field names, as the re
 The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
 messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
-Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings,
-such as a documentation value the served document cannot carry, use Python `UserWarning` with the source pointer
-or artifact path in the message. They respect `--disable-warnings` and Python warning filters, and are not returned
-as diagnostic records.
+Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
+Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `TargetEditWarning`,
+`TargetStateWarning`, and `DocumentationAnnotationWarning` for a documentation value the served document cannot
+carry. Each message starts with the output path, spelled relative to the working directory when it lies inside
+it, so every generated package reports its own files. They respect `--disable-warnings` and Python warning
+filters, and are not returned as diagnostic records.
 
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
 records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
