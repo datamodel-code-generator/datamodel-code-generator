@@ -36,6 +36,9 @@ class GetValues:
         tags: defaults_basemodel_models.Tags
         labels: defaults_basemodel_models.FieldValuesGetQueryLabelsParameter
         rows: defaults_basemodel_models.FieldValuesGetQueryRowsParameter | None
+        marks: defaults_basemodel_models.Tags
+        notes: defaults_basemodel_models.Notes
+        extras: defaults_basemodel_models.FieldValuesGetQueryExtrasParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -47,10 +50,10 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'labels', 'page', 'rows', 'size', 'words'),
+                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'rows', 'size', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.Tags),
-                default=defaults_basemodel_models.Tags(),
+                default=defaults_basemodel_models.Tags.model_construct(['a']),
             ),
             ParameterArgument(
                 name='labels',
@@ -60,7 +63,7 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'page', 'rows', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'depth', 'extras', 'marks', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryLabelsParameter),
                 default=['x'],
@@ -74,9 +77,47 @@ class GetValues:
                     explode=True,
                     shape='array',
                     kind='integer',
-                    reserved_names=('bounded', 'depth', 'labels', 'page', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'size', 'tags', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryRowsParameter),
+            ),
+            ParameterArgument(
+                name='marks',
+                plan=ParameterPlan(
+                    location='query',
+                    name='marks',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
+                ),
+                adapter=TypeAdapter(defaults_basemodel_models.Tags),
+                default=defaults_basemodel_models.Tags.model_construct(['b']),
+            ),
+            ParameterArgument(
+                name='notes',
+                plan=ParameterPlan(
+                    location='query',
+                    name='notes',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'page', 'rows', 'size', 'tags', 'words'),
+                ),
+                adapter=TypeAdapter(defaults_basemodel_models.Notes),
+                default=defaults_basemodel_models.Notes(),
+            ),
+            ParameterArgument(
+                name='extras',
+                plan=ParameterPlan(
+                    location='query',
+                    name='extras',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    reserved_names=('bounded', 'depth', 'labels', 'marks', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
+                ),
+                adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryExtrasParameter),
             ),
         ),
         record=Parameters,

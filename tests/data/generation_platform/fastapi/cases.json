@@ -129,7 +129,8 @@
     "model": {
       "strict_types": [
         "bytes"
-      ]
+      ],
+      "field_constraints": true
     }
   },
   "selector-errors": {

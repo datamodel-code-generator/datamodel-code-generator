@@ -10,6 +10,7 @@ paths:
         - {name: parts, in: query, schema: {type: array, items: {type: string, format: binary}}}
         - {name: X-Blob, in: header, schema: {type: string, format: binary}}
         - {name: blob, in: cookie, schema: {type: string, format: binary}}
+        - {name: sized, in: query, schema: {type: string, format: binary, minLength: 1}}
         - {name: note, in: query, schema: {type: string}}
         - {name: packed, in: query, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
       requestBody:

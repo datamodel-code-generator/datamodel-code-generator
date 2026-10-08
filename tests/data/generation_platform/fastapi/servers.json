@@ -2232,7 +2232,7 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
         "headers": {
           "X-Level": "6"
         }
@@ -2268,7 +2268,7 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
         "headers": {
           "X-Level": "6"
         }
@@ -2298,7 +2298,7 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
         "headers": {
           "X-Level": "6"
         }

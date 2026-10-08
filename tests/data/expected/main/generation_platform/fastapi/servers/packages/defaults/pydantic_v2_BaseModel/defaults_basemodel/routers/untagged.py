@@ -50,6 +50,9 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 tags=parameters.tags,
                 labels=parameters.labels,
                 rows=parameters.rows,
+                marks=parameters.marks,
+                notes=parameters.notes,
+                extras=parameters.extras,
             ),
             contract.GetValues.RESPONSES,
         )
@@ -93,6 +96,34 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                         'type': ['array', 'null'],
                         'minItems': 1,
                         'items': {'type': 'integer'},
+                    },
+                },
+                {
+                    'name': 'marks',
+                    'in': 'query',
+                    'schema': {
+                        'type': 'array',
+                        'minItems': 1,
+                        'items': {'type': 'string'},
+                        'default': ['b'],
+                    },
+                },
+                {
+                    'name': 'notes',
+                    'in': 'query',
+                    'schema': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'default_factory': 'list',
+                    },
+                },
+                {
+                    'name': 'extras',
+                    'in': 'query',
+                    'schema': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'default_factory': 'list',
                     },
                 },
             ],

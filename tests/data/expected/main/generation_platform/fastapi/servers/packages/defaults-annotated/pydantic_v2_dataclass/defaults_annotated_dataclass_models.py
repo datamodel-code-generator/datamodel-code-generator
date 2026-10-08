@@ -16,6 +16,9 @@ Tags = TypeAliasType(
 )
 
 
+Notes = TypeAliasType("Notes", Annotated[list[str], Field(default_factory=list)])
+
+
 FieldValuesGetQueryDepthParameter = TypeAliasType(
     "FieldValuesGetQueryDepthParameter", Annotated[int | None, Field(ge=0)]
 )
@@ -56,4 +59,13 @@ FieldValuesGetQueryLabelsParameter = TypeAliasType(
 
 FieldValuesGetQueryRowsParameter = TypeAliasType(
     "FieldValuesGetQueryRowsParameter", Annotated[list[int] | None, Field(min_length=1)]
+)
+
+
+FieldValuesGetQueryMarksParameter = TypeAliasType("FieldValuesGetQueryMarksParameter", Tags)
+
+
+FieldValuesGetQueryExtrasParameter = TypeAliasType(
+    "FieldValuesGetQueryExtrasParameter",
+    Annotated[list[str], Field(default_factory=list)],
 )

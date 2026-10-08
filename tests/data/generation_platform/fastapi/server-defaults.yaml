@@ -14,9 +14,13 @@ paths:
         - {name: tags, in: query, schema: {$ref: "#/components/schemas/Tags"}}
         - {name: labels, in: query, schema: {type: array, minItems: 1, items: {type: string}, default: [x]}}
         - {name: rows, in: query, schema: {type: [array, "null"], minItems: 1, items: {type: integer}}}
+        - {name: marks, in: query, schema: {$ref: "#/components/schemas/Tags", default: [b]}}
+        - {name: notes, in: query, schema: {$ref: "#/components/schemas/Notes"}}
+        - {name: extras, in: query, schema: {type: array, items: {type: string}, default_factory: list}}
       responses:
         "204": {description: Done.}
 components:
   schemas:
     Size: {type: integer, minimum: 1, default: 10}
     Tags: {type: array, minItems: 1, items: {type: string}, default: [a]}
+    Notes: {type: array, items: {type: string}, default_factory: list}
