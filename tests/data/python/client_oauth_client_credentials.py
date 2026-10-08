@@ -78,12 +78,12 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
 
 
 def _small_stack(call: Callable[[], object]) -> str:
-    """Run a call in a thread of a 2 MiB stack, which every Python's JSON parser outgrows before 60000 nested arrays.
+    """Run a call in a thread of a 1 MiB stack, which every Python's JSON parser outgrows before 60000 nested arrays.
 
     Python 3.14 bounds parsing by the stack instead of a depth count, so only a small stack makes it refuse the depth.
     """
     outcome: list[str] = []
-    previous = threading.stack_size(2 << 20)
+    previous = threading.stack_size(1 << 20)
     try:
         worker = threading.Thread(target=lambda: outcome.append(_outcome(call)))
         worker.start()
