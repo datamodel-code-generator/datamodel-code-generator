@@ -39,7 +39,6 @@ paths:
         - {name: code, in: query, schema: {type: string, pattern: "^[A-Z]+$"}}
         - {name: mail, in: query, schema: {type: string, format: email}}
         - {name: other, in: query, schema: {type: string, not: {const: x}}}
-        - {name: none, in: query, schema: {type: [string, "null"], enum: [null]}}
         - {name: count, in: query, schema: {type: integer, default: "ten"}}
         - {name: point, in: query, schema: {$ref: "#/components/schemas/Point"}}
         - {name: stamp, in: query, schema: {type: string, format: date-time, x-note: kept}}

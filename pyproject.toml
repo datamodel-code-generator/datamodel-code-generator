@@ -352,6 +352,7 @@ run.omit = [
   "*/datamodel_code_generator/_openapi_type_binding.py",
   "*/datamodel_code_generator/model/binding*.py",
   "*/datamodel_code_generator/parser/openapi_contract*.py",
+  "tests/api_generation/test_client_install.py",
   "tests/api_generation/test_client_typing.py",
   "tests/api_generation/test_fastapi_install.py",
   "tests/api_generation/test_fastapi_typing.py",

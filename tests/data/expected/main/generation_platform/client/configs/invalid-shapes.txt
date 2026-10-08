@@ -1,5 +1,7 @@
 APIGenerationError
   E_CONFIG_VALUE config resource_names: resource_names must be a tuple of ResourceName records
   E_CONFIG_VALUE config operations: operations must be a tuple of ClientOperationConfig records
+  E_CONFIG_VALUE config signature_style: signature_style must be 'explicit' or 'unpack'
+  E_CONFIG_VALUE config body_arguments: body_arguments must be 'body' or 'both'
   E_CONFIG_VALUE config default_base_url: default_base_url must be an absolute http or https URL without userinfo, query, or fragment
   E_CONFIG_VALUE config server_base_url: server_base_url must be an absolute http or https URL without userinfo, query, or fragment

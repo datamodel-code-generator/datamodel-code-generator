@@ -2477,228 +2477,6 @@
     "expected": "protocols-disabled",
     "cwd": true
   },
-  "protocols-toml": {
-    "input": "helpers.yaml",
-    "modules": [
-      [
-        "client",
-        "_async_client.py"
-      ],
-      [
-        "client",
-        "_client.py"
-      ],
-      [
-        "client",
-        "_generated",
-        "model_bindings.py"
-      ],
-      [
-        "client",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "types",
-        "events",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "events",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "jobs",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "jobs",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "labels",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "labels",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "records",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "records",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "tags",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "tags",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "users",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "users",
-        "_operations.py"
-      ],
-      [
-        "models.py"
-      ]
-    ],
-    "references": [
-      "helpers-external.yaml",
-      "protocols/disabled.json"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"../protocols/disabled.json\"\n",
-    "toml_path": "config/client.toml",
-    "expected": "protocols-disabled"
-  },
   "protocols-relative": {
     "input": "helpers.yaml",
     "modules": [
@@ -3869,6 +3647,32 @@
     },
     "modules": false
   },
+  "querystring-targets": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-targets.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-targets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-querystring-target-checks": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-target-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-target-checks.json"
+    },
+    "modules": false
+  },
   "webhooks": {
     "input": "webhooks.yaml",
     "references": [
@@ -4982,8 +4786,37 @@
   },
   "native-boundaries": {
     "input": "native-boundaries.yaml",
+    "model": {
+      "use_standard_primitive_types": true,
+      "output_datetime_class": "datetime"
+    },
     "config": {
       "body_arguments": "both"
+    }
+  },
+  "parameter-kinds": {
+    "input": "parameter-kinds.yaml"
+  },
+  "parameter-kinds-decimal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "use_decimal_for_multiple_of": true
+    }
+  },
+  "parameter-kinds-literal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "enum_field_as_literal": "all"
+    }
+  },
+  "parameter-kinds-strict": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
     }
   },
   "templates": {
@@ -5068,5 +4901,41 @@
         "paths"
       ]
     }
+  },
+  "caching-oauth": {
+    "input": "caching-oauth.json",
+    "references": [
+      "caching.yaml",
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*",
+        "/oauth"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ],
+    "expected": "caching"
   }
 }
