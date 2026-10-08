@@ -6,8 +6,6 @@
 |--------|-------------|
 | [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
-| [`--dependency-format`](#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
-| [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--help`](#help) | Show help message and exit |
 | [`--install-skill`](#install-skill) | Install the bundled Agent Skill (experimental) |
@@ -85,97 +83,6 @@ or code generation. Requires the `debug` extra to be installed.
     ```bash
     pip install 'datamodel-code-generator[debug]'
     ```
-
----
-
-## `--dependency-format` {#dependency-format}
-
-Choose what a generation prints to add the generated package to your project (experimental): `uv`, the
-default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
-
-**Related:** [`--generate-server`](target-generation-options.md#generate-server),
-[`--generate-client`](target-generation-options.md#generate-client),
-[FastAPI Server](../fastapi-server.md)
-
-!!! tip "Usage"
-
-    ```bash
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
-      --generate-server fastapi --server-output server \
-      --server-package server --server-model-package models \
-      --dependency-format requirements > requirements.txt
-    ```
-
-`requirements` prints one runtime dependency per line, each with the minimum version the
-package needs:
-
-```text
-fastapi>=0.141.1
-starlette>=1.0.0
-pydantic>=2.13.5
-jsonschema[format-nongpl]>=4.26
-referencing>=0.37
-typing-extensions>=4.16
-```
-
-Nothing is printed for `--check`, and the option
-cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_CONFIG_CONFLICT`).
-
----
-
-## `--diagnostics-json` {#diagnostics-json}
-
-Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
-
-**Related:** [`--generate-server`](target-generation-options.md#generate-server),
-[`--generate-client`](target-generation-options.md#generate-client),
-[Diagnostics](../fastapi-server.md#diagnostics)
-
-!!! tip "Usage"
-
-    ```bash
-    datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
-      --generate-server fastapi --server-output server \
-      --server-package server --server-model-package models \
-      --diagnostics-json diagnostics.json
-    ```
-
-The document is written after every run that passes the command-line checks, successful or not, and lists
-the diagnostic records in their original phase order. stderr prints warnings separately, then one combined
-`Error:` message for a target failure, without the records' codes or stages. Ordinary model generation errors
-receive code `E_GENERATION_FAILURE` and stage `target` in the document, with the original exception type and
-message. A usage error, such as `--generate-server` without
-`--server-output`, prints `Error:` like any other command-line error and writes no document.
-
-```json
-{
-  "schema_version": 1,
-  "target": "fastapi",
-  "diagnostics": [
-    {
-      "code": "E_OPERATION_REF",
-      "severity": "error",
-      "stage": "config",
-      "message": "The handler_modes entry '/paths/~1cats/get' selects no root path operation",
-      "source_uri": null,
-      "source_pointer": null,
-      "operation": null,
-      "option_path": "handler_modes",
-      "artifact_path": null,
-      "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
-    }
-  ]
-}
-```
-
-`target` names the selected target: `fastapi` for `--generate-server` and `httpx2` for `--generate-client`.
-
-A path the generation reads or writes, or one inside the model or target output, is refused with `Error:`,
-and nothing is written to it; the check runs before anything is generated. An existing file is replaced only
-when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
-directory, or a file that cannot be written is refused with `Error:`, and the command exits with 2.
 
 ---
 
@@ -357,6 +264,9 @@ one profile or input at a time. With `--watch`, one outer scheduler watches the
 selected jobs' combined dependency graph and `pyproject.toml`. Every event replans and
 transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
+
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
 
 ---
 

@@ -16,8 +16,8 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server generation with the models (experimental) |
-| 📝 [Utility Options](utility-options.md) | 17 | Help, version, debug options |
+| 🚀 [Target Generation Options](target-generation-options.md) | 14 | Server generation with the models (experimental) |
+| 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -64,24 +64,9 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
-| [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
-| [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
-| [`--client-model-package`](target-generation-options.md#client-model-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-model-package` requires `--generate-client httpx2`. |
-| [`--client-operations`](target-generation-options.md#client-operations) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-operations` requires `--generate-client httpx2`. |
-| [`--client-output`](target-generation-options.md#client-output) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-output` requires `--generate-client httpx2`. |
-| [`--client-package`](target-generation-options.md#client-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-package` requires `--generate-client httpx2`. |
-| [`--client-protocols`](target-generation-options.md#client-protocols) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-protocols` requires `--generate-client httpx2`. |
-| [`--client-resource-names`](target-generation-options.md#client-resource-names) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-resource-names` requires `--generate-client httpx2`. |
-| [`--client-server-base-url`](target-generation-options.md#client-server-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-server-base-url` requires `--generate-client httpx2`. |
-| [`--client-signature-style`](target-generation-options.md#client-signature-style) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-signature-style` requires `--generate-client httpx2`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
-| [`--generate-server`](target-generation-options.md#generate-server) | Conflicts | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--generate-server` can not be used with `--generate-client`. |
 | [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
 | [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
 | [`--server-handler-mode`](target-generation-options.md#server-handler-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-mode` requires `--generate-server fastapi`. |
@@ -131,16 +116,6 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
-- [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
-- [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
-- [`--client-model-package`](target-generation-options.md#client-model-package)
-- [`--client-operations`](target-generation-options.md#client-operations)
-- [`--client-output`](target-generation-options.md#client-output)
-- [`--client-package`](target-generation-options.md#client-package)
-- [`--client-protocols`](target-generation-options.md#client-protocols)
-- [`--client-resource-names`](target-generation-options.md#client-resource-names)
-- [`--client-server-base-url`](target-generation-options.md#client-server-base-url)
-- [`--client-signature-style`](target-generation-options.md#client-signature-style)
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models)
 - [`--collapse-root-models`](model-customization.md#collapse-root-models)
 - [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy)
@@ -156,9 +131,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
 - [`--default-values`](field-customization.md#default-values)
-- [`--dependency-format`](utility-options.md#dependency-format)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
-- [`--diagnostics-json`](utility-options.md#diagnostics-json)
 - [`--diff-against`](general-options.md#diff-against)
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
@@ -196,7 +169,6 @@ These links are generated from CLI option metadata and summarize options that im
 ### G {#g}
 
 - [`--generate-cli-command`](general-options.md#generate-cli-command)
-- [`--generate-client`](target-generation-options.md#generate-client)
 - [`--generate-prompt`](utility-options.md#generate-prompt)
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config)
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators)

@@ -19,6 +19,7 @@ __all__ = [
     "Diagnostic",
     "DiagnosticSeverity",
     "DiagnosticStage",
+    "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationReport",
@@ -26,7 +27,9 @@ __all__ = [
     "OperationSelector",
     "PublicationRollbackError",
     "SchemaRef",
+    "TargetEditWarning",
     "TargetKind",
+    "TargetStateWarning",
 ]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
@@ -55,6 +58,18 @@ class SchemaRef:
 
 
 OperationSelector: TypeAlias = OperationRef | str
+
+
+class TargetStateWarning(UserWarning):
+    """Warn that a target manifest of an old or unknown format owns no files."""
+
+
+class TargetEditWarning(UserWarning):
+    """Warn that a generation discards a change to a file the target owns."""
+
+
+class DocumentationAnnotationWarning(UserWarning):
+    """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
 class PublicationRollbackError(OSError):
@@ -92,9 +107,7 @@ class APIGenerationError(Error):
     def __init__(self, diagnostics: tuple[Diagnostic, ...], *, option_prefix: str | None = None) -> None:
         """Keep the internal findings and describe errors without diagnostic codes or stages."""
         self.diagnostics = diagnostics
-        super().__init__(
-            "; ".join(_error_message(item, option_prefix) for item in diagnostics if item.severity == "error")
-        )
+        super().__init__("; ".join(_error_message(item, option_prefix) for item in diagnostics))
 
 
 def _error_message(item: Diagnostic, option_prefix: str | None) -> str:
@@ -153,7 +166,6 @@ class GenerationReport:
     written_files: tuple[ArtifactRecord, ...]
     unchanged_files: tuple[ArtifactRecord, ...]
     deleted_files: tuple[ArtifactRecord, ...]
-    diagnostics: tuple[Diagnostic, ...]
     generator_version: str
     runtime_revision: str
     dependencies: tuple[str, ...] = ()
@@ -169,7 +181,6 @@ class GeneratedProject:
 
     target: TargetKind
     artifacts: tuple[GeneratedArtifact, ...]
-    diagnostics: tuple[Diagnostic, ...]
     generator_version: str
     runtime_revision: str
     dependencies: tuple[str, ...] = ()
