@@ -10,18 +10,10 @@ from functools import cached_property
 from typing import Literal, overload
 
 from audit import AuditMixin
-from models import FieldPetsGetCookieSessionParameter as _dcg_type_3
-from models import FieldPetsGetHeaderXTraceParameter as _dcg_type_2
-from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
-from models import FieldPetsGetQueryTagsParameter as _dcg_type_1
-from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_11
-from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_10
-from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_6
-from models import FieldPetsPetIdGetResponse as _dcg_type_8
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_9
-from models import FieldPetsPostRequest as _dcg_type_5
-from models import NewPet as _dcg_type_4
-from models import Pet as _dcg_type_7
+from models import FieldPetsPetIdGetResponse as _dcg_type_3
+from models import FieldPetsPostRequest as _dcg_type_1
+from models import NewPet as _dcg_type_0
+from models import Pet as _dcg_type_2
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -65,10 +57,10 @@ class PetsResource(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        tags: _dcg_type_1 | Unset = UNSET,
-        x_trace: _dcg_type_2,
-        session: _dcg_type_3 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
+        x_trace: str,
+        session: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -84,7 +76,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4,
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -93,7 +85,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_5,
+        body: _dcg_type_1,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -101,7 +93,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | _dcg_type_5,
+        body: _dcg_type_0 | _dcg_type_1,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -120,7 +112,7 @@ class PetsResource(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse: ...
@@ -128,22 +120,22 @@ class PetsResource(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_7: ...
+    ) -> _dcg_type_2: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_8: ...
+    ) -> _dcg_type_3: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
@@ -158,7 +150,7 @@ class PetsResource(AuditMixin):
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> DeletePetsByPetIdResponse:
         """Call DELETE /pets/{petId}."""
@@ -171,7 +163,7 @@ class PetsResource(AuditMixin):
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> HeadPetResponse:
         """Call HEAD /pets/{petId}."""
@@ -184,7 +176,7 @@ class PetsResource(AuditMixin):
     def upload_photo(
         self,
         *,
-        pet_id: _dcg_type_9,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -203,7 +195,7 @@ class PetsResource(AuditMixin):
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_10,
+        pet_id: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -220,7 +212,7 @@ class PetsResource(AuditMixin):
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_11,
+        pet_id: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadFilesResponse:
@@ -243,10 +235,10 @@ class PetsWithResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        tags: _dcg_type_1 | Unset = UNSET,
-        x_trace: _dcg_type_2,
-        session: _dcg_type_3 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
+        x_trace: str,
+        session: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -262,7 +254,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4,
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -271,7 +263,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_5,
+        body: _dcg_type_1,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -279,7 +271,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | _dcg_type_5,
+        body: _dcg_type_0 | _dcg_type_1,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -298,7 +290,7 @@ class PetsWithResponse(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]: ...
@@ -306,22 +298,22 @@ class PetsWithResponse(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_7]: ...
+    ) -> Response[_dcg_type_2]: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_8]: ...
+    ) -> Response[_dcg_type_3]: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
@@ -336,7 +328,7 @@ class PetsWithResponse(AuditMixin):
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> Response[DeletePetsByPetIdResponse]:
         """Call DELETE /pets/{petId}."""
@@ -345,7 +337,7 @@ class PetsWithResponse(AuditMixin):
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> Response[HeadPetResponse]:
         """Call HEAD /pets/{petId}."""
@@ -354,7 +346,7 @@ class PetsWithResponse(AuditMixin):
     def upload_photo(
         self,
         *,
-        pet_id: _dcg_type_9,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -373,7 +365,7 @@ class PetsWithResponse(AuditMixin):
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_10,
+        pet_id: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -390,7 +382,7 @@ class PetsWithResponse(AuditMixin):
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_11,
+        pet_id: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadFilesResponse]:
@@ -413,10 +405,10 @@ class PetsWithRawResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        tags: _dcg_type_1 | Unset = UNSET,
-        x_trace: _dcg_type_2,
-        session: _dcg_type_3 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
+        x_trace: str,
+        session: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -432,7 +424,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4,
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -441,7 +433,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_5,
+        body: _dcg_type_1,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -449,7 +441,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | _dcg_type_5,
+        body: _dcg_type_0 | _dcg_type_1,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -467,7 +459,7 @@ class PetsWithRawResponse(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -482,7 +474,7 @@ class PetsWithRawResponse(AuditMixin):
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call DELETE /pets/{petId}."""
@@ -495,7 +487,7 @@ class PetsWithRawResponse(AuditMixin):
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call HEAD /pets/{petId}."""
@@ -508,7 +500,7 @@ class PetsWithRawResponse(AuditMixin):
     def upload_photo(
         self,
         *,
-        pet_id: _dcg_type_9,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -527,7 +519,7 @@ class PetsWithRawResponse(AuditMixin):
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_10,
+        pet_id: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -544,7 +536,7 @@ class PetsWithRawResponse(AuditMixin):
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_11,
+        pet_id: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -567,10 +559,10 @@ class PetsWithStreamingResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | Unset = UNSET,
-        tags: _dcg_type_1 | Unset = UNSET,
-        x_trace: _dcg_type_2,
-        session: _dcg_type_3 | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
+        x_trace: str,
+        session: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -586,7 +578,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4,
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -595,7 +587,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_5,
+        body: _dcg_type_1,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -603,7 +595,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | _dcg_type_5,
+        body: _dcg_type_0 | _dcg_type_1,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -621,7 +613,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -636,7 +628,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call DELETE /pets/{petId}."""
@@ -645,7 +637,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6,
+        pet_id: int,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call HEAD /pets/{petId}."""
@@ -654,7 +646,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def upload_photo(
         self,
         *,
-        pet_id: _dcg_type_9,
+        pet_id: int,
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -673,7 +665,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_10,
+        pet_id: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -690,7 +682,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_11,
+        pet_id: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

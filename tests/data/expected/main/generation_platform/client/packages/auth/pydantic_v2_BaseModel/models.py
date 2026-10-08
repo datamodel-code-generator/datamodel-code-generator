@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, RootModel
+from typing_extensions import TypeAliasType
 
 
 class FieldInheritedGetResponse(RootModel[bytes]):
@@ -50,16 +51,13 @@ class FieldApiKeyCookieGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldApiKeyCookieParametersGetCookieThemeParameter(RootModel[str]):
-    root: str
+FieldApiKeyCookieParametersGetCookieThemeParameter = TypeAliasType("FieldApiKeyCookieParametersGetCookieThemeParameter", str)
 
 
-class FieldApiKeyCookieParametersGetQueryPageParameter(RootModel[int]):
-    root: int
+FieldApiKeyCookieParametersGetQueryPageParameter = TypeAliasType("FieldApiKeyCookieParametersGetQueryPageParameter", int)
 
 
-class FieldApiKeyCookieParametersGetHeaderXTraceParameter(RootModel[str]):
-    root: str
+FieldApiKeyCookieParametersGetHeaderXTraceParameter = TypeAliasType("FieldApiKeyCookieParametersGetHeaderXTraceParameter", str)
 
 
 class FieldApiKeyCookieParametersGetQueryFilterParameter(BaseModel):

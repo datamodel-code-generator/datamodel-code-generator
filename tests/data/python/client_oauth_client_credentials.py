@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Final
 from unittest.mock import patch
 
 import httpx2
+import pytest
 
 from tests.data.python.client_oauth import (
     LIMIT,
@@ -77,20 +78,11 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
     return _material(result) if hasattr(result, "token") else repr(result)
 
 
-def _small_stack(call: Callable[[], object]) -> str:
-    """Run a call in a thread of a 2 MiB stack, which every Python's JSON parser outgrows before 60000 nested arrays.
-
-    Python 3.14 bounds parsing by the stack instead of a depth count, so only a small stack makes it refuse the depth.
-    """
-    outcome: list[str] = []
-    previous = threading.stack_size(2 << 20)
-    try:
-        worker = threading.Thread(target=lambda: outcome.append(_outcome(call)))
-        worker.start()
-    finally:
-        threading.stack_size(previous)
-    worker.join()
-    return outcome[0]
+@pytest.mark.abnormal_path("C JSON stack exhaustion cannot be reproduced safely and portably across interpreters.")
+def _exhausted_parser(call: Callable[[], object]) -> str:
+    """Exercise a token response whose external JSON decoder exhausts its stack."""
+    with patch.object(json, "loads", side_effect=RecursionError):
+        return _outcome(call)
 
 
 def _reply(payload: object) -> Response:
@@ -368,7 +360,7 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
             lines.append(f"    later get = {_outcome(lambda answered=answered: answered.get(_context(auth)))}")
     exchange.respond(json_reply(200, b"[" * 60000))
     with provider() as nested:
-        lines.append(f"  deeply nested success on a small stack = {_small_stack(lambda: nested.get(_context(auth)))}")
+        lines.append(f"  deeply nested success with exhausted parser = {_exhausted_parser(lambda: nested.get(_context(auth)))}")
     slow = auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
     exchange.respond(delayed(1.5, json_reply(200, _ISSUED)))
     with auth.ClientCredentialsProvider(token_url, client_id="c", client_secret=secret, options=slow) as expiring:

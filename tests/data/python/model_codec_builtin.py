@@ -21,8 +21,7 @@ from typing import TYPE_CHECKING, Any, get_args, get_type_hints
 
 from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
-from datamodel_code_generator import SchemaParseError
-from datamodel_code_generator.api_types import APIGenerationError
+from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator.fastapi import generate_fastapi
 from tests.data.python.client_generation import generate_client, model_config
 from tests.data.python.fastapi_generation import fastapi_config
@@ -113,13 +112,10 @@ def generate_package(
             )
         else:
             generate_client(source, root, package, backend, options, {**CLIENT, **config})
-    except APIGenerationError as error:
-        return [
-            "APIGenerationError",
-            *(f"diagnostic {item.code} {item.source_pointer}: {item.message}" for item in error.diagnostics),
-        ]
     except SchemaParseError as error:
         return [f"SchemaParseError {error}"]
+    except Error as error:
+        return [f"Error: {error}"]
     return []
 
 
@@ -250,7 +246,8 @@ class _Runner:
                 case "encode" | "serialize":
                     encoded = json.dumps(
                         _unordered_json(value, json.loads(codec.encode(value))),
-                        separators=(",", ":"), ensure_ascii=False,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
                     )
                     return f"json={encoded}"
                 case "mutate":

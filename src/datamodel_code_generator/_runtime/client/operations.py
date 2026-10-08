@@ -83,6 +83,10 @@ class OutboundModelCodec(Protocol):
         """Return the value the JSON bytes of a saved value restore."""
         ...
 
+    def convert(self, value: Any) -> object:
+        """Return the model value of a value its model type stands for, built as the model builds it."""
+        ...
+
     @property
     def errors(self) -> tuple[type[Exception], ...]:
         """Return the failures of the codec's backend."""
@@ -135,14 +139,20 @@ class ServerPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its wire plan and, when it has a schema, the codec of its argument."""
+    """One effective parameter: its wire plan and, when it has a schema, the codec of its argument.
+
+    An argument that `converts` takes the type its root model stands for, and is converted into the root model first.
+    """
 
     plan: ParameterPlan
     codec: OutboundModelCodec | None = None
+    converts: bool = False
 
     def dump(self, value: object) -> JSONValue:
         """Return the wire value of a present argument."""
-        return cast("JSONValue", value if self.codec is None else self.codec.dump(value))
+        if (codec := self.codec) is None:
+            return cast("JSONValue", value)
+        return cast("JSONValue", codec.dump(codec.convert(value) if self.converts else value))
 
     def restored(self, wire: JSONValue) -> object:
         """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""

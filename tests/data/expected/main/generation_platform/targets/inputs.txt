@@ -60,14 +60,14 @@ render
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
 render
-  APIGenerationError
+  Error: The --server-operation-names entry '/paths/~1items/get' selects no root path operation
   E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1items/get' selects no root path operation
 render
-  APIGenerationError
+  Error: input: Target generation reads one root document, not a list
   E_INPUT_ROOT error input input: Target generation reads one root document, not a list
 render
-  APIGenerationError
+  Error: input: Target generation reads one root document, not a directory
   E_INPUT_ROOT error input input: Target generation reads one root document, not a directory
 render
-  APIGenerationError
+  Error: --input-file-type: Target generation reads an OpenAPI document
   E_INPUT_ROOT error input model_config.input_file_type: Target generation reads an OpenAPI document

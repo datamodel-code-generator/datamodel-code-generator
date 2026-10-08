@@ -63,7 +63,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   no querystring ['1', '2']
   text start [] ! UserWarning: Pydantic serializer warnings:
-  PydanticSerializationUnexpectedValue(Expected `FieldUsersGetQueryOffsetParameter` - serialized value may not be as expected [input_value='forty', input_type=str]) []
+  PydanticSerializationUnexpectedValue(Expected `int` - serialized value may not be as expected [input_value='forty', input_type=str]) []
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?position=41

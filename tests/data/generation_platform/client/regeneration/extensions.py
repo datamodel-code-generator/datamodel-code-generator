@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pets import Client
 from pets.resources.pets import PetsResource
-from pets_models import PageSize, Pet, PetId
+from pets_models import Pet
 
 
 class AuditedPets(PetsResource):
@@ -12,7 +12,7 @@ class AuditedPets(PetsResource):
 
     def first_pet(self) -> Pet | None:
         """Return the first pet of a one-pet page."""
-        pets = self.list_pets(limit=PageSize(1))
+        pets = self.list_pets(limit=1)
         return pets.root[0] if pets.root else None
 
 
@@ -24,6 +24,6 @@ class AppClient(Client):
         """Return the pets operations the application reads through."""
         return AuditedPets(self._core)
 
-    def retire(self, pet_id: PetId) -> None:
+    def retire(self, pet_id: int) -> None:
         """Archive one pet."""
         self.archive.archive_pet(pet_id=pet_id)

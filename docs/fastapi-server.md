@@ -15,7 +15,7 @@ matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
-default target, 3.10, is refused with `E_CONFIG_VALUE`, and running on Python 3.10 with `E_PYTHON_UNSUPPORTED`.
+default target, 3.10, and running on Python 3.10 are both refused with `Error:` and exit code 2.
 
 ## Quick start
 
@@ -103,9 +103,9 @@ object with the right methods works, and type checkers check it where you pass i
 ## Requirements
 
 - The input is one OpenAPI 3.0, 3.1, or 3.2 document, from a file, a URL, or stdin; a directory or a list of
-  files is `E_INPUT_ROOT`.
+  files is refused.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
-  `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, and types do not add backends.
+  refused. Custom templates, base classes, and types do not add backends.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
@@ -156,8 +156,9 @@ for record in report.written_files:
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
 as a `uv add` command.
-Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
-ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, and codec
+Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
+`datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
+model generation errors keep their own types and messages. The records, errors, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
@@ -202,7 +203,7 @@ path references has no URL and is not served. To leave paths out, pass
 [`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths). The models follow the
 `api` scope as in a model-only run: inline schemas of the paths left out are not generated, while the schemas and
 path items under `components` still are. A per-operation setting that names a path left out fails with
-`E_OPERATION_REF`.
+an error before generation.
 
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
@@ -234,12 +235,12 @@ datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
 restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
-own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`).
+own modules; a file the generator never wrote at a path it needs stops the run with an error.
 
 ## Regenerating and checking
 
 Generation stages file changes and rolls back earlier changes if publication fails.
-Before publishing, it rechecks planned file hashes and reports `E_STATE_CHANGED`
+Before publishing, it rechecks planned file hashes and reports an error
 when they differ. Run generators that share output files one at a time.
 
 The manifest records the generator version, the target kind and package, the model output and one hash of the model
@@ -357,16 +358,21 @@ datamodel-codegen \
   --server-model-package models
 ```
 
-A template that does not parse or render stops the run with `F_TEMPLATE_INVALID`, which names the file in the custom
+A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
 directory, so the model templates must keep the class and field names, as the requirements above describe.
 
 ## Diagnostics
 
-The command line prints each diagnostic to stderr as `CODE severity stage location: message`, and
-[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
-stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
-(`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
-(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding, planning, and templates (`BND_*`, `F_*`), and ownership
-(`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
-served document cannot carry, do not.
+The command line prints failures to stderr as `Error: message` and exits with 2. Target errors combine their
+messages in diagnostic order, without codes, severity or stage labels. Model generation errors keep their
+messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
+Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings,
+such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the served document cannot carry, still print as
+`CODE severity stage location: message` and do not stop the run.
+
+[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes the ordered diagnostic
+records separately from the stderr messages. Target errors retain their diagnostic codes and stages in that
+document. Ordinary model generation errors receive `E_GENERATION_FAILURE` with stage `target`; the record's
+message includes the original exception type and message. For example, an unresolved reference is reported as
+`Error: Unresolved local $ref targets: ...` on stderr and as `E_GENERATION_FAILURE` in the JSON document.
