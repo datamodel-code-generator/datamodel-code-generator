@@ -474,10 +474,9 @@ class GenerationIndex:
         self._reset_reference_classes_cache_if_needed()
         if (reference_classes := self._reference_classes_cache.get(model_id)) is not None:
             return reference_classes
-        model_type = model.__class__
         include_dict_key_references = (
-            include_dict_key_reference_classes := model_type._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
-        ) is not None and include_dict_key_reference_classes(model_type)
+            include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
+        ) is not None and include_dict_key_reference_classes(model)
         reference_classes = frozenset(
             reference.path
             for data_type_id in facts.data_types_by_model.get(model_id, ())

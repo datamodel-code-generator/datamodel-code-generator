@@ -542,8 +542,9 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--target-pydantic-version",
-    help="Target Pydantic version for generated code. "
-    "'2': Pydantic 2.0+ compatible (default, uses populate_by_name). "
+    help="Oldest Pydantic version the generated code must support. "
+    "Unset: the newest supported feature forms, with populate_by_name config like '2'. "
+    "'2': Pydantic 2.0+ compatible (uses populate_by_name). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel).",
     choices=[v.value for v in TargetPydanticVersion],

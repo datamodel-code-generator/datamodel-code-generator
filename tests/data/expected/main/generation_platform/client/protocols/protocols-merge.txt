@@ -1,4 +1,0 @@
-# protocols-merge
-render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols: The protocol configuration file uses a YAML merge key

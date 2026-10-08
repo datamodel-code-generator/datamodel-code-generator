@@ -1324,6 +1324,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         use_type_alias_type=config.use_type_alias_type,
         use_root_model_type_alias=config.use_root_model_type_alias,
         include_graphql_models=input_file_type == InputFileType.GraphQL,
+        target_pydantic_version=config.target_pydantic_version,
     )
 
     python_type_expressions: _PythonTypeExpressions | None = None

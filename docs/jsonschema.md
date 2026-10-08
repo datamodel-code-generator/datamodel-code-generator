@@ -218,6 +218,49 @@ This allows you to set a default base class with `--base-class`, override specif
 | `format` values | Mapped to Python/Pydantic types where supported |
 | Custom extensions | `customBasePath` and related options can steer generated base classes |
 
+## Regular Expression Patterns
+
+Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the
+pattern when the model class is created. Some syntax that Python's `re` accepts is rejected by every
+pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
+OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
+the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
+the installed pydantic-core or on the Python running the generator, and it is the same for every
+`--target-pydantic-version`.
+
+| Pattern syntax | Example | Generated model |
+|----------------|---------|-----------------|
+| Lookahead and lookbehind | `(?=x)`, `(?<!x)` | `python-re` |
+| Numbered backreferences and octal escapes | `([a-z])\1`, `\0`, `[\101]` | `python-re` |
+| Named backreferences | `(?P<c>x)(?P=c)` | `python-re` |
+| Conditionals | `(<)?a(?(1)>)` | `python-re` |
+| End of string | `\Z` | `python-re` |
+| Comments | `(?#note)` | `python-re` |
+| Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
+| Backspace in a character class | `[\b]` | `python-re` |
+| ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
+| Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
+| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
+| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
+| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
+| Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
+| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
+
+Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
+Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
+Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a
+`pattern` on `bytes`.
+Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
+example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
+linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
+validate untrusted input.
+
 ## Limitations
 
 JSON Schema input generates Python model definitions. It does not perform runtime validation by itself, and some

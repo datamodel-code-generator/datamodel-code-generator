@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 
+from datamodel_code_generator import TargetPydanticVersion
 from datamodel_code_generator.format import PythonVersion, is_supported_in_black
-from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH
+from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH, installed_pydantic_runs_target
 from tests.main.payload_validation.models import PayloadBackend
 
 PAYLOAD_CODEGEN_WARNING_FILES: dict[str, str] = json.loads(
@@ -90,6 +91,20 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/ref_to_json_list/list.json": "referenced JSON data list, not a schema document",
     "jsonschema/schema_validators_multiple_aliases_property_count.json": (
         "opt-in schema-validator e2e fixture; payload validation intentionally uses default generation"
+    ),
+    "jsonschema/rust_only_syntax.json": (
+        "Rust-only regex syntax that Python's re rejects or warns about; test_main_rust_only_syntax validates it"
+    ),
+    "jsonschema/rust_unsupported_atomic_group.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.11+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_end_of_string.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.14+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_python_rejected.json": (
+        "patterns both regex engines reject fail to import under either engine"
     ),
     "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
@@ -242,6 +257,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/ref_nullable.yaml::components.schemas.NullableChild": (
         "top-level nullable object components need a wrapper policy; nullable refs are covered via Parent"
     ),
+    "jsonschema/collapse_root_models_lookaround_discriminator.json": (
+        "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
+        "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
+    ),
 }
 MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
@@ -258,9 +277,15 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
         for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
     },
-    "jsonschema/collapse_root_models_property_names_reference.json": dict.fromkeys(
-        PayloadBackend, ("--collapse-root-models",)
-    ),
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
+        for name in (
+            "collapse_root_models_lookaround",
+            "collapse_root_models_lookaround_inheritance",
+            "collapse_root_models_lookaround_root",
+            "collapse_root_models_property_names_reference",
+        )
+    },
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },
@@ -342,6 +367,14 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
         LITERAL_PATTERN_INTERSECTION_CASE_IDS,
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to intersected literal patterns",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/collapse_root_models_lookaround.json",
+            "jsonschema/collapse_root_models_lookaround_inheritance.json",
+            "jsonschema/collapse_root_models_lookaround_root.json",
+        ),
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to collapsed lookaround pattern validators",
     ),
     "jsonschema/lookaround_anyof_nullable.json": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
@@ -472,3 +505,8 @@ def _payload_target_python_version() -> str:
 
 
 PAYLOAD_TARGET_PYTHON_VERSION = _payload_target_python_version()
+PAYLOAD_TARGET_PYDANTIC_VERSION = max(
+    (target.value for target in TargetPydanticVersion if installed_pydantic_runs_target(target.value)),
+    key=lambda value: tuple(map(int, value.split("."))),
+)
+"""The newest target the installed Pydantic can run, so payload models execute on every pinned runtime."""

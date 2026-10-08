@@ -9,11 +9,11 @@ import pytest
 
 from datamodel_code_generator import DataModelType, Formatter, InputFileType, PythonVersion
 from datamodel_code_generator.format import CodeFormatter
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_VERSION_TUPLE
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     assert_generated_model_json_validation,
+    installed_pydantic_runs_target,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
@@ -31,15 +31,7 @@ PAYLOADS = DATA_PATH / "payloads/annotated_string_keys"
 @pytest.mark.parametrize(
     ("case", "backend"),
     [
-        pytest.param(
-            case,
-            backend,
-            id=f"{case['name']}_{backend}",
-            marks=pytest.mark.skipif(
-                tuple(case.get("minimum_pydantic_version", [0, 0, 0])) > PYDANTIC_VERSION_TUPLE,
-                reason="Installed Pydantic does not support this schema or target version",
-            ),
-        )
+        pytest.param(case, backend, id=f"{case['name']}_{backend}")
         for case in json.loads((PAYLOADS / "cases.json").read_text())
         for backend in case.get("backends", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
     ],
@@ -47,11 +39,13 @@ PAYLOADS = DATA_PATH / "payloads/annotated_string_keys"
 def test_annotated_string_keys(
     output_file: Path, entrypoint: str, formatter: str, case: dict[str, Any], backend: str
 ) -> None:
-    """Check exact output and native constraints without mocking code generation."""
+    """Check exact output everywhere and native constraints where the installed Pydantic supports the case."""
     source = JSON_SCHEMA_DATA_PATH / "annotated_string_keys" / f"{case['schema']}.json"
     expected = f"annotated_string_keys/{case['name']}_{backend}_{formatter}.py"
-    if PYDANTIC_VERSION_TUPLE < (2, 1, 0):
-        expected = f"pydantic20/{expected}"
+    runs = installed_pydantic_runs_target(case["options"].get("target_pydantic_version")) and (
+        not (minimum := case.get("minimum_pydantic_version"))
+        or installed_pydantic_runs_target(".".join(map(str, minimum)))
+    )
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
     options: dict[str, Any] = {"field_constraints": True, "use_field_description": True, **case["options"]}
     match entrypoint:
@@ -76,6 +70,7 @@ def test_annotated_string_keys(
                 assert_func=assert_file_content,
                 expected_file=expected,
                 force_exec_validation=True,
+                skip_code_validation=not runs,
             )
         case _:
             run_generate_file_and_assert(
@@ -89,6 +84,8 @@ def test_annotated_string_keys(
                 expected_file=expected,
                 **options,
             )
+    if not runs:
+        return
     payloads = json.loads((PAYLOADS / f"{case['schema']}.json").read_text())
     for invalid in payloads["invalid"]:
         assert_generated_model_json_validation(

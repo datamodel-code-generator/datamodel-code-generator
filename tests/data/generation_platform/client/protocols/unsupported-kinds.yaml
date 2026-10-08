@@ -1,3 +1,0 @@
-schema_version: 1
-helpers:
-  files.upload: {kind: resumable_upload, profile: parts}

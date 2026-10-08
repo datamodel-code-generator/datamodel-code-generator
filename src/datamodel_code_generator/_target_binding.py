@@ -75,6 +75,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
+from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
@@ -100,7 +101,7 @@ _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
     msgspec.Struct: "msgspec",
 }
 _ENUMS: Final = frozenset({Enum, IntEnum, StrEnum})
-_ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement})
+_ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement, PydanticCompatibleTypeAlias})
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
 _BUILTINS: Final = {
     "bool": BuiltinType("bool"),

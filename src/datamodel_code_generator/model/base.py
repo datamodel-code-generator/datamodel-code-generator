@@ -1942,7 +1942,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     FORMAT_DESCRIPTION_AS_DOCSTRING: ClassVar[bool] = True
     CUSTOM_TEMPLATE_ADAPTER: ClassVar[Callable[[Template], Template] | None] = None
     # A static callable avoids allocating bound methods on dependency-index cache misses.
-    _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[type[DataModel]], bool] | None] = None
+    _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[DataModel], bool] | None] = None
     _TYPED_EXTRA_DICT_KEY_CAPABILITY: ClassVar[Callable[[DataType], bool] | None] = None
     _IMPORTS_CACHE_KEY: ClassVar[str] = "_cached_imports"
     has_forward_reference: bool = False
@@ -2467,6 +2467,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.clear_imports_cache()
         if dedup_key_cache := getattr(self, "_dedup_key_cache", None):
             dedup_key_cache.clear()
+
+    def refresh_field_config(self) -> None:
+        """Update config derived from field types once the parser has finished replacing them."""
 
     @property
     def reference_classes(self) -> frozenset[str]:
