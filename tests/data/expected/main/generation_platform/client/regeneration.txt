@@ -72,6 +72,6 @@
   file pets/types/pets/_operations.py
   file pets_models.py
   runtime files 47
-  UserWarning: _client.py: The owned file changed since the last generation, and this generation discards the change
+  TargetEditWarning: <root>/pets/_client.py: The owned file changed since the last generation, and this generation discards the change
   pets/extensions.py unchanged True
   pets/_client.py edited False

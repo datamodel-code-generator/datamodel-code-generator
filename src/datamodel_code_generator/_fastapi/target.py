@@ -7,7 +7,8 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_manifest import shown
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, DocumentationAnnotationWarning
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.documentation import Documentation
@@ -75,7 +76,8 @@ class FastAPITarget:
         )
         files = renderer.files()
         for problem in docs.problems:
-            warnings.warn(problem, stacklevel=2)
+            output = shown(config.output, request.cwd).as_posix()
+            warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
         return TargetRender(files=files, dependencies=_dependencies(plan, request.models))
 
 
