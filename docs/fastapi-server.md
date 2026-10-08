@@ -261,6 +261,12 @@ the model and server output directories. CRLF and LF compare equally. Unrelated 
 `--check --output-format json` uses the same check payload as model generation. Checking publishes nothing and
 does not warn that it would overwrite an edited owned file.
 
+`--output-format json` publishes the files and emits the existing generation payload as one JSON document on
+stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. File
+paths are relative to the common parent of the configured outputs when those paths share one, otherwise they
+are absolute. The target manifest, model metadata, and remote lock are outside the payload. The dependency
+notice goes to stderr, along with errors and Python warnings.
+
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another

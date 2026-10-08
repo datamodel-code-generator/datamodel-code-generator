@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import warnings
 from pathlib import Path
@@ -40,6 +41,7 @@ NOT_WRITABLE = "Error: --diagnostics-json cannot be written: it is not a file in
 READ_OR_WRITTEN = "Error: --diagnostics-json names a file the generation reads or writes\n"
 OTHER_FILE = "Error: --diagnostics-json names an existing file that is not a report\n"
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
+JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -228,6 +230,87 @@ def test_fastapi_cli_check_outputs(
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     assert_output(
         f"files unchanged {before == after}; warnings {len(recorded)}\n", EXPECTED / "cli" / "check-unchanged.txt"
+    )
+
+
+@pytest.mark.parametrize(
+    "case_name",
+    [
+        pytest.param(name, marks=pytest.mark.abnormal_path("portable fixtures cannot create different output drives"))
+        if JSON_CASES[name].get("different_volumes")
+        else name
+        for name in JSON_CASES
+    ],
+)
+def test_fastapi_cli_generation_json(
+    case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Parse one generation payload and compare every reported text file with its published output."""
+    case = JSON_CASES[case_name]
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    source = Path("pets.yaml")
+    if name := case.get("source"):
+        shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
+        source = Path("spec") / name
+    model = Path(case.get("model", "models.py"))
+    server = Path(case.get("server", "server"))
+    if case.get("absolute"):
+        model, server = tmp_path / model, tmp_path / server
+    elif case.get("absolute_server"):
+        server = tmp_path / server
+    encoding = case.get("encoding", "utf-8")
+    options = ["--encoding", encoding]
+    if case.get("templates"):
+        shutil.copytree(CLI / "check-templates", tmp_path / "templates")
+        options.extend(["--custom-template-dir", "templates"])
+    if case.get("repeat"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=model,
+            extra_args=_server(*options, output=str(server)),
+            capsys=capsys,
+            expected_stdout_path=DEPENDENCIES,
+        )
+    if case.get("unowned"):
+        server.mkdir()
+        (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
+    if case.get("different_volumes"):
+
+        def different_drives(_: object) -> str:
+            raise ValueError
+
+        monkeypatch.setattr(os.path, "commonpath", different_drives)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=model,
+            extra_args=_server("--output-format", "json", *options, *case.get("options", ()), output=str(server)),
+            skip_code_validation=encoding != "utf-8",
+        )
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    parent = Path("generated" if case_name == "nested-output" else ".")
+    lines = [
+        f"version {payload['version']}; format {payload['format']}; kind {payload['kind']}",
+        f"output {payload['output']}",
+    ]
+    for item in payload["files"]:
+        path = parent / item["path"]
+        codec = encoding if path.suffix == ".py" else "utf-8"
+        lines.append(f"file {item['path']}; matches published {item['content'] == path.read_text(encoding=codec)}")
+    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+    lines.extend(
+        f"outside payload {name}; published {(tmp_path / name).is_file()}; "
+        f"listed {any(item['path'] == name for item in payload['files'])}"
+        for name in case.get("outside_payload", ())
+    )
+    assert_output(captured.err, DEPENDENCIES)
+    assert_output(
+        "\n".join(lines).replace(tmp_path.as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json" / f"{case_name}.txt"
     )
 
 
@@ -795,10 +878,7 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
     [
         (
             ["--watch", "--output-format", "json", "--diagnostics-json", "-"],
-            (
-                "Error: --generate-server cannot be used with --watch; "
-                "--generate-server cannot be used with --output-format json\n"
-            ),
+            "Error: --generate-server cannot be used with --watch\n",
             "conflicts-report.txt",
         ),
         (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n", None),
@@ -1431,8 +1511,9 @@ def test_fastapi_cli_failures(
 
 
 @pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
-    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files."""
     monkeypatch.chdir(tmp_path)
@@ -1450,7 +1531,7 @@ def test_fastapi_cli_model_error_context(
             ]
             stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
         case "encoding":
-            (tmp_path / "pets.yaml").write_bytes(b"\xff")
+            (tmp_path / "pets.yaml").write_bytes((CLI / "non-text.dat").read_bytes())
             stderr = "Error: Unable to decode input using encoding 'utf-8': "
         case "lock":
             (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
@@ -1463,10 +1544,11 @@ def test_fastapi_cli_model_error_context(
         input_path=Path("pets.yaml"),
         output_path=output,
         input_file_type="openapi",
-        extra_args=_server(*options),
+        extra_args=_server(*options, *(["--output-format", "json"] if structured else [])),
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=stderr,
+        expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
         output_should_not_exist=True,
     )
 
