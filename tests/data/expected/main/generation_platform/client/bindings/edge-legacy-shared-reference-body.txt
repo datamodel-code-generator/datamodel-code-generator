@@ -5,10 +5,10 @@ render pydantic_v2.BaseModel default
   #   filename:  legacy-shared-reference-body.yaml
   
   from __future__ import annotations
-  from pydantic import RootModel
+  from typing_extensions import TypeAliasType
   
   
-  class SharedParameter(RootModel[str]):
-      root: str
+  
+  SharedParameter = TypeAliasType("SharedParameter", str)
   model_bindings.py
   codec_0 models.SharedParameter

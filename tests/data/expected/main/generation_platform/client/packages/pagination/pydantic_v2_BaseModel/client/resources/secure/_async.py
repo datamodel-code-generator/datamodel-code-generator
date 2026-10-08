@@ -9,8 +9,6 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldSecureUsersGetQueryCursorParameter as _dcg_type_0
-
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET, RequestOptions, Unset
@@ -43,7 +41,7 @@ class AsyncSecureResource:
     async def list_secure_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListSecureUsersResponse:
@@ -66,7 +64,7 @@ class AsyncSecureWithResponse:
     async def list_secure_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListSecureUsersResponse]:
@@ -89,7 +87,7 @@ class AsyncSecureWithRawResponse:
     async def list_secure_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -112,7 +110,7 @@ class AsyncSecureWithStreamingResponse:
     def list_secure_users(
         self,
         *,
-        cursor: _dcg_type_0 | Unset = UNSET,
+        cursor: str | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

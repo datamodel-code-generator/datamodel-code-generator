@@ -17,7 +17,6 @@ from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
     OperationRef,
-    attached_diagnostic,
 )
 from datamodel_code_generator._client.config import (
     BodyFieldName,
@@ -203,9 +202,7 @@ def _render(
             lines.append(f"  files {[path for path in files if path not in kept]}")
         return lines
     except Error as error:
-        if (diagnostic := attached_diagnostic(error)) is None:
-            raise
-        return ["  Error", _diagnostic(diagnostic)]
+        return [f"  Error: {error}"]
     lines: list[str] = []
     for artifact in project.artifacts:
         path, content = (root / artifact.path).relative_to(root), artifact.content or b""

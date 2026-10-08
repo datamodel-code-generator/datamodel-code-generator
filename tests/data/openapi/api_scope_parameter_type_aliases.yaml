@@ -1,0 +1,104 @@
+openapi: 3.1.0
+info:
+  title: Parameter type aliases
+  version: 1.0.0
+paths:
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema: {type: integer, minimum: 1}
+    get:
+      operationId: getItem
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: ratio
+          in: query
+          schema: {type: number, exclusiveMinimum: 0, multipleOf: 0.5}
+        - name: slug
+          in: query
+          schema: {type: string, minLength: 2, pattern: '^(?!admin)[a-z]+$'}
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items: {type: string, maxLength: 8}
+            maxItems: 5
+            default: [new]
+        - name: labels
+          in: query
+          schema:
+            type: array
+            items: {type: string, maxLength: 8}
+            maxItems: 5
+        - name: shade
+          in: query
+          schema: {type: string, enum: [light, dark], default: light}
+        - name: pinned
+          in: query
+          schema: {const: 'on'}
+        - name: color
+          in: query
+          schema: {$ref: '#/components/schemas/Color'}
+        - name: colors
+          in: query
+          schema:
+            type: array
+            title: ColorList
+            items: {$ref: '#/components/schemas/Color'}
+        - name: codes
+          in: query
+          schema:
+            anyOf:
+              - {type: string, title: Code, maxLength: 4}
+              - type: array
+                items: {type: string, maxLength: 4}
+        - name: nullable
+          in: query
+          schema: {type: [integer, 'null'], minimum: 0, default: 3}
+        - name: filter
+          in: query
+          style: deepObject
+          schema: {$ref: '#/components/schemas/Filter'}
+        - name: owner
+          in: query
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              name: {type: string, maxLength: 3}
+        - name: extra
+          in: query
+          style: deepObject
+          schema:
+            type: object
+            additionalProperties: {type: string}
+        - $ref: '#/components/parameters/Trace'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Item'}
+components:
+  parameters:
+    Trace:
+      name: X-Trace
+      in: header
+      schema: {type: string, pattern: '^[a-f0-9]+$'}
+  schemas:
+    Color:
+      type: string
+      enum: [red, green]
+    Filter:
+      type: object
+      properties:
+        color: {$ref: '#/components/schemas/Color'}
+    Item:
+      type: object
+      properties:
+        id: {type: integer}
+        trace: {$ref: '#/components/parameters/Trace/schema'}

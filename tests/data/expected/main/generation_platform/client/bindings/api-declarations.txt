@@ -12,6 +12,7 @@ render pydantic_v2.BaseModel default
   from typing import Optional
   
   from pydantic import BaseModel, RootModel
+  from typing_extensions import TypeAliasType
   
   
   class Foo(BaseModel):
@@ -23,16 +24,14 @@ render pydantic_v2.BaseModel default
       missing = 'missing'
   
   
-  class PageParameter(RootModel[int]):
-      root: int
+  PageParameter = TypeAliasType("PageParameter", int)
   
   
   class TraceHeader(RootModel[str]):
       root: str
   
   
-  class ListPetsQueryLimitParameter(RootModel[int]):
-      root: int
+  ListPetsQueryLimitParameter = TypeAliasType("ListPetsQueryLimitParameter", int)
   model_bindings.py
   codec_0 models.ListPetsQueryLimitParameter
   codec_1 models.Foo

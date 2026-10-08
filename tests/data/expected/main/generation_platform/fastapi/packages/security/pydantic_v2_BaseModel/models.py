@@ -4,15 +4,14 @@
 from __future__ import annotations
 
 from pydantic import RootModel
+from typing_extensions import TypeAliasType
 
 
 class FieldPetsGetResponse(RootModel[list[str]]):
     root: list[str]
 
 
-class FieldMaybeGetQueryPrincipalParameter(RootModel[str]):
-    root: str
+FieldMaybeGetQueryPrincipalParameter = TypeAliasType("FieldMaybeGetQueryPrincipalParameter", str)
 
 
-class FieldPetsPetIdPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPutPathPetIdParameter", int)

@@ -8,7 +8,10 @@ render pydantic_v2.BaseModel default
   
   from __future__ import annotations
   
-  from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
+  from typing import Annotated
+  
+  from pydantic import BaseModel, ConfigDict, Field, RootModel
+  from typing_extensions import TypeAliasType
   
   
   class Record(BaseModel):
@@ -25,20 +28,21 @@ render pydantic_v2.BaseModel default
       message: str
   
   
-  class PageParameter(RootModel[conint(ge=0)]):
-      root: conint(ge=0)
+  PageParameter = TypeAliasType("PageParameter", Annotated[int, Field(ge=0)])
   
   
-  class FieldRecordsIdPostHeaderTraceParameter(RootModel[str]):
-      root: str
+  FieldRecordsIdPostHeaderTraceParameter = TypeAliasType(
+      "FieldRecordsIdPostHeaderTraceParameter", str
+  )
   
   
   class FieldRecordsIdPostQueryFilterParameter(BaseModel):
       active: bool | None = None
   
   
-  class FieldRecordsIdPostPathIdParameter(RootModel[int]):
-      root: int
+  FieldRecordsIdPostPathIdParameter = TypeAliasType(
+      "FieldRecordsIdPostPathIdParameter", int
+  )
   
   
   class FieldRecordsIdPostRequestItemsXPartEncodingHeader(RootModel[str]):
@@ -67,34 +71,29 @@ render pydantic_v2.BaseModel default
   codec_12 models.PageParameter
   codec_13 models.Record
 change pydantic_v2.BaseModel default line-offsets
-  @@ -9,0 +10,2 @@
+  @@ -12,0 +13,2 @@
   +
   +
 change pydantic_v2.BaseModel default base
-  @@ -12 +12 @@
+  @@ -15 +15 @@
   -class Record(BaseModel):
   +class Record(dict):
 change pydantic_v2.BaseModel default configuration
-  @@ -14 +14 @@
+  @@ -17 +17 @@
   -        extra='forbid',
   +        extra='allow',
 change pydantic_v2.BaseModel default new-field
-  @@ -12,0 +13 @@
+  @@ -15,0 +16 @@
   +    unexpected: str
 change pydantic_v2.BaseModel default decorator
-  @@ -11,0 +12 @@
+  @@ -14,0 +15 @@
   +@custom_decorator
 change pydantic_v2.BaseModel default symbol-shadow
-  @@ -40,0 +41,2 @@
-  +from builtins import str as Record
-  +
-  @@ -51,0 +54,2 @@
+  @@ -55,0 +56,2 @@
   +
   +from builtins import str as Record
 change pydantic_v2.BaseModel default import-identity
-  @@ -9 +9 @@
-  -from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
-  +from custom_backend import BaseModel, ConfigDict, Field, RootModel, conint
+  unchanged
 render pydantic_v2.dataclass default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
@@ -104,7 +103,9 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   
-  from pydantic import ConfigDict, Field, conint
+  from typing import Annotated
+  
+  from pydantic import ConfigDict, Field
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -122,7 +123,7 @@ render pydantic_v2.dataclass default
       message: str
   
   
-  PageParameter = TypeAliasType("PageParameter", conint(ge=0))
+  PageParameter = TypeAliasType("PageParameter", Annotated[int, Field(ge=0)])
   
   
   FieldRecordsIdPostHeaderTraceParameter = TypeAliasType(

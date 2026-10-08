@@ -30,6 +30,7 @@ show models.py
   | # a comment
   | 
   | from pydantic import BaseModel, RootModel
+  | from typing_extensions import TypeAliasType
   | 
   | 
   | class Pet(BaseModel):
@@ -41,8 +42,7 @@ show models.py
   |     root: list[Pet]
   | 
   | 
-  | class FieldStoreOrdersGetQueryLimitParameter(RootModel[int]):
-  |     root: int
+  | FieldStoreOrdersGetQueryLimitParameter = TypeAliasType("FieldStoreOrdersGetQueryLimitParameter", int)
   | 
   | 
   | class Order(BaseModel):
@@ -199,10 +199,9 @@ show server/_runtime/model_codecs/unset.py
   | #   filename:  api.yaml
   | #   timestamp: 2026-09-25T12:00:00+00:00
   | 
-  | from __future__ import annotations
-  | 
   | """The single HTTP omission marker owned by one generated package runtime."""
   | 
+  | from __future__ import annotations
   | 
   | from enum import Enum
   | from typing import Final, Literal

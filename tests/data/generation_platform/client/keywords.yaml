@@ -16,7 +16,10 @@ paths:
           schema: {type: string}
         - name: args
           in: query
-          schema: {type: integer}
+          schema: {type: integer, minimum: 1, default: 5}
+        - name: code
+          in: query
+          schema: {$ref: '#/components/schemas/Code'}
       responses:
         '200':
           description: The matches.
@@ -25,6 +28,7 @@ paths:
               schema: {$ref: '#/components/schemas/Operation0Arguments'}
 components:
   schemas:
+    Code: {type: string, maxLength: 2}
     Operation0Arguments:
       type: object
       properties:

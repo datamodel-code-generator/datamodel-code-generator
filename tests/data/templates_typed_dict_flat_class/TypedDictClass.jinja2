@@ -1,0 +1,6 @@
+class {{ class_name }}(TypedDict):
+{%- for field in all_fields %}
+    {{ field.name }}: {{ field.type_hint }}
+{%- else %}
+    pass
+{%- endfor %}

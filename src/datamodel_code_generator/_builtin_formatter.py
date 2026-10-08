@@ -1690,13 +1690,52 @@ def _format_generated_module_statement(  # noqa: PLR0911
         or ((_is_annotated(argument) or _is_string_constant(argument)) and len(line) > line_length)
         for argument in statement.value.args[1:]
     ):
-        return None
+        return _format_nested_annotated_type_alias_assignment(statement, statement.value, line, line_length, source)
     if len(line) <= line_length and statement.lineno == (statement.end_lineno or statement.lineno):
         return None  # pragma: no cover
 
     indent = _line_indent(line)
     target = _source_segment(source, statement.targets[0])
     return f"{indent}{target} = {_format_type_alias_type_call(statement.value, indent, line_length, source)}"
+
+
+def _format_type_alias_argument_line(argument: ast.AST, continuation_indent: str, line_length: int, source: str) -> str:
+    """Put one alias argument on its own line, splitting a too-long subscript as black does."""
+    if len(line := f"{continuation_indent}{_source_segment(source, argument)},") > line_length and isinstance(
+        argument, ast.Subscript
+    ):
+        return (
+            f"{continuation_indent}{_format_subscript_value(argument, continuation_indent, line_length, source, ',')}"
+        )
+    return line
+
+
+def _format_nested_annotated_type_alias_assignment(
+    statement: ast.Assign, call: ast.Call, line: str, line_length: int, source: str
+) -> str | None:
+    """Split a too-long alias whose body nests ``Annotated`` constraints, as black does.
+
+    Black first moves the arguments to one continuation line, then puts each argument on its own line.
+    Calls with keywords, such as ``type_params`` from a custom template, keep their existing layout.
+    """
+    if (
+        len(line) <= line_length
+        or statement.lineno != (statement.end_lineno or statement.lineno)
+        or call.keywords
+        or not any(_contains_annotated(argument) for argument in call.args)
+    ):
+        return None
+    indent = _line_indent(line)
+    continuation_indent = f"{indent}    "
+    if (
+        len(body := f"{continuation_indent}{', '.join(_source_segment(source, arg) for arg in call.args)}")
+        > line_length
+    ):
+        body = "\n".join(
+            _format_type_alias_argument_line(argument, continuation_indent, line_length, source)
+            for argument in call.args
+        )
+    return f"{indent}{_source_segment(source, statement.targets[0])} = TypeAliasType(\n{body}\n{indent})"
 
 
 def _format_type_checking_block(

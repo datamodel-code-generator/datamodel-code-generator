@@ -51,6 +51,7 @@ from datamodel_code_generator import (
     ModuleSplitMode,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
+    cached_path_exists,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._graph import stable_toposort
@@ -3082,7 +3083,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if model in models_to_remove:  # pragma: no cover
                 continue
             reuse_allowed = reuse_constraint is None or reuse_constraint(model)
-            if isinstance(model, self.data_model_root_type):
+            if self._is_root_model(model):
                 root_data_type = model.fields[0].data_type
 
                 # backward compatible
@@ -3137,7 +3138,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 shapes.clear()
                 content_key_to_models: dict[tuple[Any, ...], list[DataModel]] = defaultdict(list)
                 for model in self._reuse_optimization_context.eligible_models(models):
-                    if model in models_to_remove or isinstance(model, self.data_model_root_type):
+                    if model in models_to_remove or self._is_root_model(model):
                         continue
                     model._dedup_key_cache.clear()  # noqa: SLF001
                     content_key_to_models[model.get_dedup_key(None, use_default=True)].append(model)
@@ -3154,7 +3155,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     break
 
                 for canonical, duplicate in duplicates:
-                    self.generation_store.redirect_model_reference_users(duplicate, models, canonical.reference)
+                    self.generation_store.redirect_reference_users(duplicate.reference, canonical.reference)
                     for child in duplicate.reference.iter_data_model_children():
                         self.generation_store.set_base_classes(
                             child,
@@ -3761,7 +3762,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         reuse_candidates = (
             model
             for model in self._reuse_optimization_context.eligible_models(models.copy())
-            if not (self.collapse_root_models and isinstance(model, self.data_model_root_type))
+            if not (self.collapse_root_models and self._is_root_model(model))
         )
         for cached_model, model in _iter_matching_duplicates(reuse_candidates, {}, lambda item: item.get_dedup_key()):
             cached_model_reference = cached_model.reference
@@ -3950,18 +3951,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         generation_store = self.generation_store
         generation_index = generation_store.index
         circular_root_model_paths = getattr(self, "_circular_root_model_paths", ())
+        is_root_model = self._is_root_model
 
         for model in models:  # noqa: PLR1702
             for model_field in model.fields:
                 for data_type in model_field.data_type.all_data_types:
                     reference = data_type.reference
-                    if not reference or not isinstance(reference.source, self.data_model_root_type):
+                    if not reference or not is_root_model(root_type_model := cast("DataModel", reference.source)):
                         # If the data type is not a reference, we can't collapse it.
                         # If it's a reference to a root model type, we don't do anything.
                         continue
 
                     # Use root-type as model_field type
-                    root_type_model = reference.source
                     if not root_type_model.fields:
                         continue
                     root_type_field = root_type_model.fields[0]
@@ -4000,7 +4001,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             root_model_wrappers, direct_refs = generation_index.root_collapse_reference_usage(
                                 inner_reference,
                                 excluded_model=root_type_model,
-                                root_model_type=self.data_model_root_type,
+                                is_root_model=is_root_model,
                             )
 
                             if len(root_model_wrappers) > 1:
@@ -4168,10 +4169,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> None:
         """Cache root-model paths in circular components before collapsing them."""
         root_models = {
-            model.path: model
-            for _, models in module_models
-            for model in models
-            if isinstance(model, self.data_model_root_type)
+            model.path: model for _, models in module_models for model in models if self._is_root_model(model)
         }
         graph: ModuleGraph = {
             (path,): {
@@ -4473,7 +4471,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         pending_models = (
             model
             for model in models
-            if not isinstance(model, (Enum, self.data_model_root_type))
+            if not (isinstance(model, Enum) or self._is_root_model(model))
             and any(
                 field.original_name is not None
                 and not field.data_type.data_types
@@ -5119,9 +5117,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if not models:  # pragma: no cover
                 continue
 
-            target_models = [
-                m for m in models if m.SUPPORTS_GENERIC_BASE_CLASS and not isinstance(m, self.data_model_root_type)
-            ]
+            target_models = [m for m in models if m.SUPPORTS_GENERIC_BASE_CLASS and not self._is_root_model(m)]
 
             if target_models:
                 modules_with_targets.append((module, models, target_models, imports))
@@ -6242,6 +6238,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__restore_inherited_field_names_for_unique_aliases(models)
         self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
         self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
+        for model in models:
+            model.refresh_field_config()
         self.__fix_constructor_field_ordering(models)
 
         return self.__remove_overridden_models(models)
@@ -6332,6 +6330,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ctx.imports.append(import_ for import_ in prepared_imports if import_ not in model_imports[model])
                 model_imports[model] = prepared_imports
 
+    def __prepare_type_alias_fields(self, contexts: list[ModuleContext], unused_models: list[DataModel]) -> None:
+        """Prepare alias bodies once every module has collapsed its roots.
+
+        A type alias has no model config to select Python's regex engine, so its patterns carry it,
+        and its constraints use ``Annotated`` because type checkers reject ``con*`` calls in aliases.
+        Module imports drop the replaced ``con*`` imports; finalization adds the annotation imports.
+        """
+        if (prepare_field := self.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
+            return
+        prepared_patterns: dict[str, PythonRuntimeExpression] = {}
+        unused_model_ids = {id(model) for model in unused_models}
+        replace_field_type = self.generation_store.replace_field_type
+        for ctx in contexts:
+            for model in ctx.models:
+                if not isinstance(model, TypeAliasBase) or id(model) in unused_model_ids or not model.fields:
+                    continue
+                previous_imports = model.imports
+                if prepare_field(field := model.fields[0], prepared_patterns, replace_field_type):
+                    field.invalidate_semantic_caches()
+                    current_imports = model.imports
+                    ctx.imports.remove(import_ for import_ in previous_imports if import_ not in current_imports)
+                    self._register_runtime_expression()
+
     def _finalize_modules(  # noqa: PLR0912
         self,
         contexts: list[ModuleContext],
@@ -6342,6 +6363,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Finalize module processing: apply generic base class and remove unused imports."""
         self.__apply_generic_base_class(contexts)
         all_models = [model for ctx in contexts for model in ctx.models]
+        self.__prepare_type_alias_fields(contexts, unused_models)
         self.__mark_set_item_models_hashable(all_models)
         self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:
@@ -6414,19 +6436,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
-        if (
-            self.custom_template_dir is not None
-            or not self._configured_generation_types_are_builtin
-            or any((
-                self.custom_formatter,
-                self.class_decorators,
-                self.config.additional_imports,
-                self._import_overrides,
-                self.generate_schema_validators,
-            ))
-        ):
-            return
-
         backend = self.data_model_type.__module__
         ordinary_backends = {
             "datamodel_code_generator.model.pydantic_v2.base_model",
@@ -6437,11 +6446,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         struct = backend == "datamodel_code_generator.model.msgspec"
         if backend not in ordinary_backends and not typed_dict and not struct:
             return
+        if (
+            typed_dict
+            and (custom_template_dir := self.custom_template_dir) is not None
+            and cached_path_exists(custom_template_dir / "TypedDictClass.jinja2")
+        ):
+            return
+
+        def builtin(model: DataModel) -> bool:
+            return type(model) is self.data_model_type and not (
+                self.custom_template_dir is not None and model._uses_custom_root_template  # noqa: SLF001
+            )
 
         def emitted_bases(model: DataModel) -> list[BaseClassDataType]:
-            if type(model) is not self.data_model_type or (
-                typed_dict and getattr(model, "is_functional_syntax", False)
-            ):
+            if not builtin(model) or (typed_dict and getattr(model, "is_functional_syntax", False)):
                 return []
             return model.base_classes
 
@@ -6465,7 +6483,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in models:
             paths[model.path].append(model)
         parents: list[list[int]] = [[] for _ in models]
-        closed = [type(model) is self.data_model_type and backend in ordinary_backends for model in models]
+        closed = [backend in ordinary_backends and builtin(model) for model in models]
+        overrides = self._import_overrides or {}
         ordered = True
         for index, model in enumerate(models):
             ctx_index, _ = positions[identities[id(model)]]
@@ -6494,7 +6513,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     parent.class_name
                     if ctx_index == parent_ctx_index
                     else (imported.alias or imported.import_)
-                    if imported is not None
+                    if imported is not None and imported.import_ not in overrides
                     else None
                 )
                 if base.type_hint != binding:
@@ -6823,6 +6842,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def dispose(self) -> None:
         """Release parser-owned resources after a facade-managed run."""
         self._dispose()
+
+    def _is_root_model(self, model: DataModel) -> bool:
+        """Return whether model uses the configured root model representation."""
+        return isinstance(model, self.data_model_root_type)
 
     def _reset_local_source_cache(self) -> None:
         self._cache_local_sources = False

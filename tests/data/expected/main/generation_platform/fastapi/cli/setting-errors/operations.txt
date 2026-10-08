@@ -1,2 +1,1 @@
-E_OPERATION_REF error config body_modes: The body_modes entry '/paths/~1pets/post' selects no root path operation
-E_OPERATION_REF error config handler_modes: The handler_modes entry '/paths/~1cats/get' selects no root path operation
+Error: The --server-body-modes entry '/paths/~1pets/post' selects no root path operation; The --server-handler-modes entry '/paths/~1cats/get' selects no root path operation

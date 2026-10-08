@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import timedelta as timedelta_aliased
 from typing import Annotated
 
-from pydantic import Field, conbytes
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -21,7 +21,10 @@ class Frame:
 
 
 Raw = TypeAliasType(
-    "Raw", Annotated[conbytes(min_length=12, max_length=12), Field(..., title='Raw')]
+    "Raw",
+    Annotated[
+        Annotated[bytes, Field(min_length=12, max_length=12)], Field(..., title='Raw')
+    ],
 )
 
 

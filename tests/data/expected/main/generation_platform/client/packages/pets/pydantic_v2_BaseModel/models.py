@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Pet(BaseModel):
@@ -22,20 +23,16 @@ class Error(BaseModel):
     message: str | None = None
 
 
-class FieldPetsGetQueryLimitParameter(RootModel[int]):
-    root: int
+FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", int)
 
 
-class FieldPetsGetQueryTagsParameter(RootModel[list[str]]):
-    root: list[str]
+FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
 
 
-class FieldPetsGetHeaderXTraceParameter(RootModel[str]):
-    root: str
+FieldPetsGetHeaderXTraceParameter = TypeAliasType("FieldPetsGetHeaderXTraceParameter", str)
 
 
-class FieldPetsGetCookieSessionParameter(RootModel[str]):
-    root: str
+FieldPetsGetCookieSessionParameter = TypeAliasType("FieldPetsGetCookieSessionParameter", str)
 
 
 class FieldPetsGetResponse(RootModel[list[Pet]]):
@@ -54,8 +51,7 @@ class FieldPetsPostRequest(RootModel[str]):
     root: str
 
 
-class FieldPetsPetIdGetPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", int)
 
 
 class FieldPetsPetIdGetResponse(RootModel[str]):
@@ -66,8 +62,7 @@ class FieldPetsPetIdHeadResponse200ETagHeader(RootModel[str]):
     root: str
 
 
-class FieldPetsPetIdPhotoPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
 
 
 class FieldPetsPetIdPhotoPutRequest(RootModel[bytes]):
@@ -78,8 +73,7 @@ class FieldPetsPetIdPhotoPutResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldPetsPetIdFilesPostPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdFilesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesPostPathPetIdParameter", int)
 
 
 class FieldPetsPetIdFilesPostRequest(BaseModel):
@@ -91,8 +85,7 @@ class FieldPetsPetIdFilesPostRequest(BaseModel):
     file: bytes
 
 
-class FieldPetsPetIdFilesGetPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGetPathPetIdParameter", int)
 
 
 class FieldPetsPetIdFilesGetResponse(BaseModel):

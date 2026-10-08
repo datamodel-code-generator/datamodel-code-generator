@@ -1,19 +1,19 @@
 # protocols-webhook-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['shape.missing'].event_schema: protocols.helpers['shape.missing'] needs 'event_schema'
-  E_CONFIG_VALUE config protocols.helpers['shape.missing'].signature: protocols.helpers['shape.missing'] needs 'signature'
-  E_CONFIG_VALUE config protocols.helpers['shape.values'].event_schema.discriminator.from: protocols.helpers['shape.values'].event_schema.discriminator.from must be 'body'
-  E_CONFIG_VALUE config protocols.helpers['shape.values'].signature: protocols.helpers['shape.values'].signature must be a signature
-  E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
-  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.header: protocols.helpers['shape.ed25519'].signature needs 'header'
-  E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.timestamp: protocols.helpers['shape.adapter'].signature needs 'timestamp'
-  E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.delivery_id: protocols.helpers['shape.adapter'].signature needs 'delivery_id'
-  E_CONFIG_UNKNOWN config protocols.helpers['shape.adapter_facts'].signature.header: protocols.helpers['shape.adapter_facts'].signature has no key 'header'
-  E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.timestamp: protocols.helpers['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
-  E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.delivery_id: protocols.helpers['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
-  E_CONFIG_UNKNOWN config protocols.helpers['shape.none'].signature.prefix: protocols.helpers['shape.none'].signature has no key 'prefix'
-  E_CONFIG_UNKNOWN config protocols.helpers['shape.settings'].signature.extra: protocols.helpers['shape.settings'].signature has no key 'extra'
-  E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.header: protocols.helpers['shape.settings'].signature.header must be a header name
-  E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.encoding: protocols.helpers['shape.settings'].signature.encoding must be 'hex' or 'base64'
-  E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: protocols.helpers['shape.settings'].signature.prefix must be visible ASCII text
+  E_CONFIG_VALUE config protocols['shape.missing'].event_schema: protocols['shape.missing'] needs 'event_schema'
+  E_CONFIG_VALUE config protocols['shape.missing'].signature: protocols['shape.missing'] needs 'signature'
+  E_CONFIG_VALUE config protocols['shape.values'].event_schema.discriminator.from: protocols['shape.values'].event_schema.discriminator.from must be 'body'
+  E_CONFIG_VALUE config protocols['shape.values'].signature: protocols['shape.values'].signature must be a signature
+  E_CONFIG_VALUE config protocols['shape.kind'].signature.kind: protocols['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
+  E_CONFIG_VALUE config protocols['shape.ed25519'].signature.header: protocols['shape.ed25519'].signature needs 'header'
+  E_CONFIG_VALUE config protocols['shape.adapter'].signature.timestamp: protocols['shape.adapter'].signature needs 'timestamp'
+  E_CONFIG_VALUE config protocols['shape.adapter'].signature.delivery_id: protocols['shape.adapter'].signature needs 'delivery_id'
+  E_CONFIG_UNKNOWN config protocols['shape.adapter_facts'].signature.header: protocols['shape.adapter_facts'].signature has no key 'header'
+  E_CONFIG_VALUE config protocols['shape.adapter_facts'].signature.timestamp: protocols['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
+  E_CONFIG_VALUE config protocols['shape.adapter_facts'].signature.delivery_id: protocols['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
+  E_CONFIG_UNKNOWN config protocols['shape.none'].signature.prefix: protocols['shape.none'].signature has no key 'prefix'
+  E_CONFIG_UNKNOWN config protocols['shape.settings'].signature.extra: protocols['shape.settings'].signature has no key 'extra'
+  E_CONFIG_VALUE config protocols['shape.settings'].signature.header: protocols['shape.settings'].signature.header must be a header name
+  E_CONFIG_VALUE config protocols['shape.settings'].signature.encoding: protocols['shape.settings'].signature.encoding must be 'hex' or 'base64'
+  E_CONFIG_VALUE config protocols['shape.settings'].signature.prefix: protocols['shape.settings'].signature.prefix must be visible ASCII text

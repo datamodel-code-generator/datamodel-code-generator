@@ -6,27 +6,28 @@ render pydantic_v2.BaseModel paths
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       x: Optional[int] = None
   
   
-  class LimitParameter(RootModel[int]):
-      root: int
+  
+  LimitParameter = TypeAliasType("LimitParameter", int)
   
   
-  class FieldXGetQueryQParameter(RootModel[int]):
-      root: int
+  
+  FieldXGetQueryQParameter = TypeAliasType("FieldXGetQueryQParameter", int)
   
   
-  class FieldXGetQueryOptionalParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryOptionalParameter = TypeAliasType("FieldXGetQueryOptionalParameter", str)
   
   
-  class FieldXGetQueryFilterParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryFilterParameter = TypeAliasType("FieldXGetQueryFilterParameter", str)
   model_bindings.py
   codec_0 models.FieldXGetQueryQParameter
   codec_1 models.FieldXGetQueryOptionalParameter
@@ -40,27 +41,28 @@ render pydantic_v2.BaseModel parameters
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       x: Optional[int] = None
   
   
-  class LimitParameter(RootModel[int]):
-      root: int
+  
+  LimitParameter = TypeAliasType("LimitParameter", int)
   
   
-  class FieldXGetQueryQParameter(RootModel[int]):
-      root: int
+  
+  FieldXGetQueryQParameter = TypeAliasType("FieldXGetQueryQParameter", int)
   
   
-  class FieldXGetQueryOptionalParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryOptionalParameter = TypeAliasType("FieldXGetQueryOptionalParameter", str)
   
   
-  class FieldXGetQueryFilterParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryFilterParameter = TypeAliasType("FieldXGetQueryFilterParameter", str)
   model_bindings.py
   codec_0 models.FieldXGetQueryQParameter
   codec_1 models.FieldXGetQueryOptionalParameter
@@ -74,27 +76,28 @@ render pydantic_v2.BaseModel api
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       x: Optional[int] = None
   
   
-  class LimitParameter(RootModel[int]):
-      root: int
+  
+  LimitParameter = TypeAliasType("LimitParameter", int)
   
   
-  class FieldXGetQueryQParameter(RootModel[int]):
-      root: int
+  
+  FieldXGetQueryQParameter = TypeAliasType("FieldXGetQueryQParameter", int)
   
   
-  class FieldXGetQueryOptionalParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryOptionalParameter = TypeAliasType("FieldXGetQueryOptionalParameter", str)
   
   
-  class FieldXGetQueryFilterParameter(RootModel[str]):
-      root: str
+  
+  FieldXGetQueryFilterParameter = TypeAliasType("FieldXGetQueryFilterParameter", str)
   model_bindings.py
   codec_0 models.FieldXGetQueryQParameter
   codec_1 models.FieldXGetQueryOptionalParameter

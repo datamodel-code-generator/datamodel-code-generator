@@ -3,12 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import RootModel
+from typing_extensions import TypeAliasType
+
+FieldInheritedPostHeaderXIdempotencyParameter = TypeAliasType("FieldInheritedPostHeaderXIdempotencyParameter", str)
 
 
-class FieldInheritedPostHeaderXIdempotencyParameter(RootModel[str]):
-    root: str
-
-
-class FieldExplicitPostHeaderXIdempotencyParameter(RootModel[str]):
-    root: str
+FieldExplicitPostHeaderXIdempotencyParameter = TypeAliasType("FieldExplicitPostHeaderXIdempotencyParameter", str)

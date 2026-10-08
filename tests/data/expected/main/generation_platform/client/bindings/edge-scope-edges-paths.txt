@@ -7,6 +7,7 @@ render pydantic_v2.BaseModel default
   from __future__ import annotations
   from typing import List, Optional
   from pydantic import BaseModel, RootModel
+  from typing_extensions import TypeAliasType
   
   
   class Event(BaseModel):
@@ -18,12 +19,12 @@ render pydantic_v2.BaseModel default
       root: List[Event]
   
   
-  class FieldEventsEventIdGetPathEventIdParameter(RootModel[int]):
-      root: int
+  
+  FieldEventsEventIdGetPathEventIdParameter = TypeAliasType("FieldEventsEventIdGetPathEventIdParameter", int)
   
   
-  class FieldEventsEventIdGetQueryFieldsParameter(RootModel[str]):
-      root: str
+  
+  FieldEventsEventIdGetQueryFieldsParameter = TypeAliasType("FieldEventsEventIdGetQueryFieldsParameter", str)
   
   
   class FieldEventsEventIdGetResponse200XRateLimitHeader(RootModel[int]):

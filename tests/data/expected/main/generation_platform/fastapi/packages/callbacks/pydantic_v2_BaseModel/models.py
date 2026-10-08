@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Literal
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Tree(BaseModel):
@@ -49,8 +50,7 @@ class FieldSubscriptionsPostOnEventCallback1PostRequest(BaseModel):
     file: bytes | None = None
 
 
-class FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter(RootModel[str]):
-    root: str
+FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter = TypeAliasType("FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter", str)
 
 
 class FieldEventsGetResponse(RootModel[list[Event]]):
@@ -61,8 +61,7 @@ class FieldEventsGetResponse200XMapHeader(BaseModel):
     pass
 
 
-class FieldSecureGetCookieTokenParameter(RootModel[str]):
-    root: str
+FieldSecureGetCookieTokenParameter = TypeAliasType("FieldSecureGetCookieTokenParameter", str)
 
 
 class FieldSecureGetResponse401wwwAuthenticateHeader(RootModel[str]):
