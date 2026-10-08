@@ -7098,6 +7098,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         Types.date,
                         Types.date_time,
                         Types.date_time_local,
+                        Types.time,
                         Types.timedelta,
                         Types.uuid,
                         Types.uuid1,
