@@ -1,4 +1,4 @@
-"""Generate the FastAPI server target from the command line: publish, check, report, and refuse conflicts."""
+"""Generate the FastAPI server target from the command line: publish, check, report, and overwrite like models."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def _methods(services: Path) -> str:
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the models and the server package, check an edit and a missing owned file, then rewrite both."""
+    """Write the models and the server package, check an edit and a missing generated file, then rewrite both."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -151,7 +151,10 @@ def test_fastapi_cli_check_outputs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compare real model and target text without publishing or changing any output file."""
+    """Compare real model and target text without publishing or changing any output file.
+
+    A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
+    """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -165,14 +168,15 @@ def test_fastapi_cli_check_outputs(
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
-    run_main_and_assert(
-        input_path=source,
-        input_file_type="openapi",
-        output_path=output,
-        extra_args=_server(*options),
-        capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
-    )
+    if not case.get("fresh"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options),
+            capsys=capsys,
+            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
             shutil.rmtree(path)
@@ -188,12 +192,22 @@ def test_fastapi_cli_check_outputs(
         (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline="\r\n")
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
+    if case.get("regenerate"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options, *case.get("options", ())),
+            capsys=capsys,
+            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
         monkeypatch.chdir(tmp_path / "server")
     base = Path("..") if case.get("nested") else Path()
-    changed = any(key in case for key in ("remove", "append", "binary", "changed"))
+    changed = any(key in case for key in ("remove", "append", "binary"))
     changed |= "write" in case and any(name.endswith(".py") and "__pycache__" not in name for name in case["write"])
+    changed = case.get("changed", changed)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("error", UserWarning)
         run_main_and_assert(
@@ -240,7 +254,7 @@ def test_fastapi_cli_generation_json(
     case = JSON_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
-    source = Path("pets.yaml")
+    source = Path(shutil.copy2(SOURCE / name, name)) if (name := case.get("input")) else Path("pets.yaml")
     if name := case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / name
@@ -264,9 +278,9 @@ def test_fastapi_cli_generation_json(
             capsys=capsys,
             expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         )
-    if case.get("unowned"):
-        server.mkdir()
-        (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
+    for name, text in case.get("write", {}).items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding=encoding)
     if case.get("different_volumes"):
 
         def different_drives(_: object) -> str:
@@ -1454,32 +1468,4 @@ def test_fastapi_cli_model_error_context(
         expected_stderr_contains=stderr,
         expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
         output_should_not_exist=True,
-    )
-
-
-@pytest.mark.parametrize("disabled", [False, True])
-def test_fastapi_cli_unowned_manifest(
-    disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
-    monkeypatch.chdir(tmp_path)
-    _copy(tmp_path)
-    (server := tmp_path / "server").mkdir()
-    (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
-    (server / "application.py").write_text("# User application\n", encoding="utf-8")
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always", UserWarning)
-        run_main_and_assert(
-            input_path=Path("pets.yaml"),
-            output_path=Path("models.py"),
-            input_file_type="openapi",
-            extra_args=_server(*(["--disable-warnings"] if disabled else [])),
-            expected_exit=Exit.ERROR,
-            capsys=capsys,
-            expected_stderr="Error: application.py: An unmanaged file occupies a path the target owns\n",
-            output_should_not_exist=True,
-        )
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
-        EXPECTED / "cli" / ("no-warning.txt" if disabled else "unowned-warning.txt"),
     )

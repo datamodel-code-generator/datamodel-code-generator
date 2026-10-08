@@ -23,4 +23,6 @@ file server/errors.py; matches published True
 file server/py.typed; matches published True
 file server/routers/__init__.py; matches published True
 file server/routers/pets.py; matches published True
+file server/routers/store.py; matches published True
 file server/services.py; matches published True
+outside payload server/.dcg-target-manifest.json; published True; listed False

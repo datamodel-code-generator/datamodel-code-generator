@@ -1,4 +1,4 @@
-"""Coordinate one target: validate settings, generate models once in staging, and plan files."""
+"""Coordinate one target: validate settings, generate models once in staging, and write files like model output."""
 
 from __future__ import annotations
 
@@ -7,34 +7,19 @@ import os
 import sys
 import tempfile
 import unicodedata
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, cast
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_manifest import (
-    GENERATOR_NAME,
-    MANIFEST_NAME,
     ROOT_URN,
     DocumentTable,
-    PlannedFile,
     RootInput,
-    canonical_document,
     config_error,
     document_identity,
-    hand_edits,
-    manifest_files,
-    model_record,
-    observe,
-    observe_file,
-    plan_files,
-    read_target_state,
-    relative_uri,
-    runtime_revision,
-    sha256,
-    shown,
     target_identity,
 )
 from datamodel_code_generator._api_types import (
@@ -49,15 +34,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
-    from datamodel_code_generator._api_types import (
-        ArtifactAction,
-        ArtifactKind,
-        DiagnosticStage,
-        GenerationReport,
-        TargetKind,
-    )
+    from datamodel_code_generator._api_types import ArtifactKind, DiagnosticStage, TargetKind
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
+    from datamodel_code_generator._publication import PublicationAnchor, StagedFile
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -88,6 +67,14 @@ class RenderedFile:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class PlannedFile:
+    """One target file as the bytes a generation writes."""
+
+    path: PurePosixPath
+    content: bytes
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
     """Everything a target renders from: settings, the accepted model contracts, the root operations, and the cwd."""
 
@@ -112,7 +99,7 @@ class TargetRequest:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRender:
-    """A target's planned files and manifest data; run warnings and information are reported but never persisted.
+    """A target's rendered files and the runtime dependencies of its package.
 
     A target raises `APIGenerationError` for its failures instead of returning error diagnostics.
     """
@@ -126,7 +113,7 @@ class TargetGenerator(Protocol):
 
     @property
     def kind(self) -> TargetKind:
-        """Return the target kind recorded in manifests and reports."""
+        """Return the target kind that results and messages name."""
 
     @property
     def backends(self) -> frozenset[DataModelType]:
@@ -151,7 +138,6 @@ class _Models:
     single: bool
     metadata: tuple[Path, bytes] | None
     lock: RemoteReferenceLock | None
-    lock_state: Observed
     source: RootInput
     cwd: Path
     filename: str
@@ -307,7 +293,6 @@ def _generate_models(
     assert output is not None
     _check_layout(target, output, cwd)
     prepared, lock = _remote_lock(input_, config, cwd)
-    lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
     assert output is not None
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
@@ -357,7 +342,6 @@ def _generate_models(
             single=staged_output.is_file(),
             metadata=metadata_file,
             lock=lock,
-            lock_state=lock_state,
             source=source,
             cwd=cwd,
             filename=prepared.input_filename or _default_input_filename(input_),
@@ -400,23 +384,15 @@ class _Planner:
     def __init__(
         self, models: _Models, effective: GenerateConfig, config: TargetConfig, generator: TargetGenerator
     ) -> None:
-        from datamodel_code_generator import get_version  # noqa: PLC0415
-
         self.models = models
         self.effective = effective
         self.config = config
         self.generator = generator
         self.cwd = models.cwd
         self.root = (self.cwd / config.output.expanduser()).resolve()
-        self.shown = shown(config.output, self.cwd)
         self.target_id = target_identity(generator.kind, config.package)
         self.documents = DocumentTable(models.product.batch, models.source, self.root)
         self.operations: dict[str, OperationContract] = {}
-        self.observed: dict[Path, Observed] = {}
-        self.version, self.revision = get_version(), runtime_revision()
-
-    def locate(self, path: Path, *, option_path: str) -> str:
-        return relative_uri(self.cwd / path.expanduser(), self.root, option_path)
 
     def operation(self, reference: OperationRef) -> OperationContract | None:
         document = reference.document
@@ -429,26 +405,11 @@ class _Planner:
         assert output is not None
         return output if self.models.single else output.joinpath(*artifact.path)
 
-    def artifact(
-        self,
-        path: Path,
-        kind: ArtifactKind,
-        content: bytes | None,
-        target_id: str | None,
-        planned: tuple[ArtifactAction, Observed] | None = None,
-    ) -> GeneratedArtifact:
-        location = self.cwd / path
-        if planned is None:
-            current = location.read_bytes() if location.is_file() else None
-            planned = ("unchanged" if current == content else "write", observe(current))
-        action, self.observed[location] = planned
+    def artifact(self, path: Path, kind: ArtifactKind, content: bytes) -> GeneratedArtifact:
+        """Plan one file: written unless the path already holds the same bytes, whoever wrote them."""
+        current = location.read_bytes() if (location := self.cwd / path).is_file() else None
         return GeneratedArtifact(
-            path=path,
-            kind=kind,
-            action=action,
-            content=content,
-            sha256=None if content is None else sha256(content),
-            target_id=target_id,
+            path=path, kind=kind, action="unchanged" if current == content else "write", content=content
         )
 
     def lock_artifacts(self) -> tuple[GeneratedArtifact, ...]:
@@ -459,23 +420,7 @@ class _Planner:
                 content = staged.read_bytes() if isinstance(staged := lock.stage(Path(directory)), Path) else b""
             finally:
                 lock.discard_stage()
-        current = lock.path.read_bytes() if lock.path.is_file() else None
-        action: ArtifactAction = "unchanged" if current == content else "write"
-        return (self.artifact(lock.path, "remote_lock", content, None, (action, self.models.lock_state)),)
-
-    def check_state(self, state: TargetState, manifest: GeneratedArtifact) -> None:
-        if self.observed[self.cwd / manifest.path] == state.snapshot:
-            return
-        raise APIGenerationError((
-            Diagnostic(
-                code="E_STATE_CHANGED",
-                severity="error",
-                stage="ownership",
-                message="The manifest changed while the target was planned",
-                artifact_path=manifest.path.as_posix(),
-                target_id=self.target_id,
-            ),
-        ))
+        return (self.artifact(lock.path, "remote_lock", content),)
 
     def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
         seen: set[str] = set()
@@ -491,27 +436,17 @@ class _Planner:
                         stage="ownership",
                         message="Two generated files resolve to the same path",
                         artifact_path=artifact.path.as_posix(),
-                        target_id=artifact.target_id,
+                        target_id=self.target_id if artifact.kind == "target" else None,
                     )
                 )
             seen.add(key)
         if problems:
             raise APIGenerationError(tuple(problems))
 
-    def manifest(self, plans: tuple[FilePlan, ...], model: JSONObject) -> JSONObject:
-        return {
-            "format": 1,
-            "generator": {"name": GENERATOR_NAME, "version": self.version},
-            "target": {"kind": self.generator.kind, "package": self.config.package},
-            "model": model,
-            "files": manifest_files(plans),
-        }
-
-    def project(self, *, warn_edits: bool = True) -> GeneratedProject:
+    def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
         self.operations = {operation.id.use_site.pointer: operation for operation in operations}
-        state = read_target_state(self.root, generator.kind, config.package, self.shown)
         rendered = generator.render(
             TargetRequest(
                 config=config,
@@ -527,47 +462,85 @@ class _Planner:
             )
         )
         finished = _Finisher(self).finish(rendered)
-        plans = plan_files(self.root, state, finished, self.target_id)
-        output = self.effective.output
-        assert output is not None
-        model = model_record(output=self.locate(output, option_path="model_config.output"), artifacts=models.artifacts)
-        manifest = self.manifest(plans, model)
         artifacts = (
-            *(
-                self.artifact(self.model_path(artifact), "model", artifact.content, None)
-                for artifact in models.artifacts
-            ),
-            *(
-                self.artifact(
-                    config.output.joinpath(*plan.path.parts),
-                    "target",
-                    plan.content,
-                    self.target_id,
-                    (plan.action, plan.observed),
-                )
-                for plan in plans
-            ),
+            *(self.artifact(self.model_path(artifact), "model", artifact.content) for artifact in models.artifacts),
+            *(self.artifact(config.output.joinpath(*file.path.parts), "target", file.content) for file in finished),
             *(
                 ()
                 if models.metadata is None
-                else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
+                else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1]),)
             ),
             *self.lock_artifacts(),
-            manifest_artifact := self.artifact(
-                config.output / MANIFEST_NAME, "target_manifest", canonical_document(manifest), self.target_id
-            ),
         )
-        self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
-        if warn_edits:
-            hand_edits(state, plans, self.shown)
-        return GeneratedProject(
-            target=generator.kind,
-            artifacts=artifacts,
-            generator_version=self.version,
-            runtime_revision=self.revision,
-            dependencies=rendered.dependencies,
+        return GeneratedProject(target=generator.kind, artifacts=artifacts, dependencies=rendered.dependencies)
+
+    def directory(self, artifact: GeneratedArtifact) -> Path | None:
+        """Return the output directory an artifact is generated into, or None for a file output names itself."""
+        if artifact.kind == "target":
+            return self.config.output
+        if artifact.kind == "model" and not self.models.single:
+            return self.effective.output
+        return None
+
+    def stage(self, project: GeneratedProject, stack: ExitStack) -> list[StagedFile]:
+        """Stage every changed file beside its output, as an atomic model run stages its files for one journal.
+
+        A file that already holds its bytes is left out, so an unchanged project stages nothing and writes nothing.
+        """
+        if not (changed := [artifact for artifact in project.artifacts if artifact.action == "write"]):
+            return []
+        from datamodel_code_generator._publication import (  # noqa: PLC0415
+            StagedFile,
+            StagingDirectory,
+            close_anchor,
+            publication_anchor,
         )
+
+        cwd = self.cwd
+        places: dict[Path, tuple[Path, Path, PublicationAnchor]] = {}
+        files: list[StagedFile] = []
+        for artifact in changed:
+            if artifact.kind == "remote_lock":
+                lock = cast("RemoteReferenceLock", self.models.lock)
+                stack.callback(close_anchor, anchor := publication_anchor(lock.path.parent))
+                lock_staging = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
+                stack.callback(_quietly, lock_staging.cleanup)
+                files.append(cast("StagedFile", lock.stage(lock_staging))._replace(anchor=anchor))
+                continue
+            destination = (directory := self.directory(artifact)) or artifact.path
+            if (place := places.get(destination)) is None:
+                location = cwd / destination.expanduser()
+                resolved = location.resolve() if directory else location.parent.resolve() / location.name
+                stack.callback(close_anchor, anchor := publication_anchor(resolved))
+                place = places[destination] = (_staging(stack, destination, cwd), resolved, anchor)
+            staging, resolved, anchor = place
+            (source := staging / str(len(files))).write_bytes(artifact.content)
+            files.append(
+                StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor)
+            )
+        return files
+
+    def publish(self, project: GeneratedProject) -> None:
+        """Publish every changed file together through the model journal, which rolls back on an I/O error."""
+        lock = self.models.lock
+        with ExitStack() as stack:
+            try:
+                if files := self.stage(project, stack):
+                    from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
+
+                    publish_staged_files(files)
+            except BaseException:
+                if lock is not None:
+                    _quietly(lock.discard_stage)
+                raise
+        if lock is not None:
+            lock.mark_committed()
+
+
+def _quietly(cleanup: Callable[[], None]) -> None:
+    with suppress(OSError):
+        cleanup()
 
 
 class _Finisher:
@@ -685,12 +658,7 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
 
 
 def _plan(
-    input_: _GenerationInput,
-    model_config: GenerateConfig,
-    config: TargetConfig,
-    generator: TargetGenerator,
-    *,
-    warn_edits: bool = True,
+    input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> tuple[_Planner, GeneratedProject]:
     effective = prepare_target(input_, model_config, generator)
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
@@ -699,28 +667,22 @@ def _plan(
     models = _run_models(input_, effective, config)
     try:
         planner = _Planner(models, effective, config, generator)
-        return planner, planner.project(warn_edits=warn_edits)
+        return planner, planner.project()
     finally:
         models.product.close()
 
 
 def render_target(
-    input_: _GenerationInput,
-    *,
-    model_config: GenerateConfig,
-    config: TargetConfig,
-    generator: TargetGenerator,
-    warn_edits: bool = True,
+    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
-    """Render one target and its models once, returning every publication candidate without writing it."""
-    return _plan(input_, model_config, config, generator, warn_edits=warn_edits)[1]
+    """Render one target and its models once, returning every generated file without writing it."""
+    return _plan(input_, model_config, config, generator)[1]
 
 
 def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
-) -> GenerationReport:
-    """Render one target and its models once, then publish every change together through one journal."""
+) -> GeneratedProject:
+    """Render one target and its models once, then write every changed file together, as an atomic model run does."""
     planner, project = _plan(input_, model_config, config, generator)
-    from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
-
-    return publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)
+    planner.publish(project)
+    return project

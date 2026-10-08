@@ -11,7 +11,6 @@ from pathlib import Path
 WATCHED = (
     "datamodel_code_generator.remote_lock",
     "datamodel_code_generator._publication",
-    "datamodel_code_generator._api_publication",
     "datamodel_code_generator._openapi_generation",
 )
 TARGET = (

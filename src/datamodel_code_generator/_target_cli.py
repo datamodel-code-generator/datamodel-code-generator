@@ -66,17 +66,16 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         prepare_target("", effective, generator)
         source = sys.stdin.read()
     if config.check:
-        project = render_target(source, model_config=effective, config=target, generator=generator, warn_edits=False)
+        project = render_target(source, model_config=effective, config=target, generator=generator)
         comparison = _compare_target(project, config.output, target.output, config.encoding)
         _write_comparison_output(comparison, namespace.output_format)
         return _DIFF if comparison.differences else _OK
     if namespace.output_format == "json":
         from datamodel_code_generator._api_generation import _plan  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-        from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
 
         planner, project = _plan(source, effective, target, generator)
         output = _target_json(project, config.output, target.output, config.encoding)
-        publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)
+        planner.publish(project)
         print(output)  # noqa: T201
         dependencies = project.dependencies
     else:

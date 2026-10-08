@@ -1,0 +1,13 @@
+# stale
+serve pydantic_v2.BaseModel
+service UntaggedService: get_value
+service UntaggedService without its methods: TypeError
+> GET /values/7
+  get_value(id=7, at=UNSET, tags=UNSET, x_label=UNSET)
+< 200 application/json {"id":7}
+> GET /pets
+< 404 application/json {"detail":"Not Found"}
+> GET /store/inventory
+< 404 application/json {"detail":"Not Found"}
+stale routers/pets.py: file True; imported False
+stale routers/store.py: file True; imported False

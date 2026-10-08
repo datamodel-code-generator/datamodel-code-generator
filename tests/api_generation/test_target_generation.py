@@ -1,4 +1,4 @@
-"""Generate the FastAPI target through the public entry points: settings, models, and ownership."""
+"""Generate the FastAPI target through the public entry points: settings, models, and written files."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import _api_manifest, _api_publication, _publication
+from datamodel_code_generator import _api_manifest, _publication
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
@@ -30,11 +30,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
     "case",
     [
         "first-run",
-        "ownership",
-        "deletion",
-        "conflict",
-        "state",
-        "unowned",
+        "overwrite",
+        "stale",
         "include-paths",
         "path-items",
         "inputs",
@@ -49,7 +46,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "publish",
         "publish-lock",
         "collision",
-        "interference",
         "directory",
         "layout-embedded",
         "model-dependencies",
@@ -60,7 +56,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generate models once, plan target files, and publish them through a reversible journal."""
+    """Generate models once, plan target files, and write them like model output: overwrite, never delete."""
     expected = f"{case}.txt"
     if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
@@ -127,178 +123,40 @@ def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.Monk
     assert_output(target_render_report("relative-failure", tmp_path, monkeypatch), EXPECTED / "relative-failure.txt")
 
 
-def _failing(
-    original: Callable[..., None],
-    failures: dict[int, BaseException],
-    *,
-    existing: bool = False,
-    destination: str | None = None,
-) -> Callable[..., None]:
+def _failing(original: Callable[..., None], failures: dict[int, OSError], destination: str) -> Callable[..., None]:
     calls = count()
 
     def call(file: _publication.StagedFile, *args: object) -> None:
-        if (
-            (not existing or file.target.exists())
-            and (destination is None or file.target.name == destination)
-            and (failure := failures.get(next(calls))) is not None
-        ):
+        if file.target.name == destination and (failure := failures.get(next(calls))) is not None:
             raise failure
         original(file, *args)
 
     return call
 
 
-@pytest.mark.parametrize(
-    "failure", [OSError("No space left on device"), KeyboardInterrupt()], ids=["error", "interrupt"]
-)
-@pytest.mark.abnormal_path("publishing fails only when the disk fills or the process is interrupted")
-def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Undo every journaled change in reverse order and keep the original failure, including interrupts."""
-    monkeypatch.setattr(
-        _publication, "_replace_source", _failing(_publication._replace_source, {4: failure, 13: failure})
-    )
-    assert_output(
-        target_render_report("publish-failure", tmp_path, monkeypatch),
-        EXPECTED / f"publish-failure-{type(failure).__name__}.txt",
-    )
-
-
-@pytest.mark.skipif(os.name == "nt", reason="Windows restores backups through the lexical fallback")
-@pytest.mark.parametrize(("case", "existing"), [("rollback-created", False), ("rollback-backup", True)])
-@pytest.mark.abnormal_path("rollback fails only when restoring the journal also hits an I/O error")
-def test_target_generate_rollback_failure(
-    case: str, existing: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Report the destinations and backups a failed rollback could not restore, keeping the cause."""
-
-    def fail(*_args: object, **_kwargs: object) -> None:
-        msg = "Permission denied"
-        raise OSError(msg)
-
-    monkeypatch.setattr(
-        _publication,
-        "_replace_source",
-        _failing(_publication._replace_source, {1: OSError("full")}, existing=existing),
-    )
-    monkeypatch.setattr(_publication, "_restore_backup_at", fail)
-    if case == "rollback-created":
-        monkeypatch.setattr(_publication, "_unlink", fail)
-        monkeypatch.setattr(_publication, "_rmdir", fail)
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
-
-
-@pytest.mark.abnormal_path("a later staged file fails after the remote lock update has been staged")
-def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Discard the staged remote lock update when a file after it fails to stage."""
+@pytest.mark.abnormal_path("publishing fails only on an I/O error such as a full disk")
+def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Undo the models, the package, the metadata and the lock together, and discard the staged lock update."""
     discarded: list[bool] = []
-    discard, stage = RemoteReferenceLock.discard_stage, _api_publication.stage_content
+    discard, failure = RemoteReferenceLock.discard_stage, OSError("No space left on device")
 
     def recorded(lock: RemoteReferenceLock) -> None:
         discarded.append(lock._staged_source is not None)
         discard(lock)
 
-    def fail(
-        staging: _publication.StagingDirectory, content: bytes, file: _publication.StagedFile
-    ) -> _publication.StagedFile:
-        if file.target.name == ".dcg-target-manifest.json":
-            msg = "No space left on device"
-            raise OSError(msg)
-        return stage(staging, content, file)
-
     monkeypatch.setattr(RemoteReferenceLock, "discard_stage", recorded)
-    monkeypatch.setattr(_api_publication, "stage_content", fail)
-    report = target_render_report("publish-lock", tmp_path, monkeypatch)
-    assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "lock-discard.txt")
-
-
-@pytest.mark.skipif(os.name == "nt", reason="Windows checks destinations through the lexical fallback")
-@pytest.mark.parametrize("failure", ["anchor", "staging", "stage-collision", "stage-exhausted", "stage-closed"])
-@pytest.mark.abnormal_path(
-    "staging I/O, occupied private names, closed staging and replaced directory anchors require failure injection"
-)
-def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Stop when staging fails, and undo the journal when a destination directory is replaced while publishing."""
-
-    def fail(*_args: object) -> None:
-        msg = "Input/output error"
-        raise OSError(msg)
-
-    match failure:
-        case "anchor":
-            checks = count()
-            matches = _publication._directory_fd_matches_path
-            monkeypatch.setattr(
-                _publication, "_directory_fd_matches_path", lambda *args: next(checks) != 2 and matches(*args)
-            )
-        case "staging":
-            monkeypatch.setattr(_api_publication, "os", SimpleNamespace(**{**vars(_api_publication.os), "fsync": fail}))
-        case _:
-            create = _api_publication._create_staged_file
-            private_name = _publication._private_name
-
-            def staged(staging: _publication.StagingDirectory, *, prefix: str, mode: int) -> tuple[int, str]:
-                if failure == "stage-closed":
-                    staging.cleanup()
-                    return create(staging, prefix=prefix, mode=mode)
-                name = f"{prefix}occupied"
-                (staging.path / name).write_bytes(b"occupied staged name")
-                staging._files.add(name)
-                names = count()
-                with monkeypatch.context() as patch:
-                    patch.setattr(
-                        _publication,
-                        "_private_name",
-                        lambda value: name if failure == "stage-exhausted" or next(names) == 0 else private_name(value),
-                    )
-                    return create(staging, prefix=prefix, mode=mode)
-
-            monkeypatch.setattr(_api_publication, "_create_staged_file", staged)
-            if failure == "stage-exhausted":
-                monkeypatch.setattr(_publication, "_private_name", lambda prefix: f"{prefix}reserved")
-    assert_output(
-        target_render_report("publication-check", tmp_path, monkeypatch), EXPECTED / f"publication-{failure}.txt"
-    )
-
-
-@pytest.mark.abnormal_path("a foreign writer changes a planned file after the final artifact has been staged")
-def test_target_generate_state_changed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Recheck all artifacts after staging and preserve bytes another writer changed."""
-    stage = _api_publication.stage_content
-
-    def interfere(
-        staging: _publication.StagingDirectory, content: bytes, file: _publication.StagedFile
-    ) -> _publication.StagedFile:
-        staged = stage(staging, content, file)
-        if file.target.name == ".dcg-target-manifest.json":
-            (tmp_path / "models.py").write_bytes(b"# Written by another generator.\n")
-        return staged
-
-    monkeypatch.setattr(_api_publication, "stage_content", interfere)
-    assert_output(target_render_report("state-changed", tmp_path, monkeypatch), EXPECTED / "state-changed.txt")
-
-
-@pytest.mark.parametrize(
-    "failure", [OSError("No space left on device"), KeyboardInterrupt()], ids=["error", "interrupt"]
-)
-@pytest.mark.abnormal_path("the final manifest fails after writes and stale deletions in the same transaction")
-def test_target_generate_transaction_rollback(
-    failure: BaseException, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Restore models, targets, metadata, remote lock, inventory and manifest after deletion and write failures."""
     monkeypatch.setattr(
         _publication,
         "_replace_source",
-        _failing(_publication._replace_source, {1: failure}, destination=".dcg-target-manifest.json"),
+        _failing(_failing(_publication._replace_source, {0: failure}, "remote.lock"), {2: failure}, "models.json"),
     )
-    assert_output(
-        target_render_report("rollback-transaction", tmp_path, monkeypatch),
-        EXPECTED / f"rollback-transaction-{type(failure).__name__}.txt",
-    )
+    report = target_render_report("publish-failure", tmp_path, monkeypatch)
+    assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
 def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Use directory bits and umask for new files while preserving replacement permissions."""
+    """Create new files with the umask default, as model output does, while preserving replacement permissions."""
     mask = os.umask(0o027)
     try:
         assert_output(
