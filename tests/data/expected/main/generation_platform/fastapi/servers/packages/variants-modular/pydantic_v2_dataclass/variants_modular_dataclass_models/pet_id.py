@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import conint
+from typing import Annotated
+
+from pydantic import Field
 from typing_extensions import TypeAliasType
 
-PetId = TypeAliasType("PetId", conint(ge=1))
+PetId = TypeAliasType("PetId", Annotated[int, Field(ge=1)])

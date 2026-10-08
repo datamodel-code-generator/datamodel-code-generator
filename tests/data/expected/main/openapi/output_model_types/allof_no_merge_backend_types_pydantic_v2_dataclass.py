@@ -10,7 +10,7 @@ from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
-ScalarValue = TypeAliasType("ScalarValue", constr(min_length=2))
+ScalarValue = TypeAliasType("ScalarValue", Annotated[str, Field(min_length=2)])
 
 
 ScalarArray = TypeAliasType(

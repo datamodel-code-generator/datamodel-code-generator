@@ -1260,6 +1260,91 @@ def test_generate_cli_command_reconstructs_false_boolean_optional_actions(
     validate_generated_code(command_output.read_text(), str(command_output), do_exec=True)
 
 
+def test_generate_cli_command_with_mapping_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --generate-cli-command prints table options in the form their CLI options accept."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+aliases = {"first name" = "first_name", id = ["id_", "identifier"]}
+extra-template-data = {Person = {comment = "it's ü $HOME"}}
+dataclass-arguments = {frozen = true, kw_only = false}
+external-ref-mapping = {"../common/a b.yaml" = "pkg.models", "$HOME/other.yaml" = "pkg.other"}
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
+
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--generate-cli-command"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "mapping_options.txt",
+        )
+
+
+def test_generate_cli_command_skips_empty_external_ref_mapping(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --generate-cli-command omits an empty external-ref-mapping table."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+external-ref-mapping = {}
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
+
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--generate-cli-command"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "empty_external_ref_mapping.txt",
+        )
+
+
+def test_generate_cli_command_reconstructs_mapping_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test reconstructed CLI commands apply table options like the pyproject configuration."""
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "person.json", tmp_path / "schema.json")
+    shutil.copy(DATA_PATH / "config" / "mapping_round_trip.toml", tmp_path / "pyproject.toml")
+    config_output = tmp_path / "from-config.py"
+    command_output = tmp_path / "from-command.py"
+
+    with chdir(tmp_path):
+        run_main_with_args(["--output", str(config_output)])
+        run_main_with_args(["--generate-cli-command", "--output-format", "json"], capsys=capsys)
+        generated_command = json.loads(capsys.readouterr().out)
+        run_main_with_args([
+            *generated_command["arguments"][1:],
+            "--ignore-pyproject",
+            "--output",
+            str(command_output),
+        ])
+
+    assert_file_content(config_output, "generate_cli_command/mapping_round_trip.py")
+    assert_file_content(command_output, "generate_cli_command/mapping_round_trip.py")
+    validate_generated_code(command_output.read_text(), str(command_output), do_exec=True)
+
+
+def test_generate_cli_command_reconstructs_external_ref_mapping_with_equals_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test a reconstructed external-ref-mapping keeps a file path that contains `=`."""
+    shutil.copytree(DATA_PATH / "config" / "external_ref_mapping_round_trip", tmp_path, dirs_exist_ok=True)
+    config_output = tmp_path / "from-config.py"
+    command_output = tmp_path / "from-command.py"
+
+    with chdir(tmp_path):
+        run_main_with_args(["--output", str(config_output)])
+        run_main_with_args(["--generate-cli-command", "--output-format", "json"], capsys=capsys)
+        generated_command = json.loads(capsys.readouterr().out)
+        run_main_with_args([
+            *generated_command["arguments"][1:],
+            "--ignore-pyproject",
+            "--output",
+            str(command_output),
+        ])
+
+    assert_file_content(config_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+    assert_file_content(command_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+
+
 def test_generate_cli_command_excludes_excluded_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-cli-command excludes options like debug, version, etc."""
     pyproject_toml = """
