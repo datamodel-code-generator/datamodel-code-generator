@@ -6,8 +6,16 @@ from __future__ import annotations
 from enum import Enum, IntEnum, StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
 from typing_extensions import TypeAliasType
+
+
+class Size(RootModel[conint(ge=1)]):
+    root: conint(ge=1) = Field(10, title='Size')
+
+
+class Words(RootModel[list[str]]):
+    root: list[str] = ['a', 'b']
 
 
 class Filter(BaseModel):
