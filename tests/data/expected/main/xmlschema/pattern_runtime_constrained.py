@@ -13,7 +13,7 @@ from typing_extensions import TypeAliasType
 Token = TypeAliasType(
     "Token",
     Annotated[
-        constr(pattern=compile_aliased('(?=\\A)(?:[A-Z]+|[0-9]+)\\Z')),
+        Annotated[str, Field(pattern=compile_aliased('(?=\\A)(?:[A-Z]+|[0-9]+)\\Z'))],
         Field(..., title='Token'),
     ],
 )

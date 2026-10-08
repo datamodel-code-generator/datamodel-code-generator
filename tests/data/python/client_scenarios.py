@@ -648,7 +648,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 
 
 def default_server(package: ModuleType, lines: list[str]) -> None:
-    """Send the generated User-Agent of a distribution to its default base URL."""
+    """Send a request to the default base URL."""
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(raw_response(204))

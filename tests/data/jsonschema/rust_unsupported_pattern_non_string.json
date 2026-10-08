@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^\\p{L}+$"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    },
+    "site": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://[\\w.-]{1,256}/$"
+    },
+    "blob": {
+      "type": "string",
+      "format": "binary",
+      "pattern": "^(a)\\1$"
+    }
+  }
+}

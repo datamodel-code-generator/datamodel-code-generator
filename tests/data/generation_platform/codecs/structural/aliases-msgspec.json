@@ -1,7 +1,7 @@
 {
   "backend": "msgspec.Struct",
   "package": "codec_aliases_msgspec",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "strategies": true,
   "cases": [
     {"name": "choice-server-decode", "use": "/paths/~1choices/post request_body", "op": "decode",

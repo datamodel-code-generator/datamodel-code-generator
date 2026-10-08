@@ -1,7 +1,7 @@
 {
   "backend": "msgspec.Struct",
   "package": "codec_structs_startup",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_annotated": true, "field_constraints": true, "use_standard_primitive_types": true, "output_datetime_class": "datetime"},
   "startup": [
     {"name": "matching", "use": "/paths/~1limits/post request_body"},

@@ -1,6 +1,0 @@
-schema_version = 1
-
-[[files]]
-template = "app.jinja2"
-path = "application.py"
-scope = "project"

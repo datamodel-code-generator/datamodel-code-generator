@@ -91,9 +91,11 @@ def generate_package(
 ) -> list[str]:
     """Generate a fixture's client or FastAPI server package, returning a refusal's diagnostics, the error, or nothing.
 
-    Both targets keep the generated models module; `config` holds the settings of the chosen target.
+    Both targets keep the generated models module; `config` holds the settings of the chosen target and, under
+    `model`, model options that apply to this generation only.
     """
-    options = dict(fixture.get("options", {}))
+    config = dict(config)
+    options = {**fixture.get("options", {}), **config.pop("model", {})}
     if "extra_template_data" in options:
         options["extra_template_data"] = defaultdict(dict, options["extra_template_data"])
     if "scopes" in fixture:

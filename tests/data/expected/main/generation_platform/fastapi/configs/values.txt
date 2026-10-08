@@ -1,19 +1,6 @@
 output=PurePosixPath('server')
 package='server'
 model_package='models'
-model_mode='generate'
-selection=OperationSelection(include_operations=(), include_tags=(), exclude_operations=(), exclude_tags=(), reason=None)
-formatters=(<Formatter.BUILTIN: 'builtin'>,)
-formatter_settings=PurePosixPath('.')
-custom_formatters=()
-custom_formatter_kwargs=mappingproxy({})
-encoding='utf-8'
-header=None
-include_timestamp=False
-package_mode='embedded'
-package_version=None
-distribution_name=None
-model_dependency=None
 layout='single'
 handler_mode='async'
 handler_modes=mappingproxy({'/paths/~1pets/get': 'sync'})
@@ -24,5 +11,3 @@ primary_responses=mappingproxy({OperationRef(pointer='/paths/~1pets/post', docum
 operation_names=mappingproxy({'/paths/~1pets/get': 'list_all'})
 router_names=mappingproxy({'tag:pets': 'animals'})
 parameter_names=mappingproxy({'/paths/~1pets/get': mappingproxy({'query:limit': 'page_size'})})
-hooks=(HookReference(module='project.hooks', file=None, callable='rename'), HookReference(module=None, file=PurePosixPath('hooks/extra.py'), callable='transform'), <function tests.data.python.fastapi_hooks.rename>)
-templates=PurePosixPath('templates/custom')

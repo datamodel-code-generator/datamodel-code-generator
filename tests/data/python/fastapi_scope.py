@@ -13,7 +13,6 @@ WATCHED = (
     "datamodel_code_generator._publication",
     "datamodel_code_generator._api_publication",
     "datamodel_code_generator._openapi_generation",
-    "probe_hooks",
 )
 TARGET = (
     "datamodel_code_generator._target_cli",
@@ -22,26 +21,18 @@ TARGET = (
     "datamodel_code_generator.fastapi",
     "datamodel_code_generator.api_types",
 )
-HOOKS = '[[hooks]]\nmodule = "probe_hooks"\n'
 EMPTY = 'openapi: 3.1.0\ninfo: {title: Empty, version: "1.0"}\npaths: {}\n'
 PRIMITIVE = EMPTY + "components:\n  schemas:\n    Name: {type: string}\n"
 UNSELECTED = (
     'openapi: 3.1.0\ninfo: {title: Unselected, version: "1.0"}\npaths:\n  /names:\n    get:\n'
     "      tags: [names]\n      responses:\n        '204': {description: Done.}\n"
 )
-SELECTION = '[selection]\nexclude_tags = ["names"]\nreason = "Nothing is selected"\n'
+INCLUDED = {"unselected": ["/none"]}
 
 
 def _write(root: Path) -> None:
-    (root / "probe_hooks.py").write_text("def transform(context):\n    return context\n", encoding="utf-8")
-    for name, text, extra in (
-        ("primitive", PRIMITIVE, ""),
-        ("empty", EMPTY, ""),
-        ("unselected", UNSELECTED, SELECTION),
-    ):
+    for name, text in (("primitive", PRIMITIVE), ("empty", EMPTY), ("unselected", UNSELECTED)):
         (root / f"{name}.yaml").write_text(text, encoding="utf-8")
-        target = 'schema_version = 1\npackage = "server"\nmodel_package = "models"\noutput = "server"\n'
-        (root / f"{name}.toml").write_text(target + extra + HOOKS, encoding="utf-8")
 
 
 def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
@@ -49,7 +40,6 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
     from datamodel_code_generator.fastapi import (
         APIGenerationError,
         FastAPIConfig,
-        HookReference,
         generate_fastapi,
         render_fastapi,
     )
@@ -61,14 +51,9 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType(backend),
         use_missing_sentinel=sentinel,
+        openapi_include_paths=INCLUDED.get(name),
     )
-    config = FastAPIConfig(
-        output=root / "server",
-        package="server",
-        model_package="models",
-        model_mode="verify" if mode == "verify" else "generate",
-        hooks=(HookReference(module="probe_hooks"),),
-    )
+    config = FastAPIConfig(output=root / "server", package="server", model_package="models")
     entry = render_fastapi if mode == "render" else generate_fastapi
     try:
         entry(root / f"{name}.yaml", model_config=model, config=config)
@@ -85,7 +70,9 @@ def _cli(root: Path, name: str, backend: str) -> str:
     arguments = [
         *("--input", str(root / f"{name}.yaml"), "--input-file-type", "openapi", "--openapi-scopes", "schemas", "api"),
         *("--output", str(root / "models.py"), "--output-model-type", backend, "--target-python-version", "3.11", "--check"),
-        *("--generate-server", "fastapi", "--target-config", str(root / f"{name}.toml")),
+        *("--generate-server", "fastapi", "--server-output", str(root / "server")),
+        *("--server-package", "server", "--server-model-package", "models"),
+        *(f"--openapi-include-paths={path}" for path in INCLUDED.get(name, ())),
     ]
     stderr = StringIO()
     with redirect_stderr(stderr):
@@ -103,7 +90,6 @@ def _ordinary(root: Path) -> str:
 
 def main(root: Path) -> None:
     """Run every entry point for each input, then print the runs, the watched modules they imported, and new files."""
-    sys.path.insert(0, str(root))
     _write(root)
     ordinary = _ordinary(root)
     import datamodel_code_generator.fastapi  # noqa: F401, PLC0415
@@ -113,7 +99,7 @@ def main(root: Path) -> None:
     runs = [
         f"{name} {mode}: {_api(root, name, mode, 'msgspec.Struct', sentinel=False)}"
         for name in ("primitive", "empty", "unselected")
-        for mode in ("generate", "render", "verify")
+        for mode in ("generate", "render")
     ]
     runs.extend(f"{name} check: {_cli(root, name, 'msgspec.Struct')}" for name in ("primitive", "empty", "unselected"))
     runs.append(f"empty sentinel: {_api(root, 'empty', 'generate', 'msgspec.Struct', sentinel=True)}")

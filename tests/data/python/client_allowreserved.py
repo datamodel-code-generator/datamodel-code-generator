@@ -33,13 +33,12 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
         destination = root / backend.replace(".", "_")
         destination.mkdir()
         generate_client(source, destination, package, backend)
-        paths = [str(destination), str(destination / package / "src")]
-        sys.path[:0] = paths
+        sys.path.insert(0, str(destination))
         lines = [f"# {case} {backend}"]
         try:
             reserved_paths(import_generated(package), lines)
         finally:
-            del sys.path[: len(paths)]
+            sys.path.remove(str(destination))
             forget_generated(package)
         reports.append(_CALL_ID.sub("<call>", "\n".join(lines)) + "\n")
     return plans, "".join(reports)

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import Field, RootModel, constr
+from pydantic import Field, RootModel
 from typing_extensions import TypeAliasType
 
 RootObject = TypeAliasType(
-    "RootObject", Annotated[dict[constr(pattern=r'^a'), Any], Field(min_length=1)]
+    "RootObject",
+    Annotated[dict[Annotated[str, Field(pattern=r'^a')], Any], Field(min_length=1)],
 )
 
 

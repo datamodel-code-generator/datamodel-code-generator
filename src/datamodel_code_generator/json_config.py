@@ -29,6 +29,12 @@ JsonConfigFieldName: TypeAlias = Literal[
     "import_overrides",
     "model_name_map",
     "serialization_aliases",
+    "server_body_modes",
+    "server_handler_modes",
+    "server_operation_names",
+    "server_parameter_names",
+    "server_primary_responses",
+    "server_router_names",
     "type_overrides",
     "validators",
 ]
@@ -43,6 +49,12 @@ JsonConfigOptionName: TypeAlias = Literal[
     "--import-overrides",
     "--model-name-map",
     "--serialization-aliases",
+    "--server-body-modes",
+    "--server-handler-modes",
+    "--server-operation-names",
+    "--server-parameter-names",
+    "--server-primary-responses",
+    "--server-router-names",
     "--type-overrides",
     "--validators",
 ]
@@ -88,6 +100,39 @@ class LegacyExtraTemplateDataConfig(RootModel[dict[str, Any]]):
     """Legacy extra template data mapping accepted during strict-validation migration."""
 
 
+class ServerHandlerModesConfig(RootModel[dict[str, Literal["sync", "async"]]]):
+    """Handler modes of server operations, keyed by operation reference."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
+class ServerBodyModesConfig(RootModel[dict[str, Literal["typed", "request"]]]):
+    """Request body modes of server operations, keyed by operation reference."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
+class ServerPrimaryResponseConfig(BaseModel):
+    """The declared response a bare server return value takes."""
+
+    model_config = ConfigDict(extra="forbid", defer_build=True)
+
+    status_code: int = Field(strict=True, ge=100, le=599)
+    media_type: str | None = None
+
+
+class ServerPrimaryResponsesConfig(RootModel[dict[str, ServerPrimaryResponseConfig]]):
+    """Primary responses of server operations, keyed by operation reference."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
+class ServerParameterNamesConfig(RootModel[dict[str, dict[str, str]]]):
+    """Server argument names keyed by operation reference, then by location and parameter name."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
 JsonConfigStrictModel: TypeAlias = (
     type[StringMappingConfig]
     | type[StringOrStringListMappingConfig]
@@ -95,6 +140,10 @@ JsonConfigStrictModel: TypeAlias = (
     | type[DuplicateNameSuffixConfig]
     | type[DefaultValuesConfig]
     | type[ExtraTemplateDataConfig]
+    | type[ServerHandlerModesConfig]
+    | type[ServerBodyModesConfig]
+    | type[ServerPrimaryResponsesConfig]
+    | type[ServerParameterNamesConfig]
     | type[ValidatorsConfig]
 )
 JsonConfigLegacyModel: TypeAlias = type[StringMappingConfig] | type[LegacyExtraTemplateDataConfig]
@@ -103,7 +152,7 @@ JsonConfigLegacyModel: TypeAlias = type[StringMappingConfig] | type[LegacyExtraT
 class JsonConfigSchemasPayload(BaseModel):
     """Strict JSON configuration schemas accepted by datamodel-code-generator."""
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True, protected_namespaces=())
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, protected_namespaces=(), defer_build=True)
 
     aliases: StringOrStringListMappingConfig | None = Field(default=None)
     base_class_map: StringOrStringListMappingConfig | None = Field(default=None, alias="base-class-map")
@@ -117,6 +166,14 @@ class JsonConfigSchemasPayload(BaseModel):
     import_overrides: StringMappingConfig | None = Field(default=None, alias="import-overrides")
     model_name_map: StringMappingConfig | None = Field(default=None, alias="model-name-map")
     serialization_aliases: StringMappingConfig | None = Field(default=None, alias="serialization-aliases")
+    server_body_modes: ServerBodyModesConfig | None = Field(default=None, alias="server-body-modes")
+    server_handler_modes: ServerHandlerModesConfig | None = Field(default=None, alias="server-handler-modes")
+    server_operation_names: StringMappingConfig | None = Field(default=None, alias="server-operation-names")
+    server_parameter_names: ServerParameterNamesConfig | None = Field(default=None, alias="server-parameter-names")
+    server_primary_responses: ServerPrimaryResponsesConfig | None = Field(
+        default=None, alias="server-primary-responses"
+    )
+    server_router_names: StringMappingConfig | None = Field(default=None, alias="server-router-names")
     type_overrides: StringMappingConfig | None = Field(default=None, alias="type-overrides")
     validators: ValidatorsConfig | None = Field(default=None)
 
@@ -294,6 +351,12 @@ class JsonConfigSpecs:
             load_error_name="serialization alias mapping",
             validation_error_message='must be a JSON string mapping (e.g. {"key": "value", ...})',
         ),
+        "server_body_modes": JsonConfigSpec("--server-body-modes", ServerBodyModesConfig),
+        "server_handler_modes": JsonConfigSpec("--server-handler-modes", ServerHandlerModesConfig),
+        "server_operation_names": JsonConfigSpec("--server-operation-names", StringMappingConfig),
+        "server_parameter_names": JsonConfigSpec("--server-parameter-names", ServerParameterNamesConfig),
+        "server_primary_responses": JsonConfigSpec("--server-primary-responses", ServerPrimaryResponsesConfig),
+        "server_router_names": JsonConfigSpec("--server-router-names", StringMappingConfig),
         "type_overrides": JsonConfigSpec("--type-overrides", StringMappingConfig),
         "validators": JsonConfigSpec(
             "--validators",

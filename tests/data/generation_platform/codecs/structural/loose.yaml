@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: A model beside a member of any type
+  version: "1"
+paths:
+  /loose:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Holder"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Tag:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+      additionalProperties: false
+    Holder:
+      type: object
+      properties:
+        value:
+          anyOf:
+            - $ref: "#/components/schemas/Tag"
+            - {}
