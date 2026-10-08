@@ -12924,6 +12924,41 @@ def test_main_jsonschema_reuse_model_same_name_references(output_dir: Path) -> N
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        pytest.param("collapse_reuse_models_cross_module_users", [], id="module"),
+        pytest.param("collapse_reuse_models_cross_module_users_tree", ["--reuse-scope", "tree"], id="tree"),
+        pytest.param(
+            "collapse_reuse_models_cross_module_users_tree",
+            ["--reuse-scope", "tree", "--use-type-alias"],
+            id="tree-type-alias",
+        ),
+    ],
+)
+def test_main_jsonschema_collapse_reuse_models_cross_module_users(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Point users in other modules at the kept model when a duplicate is collapsed within its module."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_reuse_models_cross_module_users",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module="holder",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"entry": {"name": "one"}, "local": {"name": "two"}},
+    )
+
+
 def test_main_jsonschema_reuse_scope_tree_enum(output_dir: Path) -> None:
     """Test --reuse-scope=tree to deduplicate enum models across multiple files."""
     run_main_and_assert(

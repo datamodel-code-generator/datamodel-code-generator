@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Item",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"}
+  },
+  "definitions": {
+    "Entry": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"}
+      }
+    }
+  }
+}

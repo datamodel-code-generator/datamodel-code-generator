@@ -9195,6 +9195,40 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        pytest.param("dot_notation_collapse_reuse_models", [], id="module"),
+        pytest.param(
+            "dot_notation_collapse_reuse_models_tree",
+            ["--reuse-scope", "tree", "--use-type-alias"],
+            id="tree-type-alias",
+        ),
+    ],
+)
+def test_main_openapi_dot_notation_collapse_reuse_models(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Point users in other dotted modules at the kept model when a duplicate is collapsed within its module."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_collapse_reuse_models.yaml",
+        output_path=output_dir,
+        expected_directory=EXPECTED_OPENAPI_PATH / expected_name,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module="holder",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"entry": {"name": "one"}, "local": {"name": "two"}},
+    )
+
+
 def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     """Test dot notation with deep inheritance from ancestor packages (issue #2039)."""
     run_main_and_assert(
