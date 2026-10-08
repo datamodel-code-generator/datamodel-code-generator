@@ -902,7 +902,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
-    "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
+    "pagination-resume": ("pagination-resume", BACKENDS, pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),

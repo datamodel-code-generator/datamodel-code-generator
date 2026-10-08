@@ -144,12 +144,7 @@ host is in the rule's own form; for example, an IPv6 address has no brackets, as
 `Origin(scheme="https", host="::1", port=443)`. A field of the wrong type, including a boolean port, raises
 `TypeError`. Constructing an `Origin` loads the client's HTTP library to apply the rule.
 
-### Continuations, poll snapshots, and progress
-
-`Continuation(*, kind, value)` records the position of a helper session. `kind` is one of `cursor`, `offset`, `page`,
-`next_url`, and `link`; `value` is a JSON value. The continuation keeps only the value's canonical JSON, described
-below, and exposes only `kind`. Its representation is `Continuation(kind='cursor')`. Each continuation equals only
-itself, and it cannot be modified.
+### Poll snapshots and progress
 
 `PollSnapshot[P]` is an immutable poll result with `state: JSONValue`, `terminal: bool`, `data: P`, and
 `response: ResponseInfo`. The state is a copy of the given value, and the state and data are excluded from the
@@ -160,13 +155,14 @@ the representation, and `C` is covariant too.
 `ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent',
 'messages_received']`, and `ProtocolProgress` is `Mapping[ProgressKey, int]`.
 
-Continuations and resume state encode their values as the same canonical JSON: UTF-8 without whitespace, object
-members sorted by the code points of their names, and strings escaped as Python's `json.dumps` escapes them with
-`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. Numbers are written as `json.dumps` writes
-them: an integer in plain decimal and a float as its shortest round-trip representation, so `1e16` stays `1e+16`.
-Decoding the result with `json.loads` and encoding it again gives the same bytes. A value `json.dumps` cannot encode
-raises `TypeError`; a non-finite number, a lone surrogate, a value nested beyond the interpreter recursion limit, and an
-integer beyond the interpreter's decimal conversion limit raise `ValueError`.
+Resume state encodes its value as canonical JSON: UTF-8 without whitespace, object members sorted by the code points
+of their names, and strings escaped as Python's `json.dumps` escapes them with `ensure_ascii=False`, so only `"`, `\`,
+and U+0000–U+001F are escaped. Numbers are written as `json.dumps` writes them: an integer in plain decimal and a
+float as its shortest round-trip representation, so `1e16` stays `1e+16`. Decoding the result with `json.loads` and
+encoding it again gives the same bytes. A value `json.dumps` cannot encode raises `TypeError`; a non-finite number, a
+lone surrogate, a reference cycle, a value nested beyond the interpreter recursion limit, and an integer beyond the
+interpreter's decimal conversion limit raise `ValueError`. A member name that is not a string is written as
+`json.dumps` writes it.
 
 ### Upload records and sources
 
@@ -177,11 +173,12 @@ upload reads; see [upload helpers](#upload-helpers). The handles are loaded only
 ### Resume state
 
 `ResumeState(*, helper: str, state: JSONValue)` is a small, opaque token: the identity of the helper it belongs to and
-the state that helper continues from, such as a cursor, a next URL, an operation's poll values, or a Last-Event-ID. The
-helper's identity must be a string without lone surrogates. The representation is `ResumeState(version=1)`, each
-instance equals only itself, and nothing is written to disk automatically: the caller saves the token where it likes.
-`copy.copy` and `copy.deepcopy` return the same instance, which cannot change, and `pickle.dumps` raises `TypeError`.
-The same applies to `Continuation`. A token carries no credential, page, digest, or security binding; a resumed call
+the state that helper continues from, such as an operation's poll values or a Last-Event-ID. Pagination has no token
+of its own: a pager resumes from the server's continuation value, as [checkpoints and resume](#checkpoints-and-resume)
+describes. The helper's identity must be a string without lone surrogates. The representation is
+`ResumeState(version=1)`, each instance equals only itself, and nothing is written to disk automatically: the caller
+saves the token where it likes. `copy.copy` and `copy.deepcopy` return the same instance, which cannot change, and
+`pickle.dumps` raises `TypeError`. A token carries no credential, page, digest, or security binding; a resumed call
 authenticates with the resuming client's own auth.
 
 `state.export()` returns canonical JSON with the members `helper`, `state`, and `version`, which is `1`.
@@ -214,8 +211,6 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 |---|---|---|---|
 | `PaginationOptions` | `max_pages` | `None` (no limit) | Positive integer or `None` |
 | | `max_items` | `None` (no limit) | Nonnegative integer or `None`; `0` ends without sending |
-| | `max_page_bytes` | `8388608` | Positive integer |
-| | `max_cursor_bytes` | `65536` | Positive integer |
 | `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
 | | `interval` | The declared interval, `1` second by default | Positive duration |
 | | `max_wait` | `60` seconds | Positive duration or `None` |
@@ -289,10 +284,10 @@ Invalid field values raise `ValueError`.
 |---|---|---|
 | `ProtocolDataError` | `ProtocolError` | `condition: Literal['missing', 'null', 'type', 'value', 'malformed', 'inconsistent'] = 'value'`, `location: Selector \| RequestTarget \| None = None` |
 | `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
-| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: ResumeState \| None = None` |
-| `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is always `reconnects` |
+| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: S \| None = None`; `S` is what the helper resumes from, a pager's `JSONValue` continuation or a `ResumeState` |
+| `StreamResumeExhaustedError` | `SessionLimitError[ResumeState]` | The same fields; `kind` is always `reconnects` |
 | `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'expired', 'malformed']` |
-| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
+| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`, `resume_state: JSONValue = None`; `condition` is always `inconsistent` |
 | `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
 | `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float`, `resume_state: ResumeState \| None = None` |
 | `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
@@ -628,27 +623,27 @@ with Client() as client:
 ```
 
 A `Page[T, P]` holds its `items` as a tuple of the item type, the decoded response as `data`, the response's
-`ResponseInfo`, and the `continuation` after it, or None on the last page. `Pager[T, P]` iterates over the items and
-`iter_pages()` over the pages; `AsyncPager[T, P]` does the same with `async for`, and its `iter_pages()` is not
-awaited. `Page`, `Pager`, and `AsyncPager` are imported from `pkg.protocols`, in every package. A pager fetches a page
-only once the previous one is consumed and reads, decodes, and closes each page inside its own call, so leaving a loop
-early holds no response. Its `progress` reports the pages fetched and the items delivered.
+`ResponseInfo`, and the `continuation` after it: the server's cursor, the next offset or page number, or the resolved
+next URL, as a `JSONValue`, or None on the last page. `Pager[T, P]` iterates over the items and `iter_pages()` over the
+pages; `AsyncPager[T, P]` does the same with `async for`, and its `iter_pages()` is not awaited. `Page`, `Pager`, and
+`AsyncPager` are imported from `pkg.protocols`, in every package. A pager fetches a page only once the previous one is
+consumed and reads, decodes, and closes each page inside its own call, so leaving a loop early holds no response. Its
+`progress` reports the pages fetched and the items delivered.
 
 ### Cursors and end conditions
 
 A page's items must be a JSON array at the `items` pointer; an empty array does not end the traversal. The cursor is
 read from the page's body, a response header, or its status, and written to the target of `write`: a path, query, or
 header parameter, a property of the querystring, or a member of the JSON request body, never a position that carries
-credentials. A cursor the server
-returned is sent as it came, without its target's codec, while a start cursor the caller passes is encoded like any
-other argument. The traversal ends at a page whose cursor is missing
-or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
-or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a value read for
-a path parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and
-the helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case counting as `.`) raise
-`ProtocolDataError`, and a cursor over its size limit raises `ProtocolSizeError`, each as a failure of the page's call.
-The error names the first such read value whose encoded text is non-empty, or else the first one. A continuation
-returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
+credentials. A cursor the server returned is sent as it came, without its target's codec, while a start cursor the
+caller passes is encoded like any other argument. The traversal ends at a page whose cursor is missing or null where
+the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing or null cursor
+that no end covers, missing or null items, a header repeated for a single cursor, and a value read for a path
+parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and the
+helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case counting as `.`) raise
+`ProtocolDataError` as a failure of the page's call. The error names the first such read value whose encoded text is
+non-empty, or else the first one. A page is read within the call's `max_response_bytes` like any response. A
+continuation returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
 `PaginationCycleError` after the repeating page.
 
 ### Offsets and page numbers
@@ -692,7 +687,7 @@ the types its declared schema gives. A missing, null, or mistyped value raises `
 total, from the body or a header, raises it with the condition `value`. Otherwise an empty page does not end the
 traversal, but one that continues while `page_items_count` counts items would ask for the same position again, so it
 raises `ProtocolDataError` with the condition `inconsistent`. Positions only grow, so these helpers never raise
-`PaginationCycleError`, and `max_cursor_bytes` does not apply to them.
+`PaginationCycleError`.
 
 ### Next URLs and Link headers
 
@@ -725,25 +720,22 @@ parameters, a token or a quoted string with backslash escapes, so a comma or sem
 empty list elements and the whitespace around separators are skipped. Parameter names and relation types match
 without regard to ASCII case, a `rel` lists several relation types separated by spaces, and only a link's first `rel`
 counts. A link with an `anchor` parameter describes another resource and is skipped. Any other syntax raises
-`ProtocolDataError` with the condition `malformed`, two links of the relation raise it with `inconsistent`, and Link
-values whose UTF-8 bytes together exceed `max_cursor_bytes` raise `ProtocolSizeError` with the kind `headers`.
+`ProtocolDataError` with the condition `malformed`, and two links of the relation raise it with `inconsistent`.
 
 A URL, from either continuation, resolves against the URL of the request that returned the page, after any redirect, as
 RFC 3986 resolves a reference. A reference with characters outside RFC 3986, or with brackets anywhere but around an
 IPv6 host, raises `ProtocolDataError` with `malformed`, and one with a fragment, user information, even empty, a scheme
-other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL, without the query fields the
-client's authentication places itself, must be at most 8 KiB of UTF-8, or `max_cursor_bytes` when that is smaller, or it
-raises `ProtocolSizeError` with the kind `cursor`, so relative references cannot grow it page by page. The URL must name
-the origin of the server the operation is sent to, its scheme, host, and port, or an origin
-`ProtocolSecurityContext.allowed_origins` lists; any other origin raises `ProtocolDataError` with `value` before
-anything is sent to it, and so does a `next_page` whose options select a server whose origin the URL no longer shares or
-is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
+other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL excludes the query fields
+the client's authentication places itself. The URL must name the origin of the server the operation is sent to, its
+scheme, host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; any other origin raises
+`ProtocolDataError` with `value` before anything is sent to it, and so does a `next_page` whose options select a server
+whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
 `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
 package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
 put them there; its other headers, the call's and the operation's, are sent as usual. The client's authentication sends
 credentials and signatures there only when its `AuthConfig.allowed_origins` lists that origin too; otherwise the page
 fails with `ConfigurationError(reason="origin_denied")` before sending. A query credential the URL repeats is
-removed before the client places its own. `Page.continuation` has the kind `next_url` or `link`, and a URL an earlier
+removed before the client places its own. `Page.continuation` is the resolved server URL, and a URL an earlier
 page of the session gave, or the URL of the first page itself, ends the traversal with `PaginationCycleError` after the
 repeating page; URLs compare once resolved and without the authentication's query fields, with the host's case, the
 default port, and dot segments normalized, but not their percent-encoding.
@@ -776,8 +768,6 @@ session's. Each limit comes from the call's options, then the helper's `Protocol
 |---|---|---|
 | `PaginationOptions.max_pages` | No limit | Removes the limit |
 | `PaginationOptions.max_items` | No limit; 0 ends a pager at once without sending | Removes the limit |
-| `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
-| `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 
@@ -796,66 +786,46 @@ as for a page it did not return, has `parent_session_id=None`.
 
 ### Checkpoints and resume
 
-`pager.checkpoint()` returns a `ResumeState` without sending, on `Pager` and `AsyncPager` alike, and on a pager that
-failed or was closed; a pager fetching a page raises `ProtocolStateError`. The helper's
-`resume(state, *, pagination_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`,
-and returns a pager in a session of its own that sends nothing until it is iterated:
+`pager.checkpoint()` returns the continuation the pager fetches its next page with: the server's cursor, the next
+offset or page number, or the resolved next URL, the same value as `Page.continuation`. It sends nothing, on `Pager`
+and `AsyncPager` alike, and is None before the first page and after the last. The helper's `resume(state, ...)` takes
+that value with the operation's arguments and any request body again, as `iterate` takes them, and returns a pager in a
+session of its own that sends nothing until it is iterated; it is not awaited, even on `AsyncClient`.
 
 ```python
-from pkg.errors import SessionLimitError
-from pkg.protocols import PaginationOptions, import_state
-
 with Client() as client:
     helper = client.protocols.users.all
-    pager = helper.iterate()
-    first = next(pager)
-    saved = pager.checkpoint().export()
-    for user in helper.resume(import_state(saved)):
-        print(user.id)
-    try:
-        list(helper.iterate(pagination_options=PaginationOptions(max_items=100)))
-    except SessionLimitError as error:
-        if error.resume_state is not None:
-            rest = list(helper.resume(error.resume_state, pagination_options=PaginationOptions(max_items=None)))
+    pager = helper.iterate(limit=20)
+    first_page = next(pager.iter_pages())
+    continuation = pager.checkpoint()
+    if continuation is not None:
+        for user in helper.resume(continuation, limit=20):
+            print(user.id)
 ```
 
-| Saved | Never saved |
-|---|---|
-| The wire values of the call's parameters, as its first request encoded and checked them | The call's `options`, headers, query patches, and cookies, and anything its auth adds |
-| The JSON body, when the next request sends it, with its declared media type and any selector's concrete type | The body of a next-URL or Link helper that does not repeat it, once its first page is fetched |
-| Where the pager continues: the index, item count, continuation, and binding values of the last page, or of the page before it while the last page has items left | The session and its deadline |
-| How many items of the page it fetches next were already delivered | Pages, their bodies, the cycle history, and model objects |
+A continuation is the server's value alone. It holds no call arguments, credentials, body, or progress, and nothing in
+it names the helper, so the caller keeps it beside the arguments of the call it belongs to. It is JSON, which
+`json.dumps` and `json.loads` round-trip.
 
-A call that gives a cookie parameter, a header the client treats as a credential, a parameter at the position of a
-declared security scheme, or a querystring with a field at such a position cannot be checkpointed: `checkpoint()` raises
-`ConfigurationError` with a `field_path` of `("arguments", <location>, <name>)`, and its limit and cycle errors
-keep `resume_state=None`. Otherwise
-`SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state`, with the
-item a limit refused still to come.
+A pager iterated by items that stops in the middle of a page gives the continuation before that page, so a resumed
+pager fetches the page again and repeats the items already delivered from it; iterate with `iter_pages()` to checkpoint
+between pages. `resume(None, ...)` starts at the caller's own first request, as `iterate` does. A checkpoint remains
+available after a pager fails or is closed, and a pager fetching a page raises `ProtocolStateError`.
 
-A resumed pager continues with the saved continuation, bindings, and request, whose arguments and body are built from
-their wire values as their codecs build a caller's. A pager checkpointed in the middle of a page fetches that page again
-and skips the items it delivered of it, which count as
-delivered; when the server's data changed in between, it skips the same number of items of the page it gets now. A
-literal binding sends the plan's value, never a saved one; a pager that skips items iterates items only, so
-`iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
-from the checkpoint against the resumed call's limits, so a limit that stopped the pager stops it again unless it is
-raised, while the session's timeout and deadline start afresh. Cycles are detected within a live pager only: a
-resumed pager starts its history with the saved continuation, so a resumed cycle raises `PaginationCycleError` again
-after one fetch.
+A resumed pager counts its pages and items from zero against its own limits, its session's timeout and deadline start
+afresh, and it detects cycles from the given continuation on. `SessionLimitError` and `PaginationCycleError` keep the
+continuation of where the pager stopped as `resume_state`. The first resumed request writes the continuation and the
+helper's literal bindings; a binding that reads a response has no value yet, so its target keeps the caller's argument,
+and an `initial` binding is read from the first resumed page. A page-number helper that ends at a total counts the
+items from the resumed page on, so it ends at the first page without items instead.
 
-`resume` checks the state before returning, without sending:
-
-| Rejected state | Exception |
-|---|---|
-| Not a `ResumeState` | `ConfigurationError(field_path=("state",), reason="invalid_value")` |
-| Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| A state, saved argument, or body that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, path arguments that make their segment a dot segment once encoded, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, items to skip after the last page, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
-| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given or at an origin the resuming client does not allow, or a server value that would make a path segment a dot segment once encoded | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
-
-A token carries no credential and is bound to no credential partition or auth: a resumed pager sends its requests with
-the resuming client's own auth, only to that client's origins, and the server authorizes the saved cursor as it would
-any caller's. The saved arguments are not encrypted, so store exported tokens as the call's own data.
+An offset or page number must be a nonnegative integer and a next URL a string, or `resume` raises
+`ConfigurationError(field_path=("state",), reason="invalid_value")`, as it does for a value that is not JSON. A next URL
+is checked as a server's: it must be absolute, without a fragment or user information, and name the origin of the
+server or one `ProtocolSecurityContext.allowed_origins` lists, or `resume` raises `ProtocolDataError` before anything
+is sent. The query fields the client's authentication places itself are removed from it, and a request to an allowed
+origin other than the server's carries credentials only as a server's next URL would. A cursor written to a path
+parameter is refused as any call's path value is when it makes its segment a dot segment.
 
 ### Generation checks
 
@@ -1700,7 +1670,7 @@ once and returns the stream:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[_dcg_type_1]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
             self._core,

@@ -33,7 +33,6 @@ from ..client.errors import (
     APIConnectionError,
     ConfigurationError,
     DeliveryState,
-    ProtocolSizeError,
     is_phase_timeout,
     too_large,
 )
@@ -125,30 +124,17 @@ def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ConfigurationError:
     )
 
 
-def _page(  # ruff: ignore[too-many-arguments]
+def _page(
     decoder: ResponseDecoder[T],
     info: ResponseInfo,
     body: ReceivedBody,
     call: Call,
-    plan: _PagePlan,
-    *,
-    page_limited: bool,
 ) -> tuple[T, JSONValue, bytes]:
     """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
     settings = call.settings
     if body.overflow:
         limit = settings.max_response_bytes
         assert limit is not None
-        if page_limited:
-            raise ProtocolSizeError(
-                kind="page",
-                limit=limit,
-                observed=body.size,
-                unit="bytes",
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-                info=info,
-            )
         raise too_large(info, limit, body.size)
     if (problem := body.problem) is not None and body.success:
         raise problem
@@ -535,7 +521,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
         They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
         other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
-        call giving one cannot be checkpointed.
+        call giving one cannot be checkpointed. The body is one the request a stream reopens with just encoded.
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
@@ -548,11 +534,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if request is None or isinstance(body, Unset):
             return saved, None
         media, sent = request.selected(operation.operation_id, media_type)
-        try:
-            wire = media.dump(body)
-        except request_errors(media.codec) as error:
-            raise request_decode_error(operation, ("body",), error) from None
-        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
+        return saved, (media.dump(body), media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
     def restored_request(
@@ -678,7 +660,6 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
 
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
-        plan: _PagePlan,
         operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
@@ -687,22 +668,17 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         media_type: str | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int | None,
         read_request: Callable[[str, HeadersView], None] | None = None,
         failed: Callable[[BaseException, DeliveryState], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
-        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
+        the call prepares; `body` is the caller's. What the
         page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
         fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := max_page_bytes is not None and (
-            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
-        ):
-            settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, operation, session)
         events = call.events = self._started(call, operation.path)
         decoder = call.decoder = operation.responses
@@ -711,7 +687,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            data, wire, content = _page(decoder, info, received, call)
             result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result
@@ -851,7 +827,6 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
 
     async def execute_page(  # ruff: ignore[too-many-arguments]
         self,
-        plan: _PagePlan,
         operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
@@ -860,22 +835,17 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         media_type: str | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int | None,
         read_request: Callable[[str, HeadersView], None] | None = None,
         failed: Callable[[BaseException, DeliveryState], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
-        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
+        the call prepares; `body` is the caller's. What the
         page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
         fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := max_page_bytes is not None and (
-            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
-        ):
-            settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, operation, session)
         events = call.events = await self._started(call, operation.path)
         decoder = call.decoder = operation.responses
@@ -884,7 +854,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            data, wire, content = _page(decoder, info, received, call)
             result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result

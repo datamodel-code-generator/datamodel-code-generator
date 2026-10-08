@@ -35,8 +35,6 @@ _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _PAGINATION: Final = (
     ("max_pages", False, True, False),
     ("max_items", False, True, True),
-    ("max_page_bytes", False, False, False),
-    ("max_cursor_bytes", False, False, False),
 )
 _POLL: Final = (
     ("max_polls", False, True, False),
@@ -144,8 +142,6 @@ class PaginationOptions:
 
     max_pages: int | Unset | None = UNSET
     max_items: int | Unset | None = UNSET
-    max_page_bytes: int | Unset = UNSET
-    max_cursor_bytes: int | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""

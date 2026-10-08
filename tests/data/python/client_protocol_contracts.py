@@ -93,8 +93,6 @@ _DURATIONS: Final = (
 _OPTION_FIELDS: Final = (
     ("PaginationOptions", "max_pages", _COUNTS),
     ("PaginationOptions", "max_items", _COUNTS),
-    ("PaginationOptions", "max_page_bytes", _COUNTS),
-    ("PaginationOptions", "max_cursor_bytes", _COUNTS),
     ("PollOptions", "max_polls", _COUNTS),
     ("PollOptions", "interval", _DURATIONS),
     ("PollOptions", "max_wait", _DURATIONS),
@@ -118,7 +116,7 @@ def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
     _shapes(protocols, options, lines)
     _selectors(protocols, lines)
     _origins(protocols, lines)
-    _continuations(protocols, records, lines)
+    _canonical_values(protocols, records, lines)
     _snapshots(protocols, responses, lines)
     _resume_states(protocols, lines)
     _imported_states(protocols, lines)
@@ -152,18 +150,16 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
             f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
             f" hints={tuple(get_type_hints(record_type))}",
         ))
-    for name in ("Continuation", "ResumeState"):
-        opaque = getattr(protocols, name)
-        parameters = inspect.signature(opaque).parameters.values()
-        lines.append(
-            f"  {name} parameters={tuple(item.name for item in parameters)} "
-            f"keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)} "
-            f"hints={tuple(get_type_hints(opaque.__init__))} final={getattr(opaque, '__final__', False)}"
-        )
+    opaque = protocols.ResumeState
+    parameters = inspect.signature(opaque).parameters.values()
+    lines.append(
+        f"  ResumeState parameters={tuple(item.name for item in parameters)} "
+        f"keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)} "
+        f"hints={tuple(get_type_hints(opaque.__init__))} final={getattr(opaque, '__final__', False)}"
+    )
     literals = (
         ("HeaderSelector.occurrence", get_type_hints(protocols.HeaderSelector)["occurrence"]),
         ("ParameterTarget.location", get_type_hints(protocols.ParameterTarget)["location"]),
-        ("Continuation.kind", get_type_hints(protocols.Continuation.__init__)["kind"]),
         ("ProgressKey", protocols.ProgressKey),
     )
     lines.extend(f"  {label} values={get_args(hint)}" for label, hint in literals)
@@ -321,13 +317,10 @@ def _origins(protocols: ModuleType, lines: list[str]) -> None:
         )
 
 
-def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str]) -> None:
-    """Keep only canonical JSON, expose only the kind, and compare by identity."""
-    canonical = records.continuation_json
-    for kind in ("cursor", "offset", "page", "next_url", "link"):
-        record(
-            lines, f"continuation {kind}", lambda kind=kind: protocols.Continuation(kind=kind, value="secret-cursor")
-        )
+def _canonical_values(protocols: ModuleType, records: ModuleType, lines: list[str]) -> None:
+    """Encode resume state values as canonical JSON and refuse what JSON cannot hold."""
+    cycle: list[object] = []
+    cycle.append(cycle)
     for label, value in (
         ("string", "secret-cursor"),
         ("integer", 20),
@@ -348,42 +341,14 @@ def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str])
         ("list", [1, "two"]),
         ("tuple", (1, "two")),
         ("mapping proxy", MappingProxyType({"z": None, "y": True})),
+        ("bytes", b"secret-cursor"),
+        ("integer key", {1: "secret-cursor"}),
+        ("nan", float("nan")),
+        ("surrogate", "\ud800"),
+        ("cyclic", cycle),
+        ("integral decimal over conversion limit", Decimal("1" + "0" * 5000)),
     ):
         record(lines, f"canonical {label}", lambda value=value: _canonical(protocols, records, value))
-    cycle: list[object] = []
-    cycle.append(cycle)
-    for label, arguments in (
-        ("kind token", {"kind": "token", "value": "x"}),
-        ("kind None", {"kind": None, "value": "x"}),
-        ("missing value", {"kind": "cursor"}),
-        ("missing kind", {"value": "x"}),
-        ("object value", {"kind": "cursor", "value": object()}),
-        ("bytes value", {"kind": "cursor", "value": b"secret-cursor"}),
-        ("integer key", {"kind": "cursor", "value": {1: "secret-cursor"}}),
-        ("nan value", {"kind": "cursor", "value": float("nan")}),
-        ("surrogate value", {"kind": "cursor", "value": "\ud800"}),
-        ("cyclic value", {"kind": "cursor", "value": cycle}),
-        ("deeply nested value", {"kind": "cursor", "value": _deep()}),
-        ("integer over conversion limit", {"kind": "cursor", "value": 10**5000}),
-        ("integral decimal over conversion limit", {"kind": "cursor", "value": Decimal("1" + "0" * 5000)}),
-        ("extra field", {"kind": "cursor", "value": "x", "raw": "x"}),
-    ):
-        record(lines, f"continuation {label}", lambda arguments=arguments: protocols.Continuation(**arguments))
-    record(lines, "continuation positional", lambda: protocols.Continuation("cursor", "secret-cursor"))
-    first = protocols.Continuation(kind="cursor", value="secret-cursor")
-    second = protocols.Continuation(kind="cursor", value="secret-cursor")
-    lines.extend((
-        f"  continuation kind={first.kind!r} repr={first!r} str={first} secret={'secret' in repr(first) + str(first)}",
-        f"  continuation identity equality={first == first}/{first == second}/{first != second} "
-        f"distinct hashes={len({first, second})} same bytes={canonical(first) == canonical(second)}",
-        f"  continuation dict={hasattr(first, '__dict__')} public={[name for name in dir(first) if not name.startswith('_')]}",
-    ))
-    for name, value in (("kind", "page"), ("_json", b"{}"), ("_kind", "page"), ("value", "other")):
-        record(lines, f"continuation set {name}", lambda name=name, value=value: setattr(first, name, value))
-    record(lines, "continuation delete kind", lambda: delattr(first, "_kind"))
-    lines.append(f"  continuation copies={copy.copy(first) is first}/{copy.deepcopy([first])[0] is first}")
-    record(lines, "continuation pickle", lambda: pickle.dumps(first))
-    lines.append(f"  continuation after mutation={first!r}/{canonical(first)!r}")
 
 
 def _deep() -> list[object]:
@@ -397,8 +362,8 @@ def _deep() -> list[object]:
 
 
 def _canonical(protocols: ModuleType, records: ModuleType, value: object) -> tuple[bytes, bool, bool]:
-    """Return a continuation's canonical JSON, whether it survives a decode, and whether resume state shares it."""
-    encoded = records.continuation_json(protocols.Continuation(kind="cursor", value=value))
+    """Return a value's canonical JSON, whether it survives a decode, and whether resume state exports it."""
+    encoded = records.canonical_json(value)
     state = protocols.ResumeState(helper="", state=value).export()
     return encoded, records.canonical_json(json.loads(encoded)) == encoded, b'"state":' + encoded + b"," in state
 

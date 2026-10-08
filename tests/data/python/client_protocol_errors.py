@@ -50,6 +50,10 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
         content_type="application/json",
     )
     resume = protocols.ResumeState(helper=secret, state={"cursor": secret})
+    resumes = {
+        "SessionLimitError": errors.SessionLimitError.__parameters__[0] | None,
+        "PaginationCycleError": importlib.import_module(f"{package.__name__}.model_codecs").JSONValue,
+    }
     data = {"secret": secret}
     snapshot = protocols.PollSnapshot(state=secret, terminal=True, data=data, response=info)
     selector = protocols.BodySelector(pointer=f"/{secret}")
@@ -67,7 +71,7 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             {
                 "page_index": 4,
                 "first_seen_page_index": 1,
-                "resume_state": resume,
+                "resume_state": secret,
                 "location": protocols.HeaderSelector(name="X-Cursor"),
             },
         ),
@@ -150,8 +154,8 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             )
         if "resume_state" in hints:
             lines.append(
-                f"    resume hint={hints['resume_state'] == protocols.ResumeState | None} "
-                f"identity={error.resume_state is resume}"
+                f"    resume hint={hints['resume_state'] == resumes.get(name, protocols.ResumeState | None)} "
+                f"identity={error.resume_state is fields['resume_state']}"
             )
     _progress(errors, protocols, resume, lines)
     _payloads(errors, protocols, snapshot, data, lines)
@@ -307,9 +311,6 @@ def _rejections(
         ("progress bool", lambda: errors.SessionLimitError(kind="pages", limit=1, progress={"pages": True})),
         ("progress list", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=[("pages", 1)])),
         ("progress None", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=None)),
-        ("resume state bytes", lambda: errors.SessionLimitError(
-            kind="pages", limit=1, progress={}, resume_state=secret.encode()
-        )),
         ("exhausted kind pages", lambda: errors.StreamResumeExhaustedError(kind="pages", limit=1, progress={})),
         ("resume condition unknown", lambda: errors.ResumeStateError(condition="stale")),
         ("resume missing condition", lambda: errors.ResumeStateError()),
@@ -319,9 +320,6 @@ def _rejections(
         ("cycle negative", lambda: errors.PaginationCycleError(page_index=-1, first_seen_page_index=0)),
         ("cycle cursor field", lambda: errors.PaginationCycleError(
             page_index=1, first_seen_page_index=0, continuation=secret
-        )),
-        ("cycle resume type", lambda: errors.PaginationCycleError(
-            page_index=1, first_seen_page_index=0, resume_state={}
         )),
         ("polling condition missing", lambda: errors.PollingStateError(condition="missing")),
         ("wait kind unknown", lambda: errors.PollWaitLimitError(kind="interval", required_wait=1, limit=0)),

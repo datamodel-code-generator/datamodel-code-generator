@@ -11,6 +11,9 @@
   write client/model_codecs.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
+  write client/resources/searches/__init__.py
+  write client/resources/searches/_sync.py
+  write client/resources/searches/_async.py
   write client/resources/events/__init__.py
   write client/resources/events/_sync.py
   write client/resources/events/_async.py
@@ -36,6 +39,8 @@
   write client/resources/status/_sync.py
   write client/resources/status/_async.py
   write client/types/__init__.py
+  write client/types/searches/__init__.py
+  write client/types/searches/_operations.py
   write client/types/events/__init__.py
   write client/types/events/_operations.py
   write client/types/streams/__init__.py
@@ -103,6 +108,7 @@ A request body is given as `body=`, unless an operation's `body_arguments` is `b
 
 ## Operations
 
+- `searches.search_feed`: `POST /search-feed`, `body=` only (`application/json`)
 - `events.stream_events`: `GET /events`, no request body
 - `streams.reopen_stream`: `GET /streams/{streamId}`, no request body
 - `rooms.stream_room`: `GET /rooms/{room}{shard}`, no request body
@@ -126,6 +132,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
 ```json
 [
+  {
+    "operation": "searches.search_feed",
+    "method": "POST",
+    "path": "/search-feed",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
   {
     "operation": "events.stream_events",
     "method": "GET",
@@ -265,6 +282,13 @@ See the runtime reference for their limits.
 
 ```json
 [
+  {
+    "helper": "searches.ticks",
+    "kind": "sse",
+    "operation": "searches.search_feed",
+    "method": "POST",
+    "path": "/search-feed"
+  },
   {
     "helper": "events.live",
     "kind": "sse",

@@ -869,7 +869,6 @@ class LroHandle(_Operation[T, P]):
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         step = core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -877,7 +876,6 @@ class LroHandle(_Operation[T, P]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(step)
 
@@ -893,7 +891,6 @@ class LroHandle(_Operation[T, P]):
         admitted = session.sends
         try:
             step = core.execute_page(
-                plan,
                 plan.polled.call,
                 self._poll_request,
                 self._polled,
@@ -901,7 +898,6 @@ class LroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -918,7 +914,6 @@ class LroHandle(_Operation[T, P]):
         self._pause(fetched.call)
         try:
             result = self._core.execute_page(
-                plan,
                 fetched.call,
                 self._fetch_request,
                 _kept,
@@ -926,7 +921,6 @@ class LroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=self._session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -940,7 +934,6 @@ class LroHandle(_Operation[T, P]):
         """
         request = self._cancelling(cancel)
         return self._core.execute_page(
-            self._plan,
             cancel.targeted.call,
             request,
             _receipt,
@@ -948,7 +941,6 @@ class LroHandle(_Operation[T, P]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     def status(self) -> PollSnapshot[P]:
@@ -1014,7 +1006,6 @@ class AsyncLroHandle(_Operation[T, P]):
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         step = await core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -1022,7 +1013,6 @@ class AsyncLroHandle(_Operation[T, P]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(step)
 
@@ -1038,7 +1028,6 @@ class AsyncLroHandle(_Operation[T, P]):
         admitted = session.sends
         try:
             step = await core.execute_page(
-                plan,
                 plan.polled.call,
                 self._poll_request,
                 self._polled,
@@ -1046,7 +1035,6 @@ class AsyncLroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -1063,7 +1051,6 @@ class AsyncLroHandle(_Operation[T, P]):
         await self._pause(fetched.call)
         try:
             result = await self._core.execute_page(
-                plan,
                 fetched.call,
                 self._fetch_request,
                 _kept,
@@ -1071,7 +1058,6 @@ class AsyncLroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=self._session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -1085,7 +1071,6 @@ class AsyncLroHandle(_Operation[T, P]):
         """
         request = self._cancelling(cancel)
         return await self._core.execute_page(
-            self._plan,
             cancel.targeted.call,
             request,
             _receipt,
@@ -1093,7 +1078,6 @@ class AsyncLroHandle(_Operation[T, P]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     async def status(self) -> PollSnapshot[P]:

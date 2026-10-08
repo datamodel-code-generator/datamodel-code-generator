@@ -1,10 +1,33 @@
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   title: Resumed streams
   version: 1.0.0
 servers:
   - url: https://api.example.com
 paths:
+  /search-feed:
+    post:
+      operationId: searchFeed
+      tags: [searches]
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                additionalProperties: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FeedQuery'}
+      responses:
+        '200':
+          description: Search feed.
+          content:
+            text/event-stream:
+              schema: {type: string}
   /events:
     get:
       operationId: streamEvents

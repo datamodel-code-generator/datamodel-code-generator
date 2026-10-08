@@ -24,7 +24,6 @@ from pets.protocols import (
     BodyTarget,
     CacheOptions,
     CacheStore,
-    Continuation,
     HeaderSelector,
     Origin,
     PaginationOptions,
@@ -45,6 +44,7 @@ from pets.protocols import (
     WSOptions,
     import_state,
 )
+from pets.model_codecs import JSONValue
 from pets.responses import ResponseInfo
 from pets_models import Pet
 from typing_extensions import assert_type
@@ -67,8 +67,6 @@ def records(snapshot: PollSnapshot[Pet], selector: Selector, target: RequestTarg
     assert_type(target, ParameterTarget | QuerystringTarget | BodyTarget)
     assert_type(selector, BodySelector | HeaderSelector | StatusSelector)
     del selectors, targets
-    continuation = Continuation(kind="cursor", value={"after": "pet-1", "size": 2})
-    assert_type(continuation.kind, Literal["cursor", "offset", "page", "next_url", "link"])
     origin = Origin(scheme="https", host="api.example.com", port=443)
     assert_type(origin.port, int)
     key: ProgressKey = "pages"
@@ -83,9 +81,9 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
 
 def options(origin: Origin) -> ClientOptions:
     """Expose each option field type and construct client-level protocol settings."""
-    pagination = PaginationOptions(max_pages=None, max_items=0, max_page_bytes=1024)
+    pagination = PaginationOptions(max_pages=None, max_items=0)
     assert_type(pagination.max_items, int | Unset | None)
-    assert_type(pagination.max_page_bytes, int | Unset)
+    assert_type(pagination.max_pages, int | Unset | None)
     polling = PollOptions(interval=0.5, max_wait=None)
     assert_type(polling.interval, float | Unset)
     assert_type(polling.max_wait, float | Unset | None)
@@ -127,12 +125,17 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     assert_type(text_failure.snapshot, PollSnapshot[str])
     remote = StreamRemoteError[Pet](event_type="error", data=snapshot.data, sequence=1)
     assert_type(remote.data, Pet)
-    limit = SessionLimitError(kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
+    limit = SessionLimitError[ResumeState](kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
     assert_type(limit.progress, Mapping[ProgressKey, int])
     assert_type(limit.resume_state, ResumeState | None)
+    paged = SessionLimitError[JSONValue](kind="items", limit=1, progress={}, resume_state={"after": "pet-1"})
+    position: JSONValue = paged.resume_state
     exhausted = StreamResumeExhaustedError(kind="reconnects", limit=5, progress={"reconnects": 5})
     assert_type(exhausted.kind, Literal["pages", "items", "polls", "reconnects", "parts"])
+    assert_type(exhausted.resume_state, ResumeState | None)
     cycle = PaginationCycleError(page_index=2, first_seen_page_index=0, location=BodySelector(pointer="/next"))
+    assert_type(cycle.resume_state, JSONValue)
+    del position
     assert_type(cycle.location, Selector | RequestTarget | None)
     wait = PollWaitLimitError(kind="wait", required_wait=120, limit=60)
     assert_type(wait.required_wait, float)

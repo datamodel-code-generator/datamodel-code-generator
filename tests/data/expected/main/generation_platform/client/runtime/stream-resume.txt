@@ -365,9 +365,22 @@ refusals
   < closed
   resume arguments of another operation ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
+  checkpoint of changed invalid body ! ProtocolDataError: ProtocolDataError(operation_id='streamFeed', condition='value') [operation_id='streamFeed', condition='value', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
+  < closed
+  > POST https://api.example.com/search-feed?term=news last-event-id=None body=b'{"topic":"t"}'
+  checkpoint of ordinary querystring = 'ResumeState'
+  < closed
+  > POST https://api.example.com/search-feed?api_key=secret last-event-id=None body=b'{"topic":"t"}'
+  checkpoint of credential querystring ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  < closed
+  > POST https://api.example.com/search-feed?sig=echoed last-event-id=None body=b'{"topic":"t"}'
+  checkpoint of signer querystring field ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
   < closed
   ticks cleared cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   ticks cursor replaced by an object ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  invalid saved body ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  invalid saved media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  mismatched saved media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   > GET https://api.example.com/events?topic=news last-event-id='1'
   resume after the refusals
     1 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'

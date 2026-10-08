@@ -13,6 +13,9 @@ render pydantic_v2.BaseModel
   write client/model_codecs.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
+  write client/resources/searches/__init__.py
+  write client/resources/searches/_sync.py
+  write client/resources/searches/_async.py
   write client/resources/events/__init__.py
   write client/resources/events/_sync.py
   write client/resources/events/_async.py
@@ -38,6 +41,8 @@ render pydantic_v2.BaseModel
   write client/resources/status/_sync.py
   write client/resources/status/_async.py
   write client/types/__init__.py
+  write client/types/searches/__init__.py
+  write client/types/searches/_operations.py
   write client/types/events/__init__.py
   write client/types/events/_operations.py
   write client/types/streams/__init__.py
