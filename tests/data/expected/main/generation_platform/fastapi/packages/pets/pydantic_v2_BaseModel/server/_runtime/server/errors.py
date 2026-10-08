@@ -25,6 +25,7 @@ _MALFORMED: Final = frozenset({
 })
 _REASONS: Final = {
     "form.duplicate": ("media_invalid", "Invalid request body"),
+    "parameter.lexical": ("type_error", "Invalid value type"),
     "text.encoding": ("media_invalid", "Invalid request body"),
 }
 REQUEST_ERRORS: Final = (WireValidationError, CodecResourceLimitError)

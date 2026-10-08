@@ -50,7 +50,7 @@ cookie cookie cookie* object/string: Cookie: greeting=Hello%2C%20world!; code=42
 query q form* scalar/string: ?q=a/b?c%23d%26e%3Df%2Bg%5Bh%5D%41%25zz%2Ci => "a/b?c#d&e=f+g[h]A%zz,i"
 query q form array/string: ?q=a%2Cb,c/d => ["a,b","c/d"]
 path p simple scalar/string: /a%2Fb%2Cc%3Bd%3De:f@g!%2F => "a/b,c;d=e:f@g!/"
-query n form* array/number: ValueError A wire number must be finite
+query n form* array/number: WireValidationError parameter.lexical
 query i form* array/integer: ?i=10&i=10&i=-3 => [10,10,-3]
 query b form* array/boolean: ?b=true&b=false => [true,false]
 query e form* array/string: ?e= => [""]
@@ -74,8 +74,8 @@ query q form* array/string: ParameterEncodingError The value does not have the p
 query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
 query q form* object/string: TypeError Unset is not a JSON value
 query q form* scalar/string: ?q=1 => "1"
-query q form* scalar/integer: ?q=1.5 => "1.5"
-query q form* scalar/boolean: ?q=1 => "1"
+query q form* scalar/integer: WireValidationError parameter.lexical
+query q form* scalar/boolean: WireValidationError parameter.lexical
 path p simple array/string: ParameterEncodingError An empty delimited value cannot be distinguished from an empty container
 path p label* array/string: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
 path p label* array/number: ParameterEncodingError An exploded label value cannot contain its '.' delimiter

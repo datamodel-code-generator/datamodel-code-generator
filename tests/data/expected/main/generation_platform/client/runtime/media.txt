@@ -4,10 +4,7 @@
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_value') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=1 validation error for FieldFormsPostResponse
-count
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_value
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
   form repeated undeclared member = FieldFormsPostResponse(name='known', count=None)
@@ -139,7 +136,7 @@ secret
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid = FieldFormsPostResponse(name=None, count='many')
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
   form repeated undeclared member = FieldFormsPostResponse(name='known', count=None)
