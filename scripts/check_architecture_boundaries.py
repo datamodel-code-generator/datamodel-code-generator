@@ -145,6 +145,12 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
         "datamodel_code_generator._target_cli",
     ): AllowlistEntry("The CLI hands a selected generation target to its lazily imported runner"),
     BoundaryKey(
+        "src/datamodel_code_generator/__main__.py",
+        "_publish_staged_files",
+        "target-reverse-import",
+        "datamodel_code_generator._target_cli",
+    ): AllowlistEntry("Batch publication hands the targets of server jobs to the lazily imported runner's journal"),
+    BoundaryKey(
         "src/datamodel_code_generator/config.py",
         "<module>",
         "config-backend-import",

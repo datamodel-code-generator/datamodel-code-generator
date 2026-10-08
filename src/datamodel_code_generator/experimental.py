@@ -116,8 +116,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "--generate-server fastapi generates the models at --output and a server package at --server-output; "
             "--server-package and --server-model-package name their import paths, and the other --server-* options "
             "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
-            "pyproject.toml and in its profiles. --check compares without writing, --output-format json uses the "
-            "model generation and check payloads, and generation prints a uv add command to stderr. "
+            "pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format "
+            "json uses the model generation and check payloads, and generation prints a uv add command to stderr. "
             "It needs Python 3.11 or later, both to run and as "
             "--target-python-version."
         ),

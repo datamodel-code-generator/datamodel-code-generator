@@ -13,6 +13,7 @@ import pytest
 from datamodel_code_generator import get_version
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
+from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
@@ -21,6 +22,7 @@ CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
 PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
 DEPENDENCIES = EXPECTED / "cli" / "dependencies.txt"
+SHARED_DEPENDENCIES = EXPECTED / "cli" / "shared-models-dependencies.txt"
 PYTHON = ["--target-python-version", "3.11"]
 SCOPES = ["--openapi-scopes", "schemas", "api"]
 BACKEND = ["--output-model-type", "pydantic_v2.BaseModel"]
@@ -873,8 +875,12 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
     [
         (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
         (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
+        (
+            ["--update-lock", "--lockfile", "server/api.lock"],
+            "Remote lock for 'command' ({lock}) overlaps server output for 'command': {server}\n",
+        ),
     ],
-    ids=["watch", "diff"],
+    ids=["watch", "diff", "lock-in-server-output"],
 )
 def test_fastapi_cli_conflicts(
     arguments: list[str],
@@ -883,8 +889,9 @@ def test_fastapi_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor before writing anything."""
+    """Refuse options the target cannot honor, and a remote lock inside the server output, before writing anything."""
     monkeypatch.chdir(tmp_path)
+    root = tmp_path.resolve()
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -893,7 +900,7 @@ def test_fastapi_cli_conflicts(
         copy_files=_inputs(tmp_path, "pyproject-target.toml"),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=stderr,
+        expected_stderr=stderr.format(lock=root / "server" / "api.lock", server=root / "server"),
         output_should_not_exist=True,
     )
     assert_output(
@@ -902,18 +909,208 @@ def test_fastapi_cli_conflicts(
     )
 
 
+def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the models and the package of a server job as a single run does, check them, then check a drift."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--job", "server", "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "models.py").write_text("# edited\n", encoding="utf-8")
+    (tmp_path / "server" / "README.md").unlink()
+    run_main_with_args(
+        ["--all-jobs", "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
+        assert_no_stderr=True,
+    )
+
+
+def test_fastapi_cli_mixed_jobs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run a model-only job and a server job together; both write the models a model-only run writes."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-mixed-jobs.toml")
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_file_content(tmp_path / "schemas.py", PACKAGE / "models.py")
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
+def test_fastapi_cli_jobs_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report a server job in the batch document with the payloads and the warnings of a single server run."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-mixed-jobs.toml")
+    run_main_with_args(["--all-jobs", "--output-format", "json"])
+    generated = capsys.readouterr()
+    lines = []
+    for job in json.loads(generated.out)["jobs"]:
+        result = job["result"]
+        lines.append(f"job {job['name']}; kind {result['kind']}; output {result['output']}")
+        lines.extend(
+            f"file {item['path']}; matches published {item['content'] == (tmp_path / item['path']).read_text('utf-8')}"
+            for item in result["files"]
+        )
+    with (tmp_path / "server" / "services.py").open("a", encoding="utf-8") as services:
+        services.write("# edited\n")
+    (tmp_path / "server" / "README.md").unlink()
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_with_args(["--all-jobs", "--check", "--output-format", "json"], expected_exit=Exit.DIFF)
+        checked = capsys.readouterr()
+        lines.append(f"check warnings {len(recorded)}; stderr {checked.err!r}")
+        for job in json.loads(checked.out)["jobs"]:
+            result = job["result"]
+            lines.append(f"job {job['name']}; kind {result['kind']}; success {result['success']}")
+            lines.extend(f"difference {item['kind']} {item['path']}" for item in result["differences"])
+        run_main_with_args(["--all-jobs", "--output-format", "json"])
+    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+    assert_output(generated.err, DEPENDENCIES)
+    assert_output(
+        "\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json" / "jobs.txt"
+    )
+
+
+def test_fastapi_cli_shared_models_jobs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models two server jobs share once, next to the package of each job, then check them."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-models-jobs.toml")
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=SHARED_DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    assert_output(_methods(tmp_path / "admin" / "services.py"), EXPECTED / "cli" / "shared-models.txt")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
+def test_fastapi_cli_shared_models_timestamp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Stamp the files of server jobs that share models with one generation time, though the clock moves on.
+
+    The formatter moves the frozen clock on by a second with every file it formats, so the second job starts later.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-timestamp-jobs.toml")
+    with freeze_time(TIMESTAMP) as clock:
+        monkeypatch.setattr(CodeFormatter, "clock", clock, raising=False)
+        run_main_with_args(
+            ["--all-jobs"], capsys=capsys, expected_stderr=SHARED_DEPENDENCIES.read_text(encoding="utf-8")
+        )
+    assert_file_content(tmp_path / "models.py", "cli/timestamp-models.py")
+    assert_file_content(tmp_path / "admin" / "services.py", "cli/timestamp-services.py")
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        ("job", ["--job", "server"]),
+        ("cli-over-job", ["--job", "server", "--server-handler-mode", "async"]),
+        ("cli-table-over-job", ["--job", "server", "--server-handler-modes", '{"/paths/~1pets/get": "async"}']),
+    ],
+)
+def test_fastapi_cli_job_precedence(
+    name: str,
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Take each server setting of a job from the command line, then the job table, then its profile."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-mixed-jobs.toml")
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_output(
+        f"$ datamodel-codegen {' '.join(arguments)}\n{_methods(tmp_path / 'server' / 'services.py')}",
+        EXPECTED / "cli" / "precedence" / f"{name}.txt",
+    )
+
+
+def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Publish the remote lock a server job updates with the batch, next to pyproject.toml."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server", "--update-lock"])
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_output(
+        (tmp_path / "datamodel-codegen.lock").read_text(encoding="utf-8"),
+        DATA / "expected" / "http" / "remote_lock_empty.txt",
+    )
+
+
+def test_fastapi_cli_job_changed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish nothing when a file a server job planned changes before the batch publishes it."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    shutil.copy2(CLI / "pyproject-interfered-jobs.toml", tmp_path / "pyproject.toml")
+    run_main_with_args(
+        ["--all-jobs"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            f"Error: could not publish batch output: {(Path.cwd() / 'server' / '.dcg-target-manifest.json').as_posix()}"
+            ": The file changed after the target was planned\n"
+        ),
+    )
+    assert_output(
+        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-changed.txt"
+    )
+
+
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
-        ("pyproject-jobs.toml", ["--job", "server"], f"{CONFLICT} --job\n"),
+        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], "Error: --generate-server cannot be used with --watch\n"),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],
             "Error: --server-layout requires --generate-server\n",
         ),
+        (
+            "pyproject-failing-jobs.toml",
+            ["--all-jobs"],
+            "Error: --collapse-root-models-name-strategy requires --collapse-root-models\n",
+        ),
+        (
+            "pyproject-overlap-jobs.toml",
+            ["--all-jobs"],
+            "Jobs 'schemas' (output: {root}) and 'server' (server output: {server}) have overlapping output paths\n",
+        ),
+        (
+            "pyproject-shared-output-jobs.toml",
+            ["--all-jobs"],
+            "Jobs 'schemas' (output: {models}) and 'server' (output: {models}) have overlapping output paths\n",
+        ),
+        (
+            "pyproject-differing-models-jobs.toml",
+            ["--all-jobs"],
+            "Error: could not publish batch output: {shared}: Jobs 'server' and 'admin' generate different models\n",
+        ),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--update-lock", "--lockfile", "server/README.md"],
+            "Remote lock for 'server' ({lock}) overlaps server output for 'server': {server}\n",
+        ),
     ],
-    ids=["all-jobs", "job", "model-job-server-option"],
+    ids=[
+        "watch",
+        "model-job-server-option",
+        "later-job-fails",
+        "overlap",
+        "model-job-shares-output",
+        "differing-models",
+        "lock-in-server-output",
+    ],
 )
 def test_fastapi_cli_jobs(
     pyproject: str,
@@ -923,13 +1120,26 @@ def test_fastapi_cli_jobs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse server jobs and server options of model-only jobs, writing nothing.
+    """Refuse what a server job cannot honor, and publish nothing of a batch whose later job fails.
 
-    A job cannot select the server until the job runner stages target packages.
+    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs or
+    hold the remote lock. Only server jobs can share a models output, which they must generate identically.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
-    run_main_with_args(arguments, expected_exit=Exit.ERROR, capsys=capsys, expected_stderr=stderr)
+    root = tmp_path.resolve()
+    run_main_with_args(
+        arguments,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=stderr.format(
+            root=root / "server" / "schemas.py",
+            server=root / "server",
+            models=root / "models.py",
+            shared=(Path.cwd() / "models.py").as_posix(),
+            lock=root / "server" / "README.md",
+        ),
+    )
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
     )

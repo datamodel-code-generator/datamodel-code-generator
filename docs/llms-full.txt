@@ -10231,6 +10231,9 @@ selection, and transactionally reruns the whole batch; it does not partially
 rebuild individual jobs. A failed cycle keeps the last published outputs and
 continues watching both prior and newly discovered dependencies for recovery.
 
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+
 ## 🎯 Configuration Priority
 
 Settings are applied in the following priority order (highest to lowest):
@@ -11338,8 +11341,7 @@ directory, and command-line paths are relative to the working directory.
 
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
-of `pyproject.toml` are validated like model keys, but have no effect while no server is selected. Batch jobs
-(`--job`, `--all-jobs`) cannot generate a server yet.
+of `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
 
 The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
 path references has no URL and is not served. To leave paths out, pass
@@ -11363,6 +11365,57 @@ document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`
 ```bash
 datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 ```
+
+## Batch jobs
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the server generates it as a single run
+with the same settings does, so one `pyproject.toml` can describe model-only jobs and server jobs together. Put
+`generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
+models only.
+
+```toml
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+
+[tool.datamodel-codegen.profiles.server]
+generate-server = "fastapi"
+server-package = "app.server"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.schemas]
+input = "openapi.yaml"
+output = "client/schemas.py"
+
+[tool.datamodel-codegen.jobs.server]
+profile = "server"
+input = "openapi.yaml"
+output = "app/models.py"
+server-output = "app/server"
+```
+
+```bash
+datamodel-codegen --all-jobs
+datamodel-codegen --job server --server-handler-mode async
+datamodel-codegen --all-jobs --check
+```
+
+A server option on the command line applies to every selected job and takes precedence over the job table, its
+profile, and the base table, as a model option does; every selected job must then select the server.
+
+`server-output`, like `output`, must not overlap the outputs of other jobs or contain the remote lock file. Server
+jobs can share their models, though: jobs that each select the server may name the same `output`, which the batch
+writes once. They must generate the same models for it, so give them the same input and model settings; a model-only
+job cannot share its `output`. The server jobs of a batch write one generation timestamp, unless
+`--disable-timestamp` leaves it out.
+
+The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
+nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
+planned changed in the meantime; the `uv add` notice of each package follows the publication on stderr. `--check`
+compares every job as a single run does and exits with 1 when any of them would change. With `--output-format json`,
+a server job adds the generation or check payload of a single server run to the batch document. Server jobs refuse
+`--watch`, as a single server run does.
 
 ## The generated package
 
@@ -11416,7 +11469,9 @@ leaves it out, as for model generation; one run heads every file with the same t
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
 directory when the paths name the same input and outputs. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
-uses it, or the default `datamodel-codegen.lock` exists.
+uses it, or the default `datamodel-codegen.lock` exists. As for model generation, it must not overlap the input or
+the model output, and it must lie outside the server output directory; a run with such a lock path stops before it
+generates anything.
 
 Several targets can share one models module: with the same input, whose file name the model header records, the
 same model options, including the same `--openapi-include-paths`, and `--disable-timestamp`, each run writes the same
@@ -43076,6 +43131,9 @@ selected jobs' combined dependency graph and `pyproject.toml`. Every event repla
 transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
 
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
+
 ---
 
 ## `--list-deprecations` {#list-deprecations}
@@ -45071,7 +45129,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml and in its profiles. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
