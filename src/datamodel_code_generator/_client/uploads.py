@@ -16,6 +16,7 @@ from datamodel_code_generator._client.pagination import (
     _overlaps,
     _page_use,
     _Pages,
+    _parameter_key,
     _problem,
     _target_key,
     credential_place,
@@ -74,7 +75,7 @@ class _Checks(_Polls):
 def _parameter(spec: OperationSpec, target: Mapping[str, Any]) -> ParameterSpec:
     """Return the parameter of an operation that a parameter target names."""
     key = _target_key(target)
-    return next(item for item in spec.parameters if _target_key({"in": item.location, "name": item.wire_name}) == key)
+    return next(item for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key)
 
 
 class _Uploads:
@@ -233,7 +234,7 @@ class _Uploads:
             unwritten = (
                 location not in locations
                 if location == "querystring"
-                else _target_key({"in": location, "name": parameter.wire_name}) not in written
+                else _parameter_key(location, parameter.wire_name) not in written
             )
             if parameter.required and unwritten:
                 message = (
