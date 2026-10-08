@@ -8,8 +8,10 @@ produce, such as a refused connection or an interrupted read.
 
 from __future__ import annotations
 
+import socket
 import ssl
 import threading
+from contextlib import suppress
 from functools import cache
 from http.client import responses
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -27,6 +29,7 @@ if TYPE_CHECKING:
 _HOSTS: Final = ("example.com", "*.example.com", "localhost")
 _BODYLESS: Final = frozenset({204, 304})
 _CHUNK_END: Final = b"0\r\n\r\n"
+_STARTED: Final[list[FixtureServer]] = []
 
 
 class Injected:
@@ -147,16 +150,22 @@ class _Handler(BaseHTTPRequestHandler):
 class FixtureServer(ThreadingHTTPServer):
     """A TLS server on a free local port that answers through a callback, in a daemon thread."""
 
-    daemon_threads = True
-
     def __init__(self, serve: Callable[[httpx2.Request], httpx2.Response]) -> None:
         """Bind a local port, wrap it in TLS, and start serving; each connection shakes hands in its own thread."""
         super().__init__(("127.0.0.1", 0), _Handler)
         self.socket = _contexts()[0].wrap_socket(self.socket, server_side=True, do_handshake_on_connect=False)
         self.serve = serve
         self.failures: list[Exception] = []
+        self.connections: dict[socket.socket, threading.Thread] = {}
         self._thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)
+        _STARTED.append(self)
         self._thread.start()
+
+    def process_request(self, request: Any, client_address: Any) -> None:
+        """Serve the connection in its own daemon thread, kept so the scenario's end can drop and join it."""
+        thread = threading.Thread(target=self.process_request_thread, args=(request, client_address), daemon=True)
+        self.connections[request] = thread
+        thread.start()
 
     def handle_error(self, request: object, client_address: object) -> None:
         """Ignore a connection the client dropped, as an aborted request."""
@@ -166,6 +175,18 @@ class FixtureServer(ThreadingHTTPServer):
         self.shutdown()
         self.server_close()
         self._thread.join(timeout=5)
+
+
+def stop_servers() -> None:
+    """Stop the servers a scenario started, drop the connections its clients left open, and join every thread."""
+    while _STARTED:
+        server = _STARTED.pop()
+        server.stop()
+        for connection, thread in server.connections.items():
+            if thread.is_alive():
+                with suppress(OSError):
+                    connection.shutdown(socket.SHUT_RDWR)
+            thread.join(timeout=5)
 
 
 class _LocalBackend(httpcore2.NetworkBackend):

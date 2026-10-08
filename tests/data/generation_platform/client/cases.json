@@ -93,7 +93,7 @@
   "pets-protocols": {
     "input": "pets-protocols.yaml",
     "references": [
-      "protocols/pets-protocols.yaml"
+      "protocols/pets-protocols.json"
     ],
     "backends": [
       "pydantic_v2.BaseModel",
@@ -139,13 +139,13 @@
           "name": "upload"
         }
       ],
-      "protocols": "protocols/pets-protocols.yaml"
+      "protocols": "protocols/pets-protocols.json"
     }
   },
   "pets-protocols-unpack": {
     "input": "pets-protocols.yaml",
     "references": [
-      "protocols/pets-protocols.yaml"
+      "protocols/pets-protocols.json"
     ],
     "config": {
       "resource_names": [
@@ -184,7 +184,7 @@
           "name": "upload"
         }
       ],
-      "protocols": "protocols/pets-protocols.yaml",
+      "protocols": "protocols/pets-protocols.json",
       "signature_style": "unpack"
     }
   },
@@ -882,10 +882,10 @@
   "pagination-paths": {
     "input": "pagination-paths.yaml",
     "references": [
-      "protocols/pagination-paths.yaml"
+      "protocols/pagination-paths.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-paths.yaml"
+      "protocols": "protocols/pagination-paths.json"
     }
   },
   "keywords": {
@@ -2189,7 +2189,7 @@
     ],
     "references": [
       "helpers-external.yaml",
-      "protocols/disabled.yaml"
+      "protocols/disabled.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -2202,7 +2202,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/disabled.yaml"
+      "protocols": "protocols/disabled.json"
     }
   },
   "protocols-python": {
@@ -2636,7 +2636,7 @@
     ],
     "references": [
       "helpers-external.yaml",
-      "protocols/disabled.yaml"
+      "protocols/disabled.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -2648,7 +2648,7 @@
         "/records"
       ]
     },
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"../protocols/disabled.yaml\"\n",
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"../protocols/disabled.json\"\n",
     "toml_path": "config/client.toml",
     "expected": "protocols-disabled"
   },
@@ -2858,7 +2858,7 @@
     ],
     "references": [
       "helpers-external.yaml",
-      "protocols/disabled.yaml"
+      "protocols/disabled.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -2872,7 +2872,7 @@
     },
     "config": {
       "protocols": {
-        "relative": "protocols/disabled.yaml"
+        "relative": "protocols/disabled.json"
       }
     },
     "expected": "protocols-disabled",
@@ -2882,7 +2882,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/empty.yaml"
+      "protocols/empty.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -2895,7 +2895,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/empty.yaml"
+      "protocols": "protocols/empty.json"
     },
     "modules": [
       [
@@ -3104,7 +3104,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/unsupported-kinds.yaml"
+      "protocols/unsupported-kinds.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3117,15 +3117,15 @@
       ]
     },
     "config": {
-      "protocols": "protocols/unsupported-kinds.yaml"
+      "protocols": "protocols/unsupported-kinds.json"
     },
     "modules": false
   },
-  "protocols-not-utf8": {
+  "protocols-not-json": {
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/not-utf8.yaml"
+      "protocols/not-json.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3138,70 +3138,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/not-utf8.yaml"
-    },
-    "modules": false
-  },
-  "protocols-not-yaml": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/not-yaml.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/not-yaml.yaml"
-    },
-    "modules": false
-  },
-  "protocols-control": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/control.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/control.yaml"
-    },
-    "modules": false
-  },
-  "protocols-complex-key": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/complex-key.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/complex-key.yaml"
+      "protocols": "protocols/not-json.json"
     },
     "modules": false
   },
@@ -3209,7 +3146,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/deep.yaml"
+      "protocols/deep.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3222,15 +3159,15 @@
       ]
     },
     "config": {
-      "protocols": "protocols/deep.yaml"
+      "protocols": "protocols/deep.json"
     },
     "modules": false
   },
-  "protocols-duplicate": {
+  "protocols-deep-limit": {
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/duplicate.yaml"
+      "protocols/deep-limit.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3243,15 +3180,16 @@
       ]
     },
     "config": {
-      "protocols": "protocols/duplicate.yaml"
+      "protocols": "protocols/deep-limit.json"
     },
-    "modules": false
+    "modules": false,
+    "expected": "protocols-empty"
   },
-  "protocols-alias": {
+  "protocols-deep-huge": {
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/alias.yaml"
+      "protocols/deep-huge.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3264,15 +3202,16 @@
       ]
     },
     "config": {
-      "protocols": "protocols/alias.yaml"
+      "protocols": "protocols/deep-huge.json"
     },
-    "modules": false
+    "modules": false,
+    "expected": "protocols-deep"
   },
-  "protocols-alias-key": {
+  "protocols-not-object": {
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/alias-key.yaml"
+      "protocols/not-object.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3285,133 +3224,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/alias-key.yaml"
-    },
-    "modules": false
-  },
-  "protocols-anchor": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/anchor.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/anchor.yaml"
-    },
-    "modules": false
-  },
-  "protocols-merge": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/merge.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/merge.yaml"
-    },
-    "modules": false
-  },
-  "protocols-not-mapping": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/not-mapping.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/not-mapping.yaml"
-    },
-    "modules": false
-  },
-  "protocols-empty-file": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/empty-file.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/empty-file.yaml"
-    },
-    "modules": false
-  },
-  "protocols-envelope": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/envelope.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/envelope.yaml"
-    },
-    "modules": false
-  },
-  "protocols-envelope-missing": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/envelope-missing.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": "protocols/envelope-missing.yaml"
+      "protocols": "protocols/not-object.json"
     },
     "modules": false
   },
@@ -3419,7 +3232,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/names.yaml"
+      "protocols/names.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3432,7 +3245,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/names.yaml"
+      "protocols": "protocols/names.json"
     },
     "modules": false
   },
@@ -3440,7 +3253,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/shared-errors.yaml"
+      "protocols/shared-errors.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3453,7 +3266,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/shared-errors.yaml"
+      "protocols": "protocols/shared-errors.json"
     },
     "modules": false
   },
@@ -3461,7 +3274,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/pagination-errors.yaml"
+      "protocols/pagination-errors.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3474,7 +3287,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/pagination-errors.yaml"
+      "protocols": "protocols/pagination-errors.json"
     },
     "modules": false
   },
@@ -3482,7 +3295,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/polling-errors.yaml"
+      "protocols/polling-errors.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3495,7 +3308,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/polling-errors.yaml"
+      "protocols": "protocols/polling-errors.json"
     },
     "modules": false
   },
@@ -3503,7 +3316,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/stream-errors.yaml"
+      "protocols/stream-errors.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3516,7 +3329,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/stream-errors.yaml"
+      "protocols": "protocols/stream-errors.json"
     },
     "modules": false
   },
@@ -3524,7 +3337,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/references.yaml"
+      "protocols/references.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3537,7 +3350,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/references.yaml"
+      "protocols": "protocols/references.json"
     },
     "modules": false
   },
@@ -3557,7 +3370,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/missing.yaml"
+      "protocols": "protocols/missing.json"
     },
     "modules": false
   },
@@ -3565,7 +3378,7 @@
     "input": "helpers.yaml",
     "references": [
       "helpers-external.yaml",
-      "protocols/unsupported.yaml"
+      "protocols/unsupported.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -3578,7 +3391,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/unsupported.yaml",
+      "protocols": "protocols/unsupported.json",
       "operations": [
         {
           "ref": "/paths/~1labels/get",
@@ -3601,17 +3414,17 @@
   "protocols-querystring": {
     "input": "querystring.yaml",
     "references": [
-      "protocols/querystring.yaml"
+      "protocols/querystring.json"
     ],
     "modules": false,
     "config": {
-      "protocols": "protocols/querystring.yaml"
+      "protocols": "protocols/querystring.json"
     }
   },
   "pagination": {
     "input": "pagination.yaml",
     "references": [
-      "protocols/pagination.yaml"
+      "protocols/pagination.json"
     ],
     "backends": [
       "pydantic_v2.BaseModel"
@@ -3851,23 +3664,23 @@
       ]
     ],
     "config": {
-      "protocols": "protocols/pagination.yaml"
+      "protocols": "protocols/pagination.json"
     }
   },
   "protocols-pagination-checks": {
     "input": "pagination-checks.yaml",
     "references": [
-      "protocols/pagination-checks.yaml"
+      "protocols/pagination-checks.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-checks.yaml"
+      "protocols": "protocols/pagination-checks.json"
     },
     "modules": false
   },
   "pagination-plans": {
     "input": "pagination.yaml",
     "references": [
-      "protocols/pagination.yaml"
+      "protocols/pagination.json"
     ],
     "backends": [
       "pydantic_v2.dataclass",
@@ -3876,7 +3689,7 @@
       "msgspec.Struct"
     ],
     "config": {
-      "protocols": "protocols/pagination.yaml"
+      "protocols": "protocols/pagination.json"
     },
     "modules": [
       [
@@ -3889,28 +3702,28 @@
   "pagination-root": {
     "input": "pagination.yaml",
     "references": [
-      "protocols/pagination-root.yaml"
+      "protocols/pagination-root.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-root.yaml"
+      "protocols": "protocols/pagination-root.json"
     }
   },
   "pagination-documents": {
     "input": "pagination.yaml",
     "references": [
-      "protocols/pagination-documents.yaml"
+      "protocols/pagination-documents.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-documents.yaml"
+      "protocols": "protocols/pagination-documents.json"
     }
   },
   "pagination-limits": {
     "input": "pagination-limits.yaml",
     "references": [
-      "protocols/pagination-limits.yaml"
+      "protocols/pagination-limits.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-limits.yaml"
+      "protocols": "protocols/pagination-limits.json"
     }
   },
   "pagination-querystring": {
@@ -3977,19 +3790,19 @@
       ]
     ],
     "references": [
-      "protocols/pagination-querystring.yaml"
+      "protocols/pagination-querystring.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-querystring.yaml"
+      "protocols": "protocols/pagination-querystring.json"
     }
   },
   "pagination-targets": {
     "input": "pagination-targets.yaml",
     "references": [
-      "protocols/pagination-targets.yaml"
+      "protocols/pagination-targets.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-targets.yaml"
+      "protocols": "protocols/pagination-targets.json"
     },
     "modules": [
       [
@@ -4002,20 +3815,20 @@
   "protocols-pagination-querystring-checks": {
     "input": "querystring.yaml",
     "references": [
-      "protocols/pagination-querystring-checks.yaml"
+      "protocols/pagination-querystring-checks.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-querystring-checks.yaml"
+      "protocols": "protocols/pagination-querystring-checks.json"
     },
     "modules": false
   },
   "webhooks": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhooks.yaml"
+      "protocols/webhooks.json"
     ],
     "config": {
-      "protocols": "protocols/webhooks.yaml"
+      "protocols": "protocols/webhooks.json"
     },
     "modules": [
       [
@@ -4124,49 +3937,49 @@
   "protocols-webhook-errors": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhook-errors.yaml"
+      "protocols/webhook-errors.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-errors.yaml"
+      "protocols": "protocols/webhook-errors.json"
     },
     "modules": false
   },
   "protocols-webhook-checks": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhook-checks.yaml"
+      "protocols/webhook-checks.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-checks.yaml"
+      "protocols": "protocols/webhook-checks.json"
     },
     "modules": false
   },
   "webhooks-typing": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhook-typing.yaml"
+      "protocols/webhook-typing.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-typing.yaml"
+      "protocols": "protocols/webhook-typing.json"
     }
   },
   "webhooks-schema": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhook-typing.yaml"
+      "protocols/webhook-typing.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-typing.yaml"
+      "protocols": "protocols/webhook-typing.json"
     },
     "modules": false
   },
   "webhooks-public-keys": {
     "input": "webhooks.yaml",
     "references": [
-      "protocols/webhook-public-keys.yaml"
+      "protocols/webhook-public-keys.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-public-keys.yaml"
+      "protocols": "protocols/webhook-public-keys.json"
     },
     "modules": [
       [
@@ -4205,10 +4018,10 @@
   "webhooks-adapters": {
     "input": "webhook-adapters.yaml",
     "references": [
-      "protocols/webhook-adapters.yaml"
+      "protocols/webhook-adapters.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-adapters.yaml"
+      "protocols": "protocols/webhook-adapters.json"
     },
     "modules": [
       [
@@ -4294,10 +4107,10 @@
   "webhooks-unsigned": {
     "input": "webhook-adapters.yaml",
     "references": [
-      "protocols/webhook-unsigned.yaml"
+      "protocols/webhook-unsigned.json"
     ],
     "config": {
-      "protocols": "protocols/webhook-unsigned.yaml"
+      "protocols": "protocols/webhook-unsigned.json"
     },
     "modules": [
       [
@@ -4334,10 +4147,10 @@
   "pagination-counts": {
     "input": "pagination-counts.yaml",
     "references": [
-      "protocols/pagination-counts.yaml"
+      "protocols/pagination-counts.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-counts.yaml"
+      "protocols": "protocols/pagination-counts.json"
     },
     "modules": [
       [
@@ -4350,20 +4163,20 @@
   "protocols-pagination-count-checks": {
     "input": "pagination-counts.yaml",
     "references": [
-      "protocols/pagination-count-checks.yaml"
+      "protocols/pagination-count-checks.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-count-checks.yaml"
+      "protocols": "protocols/pagination-count-checks.json"
     },
     "modules": false
   },
   "pagination-links": {
     "input": "pagination-links.yaml",
     "references": [
-      "protocols/pagination-links.yaml"
+      "protocols/pagination-links.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-links.yaml",
+      "protocols": "protocols/pagination-links.json",
       "operations": [
         {
           "ref": "/paths/~1searches/post",
@@ -4384,36 +4197,36 @@
   "protocols-pagination-link-checks": {
     "input": "pagination-links.yaml",
     "references": [
-      "protocols/pagination-link-checks.yaml"
+      "protocols/pagination-link-checks.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-link-checks.yaml"
+      "protocols": "protocols/pagination-link-checks.json"
     },
     "modules": false
   },
   "pagination-resume": {
     "input": "pagination-resume.yaml",
     "references": [
-      "protocols/pagination-resume.yaml"
+      "protocols/pagination-resume.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-resume.yaml"
+      "protocols": "protocols/pagination-resume.json"
     }
   },
   "protocols-pagination-resume-checks": {
     "input": "pagination-resume.yaml",
     "references": [
-      "protocols/pagination-resume-checks.yaml"
+      "protocols/pagination-resume-checks.json"
     ],
     "config": {
-      "protocols": "protocols/pagination-resume-checks.yaml"
+      "protocols": "protocols/pagination-resume-checks.json"
     },
     "modules": false
   },
   "polling": {
     "input": "polling.yaml",
     "references": [
-      "protocols/polling.yaml"
+      "protocols/polling.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -4424,7 +4237,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/polling.yaml"
+      "protocols": "protocols/polling.json"
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -4450,7 +4263,7 @@
   "polling-plans": {
     "input": "polling.yaml",
     "references": [
-      "protocols/polling.yaml"
+      "protocols/polling.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -4461,7 +4274,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/polling.yaml"
+      "protocols": "protocols/polling.json"
     },
     "backends": [
       "pydantic_v2.dataclass",
@@ -4480,20 +4293,20 @@
   "protocols-polling-checks": {
     "input": "polling.yaml",
     "references": [
-      "protocols/polling-checks.yaml"
+      "protocols/polling-checks.json"
     ],
     "config": {
-      "protocols": "protocols/polling-checks.yaml"
+      "protocols": "protocols/polling-checks.json"
     },
     "modules": false
   },
   "uploads": {
     "input": "uploads.yaml",
     "references": [
-      "protocols/uploads.yaml"
+      "protocols/uploads.json"
     ],
     "config": {
-      "protocols": "protocols/uploads.yaml"
+      "protocols": "protocols/uploads.json"
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -4519,10 +4332,10 @@
   "uploads-plans": {
     "input": "uploads.yaml",
     "references": [
-      "protocols/uploads.yaml"
+      "protocols/uploads.json"
     ],
     "config": {
-      "protocols": "protocols/uploads.yaml"
+      "protocols": "protocols/uploads.json"
     },
     "backends": [
       "pydantic_v2.dataclass",
@@ -4541,30 +4354,30 @@
   "protocols-upload-checks": {
     "input": "upload-checks.yaml",
     "references": [
-      "protocols/upload-checks.yaml"
+      "protocols/upload-checks.json"
     ],
     "config": {
-      "protocols": "protocols/upload-checks.yaml"
+      "protocols": "protocols/upload-checks.json"
     },
     "modules": false
   },
   "protocols-upload-errors": {
     "input": "uploads.yaml",
     "references": [
-      "protocols/upload-errors.yaml"
+      "protocols/upload-errors.json"
     ],
     "config": {
-      "protocols": "protocols/upload-errors.yaml"
+      "protocols": "protocols/upload-errors.json"
     },
     "modules": false
   },
   "streams": {
     "input": "streams.yaml",
     "references": [
-      "protocols/streams.yaml"
+      "protocols/streams.json"
     ],
     "config": {
-      "protocols": "protocols/streams.yaml"
+      "protocols": "protocols/streams.json"
     },
     "modules": [
       [
@@ -4596,20 +4409,20 @@
   "protocols-stream-checks": {
     "input": "streams.yaml",
     "references": [
-      "protocols/stream-checks.yaml"
+      "protocols/stream-checks.json"
     ],
     "config": {
-      "protocols": "protocols/stream-checks.yaml"
+      "protocols": "protocols/stream-checks.json"
     },
     "modules": false
   },
   "protocols-stream-scope": {
     "input": "streams.yaml",
     "references": [
-      "protocols/stream-scope.yaml"
+      "protocols/stream-scope.json"
     ],
     "config": {
-      "protocols": "protocols/stream-scope.yaml"
+      "protocols": "protocols/stream-scope.json"
     },
     "modules": false,
     "model": {
@@ -4622,10 +4435,10 @@
   "streams-mixed": {
     "input": "streams-mixed.yaml",
     "references": [
-      "protocols/streams-mixed.yaml"
+      "protocols/streams-mixed.json"
     ],
     "config": {
-      "protocols": "protocols/streams-mixed.yaml"
+      "protocols": "protocols/streams-mixed.json"
     },
     "modules": [
       [
@@ -4643,10 +4456,10 @@
   "ndjson": {
     "input": "ndjson.yaml",
     "references": [
-      "protocols/ndjson.yaml"
+      "protocols/ndjson.json"
     ],
     "config": {
-      "protocols": "protocols/ndjson.yaml"
+      "protocols": "protocols/ndjson.json"
     },
     "modules": [
       [
@@ -4669,32 +4482,32 @@
   "ndjson-split": {
     "input": "ndjson-split.yaml",
     "references": [
-      "protocols/ndjson-split.yaml"
+      "protocols/ndjson-split.json"
     ],
     "model": {
       "read_only_write_only_model_type": "request-response"
     },
     "config": {
-      "protocols": "protocols/ndjson-split.yaml"
+      "protocols": "protocols/ndjson-split.json"
     }
   },
   "protocols-ndjson-checks": {
     "input": "ndjson.yaml",
     "references": [
-      "protocols/ndjson-checks.yaml"
+      "protocols/ndjson-checks.json"
     ],
     "config": {
-      "protocols": "protocols/ndjson-checks.yaml"
+      "protocols": "protocols/ndjson-checks.json"
     },
     "modules": false
   },
   "stream-resume": {
     "input": "stream-resume.yaml",
     "references": [
-      "protocols/stream-resume.yaml"
+      "protocols/stream-resume.json"
     ],
     "config": {
-      "protocols": "protocols/stream-resume.yaml"
+      "protocols": "protocols/stream-resume.json"
     },
     "modules": [
       [
@@ -4717,10 +4530,10 @@
   "protocols-stream-resume-checks": {
     "input": "stream-resume.yaml",
     "references": [
-      "protocols/stream-resume-checks.yaml"
+      "protocols/stream-resume-checks.json"
     ],
     "config": {
-      "protocols": "protocols/stream-resume-checks.yaml"
+      "protocols": "protocols/stream-resume-checks.json"
     },
     "modules": false
   },
@@ -4737,7 +4550,7 @@
   "caching": {
     "input": "caching.yaml",
     "references": [
-      "protocols/caching.yaml"
+      "protocols/caching.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -4747,7 +4560,7 @@
       ]
     },
     "config": {
-      "protocols": "protocols/caching.yaml"
+      "protocols": "protocols/caching.json"
     },
     "modules": [
       [
@@ -4770,7 +4583,7 @@
   "caching-backends": {
     "input": "caching.yaml",
     "references": [
-      "protocols/caching.yaml"
+      "protocols/caching.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -4780,17 +4593,17 @@
       ]
     },
     "config": {
-      "protocols": "protocols/caching.yaml"
+      "protocols": "protocols/caching.json"
     },
     "modules": false
   },
   "protocols-cache-checks": {
     "input": "caching.yaml",
     "references": [
-      "protocols/cache-checks.yaml"
+      "protocols/cache-checks.json"
     ],
     "config": {
-      "protocols": "protocols/cache-checks.yaml",
+      "protocols": "protocols/cache-checks.json",
       "operations": [
         {
           "ref": "/paths/~1items~1{id}/get",
@@ -4809,10 +4622,10 @@
   "protocols-cache-errors": {
     "input": "caching.yaml",
     "references": [
-      "protocols/cache-errors.yaml"
+      "protocols/cache-errors.json"
     ],
     "config": {
-      "protocols": "protocols/cache-errors.yaml"
+      "protocols": "protocols/cache-errors.json"
     },
     "modules": false
   },
@@ -4834,7 +4647,7 @@
   "caching-typing": {
     "input": "caching.yaml",
     "references": [
-      "protocols/caching.yaml"
+      "protocols/caching.json"
     ],
     "model": {
       "openapi_include_paths": [
@@ -4844,17 +4657,17 @@
       ]
     },
     "config": {
-      "protocols": "protocols/caching.yaml"
+      "protocols": "protocols/caching.json"
     },
     "modules": false
   },
   "sockets": {
     "input": "sockets.yaml",
     "references": [
-      "protocols/sockets.yaml"
+      "protocols/sockets.json"
     ],
     "config": {
-      "protocols": "protocols/sockets.yaml"
+      "protocols": "protocols/sockets.json"
     },
     "modules": [
       [
@@ -4877,30 +4690,30 @@
   "protocols-socket-checks": {
     "input": "socket-checks.yaml",
     "references": [
-      "protocols/socket-checks.yaml"
+      "protocols/socket-checks.json"
     ],
     "config": {
-      "protocols": "protocols/socket-checks.yaml"
+      "protocols": "protocols/socket-checks.json"
     },
     "modules": false
   },
   "protocols-socket-errors": {
     "input": "sockets.yaml",
     "references": [
-      "protocols/socket-errors.yaml"
+      "protocols/socket-errors.json"
     ],
     "config": {
-      "protocols": "protocols/socket-errors.yaml"
+      "protocols": "protocols/socket-errors.json"
     },
     "modules": false
   },
   "protocols-socket-scope": {
     "input": "socket-checks.yaml",
     "references": [
-      "protocols/socket-scope.yaml"
+      "protocols/socket-scope.json"
     ],
     "config": {
-      "protocols": "protocols/socket-scope.yaml"
+      "protocols": "protocols/socket-scope.json"
     },
     "modules": false,
     "model": {
@@ -4913,20 +4726,20 @@
   "protocols-unmodeled": {
     "input": "unmodeled-messages.yaml",
     "references": [
-      "protocols/unmodeled.yaml"
+      "protocols/unmodeled.json"
     ],
     "config": {
-      "protocols": "protocols/unmodeled.yaml"
+      "protocols": "protocols/unmodeled.json"
     },
     "modules": false
   },
   "compression": {
     "input": "compression.yaml",
     "references": [
-      "protocols/compression.yaml"
+      "protocols/compression.json"
     ],
     "config": {
-      "protocols": "protocols/compression.yaml",
+      "protocols": "protocols/compression.json",
       "operations": [
         {
           "ref": "/paths/~1items/post",
@@ -5004,10 +4817,10 @@
   "uploads-compression": {
     "input": "uploads.yaml",
     "references": [
-      "protocols/uploads.yaml"
+      "protocols/uploads.json"
     ],
     "config": {
-      "protocols": "protocols/uploads.yaml",
+      "protocols": "protocols/uploads.json",
       "operations": [
         {
           "ref": "/paths/~1files~1{fileId}/patch",
@@ -5027,10 +4840,10 @@
   "uploads-oauth": {
     "input": "uploads-oauth.yaml",
     "references": [
-      "protocols/uploads-oauth.yaml"
+      "protocols/uploads-oauth.json"
     ],
     "config": {
-      "protocols": "protocols/uploads-oauth.yaml"
+      "protocols": "protocols/uploads-oauth.json"
     },
     "backends": [
       "pydantic_v2.BaseModel"

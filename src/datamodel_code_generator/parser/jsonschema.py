@@ -29,7 +29,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from pydantic.alias_generators import to_camel, to_pascal, to_snake
 from typing_extensions import Unpack
 
 from datamodel_code_generator import (
@@ -47,6 +46,7 @@ from datamodel_code_generator import (
     VersionMode,
     snooper_to_methods,
 )
+from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )

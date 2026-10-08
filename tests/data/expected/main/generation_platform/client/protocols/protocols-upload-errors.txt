@@ -1,22 +1,22 @@
 # protocols-upload-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['errors.profile'].profile: protocols.helpers['errors.profile'].profile must be 'offset'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].create: protocols.helpers['errors.missing'] needs 'create'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].probe: protocols.helpers['errors.missing'] needs 'probe'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].append: protocols.helpers['errors.missing'] needs 'append'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].max_chunk_bytes: protocols.helpers['errors.missing'] needs 'max_chunk_bytes'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].partial_commit: protocols.helpers['errors.missing'] needs 'partial_commit'
-  E_CONFIG_VALUE config protocols.helpers['errors.missing'].completion: protocols.helpers['errors.missing'] needs 'completion'
-  E_CONFIG_UNKNOWN config protocols.helpers['errors.values'].create.extra: protocols.helpers['errors.values'].create has no key 'extra'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].create.size.in: protocols.helpers['errors.values'].create.size.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].probe.remote_offset: protocols.helpers['errors.values'].probe needs 'remote_offset'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.offset: protocols.helpers['errors.values'].append needs 'offset'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.algorithm: protocols.helpers['errors.values'].append.checksum.algorithm must be 'md5', 'sha1', 'sha256' or 'sha512'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.encoding: protocols.helpers['errors.values'].append.checksum.encoding must be 'base64' or 'hex'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.algorithm_prefix: protocols.helpers['errors.values'].append.checksum.algorithm_prefix must be a boolean
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].max_chunk_bytes: protocols.helpers['errors.values'].max_chunk_bytes must be a positive integer
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].partial_commit: protocols.helpers['errors.values'].partial_commit must be 'allowed' or 'forbidden'
-  E_CONFIG_VALUE config protocols.helpers['errors.values'].completion.kind: protocols.helpers['errors.values'].completion.kind must be 'length' or 'operation'
-  E_CONFIG_VALUE config protocols.helpers['errors.completion'].completion.result_schema: protocols.helpers['errors.completion'].completion needs 'result_schema'
-  E_CONFIG_VALUE config protocols.helpers['errors.completion'].abort.operation: protocols.helpers['errors.completion'].abort needs 'operation'
+  E_CONFIG_VALUE config protocols['errors.profile'].profile: protocols['errors.profile'].profile must be 'offset'
+  E_CONFIG_VALUE config protocols['errors.missing'].create: protocols['errors.missing'] needs 'create'
+  E_CONFIG_VALUE config protocols['errors.missing'].probe: protocols['errors.missing'] needs 'probe'
+  E_CONFIG_VALUE config protocols['errors.missing'].append: protocols['errors.missing'] needs 'append'
+  E_CONFIG_VALUE config protocols['errors.missing'].max_chunk_bytes: protocols['errors.missing'] needs 'max_chunk_bytes'
+  E_CONFIG_VALUE config protocols['errors.missing'].partial_commit: protocols['errors.missing'] needs 'partial_commit'
+  E_CONFIG_VALUE config protocols['errors.missing'].completion: protocols['errors.missing'] needs 'completion'
+  E_CONFIG_UNKNOWN config protocols['errors.values'].create.extra: protocols['errors.values'].create has no key 'extra'
+  E_CONFIG_VALUE config protocols['errors.values'].create.size.in: protocols['errors.values'].create.size.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
+  E_CONFIG_VALUE config protocols['errors.values'].probe.remote_offset: protocols['errors.values'].probe needs 'remote_offset'
+  E_CONFIG_VALUE config protocols['errors.values'].append.offset: protocols['errors.values'].append needs 'offset'
+  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.algorithm: protocols['errors.values'].append.checksum.algorithm must be 'md5', 'sha1', 'sha256' or 'sha512'
+  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.encoding: protocols['errors.values'].append.checksum.encoding must be 'base64' or 'hex'
+  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.algorithm_prefix: protocols['errors.values'].append.checksum.algorithm_prefix must be a boolean
+  E_CONFIG_VALUE config protocols['errors.values'].max_chunk_bytes: protocols['errors.values'].max_chunk_bytes must be a positive integer
+  E_CONFIG_VALUE config protocols['errors.values'].partial_commit: protocols['errors.values'].partial_commit must be 'allowed' or 'forbidden'
+  E_CONFIG_VALUE config protocols['errors.values'].completion.kind: protocols['errors.values'].completion.kind must be 'length' or 'operation'
+  E_CONFIG_VALUE config protocols['errors.completion'].completion.result_schema: protocols['errors.completion'].completion needs 'result_schema'
+  E_CONFIG_VALUE config protocols['errors.completion'].abort.operation: protocols['errors.completion'].abort needs 'operation'

@@ -156,5 +156,18 @@
       11,
       0
     ]
+  },
+  {
+    "name": "target_v212",
+    "schema": "names",
+    "options": {
+      "use_annotated": true,
+      "target_pydantic_version": "2.12"
+    },
+    "minimum_pydantic_version": [
+      2,
+      12,
+      0
+    ]
   }
 ]

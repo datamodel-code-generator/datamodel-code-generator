@@ -1,0 +1,211 @@
+{
+  "checks.cursor_header": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "header", "name": "X-Stream-Id"},
+      "missing": "inherit",
+      "null": "clear",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cursor_absent": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/id"},
+      "missing": "inherit",
+      "null": "clear",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cursor_required": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "discriminator": {"from": "event_type"},
+      "mapping": {
+        "created": {"pointer": "/components/schemas/Created"},
+        "tick": {"pointer": "/components/schemas/Tick"}
+      }
+    },
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/seq"},
+      "missing": "error",
+      "null": "error",
+      "write": {"in": "query", "name": "topic"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cursor_types": {
+    "kind": "sse",
+    "operation": "/paths/~1feed/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Tick"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/seq"},
+      "missing": "inherit",
+      "null": "error",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cursor_cookie": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "cookie", "name": "session"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cursor_path": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Created"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/id"},
+      "missing": "error",
+      "null": "error",
+      "write": {"in": "path", "name": "streamId"},
+      "reopen_operation": "/paths/~1streams~1{streamId}/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cleared_body": {
+    "kind": "sse",
+    "operation": "/paths/~1feed/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Tick"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "body", "pointer": "/topic"},
+      "reopen_operation": "/paths/~1feed/post",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.cleared_required": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "query", "name": "from"},
+      "reopen_operation": "/paths/~1replay/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.reopen_media": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "query", "name": "after"},
+      "reopen_operation": "/paths/~1records/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "checks.bindings": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1streams~1{streamId}/get",
+      "delivery": "at_least_once",
+      "bindings": [
+        {
+          "target": {"in": "query", "name": "token"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/token"}}
+        },
+        {
+          "target": {"in": "query", "name": "mode"},
+          "value": {"source": "input", "selector": {"from": "header", "name": "X-Mode"}}
+        },
+        {"target": {"in": "header", "name": "Last-Event-ID"}, "value": {"literal": "0"}},
+        {
+          "target": {"in": "path", "name": "streamId"},
+          "value": {"source": "previous", "selector": {"from": "header", "name": "X-Stream-Id"}}
+        }
+      ],
+      "expires_at": {"from": "body", "pointer": "/expires"}
+    }
+  },
+  "checks.expiry": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1streams~1{streamId}/get",
+      "delivery": "at_least_once",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "streamId"},
+          "value": {"source": "initial", "selector": {"from": "header", "name": "X-Stream-Id"}}
+        }
+      ],
+      "expires_at": {"from": "header", "name": "Expires"}
+    }
+  },
+  "checks.cursor_exploded": {
+    "kind": "sse",
+    "operation": "/paths/~1keyed-marks/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Mark"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/scope"},
+      "missing": "inherit",
+      "null": "clear",
+      "write": {"in": "query", "name": "keyed"},
+      "reopen_operation": "/paths/~1keyed-marks/get",
+      "delivery": "at_least_once"
+    }
+  }
+}

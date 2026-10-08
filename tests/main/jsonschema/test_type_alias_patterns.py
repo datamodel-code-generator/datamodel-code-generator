@@ -9,9 +9,14 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_VERSION_TUPLE
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, JSON_SCHEMA_DATA_PATH, _generated_model, run_main_and_assert
+from tests.main.conftest import (
+    DATA_PATH,
+    JSON_SCHEMA_DATA_PATH,
+    _generated_model,
+    installed_pydantic_runs_target,
+    run_main_and_assert,
+)
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
@@ -21,7 +26,7 @@ LOOKAROUND_SCHEMAS = JSON_SCHEMA_DATA_PATH / "type_alias_lookaround"
 LOOKAROUND_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "type_alias_lookaround"
 LOOKAROUND_PAYLOADS = json.loads((DATA_PATH / "payloads/type_alias_lookaround/cases.json").read_text())
 COMPILED_ALIAS_PATTERNS = pytest.mark.skipif(
-    PYDANTIC_VERSION_TUPLE < (2, 10, 0),
+    not installed_pydantic_runs_target("2.10"),
     reason="Compiled alias patterns need Pydantic 2.8 and referenced aliases keep their names from Pydantic 2.10",
 )
 
