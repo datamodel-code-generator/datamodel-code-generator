@@ -144,30 +144,47 @@ def test_fastapi_cli_generate(
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
+@pytest.mark.parametrize("case_name", ["unchanged", "models-in-package", "package-in-models"])
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_check_read_only(
-    structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    case_name: str,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Check a package whose directories cannot be written to: a check creates nothing inside the output it compares."""
+    """Check outputs whose directories cannot be written to: a check creates nothing inside the outputs it compares.
+
+    The outputs lie beside each other, or one inside the other.
+    """
+    case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
+    shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
+    source = Path("spec/modular.yaml" if case.get("modular") else "pets.yaml")
+    output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
+    server = case.get("server", "server")
+    arguments = case.get("arguments", ())
     run_main_and_assert(
-        input_path=Path("pets.yaml"),
+        input_path=source,
         input_file_type="openapi",
-        output_path=Path("models.py"),
-        extra_args=_server(),
+        output_path=output,
+        extra_args=_server(*arguments, output=server),
         capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        expected_stderr=(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(encoding="utf-8"),
     )
-    directories = [tmp_path / "server", *(path for path in (tmp_path / "server").rglob("*") if path.is_dir())]
+    roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
+    directories = [*roots, *(path for root in roots for path in root.rglob("*") if path.is_dir())]
     for directory in directories:
         directory.chmod(0o555)
     try:
         run_main_and_assert(
-            input_path=Path("pets.yaml"),
+            input_path=source,
             input_file_type="openapi",
-            output_path=Path("models.py"),
-            extra_args=_server("--check", *(["--output-format", "json"] if structured else [])),
+            output_path=output,
+            extra_args=_server(
+                "--check", *arguments, *(["--output-format", "json"] if structured else []), output=server
+            ),
             capsys=capsys,
             assert_no_stderr=True,
             expected_stdout_path=EXPECTED / "cli" / "check" / f"unchanged.{'json' if structured else 'txt'}",
@@ -700,14 +717,20 @@ def test_fastapi_cli_models_as_given(
 
 
 @pytest.mark.parametrize(
+    "layout",
+    [[], ["--output", "server/models.py", "--server-model-package", "server.models"]],
+    ids=["beside", "models-in-package"],
+)
+@pytest.mark.parametrize(
     "formatters", [[], ["--formatters", "ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"]
 )
 def test_fastapi_cli_check_after_generate(
-    formatters: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    formatters: list[str], layout: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Find nothing to change in a copy of a fresh generation, though its models were still staged when formatted.
 
     The copy also gives isort, which caches where it places a module per configuration, a configuration of its own.
+    The models lie beside the server package or inside it, where they are staged beside the package.
     """
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
@@ -722,6 +745,7 @@ def test_fastapi_cli_check_after_generate(
         "--disable-timestamp",
         *formatters,
         *SERVER,
+        *layout,
     ]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", FutureWarning)

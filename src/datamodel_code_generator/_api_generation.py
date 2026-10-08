@@ -242,8 +242,15 @@ def _remote_lock(
     return _resolve_generation_remote_lock(input_, config, cwd), None
 
 
-def _staging(stack: ExitStack, destination: Path, cwd: Path) -> Path:
-    parent = Path(os.path.abspath(cwd / destination.expanduser())).parent  # noqa: PTH100
+def _staging(stack: ExitStack, destination: Path, cwd: Path, around: Path | None = None) -> Path:
+    """Create a private directory beside a destination, or beside the output `around` that contains it.
+
+    Models inside the target package are then staged beside the package, so a render writes nothing into it.
+    """
+    location = Path(os.path.abspath(cwd / destination.expanduser()))  # noqa: PTH100
+    if around is not None and (outer := Path(os.path.abspath(cwd / around.expanduser()))) in location.parents:  # noqa: PTH100
+        location = outer
+    parent = location.parent
     while not parent.exists():
         parent = parent.parent
     return Path(stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)))
@@ -281,7 +288,7 @@ def _generate_models(
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
-        staged_output = _staging(stack, output, cwd) / (output.name or "output")
+        staged_output = _staging(stack, output, cwd, target.output) / (output.name or "output")
         if (cwd / output).is_dir():
             staged_output.mkdir()
         updates: dict[str, Any] = {"output": staged_output}

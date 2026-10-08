@@ -168,7 +168,7 @@ def _nested(models: Path, target: Path) -> dict[str, tuple[Path, Path]]:
     A comparison takes that root as part of the other one, so each file is reported once and neither root lists
     the files of the other as extra.
     """
-    model_root, target_root = models.expanduser().resolve(), target.expanduser().resolve()
+    model_root, target_root = models.resolve(), target.resolve()
     if model_root.is_relative_to(target_root):
         return {"model": (models, model_root.relative_to(target_root))}
     if target_root.is_relative_to(model_root):
