@@ -68,7 +68,11 @@ def parameter_kinds(package: ModuleType, lines: list[str]) -> None:
     with exchange.client() as http, package.Client(http_client=http) as api:
         for name, value in _ARGUMENTS:
             exchange.respond(raw_response(204))
-            record(lines, f"send {name} {value!r}", lambda name=name, value=value: api.values.get_values(**{name: value}))
+            record(
+                lines,
+                f"send {name} {value!r}",
+                lambda name=name, value=value: api.values.get_values(**{name: value}),
+            )
         for name, wire in _WIRE_ARGUMENTS:
             exchange.respond(raw_response(204))
             record(
@@ -96,7 +100,7 @@ def parameter_kinds(package: ModuleType, lines: list[str]) -> None:
                     body=request_body(package, "saveValues", _FORM, {**_SAVED, "mixed": mixed, "either": mixed})
                 ),
             )
-        body = request_body(package, "saveValues", _FORM, {})
+        body = request_body(package, "saveValues", _FORM, {**_SAVED, "mixed": 5, "either": 5})
         for label, content, media in (
             ("read fields", _pairs(*_FIELDS), _FORM),
             ("read fields of text", _pairs(*_TEXTS), _FORM),

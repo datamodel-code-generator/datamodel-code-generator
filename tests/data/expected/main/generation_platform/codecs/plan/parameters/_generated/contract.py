@@ -154,22 +154,12 @@ class GetHeaders:
         name='get__headers',
         key='/paths/~1headers/get',
         service='untagged',
-        keywords=(
-            'combined',
-            'flag',
-            'ratio',
-            'mode',
-            'shaped',
-            'counts',
-            'any_map',
-            'plain',
-        ),
+        keywords=('flag', 'ratio', 'mode', 'shaped', 'counts', 'any_map', 'plain'),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__headers."""
 
-        combined: plan_parameters_models.FieldHeadersGetHeaderCombinedParameter | Unset
         flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | Unset
         ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | Unset
         shaped: typing.Any | Unset
@@ -180,23 +170,13 @@ class GetHeaders:
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
             ParameterArgument(
-                name='combined',
-                plan=ParameterPlan(
-                    location='header',
-                    name='combined',
-                    style='simple',
-                    reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
-                ),
-                adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderCombinedParameter),
-            ),
-            ParameterArgument(
                 name='flag',
                 plan=ParameterPlan(
                     location='header',
                     name='flag',
                     style='simple',
                     kind='boolean',
-                    reserved_names=('anyMap', 'combined', 'counts', 'mode', 'plain', 'ratio', 'shaped'),
+                    reserved_names=('anyMap', 'counts', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
                 adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderFlagParameter),
             ),
@@ -207,7 +187,7 @@ class GetHeaders:
                     name='ratio',
                     style='simple',
                     kind='number',
-                    reserved_names=('anyMap', 'combined', 'counts', 'flag', 'mode', 'plain', 'shaped'),
+                    reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'shaped'),
                 ),
                 adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderRatioParameter),
             ),
@@ -219,7 +199,7 @@ class GetHeaders:
                     style='simple',
                     shape='object',
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('anyMap', 'combined', 'counts', 'flag', 'mode', 'plain', 'ratio'),
+                    reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio'),
                 ),
                 adapter=TypeAdapter(typing.Any),
             ),
@@ -232,7 +212,7 @@ class GetHeaders:
                     explode=True,
                     shape='object',
                     additional=FieldPlan('', 'integer'),
-                    reserved_names=('anyMap', 'combined', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
+                    reserved_names=('anyMap', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
                 adapter=TypeAdapter(dict[str, int]),
             ),
@@ -245,7 +225,7 @@ class GetHeaders:
                     explode=True,
                     shape='object',
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('combined', 'counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
+                    reserved_names=('counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
                 adapter=TypeAdapter(dict[str, typing.Any]),
             ),
@@ -279,8 +259,10 @@ class GetKinds:
             'no_items',
             'any_items',
             'loose',
-            'untyped_object',
-            'untyped_array',
+            'composed',
+            'only',
+            'maybe',
+            'whatever',
             'prices',
         ),
     )
@@ -294,8 +276,10 @@ class GetKinds:
         no_items: list[typing.Any] | Unset
         any_items: list[typing.Any] | Unset
         loose: str | typing.Any | Unset
-        untyped_object: plan_parameters_models.FieldKindsGetHeaderUntypedObjectParameter | Unset
-        untyped_array: list[str] | Unset
+        composed: list[int] | Unset
+        only: list[int] | Unset
+        maybe: list[int] | None | Unset
+        whatever: typing.Any | Unset
         prices: plan_parameters_models.FieldKindsGetHeaderPricesParameter | Unset
 
     PARAMETERS: Final = ParameterAdapter(
@@ -307,7 +291,7 @@ class GetKinds:
                     name='amounts',
                     style='simple',
                     shape='array',
-                    reserved_names=('amount', 'anyItems', 'anything', 'loose', 'mixed', 'noItems', 'prices', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(list[decimal.Decimal]),
             ),
@@ -319,7 +303,7 @@ class GetKinds:
                     style='simple',
                     shape='array',
                     kind='number',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'mixed', 'noItems', 'prices', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'whatever'),
                 ),
                 adapter=TypeAdapter(list[int | float]),
             ),
@@ -329,7 +313,7 @@ class GetKinds:
                     location='header',
                     name='anything',
                     style='simple',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'loose', 'mixed', 'noItems', 'prices', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anyItems', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(typing.Any),
             ),
@@ -340,7 +324,7 @@ class GetKinds:
                     name='noItems',
                     style='simple',
                     shape='array',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'mixed', 'prices', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'only', 'prices', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(list[typing.Any]),
             ),
@@ -351,7 +335,7 @@ class GetKinds:
                     name='anyItems',
                     style='simple',
                     shape='array',
-                    reserved_names=('amount', 'amounts', 'anything', 'loose', 'mixed', 'noItems', 'prices', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(list[typing.Any]),
             ),
@@ -361,29 +345,55 @@ class GetKinds:
                     location='header',
                     name='loose',
                     style='simple',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'mixed', 'noItems', 'prices', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(str | typing.Any),
             ),
             ParameterArgument(
-                name='untyped_object',
+                name='composed',
                 plan=ParameterPlan(
                     location='header',
-                    name='untypedObject',
+                    name='composed',
                     style='simple',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'mixed', 'noItems', 'prices', 'scales', 'untypedArray'),
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(plan_parameters_models.FieldKindsGetHeaderUntypedObjectParameter),
+                adapter=TypeAdapter(list[int]),
             ),
             ParameterArgument(
-                name='untyped_array',
+                name='only',
                 plan=ParameterPlan(
                     location='header',
-                    name='untypedArray',
+                    name='only',
                     style='simple',
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'mixed', 'noItems', 'prices', 'scales', 'untypedObject'),
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(list[str]),
+                adapter=TypeAdapter(list[int]),
+            ),
+            ParameterArgument(
+                name='maybe',
+                plan=ParameterPlan(
+                    location='header',
+                    name='maybe',
+                    style='simple',
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
+                ),
+                adapter=TypeAdapter(list[int] | None),
+            ),
+            ParameterArgument(
+                name='whatever',
+                plan=ParameterPlan(
+                    location='header',
+                    name='whatever',
+                    style='simple',
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales'),
+                ),
+                adapter=TypeAdapter(typing.Any),
             ),
             ParameterArgument(
                 name='prices',
@@ -395,7 +405,7 @@ class GetKinds:
                     shape='object',
                     fields=(FieldPlan('net', 'string'), FieldPlan('count', 'integer')),
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'mixed', 'noItems', 'scales', 'untypedArray', 'untypedObject'),
+                    reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'scales', 'whatever'),
                 ),
                 adapter=TypeAdapter(plan_parameters_models.FieldKindsGetHeaderPricesParameter),
             ),

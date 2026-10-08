@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
@@ -20,6 +20,8 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     UnsupportedBindingValueError,
 )
+
+LeafStep: TypeAlias = Literal["items", "values"]
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -58,10 +60,15 @@ _STATIC_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str | None, str]]
 }
 _STATIC_SCALARS: Final = {name: BuiltinType(name) for name in ("bytes", "float", "int", "str")}
 _LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
-_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind]] = {
+_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
     (None, "bool"): "boolean",
     (None, "float"): "number",
     (None, "int"): "integer",
+    (None, "dict"): None,
+    (None, "frozenset"): None,
+    (None, "list"): None,
+    (None, "set"): None,
+    (None, "tuple"): None,
     ("pydantic", "StrictBool"): "boolean",
     ("pydantic", "NegativeFloat"): "number",
     ("pydantic", "NonNegativeFloat"): "number",
@@ -75,6 +82,19 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind]] = {
     ("pydantic", "PositiveInt"): "integer",
     ("pydantic", "StrictInt"): "integer",
     ("pydantic", "conint"): "integer",
+}
+_ARGUMENTS: Final[dict[LeafStep, tuple[int, frozenset[tuple[str | None, str]]]]] = {
+    "items": (
+        1,
+        frozenset({
+            (None, "frozenset"),
+            (None, "list"),
+            (None, "set"),
+            ("collections.abc", "Sequence"),
+            ("typing", "Sequence"),
+        }),
+    ),
+    "values": (2, frozenset({(None, "dict"), ("collections.abc", "Mapping"), ("typing", "Mapping")})),
 }
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _WRAPPERS: Final = frozenset({"alias", "root"})
@@ -96,7 +116,9 @@ class LexicalKinds:
     """Read the lexical kind of a text leaf from the final type the model generator bound at its schema.
 
     An int, float or bool leaf has its own kind: as the builtin, a constrained or strict form of it, or the member
-    type of an enum or literal. The text of any other leaf, a union of several kinds included, is the model's to read.
+    type of an enum or literal. The text of any other scalar leaf is the model's to read, and so is that of a union
+    with such a leaf. A model, a container, an enum or literal of several kinds, and a union of several kinds none of
+    which reads text as it is, have no kind.
     """
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
@@ -123,19 +145,48 @@ class LexicalKinds:
             if member.member_kind == "root_value" and (facts := member.model_facts) is not None
         }
 
-    def at(self, location: SourceLocation) -> LexicalKind:
-        """Return the kind of the leaf a schema declares, taking an int beside a float as a number.
+    def at(self, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]) -> LexicalKind | None:
+        """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
 
-        A schema no type is bound at has the string kind.
+        A place is a schema's location and the steps from the type bound there to the leaf: a list's items, then a
+        mapping's values. A leaf no place binds a type for has no kind.
         """
-        kinds = set(self._leaves(self._types.get((location.document, location.pointer)), frozenset()))
-        if kinds == _INTEGER_NUMBER:
-            return "number"
-        return kinds.pop() if len(kinds) == 1 else "string"
+        value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
+        return _kind(set(self._leaves(value, frozenset())), mixed=True)
 
-    def _leaves(self, value: FinalPythonType | None, seen: frozenset[int]) -> Iterator[LexicalKind]:
+    def _reached(self, location: SourceLocation, steps: tuple[LeafStep, ...]) -> FinalPythonType | None:
+        value = self._types.get((location.document, location.pointer))
+        for step in steps:
+            value = self._argument(value, *_ARGUMENTS[step])
+        return value
+
+    def _argument(
+        self, value: FinalPythonType | None, count: int, containers: frozenset[tuple[str | None, str]]
+    ) -> FinalPythonType | None:
+        """Return the last argument of a container type, through aliases, root models and a union with None alone."""
+        seen: set[int] = set()
+        while True:
+            if isinstance(value, UnionType) and len(present := _present(value)) == 1:
+                value = present[0]
+            elif (
+                isinstance(value, GeneratedSymbolType)
+                and value.symbol not in seen
+                and self._symbols[value.symbol].kind in _WRAPPERS
+            ):
+                seen.add(value.symbol)
+                value = self._roots.get(value.symbol)
+            else:
+                return (
+                    value.arguments[-1]
+                    if isinstance(value, GenericType)
+                    and len(value.arguments) == count
+                    and _name(value.base) in containers
+                    else None
+                )
+
+    def _leaves(self, value: FinalPythonType | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
         match value:
-            case None | NoneType():
+            case NoneType():
                 pass
             case AnnotatedType() | ConstructorType():
                 yield from self._leaves(value.base if isinstance(value, AnnotatedType) else value.callable, seen)
@@ -143,35 +194,68 @@ class LexicalKinds:
                 for member in value.members:
                     yield from self._leaves(member, seen)
             case LiteralType():
-                for item in value.values:
-                    yield from (
-                        self._leaves(GeneratedSymbolType(item.symbol), seen)
-                        if isinstance(item, GeneratedEnumMember)
-                        else _literal_kinds(item)
-                    )
+                yield _kind(
+                    {
+                        kind
+                        for item in value.values
+                        for kind in (
+                            self._leaves(GeneratedSymbolType(item.symbol), seen)
+                            if isinstance(item, GeneratedEnumMember)
+                            else _literal_kinds(item)
+                        )
+                    },
+                    mixed=False,
+                )
             case GeneratedSymbolType():
                 yield from self._symbol(self._symbols[value.symbol], seen)
-            case BuiltinType():
-                yield _LEXICAL_KINDS.get((None, value.name), "string")
-            case ImportedType():
-                yield _LEXICAL_KINDS.get((value.import_.from_, value.import_.import_), "string")
+            case BuiltinType() | ImportedType():
+                yield _LEXICAL_KINDS.get(_name(value), "string")
+            case None | GenericType():
+                yield None
             case _:
                 yield "string"
 
-    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind]:
+    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
         if symbol.kind == "enum":
-            for item in symbol.values:
-                yield from _literal_kinds(item)
+            yield _kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
         elif symbol.kind in _WRAPPERS and symbol.id not in seen:
             yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
         else:
-            yield "string"
+            yield None
 
 
-def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind]:
-    """Yield the kind of one literal or enum member value, none for null."""
+def _present(value: UnionType) -> list[FinalPythonType]:
+    return [member for member in value.members if not isinstance(member, NoneType)]
+
+
+def _name(value: FinalPythonType) -> tuple[str | None, str]:
+    """Return the module and name of a builtin or imported type, or no name for any other type."""
+    return (
+        (None, value.name)
+        if isinstance(value, BuiltinType)
+        else (value.import_.from_, value.import_.import_)
+        if isinstance(value, ImportedType)
+        else (None, "")
+    )
+
+
+def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind | None]:
+    """Yield the kind of one literal or enum member value: none for null, and None for one that is no scalar."""
     if value is None or value.kind != "none":
-        yield "string" if value is None else _LITERAL_KINDS.get(value.kind, "string")
+        yield None if value is None else _LITERAL_KINDS.get(value.kind, "string")
+
+
+def _kind(kinds: set[LexicalKind | None], *, mixed: bool) -> LexicalKind | None:
+    """Return the one kind of a leaf's kinds, taking an int beside a float as a number.
+
+    Several other kinds are the string kind when `mixed` admits them and one of them is the string kind, whose leaf
+    reads the text as it is; the members of one enum or literal admit none. A leaf of null alone is the model's to read.
+    """
+    if kinds == _INTEGER_NUMBER:
+        return "number"
+    if len(kinds) == 1:
+        return kinds.pop()
+    return "string" if not kinds or (mixed and "string" in kinds and None not in kinds) else None
 
 
 class Namespace:

@@ -1155,9 +1155,9 @@ def _part_plan(
     """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
     _, schema = wire.schema(location)
     if repeated := _types(schema) - _NULL == _ARRAY:
-        location = SourceLocation(location.document, f"{location.pointer}/items", "schema")
-        _, schema = wire.schema(location)
-    kind: PartKind = wire.kinds.at(location) if (types := _types(schema) - _NULL) and not types & _NESTED else "json"
+        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
+    text = (types := _types(schema) - _NULL) and not types & _NESTED
+    kind: PartKind = (wire.kinds.at((location, ("items",) if repeated else ())) if text else None) or "json"
     return PartPlan(name, kind, repeated=repeated, required=required, excluded=excluded)
 
 

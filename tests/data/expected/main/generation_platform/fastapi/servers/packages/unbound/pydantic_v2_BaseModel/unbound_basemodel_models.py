@@ -22,7 +22,3 @@ FieldValuesIdGetQueryAtParameter = TypeAliasType("FieldValuesIdGetQueryAtParamet
 
 
 FieldValuesIdGetQueryTagsParameter = TypeAliasType("FieldValuesIdGetQueryTagsParameter", list[str])
-
-
-class FieldValuesIdGetHeaderXLabelParameter(BaseModel):
-    pass

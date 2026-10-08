@@ -24,7 +24,6 @@ paths:
   /headers:
     get:
       parameters:
-        - {name: combined, in: header, schema: {type: string, allOf: [{type: [string, "null"]}, {minLength: 1}], anyOf: []}}
         - {name: flag, in: header, schema: {enum: [true, false]}}
         - {name: ratio, in: header, schema: {enum: [0.5, 1.5]}}
         - {name: mode, in: header, schema: {enum: [null, a]}}
@@ -48,8 +47,10 @@ paths:
         - {name: noItems, in: header, schema: {type: array}}
         - {name: anyItems, in: header, schema: {type: array, items: true}}
         - {name: loose, in: header, schema: {anyOf: [{type: string}, {minLength: 1}]}}
-        - {name: untypedObject, in: header, schema: {properties: {a: {type: string}}}}
-        - {name: untypedArray, in: header, schema: {items: {type: string}}}
+        - {name: composed, in: header, schema: {allOf: [{$ref: "#/components/schemas/Counts"}]}}
+        - {name: only, in: header, schema: {oneOf: [{type: array, items: {type: integer}}]}}
+        - {name: maybe, in: header, schema: {type: [array, "null"], items: {type: integer}}}
+        - {name: whatever, in: header, schema: true}
         - name: prices
           in: header
           explode: true
@@ -59,3 +60,6 @@ paths:
             additionalProperties: {type: number, format: decimal}
       responses:
         "204": {description: none}
+components:
+  schemas:
+    Counts: {type: array, items: {type: integer}}
