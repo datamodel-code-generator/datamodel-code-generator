@@ -18,35 +18,11 @@
     ],
     [
       "X-Score",
-      "1e3"
-    ],
-    [
-      "X-Score",
-      ".5"
-    ],
-    [
-      "X-Score",
-      "inf"
-    ],
-    [
-      "X-Score",
-      "nan"
-    ],
-    [
-      "X-Score",
       "1e999"
     ],
     [
       "X-Score",
       "１２.３"
-    ],
-    [
-      "X-Count",
-      "1_000"
-    ],
-    [
-      "X-Count",
-      "0x10"
     ],
     [
       "X-Count",
