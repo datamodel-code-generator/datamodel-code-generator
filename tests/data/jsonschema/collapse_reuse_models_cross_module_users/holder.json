@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "entry": {"$ref": "item.json#/definitions/Entry"},
+    "local": {"$ref": "#/definitions/Local"}
+  },
+  "definitions": {
+    "Local": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"}
+      }
+    }
+  }
+}
