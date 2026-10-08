@@ -680,15 +680,19 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
 
 
-def _plan(
+def _plan(  # noqa: PLR0913
     input_: _GenerationInput,
     model_config: GenerateConfig,
     config: TargetConfig,
     generator: TargetGenerator,
     *,
     publish: bool,
+    timestamp: str | None = None,
 ) -> tuple[_Planner, GeneratedProject]:
-    """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished."""
+    """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
+
+    The files carry `timestamp` as their generation timestamp, or the current time without one.
+    """
     effective = prepare_target(input_, model_config, generator)
     if publish and effective.remote_lock_resolved and getattr(effective.remote_lock, "update", False):
         raise config_error(
@@ -698,7 +702,9 @@ def _plan(
         )
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
-        effective._generation_timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
+        effective._generation_timestamp = (  # noqa: SLF001
+            timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        )
     models = _run_models(input_, effective, config)
     try:
         planner = _Planner(models, effective, config, generator)
@@ -721,17 +727,29 @@ class PlannedTarget:
     project: GeneratedProject
     observed: dict[Path, Observed]
     cwd: Path
+    timestamp: str | None
 
 
 def plan_target(
-    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+    input_: _GenerationInput,
+    *,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    timestamp: str | None = None,
 ) -> PlannedTarget:
     """Render one target like `render_target` for a caller that publishes it later with other files.
 
-    The caller owns the remote lock the models record into, so the target leaves the lock out.
+    The caller owns the remote lock the models record into, so the target leaves the lock out. Targets published
+    together pass on the `timestamp` of the first, so the models they share carry one generation timestamp.
     """
-    planner, project = _plan(input_, model_config, config, generator, publish=False)
-    return PlannedTarget(project=project, observed=planner.observed, cwd=planner.models.cwd)
+    planner, project = _plan(input_, model_config, config, generator, publish=False, timestamp=timestamp)
+    return PlannedTarget(
+        project=project,
+        observed=planner.observed,
+        cwd=planner.models.cwd,
+        timestamp=planner.effective._generation_timestamp,  # noqa: SLF001
+    )
 
 
 def generate_target(

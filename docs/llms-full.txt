@@ -10232,7 +10232,7 @@ rebuild individual jobs. A failed cycle keeps the last published outputs and
 continues watching both prior and newly discovered dependencies for recovery.
 
 A job whose settings select `generate-server` also generates the FastAPI server
-package; see [Batch jobs](fastapi-server.md#batch-jobs).
+package, and such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
 
 ## 🎯 Configuration Priority
 
@@ -11406,13 +11406,18 @@ datamodel-codegen --all-jobs --check
 ```
 
 A server option on the command line applies to every selected job and takes precedence over the job table, its
-profile, and the base table, as a model option does; every selected job must then select the server. Each job writes
-its own models: `server-output`, like `output`, must not overlap the outputs of other jobs, so two jobs cannot share
-one models file. The batch publishes the server packages together with the models of every job once all jobs
-succeed, and publishes nothing when a job fails or a file that a server job planned changed in the meantime; the
-`uv add` notice of each package follows the publication. `--check` checks every job and exits with 1 when any of them
-would change. Server jobs refuse `--watch` and `--output-format json`, as a single server run does, and
-`--diagnostics-json`, whose report covers one run.
+profile, and the base table, as a model option does; every selected job must then select the server.
+
+`server-output`, like `output`, must not overlap the outputs of other jobs. Server jobs can share their models,
+though: jobs that each select the server may name the same `output`, which the batch writes once. They must generate
+the same models for it, so give them the same input and model settings; a model-only job cannot share its `output`.
+The server jobs of a batch write one generation timestamp, unless `--disable-timestamp` leaves it out.
+
+The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
+nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
+planned changed in the meantime; the `uv add` notice of each package follows the publication. `--check` checks every
+job and exits with 1 when any of them would change. Server jobs refuse `--watch` and `--output-format json`, as a
+single server run does, and `--diagnostics-json`, whose report covers one run.
 
 ## The generated package
 
@@ -43210,7 +43215,7 @@ transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
 
 A job whose settings select `generate-server` also generates the FastAPI server
-package; see [Batch jobs](../fastapi-server.md#batch-jobs).
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
 
 ---
 

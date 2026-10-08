@@ -1,0 +1,2 @@
+crossed a clock second: True
+generation timestamps: 1

@@ -390,7 +390,7 @@ class _StagedJobPlan(NamedTuple):
     output_anchor: _PublicationAnchor | None
     model_metadata_anchor: _PublicationAnchor | None
     staging_contexts: tuple[tempfile.TemporaryDirectory[str], ...]
-    targets: list[Any]
+    targets: list[Any] | None = None
 
 
 class _RemoteLockPlan(NamedTuple):
@@ -763,9 +763,13 @@ def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
 
 
 def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
-    """Validate all selected jobs before any job starts generation."""
+    """Validate all selected jobs before any job starts generation.
+
+    Jobs that each generate a target may name one models output, which they must then generate identically.
+    """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
+    target_jobs = {plan.name for plan in plans if plan.config.generate_server is not None}
     for plan in plans:
         config = plan.config
         if config.output is None:  # pragma: no cover - guarded by the TOML validation above
@@ -788,7 +792,12 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     for index, first_artifact in enumerate(artifacts):
         first_job, first_kind, first_path = first_artifact
         for second_job, second_kind, second_path in artifacts[index + 1 :]:
-            if not _paths_overlap_or_samefile(first_path, second_path):
+            shares_models = (
+                first_path == second_path
+                and first_kind == second_kind == "output"
+                and target_jobs.issuperset((first_job, second_job))
+            )
+            if shares_models or not _paths_overlap_or_samefile(first_path, second_path):
                 continue
             msg = (
                 f"Jobs '{first_job}' ({first_kind}: {first_path}) and '{second_job}' "
@@ -1733,7 +1742,7 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     batch.
     """
     if plan.config.check or plan.config.generate_server is not None:
-        return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, (), [])
+        return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
     output = plan.config.output
     from datamodel_code_generator._publication import publication_anchor  # noqa: PLC0415
@@ -1780,7 +1789,6 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
             output_anchor,
             model_metadata_anchor,
             tuple(contexts),
-            [],
         )
     except OSError as exc:
         cleanup_errors = _cleanup_staging_resources(contexts, anchors)
@@ -1790,11 +1798,15 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
 
 
 def _stage_job_plans(plans: Sequence[JobPlan]) -> tuple[_StagedJobPlan, ...]:
-    """Stage every write-mode job, removing earlier staging if preparation fails."""
+    """Stage every write-mode job, removing earlier staging if preparation fails.
+
+    The jobs share one list for the targets that the server jobs of the batch plan.
+    """
     staged_plans: list[_StagedJobPlan] = []
+    targets: list[Any] = []
     try:
         for plan in plans:
-            staged_plans.append(_stage_job_plan(plan))  # noqa: PERF401
+            staged_plans.append(_stage_job_plan(plan)._replace(targets=targets))  # noqa: PERF401
     except OSError as exc:
         cleanup_errors = _cleanup_staged_job_plans(staged_plans)
         if cleanup_error := _staging_cleanup_error(exc, cleanup_errors):
@@ -1918,9 +1930,9 @@ def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targ
     publish_staged_files(files)
 
 
-def _planned_targets(staged_plans: Sequence[_StagedJobPlan]) -> tuple[Any, ...]:
+def _planned_targets(staged_plans: Sequence[_StagedJobPlan]) -> Sequence[Any]:
     """Return the targets the server jobs of a batch planned, in job order."""
-    return tuple(target for staged_plan in staged_plans for target in staged_plan.targets)
+    return next((targets for staged_plan in staged_plans if (targets := staged_plan.targets)), ())
 
 
 def _publish_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:

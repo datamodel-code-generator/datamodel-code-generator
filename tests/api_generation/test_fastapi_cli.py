@@ -11,6 +11,7 @@ import pytest
 from datamodel_code_generator import get_version
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
+from tests.data.python.custom_formatters.advance_time_before_second_generation import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args
 
 DATA = Path(__file__).parents[1] / "data"
@@ -782,6 +783,47 @@ def test_fastapi_cli_mixed_jobs(
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
 
 
+def test_fastapi_cli_shared_models_jobs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models two server jobs share once, next to the package of each job, then check them."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-models-jobs.toml")
+    run_main_with_args(
+        ["--all-jobs"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "shared-models-dependencies.txt"
+    )
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    assert_output(_methods(tmp_path / "admin" / "services.py"), EXPECTED / "cli" / "shared-models.txt")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
+def test_fastapi_cli_shared_models_timestamp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Stamp the files of server jobs that share models with one generation time, though the clock moves on.
+
+    The formatter waits for the next clock second while the first job renders its package.
+    """
+    CodeFormatter.apply_count = 0
+    CodeFormatter.crossed_second_boundary = False
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-timestamp-jobs.toml")
+    run_main_with_args(
+        ["--all-jobs"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "shared-models-dependencies.txt"
+    )
+    timestamps = {
+        line
+        for path in tmp_path.rglob("*.py")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("#   timestamp:")
+    }
+    assert_output(
+        f"crossed a clock second: {CodeFormatter.crossed_second_boundary}\ngeneration timestamps: {len(timestamps)}\n",
+        EXPECTED / "cli" / "shared-models-timestamp.txt",
+    )
+
+
 @pytest.mark.parametrize(
     ("name", "arguments"),
     [
@@ -867,12 +909,29 @@ def test_fastapi_cli_job_changed(
             "Jobs 'schemas' (output: {root}) and 'server' (server output: {server}) have overlapping output paths\n",
         ),
         (
-            "pyproject-shared-models-jobs.toml",
+            "pyproject-shared-output-jobs.toml",
             ["--all-jobs"],
-            "Jobs 'server' (output: {models}) and 'admin' (output: {models}) have overlapping output paths\n",
+            "Jobs 'schemas' (output: {models}) and 'server' (output: {models}) have overlapping output paths\n",
+        ),
+        (
+            "pyproject-differing-models-jobs.toml",
+            ["--all-jobs"],
+            (
+                "Error: could not publish batch output: {shared}: Jobs that share a models output must generate the"
+                " same models\n"
+            ),
         ),
     ],
-    ids=["watch", "json", "diagnostics-json", "model-job-server-option", "later-job-fails", "overlap", "shared-models"],
+    ids=[
+        "watch",
+        "json",
+        "diagnostics-json",
+        "model-job-server-option",
+        "later-job-fails",
+        "overlap",
+        "model-job-shares-output",
+        "differing-models",
+    ],
 )
 def test_fastapi_cli_jobs(
     pyproject: str,
@@ -884,7 +943,8 @@ def test_fastapi_cli_jobs(
 ) -> None:
     """Refuse what a server job cannot honor, and publish nothing of a batch whose later job fails.
 
-    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs.
+    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs. Only
+    server jobs can share a models output, which they must generate identically.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
@@ -894,7 +954,10 @@ def test_fastapi_cli_jobs(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=stderr.format(
-            root=root / "server" / "schemas.py", server=root / "server", models=root / "models.py"
+            root=root / "server" / "schemas.py",
+            server=root / "server",
+            models=root / "models.py",
+            shared=(Path.cwd() / "models.py").as_posix(),
         ),
     )
     assert_output(

@@ -19,7 +19,7 @@ from datamodel_code_generator._api_types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator import _publication
@@ -243,6 +243,11 @@ def publish_batch(entries: Sequence[BatchEntry]) -> None:
     _publish_batch_at(entries)
 
 
+def _destination(target: Path) -> Path:
+    """Return the concrete file a target path names, through the links of its directory."""
+    return target.parent.resolve(strict=False) / target.name
+
+
 def _base(path: Path) -> Path:
     while not path.is_dir():
         path = path.parent
@@ -274,7 +279,7 @@ class _Batch:
     def entry(self, artifact: GeneratedArtifact, target: Path, lock: RemoteReferenceLock | None) -> BatchEntry:
         from datamodel_code_generator._publication import StagedFile  # ruff: ignore[import-outside-top-level]
 
-        resolved = target.parent.resolve(strict=False) / target.name
+        resolved = _destination(target)
         file = StagedFile(None, target, resolved, self.anchor(base := _base(resolved.parent)))
         match artifact.action, artifact.content:
             case "write", _ if lock is not None and isinstance(staged := lock.stage(self.staging(base)), StagedFile):
@@ -297,21 +302,19 @@ def _record(artifact: GeneratedArtifact, digest: str, size: int) -> ArtifactReco
 
 def _entries(
     batch: _Batch,
-    project: GeneratedProject,
+    artifacts: Sequence[GeneratedArtifact],
     observed: Mapping[Path, Observed],
     cwd: Path,
     lock: RemoteReferenceLock | None,
 ) -> list[BatchEntry]:
-    """Stage every change of a project, then recheck all its planned files."""
+    """Stage every change among the planned artifacts, then recheck all their files."""
     entries = [
         batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
-        for artifact in project.artifacts
+        for artifact in artifacts
         if artifact.action != "unchanged"
     ]
     if changed := [
-        artifact
-        for artifact in project.artifacts
-        if observe_file(location := cwd / artifact.path) != observed[location]
+        artifact for artifact in artifacts if observe_file(location := cwd / artifact.path) != observed[location]
     ]:
         raise APIGenerationError(
             tuple(
@@ -329,13 +332,39 @@ def _entries(
     return entries
 
 
+def _unshared(target: PlannedTarget, models: dict[Path, GeneratedArtifact]) -> Iterator[GeneratedArtifact]:
+    """Yield the artifacts of a target that no earlier target plans.
+
+    Targets that share a models output plan each of its files once, and must plan the same content for it.
+    """
+    for artifact in target.project.artifacts:
+        planned = (
+            models.setdefault(_destination(target.cwd / artifact.path), artifact)
+            if artifact.kind == "model"
+            else artifact
+        )
+        if planned is artifact:
+            yield artifact
+        elif planned.sha256 != artifact.sha256:
+            raise APIGenerationError((
+                Diagnostic(
+                    code="E_PATH_COLLISION",
+                    severity="error",
+                    stage="publication",
+                    message="Jobs that share a models output must generate the same models",
+                    artifact_path=artifact.path.as_posix(),
+                ),
+            ))
+
+
 def publish_planned(files: Iterable[StagedFile], targets: Sequence[PlannedTarget]) -> None:
     """Publish staged files and the changes of planned targets through one reversible journal."""
     with ExitStack() as stack:
         batch = _Batch(stack)
         entries = [BatchEntry("write", file) for file in files]
+        models: dict[Path, GeneratedArtifact] = {}
         for target in targets:
-            entries.extend(_entries(batch, target.project, target.observed, target.cwd, None))
+            entries.extend(_entries(batch, tuple(_unshared(target, models)), target.observed, target.cwd, None))
         publish_batch(entries)
 
 
@@ -349,7 +378,7 @@ def publish_project(
     """Stage every change, recheck all planned files, then publish one reversible journal."""
     with ExitStack() as stack:
         try:
-            publish_batch(_entries(_Batch(stack), project, observed, cwd, lock))
+            publish_batch(_entries(_Batch(stack), project.artifacts, observed, cwd, lock))
         except BaseException:
             if lock is not None:
                 with suppress(OSError):

@@ -58,8 +58,8 @@ def run_target(  # noqa: PLR0913, PLR0917
     """Generate or check the selected target from the finalized CLI config, reporting every diagnostic.
 
     A model setting the target needs but the config lacks is refused like a model option conflict, before the run. A
-    batch job appends the planned target to `batch` instead of publishing it, and its models record into the batch's
-    remote `lock`.
+    batch job appends the planned target to the targets its `batch` has planned instead of publishing it, and its
+    models record into the batch's remote `lock`.
     """
     from datamodel_code_generator._api_generation import model_requirement  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
@@ -124,7 +124,8 @@ def _run(  # noqa: PLR0913, PLR0917
             print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
         return _DIFF if changes else _OK
     if batch is not None:
-        planned = plan_target(source, model_config=effective, config=target, generator=generator)
+        timestamp = next((earlier.timestamp for earlier, _ in batch if earlier.timestamp is not None), None)
+        planned = plan_target(source, model_config=effective, config=target, generator=generator, timestamp=timestamp)
         report.extend(planned.project.diagnostics)
         batch.append((planned, _next_step(target, planned.project.dependencies, form)))
         return _OK

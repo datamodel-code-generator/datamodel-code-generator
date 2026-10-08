@@ -121,9 +121,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "--server-package and --server-model-package name their import paths, and the other --server-* options "
             "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
             "pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diagnostics-json "
-            "writes the "
-            "target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add "
-            "command or requirements lines. It needs Python 3.11 or later, both to run and as "
+            "writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a "
+            "uv add command or requirements lines. It needs Python 3.11 or later, both to run and as "
             "--target-python-version."
         ),
     ),

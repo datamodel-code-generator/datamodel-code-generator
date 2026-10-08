@@ -357,7 +357,7 @@ transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
 
 A job whose settings select `generate-server` also generates the FastAPI server
-package; see [Batch jobs](../fastapi-server.md#batch-jobs).
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
 
 ---
 
