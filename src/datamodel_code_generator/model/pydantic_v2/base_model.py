@@ -824,7 +824,11 @@ class DataModelField(_PydanticBaseDataModelField):
             ):
                 data["serialization_alias"] = serialization_alias
 
-        if self.serialization_alias is not None and (self.serialization_alias != self.name or has_alias):
+        if self.serialization_alias is not None and (
+            self.serialization_alias != self.name
+            or has_alias
+            or self._alias_generator_renames(self.serialization_alias)
+        ):
             data["serialization_alias"] = self.serialization_alias
 
         if self.use_serialization_alias and "alias" in data:
