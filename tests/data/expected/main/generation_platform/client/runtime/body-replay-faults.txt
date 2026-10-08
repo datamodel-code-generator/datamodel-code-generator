@@ -31,3 +31,4 @@
   cancelled while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
   cancelled twice while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
   cancelled while a path read fails: CancelledError notes ['Secondary cleanup failure: OSError'] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
+  cancelled while two paths are closed: CancelledError closed=[True, True] events=['close entered', 'cancelled done=False closed=[False, False]', 'closed', 'closed']

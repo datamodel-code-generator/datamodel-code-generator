@@ -211,9 +211,10 @@ class BinarySource:
                 return error
         return None
 
-    async def aclose(self) -> OSError | None:
-        """Close an SDK-opened path in a thread and return its failure."""
-        return await in_thread(self.close) if self._owned else None
+    @property
+    def owned(self) -> bool:
+        """Report whether this call opened the file from a path and has yet to close it."""
+        return self._owned
 
 
 class BinaryContent:

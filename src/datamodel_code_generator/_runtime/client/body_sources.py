@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
 from .errors import DecodeError
+from .logical import in_thread
 from .multipart import AsyncMultipartAttempt, MultipartAttempt, MultipartSource, is_file_part, is_multipart
 
 if TYPE_CHECKING:
@@ -62,9 +63,10 @@ class BodyBindings:
         return [failure for _, source in entries.values() if (failure := source.close()) is not None]
 
     async def aclose(self) -> list[OSError]:
-        """Close every file this call opened from a path, each in a thread, and return the failures."""
-        entries, self._entries = self._entries, {}
-        return [failure for _, source in entries.values() if (failure := await source.aclose()) is not None]
+        """Close every file this call opened from a path in one thread call, and return the failures."""
+        if any(source.owned for _, source in self._entries.values()):
+            return await in_thread(self.close)
+        return self.close()
 
 
 def capture_body(body: object) -> BodyBindings | None:
@@ -123,7 +125,7 @@ class BodySource:
         return self._bindings.close()
 
     async def aclose(self) -> list[OSError]:
-        """Close every file this call opened from a path, each in a thread, and return the failures."""
+        """Close every file this call opened from a path in one thread call, and return the failures."""
         return await self._bindings.aclose()
 
 
