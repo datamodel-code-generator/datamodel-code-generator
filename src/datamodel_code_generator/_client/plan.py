@@ -896,13 +896,14 @@ class Planner:
 
 def _default(wire: WirePlan, use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
+    if argument is None or use is None or use.schema is None:
+        return None
     present = (
         tuple(member for member in argument.members if not isinstance(member, NoneType))
         if isinstance(argument, UnionType)
         else (argument,)
     )
-    scalar = static_scalar(present[0]) if len(present) == 1 else None
-    if not isinstance(scalar, BuiltinType) or use is None or use.schema is None:
+    if len(present) != 1 or not isinstance(scalar := static_scalar(present[0]), BuiltinType):
         return None
     literal = wire.default(use.schema)
     return literal if literal is not None and literal.kind in _DEFAULTS.get(scalar.name, ()) else None
