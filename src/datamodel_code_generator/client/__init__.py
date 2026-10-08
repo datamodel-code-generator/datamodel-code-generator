@@ -23,11 +23,9 @@ from datamodel_code_generator._client.config import (
 )
 from datamodel_code_generator.api_types import (
     APIGenerationError,
-    ArtifactRecord,
     Diagnostic,
     GeneratedArtifact,
     GeneratedProject,
-    GenerationReport,
     OperationRef,
     PublicationRollbackError,
     SchemaRef,
@@ -92,14 +90,12 @@ _LAZY: Final = {
 }
 
 
-def generate_client(
-    input_: GenerationInput, *, model_config: GenerateConfig, config: ClientGenerationConfig
-) -> GenerationReport:
+def generate_client(input_: GenerationInput, *, model_config: GenerateConfig, config: ClientGenerationConfig) -> None:
     """Generate the models and the client package once, then publish every change together."""
     from datamodel_code_generator._api_generation import generate_target  # noqa: PLC0415
     from datamodel_code_generator._client.target import ClientTarget  # noqa: PLC0415
 
-    return generate_target(input_, model_config=model_config, config=config, generator=ClientTarget())
+    generate_target(input_, model_config=model_config, config=config, generator=ClientTarget())
 
 
 def render_client(
@@ -122,7 +118,6 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [  # noqa: PLE0604
     "APIGenerationError",
-    "ArtifactRecord",
     "BodyFieldName",
     "ClientGenerationConfig",
     "ClientOperationConfig",
@@ -130,7 +125,6 @@ __all__ = [  # noqa: PLE0604
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationInput",
-    "GenerationReport",
     "IdempotencyMetadata",
     "OperationRef",
     "ParameterName",

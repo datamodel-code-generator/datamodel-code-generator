@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import shutil
+import warnings
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
@@ -40,6 +41,18 @@ if TYPE_CHECKING:
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
+_DEFERRED_MODULES = (
+    "datamodel_code_generator._api_generation",
+    "datamodel_code_generator._client.target",
+    "datamodel_code_generator.json_config",
+)
+_PUBLIC_NAMES_PROBE = (
+    "import json, sys\n"
+    "import datamodel_code_generator.client as client\n"
+    "for name in client.__all__:\n"
+    "    getattr(client, name)\n"
+    "print(json.dumps([name for name in sys.argv[1:] if name in sys.modules]))\n"
+)
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
@@ -361,14 +374,18 @@ def client_api_report(root: Path) -> str:
     """Resolve the entry points' annotations, then render, generate twice, and generate over an edited owned file.
 
     The helpers are a JSON object whose documents resolve against the working directory, and the helper records
-    load from the public module on first use.
+    load from the public module on first use: a fresh interpreter that reads every public name imports neither the
+    JSON option schemas nor the generation modules.
     """
+    import subprocess
+    import sys
+
     import datamodel_code_generator.client as client_api
     from datamodel_code_generator._client import protocols
 
     hints = {"input_": client_api.GenerationInput, "model_config": GenerateConfig, "config": ClientGenerationConfig}
     functions = (
-        (client_api.generate_client, client_api.GenerationReport),
+        (client_api.generate_client, type(None)),
         (client_api.render_client, client_api.GeneratedProject),
     )
     lines = [
@@ -376,6 +393,10 @@ def client_api_report(root: Path) -> str:
         for function, result in functions
     ]
     lines.append(f"records {client_api.PaginationHelper is protocols.PaginationHelper}")
+    probe = subprocess.run(
+        [sys.executable, "-c", _PUBLIC_NAMES_PROBE, *_DEFERRED_MODULES], capture_output=True, text=True, check=True
+    )
+    lines.append(f"reading every public name imports {json.loads(probe.stdout)} of {list(_DEFERRED_MODULES)}")
     try:
         client_api.Missing  # noqa: B018
     except AttributeError as error:
@@ -389,11 +410,20 @@ def client_api_report(root: Path) -> str:
         project = client_api.render_client(source, model_config=model, config=config)
         lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
         for _ in range(2):
-            report = client_api.generate_client(source, model_config=model, config=config)
-            lines.append(f"generate wrote {len(report.written_files)} and kept {len(report.unchanged_files)}")
-        (root / PACKAGE / "_client.py").write_text("# edited\n", encoding="utf-8")
-        report = client_api.generate_client(source, model_config=model, config=config)
-    lines.append(f"generate rewrote {[item.path.relative_to(root).as_posix() for item in report.written_files]}")
+            result = client_api.generate_client(source, model_config=model, config=config)
+            files = sorted(
+                path.relative_to(root).as_posix()
+                for path in root.rglob("*")
+                if path.is_file() and "_runtime" not in path.parts
+            )
+            lines.append(f"generate returned {result}; files {files}")
+        original = (owned := root / PACKAGE / "_client.py").read_bytes()
+        owned.write_text("# edited\n", encoding="utf-8")
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            result = client_api.generate_client(source, model_config=model, config=config)
+    lines.append(f"generate returned {result}; edited file restored {owned.read_bytes() == original}")
+    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
     return "\n".join(lines) + "\n"
 
 

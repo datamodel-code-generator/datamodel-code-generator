@@ -121,7 +121,7 @@ from pathlib import Path
 from datamodel_code_generator import GenerateConfig, OpenAPIScope
 from datamodel_code_generator.client import ClientGenerationConfig, generate_client
 
-report = generate_client(
+generate_client(
     Path("openapi.yaml"),
     model_config=GenerateConfig(
         output=Path("models.py"),
@@ -133,8 +133,8 @@ report = generate_client(
 )
 ```
 
-`generate_client` publishes every change together and returns a `GenerationReport`; `render_client` returns the
-`GeneratedProject` without writing it. The records `ClientGenerationConfig` takes, such as `ClientOperationConfig`,
+`generate_client` publishes every change together and returns `None`, like model generation; `render_client` returns
+the `GeneratedProject` without writing it. The records `ClientGenerationConfig` takes, such as `ClientOperationConfig`,
 `ResourceName`, and `RuntimeOperationMetadata`, and the helper records of a `ProtocolConfiguration`, are imported
 from `datamodel_code_generator.client`.
 
