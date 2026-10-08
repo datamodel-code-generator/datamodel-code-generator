@@ -330,6 +330,7 @@ class FinalModelSymbol:
     is_alias: bool
     nullable: bool
     facts: BackendModelFacts | None
+    values: tuple[LiteralScalar | None, ...] = ()
 
 
 BindingReason: TypeAlias = Literal[

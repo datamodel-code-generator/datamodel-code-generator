@@ -79,4 +79,4 @@ render msgspec.Struct
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.18']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.21.1']
