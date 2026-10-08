@@ -10,6 +10,7 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
+  write target server/errors.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
@@ -17,16 +18,17 @@ render
   11 runtime modules ['write']
 {
   "files": {
-    "README.md": "sha256:e4dcbc8a20d5c5015901b75678b0149fc73bc6897078cc0ea97e86dfd00b8531",
-    "__init__.py": "sha256:bde7b8b408d093d5c1ce0f9b2553c3a74987c63b7c773a204cf7c4b5711d8638",
+    "README.md": "sha256:02005908e8d8d305f86cb783023d5bac79e5d1497812d1e986b222cd83697b75",
+    "__init__.py": "sha256:6394557a01505f5bbaadae275680fc2dd45da82641f9e03838bfde926077fe20",
     "_generated/__init__.py": "sha256:a792d5739e3676bad9222272582e0d6ea9471f05a146f4aaedbb53569ebb3ad4",
-    "_generated/contract.py": "sha256:57c4d0cd9b52325302ee5fe316c1c9836c692fb805d51478b74fa42f8fb535e2",
-    "application.py": "sha256:07f607bf23bcf83370ff7d55160e2da1a9cdf73f1b67441fd022874b58a14df7",
+    "_generated/contract.py": "sha256:3afd360ccd8392c533c2fba4bbecffa612b670724b3f8ad00358aafa3b07da40",
+    "application.py": "sha256:8d24bc5a201e8eece73a88a2e7b4c0813f2e474fd1fd130b9a4ab83ee5948632",
+    "errors.py": "sha256:1d233d3874a47379092ea61d70974917b64dc0c40ad979772d1e0290b493e512",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:7e21a48efe05e35b4aff391273607d83c005e455bbc593a444778aaf50e6c334",
-    "routers/pets.py": "sha256:d0264633b6307291730aca5c95a8b66e44bca8cab5e41a72bdaba05704967a06",
-    "routers/store.py": "sha256:d22e17b7dafa8e670382a2e62c143eff21b9410d3070f614854fffcd0cf19dd8",
-    "routers/untagged.py": "sha256:a9d0d456a1e6d967f39ffd3161be5120f8fed9c45b9f974f739cd2c27ff150dc",
+    "routers/pets.py": "sha256:c9be448049557fd299842bda8bc54394d8a19bff632bc53c06810b0e041f0463",
+    "routers/store.py": "sha256:5e60db0f82e035bfda1512ecef43a33a7a96bafe49a5cec8f1bfdb9622507e6d",
+    "routers/untagged.py": "sha256:610138f06dae616f908143fa2f28ba32dd980199ae758e98599dea50a750f265",
     "services.py": "sha256:ab17ecfccf66f9c6b0aa322afa44e425cfbc537baffe878e0b8148dd3ae17dc7"
   },
   "format": 1,
@@ -55,6 +57,7 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)

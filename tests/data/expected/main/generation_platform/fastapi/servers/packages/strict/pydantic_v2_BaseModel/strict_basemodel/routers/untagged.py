@@ -10,7 +10,6 @@ import pydantic
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
 from pydantic import StringConstraints
-from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -28,16 +27,12 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
 
     def get_values(
         *,
-        name: Annotated[pydantic.StrictStr | SkipJsonSchema[None], Query(
-            alias='name',
-        )] = None,
-        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | SkipJsonSchema[None], Query(
+        name: Annotated[pydantic.StrictStr | None, Query(alias='name')] = None,
+        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(
             alias='label',
         )] = None,
-        names: Annotated[list[pydantic.StrictStr] | SkipJsonSchema[None], Query(
-            alias='names',
-        )] = None,
-        x_tag: Annotated[pydantic.StrictStr | SkipJsonSchema[None], Header(
+        names: Annotated[list[pydantic.StrictStr] | None, Query(alias='names')] = None,
+        x_tag: Annotated[pydantic.StrictStr | None, Header(
             alias='X-Tag',
             convert_underscores=False,
         )] = None,

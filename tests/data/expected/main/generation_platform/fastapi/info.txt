@@ -75,6 +75,7 @@ render pydantic_v2.BaseModel
     | ## Served OpenAPI document
     |
     | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
     | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
     | ## Validation

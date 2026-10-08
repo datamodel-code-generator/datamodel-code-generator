@@ -12,7 +12,6 @@ import pydantic
 from fastapi import APIRouter, Body, Depends, Header, Path, Query, params
 from fastapi.responses import Response
 from pydantic import Field
-from pydantic.json_schema import SkipJsonSchema
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -34,17 +33,15 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
             alias='limit',
             description='Page size.',
         )] = 20,
-        tags: Annotated[list[str] | SkipJsonSchema[None], Query(alias='tags')] = None,
-        kind: Annotated[pets_basemodel_models.FieldPetsGetQueryKindParameter | SkipJsonSchema[None], Query(
+        tags: Annotated[list[str] | None, Query(alias='tags')] = None,
+        kind: Annotated[pets_basemodel_models.FieldPetsGetQueryKindParameter | None, Query(
             alias='kind',
         )] = None,
-        x_request_id: Annotated[uuid.UUID | SkipJsonSchema[None], Header(
+        x_request_id: Annotated[uuid.UUID | None, Header(
             alias='X-Request-Id',
             convert_underscores=False,
         )] = None,
-        since: Annotated[pydantic.AwareDatetime | SkipJsonSchema[None], Query(
-            alias='since',
-        )] = None,
+        since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
         parameters: Annotated[contract.ListPets.Parameters, Depends(contract.ListPets.PARAMETERS)],
     ) -> object:
         return dispatch(

@@ -761,7 +761,7 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
         keywords.append("convert_underscores=False")
     keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
     if field.default is Default.ABSENT:
-        parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
+        parts: tuple[str, ...] = (_none(module.annotation(field.type), field.type),)
         default = " = None"
     else:
         base, metadata = module.types.parts(field.type)
@@ -781,17 +781,15 @@ def _nullable(value: FinalPythonType | None) -> bool:
     return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
 
 
-def _none(module: Module, text: str, value: FinalPythonType | None) -> str:
-    """Return a runtime annotation that also takes None, which stays out of the served schema of a non-nullable type."""
-    if _nullable(value):
-        return text
-    return f"{text} | {module.name('pydantic.json_schema', 'SkipJsonSchema')}[None]"
+def _none(text: str, value: FinalPythonType | None) -> str:
+    """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
+    return text if _nullable(value) else f"{text} | None"
 
 
 def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
     value = None if media.use is None else media.use.type
     text = module.name("typing", "Any") if value is None else module.annotation(value)
-    return text if required else _none(module, text, value)
+    return text if required else _none(text, value)
 
 
 def _adapter(module: Module, value: FinalPythonType) -> str:

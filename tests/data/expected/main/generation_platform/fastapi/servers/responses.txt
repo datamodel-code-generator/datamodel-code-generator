@@ -10,7 +10,7 @@ app standard
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -37,7 +37,7 @@ app plain
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -58,7 +58,7 @@ app included
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -82,7 +82,7 @@ app standard
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -109,7 +109,7 @@ app plain
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -130,7 +130,7 @@ app included
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode", "str-enum[FieldGreetingsGetQueryModeParameter]"]}, {"type": "none_required", "loc": ["query", "mode", "none"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
