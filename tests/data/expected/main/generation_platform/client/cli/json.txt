@@ -1,0 +1,71 @@
+$ datamodel-codegen --generate-client httpx2 --output-format json
+kind generation; output <root>/models.py
+file client/__init__.py; matches published True
+file client/_async_client.py; matches published True
+file client/_client.py; matches published True
+file client/_generated/__init__.py; matches published True
+file client/_generated/model_bindings.py; matches published True
+file client/_generated_docs/README.md; matches published True
+file client/_generated_docs/runtime.md; matches published True
+file client/_operations.py; matches published True
+file client/auth.py; matches published True
+file client/bodies.py; matches published True
+file client/errors.py; matches published True
+file client/hooks.py; matches published True
+file client/model_codecs.py; matches published True
+file client/options.py; matches published True
+file client/protocols/__init__.py; matches published True
+file client/py.typed; matches published True
+file client/resources/__init__.py; matches published True
+file client/resources/pets/__init__.py; matches published True
+file client/resources/pets/_async.py; matches published True
+file client/resources/pets/_sync.py; matches published True
+file client/responses.py; matches published True
+file client/types/__init__.py; matches published True
+file client/types/pets/__init__.py; matches published True
+file client/types/pets/_operations.py; matches published True
+file models.py; matches published True
+runtime files match published True
+$ datamodel-codegen --all-jobs --output-format json
+job server
+kind generation; output <root>/models.py
+file models.py; matches published True
+file server/README.md; matches published True
+file server/__init__.py; matches published True
+file server/_generated/__init__.py; matches published True
+file server/_generated/contract.py; matches published True
+file server/application.py; matches published True
+file server/errors.py; matches published True
+file server/py.typed; matches published True
+file server/routers/__init__.py; matches published True
+file server/routers/pets.py; matches published True
+file server/services.py; matches published True
+runtime files match published True
+job client
+kind generation; output <root>/models.py
+file client/__init__.py; matches published True
+file client/_async_client.py; matches published True
+file client/_client.py; matches published True
+file client/_generated/__init__.py; matches published True
+file client/_generated/model_bindings.py; matches published True
+file client/_generated_docs/README.md; matches published True
+file client/_generated_docs/runtime.md; matches published True
+file client/_operations.py; matches published True
+file client/auth.py; matches published True
+file client/bodies.py; matches published True
+file client/errors.py; matches published True
+file client/hooks.py; matches published True
+file client/model_codecs.py; matches published True
+file client/options.py; matches published True
+file client/protocols/__init__.py; matches published True
+file client/py.typed; matches published True
+file client/resources/__init__.py; matches published True
+file client/resources/pets/__init__.py; matches published True
+file client/resources/pets/_async.py; matches published True
+file client/resources/pets/_sync.py; matches published True
+file client/responses.py; matches published True
+file client/types/__init__.py; matches published True
+file client/types/pets/__init__.py; matches published True
+file client/types/pets/_operations.py; matches published True
+file models.py; matches published True
+runtime files match published True
