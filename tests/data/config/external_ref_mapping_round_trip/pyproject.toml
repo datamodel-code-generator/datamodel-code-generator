@@ -1,0 +1,6 @@
+[tool.datamodel-codegen]
+disable-timestamp = true
+input = "api.yaml"
+input-file-type = "openapi"
+output-model-type = "pydantic_v2.BaseModel"
+external-ref-mapping = { "schema=v2.yaml" = "mypackage.shared.models" }
