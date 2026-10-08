@@ -242,7 +242,6 @@ DISABLED = ProtocolConfiguration(
 )
 
 INVALID = ProtocolConfiguration(
-    schema_version=2,  # ty: ignore[invalid-argument-type]
     helpers={
         1: PaginationHelper(  # ty: ignore[invalid-argument-type]
             operation=USERS, items=DATA, item_schema=USER, continuation=LinkContinuation(header="Link")

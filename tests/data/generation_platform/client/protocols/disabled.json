@@ -1,0 +1,219 @@
+{
+  "users.all": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User", "document": "../helpers.yaml"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "value"
+    },
+    "bindings": [
+      {
+        "target": {"in": "header", "name": "snapshot"},
+        "value": {"source": "initial", "selector": {"from": "header", "name": "Snapshot", "occurrence": "all"}}
+      }
+    ]
+  },
+  "users.offsets": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": {"pointer": "/paths/~1users/get"},
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"page_items_count": true},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  },
+  "users.pages": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": {"pointer": "/paths/~1users/get", "document": "../helpers.yaml"},
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "total": {"from": "body", "pointer": "/total"}
+    }
+  },
+  "users.follow": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "next_url",
+      "read": {"from": "body", "pointer": "/next_url"},
+      "end": [{"kind": "missing"}, {"kind": "value", "value": ""}],
+      "repeat_request_body": true
+    }
+  },
+  "users.linked": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"},
+    "bindings": [{"target": {"in": "query", "name": "page"}, "value": {"literal": 1}}]
+  },
+  "users.search": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users~1search/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "status"},
+      "write": {"in": "body", "pointer": "/cursor"},
+      "end": [{"kind": "value", "value": 204}],
+      "empty_string": "end"
+    }
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "enabled": false,
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued", "running"],
+    "succeeded": ["done"],
+    "failed": ["failed"],
+    "cancelled": ["cancelled"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": ""},
+      "schema": {"pointer": "/components/schemas/Job"}
+    },
+    "interval": {"seconds": 2, "retry_after_header": "Retry-After"},
+    "remote_cancel": {
+      "operation": "/paths/~1jobs~1{jobId}/delete",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "jobId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    },
+    "immediate_result": {
+      "statuses": [200, 201],
+      "selector": {"from": "body", "pointer": ""},
+      "schema": {"pointer": "/components/schemas/Job"}
+    },
+    "expires_at": {"from": "body", "pointer": "/expires"}
+  },
+  "jobs.fetch": {
+    "kind": "polling",
+    "enabled": false,
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "previous", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "status"},
+    "pending": [202, 1.5, {"phase": [true, null]}],
+    "succeeded": [200],
+    "result": {
+      "kind": "operation",
+      "operation": "/paths/~1jobs~1{jobId}~1result/get",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "jobId"},
+          "value": {"source": "input", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    }
+  },
+  "jobs.fire": {
+    "kind": "polling",
+    "enabled": false,
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202, 204],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [],
+    "state": {"from": "header", "name": "X-State"},
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "events.watch": {
+    "kind": "sse",
+    "enabled": false,
+    "operation": "/paths/~1events/get",
+    "media": "Text/Event-Stream",
+    "event_schema": {
+      "discriminator": {"from": "event_type"},
+      "mapping": {
+        "created": {"pointer": "/components/schemas/UserEvent"},
+        "deleted": {"pointer": "/components/schemas/UserEvent"}
+      }
+    },
+    "completion": {"kind": "event_type", "value": "done"},
+    "unknown": "raw",
+    "error_events": {"error": {"pointer": "/components/schemas/StreamError"}},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once",
+      "reconnect_on": ["transport_interruption", "incomplete_eof"]
+    }
+  },
+  "records.watch": {
+    "kind": "ndjson",
+    "enabled": false,
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {"pointer": "/components/schemas/Record", "document": "../helpers-external.yaml"},
+    "completion": {"kind": "sentinel", "value": "[DONE]"},
+    "final_line": "allow_eof",
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/id"},
+      "write": {"in": "query", "name": "after"},
+      "reopen_operation": "/paths/~1records/get",
+      "delivery": "at_least_once",
+      "missing": "inherit",
+      "null": "clear",
+      "expires_at": {"from": "header", "name": "X-Expires"}
+    }
+  },
+  "records.typed": {
+    "kind": "ndjson",
+    "enabled": false,
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/type"},
+      "mapping": {"record": {"pointer": "/components/schemas/Record", "document": "../helpers-external.yaml"}}
+    },
+    "completion": {"kind": "eof"},
+    "final_line": "require_newline",
+    "resume": {}
+  }
+}

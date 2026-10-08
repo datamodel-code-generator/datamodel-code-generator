@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from io import TextIOBase
@@ -16,6 +17,7 @@ from datamodel_code_generator.validators import ValidatorsConfig, format_validat
 
 DEFAULT_ENCODING = "utf-8"
 JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
+_JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
 JsonConfigFieldName: TypeAlias = Literal[
@@ -190,7 +192,7 @@ def json_config_json_schema() -> str:
     })
 
 
-def _invalid_json_message(option_name: str, error: json.JSONDecodeError, load_error_name: str | None) -> str:
+def _invalid_json_message(option_name: str, error: object, load_error_name: str | None) -> str:
     if load_error_name:
         return f"Unable to load {load_error_name}: {error}"
     if option_name:
@@ -217,15 +219,43 @@ def _read_json_or_inline(value: str) -> str:
         raise JsonConfigError(msg) from e
 
 
-def _loads_json(value: str, *, option_name: str, load_error_name: str | None) -> Any:
+def _nests_deeper(value: str, max_depth: int) -> bool:
+    """Return whether JSON text opens more than max_depth arrays and objects at once, skipping strings."""
+    depth = 0
+    for match in _JSON_STRING_OR_BRACKET.finditer(value):
+        match match.group():
+            case "[" | "{":
+                depth += 1
+                if depth > max_depth:
+                    return True
+            case "]" | "}":
+                depth -= 1
+            case _:
+                pass
+    return False
+
+
+def _loads_json(value: str, *, option_name: str, load_error_name: str | None, max_depth: int | None = None) -> Any:
+    """Parse JSON text, reporting text the parser refuses, or nests deeper than max_depth, with one fixed message."""
+    if max_depth is not None and _nests_deeper(value, max_depth):
+        msg = _invalid_json_message(option_name, f"nests collections deeper than {max_depth} levels", load_error_name)
+        raise JsonConfigError(msg)
     try:
         return json.loads(value)
     except json.JSONDecodeError as e:
         msg = _invalid_json_message(option_name, e, load_error_name)
         raise JsonConfigError(msg) from e
+    except RecursionError as e:
+        msg = _invalid_json_message(option_name, "nests too deeply to parse", load_error_name)
+        raise JsonConfigError(msg) from e
+    except ValueError as e:
+        msg = _invalid_json_message(option_name, "has an integer with too many digits", load_error_name)
+        raise JsonConfigError(msg) from e
 
 
-def _load_json_source(value: JsonConfigSource, *, option_name: str, load_error_name: str | None = None) -> Any:
+def _load_json_source(
+    value: JsonConfigSource, *, option_name: str, load_error_name: str | None = None, max_depth: int | None = None
+) -> Any:
     match value:
         case None | dict():
             return value
@@ -233,7 +263,8 @@ def _load_json_source(value: JsonConfigSource, *, option_name: str, load_error_n
             with data:
                 return _loads_json(data.read(), option_name=option_name, load_error_name=load_error_name)
 
-    return _loads_json(_read_json_or_inline(str(value)), option_name=option_name, load_error_name=load_error_name)
+    text = _read_json_or_inline(str(value))
+    return _loads_json(text, option_name=option_name, load_error_name=load_error_name, max_depth=max_depth)
 
 
 def _to_defaultdict(value: Any) -> Any:
@@ -377,9 +408,14 @@ def load_json_config_field(
     return None if raw is None else spec.validate(raw)
 
 
-def validate_json_value_or_file(value: str, *, option_name: str = "") -> dict[str, object]:
-    """Parse and validate a JSON object or JSON file path for argparse-compatible callers."""
-    raw = _load_json_source(value, option_name=option_name)
+def validate_json_value_or_file(
+    value: str, *, option_name: str = "", max_depth: int | None = None
+) -> dict[str, object]:
+    """Parse and validate a JSON object or JSON file path for argparse-compatible callers.
+
+    With max_depth, text that opens more arrays and objects at once is refused before parsing.
+    """
+    raw = _load_json_source(value, option_name=option_name, max_depth=max_depth)
     if not isinstance(raw, dict):
         msg = f"Expected a JSON object, got {type(raw).__name__}"
         raise JsonConfigError(msg)
