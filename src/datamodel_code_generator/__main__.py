@@ -2905,12 +2905,19 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 
     if config.check and config.output is not None and generate_output is not None:
-        comparison = _compare_generated_outputs(
-            generate_output,
-            config.output,
-            config.encoding,
-            OutputComparisonOptions(is_directory_output=is_directory_output),
-        )
+        try:
+            comparison = _compare_generated_outputs(
+                generate_output,
+                config.output,
+                config.encoding,
+                OutputComparisonOptions(is_directory_output=is_directory_output),
+            )
+        except UnicodeDecodeError as e:
+            print(  # noqa: T201
+                f"Unable to decode output {config.output.as_posix()} using encoding {config.encoding!r}: {e}",
+                file=sys.stderr,
+            )
+            return cleanup_and_return(Exit.ERROR)
         _write_comparison_output(comparison, namespace.output_format)
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 

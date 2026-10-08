@@ -3117,6 +3117,47 @@ def test_check_directory_ignores_pycache(output_dir: Path) -> None:
     )
 
 
+def test_check_file_undecodable(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check reports an existing file the configured encoding cannot decode."""
+    output_file.write_bytes(b"\xff\n")
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            f"Unable to decode output {output_file.as_posix()} using encoding 'utf-8': "
+            "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n"
+        ),
+    )
+
+
+def test_check_directory_file_undecodable(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check reports an output directory with a file the configured encoding cannot decode."""
+    input_path = OPEN_API_DATA_PATH / "modular.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp"],
+    )
+    (output_dir / "foo" / "bar.py").write_bytes(b"\xff\n")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            f"Unable to decode output {output_dir.as_posix()} using encoding 'utf-8': "
+            "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n"
+        ),
+    )
+
+
 def test_check_with_invalid_class_name(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --check cleans up temp directory when InvalidClassNameError occurs."""
     invalid_schema = tmp_path / "invalid.json"
