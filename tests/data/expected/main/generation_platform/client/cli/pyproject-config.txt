@@ -1,0 +1,15 @@
+[tool.datamodel-codegen]
+client-body-arguments = "both"
+client-default-base-url = "https://api.example.com/v1"
+client-model-package = "models"
+client-operations = "{\"/paths/~1pets/get\": {\"name\": \"list_all\"}}"
+client-output = "client"
+client-package = "client"
+client-protocols = "protocols.json"
+client-resource-names = "{\"pets\": \"animals\"}"
+client-server-base-url = "https://api.example.com/"
+client-signature-style = "unpack"
+generate-client = "httpx2"
+input = "options.yaml"
+output = "models.py"
+

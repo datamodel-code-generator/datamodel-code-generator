@@ -38,6 +38,10 @@ UNSUPPORTED = (
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
 )
 CONFLICT = "Error: --generate-server cannot be used with"
+DOCUMENT_BASE = (
+    "A relative document of an operation reference resolves against the JSON file that holds the reference, or\n"
+    "without a file against the working directory, and against the pyproject.toml directory for a table."
+)
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
@@ -387,9 +391,10 @@ def test_fastapi_cli_precedence(
 def test_fastapi_cli_pyproject_paths(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Resolve pyproject.toml paths, JSON files and operation documents against its directory.
+    """Resolve pyproject.toml paths and JSON files, and the operation documents of its tables, against its directory.
 
-    Command-line paths and JSON files resolve against the working directory.
+    Command-line paths and JSON files resolve against the working directory. The operation documents that a JSON
+    file names resolve against the file's directory.
     """
     project, work = tmp_path / "project", tmp_path / "project" / "work"
     work.mkdir(parents=True)
@@ -408,6 +413,39 @@ def test_fastapi_cli_pyproject_paths(
         "".join(f"# in {path.parent.parent.relative_to(tmp_path).as_posix()}\n{_methods(path)}" for path in services),
         EXPECTED / "cli" / "pyproject-paths.txt",
     )
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "arguments"),
+    [
+        (
+            [],
+            [
+                *("--input", "../api/pets.yaml", "--input-file-type", "openapi", "--output", "../models.py"),
+                *_server("--server-handler-modes", "../api/modes.json", output="../server"),
+            ],
+        ),
+        (["pyproject-json-files.toml"], []),
+    ],
+    ids=["option", "pyproject"],
+)
+def test_fastapi_cli_json_file_documents(
+    pyproject: list[str],
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve the documents that the operation references of a JSON file name against the file's directory."""
+    project, work = tmp_path / "project", tmp_path / "project" / "work"
+    work.mkdir(parents=True)
+    shutil.copytree(CLI / "json-files", project / "api")
+    shutil.copy2(SOURCE / "pets.yaml", project / "api" / "pets.yaml")
+    for name in pyproject:
+        shutil.copy2(CLI / name, project / "pyproject.toml")
+    monkeypatch.chdir(work)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
 
 
 def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
@@ -1347,13 +1385,25 @@ def test_fastapi_cli_pyproject_json_error(
                 *("--server-body-modes", '{"other.yaml#/paths/~1pets/post": "request"}'),
             ],
         ),
+        (
+            "file-documents",
+            [
+                *("--server-handler-modes", "api/modes.json", "--server-body-modes", "api/body-modes.json"),
+                *("--server-operation-names", "api/names.json", "--server-parameter-names", "api/parameters.json"),
+                *("--server-primary-responses", "api/responses.json"),
+            ],
+        ),
     ],
 )
 def test_fastapi_cli_setting_errors(
     name: str, arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report every server setting the server cannot use, before any file is written."""
+    """Report every server setting the server cannot use, before any file is written.
+
+    An entry of a JSON file names the file its document resolved to: the file's sibling, not the input next to it.
+    """
     monkeypatch.chdir(tmp_path)
+    shutil.copytree(CLI / "json-files", tmp_path / "api")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -1363,7 +1413,10 @@ def test_fastapi_cli_setting_errors(
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+    assert_output(
+        capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
+        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
+    )
 
 
 @pytest.mark.parametrize(
@@ -1476,12 +1529,13 @@ methods. `--server-handler-modes` overrides it for single operations.""",
             id="server-handler-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-handler-modes"],
-                option_description="""Set the handler mode of single operations (experimental).
+                option_description=f"""Set the handler mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
-pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.""",
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`.
+{DOCUMENT_BASE} In pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole
+table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
                 golden_output=f"{DOC_OUTPUT}/handler-modes/services.py",
@@ -1526,10 +1580,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             id="server-body-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-body-modes"],
-                option_description="""Set the body mode of single operations (experimental).
+                option_description=f"""Set the body mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
-`--server-body-mode` for those operations.""",
+`--server-body-mode` for those operations. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
                 golden_output=f"{DOC_OUTPUT}/body-modes/services.py",
@@ -1542,11 +1596,11 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
             id="server-primary-responses",
             marks=pytest.mark.cli_doc(
                 options=["--server-primary-responses"],
-                option_description="""Choose the response a bare return value of an operation takes (experimental).
+                option_description=f"""Choose the response a bare return value of an operation takes (experimental).
 
 The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
 response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses.""",
+primary response from the declared success responses. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
                 golden_output=f"{DOC_OUTPUT}/primary-responses/pets.py",
@@ -1559,10 +1613,10 @@ primary response from the declared success responses.""",
             id="server-operation-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-operation-names"],
-                option_description="""Name the service methods of single operations (experimental).
+                option_description=f"""Name the service methods of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to method names. Other operations take the
-snake_case form of their operationId, or of their method and path.""",
+snake_case form of their operationId, or of their method and path. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
                 golden_output=f"{DOC_OUTPUT}/operation-names/services.py",
@@ -1591,10 +1645,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             id="server-parameter-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-parameter-names"],
-                option_description="""Name the method arguments of single operations (experimental).
+                option_description=f"""Name the method arguments of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
-location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.""",
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[
                     *DOC_OPTIONS,
