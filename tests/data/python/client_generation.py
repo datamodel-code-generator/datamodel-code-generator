@@ -8,6 +8,7 @@ import re
 import shutil
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
+from functools import partial
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -35,7 +36,7 @@ from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
     from datamodel_code_generator._api_types import GeneratedProject
@@ -160,6 +161,25 @@ def publication_client(case: dict[str, Any], root: Path, backend: str) -> Genera
                 "package": "publication_client",
                 "model_package": "publication_client_models",
                 **case.get("config", {}),
+            },
+            root,
+        ),
+        generator=ClientTarget(),
+    )
+
+
+def client_render_call(source: Path, root: Path, package: str, backend: str) -> Callable[[], GeneratedProject]:
+    """Prepare a client render with configuration construction outside benchmark timing."""
+    return partial(
+        render_target,
+        source,
+        model_config=model_config(root / f"{package}_models.py", backend, {}),
+        config=client_config(
+            {
+                "output": package,
+                "package": package,
+                "model_package": f"{package}_models",
+                "server_base_url": "https://benchmark.invalid",
             },
             root,
         ),

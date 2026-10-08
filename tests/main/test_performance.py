@@ -45,7 +45,9 @@ from datamodel_code_generator.types import DataType
 from tests.main.conftest import _generated_model
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator, Iterator
+
+    from pytest_benchmark.fixture import BenchmarkFixture
 
 PERFORMANCE_DATA_PATH: Path = Path(__file__).parent.parent / "data" / "performance"
 EXPECTED_STARTUP_MEASUREMENT_CASES = {
@@ -58,6 +60,11 @@ EXPECTED_STARTUP_MEASUREMENT_CASES = {
     "cli-schema-generation",
     "cli-schema-structured-output",
 }
+
+
+@pytest.fixture
+def auto_freeze_time() -> None:
+    """Keep benchmark clocks advancing instead of inheriting the model tests' frozen wall clock."""
 
 
 @pytest.fixture(scope="module")
@@ -1102,6 +1109,43 @@ def test_perf_openapi_large_pydantic_v2_builtin(tmp_path: Path) -> None:
     )
     content = output_file.read_text()
     assert content.count("class Entity") >= 300
+
+
+@pytest.fixture(params=["client", "fastapi"])
+def target_render(request: pytest.FixtureRequest, tmp_path: Path, target_size: str) -> Callable[[], Any]:
+    """Prepare source and target configurations before benchmark timing."""
+    from tests.data.python.target_performance import target_render_call
+
+    return target_render_call(request.param, target_size, tmp_path)
+
+
+@pytest.fixture(params=["small", "large"])
+def target_size(request: pytest.FixtureRequest) -> str:
+    """Select representative small and large OpenAPI inputs."""
+    return request.param
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
+def test_perf_target_render(benchmark: BenchmarkFixture, target_render: Callable[[], Any]) -> None:
+    """Measure client and FastAPI model/package rendering without configuration or fixture setup."""
+    benchmark(target_render)
+
+
+@pytest.fixture(params=["sync", "async"])
+def client_calls(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Callable[[], Any]]:
+    """Generate and import the shipped runtime, and prepare clients before timing their public calls."""
+    from tests.data.python.target_performance import generated_client_calls
+
+    with generated_client_calls(tmp_path) as calls:
+        yield calls[request.param]
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
+def test_perf_client_calls(benchmark: BenchmarkFixture, client_calls: Callable[[], Any]) -> None:
+    """Measure JSON request encoding and typed response decoding in 200 sync or async public calls."""
+    benchmark(client_calls)
 
 
 @pytest.mark.perf
