@@ -1,0 +1,4 @@
+$ datamodel-codegen --client-operations {"/paths/~1pets/post": {"name": "add"}}
+# client/resources/pets/_sync.py
+list_pets(limit, cursor, response_media_type, options)
+add(body, name, tag, media_type, response_media_type, options)

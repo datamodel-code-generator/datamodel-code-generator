@@ -124,13 +124,21 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     return frozenset(dotted)
 
 
+def _parameter_key(location: str, name: str) -> tuple[str, str]:
+    """Return what a target naming a parameter writes, a header by its case-insensitive name.
+
+    A querystring's targets point into it instead, so its key is no target's.
+    """
+    return (location, name.lower() if location == "header" else name)
+
+
 def _target_key(target: Mapping[str, Any]) -> tuple[str, ...]:
     """Return what a request target writes, a header by its case-insensitive name."""
     if (location := target["in"]) == "body":
         return (location, target["pointer"])
     if location == "querystring":
         return (location, target["name"], target["pointer"])
-    return (location, target["name"].lower() if location == "header" else target["name"])
+    return _parameter_key(location, target["name"])
 
 
 def _overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
@@ -485,11 +493,7 @@ class _Pages:
         else:
             key = _target_key(target)
             place = f"the {where} parameter {target['name']!r} of {label}"
-            uses = [
-                item.use
-                for item in spec.parameters
-                if _target_key({"in": item.location, "name": item.wire_name}) == key
-            ]
+            uses = [item.use for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key]
         schemas: list[_Types] = []
         for use in uses:
             location = None if use is None or use.schema is None else self.declared(use.schema, pointer)
