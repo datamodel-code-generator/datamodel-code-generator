@@ -22,6 +22,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     encode_json,
     media_kind,
     normalize_media_type,
+    plain,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
     EncodedParameterContribution,
@@ -213,7 +214,7 @@ def _raw_parameters(plan: ParameterPlan, contribution: EncodedParameterContribut
 def _round_trip(plan: ParameterPlan, value: object) -> str:
     contribution = encode_parameter(plan, value)
     decoded = decode_parameters([plan], _raw_parameters(plan, contribution))[plan.location, plan.name]
-    return f"{_http(contribution)} => {encode_json(decoded).decode()}"
+    return f"{_http(contribution)} => {encode_json(plain(decoded)).decode()}"
 
 
 def parameter_encoding_report(path: Path) -> str:
@@ -267,7 +268,7 @@ def _fixture_raw(data: Mapping[str, object]) -> RawParameters:
 
 
 def _decoded(value: object) -> str:
-    return "UNSET" if value is UNSET else encode_json(value).decode()
+    return "UNSET" if value is UNSET else encode_json(plain(value)).decode()
 
 
 def parameter_decoding_report(path: Path) -> str:

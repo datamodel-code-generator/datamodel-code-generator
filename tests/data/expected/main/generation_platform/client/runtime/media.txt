@@ -139,7 +139,7 @@ secret
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid = FieldFormsPostResponse(name=None, count='many')
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_value') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_value
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
   form repeated undeclared member = FieldFormsPostResponse(name='known', count=None)
