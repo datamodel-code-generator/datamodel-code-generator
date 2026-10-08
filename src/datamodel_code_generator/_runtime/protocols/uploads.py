@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
-from ..client.bodies import AsyncBodyFactory, BodyFactory
 from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
@@ -50,7 +49,7 @@ from .sources import UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import Callable
     from datetime import datetime
     from types import TracebackType
 
@@ -348,69 +347,6 @@ def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> i
     if (limit := limits.max_parts) is not None and -(-size // chunk) > limit:
         raise _invalid(plan, ("upload_options", "max_parts"))
     return chunk
-
-
-class _Slices:
-    """One attempt of an append's body: the unconfirmed part of a chunk's buffer, sent in read-buffer slices."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    @property
-    def content_length(self) -> int:
-        """Return the number of body bytes."""
-        return len(self._view)
-
-    @property
-    def content_type(self) -> None:
-        """Name no media type; the operation's request media names it."""
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        """Yield the body in slices of at most one read buffer."""
-        view = self._view
-        for start in range(0, len(view), _READ):
-            yield bytes(view[start : start + _READ])
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the body in slices of at most one read buffer."""
-        for data in self.iter_bytes():
-            yield data
-
-    def close(self) -> None:
-        """Hold nothing to release."""
-
-    async def aclose(self) -> None:
-        """Hold nothing to release."""
-
-
-class _Factory:
-    """Build a new attempt of the same unconfirmed bytes for each send of an append."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    def __call__(self, context: object, /) -> _Slices:
-        """Return a new attempt of the bytes."""
-        del context
-        return _Slices(self._view)
-
-
-class _AsyncFactory:
-    """Build a new asyncio attempt of the same unconfirmed bytes for each send of an append."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    async def __call__(self, context: object, /) -> _Slices:
-        """Return a new attempt of the bytes."""
-        del context
-        return _Slices(self._view)
 
 
 class _Upload(Generic[T]):
@@ -885,7 +821,7 @@ class UploadHandle(_Upload[T]):
         buffer, end = self._buffer()
         while self._confirmed < end:
             unconfirmed = buffer[self._confirmed - start :]
-            payload = BodyFactory(_Factory(unconfirmed), content_length=len(unconfirmed))
+            payload = bytes(unconfirmed)
             self._sending(end)
             try:
                 self._core.execute_page(
@@ -1059,7 +995,7 @@ class AsyncUploadHandle(_Upload[T]):
         buffer, end = self._buffer()
         while self._confirmed < end:
             unconfirmed = buffer[self._confirmed - start :]
-            payload = AsyncBodyFactory(_AsyncFactory(unconfirmed), content_length=len(unconfirmed))
+            payload = bytes(unconfirmed)
             self._sending(end)
             try:
                 await self._core.execute_page(

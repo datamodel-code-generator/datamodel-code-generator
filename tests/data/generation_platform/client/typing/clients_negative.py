@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
@@ -83,13 +83,12 @@ async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdP
 async def misuse_bodies(
     client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter
 ) -> None:
-    from pets.bodies import AsyncFileBody, BodyFactory, FileBody, StreamBody
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"a"
 
-    client.pets.photos.upload(pet_id=photo, body=AsyncFileBody(file))  # error
-    await aclient.pets.photos.upload(pet_id=photo, body=FileBody(file))  # error
-    StreamBody(["text"])  # error
-    FileBody(file, ownership="shared")  # error
-    BodyFactory(lambda: b"")  # error
+    client.pets.photos.upload(pet_id=photo, body=chunks())  # error
+    client.pets.photos.upload(pet_id=photo, body="file.bin")  # error
+    await aclient.pets.photos.upload(pet_id=photo, body=["text"])  # error
 
 
 def misuse_multipart(
@@ -98,10 +97,10 @@ def misuse_multipart(
     pet: FieldPetsPetIdFilesPostPathPetIdParameter,
     files: FieldPetsPetIdFilesGetPathPetIdParameter,
 ) -> None:
-    from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
+    from pets.bodies import AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
     from pets.model_codecs import JSONValue
 
-    MultipartBody[str]((FilePart("f", AsyncFileBody(file)),))  # error
+    MultipartBody[str]((FilePart("f", ["text"]),))  # error
     client.request_raw("POST", "https://example.com/forms", body=AsyncMultipartBody[JSONValue](()))  # error
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error

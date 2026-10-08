@@ -3189,39 +3189,26 @@ Immutable bytes and JSON encoding results are retained and reused without rerunn
 The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
 fixes its boundary once per logical call and can replay only if every part can replay.
 
-`FileBody(file)` records the current offset at call entry and seeks back there for each attempt when possible.
-Borrowed files stay open and their final position is not restored. Concurrent reads of one borrowed file by different
-calls are rejected. `FileBody.from_path(path)` and `AsyncFileBody.from_path(path)` reopen for each attempt and compare
-device, inode, size, and modification time; identical stat data does not guarantee identical bytes. The caller must
-keep input immutable. Explicit async file adapters own one worker with at most one disk chunk in flight; their
-caller closes them when borrowed. File and multipart reads use chunks of at most 64 KiB.
+Pass binary files, `Path` objects and iterables of bytes directly; async calls also accept async iterables.
+Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
+Paths are opened lazily and closed by the call. Consumed nonseekable inputs cannot replay and are never buffered or
+spooled implicitly. Multipart can replay when every file part can. File reads use chunks of at most 64 KiB, including
+conventional binary files passed to async calls.
 
 ```python
 from pathlib import Path
 
 from pets import Client
-from pets.bodies import FileBody
 from pets.options import RequestOptions, RetryOptions
 
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
-    response = client.request_raw(
-        "PUT", url, body=FileBody.from_path(path), options=RequestOptions(retry=RetryOptions(max_retries=2))
-    )
+    response = client.request_raw("PUT", url, body=path, options=RequestOptions(retry=RetryOptions(max_retries=2)))
     return response.read()
 ```
 
-`StreamBody` and `AsyncStreamBody` are one-shot. After consumption they cannot replay, and the SDK does not buffer or
-spool them to create replayability. Owned iterators are closed; borrowed iterators remain caller-owned.
-
-`BodyFactory` and `AsyncBodyFactory` must return a fresh `BodyAttempt` or `AsyncBodyAttempt` with the same payload for
-every invocation. Each returned attempt is SDK-owned and closes on success, failure, or interruption. A factory is
-responsible for freshness across all calls: the detection ledger covers a logical call and an immediate cross-call
-guard, rather than indefinite object history. Length/fingerprint/stat checks detect available evidence of changes
-without buffering the whole payload; a detected change raises a request `DecodeError` with the reason `body_changed`
-and the `location` `("body",)`. A factory callback failure raises `SDKError` with the reason `body_factory_failed` and
-the callback exception as `cause`, and does not retry. A body that cannot be sent again raises a request `DecodeError`
-with the reason `body_not_replayable`, or `body_in_use` while another call is reading it.
+Public body factories, attempt protocols and contexts, declared body digests, freshness ledgers and explicit ownership
+adapters are removed. Callers manage the lifetime and concurrent use of their own files and iterables.
 
 ## Redirects and transport construction
 
@@ -3425,9 +3412,9 @@ auth_challenge_less_401 = true
 
 ### Sign the finalized request
 
-Signers declare their allowed origins, managed header/query names, and whether they require a SHA-256 body digest.
+Signers declare their allowed origins and managed header/query names.
 They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
-hook and send. `SigningInput.query` is the exact raw query bytes; its headers and body digest describe that hop's
+hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe that hop's
 unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
 callbacks or sends; arbitrary signer exceptions raise `AuthError` with the reason `signing_failed` and do not retry.
 
@@ -3439,14 +3426,13 @@ from pets.auth import AuthConfig, SignatureFields, SignerCapabilities, SigningIn
 from pets.options import RequestOptions
 
 
-class PayloadSigner:
+class RequestSigner:
     def __init__(self, key: bytes, origin: str) -> None:
         self._key = key
         self._capabilities = SignerCapabilities(
             allowed_origins=(origin,),
-            managed_headers=("X-Payload-Signature",),
+            managed_headers=("X-Request-Signature",),
             managed_query=(),
-            requires_body_digest=True,
         )
 
     @property
@@ -3454,29 +3440,21 @@ class PayloadSigner:
         return self._capabilities
 
     def sign(self, request: SigningInput) -> SignatureFields:
-        assert request.body_digest is not None
-        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8") + b"\n" + request.body_digest
+        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8")
         signature = hmac.digest(self._key, message, "sha256").hex()
-        return SignatureFields(headers=(("X-Payload-Signature", signature),), query=())
+        return SignatureFields(headers=(("X-Request-Signature", signature),), query=())
 
 
 def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> bytes:
-    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(PayloadSigner(key, origin),))
+    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(RequestSigner(key, origin),))
     view = client.with_options(RequestOptions(auth=auth))
     return view.auth.signed_body(body=payload)
 ```
 
-This example defines its own canonical input; a service's signature protocol must define the same bytes. Signatures
-are rebuilt for every attempt and redirect hop. Unsigned calls do not hash bodies or invoke signer/provider callbacks.
-Hashing bytes, files, or complete seekable multipart input costs time proportional to payload size and consumes the
-call deadline. Seekable sources are restored to their original position after hashing, and reads remain chunked.
-
-`BodyFactory(..., sha256=digest)` and `AsyncBodyFactory(..., sha256=digest)` accept an optional 32-byte declaration for
-the exact whole payload. A digest-declaring factory is not read to compute the digest; its declaration and replay
-identity remain the application's obligations. A one-shot stream or digest-less factory cannot satisfy a signer
-that requires a digest and fails before sending, without implicit spooling. A file-part factory's digest is not the
-multipart payload's digest: factory-containing multipart is rejected for digest-required signing, while it remains
-supported without such a signer. No multipart digest field is added.
+This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
+are rebuilt for every attempt and redirect hop. Unsigned calls do not invoke signer/provider callbacks.
+`SignerCapabilities.requires_body_digest` and `SigningInput.body_digest` are removed; the SDK does not pre-read or
+hash binary inputs for signing.
 
 Credential values, signing inputs, and returned signature values are omitted from their representations and from
 hook events. A credential or signature placed in the query is part of the request URL, which HTTPX2 logs at INFO level

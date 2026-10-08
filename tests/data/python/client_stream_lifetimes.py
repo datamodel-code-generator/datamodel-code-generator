@@ -116,24 +116,6 @@ class _Opening:
         return file
 
 
-class _Gate:
-    """Hold the disk thread inside an operation until the scenario lets it go."""
-
-    def __init__(self) -> None:
-        self.entered = threading.Event()
-        self.released = threading.Event()
-
-    def hold(self) -> None:
-        self.entered.set()
-        self.released.wait(5)
-
-    async def reached(self) -> None:
-        for _ in range(500):
-            if self.entered.is_set():
-                return
-            await asyncio.sleep(0.01)
-
-
 def _denied(path: Path, *, missing_ok: bool = False) -> None:
     raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
@@ -523,46 +505,32 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
+@pytest.mark.abnormal_path(
+    "Portable external file-opening and unlink failures exercise cancellation cleanup."
+)
 async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
-    """Stop downloads while or right after the disk thread creates their file, and keep nothing it created."""
+    """Cancel after conventional file creation and report an abnormal unlink failure."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"
-    loop, downloads = asyncio.get_running_loop(), []
-    opening = _Opening(lambda: loop.call_soon_threadsafe(downloads[0].cancel, "cancelled once opened"))
-    exchange.respond(_body())
-    async with streaming.request_raw("GET", _URL) as response:
-        with pytest.MonkeyPatch.context() as fault:
-            fault.setattr(os, "fdopen", opening)
-            downloads.append(asyncio.create_task(response.stream_to(target)))
-            try:
-                failed = await aoutcome(lambda: downloads[0])
-            except asyncio.CancelledError as error:
-                failed = f"CancelledError {error.args}"
-    closed = [file.closed for file in opening.opened]
-    lines.append(f"  async cancelled once opened {failed} closed {closed} {_files(directory)}")
-    for label in ("cancelled while opening", "removal denied", "read while opening"):
-        gate = _Gate()
+    loop = asyncio.get_running_loop()
+    for label in ("cancelled once opened", "removal denied"):
+        downloads: list[asyncio.Task[None]] = []
+        opening = _Opening(lambda: loop.call_soon(downloads[0].cancel, "cancelled once opened"))
         exchange.respond(_body())
         async with streaming.request_raw("GET", _URL) as response:
             with pytest.MonkeyPatch.context() as fault:
-                fault.setattr(os, "fdopen", _Opening(gate.hold))
+                fault.setattr(os, "fdopen", opening)
                 if label == "removal denied":
                     fault.setattr(Path, "unlink", _denied)
-                task = asyncio.create_task(response.stream_to(target))
-                await gate.reached()
-                chunks = response.iter_bytes() if label == "read while opening" else None
-                if chunks is None:
-                    task.cancel()
-                gate.released.set()
+                downloads.append(asyncio.create_task(response.stream_to(target)))
                 try:
-                    result = await aoutcome(lambda: task)
+                    result = await aoutcome(lambda: downloads[0])
                 except asyncio.CancelledError as error:
-                    result = f"CancelledError notes {error.__dict__.get('__notes__', [])}"
-                left = [path.name.endswith(".part") for path in directory.iterdir()]
-            if chunks is not None:
-                result += f" then read {await _drained(chunks)}"
+                    result = f"CancelledError {error.args} notes {error.__dict__.get('__notes__', [])}"
+                left = sum(path.name.endswith(".part") for path in directory.iterdir())
         for path in directory.glob("*.part"):
             path.unlink()
-        lines.append(f"  async {label} {result} partial files {left.count(True)}")
+        closed = [file.closed for file in opening.opened]
+        lines.append(f"  async {label} {result} closed {closed} partial files {left}")
 
 
 async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:

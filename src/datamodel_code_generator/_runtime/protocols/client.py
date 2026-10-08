@@ -452,7 +452,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
                         tuple(sorted(capabilities.allowed_origins)),
                         tuple(sorted(capabilities.managed_headers)),
                         tuple(sorted(capabilities.managed_query)),
-                        capabilities.requires_body_digest,
                     )
                     for capabilities in (signer.capabilities for signer in bound.signers)
                 ),

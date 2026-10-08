@@ -337,7 +337,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `grants.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `oauth.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `refresh.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `errors.py`, `events.py`, `grants.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `oauth.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `refresh.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
 - `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `errors.py`, `links.py`, `options.py`, `origins.py`, `pagination.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `values.py`, `websocket_types.py`, `writes.py`
 
@@ -406,16 +406,11 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
-their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
-check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
-One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
-
-`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
-The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
-ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
-changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
-resources remain caller-owned; close explicitly created async file adapters to release their worker.
+Pass binary files, `Path` objects, iterables of bytes, or (for async calls) async iterables directly.
+Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
+The SDK opens and closes paths for the call. Consumed nonseekable inputs cannot replay and are never buffered or
+spooled implicitly. Multipart can replay when all its file parts can. Body factories, attempt protocols, digest
+metadata, freshness ledgers and explicit ownership adapters are removed.
 
 ## Redirects and transport construction
 
@@ -482,14 +477,11 @@ Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration
 retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
-final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
-hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
-reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
-signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
-seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
-implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
+sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
+`signing_failed` preserves callback failures without transport retry. Signer body digests and digest declarations
+are removed.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting

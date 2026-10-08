@@ -1,86 +1,11 @@
 # media pydantic_v2.BaseModel
-  file preparation SDKError cause=True secondary=True closes=1 sends=0
-  factory metadata SDKError cause=True secondary=['OSError'] closes=1 sends=0
-  unsupported seek = b'ok'
-    wire=[('PUT', b'/', b'streamed')] pending=0
-  unsupported tell = b'ok'
-    wire=[('PUT', b'/', b'streamed')] pending=0
-  past EOF replays empty = b'ok'
-    wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
-    offset=2 closes=0
-  partial capture SDKError secondary=['OSError', 'OSError'] closes=(1, 1)
-  changed length DecodeError secondary=['SDKError'] closes=(1, 1)
-  changed fingerprint ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    sends=1 closes=[1, 1]
-  SDK metadata error SDKError cause=True callbacks=1 closes=1 sends=0
-  partial open SDKError secondary=['SDKError'] closes=1 sends=0
-  changed parts = b'ok'
-    closes=(1, 1) sends=1
-  changed parts failed DecodeError secondary=['OSError']
-    closes=(1, 1) sends=0
-  native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: SDKError',)
-  native partial attempt cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: SDKError',)
-  native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
-  native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
-  native metadata cleanup identity=True closes=1 sends=0
-  file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    sends=1 borrowed_open=True
-  file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('replay seek failed')] body_factory_failed
-    sends=1 borrowed_open=True
-  owned stream without close = b'ok'
-    wire=[('PUT', b'/', b'tuple')] pending=0
-  Declared getter failure ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError('factory declaration failed')] body_factory_failed
-    callbacks=0 closes=[] sends=0
-  Changed getter failure ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError('factory fingerprint failed')] body_factory_failed
-    callbacks=1 closes=[1] sends=0
-  direct file preparation SDKError identity=False cause=True
-    claim released payload=b'body'
-  direct file preparation _Stopped identity=True cause=False
-    claim released payload=b'body'
-  direct closed file ! DecodeError: DecodeError(reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-  direct owned stream payload=b'one-shot' begins=1 closes=1
-  direct media type getter ! SDKError: SDKError(reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError('attempt media type failed')] body_factory_failed
-    closes=1
-  SDK file rewind SDKError cause=True failed_calls=1 closes=1 sends=0
-  SDK file capture SDKError cause=True failed_calls=1 closes=1 sends=0
-  direct SDK file metadata SDKError cause=True reason=body_factory_failed failed_calls=1
-  nested owned file failed_close=False repeated=False SDKError inner=SDKError closed=True closes=1 secondary=False sends=0
-  nested owned file failed_close=False repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
-  nested owned file failed_close=True repeated=False SDKError inner=SDKError closed=True closes=1 secondary=True sends=0
-  nested owned file failed_close=True repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
-  async file preparation SDKError cause=True secondary=True closes=1 sends=0
-  async factory metadata SDKError cause=True secondary=['OSError'] closes=1 sends=0
-  async past EOF replays empty = b'ok'
-    wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
-    offset=2 closes=0
-  async partial capture SDKError secondary=['OSError', 'OSError'] closes=(1, 1)
-  async SDK metadata error SDKError cause=True callbacks=1 closes=1 sends=0
-  direct async metadata SDKError cause=True secondary=[] closes=1
-  direct async metadata SDKError cause=True secondary=['OSError'] closes=1
-  async changed parts = b'ok'
-    closes=(1, 1, 1) sends=1
-  async changed parts failed DecodeError secondary=['OSError']
-    closes=(1, 1, 1) sends=0
-  async native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: SDKError',)
-  async native partial attempt cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: SDKError', 'Secondary cleanup failure: SDKError')
-  async native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
-  async native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
-  async native metadata cleanup identity=True closes=1 sends=0
-  async file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    sends=1 borrowed_open=True
-  async file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('replay seek failed')] body_factory_failed
-    sends=1 borrowed_open=True
-  async owned stream without close = b'ok'
-    sends=1 payload=b'iterable'
-  direct async file preparation SDKError identity=False cause=True secondary=True closes=1
-  direct async file preparation _Stopped identity=True cause=False secondary=False closes=1
-  direct stopped worker ! DecodeError: DecodeError(reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-  direct async owned stream payload=b'one-shot' begins=1 closes=1
-  async SDK file rewind SDKError cause=True failed_calls=1 closes=1 sends=0
-  async SDK file capture SDKError cause=True failed_calls=1 closes=1 sends=0
-  native length cleanup cancelled closes=1 finished=0 sends=1 failure=CancelledError cancel_requested=True
-    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: DecodeError',) secondary=[]
-  native metadata cleanup cancelled closes=1 finished=0 sends=0 failure=CancelledError cancel_requested=True
-    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) secondary=[]
-  native multipart cleanup cancelled closes=1 finished=0 sends=0 failure=CancelledError cancel_requested=True
-    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) secondary=[]
+  positionless file = b'ok'
+    caller positionless file open=True
+  rewind failure before send ! DecodeError: DecodeError(call_id='<call>', reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
+    rewind failure caller file open=True
+  native file read failure ! APIConnectionError: APIConnectionError(call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=OSError('read failed')] api_connection_error
+    read failure caller file open=True
+  invalid raw binary input ! DecodeError: DecodeError(call_id='<call>', reason='unencodable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
+  async positionless file = b'ok'
+  async rewind failure ! DecodeError: DecodeError(call_id='<call>', reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
+    async failed caller file open=True

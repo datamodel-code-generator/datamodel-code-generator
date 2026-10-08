@@ -7,7 +7,7 @@
   context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 6 were given []
   signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
   signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
-  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',))
   secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
   immutable AccessToken.value unchanged=True
   immutable ApiKeyCredential.value unchanged=True
@@ -16,7 +16,6 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  immutable SignerCapabilities.requires_body_digest unchanged=True
   token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -36,7 +35,7 @@
   capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid digest flag ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='requires_body_digest') [field_path=('requires_body_digest',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
   signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -220,12 +219,12 @@
   hints SignatureFields=('headers', 'query')
   constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
   init hints SignatureFields=('headers', 'query', 'return')
-  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
-  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
-  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
-  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
-  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
-  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index', 'return')
   hints StaticCredentialProvider=()
   constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticCredentialProvider=('material', 'return')
@@ -252,7 +251,7 @@
   context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 6 were given []
   signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
   signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
-  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',))
   secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
   immutable AccessToken.value unchanged=True
   immutable ApiKeyCredential.value unchanged=True
@@ -261,7 +260,6 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  immutable SignerCapabilities.requires_body_digest unchanged=True
   token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -281,7 +279,7 @@
   capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid digest flag ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='requires_body_digest') [field_path=('requires_body_digest',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
   signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -465,12 +463,12 @@
   hints SignatureFields=('headers', 'query')
   constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
   init hints SignatureFields=('headers', 'query', 'return')
-  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
-  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
-  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
-  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
-  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
-  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index', 'return')
   hints StaticCredentialProvider=()
   constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticCredentialProvider=('material', 'return')
@@ -497,7 +495,7 @@
   context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 6 were given []
   signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
   signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
-  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',))
   secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
   immutable AccessToken.value unchanged=True
   immutable ApiKeyCredential.value unchanged=True
@@ -506,7 +504,6 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  immutable SignerCapabilities.requires_body_digest unchanged=True
   token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -526,7 +523,7 @@
   capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid digest flag ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='requires_body_digest') [field_path=('requires_body_digest',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
   signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -710,12 +707,12 @@
   hints SignatureFields=('headers', 'query')
   constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
   init hints SignatureFields=('headers', 'query', 'return')
-  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
-  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
-  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
-  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
-  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
-  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index', 'return')
   hints StaticCredentialProvider=()
   constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticCredentialProvider=('material', 'return')
@@ -742,7 +739,7 @@
   context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 6 were given []
   signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
   signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
-  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',))
   secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
   immutable AccessToken.value unchanged=True
   immutable ApiKeyCredential.value unchanged=True
@@ -751,7 +748,6 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  immutable SignerCapabilities.requires_body_digest unchanged=True
   token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -771,7 +767,7 @@
   capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid digest flag ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='requires_body_digest') [field_path=('requires_body_digest',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
   signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -955,12 +951,12 @@
   hints SignatureFields=('headers', 'query')
   constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
   init hints SignatureFields=('headers', 'query', 'return')
-  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
-  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
-  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
-  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
-  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
-  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index', 'return')
   hints StaticCredentialProvider=()
   constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticCredentialProvider=('material', 'return')
@@ -987,7 +983,7 @@
   context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 6 were given []
   signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
   signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
-  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',))
   secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
   immutable AccessToken.value unchanged=True
   immutable ApiKeyCredential.value unchanged=True
@@ -996,7 +992,6 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  immutable SignerCapabilities.requires_body_digest unchanged=True
   token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -1016,7 +1011,7 @@
   capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid digest flag ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='requires_body_digest') [field_path=('requires_body_digest',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
   signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
@@ -1200,12 +1195,12 @@
   hints SignatureFields=('headers', 'query')
   constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
   init hints SignatureFields=('headers', 'query', 'return')
-  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
-  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
-  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
-  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
-  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
-  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'attempt_index', 'hop_index', 'return')
   hints StaticCredentialProvider=()
   constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticCredentialProvider=('material', 'return')

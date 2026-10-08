@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import httpx2
 
-from tests.data.python.client_body_replay import _Attempt, _Factory
 from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_retry_calls import _Broken, _capture, _error, _Events, _report, _secondary, _Stop
 from tests.data.python.client_runtime import Exchange, arecord, failing, injected, raw_response, record, run
@@ -263,7 +262,6 @@ class _Blocking(httpx2.AsyncBaseTransport):
 
 async def _late_native(package: ModuleType, options: ModuleType, bodies: ModuleType, lines: list[str]) -> None:
     transport = _Blocking()
-    attempt = _Attempt(failure=_Stop("late body cleanup interruption"))
     limiter = _AsyncSemaphoreLimiter()
     async with (
         httpx2.AsyncClient(transport=transport) as native,
@@ -272,7 +270,7 @@ async def _late_native(package: ModuleType, options: ModuleType, bodies: ModuleT
 
         async def request() -> tuple[object, ...]:
             try:
-                await api.retry.post_idempotent(body=bodies.AsyncBodyFactory(_Factory((attempt,)).async_call))
+                await api.retry.post_idempotent(body=b"request")
             except BaseException as error:  # noqa: BLE001
                 return type(error).__name__, error.args, getattr(error, "__notes__", ())
             return ("returned",)
@@ -280,9 +278,9 @@ async def _late_native(package: ModuleType, options: ModuleType, bodies: ModuleT
         caller = asyncio.create_task(request())
         await transport.entered.wait()
         caller.cancel("original caller interruption")
-        await arecord(lines, "send cancellation with a failing body cleanup", lambda: caller)
+        await arecord(lines, "native send cancellation", lambda: caller)
     record(
-        lines, "cancelled send resources released", lambda: (attempt.closes, transport.cancelled, limiter.usage.active)
+        lines, "cancelled send resources released", lambda: (transport.cancelled, limiter.usage.active)
     )
 
 

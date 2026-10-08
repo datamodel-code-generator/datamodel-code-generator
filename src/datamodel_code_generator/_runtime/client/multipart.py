@@ -21,7 +21,7 @@ from ..model_codecs.media import issue, json_value, media_kind, normalize_media_
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
-from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
+from .bodies import AsyncBinaryBody, SyncBinaryBody, is_async_binary_input, is_binary_input
 from .errors import DecodeError, add_secondary
 from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from typing import Any, Protocol
 
     from ..model_codecs.media import JSONValue, LexicalKind
-    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
+    from .bodies import AsyncContent, SyncContent
 
     class PartCodec(Protocol):
         """The codec of a sent member's values, as the generated operation registry binds it."""
@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 
 PartT = TypeVar("PartT")
 T = TypeVar("T")
-InputT = TypeVar("InputT")
 PartT_co = TypeVar("PartT_co", covariant=True)
 T_co = TypeVar("T_co", covariant=True)
 PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
@@ -91,8 +90,6 @@ _MISSING: Final = "A form-data body lacks a required member"
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
-_SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
-_ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
 
 
 class FieldPart(Generic[PartT_co]):
@@ -214,15 +211,13 @@ class AsyncMultipartBody(Generic[PartT]):
 
 
 if TYPE_CHECKING:
-    BodyInput: TypeAlias = bytes | FileBody | StreamBody | BodyFactory | MultipartBody[PartT]
-    AsyncBodyInput: TypeAlias = bytes | AsyncFileBody | AsyncStreamBody | AsyncBodyFactory | AsyncMultipartBody[PartT]
+    BodyInput: TypeAlias = SyncBinaryBody | MultipartBody[PartT]
+    AsyncBodyInput: TypeAlias = AsyncBinaryBody | AsyncMultipartBody[PartT]
 else:
-    BodyInput = TypeAliasType(
-        "BodyInput", "bytes | FileBody | StreamBody | BodyFactory | MultipartBody[PartT]", type_params=(PartT,)
-    )
+    BodyInput = TypeAliasType("BodyInput", "SyncBinaryBody | MultipartBody[PartT]", type_params=(PartT,))
     AsyncBodyInput = TypeAliasType(
         "AsyncBodyInput",
-        "bytes | AsyncFileBody | AsyncStreamBody | AsyncBodyFactory | AsyncMultipartBody[PartT]",
+        "AsyncBinaryBody | AsyncMultipartBody[PartT]",
         type_params=(PartT,),
     )
 
@@ -507,7 +502,7 @@ class MultipartAttempt:
 
     __slots__ = ("_length", "_pieces")
 
-    def __init__(self, pieces: list[bytes | BodyAttempt]) -> None:
+    def __init__(self, pieces: list[bytes | SyncContent]) -> None:
         self._pieces = pieces
         lengths = [len(piece) if isinstance(piece, bytes) else piece.content_length for piece in pieces]
         self._length = None if None in lengths else sum(length for length in lengths if length is not None)
@@ -529,22 +524,13 @@ class MultipartAttempt:
             else:
                 yield from piece.iter_bytes()
 
-    def digest_pieces(self) -> Iterator[bytes | BodyAttempt]:
-        """Visit the frozen wire framing and opened parts without consuming their iterators."""
-        return iter(self._pieces)
-
-    def close(self) -> None:
-        """Close every file part's attempt, preserving native interruption before ordinary failures."""
-        pieces, self._pieces = self._pieces, []
-        close_attempts(pieces)
-
 
 class AsyncMultipartAttempt:
     """One async attempt of a multipart body: the encoded heads and fields, and each file part's own attempt."""
 
     __slots__ = ("_length", "_pieces")
 
-    def __init__(self, pieces: list[bytes | AsyncBodyAttempt]) -> None:
+    def __init__(self, pieces: list[bytes | AsyncContent]) -> None:
         self._pieces = pieces
         lengths = [len(piece) if isinstance(piece, bytes) else piece.content_length for piece in pieces]
         self._length = None if None in lengths else sum(length for length in lengths if length is not None)
@@ -566,29 +552,6 @@ class AsyncMultipartAttempt:
             else:
                 async for chunk in piece.aiter_bytes():
                     yield chunk
-
-    def digest_pieces(self) -> Iterator[bytes | AsyncBodyAttempt]:
-        """Visit this attempt's retained framing and parts before asynchronous upload."""
-        return iter(self._pieces)
-
-    async def aclose(self) -> None:
-        """Close every file part's attempt, preserving native interruption before ordinary failures."""
-        pieces, self._pieces = self._pieces, []
-        await close_async_attempts(pieces)
-
-
-def close_attempts(pieces: list[bytes | BodyAttempt]) -> None:
-    """Close every opened attempt before selecting its group's cleanup failure."""
-    _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
-
-
-async def close_async_attempts(pieces: list[bytes | AsyncBodyAttempt]) -> None:
-    """Close every opened attempt, retaining the first failure and every later one."""
-    raise_cleanup([
-        failure
-        for piece in pieces
-        if not isinstance(piece, bytes) and (failure := await quiet_aclose(piece.aclose)) is not None
-    ])
 
 
 def quiet_close(close: Callable[[], object]) -> BaseException | None:
@@ -613,10 +576,6 @@ def raise_cleanup(failures: list[BaseException]) -> None:
         for failure in failures:
             add_secondary(first, failure)
         raise first
-
-
-def _closed_all(closes: list[Callable[[], object]]) -> None:
-    raise_cleanup([failure for close in closes if (failure := quiet_close(close)) is not None])
 
 
 def _is_field(value: object) -> TypeIs[FieldPart[object]]:
@@ -671,16 +630,17 @@ def _layout(
 
 
 def _inputs(
-    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]], inputs: tuple[type[InputT], ...]
-) -> Iterator[bytes | InputT]:
+    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]], *, asynchronous: bool = False
+) -> Iterator[AsyncBinaryBody]:
     """Yield a body's encoded pieces and each file part's binary input, refusing an input of the other mode."""
     for piece in pieces:
         if isinstance(piece, bytes):
             yield piece
-        elif isinstance(content := piece.content, inputs):
-            yield content
         else:
-            _refused(piece)
+            content = piece.content
+            if not (is_async_binary_input(content) if asynchronous else is_binary_input(content)):
+                _refused(piece)
+            yield content
 
 
 class MultipartSource:
@@ -710,13 +670,13 @@ class MultipartSource:
         """Yield the once-encoded layout and synchronous file inputs for call-level binding."""
         if not _is_sync(self.body):
             raise _malformed(None, TypeError(_MULTIPART), whole=True)
-        return _inputs(self._pieces, _SYNC)
+        return cast("Iterator[SyncBinaryBody]", _inputs(self._pieces))
 
     def ainputs(self) -> Iterator[AsyncBinaryBody]:
         """Yield the once-encoded layout and asynchronous file inputs for call-level binding."""
         if not _is_async(self.body):
             raise _malformed(None, TypeError(_MULTIPART), whole=True)
-        return _inputs(self._pieces, _ASYNC)
+        return _inputs(self._pieces, asynchronous=True)
 
 
 class DecodedPart(Generic[T_co]):

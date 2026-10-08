@@ -66,10 +66,12 @@
 # signed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>, x-signed: yes] gzip b'signed'
-    signed digest of the sent bytes True
     signed framing correct True
   signed bytes = None
-  signed file ! DecodeError: DecodeError(operation_id='putBlob', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='putBlob', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, transfer-encoding: chunked, x-signed: yes] gzip b'file'
+  signed file = None
+    signed caller file open True
 # framing
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'framed'

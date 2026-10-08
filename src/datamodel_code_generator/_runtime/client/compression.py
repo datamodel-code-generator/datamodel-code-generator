@@ -17,8 +17,8 @@ from .coding import CHUNK
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 
-    from .bodies import AsyncBodyAttempt, BodyAttempt, BodyAttemptContext
-    from .body_sources import AsyncBodySource, BodySource
+    from .bodies import AsyncContent, SyncContent
+    from .body_sources import BodySource
 
 _LEVEL: Final = 6
 _WBITS: Final = 16 + zlib.MAX_WBITS
@@ -58,7 +58,7 @@ class _GzipAttempt:
 
     __slots__ = ("_attempt", "content_type")
 
-    def __init__(self, attempt: BodyAttempt) -> None:
+    def __init__(self, attempt: SyncContent) -> None:
         self._attempt = attempt
         self.content_type = attempt.content_type
 
@@ -70,17 +70,13 @@ class _GzipAttempt:
         """Yield the compressed bytes of the attempt."""
         return _gzipped(self._attempt.iter_bytes())
 
-    def close(self) -> None:
-        """Release the uncompressed attempt."""
-        self._attempt.close()
-
 
 class _AsyncGzipAttempt:
     """An asynchronous body attempt whose bytes are compressed as they stream."""
 
     __slots__ = ("_attempt", "content_type")
 
-    def __init__(self, attempt: AsyncBodyAttempt) -> None:
+    def __init__(self, attempt: AsyncContent) -> None:
         self._attempt = attempt
         self.content_type = attempt.content_type
 
@@ -97,55 +93,10 @@ class _AsyncGzipAttempt:
                     yield output
         yield compressor.flush()
 
-    async def aclose(self) -> None:
-        """Release the uncompressed attempt."""
-        await self._attempt.aclose()
+
+def gzipped_source(source: BodySource) -> BodySource:
+    """Apply gzip while retaining the native source's replay and ownership."""
+    return source.encoded(_GzipAttempt, _AsyncGzipAttempt)
 
 
-class GzipSource:
-    """A body source whose attempts are compressed; it replays exactly as the source it wraps."""
-
-    __slots__ = ("_source",)
-
-    def __init__(self, source: BodySource) -> None:
-        """Wrap the call's own source."""
-        self._source = source
-
-    @property
-    def replayable(self) -> bool:
-        """Return whether the wrapped source replays."""
-        return self._source.replayable
-
-    def open(self, context: BodyAttemptContext) -> BodyAttempt:
-        """Open an attempt of the wrapped source, compressed as it streams."""
-        return _GzipAttempt(self._source.open(context))
-
-    def close(self) -> None:
-        """Release the wrapped source."""
-        self._source.close()
-
-
-class AsyncGzipSource:
-    """An asynchronous body source whose attempts are compressed."""
-
-    __slots__ = ("_source",)
-
-    def __init__(self, source: AsyncBodySource) -> None:
-        """Wrap the call's own source."""
-        self._source = source
-
-    @property
-    def replayable(self) -> bool:
-        """Return whether the wrapped source replays."""
-        return self._source.replayable
-
-    async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
-        """Open an attempt of the wrapped source, compressed as it streams."""
-        return _AsyncGzipAttempt(await self._source.aopen(context))
-
-    async def aclose(self) -> None:
-        """Release the wrapped source."""
-        await self._source.aclose()
-
-
-GZIP: Final = RequestCoding("gzip", gzipped_attempt, GzipSource, AsyncGzipSource)
+GZIP: Final = RequestCoding("gzip", gzipped_attempt, gzipped_source, gzipped_source)

@@ -158,7 +158,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] unencodable
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
@@ -438,7 +438,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] unencodable
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''

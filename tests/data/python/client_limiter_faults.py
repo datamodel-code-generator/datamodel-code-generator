@@ -9,12 +9,10 @@ import httpx2
 
 from tests.data.python.client_bodies import _photo
 from tests.data.python.client_limiters import (
-    _AsyncBody,
     _AsyncEvents,
     _AsyncSemaphoreLimiter,
-    _Body,
     _Events,
-    _Factory,
+    _Payload,
     _SemaphoreLimiter,
     _modules,
 )
@@ -108,28 +106,6 @@ def _sent_then_failed(request: httpx2.Request) -> httpx2.Response:
     raise RuntimeError(msg)
 
 
-class _FaultBody(_Body):
-    def close(self) -> None:
-        super().close()
-        raise RuntimeError("Body close failed")
-
-
-class _AsyncFaultBody(_AsyncBody):
-    async def aclose(self) -> None:
-        self.close()
-        raise RuntimeError("Body close failed")
-
-
-class _FaultFactory(_Factory):
-    def open(self, context: object) -> _FaultBody:
-        self._open(context)
-        return _FaultBody(self)
-
-    async def aopen(self, context: object) -> _AsyncFaultBody:
-        self._open(context)
-        return _AsyncFaultBody(self)
-
-
 class _InterruptedStream(httpx2.AsyncByteStream):
     """A response that reports a read failure after its reader is cancelled."""
 
@@ -155,7 +131,6 @@ def limiter_faults(package: ModuleType, lines: list[str]) -> None:
     """Record callback contract failures, preserved primary failures, and owned-resource cleanup."""
     _sync_callbacks(package, lines)
     _sync_response_cleanup(package, lines)
-    _sync_body_cleanup(package, lines)
     run(lambda: _async(package, lines))
 
 
@@ -179,14 +154,14 @@ def _sync_callbacks(package: ModuleType, lines: list[str]) -> None:
             )
         record(lines, "raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id=object()))
         semaphore = _SemaphoreLimiter()
-        factory = _Factory(semaphore.usage)
+        payload = _Payload(semaphore.usage)
         starting, ending = _Events(semaphore.usage, "call_start"), _Events(semaphore.usage, "call_end")
         stopped = options.RequestOptions(total_timeout=0, limiter=semaphore, hooks=(starting, ending))
         lines.append(
-            f"  stopped call with failing hooks: {outcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open), options=stopped))}"
+            f"  stopped call with failing hooks: {outcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=stopped))}"
         )
         lines.append(
-            f"    {semaphore.usage.report} factory={factory.opened}/{factory.closed} "
+            f"    {semaphore.usage.report} payload={payload.opened} "
             f"events={starting.names}/{ending.names} counters={ending.ends} queued={len(exchange.responders)}"
         )
     http.close()
@@ -240,40 +215,9 @@ def _close_failure(error: Exception | None, failure: BaseException | None) -> tu
     )
 
 
-def _sync_body_cleanup(package: ModuleType, lines: list[str]) -> None:
-    options, bodies, _ = _modules(package)
-    limiter = _SemaphoreLimiter()
-    factory = _Factory(limiter.usage)
-    exchange = Exchange(lines)
-    exchange.respond(injected(_sent_then_failed))
-    with (
-        exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
-    ):
-        record(
-            lines,
-            "transport fails after reading the body",
-            lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open)),
-        )
-    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
-    exchange = Exchange(lines)
-    exchange.respond(raw_response(200, _PNG, "image/png"))
-    limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-    factory = _FaultFactory(limiter.usage)
-    with (
-        exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
-    ):
-        lines.append(
-            f"  body and permit close failure: {outcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open)))}"
-        )
-    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
-
-
 async def _async(package: ModuleType, lines: list[str]) -> None:
     await _async_callbacks(package, lines)
     await _async_response_cleanup(package, lines)
-    await _async_body_cleanup(package, lines)
     await _native_priority(package, lines)
 
 
@@ -299,16 +243,16 @@ async def _async_callbacks(package: ModuleType, lines: list[str]) -> None:
             lines, "async raw preparation before limiter", lambda: api.pets.with_raw_response.get_pet(pet_id=object())
         )
         semaphore = _AsyncSemaphoreLimiter()
-        factory = _Factory(semaphore.usage)
+        payload = _Payload(semaphore.usage)
         starting, ending = _Events(semaphore.usage, "call_start"), _Events(semaphore.usage, "call_end")
         stopped = options.RequestOptions(
             total_timeout=0, limiter=semaphore, hooks=(_AsyncEvents(starting), _AsyncEvents(ending))
         )
         lines.append(
-            f"  async stopped call with failing hooks: {await aoutcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen), options=stopped))}"
+            f"  async stopped call with failing hooks: {await aoutcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=stopped))}"
         )
         lines.append(
-            f"    {semaphore.usage.report} factory={factory.opened}/{factory.closed} "
+            f"    {semaphore.usage.report} payload={payload.opened} "
             f"events={starting.names}/{ending.names} counters={ending.ends} queued={len(exchange.responders)}"
         )
     await http.aclose()
@@ -328,36 +272,6 @@ async def _async_response_cleanup(package: ModuleType, lines: list[str]) -> None
             observed = _close_failure(await _araised(lambda api=api: api.pets.get_pet(pet_id=pet)), failure)
         record(lines, f"async response close failure with permit failure={failure is not None}", lambda: observed)
         lines.append(f"    closes={stream.closes} {limiter.usage.report}")
-
-
-async def _async_body_cleanup(package: ModuleType, lines: list[str]) -> None:
-    options, bodies, _ = _modules(package)
-    limiter = _AsyncSemaphoreLimiter()
-    factory = _Factory(limiter.usage)
-    exchange = Exchange(lines)
-    exchange.respond(injected(_sent_then_failed))
-    async with (
-        exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
-    ):
-        await arecord(
-            lines,
-            "async transport fails after reading the body",
-            lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen)),
-        )
-    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
-    exchange = Exchange(lines)
-    exchange.respond(raw_response(200, _PNG, "image/png"))
-    limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-    factory = _FaultFactory(limiter.usage)
-    async with (
-        exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
-    ):
-        lines.append(
-            f"  async body and permit close failure: {await aoutcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen)))}"
-        )
-    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
 
 
 async def _native_priority(package: ModuleType, lines: list[str]) -> None:

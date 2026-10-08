@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..model_codecs.media import JSONValue
-    from .disk import DiskWorker
     from .events import CallEvents
     from .logical import LogicalCallContext
     from .operations import ResponseDecoder
@@ -166,14 +165,13 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
 class _Download:
     """One temporary download whose file operations finish sequentially."""
 
-    def __init__(self, worker: DiskWorker) -> None:
-        self.worker = worker
+    def __init__(self) -> None:
         self.created: tuple[BinaryIO, Path] | None = None
         self.parts: list[bytes] = []
         self.size = 0
 
     async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
-        self.created = created = await self.worker.run(_created, path, overwrite, discard=_discarded)
+        self.created = created = _created(path, overwrite)
         return created
 
     def add(self, chunk: bytes) -> bytes | None:
@@ -187,7 +185,7 @@ class _Download:
 
     async def discard(self) -> None:
         if self.created is not None:
-            await self.worker.run(_discarded, self.created, cleanup=True)
+            _discarded(self.created)
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -742,19 +740,13 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._end("failed", error)
 
     async def _download(self, path: Path, *, overwrite: bool) -> None:
-        """Write the body to a path through a temporary file, one file operation at a time in a thread.
+        """Write the body through a temporary conventional binary file.
 
-        Opening the file and each write count against the stream's total limit and the call's deadline, but never
-        against its idle or read limits; the final write and move run to their end. A failure ends the stream and
-        removes the unfinished file before it propagates.
+        A failure ends the stream and removes the unfinished file before it propagates.
         """
         self._downloadable()
 
-        from .disk import DiskWorker  # noqa: PLC0415 - Only a download to a path starts a disk thread.
-
-        worker = DiskWorker()
-        worker.acquire()
-        download = _Download(worker)
+        download = _Download()
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
             created = await download.create(path, overwrite)
@@ -762,8 +754,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             async with aclosing(chunks):
                 async for chunk in chunks:
                     if (data := download.add(chunk)) is not None:
-                        await worker.run(created[0].write, data)
-            await worker.run(_committed, created, b"".join(download.parts), path, overwrite)
+                        created[0].write(data)
+            _committed(created, b"".join(download.parts), path, overwrite)
         except BaseException as error:
             try:
                 if chunks is not None:
@@ -771,8 +763,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             finally:
                 await self._call.cleanup(download.discard, error=error)
             raise
-        finally:
-            worker.close()
 
     async def raise_for_status(self) -> None:
         """Return for a success; close and raise the typed failure of any other status from its error prefix.
