@@ -14,6 +14,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
+from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -170,13 +171,12 @@ def client_render_call(
 ) -> Callable[[], GeneratedProject]:
     """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
     return partial(
-        render_target,
+        public_client.render_client,
         source,
         model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
-        generator=ClientTarget(),
     )
 
 
