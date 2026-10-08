@@ -53,6 +53,8 @@ from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
@@ -97,12 +99,19 @@ class ClientTarget:
     unsupported_backend: str = "E_CONFIG_VALUE"
     selector: str = "--generate-client"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals]
+    def __init__(self, protocol_base: Path | None = None) -> None:
+        """Resolve the documents that helper records or a helper JSON object name against protocol_base.
+
+        Without it, they resolve against the working directory.
+        """
+        self.protocol_base = protocol_base
+
+    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[too-many-locals]
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
-        protocols = plan_protocols(request, config.protocols)
+        protocols = plan_protocols(request, config.protocols, self.protocol_base or request.cwd)
         wire = _wire(request, request.batch)
         try:
             plan = Planner(request, config, wire).plan()

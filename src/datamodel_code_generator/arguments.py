@@ -1635,6 +1635,70 @@ target_options.add_argument(
     help="Argument names per operation reference, each keyed by location and name such as query:limit, "
     "as inline JSON or a JSON file path (experimental).",
 )
+target_selection_options.add_argument(
+    "--generate-client",
+    choices=["httpx2"],
+    default=None,
+    help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
+)
+target_options.add_argument(
+    "--client-output",
+    default=None,
+    help="Directory of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-package",
+    default=None,
+    help="Import path of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-model-package",
+    default=None,
+    help="Import path of the models that --output generates (experimental).",
+)
+target_options.add_argument(
+    "--client-signature-style",
+    choices=["explicit", "unpack"],
+    default=None,
+    help="Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental).",
+)
+target_options.add_argument(
+    "--client-body-arguments",
+    choices=["body", "both"],
+    default=None,
+    help="Take request bodies as one body argument (default) or also as field arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-resource-names",
+    type=str,
+    default=None,
+    help='Resource namespaces keyed by tag, such as {"pets": "store.pets"}, as inline JSON or a JSON file path '
+    "(experimental).",
+)
+target_options.add_argument(
+    "--client-operations",
+    type=str,
+    default=None,
+    help="Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; "
+    "their body_arguments overrides --client-body-arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-default-base-url",
+    default=None,
+    help="Server URL of the operations that declare no servers (experimental).",
+)
+target_options.add_argument(
+    "--client-server-base-url",
+    default=None,
+    help="Base URL that relative server URLs of the document resolve against (experimental).",
+)
+target_options.add_argument(
+    "--client-protocols",
+    type=str,
+    default=None,
+    help="Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a "
+    "JSON file path (experimental).",
+)
 target_options.add_argument(
     "--diagnostics-json",
     default=SUPPRESS,

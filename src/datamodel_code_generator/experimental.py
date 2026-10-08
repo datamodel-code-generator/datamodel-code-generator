@@ -13,6 +13,7 @@ ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
 ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
     "behavior.remote-reference-lock",
+    "cli-option.generate-client",
     "cli-option.generate-schema-validators",
     "cli-option.generate-server",
     "cli-option.install-skill",
@@ -27,6 +28,7 @@ ExperimentalFeatureId = Literal[
     "input-format.protobuf",
     "input-format.xmlschema",
     "formatter.builtin",
+    "python-api.client",
     "python-api.fastapi-server",
 ]
 
@@ -88,6 +90,23 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "experimental httpx2 is selected only when that module is absent. Use --http-backend httpx2 or "
             "HTTPBackend.HTTPX2 to require the experimental pair. Explicit selections and paired dependency "
             "errors do not fall back."
+        ),
+    ),
+    "cli-option.generate-client": ExperimentalFeature(
+        id="cli-option.generate-client",
+        kind="cli-option",
+        target="--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)",
+        message=(
+            "HTTPX2 client generation from the CLI is experimental; its options, generated package, and diagnostics "
+            "may change."
+        ),
+        since_version="0.84.0",
+        note=(
+            "--generate-client httpx2 generates the models at --output and a client package at --client-output; "
+            "--client-package and --client-model-package name their import paths, and the other --client-* options "
+            "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
+            "pyproject.toml and in its profiles. --check, --diagnostics-json, and --dependency-format work as with "
+            "--generate-server. It needs Python 3.11 or later, both to run and as --target-python-version."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(
@@ -243,6 +262,21 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         message="The internal formatter is experimental and may change as generated-output coverage is expanded.",
         since_version="0.59.0",
         note="The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
+    ),
+    "python-api.client": ExperimentalFeature(
+        id="python-api.client",
+        kind="python-api",
+        target="datamodel_code_generator.client and datamodel_code_generator.api_types",
+        message=(
+            "The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package "
+            "may change."
+        ),
+        since_version="0.84.0",
+        note=(
+            "generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI "
+            "document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, "
+            "both to run and as model_config.target_python_version."
+        ),
     ),
     "python-api.fastapi-server": ExperimentalFeature(
         id="python-api.fastapi-server",

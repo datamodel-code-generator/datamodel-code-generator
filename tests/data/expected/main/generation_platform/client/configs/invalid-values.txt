@@ -1,5 +1,4 @@
 APIGenerationError
-  E_CONFIG_VALUE config schema_version: schema_version must be 1
   E_CONFIG_VALUE config transport: transport must be 'httpx2'
   E_CONFIG_VALUE config resource_names[0].tag: A resource name needs its source tag
   E_CONFIG_VALUE config resource_names[1].namespace: A resource namespace must be dotted lowercase ASCII identifiers

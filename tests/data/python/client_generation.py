@@ -9,7 +9,7 @@ import shutil
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
@@ -30,7 +30,6 @@ from datamodel_code_generator._client.config import (
 )
 from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator._client.templates import ClientTemplates
-from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
@@ -183,16 +182,10 @@ def _render(
         model = {**model, "custom_template_dir": root / "builtin-sources"}
     try:
         with _working_directory(case, root):
-            if (toml := case.get("toml")) is not None:
-                (path := root / case["toml_path"]).parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(toml, encoding="utf-8")
-                config = load_target_config(path, ClientGenerationConfig, output=root / PACKAGE)
-            else:
-                config = client_config(case.get("config", {}), root)
             project = (generate_target if case.get("publish") else render_target)(
                 source,
                 model_config=model_config(root / "models.py", backend, model),
-                config=config,
+                config=client_config(case.get("config", {}), root),
                 generator=ClientTarget(),
             )
     except APIGenerationError as error:
@@ -228,6 +221,7 @@ class _BindingDiagnosticsTarget(ClientTarget):
     """Render a client package and keep the binding diagnostics of the batch it renders from."""
 
     def __init__(self) -> None:
+        super().__init__()
         self.binding_diagnostics: list[str] = []
 
     def render(self, request: TargetRequest) -> TargetRender:
@@ -323,6 +317,87 @@ def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) 
         if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def client_cli_arguments(pyproject: Path) -> list[str]:
+    """Spell the [tool.datamodel-codegen] keys of a pyproject.toml as the command-line options that set them."""
+    import tomllib
+
+    arguments: list[str] = []
+    for key, value in tomllib.loads(pyproject.read_text(encoding="utf-8"))["tool"]["datamodel-codegen"].items():
+        match value:
+            case True:
+                arguments.append(f"--{key}")
+            case list():
+                arguments.extend((f"--{key}", *value))
+            case dict():
+                arguments.extend((f"--{key}", json.dumps(value)))
+            case _:
+                arguments.extend((f"--{key}", str(value)))
+    return arguments
+
+
+def prepare_client_case(case_name: str, root: Path) -> None:
+    """Copy a case's source and reference documents into a root."""
+    _prepare_input(json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name], root)
+
+
+def client_cli_modules(case_name: str, root: Path) -> tuple[str, Modules]:
+    """Return the package a case's renders compare with and the Python modules a run wrote under root that it keeps.
+
+    The modules are those the case keeps of its first backend.
+    """
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    modules: Modules = {
+        parts: path.read_text(encoding="utf-8")
+        for path in root.rglob("*.py")
+        if "_runtime" not in (parts := path.relative_to(root).parts)
+    }
+    selected = case.get("modules", True)
+    kept = selected[case.get("backends", ["pydantic_v2.BaseModel"])[0]] if isinstance(selected, dict) else selected
+    return case.get("expected", case_name), modules if kept is True else {
+        parts: modules[parts] for parts in map(tuple, kept)
+    }
+
+
+def client_api_report(root: Path) -> str:
+    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited owned file.
+
+    The helpers are a JSON object whose documents resolve against the working directory, and the helper records
+    load from the public module on first use.
+    """
+    import datamodel_code_generator.client as client_api
+    from datamodel_code_generator._client import protocols
+
+    hints = {"input_": client_api.GenerationInput, "model_config": GenerateConfig, "config": ClientGenerationConfig}
+    functions = (
+        (client_api.generate_client, client_api.GenerationReport),
+        (client_api.render_client, client_api.GeneratedProject),
+    )
+    lines = [
+        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
+        for function, result in functions
+    ]
+    lines.append(f"records {client_api.PaginationHelper is protocols.PaginationHelper}")
+    try:
+        client_api.Missing  # noqa: B018
+    except AttributeError as error:
+        lines.append(f"AttributeError: {error}")
+    source = shutil.copy2(SOURCE / "cli" / "options.yaml", root / "api.yaml")
+    helpers = json.loads((SOURCE / "cli" / "protocols.json").read_text(encoding="utf-8"))
+    helpers["pets.all"]["operation"] = {"pointer": "/paths/~1pets/get", "document": "api.yaml"}
+    model = model_config(root / "models.py", "pydantic_v2.BaseModel", {})
+    config = client_config({"protocols": {"raw": helpers}}, root)
+    with _working_directory({"cwd": True}, root):
+        project = client_api.render_client(source, model_config=model, config=config)
+        lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+        for _ in range(2):
+            report = client_api.generate_client(source, model_config=model, config=config)
+            lines.append(f"generate wrote {len(report.written_files)} and kept {len(report.unchanged_files)}")
+        (root / PACKAGE / "_client.py").write_text("# edited\n", encoding="utf-8")
+        report = client_api.generate_client(source, model_config=model, config=config)
+    lines.append(f"generate rewrote {[item.path.relative_to(root).as_posix() for item in report.written_files]}")
+    return "\n".join(lines) + "\n"
 
 
 def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
@@ -528,15 +603,10 @@ def _setting(value: object, root: Path) -> str:
 
 
 def client_config_report(case_name: str, root: Path) -> str:
-    """Construct one client configuration from Python values or a TOML file and report it or its diagnostics."""
+    """Construct one client configuration from Python values and report it or its diagnostics."""
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
-        if (toml := case.get("toml")) is not None:
-            (path := root / case.get("toml_path", "client.toml")).parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(toml, encoding="utf-8")
-            config = load_target_config(path, ClientGenerationConfig)
-        else:
-            config = client_config(case, root)
+        config = client_config(case, root)
     except APIGenerationError as error:
         return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
     except TypeError as error:

@@ -1,0 +1,2 @@
+E_OPERATION_REF error config operations[0].ref: The operation setting '/paths/~1cats/get' selects no root path operation
+E_OPERATION_REF error config operations[1].ref: The operation setting '/paths/~1pets/get' selects no root path operation

@@ -1,0 +1,9 @@
+E_CONFIG_VALUE error config resource_names[0].namespace: A resource namespace must be dotted lowercase ASCII identifiers
+E_CONFIG_VALUE error config operations[0].name: name must be a lowercase ASCII identifier
+E_CONFIG_VALUE error config operations[0].parameter_names[0]: A parameter name needs a location, a wire name, and an identifier
+E_CONFIG_VALUE error config operations[0].runtime.accepted_content_encodings: accepted_content_encodings may name only gzip, the builtin encoder
+E_CONFIG_VALUE error config operations[0].runtime.success_statuses: success_statuses must be distinct statuses 300 to 399
+E_CONFIG_VALUE error config operations[1].runtime.idempotency.header_name: header_name must be a header name
+E_CONFIG_VALUE error config operations[1].runtime.success_statuses: success_statuses must be distinct statuses 300 to 399
+E_CONFIG_VALUE error config operations[1].body_field_names: body_field_names need body_arguments 'both' for the operation
+E_CONFIG_VALUE error config default_base_url: default_base_url must be an absolute http or https URL without userinfo, query, or fragment

@@ -4,6 +4,7 @@ Choose what a generation prints to add the generated package to your project (ex
 default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
 
 **Related:** [`--generate-server`](../target-generation-options.md#generate-server),
+[`--generate-client`](../target-generation-options.md#generate-client),
 [FastAPI Server](../../fastapi-server.md)
 
 !!! tip "Usage"

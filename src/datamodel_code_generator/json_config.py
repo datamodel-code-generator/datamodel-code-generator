@@ -23,6 +23,8 @@ JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
 JsonConfigFieldName: TypeAlias = Literal[
     "aliases",
     "base_class_map",
+    "client_operations",
+    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",
@@ -43,6 +45,8 @@ JsonConfigFieldName: TypeAlias = Literal[
 JsonConfigOptionName: TypeAlias = Literal[
     "--aliases",
     "--base-class-map",
+    "--client-operations",
+    "--client-resource-names",
     "--custom-formatters-kwargs",
     "--default-values",
     "--duplicate-name-suffix",
@@ -102,6 +106,12 @@ class LegacyExtraTemplateDataConfig(RootModel[dict[str, Any]]):
     """Legacy extra template data mapping accepted during strict-validation migration."""
 
 
+class ClientOperationsConfig(RootModel[dict[str, dict[str, Any]]]):
+    """Client settings keyed by operation reference; the client target validates their members."""
+
+    model_config = ConfigDict(defer_build=True)
+
+
 class ServerHandlerModesConfig(RootModel[dict[str, Literal["sync", "async"]]]):
     """Handler modes of server operations, keyed by operation reference."""
 
@@ -142,6 +152,7 @@ JsonConfigStrictModel: TypeAlias = (
     | type[DuplicateNameSuffixConfig]
     | type[DefaultValuesConfig]
     | type[ExtraTemplateDataConfig]
+    | type[ClientOperationsConfig]
     | type[ServerHandlerModesConfig]
     | type[ServerBodyModesConfig]
     | type[ServerPrimaryResponsesConfig]
@@ -158,6 +169,8 @@ class JsonConfigSchemasPayload(BaseModel):
 
     aliases: StringOrStringListMappingConfig | None = Field(default=None)
     base_class_map: StringOrStringListMappingConfig | None = Field(default=None, alias="base-class-map")
+    client_operations: ClientOperationsConfig | None = Field(default=None, alias="client-operations")
+    client_resource_names: StringMappingConfig | None = Field(default=None, alias="client-resource-names")
     custom_formatters_kwargs: StringMappingConfig | None = Field(default=None, alias="custom-formatters-kwargs")
     default_values: DefaultValuesConfig | None = Field(default=None, alias="default-values")
     duplicate_name_suffix: DuplicateNameSuffixConfig | None = Field(default=None, alias="duplicate-name-suffix")
@@ -345,6 +358,8 @@ class JsonConfigSpecs:
             ),
         ),
         "base_class_map": JsonConfigSpec("--base-class-map", StringOrStringListMappingConfig),
+        "client_operations": JsonConfigSpec("--client-operations", ClientOperationsConfig),
+        "client_resource_names": JsonConfigSpec("--client-resource-names", StringMappingConfig),
         "custom_formatters_kwargs": JsonConfigSpec(
             "--custom-formatters-kwargs",
             StringMappingConfig,

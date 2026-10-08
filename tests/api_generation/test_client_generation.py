@@ -11,6 +11,7 @@ from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
+    client_api_report,
     client_config_report,
     client_documentation_report,
     client_helper_spelling_report,
@@ -162,7 +163,6 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     [
         "protocols-disabled",
         "protocols-python",
-        "protocols-toml",
         "protocols-relative",
         "protocols-empty",
         "protocols-unsupported",
@@ -306,53 +306,25 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "auth-values",
         "auth-invalid",
         "auth-unknown",
-        "toml-auth-values",
-        "toml-auth-type",
-        "toml-auth-location",
-        "toml-auth-unknown",
         "values",
         "invalid-values",
         "invalid-urls",
         "invalid-shapes",
         "invalid-parameter-names",
-        "toml-values",
-        "toml-invalid-location",
-        "toml-invalid-statuses",
-        "toml-unknown-keys",
         "body-fields",
         "body-fields-invalid",
         "body-field-names-invalid",
-        "toml-body-fields",
-        "toml-body-field-names-unknown",
         "retry-values",
         "retry-invalid",
         "retry-conflicting-controls",
         "retry-unknown-field",
-        "toml-retry-values",
-        "toml-retry-safety",
-        "toml-retry-type",
-        "toml-retry-unknown",
-        "toml-retry-idempotency-unknown",
-        "toml-retry-idempotency-type",
-        "toml-retry-header-missing",
-        "toml-retry-removed-retention",
-        "toml-retry-removed-replay",
-        "toml-retry-removed-scope",
         "compression-values",
         "compression-invalid",
-        "toml-compression-values",
-        "toml-compression-type",
         "protocols-path",
         "protocols-type",
         "protocols-records",
         "protocols-records-invalid",
         "protocols-records-shape",
-        "toml-protocols",
-        "toml-protocols-type",
-        "toml-syntax",
-        "toml-version",
-        "toml-unknown-setting",
-        "toml-operation-document",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:
@@ -405,3 +377,8 @@ def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Pat
         if path.read_bytes() != (generated / path.relative_to(copy)).read_bytes()
     )
     assert_output(f"changed {changed}\n", EXPECTED / "regenerated-unchanged.txt")
+
+
+def test_client_api(tmp_path: Path) -> None:
+    """Resolve the public annotations, render and generate twice, then rewrite an edited owned file."""
+    assert_output(client_api_report(tmp_path), EXPECTED / "api.txt")

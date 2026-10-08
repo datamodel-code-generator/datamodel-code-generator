@@ -94,6 +94,7 @@ Choose what a generation prints to add the generated package to your project (ex
 default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
 
 **Related:** [`--generate-server`](target-generation-options.md#generate-server),
+[`--generate-client`](target-generation-options.md#generate-client),
 [FastAPI Server](../fastapi-server.md)
 
 !!! tip "Usage"
@@ -128,6 +129,7 @@ cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_
 Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
 
 **Related:** [`--generate-server`](target-generation-options.md#generate-server),
+[`--generate-client`](target-generation-options.md#generate-client),
 [Diagnostics](../fastapi-server.md#diagnostics)
 
 !!! tip "Usage"
@@ -164,6 +166,8 @@ the diagnostics in the order stderr shows them. A usage error, such as `--genera
   ]
 }
 ```
+
+`target` names the selected target: `fastapi` for `--generate-server` and `httpx2` for `--generate-client`.
 
 A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
 and nothing is written to it; the check runs before anything is generated. An existing file is replaced only

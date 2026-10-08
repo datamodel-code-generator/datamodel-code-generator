@@ -1,0 +1,8 @@
+generate_client resolves ['config', 'input_', 'model_config']: True
+render_client resolves ['config', 'input_', 'model_config']: True
+records True
+AttributeError: module 'datamodel_code_generator.client' has no attribute 'Missing'
+render ['write']
+generate wrote 80 and kept 0
+generate wrote 0 and kept 80
+generate rewrote ['client/_client.py']

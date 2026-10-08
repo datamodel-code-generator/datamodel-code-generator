@@ -160,6 +160,8 @@ def _get_config_class() -> type[Config]:
             "server_operation_names",
             "server_router_names",
             "server_parameter_names",
+            "client_resource_names",
+            "client_operations",
             mode="before",
         )
         @classmethod
@@ -190,6 +192,19 @@ def _get_config_class() -> type[Config]:
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 
+        @field_validator("client_protocols", mode="before")
+        @classmethod
+        def validate_client_protocols(cls, value: Any) -> Any:
+            """Load the client helpers from inline JSON or a JSON file path, refusing deep nesting before parsing."""
+            if not isinstance(value, str | Path):
+                return value
+            from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
+
+            try:
+                return validate_json_value_or_file(str(value), option_name="--client-protocols", max_depth=64)
+            except JsonConfigError as e:
+                raise Error(str(e)) from e
+
         @field_validator(
             "input",
             "output",
@@ -198,6 +213,7 @@ def _get_config_class() -> type[Config]:
             "custom_file_header_path",
             "http_local_ref_path",
             "server_output",
+            "client_output",
             mode="before",
         )
         @classmethod
@@ -329,6 +345,10 @@ def _get_config_class() -> type[Config]:
             f"`--keyword-only` requires `--target-python-version` {PythonVersion.PY_310.value} or higher."
         )
 
+        __validate_target_selection_err: ClassVar[str] = (
+            "--generate-server and --generate-client cannot be used together"
+        )
+
         __validate_all_exports_collision_strategy_err: ClassVar[str] = (
             "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
         )
@@ -370,6 +390,13 @@ def _get_config_class() -> type[Config]:
                 and not python_target.has_kw_only_dataclass
             ):
                 raise Error(self.__validate_keyword_only_err)  # pragma: no cover
+            return self
+
+        @model_validator(mode="after")
+        def validate_target_selection(self: Self) -> Self:
+            """Validate that one run selects at most one generation target."""
+            if self.generate_server is not None and self.generate_client is not None:
+                raise Error(self.__validate_target_selection_err)
             return self
 
         @model_validator(mode="after")
@@ -456,6 +483,17 @@ def _get_config_class() -> type[Config]:
         server_operation_names: Optional[Mapping[str, str]] = None  # noqa: UP045
         server_router_names: Optional[Mapping[str, str]] = None  # noqa: UP045
         server_parameter_names: Optional[Mapping[str, Mapping[str, str]]] = None  # noqa: UP045
+        generate_client: Optional[Literal["httpx2"]] = None  # noqa: UP045
+        client_output: Optional[Path] = None  # noqa: UP045
+        client_package: Optional[str] = None  # noqa: UP045
+        client_model_package: Optional[str] = None  # noqa: UP045
+        client_signature_style: Optional[Literal["explicit", "unpack"]] = None  # noqa: UP045
+        client_body_arguments: Optional[Literal["body", "both"]] = None  # noqa: UP045
+        client_resource_names: Optional[Mapping[str, str]] = None  # noqa: UP045
+        client_operations: Optional[Mapping[str, Mapping[str, Any]]] = None  # noqa: UP045
+        client_default_base_url: Optional[str] = None  # noqa: UP045
+        client_server_base_url: Optional[str] = None  # noqa: UP045
+        client_protocols: Optional[Mapping[str, Any]] = None  # noqa: UP045
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""
@@ -477,6 +515,10 @@ def _get_config_class() -> type[Config]:
                 self.locked = False
             elif "locked" in set_args:
                 self.update_lock = False
+            if "generate_server" in set_args:
+                self.generate_client = None
+            elif "generate_client" in set_args:
+                self.generate_server = None
             for field_name in set_args:
                 setattr(self, field_name, getattr(parsed_args, field_name))
 

@@ -2,6 +2,7 @@ ID                                     Kind          Target                     
 -------------------------------------  ------------  -------------------------------------------------------------------------------------------------------------------------------------------  ------  --------
 behavior.batch-generation-jobs         behavior      [tool.datamodel-codegen.jobs], --job, --all-jobs                                                                                             0.72.3  -
 behavior.remote-reference-lock         behavior      datamodel-codegen.lock, --lockfile, --update-lock, and --locked                                                                              0.72.3  -
+cli-option.generate-client             cli-option    --generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)                                                0.84.0  -
 cli-option.generate-schema-validators  cli-option    --generate-schema-validators                                                                                                                 0.66.1  -
 cli-option.generate-server             cli-option    --generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys), --diagnostics-json, and --dependency-format  0.84.0  -
 cli-option.install-skill               cli-option    --install-skill, --skill-scope, and --overwrite-skill                                                                                        0.76.0  -
@@ -16,6 +17,7 @@ input-format.avro                      input-format  --input-file-type avro     
 input-format.mcp-tools                 input-format  --input-file-type mcp-tools                                                                                                                  0.60.0  -
 input-format.protobuf                  input-format  --input-file-type protobuf                                                                                                                   0.59.0  -
 input-format.xmlschema                 input-format  --input-file-type xmlschema                                                                                                                  0.59.0  -
+python-api.client                      python-api    datamodel_code_generator.client and datamodel_code_generator.api_types                                                                       0.84.0  -
 python-api.fastapi-server              python-api    datamodel_code_generator.fastapi and datamodel_code_generator.api_types                                                                      0.84.0  -
 
 Notes:
@@ -27,6 +29,12 @@ behavior.remote-reference-lock:
   The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests, never response
   bodies or request values directly. Each saved display origin contains only the scheme, host, and
   explicit port—never a path, query, or request headers.
+cli-option.generate-client:
+  --generate-client httpx2 generates the models at --output and a client package at --client-output;
+  --client-package and --client-model-package name their import paths, and the other --client-*
+  options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of
+  pyproject.toml and in its profiles. --check, --diagnostics-json, and --dependency-format work as
+  with --generate-server. It needs Python 3.11 or later, both to run and as --target-python-version.
 cli-option.generate-schema-validators:
   The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules
   such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else
@@ -76,6 +84,10 @@ input-format.protobuf:
   validation or gRPC code generation.
 input-format.xmlschema:
   The parser focuses on model generation from XSD documents, not full XML instance validation.
+python-api.client:
+  generate_client and render_client generate the models and an HTTPX2 client package from one
+  OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11
+  or later, both to run and as model_config.target_python_version.
 python-api.fastapi-server:
   generate_fastapi and render_fastapi generate the models and a FastAPI server package from one
   OpenAPI document with the api scope. The package declares a service Protocol for each router

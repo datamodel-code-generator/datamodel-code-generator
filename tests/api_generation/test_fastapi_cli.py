@@ -384,8 +384,8 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         (
             [*OPTIONS, *PACKAGES, "--server-include-request", "--diagnostics-json", "-", "--dependency-format", "uv"],
             (
-                "--server-package, --server-model-package, --server-include-request, --diagnostics-json and "
-                "--dependency-format require --generate-server"
+                "--server-package, --server-model-package and --server-include-request require --generate-server\n"
+                "Error: --diagnostics-json and --dependency-format require --generate-server or --generate-client"
             ),
         ),
         (

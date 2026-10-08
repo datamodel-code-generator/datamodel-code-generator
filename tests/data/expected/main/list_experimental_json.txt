@@ -18,6 +18,15 @@
     "tracking_issue": null
   },
   {
+    "id": "cli-option.generate-client",
+    "kind": "cli-option",
+    "message": "HTTPX2 client generation from the CLI is experimental; its options, generated package, and diagnostics may change.",
+    "note": "--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml and in its profiles. --check, --diagnostics-json, and --dependency-format work as with --generate-server. It needs Python 3.11 or later, both to run and as --target-python-version.",
+    "since_version": "0.84.0",
+    "target": "--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)",
+    "tracking_issue": null
+  },
+  {
     "id": "cli-option.generate-schema-validators",
     "kind": "cli-option",
     "message": "Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.",
@@ -141,6 +150,15 @@
     "note": "The parser focuses on model generation from XSD documents, not full XML instance validation.",
     "since_version": "0.59.0",
     "target": "--input-file-type xmlschema",
+    "tracking_issue": null
+  },
+  {
+    "id": "python-api.client",
+    "kind": "python-api",
+    "message": "The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.",
+    "note": "generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.",
+    "since_version": "0.84.0",
+    "target": "datamodel_code_generator.client and datamodel_code_generator.api_types",
     "tracking_issue": null
   },
   {

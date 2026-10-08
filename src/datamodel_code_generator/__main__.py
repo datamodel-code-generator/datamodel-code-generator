@@ -220,7 +220,8 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
-_SERVER_REQUIRED_FIELDS: tuple[str, ...] = ("server_output", "server_package", "server_model_package")
+_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
+_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 _TARGET_RUN_OPTIONS: tuple[str, ...] = ("diagnostics_json", "dependency_format")
 
 
@@ -1567,24 +1568,39 @@ def _flag(field: str, *, negative: bool = False) -> str:
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
 
 
-def _target_usage_error(config: Config, namespace: Namespace) -> str | None:
-    """Return why the target options of a run cannot apply, if they cannot.
+def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
+    """Return why the target options of a run cannot apply.
 
-    Server keys of pyproject.toml are validated like model keys but have no effect while no server is selected.
+    Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
-    if config.generate_server is None:
-        given = [
-            _flag(field, negative=value is False)
-            for field, value in _explicit_config_args(namespace).items()
-            if field.startswith("server_")
-        ]
-        given += [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]
-        if not given:
-            return None
-        return f"{_option_list(given)} {'requires' if len(given) == 1 else 'require'} --generate-server"
-    if missing := [field for field in _SERVER_REQUIRED_FIELDS if getattr(config, field) is None]:
-        return f"--generate-server requires {_option_list([_flag(field) for field in missing])}"
-    return None
+    explicit = _explicit_config_args(namespace)
+    unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
+    given = [
+        (
+            _flag(selector),
+            [_flag(field, negative=value is False) for field, value in explicit.items() if field.startswith(prefix)],
+        )
+        for selector, prefix in unselected
+    ]
+    if len(unselected) == len(_TARGET_SELECTORS):
+        selectors = " or ".join(_flag(selector) for selector, _ in _TARGET_SELECTORS)
+        given.append((selectors, [_flag(field) for field in _TARGET_RUN_OPTIONS if field in vars(namespace)]))
+    if errors := [
+        f"{_option_list(flags)} {'requires' if len(flags) == 1 else 'require'} {selector}"
+        for selector, flags in given
+        if flags
+    ]:
+        return errors
+    return [
+        f"{_flag(selector)} requires {_option_list(missing)}"
+        for selector, prefix in _TARGET_SELECTORS
+        if getattr(config, selector) is not None
+        and (
+            missing := [
+                _flag(field) for name in _TARGET_REQUIRED if getattr(config, field := f"{prefix}{name}") is None
+            ]
+        )
+    ]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
@@ -1683,11 +1699,13 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
     return None
 
 
-def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
+def _run_target(
+    args: Sequence[str], namespace: Namespace, config: Config, pyproject_path: Path | None, *, job: bool
+) -> Exit:
     """Hand the selected generation target to its runner, which reports every diagnostic."""
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path))
+    return Exit(run_target(args, namespace, config, pyproject_path, job=job))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -2561,13 +2579,14 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    if (target_usage := _target_usage_error(config, namespace)) is not None:
-        print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
+    if target_usage := _target_usage_errors(config, namespace):
+        for error in target_usage:
+            print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
-    if config.generate_server is not None:
+    if config.generate_server is not None or config.generate_client is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
-        return _run_target(args, namespace, None if _batch_config is not None else config, pyproject_path)
+        return _run_target(args, namespace, config, pyproject_path, job=_batch_config is not None)
 
     if config.watch and config.check:
         print(  # noqa: T201

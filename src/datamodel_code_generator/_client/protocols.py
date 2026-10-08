@@ -786,18 +786,22 @@ def protocol_problems(configuration: ProtocolConfiguration) -> list[Diagnostic]:
 
 
 def load_protocols(
-    source: Path | ProtocolConfiguration, cwd: Path
+    source: Path | ProtocolConfiguration | Mapping[str, object], cwd: Path
 ) -> tuple[tuple[Helper, ...], Path, list[Diagnostic]]:
     """Read or project a helper configuration and validate it, with the directory its documents resolve against.
 
-    A file's relative documents resolve against its directory, and a Python record's against the working directory.
+    A file's relative documents resolve against its directory, and those of Python records or a JSON object against
+    the given working directory.
     """
-    if isinstance(source, ProtocolConfiguration):
-        tree, base, problems = project(source), cwd, []
-    else:
-        path = cwd / source.expanduser()
-        tree, problems = _read(path)
-        base = path.parent
+    match source:
+        case ProtocolConfiguration():
+            tree, base, problems = project(source), cwd, []
+        case Mapping():
+            tree, base, problems = source, cwd, []
+        case _:
+            path = cwd / source.expanduser()
+            tree, problems = _read(path)
+            base = path.parent
     if problems:
         return (), base, problems
     helpers, problems = validate(tree)

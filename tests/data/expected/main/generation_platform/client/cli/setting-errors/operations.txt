@@ -1,0 +1,6 @@
+E_CONFIG_UNKNOWN error config operations[0].label: operations[0] has no key 'label'
+E_CONFIG_VALUE error config operations[1].parameter_names: operations[1].parameter_names key 'limit' must be a location (path, query, querystring, header, or cookie), ':', and a name
+E_CONFIG_VALUE error config operations[2].parameter_names: operations[2].parameter_names must be an object
+E_CONFIG_VALUE error config operations[3].body_field_names['application/json']: operations[3].body_field_names['application/json'] must be an object
+E_CONFIG_UNKNOWN error config operations[4].runtime.idempotency.header: operations[4].runtime.idempotency has no key 'header'
+E_CONFIG_VALUE error config operations[5].runtime: operations[5].runtime must be an object
