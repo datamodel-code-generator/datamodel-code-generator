@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import errno
+import os
 import re
 import shutil
 from typing import TYPE_CHECKING, Any
@@ -177,6 +179,21 @@ def test_input_diff_does_not_warn(name: str, output: str, output_dir: Path) -> N
     """`--diff-against` writes no module, so it warns about nothing beside a package of the module's name."""
     _run("package", output_dir)
     _run(name, output_dir / output, "--diff-against", str(INPUT_PATH / f"{name}.json"))
+
+
+@pytest.mark.abnormal_path("a directory that can be written but not listed is not portable to Windows or root")
+def test_unlistable_directory_does_not_stop_generation(output_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A directory whose entries cannot be read is written like any other and reports nothing."""
+    listdir = os.listdir
+
+    def fail(path: Path) -> list[str]:
+        if path == output_dir:
+            raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
+        return listdir(path)
+
+    _run("package", output_dir)
+    monkeypatch.setattr(os, "listdir", fail)
+    _run("module", output_dir, expected_directory=EXPECTED_PATH / "stale_package")
 
 
 def test_directory_without_init_does_not_shadow(output_dir: Path) -> None:

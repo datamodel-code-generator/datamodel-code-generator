@@ -734,7 +734,7 @@ def publish_staged_files(files: Iterable[tuple[Path, Path] | StagedFile]) -> Non
         if file.resolved_target in seen_targets:
             raise OSError(f"duplicate staged publication target: {file.target}")
         seen_targets.add(file.resolved_target)
-    warn_shadowed_modules(file.resolved_target for file in planned_files)
+    warn_shadowed_modules(file.target.expanduser() for file in planned_files)
     if os.name == "nt":  # pragma: no cover - Windows keeps a checked lexical fallback
         _publish_staged_files_by_path(planned_files)
         return

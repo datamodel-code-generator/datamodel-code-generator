@@ -45475,7 +45475,8 @@ example `models/pets/` into `models/pets.py`, or a directory output `models/` gi
 module of the same name. Generation still writes the module and warns that the existing package directory shadows it,
 naming both paths; remove the stale directory. A directory whose only `__init__` is a compiled `__init__.pyc` or an
 extension module hides the module in the same way but is not reported. `--check` and `--diff-against` write nothing
-and do not warn. `--disable-warnings` and Python warning filters silence the warning.
+and do not warn. `--disable-warnings` and Python warning filters silence the warning; a filter that turns it into an
+error, such as `-W error::UserWarning`, stops the run before it writes anything.
 
 ---
 
