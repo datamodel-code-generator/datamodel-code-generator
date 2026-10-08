@@ -1,0 +1,31 @@
+{
+  "title": "Child",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Parent"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/definitions/Code"
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "Code": {
+      "type": "string",
+      "pattern": "^(?!bad)[a-z]+$"
+    },
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "own": {
+          "type": "string",
+          "pattern": "^(?=o)[a-z]+$"
+        }
+      }
+    }
+  }
+}

@@ -92,7 +92,7 @@ def _external_ref_mapping(value: str) -> str:
             "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
         )
         raise ArgumentTypeError(msg)
-    file_path, python_package = value.split("=", maxsplit=1)
+    file_path, python_package = value.rsplit("=", maxsplit=1)
     if not file_path.strip() or not python_package.strip():
         msg = f"Invalid --external-ref-mapping format: {value!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
         raise ArgumentTypeError(msg)

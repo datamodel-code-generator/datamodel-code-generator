@@ -962,6 +962,36 @@ def test_main_modular_reuse_model(output_dir: Path) -> None:
         )
 
 
+def test_main_modular_allof_inheritance_mro_conflict(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject an inconsistent method resolution order across generated modules."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_inheritance_modular_mro_conflict.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model E (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/top.E) has "
+            "inconsistent method resolution order for generated bases "
+            "C (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.C), "
+            "D (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.D).\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_main_modular_allof_inheritance_import_override(output_dir: Path) -> None:
+    """Leave a base imported from an overriding module out of the generated hierarchy."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_inheritance_modular_mro_conflict.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--import-overrides", '{"D": "external.models"}'],
+        expected_directory=EXPECTED_OPENAPI_PATH / "allof_inheritance_modular_import_override",
+        skip_code_validation=True,
+    )
+
+
 def test_main_modular_no_file(tmp_path: Path) -> None:
     """Test main function on modular file with no output name."""
     run_main_and_assert(
@@ -3173,6 +3203,33 @@ def test_main_openapi_pattern_with_lookaround_pydantic_v2_dataclass(
     )
 
 
+def test_main_openapi_pattern_with_backreference_pydantic_v2(output_file: Path) -> None:
+    """OpenAPI patterns with backreferences select Python's regex engine for RootModel and BaseModel output."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "pattern_backreference.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="pattern_with_backreference_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
+    )
+    for model_name, valid, invalid, path in (
+        ("Doubled", "aa", "ab", ("root",)),
+        ("Info", {"pair": "aa"}, {"pair": "ab"}, ("pair",)),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"pattern_with_backreference_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=path,
+            expected_attribute_value="aa",
+        )
+
+
 def test_main_generate_custom_class_name_generator_modular(
     tmp_path: Path,
 ) -> None:
@@ -3969,6 +4026,18 @@ def test_main_openapi_allof_required_inherited_model_references(
             ),
             id="pydantic-v2-dataclass-annotated-legacy-template",
         ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_alias_fallback",
+            ("--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-target-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "pydantic_v2_dataclass_annotated_alias_fallback",
+            ("--use-annotated", "--field-constraints", "--target-pydantic-version", "2"),
+            id="pydantic-v2-dataclass-annotated-target-2",
+        ),
     ],
 )
 def test_main_openapi_allof_required_inherited_dataclass_metadata(
@@ -3978,7 +4047,9 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
     additional_args: tuple[str, ...],
 ) -> None:
     """Preserve explicit field metadata and exact dataclass ordering across required overrides."""
-    runs = installed_pydantic_runs_target(None) or output_model_type != DataModelType.PydanticV2Dataclass.value
+    runs = output_model_type != DataModelType.PydanticV2Dataclass.value or installed_pydantic_runs_target(
+        "2" if "--target-pydantic-version" in additional_args else None
+    )
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_required_inherited_dataclass_metadata.yaml",
         output_path=output_file,

@@ -9,7 +9,6 @@ from datamodel_code_generator.reference import FieldNameResolver
 
 PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
     "__abstractmethods__",
-    "__annotate__",
     "__annotations__",
     "__base__",
     "__bases__",
@@ -28,7 +27,6 @@ PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
     "__eq__",
     "__fields__",
     "__fields_set__",
-    "__firstlineno__",
     "__flags__",
     "__format__",
     "__ge__",
@@ -82,19 +80,16 @@ PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
     "__setstate__",
     "__sizeof__",
     "__slots__",
-    "__static_attributes__",
     "__str__",
     "__subclasscheck__",
     "__subclasses__",
     "__subclasshook__",
     "__text_signature__",
-    "__type_params__",
     "__weakrefoffset__",
     "_abc_caches_clear",
     "_abc_impl",
     "_abc_registry_clear",
     "_calculate_keys",
-    "_check_frozen",
     "_collect_bases_data",
     "_copy_and_set_values",
     "_dump_registry",
@@ -132,7 +127,7 @@ PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
     "update_forward_refs",
     "validate",
 })
-"""Names ``hasattr(pydantic.BaseModel, name)`` accepts, metaclass included, on any Pydantic 2 and supported Python."""
+"""Names ``hasattr(pydantic.BaseModel, name)`` accepts on the newest Pydantic under every supported Python."""
 
 
 class PydanticFieldNameResolver(FieldNameResolver):

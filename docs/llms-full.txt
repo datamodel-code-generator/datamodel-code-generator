@@ -4569,6 +4569,49 @@ This allows you to set a default base class with `--base-class`, override specif
 | `format` values | Mapped to Python/Pydantic types where supported |
 | Custom extensions | `customBasePath` and related options can steer generated base classes |
 
+## Regular Expression Patterns
+
+Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the
+pattern when the model class is created. Some syntax that Python's `re` accepts is rejected by every
+pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
+OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
+the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
+the installed pydantic-core or on the Python running the generator, and it is the same for every
+`--target-pydantic-version`.
+
+| Pattern syntax | Example | Generated model |
+|----------------|---------|-----------------|
+| Lookahead and lookbehind | `(?=x)`, `(?<!x)` | `python-re` |
+| Numbered backreferences and octal escapes | `([a-z])\1`, `\0`, `[\101]` | `python-re` |
+| Named backreferences | `(?P<c>x)(?P=c)` | `python-re` |
+| Conditionals | `(<)?a(?(1)>)` | `python-re` |
+| End of string | `\Z` | `python-re` |
+| Comments | `(?#note)` | `python-re` |
+| Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
+| Backspace in a character class | `[\b]` | `python-re` |
+| ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
+| Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
+| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
+| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
+| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
+| Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
+| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
+
+Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
+Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
+Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a
+`pattern` on `bytes`.
+Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
+example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
+linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
+validate untrusted input.
+
 ## Limitations
 
 JSON Schema input generates Python model definitions. It does not perform runtime validation by itself, and some
@@ -7814,6 +7857,8 @@ When a schema defines a simple type (not an object with properties), `datamodel-
 - 📌 RootModel and type aliases do not fully support field-specific metadata (default, alias, etc). See [Named Type Aliases](https://docs.pydantic.dev/latest/concepts/types/#named-type-aliases) for details.
 - 🚫 Type aliases do not support some RootModel features (e.g. `model_config`)
 - 📄 A RootModel or type alias is also generated for the main schema, allowing you to define a single type alias from a schema file (e.g. `model.json` containing `{"title": "MyString", "type": "string"}`)
+- 🧩 Pydantic v2 type aliases express constraints as `Annotated[int, Field(ge=1)]` instead of `conint(ge=1)`, because mypy and Pyright reject call expressions in type aliases. A `Decimal` `multipleOf` uses `annotated_types.MultipleOf`, because `Field` types `multiple_of` as a float. Validation, serialization, and JSON schema stay the same, except that on Pydantic 2.0.x a string alias with `minLength: 0` now keeps `minLength: 0` in its JSON schema.
+- 🔤 Pydantic v2 type aliases (`--use-type-alias` and `pydantic_v2.dataclass` output) cannot select Python's regex engine through `model_config`, so patterns that need it, such as lookaround assertions, are generated as compiled `re.compile(...)` patterns. These aliases require **Pydantic 2.8 or later in the environment that runs the generated code**, because [Pydantic 2.8 added support for compiled patterns](https://pydantic.dev/articles/pydantic-v2-8-release#respect-regex-flags-in-constrained-string-validation).
 
 When `--use-root-model-type-alias` is enabled, roots with field constraints or
 patterns that require Python regex configuration use a regular `RootModel` class
@@ -44997,7 +45042,7 @@ change generated output.
 | DCG configuration/internal Pydantic models | Internal runtime compatibility: validating generator configuration and constructing internal model/field objects relies on the installed Pydantic. | Keep the minimum DCG-runtime configuration and generation tests; reassess only when the actual floor changes. |
 | Dataclass alias, 2.4 boundary | Generated-code compatibility: targets before 2.4 (`2`) use the `DataModelFieldBackport` alias fallback, which emits `Field` assignments with validation and serialization aliases for non-identifier aliases. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
 | `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11` and `2.12` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
-| `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for lookaround patterns for every target. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
+| `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)) for every target. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
 | RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11` and `2.12` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
 | `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11` and `2.12` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11` and `2.12` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |

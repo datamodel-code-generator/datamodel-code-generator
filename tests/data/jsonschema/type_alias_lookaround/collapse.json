@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string", "pattern": "^(?!bad)[a-z]+$"},
+    "codes": {"$ref": "#/definitions/Codes"},
+    "many": {"type": "array", "items": {"$ref": "#/definitions/Codes"}}
+  },
+  "definitions": {
+    "Codes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "object", "patternProperties": {"^(?=k)[a-z]+$": {"type": "integer"}}, "additionalProperties": false}
+    }
+  }
+}
