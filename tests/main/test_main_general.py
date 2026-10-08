@@ -2963,6 +2963,60 @@ def test_check_file_differs(output_file: Path) -> None:
     )
 
 
+def test_check_suffixless_file_matches(tmp_path: Path) -> None:
+    """Test --check returns OK when a single-module output without a suffix matches."""
+    input_path = DATA_PATH / "jsonschema" / "person.json"
+    output_path = tmp_path / "model"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+        expected_file="person.py",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.OK,
+    )
+
+
+def test_check_suffixless_file_differs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check returns DIFF when a single-module output without a suffix differs."""
+    output_path = tmp_path / "model"
+    output_path.write_text("# Different content\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.DIFF,
+    )
+    assert_output(
+        capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
+        EXPECTED_MAIN_PATH / "check" / "suffixless_file_differs.txt",
+    )
+
+
+def test_check_suffixless_file_does_not_exist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check returns DIFF when a single-module output without a suffix does not exist."""
+    output_path = tmp_path / "model"
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.DIFF,
+    )
+    assert_output(
+        capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
+        EXPECTED_MAIN_PATH / "check" / "suffixless_file_does_not_exist.txt",
+    )
+
+
 def test_check_with_stdout_output(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --check with stdout output returns error."""
     run_main_and_assert(
@@ -3114,6 +3168,66 @@ def test_check_directory_ignores_pycache(output_dir: Path) -> None:
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+    )
+
+
+def test_check_file_undecodable(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check reports an existing file the configured encoding cannot decode."""
+    output_file.write_bytes(b"\xff\n")
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            f"Unable to decode output {output_file.as_posix()} using encoding 'utf-8': "
+            "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n"
+        ),
+    )
+
+
+def test_check_file_without_byte_order_mark(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --check reports an existing file without the byte order mark the configured encoding requires."""
+    input_path = tmp_path / "person.json"
+    input_path.write_text((DATA_PATH / "jsonschema" / "person.json").read_text(encoding="utf-8"), encoding="utf-16")
+    output_file.write_bytes("# Different content\n".encode("utf-16-le"))
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--encoding", "utf-16", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Unable to decode output {output_file.as_posix()} using encoding 'utf-16': ",
+    )
+
+
+def test_check_directory_file_undecodable(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --check names the file in an output directory the configured encoding cannot decode."""
+    input_path = OPEN_API_DATA_PATH / "modular.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp"],
+    )
+    undecodable_file = output_dir / "foo" / "bar.py"
+    undecodable_file.write_bytes(b"\xff\n")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            f"Unable to decode output {undecodable_file.as_posix()} using encoding 'utf-8': "
+            "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n"
+        ),
     )
 
 
