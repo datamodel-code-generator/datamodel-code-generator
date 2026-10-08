@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import shutil
+import warnings
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
@@ -217,7 +218,6 @@ def _render(
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
     lines.append(f"  dependencies {list(project.dependencies)}")
-    lines.extend(_diagnostic(item) for item in project.diagnostics)
     return lines
 
 
@@ -267,8 +267,7 @@ def render_client(
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
-    lines = [_diagnostic(item).strip() for item in project.diagnostics]
-    return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], modules
+    return target.binding_diagnostics if binding_diagnostics else [], modules
 
 
 def _rendered(case: dict[str, Any], root: Path) -> dict[str, bytes]:
@@ -606,29 +605,19 @@ def _artifact_diagnostic(item: Diagnostic) -> str:
 
 
 def _regenerate(source: Path, root: Path) -> list[str]:
-    """Generate the regeneration fixture's package from one version, reporting each file's action and diagnostic.
-
-    A refused generation reports its diagnostics instead.
-    """
+    """Generate one regeneration fixture, reporting warnings and the files it leaves."""
     shutil.copy2(source, root / "api.yaml")
-    try:
-        report = generate_target(
-            root / "api.yaml",
-            model_config=model_config(root / "pets_models.py", "pydantic_v2.BaseModel", {}),
-            config=client_config({"output": "pets", "package": "pets", "model_package": "pets_models"}, root),
-            generator=ClientTarget(),
-        )
-    except APIGenerationError as error:
-        return ["  APIGenerationError", *map(_artifact_diagnostic, error.diagnostics)]
-    actions = (("write", report.written_files), ("unchanged", report.unchanged_files), ("delete", report.deleted_files))
-    lines = [
-        f"  {action} {path.as_posix()}"
-        for action, records in actions
-        for record in records
-        if "_runtime" not in (path := record.path.relative_to(root)).parts
-    ]
-    runtime = sum("_runtime" in record.path.parts for _, records in actions for record in records)
-    return [*lines, f"  runtime files {runtime}", *map(_artifact_diagnostic, report.diagnostics)]
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        try:
+            generate_client(root / "api.yaml", root, "pets", "pydantic_v2.BaseModel")
+        except APIGenerationError as error:
+            lines = ["  APIGenerationError", *map(_artifact_diagnostic, error.diagnostics)]
+        else:
+            paths = sorted(path.relative_to(root) for path in root.rglob("*") if path.is_file())
+            lines = [f"  file {path.as_posix()}" for path in paths if "_runtime" not in path.parts]
+            lines.append(f"  runtime files {sum('_runtime' in path.parts for path in paths)}")
+    return [*lines, *(f"  {item.category.__name__}: {item.message}" for item in recorded)]
 
 
 def client_regeneration_report(root: Path) -> str:
