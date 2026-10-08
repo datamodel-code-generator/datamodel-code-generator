@@ -1379,8 +1379,9 @@ def test_fastapi_cli_model_error_context(
     )
 
 
+@pytest.mark.parametrize("report", [False, True])
 def test_fastapi_cli_unowned_manifest(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    report: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
     monkeypatch.chdir(tmp_path)
@@ -1392,9 +1393,10 @@ def test_fastapi_cli_unowned_manifest(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server(),
+        extra_args=_server(*(["--diagnostics-json", "-"] if report else [])),
         expected_exit=Exit.ERROR,
         capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "unowned-report.txt" if report else None,
         expected_stderr=(
             "W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: "
             "The manifest has an old or unknown format, so the target owns no files and deletes none\n"

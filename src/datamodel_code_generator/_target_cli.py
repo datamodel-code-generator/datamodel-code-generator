@@ -241,8 +241,11 @@ class _Report:
     def failure(self, error: Exception, *, encoding: str = "utf-8") -> None:
         """Print ordinary target errors and preserve the model CLI's hints and unexpected-error traceback."""
         if isinstance(error, APIGenerationError):
-            self.diagnostics.extend(item for item in error.diagnostics if item.severity == "error")
-            self.extend(item for item in error.diagnostics if item.severity != "error")
+            for diagnostic in error.diagnostics:
+                if diagnostic.severity == "error":
+                    self.diagnostics.append(diagnostic)
+                else:
+                    self.extend((diagnostic,))
         message = str(error)
         if isinstance(error, InvalidClassNameError):
             message = f"{error} You have to set `--class-name` option"
