@@ -392,7 +392,10 @@ class Planner:
             reference = OperationRef(pointer=item.ref) if isinstance(item.ref, str) else item.ref
             option = f"operations[{index}].ref"
             if (operation := self.request.resolve(reference)) is None:
-                message = f"The operation setting {reference.pointer!r} {self.request.unresolved}"
+                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+
+                named = named_document(reference.document, reference.document)
+                message = f"The operation setting {reference.pointer!r}{named} {self.request.unresolved}"
                 self.problems.append(_problem("E_OPERATION_REF", message, option_path=option))
             elif (key := operation.id.use_site.pointer) in resolved:
                 self.problems.append(_problem("E_CONFIG_CONFLICT", f"Two settings name {key!r}", option_path=option))

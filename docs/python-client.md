@@ -71,9 +71,12 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file. A value on the
 command line takes precedence over the selected profile, which takes precedence over the base table, and a
 command-line table replaces the whole table of `pyproject.toml`. An operation's own `body_arguments` takes precedence
-over `--client-body-arguments`, wherever each comes from. Paths in `pyproject.toml`, including the JSON files and the
-documents that operation references and helpers name, are relative to its directory, and command-line paths are
-relative to the working directory.
+over `--client-body-arguments`, wherever each comes from. Paths in `pyproject.toml`, including the JSON files, are
+relative to its directory, and command-line paths are relative to the working directory. The documents that
+operation references and helpers name are relative to the JSON file that holds them, however the file is given, as
+a `$ref` is relative to its document; a file given through a symbolic link uses the link's directory. Without a
+file, they are relative to the `pyproject.toml` directory for its tables, and to the working directory for inline
+JSON on the command line.
 
 `--client-resource-names` maps a tag to the dotted namespace of the resource its operations join, such as
 `{"pets": "store.pets"}`. `--client-operations` maps an operation reference, the JSON pointer of the path item method
@@ -470,7 +473,7 @@ upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNS
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
-| `protocols` | A helper file path, a JSON object, a `ProtocolConfiguration`, or none | None | `--client-protocols helpers.json` or inline JSON, relative to the working directory; `client-protocols = "helpers.json"` or a table in `pyproject.toml`, relative to its directory; Python: a `Path`, whose documents are relative to the file, or a mapping or `ProtocolConfiguration` record, whose documents are relative to the working directory |
+| `protocols` | A helper file path, a JSON object, a `ProtocolConfiguration`, or none | None | `--client-protocols helpers.json` or inline JSON; `client-protocols = "helpers.json"` or a table in `pyproject.toml`; Python: a `Path`, a mapping, or a `ProtocolConfiguration` record. The documents a helper file names are relative to the file in all three; those of inline JSON, a mapping, or a record are relative to the working directory, and those of a `pyproject.toml` table to its directory |
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.pyproject -->
 <!-- fmt: off -->
@@ -595,7 +598,8 @@ The file holds one JSON object mapping each helper's name to its definition, in 
 - The file is read as JSON options such as `--aliases` read a JSON file: UTF-8 text parsed by Python's `json`
   module, so a key repeated in one object keeps its last value. A file that cannot be read, text that is not JSON,
   including a path that names no file, and a value that is not an object fail with `E_CONFIG_VALUE` and the message
-  those options give, such as `Invalid JSON for protocols: ...` or `Expected a JSON object, got list`. Before parsing,
+  `--client-protocols` gives, such as `Invalid JSON for protocols: ...` or
+  `Invalid protocols: Input should be a valid dictionary`. Before parsing,
   text that opens more than 64 arrays and objects at once fails the same way, with
   `Invalid JSON for protocols: nests collections deeper than 64 levels`. `NaN` and `Infinity`, which the parser
   accepts, are not JSON values for a literal.
@@ -612,7 +616,7 @@ The file holds one JSON object mapping each helper's name to its definition, in 
 
 | Value | Forms |
 |---|---|
-| Operation reference | An RFC 6901 pointer string to a root path operation, or `{pointer, document?}`. A document names the root input, relative to the helper file, or to the working directory for Python records |
+| Operation reference | An RFC 6901 pointer string to a root path operation, or `{pointer, document?}`. A document names the root input, relative to the helper file, or without a file to the working directory, or to the `pyproject.toml` directory for its table |
 | Schema reference | `{pointer, document?}` with an RFC 6901 pointer; an omitted document is the root input. A document, resolved as for operation references, must be one of the accepted input's documents |
 | Selector | `{from: body, pointer}`, an RFC 6901 pointer over wire names; `{from: header, name, occurrence?}` with `occurrence` `single` (default) or `all`; or `{from: status}`. `all` is accepted only in a binding value |
 | Request target | `{in: path\|query\|header\|cookie, name}`, `{in: querystring, name, pointer}` with the declared querystring's name, or `{in: body, pointer}` |
