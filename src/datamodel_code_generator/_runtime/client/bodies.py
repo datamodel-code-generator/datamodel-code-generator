@@ -187,9 +187,11 @@ class BinarySource:
                 yield chunk
         elif self._owned:
             chunks, left = self.chunks(), self.content_length
-            while left != 0 and (chunk := await in_thread(_step, chunks)) is not None:
-                yield chunk
-                left = None if left is None else left - len(chunk)
+            while left != 0:
+                if (piece := await in_thread(_step, chunks)) is None:
+                    break
+                yield piece
+                left = None if left is None else left - len(piece)
         elif isinstance(self._input, AsyncIterable):
             self._used = True
             async for chunk in self._input:

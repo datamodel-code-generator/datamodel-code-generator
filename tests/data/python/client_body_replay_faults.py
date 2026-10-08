@@ -157,6 +157,15 @@ async def _async_close_faults(package: ModuleType, options: ModuleType, data: di
     exchange = Exchange([])
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
         with pytest.MonkeyPatch.context() as fault:
+            fault.setattr(Path, "open", _opening(_PATHS, [], lambda: _Positionless(data["payload"].encode())))
+            exchange.respond(lambda request: raw_response(200, request.content, "text/plain")(request))
+
+            async def unmeasured() -> bytes:
+                response = await api.request_raw("PUT", data["url"], body=path)
+                return await response.read()
+
+            await arecord(lines, "async path whose file has no position", unmeasured)
+        with pytest.MonkeyPatch.context() as fault:
             fault.setattr(Path, "open", _opening(_PATHS, files, lambda: _Unclosable(data["payload"].encode())))
             for label, response, call in (
                 (
