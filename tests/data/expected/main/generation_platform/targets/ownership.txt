@@ -15,7 +15,7 @@ render
   write target server/README.md (target)
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
+  13 runtime modules ['write']
 publish
 write server/app.py
 render
@@ -34,7 +34,7 @@ render
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']
 write server/routers/pets.py
 remove server/routers/store.py
 render
@@ -53,8 +53,8 @@ render
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['unchanged']
-  W_TARGET_EDITED warning ownership routers/pets.py: The owned file changed since the last generation, and this generation discards the change
+  13 runtime modules ['unchanged']
+  TargetEditWarning: server/routers/pets.py: The owned file changed since the last generation, and this generation discards the change
 publish
 render
   target=fastapi schema_version=1
@@ -72,4 +72,4 @@ render
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']

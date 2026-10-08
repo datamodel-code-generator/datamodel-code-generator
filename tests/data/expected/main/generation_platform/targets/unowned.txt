@@ -17,25 +17,10 @@ render
   write target server/README.md (target)
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
-  W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+  13 runtime modules ['write']
+  TargetStateWarning: server/.dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
 generate
-  target=fastapi schema_version=1
-  written model models.py
-  written target server/__init__.py (target)
-  written target server/application.py (target)
-  written target server/routers/__init__.py (target)
-  written target server/routers/pets.py (target)
-  written target server/routers/store.py (target)
-  written target server/routers/untagged.py (target)
-  written target server/_generated/__init__.py (target)
-  written target server/_generated/contract.py (target)
-  written target server/errors.py (target)
-  written target server/services.py (target)
-  written target server/README.md (target)
-  written target server/py.typed (target)
-  written target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['written']
+  returned None
 tree
   models.py
   server/.dcg-target-manifest.json
@@ -52,4 +37,22 @@ tree
   server/routers/untagged.py
   server/services.py
   server/stale.py
-  11 runtime modules ['present']
+  13 runtime modules ['present']
+  TargetStateWarning: server/.dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
+tree
+  models.py
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  server/stale.py
+  13 runtime modules ['present']

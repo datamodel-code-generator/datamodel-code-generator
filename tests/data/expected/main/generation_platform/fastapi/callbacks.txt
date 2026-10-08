@@ -26,8 +26,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   write server/.dcg-target-manifest.json
-  W_DOCUMENTATION_ANNOTATION target /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
-  W_DOCUMENTATION_ANNOTATION target /paths/~1events/get: The served document leaves out servers, which has no JSON form
   file server/README.md
     | # Callbacks
     |
@@ -120,3 +118,5 @@ render pydantic_v2.BaseModel
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
     | run it again when a new version of datamodel-code-generator changes them.
   file server/py.typed
+  DocumentationAnnotationWarning: <root>/pydantic_v2_BaseModel/server: /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
+  DocumentationAnnotationWarning: <root>/pydantic_v2_BaseModel/server: /paths/~1events/get: The served document leaves out servers, which has no JSON form

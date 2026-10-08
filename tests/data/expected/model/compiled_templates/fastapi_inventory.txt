@@ -1,0 +1,19 @@
+template count: 4
+application.jinja2
+readme.jinja2
+router.jinja2
+services.jinja2
+
+nodes: For, Getattr, If, Name, Output, Template, TemplateData
+filters:
+tests:
+globals:
+loop_attributes:
+assignments:
+for_targets: Name
+macros:
+includes:
+imports_and_inheritance:
+undefined_usage:
+namespaces:
+mapping_dot_accesses:
