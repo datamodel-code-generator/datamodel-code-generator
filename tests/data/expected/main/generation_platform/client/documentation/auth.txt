@@ -25,7 +25,7 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14', 'pydantic>=2.12.0']
 
 # artifact client/_generated_docs/README.md
 # client
@@ -506,9 +506,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
 The package needs these distributions at run time:
 
-- `httpx2>=2.13.0`
-- `typing-extensions>=4.16`
-- `pydantic>=2.13.5`
+- `httpx2>=2.0.0`
+- `typing-extensions>=4.14`
+- `pydantic>=2.12.0`
 
 Each generation reports them; add them to your project, for example with `uv add`.
 

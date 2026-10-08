@@ -26,4 +26,4 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14']

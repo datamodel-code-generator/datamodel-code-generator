@@ -1,2 +1,2 @@
 Add the runtime dependencies of publication_client to your project:
-  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "websockets>=17.1" "msgspec>=0.21.1" "cryptography>=50.0.0"
+  uv add "httpx2>=2.0.0" "typing-extensions>=4.14" "websockets>=17.1" "msgspec>=0.20.0" "cryptography>=40.0.0"

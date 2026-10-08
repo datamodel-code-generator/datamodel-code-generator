@@ -30,8 +30,11 @@ OPTIONS = [
 ]
 
 
-def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
-    """Install the dependencies of the printed uv command into a new environment, then serve from the package."""
+@pytest.mark.parametrize("resolution", ["lowest-direct", "highest"])
+def test_fastapi_install(
+    resolution: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Install the printed dependencies at their floors and at their newest versions, then serve from the package."""
     if not os.environ.get("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E"):
         pytest.skip("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E enables installing generated servers")
     monkeypatch.chdir(tmp_path)
@@ -53,6 +56,8 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
     python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"
     dependencies = shlex.split(notice.splitlines()[-1])[2:]
-    subprocess.run(["uv", "pip", "install", "--quiet", "--python", python, *dependencies], check=True)
+    subprocess.run(
+        ["uv", "pip", "install", "--quiet", "--python", python, "--resolution", resolution, *dependencies], check=True
+    )
     served = subprocess.run([python, "app.py"], capture_output=True, text=True, check=False)
     assert_output(served.stdout + served.stderr, EXPECTED / "served.txt")

@@ -27,8 +27,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._target_contract import ModelArtifact
 
-DEPENDENCIES: Final = ("fastapi>=0.141.1", "pydantic>=2.13.5")
-FORMS: Final = "python-multipart>=0.0.32"
+DEPENDENCIES: Final = ("fastapi>=0.132.0", "pydantic>=2.12.0")
+FORMS: Final = "python-multipart>=0.0.18"
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",

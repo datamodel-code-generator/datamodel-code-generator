@@ -1,9 +1,9 @@
 # basic
 backend pydantic_v2.BaseModel
 dependencies
-  httpx2>=2.13.0
-  typing-extensions>=4.16
-  pydantic>=2.13.5
+  httpx2>=2.0.0
+  typing-extensions>=4.14
+  pydantic>=2.12.0
 copied runtime
   __init__.py: 2
   client/__init__.py: 4

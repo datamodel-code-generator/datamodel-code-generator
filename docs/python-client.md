@@ -3845,7 +3845,7 @@ An `ed25519` helper takes `KeySet[Ed25519Key]` and an `rsa-pss-sha256` helper `K
 `Ed25519Key(*, id: str, public_key: Ed25519PublicKey)` and `RSAPSSKey(*, id: str, public_key: RSAPublicKey)` wrap the
 public key classes of [cryptography](https://cryptography.io/). `pkg.webhooks.keys` exports only the key types of the
 selected signature kinds, and only these key types and their helpers import cryptography, so `pkg`, `pkg.protocols`,
-and HMAC helpers import without it. A package with such a helper lists `cryptography>=50.0.0` among its dependencies,
+and HMAC helpers import without it. A package with such a helper lists `cryptography>=40.0.0` among its dependencies,
 and generation prints it in the `uv add` hint. Load the key with cryptography yourself, for example:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys -->

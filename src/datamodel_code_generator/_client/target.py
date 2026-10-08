@@ -75,12 +75,12 @@ if TYPE_CHECKING:
         TypeUseId,
     )
 
-DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
-PYDANTIC: Final = "pydantic>=2.13.5"
+DEPENDENCIES: Final = ("httpx2>=2.0.0", "typing-extensions>=4.14")
+PYDANTIC: Final = "pydantic>=2.12.0"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
     "pydantic_v2.dataclass": (PYDANTIC,),
-    "msgspec.Struct": ("msgspec>=0.21.1",),
+    "msgspec.Struct": ("msgspec>=0.20.0",),
 }
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",

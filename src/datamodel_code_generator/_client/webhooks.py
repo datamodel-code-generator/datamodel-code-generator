@@ -47,7 +47,7 @@ __all__ = (
 )
 
 _SENDERS: Final = frozenset({"webhook", "callback"})
-_CRYPTOGRAPHY: Final = "cryptography>=50.0.0"
+_CRYPTOGRAPHY: Final = "cryptography>=40.0.0"
 
 
 class _Algorithm(NamedTuple):

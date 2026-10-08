@@ -40,7 +40,7 @@ render pydantic_v2.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14', 'pydantic>=2.12.0']
 render dataclasses.dataclass
   write models.py
   write client/__init__.py
@@ -82,7 +82,7 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -124,7 +124,7 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14']
 render msgspec.Struct
   write models.py
   write client/__init__.py
@@ -166,4 +166,4 @@ render msgspec.Struct
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.21.1']
+  dependencies ['httpx2>=2.0.0', 'typing-extensions>=4.14', 'msgspec>=0.20.0']

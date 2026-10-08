@@ -17,11 +17,11 @@ if TYPE_CHECKING:
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
 MODEL_DEPENDENCIES: Final = (
-    ("pydantic.EmailStr", "email-validator>=2.3"),
-    ("pydantic.NameEmail", "email-validator>=2.3"),
-    ("pydantic.networks.EmailStr", "email-validator>=2.3"),
-    ("pydantic.networks.NameEmail", "email-validator>=2.3"),
-    ("ulid", "python-ulid>=3.2.1"),
+    ("pydantic.EmailStr", "email-validator>=2.0"),
+    ("pydantic.NameEmail", "email-validator>=2.0"),
+    ("pydantic.networks.EmailStr", "email-validator>=2.0"),
+    ("pydantic.networks.NameEmail", "email-validator>=2.0"),
+    ("ulid", "python-ulid>=2.4"),
     ("pendulum", "pendulum>=3.2"),
 )
 _IMPORT: Final = re.compile(
