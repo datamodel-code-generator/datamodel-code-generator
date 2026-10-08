@@ -10,7 +10,7 @@ build async: HandlerConfigurationError: The store.get_inventory method is asynch
 build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
 build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
-  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
   list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
@@ -18,9 +18,9 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
-< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind", "str-enum[FieldPetsGetQueryKindParameter]"]}, {"type": "none_required", "loc": ["query", "kind", "none"]}]
 > GET /pets?limit=99
-  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=99, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
 > POST /pets
   create_pet(body=NewPet(name='Tom', tag=None))
@@ -48,21 +48,21 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
   get_inventory()
 < 200 application/json {"available":2}
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=UNSET)
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=101
 < 422 application/json [{"type": "less_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?limit=two
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "limit"]}]
 > GET /pets?limit=1&limit=2
-  list_pets(limit=2, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=2, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
-< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
+< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since", "datetime"]}, {"type": "none_required", "loc": ["query", "since", "none"]}]
 > GET /pets
-< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
+< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id", "uuid"]}, {"type": "none_required", "loc": ["header", "X-Request-Id", "none"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]
@@ -89,7 +89,7 @@ build async: HandlerConfigurationError: The store.get_inventory method is asynch
 build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
 build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
-  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
   list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
@@ -97,9 +97,9 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
-< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind", "str-enum[FieldPetsGetQueryKindParameter]"]}, {"type": "none_required", "loc": ["query", "kind", "none"]}]
 > GET /pets?limit=99
-  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=99, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
 > POST /pets
   create_pet(body=NewPet(name='Tom', tag=None))
@@ -127,21 +127,21 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
   get_inventory()
 < 200 application/json {"available":2}
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=UNSET)
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=101
 < 422 application/json [{"type": "less_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?limit=two
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "limit"]}]
 > GET /pets?limit=1&limit=2
-  list_pets(limit=2, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=2, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
-< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
+< 422 application/json [{"type": "timezone_aware", "loc": ["query", "since", "datetime"]}, {"type": "none_required", "loc": ["query", "since", "none"]}]
 > GET /pets
-< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
+< 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id", "uuid"]}, {"type": "none_required", "loc": ["header", "X-Request-Id", "none"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]

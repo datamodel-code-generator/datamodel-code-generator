@@ -14,7 +14,6 @@ from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
@@ -42,10 +41,10 @@ class GetItems:
     class Parameters:
         """The adapter parameters of get__items."""
 
-        flags: list[bool] | Unset
-        page: plan_oas30_models.FieldItemsGetQueryPageParameter | Unset
+        flags: list[bool] | None
+        page: plan_oas30_models.FieldItemsGetQueryPageParameter | None
         x_id: list[int]
-        pref: plan_oas30_models.FieldItemsGetCookiePrefParameter | Unset
+        pref: plan_oas30_models.FieldItemsGetCookiePrefParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

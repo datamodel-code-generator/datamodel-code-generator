@@ -1,23 +1,23 @@
 # bodies
 serve pydantic_v2.BaseModel
-service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, upload
+service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_note, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, upload
 service UntaggedService without its methods: TypeError
 > POST /items
-  post_item(body=UNSET)
+  post_item(body=None)
 < 204 - b''
 > POST /items
   post_item(body=Item(name='a'))
 < 204 - b''
 > POST /items
-< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "extra"]}]
+< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "Item", "extra"]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /items
 < 422 application/json [{"type": "json_invalid", "loc": ["body", 1]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /items
-< 422 application/json [{"type": "model_attributes_type", "loc": ["body"]}]
+< 422 application/json [{"type": "model_attributes_type", "loc": ["body", "Item"]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /accounts
 < 422 application/json [{"type": "missing", "loc": ["body", "id"]}]
 > POST /accounts
@@ -37,7 +37,7 @@ service UntaggedService without its methods: TypeError
   post_profile(body=FieldProfilesPostRequest(a=2), media_type='application/json; profile=a')
 < 204 - b''
 > POST /profiles
-  post_profile(body=UNSET, media_type=None)
+  post_profile(body=None, media_type=None)
 < 204 - b''
 > POST /variants
   post_variant(body=FieldVariantsPostRequest1(c=True), media_type='application/json')
@@ -94,11 +94,23 @@ service UntaggedService without its methods: TypeError
   post_check(body=Check(code=12, scores=[1, 2]))
 < 204 - b''
 > POST /checks
-< 422 application/json [{"type": "int_parsing", "loc": ["body", "code"]}]
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "Check", "code"]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /checks
-< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "scores", 1]}]
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "Check", "scores", 1]}, {"type": "none_required", "loc": ["body", "none"]}]
 > POST /checks
 < 400 application/json {"detail":"There was an error parsing the body"}
+> POST /items
+  post_item(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=FieldNotesPostRequest(root=Item(name='a')))
+< 204 - b''
 > POST /raw
   post_raw(request=POST /raw, body=b'{"any":"thing"}')
 < 204 - b''

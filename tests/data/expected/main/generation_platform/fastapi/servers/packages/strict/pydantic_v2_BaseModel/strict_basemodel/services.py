@@ -11,7 +11,6 @@ from typing import Protocol
 import pydantic
 from fastapi.responses import Response
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 
@@ -23,17 +22,17 @@ class UntaggedService(Protocol):
         self,
         *,
         id: pydantic.StrictInt,
-        count: pydantic.StrictInt | Unset,
-        bounded: int | Unset,
-        score: pydantic.StrictFloat | Unset,
-        flag: pydantic.StrictBool | Unset,
-        name: pydantic.StrictStr | Unset,
-        label: str | Unset,
-        counts: list[pydantic.StrictInt] | Unset,
-        names: list[pydantic.StrictStr] | Unset,
+        count: pydantic.StrictInt | None,
+        bounded: int | None,
+        score: pydantic.StrictFloat | None,
+        flag: pydantic.StrictBool | None,
+        name: pydantic.StrictStr | None,
+        label: str | None,
+        counts: list[pydantic.StrictInt] | None,
+        names: list[pydantic.StrictStr] | None,
         page: pydantic.StrictInt,
         size: int,
-        maybe: pydantic.StrictInt | None | Unset,
-        x_trace: pydantic.StrictInt | Unset,
-        x_tag: pydantic.StrictStr | Unset,
+        maybe: pydantic.StrictInt | None,
+        x_trace: pydantic.StrictInt | None,
+        x_tag: pydantic.StrictStr | None,
     ) -> None | HTTPResult[None] | Response: ...

@@ -15,7 +15,6 @@ from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
@@ -51,7 +50,7 @@ class GetPages:
     class Parameters:
         """The adapter parameters of get__pages."""
 
-        pager: plan_parameters_models.FieldPagesGetQueryPagerParameter | Unset
+        pager: plan_parameters_models.FieldPagesGetQueryPagerParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -87,7 +86,7 @@ class GetOptions:
     class Parameters:
         """The adapter parameters of get__options."""
 
-        opts: plan_parameters_models.FieldOptionsGetQueryOptsParameter | Unset
+        opts: plan_parameters_models.FieldOptionsGetQueryOptsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -122,7 +121,7 @@ class GetMore:
     class Parameters:
         """The adapter parameters of get__more."""
 
-        more: plan_parameters_models.FieldMoreGetQueryMoreParameter | Unset
+        more: plan_parameters_models.FieldMoreGetQueryMoreParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -166,13 +165,13 @@ class GetHeaders:
     class Parameters:
         """The adapter parameters of get__headers."""
 
-        combined: plan_parameters_models.FieldHeadersGetHeaderCombinedParameter | Unset
-        flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | Unset
-        ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | Unset
-        shaped: typing.Any | Unset
-        counts: dict[str, int] | Unset
-        any_map: dict[str, typing.Any] | Unset
-        plain: str | Unset
+        combined: plan_parameters_models.FieldHeadersGetHeaderCombinedParameter | None
+        flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | None
+        ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | None
+        shaped: typing.Any | None
+        counts: dict[str, int] | None
+        any_map: dict[str, typing.Any] | None
+        plain: str | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

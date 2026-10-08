@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
@@ -18,7 +18,7 @@ from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dep
 
 from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import Unset
 from ..model_codecs.wire import thaw_wire
 from .errors import REQUEST_ERRORS, invalid, malformed_request, missing, model_records, unsupported_media, wire_records
 
@@ -29,22 +29,12 @@ if TYPE_CHECKING:
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]
-ValueT = TypeVar("ValueT")
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
 _PATH_SAFE: Final = "/:@!$&'()*+,;="
 _TEXT: Final = FieldPlan("")
 _ANY: Final[TypeAdapter[object]] = TypeAdapter(object)
-
-
-def absent() -> None:
-    """Stand in for an omitted optional native value; the endpoint passes UNSET to the handler instead."""
-
-
-def present(value: ValueT | None) -> ValueT | Unset:
-    """Return an optional native value, or UNSET when the request omits it."""
-    return UNSET if value is None else value
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -54,7 +44,7 @@ class ParameterArgument:
     name: str
     plan: ParameterPlan
     adapter: TypeAdapter[object] | None = None
-    default: object = field(default=UNSET, compare=False)
+    default: object = field(default=None, compare=False)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -110,7 +100,7 @@ class ParameterAdapter:
     path: RawPath | None = None
 
     async def __call__(self, request: Request) -> object:
-        """Return the operation's record of adapter parameter values, with UNSET for omitted ones."""
+        """Return the operation's record of adapter parameter values, with their defaults or None for omitted ones."""
         scope = request.scope
         raw = RawParameters(
             path=self._path(scope, self.path) if self.path is not None else {},
@@ -199,17 +189,17 @@ class BodyAdapter:
         )
 
     async def __call__(self, request: Request) -> object:
-        """Return the validated body, or UNSET for an omitted optional body."""
+        """Return the validated body, or None for an omitted optional body."""
         return (await self.receive(request))[1]
 
     async def receive(self, request: Request) -> tuple[str | None, object]:
-        """Return the received media type with the validated body, or UNSET for an omitted optional body."""
+        """Return the received media type with the validated body, or None for both of an omitted optional body."""
         header = request.headers.get("content-type")
         body = await request.body()
         if not body and (header is None or not self.required):
             if self.required:
                 raise RequestValidationError([missing(("body",))])
-            return None, UNSET
+            return None, None
         if (selected := self._select(header)) is None:
             raise unsupported_media()
         media, media_type, received_type = selected

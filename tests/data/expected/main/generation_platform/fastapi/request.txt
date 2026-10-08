@@ -47,7 +47,7 @@ render pydantic_v2.BaseModel
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
+    | A method takes the operation's arguments as keywords, with `None` for an optional parameter or body the request omits, and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
     |

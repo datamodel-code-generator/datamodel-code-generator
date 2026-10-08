@@ -17,7 +17,7 @@ render
   write target server/README.md (target)
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['write']
+  11 runtime modules ['write']
   W_STATE_UNOWNED warning ownership .dcg-target-manifest.json: The manifest has an old or unknown format, so the target owns no files and deletes none
 generate
   target=fastapi schema_version=1
@@ -35,7 +35,7 @@ generate
   written target server/README.md (target)
   written target server/py.typed (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['written']
+  11 runtime modules ['written']
 tree
   models.py
   server/.dcg-target-manifest.json
@@ -52,4 +52,4 @@ tree
   server/routers/untagged.py
   server/services.py
   server/stale.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']

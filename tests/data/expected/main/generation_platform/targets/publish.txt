@@ -15,7 +15,7 @@ generate
   written target server/README.md (target)
   written target server/py.typed (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['written']
+  11 runtime modules ['written']
 tree
   models.py
   server/.dcg-target-manifest.json
@@ -31,7 +31,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
 generate
   target=fastapi schema_version=1
   unchanged model models.py
@@ -48,7 +48,7 @@ generate
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
 generate
   target=fastapi schema_version=1
   written model models.py
@@ -64,7 +64,7 @@ generate
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/py.typed (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
   deleted target server/routers/store.py (target)
 tree
   models.py
@@ -80,7 +80,7 @@ tree
   server/routers/pets.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -96,4 +96,4 @@ render
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']

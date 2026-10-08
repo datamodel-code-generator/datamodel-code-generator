@@ -67,7 +67,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > GET /maybe?principal=x
   global /maybe
@@ -77,11 +77,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > PUT /pets/1
   global /pets/1

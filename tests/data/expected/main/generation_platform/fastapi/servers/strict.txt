@@ -3,7 +3,7 @@ serve pydantic_v2.BaseModel
 service UntaggedService: get_values
 service UntaggedService without its methods: TypeError
 > GET /values/5
-  get_values(id=5, count=UNSET, bounded=UNSET, score=UNSET, flag=UNSET, name=UNSET, label=UNSET, counts=UNSET, names=UNSET, page=1, size=10, maybe=UNSET, x_trace=UNSET, x_tag=UNSET)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None)
 < 204 - b''
 > GET /values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4
   get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, x_trace=7, x_tag='t')
@@ -21,7 +21,7 @@ service UntaggedService without its methods: TypeError
 > GET /values/5?flag=maybe
 < 422 application/json [{"type": "type_error", "loc": ["query", "flag"]}]
 > GET /values/5?label=a
-< 422 application/json [{"type": "string_too_short", "loc": ["query", "label"]}]
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "label", "constrained-str"]}, {"type": "none_required", "loc": ["query", "label", "none"]}]
 > GET /values/5?counts=1&counts=x
 < 422 application/json [{"type": "type_error", "loc": ["query", "counts"]}]
 > GET /values/5?page=x

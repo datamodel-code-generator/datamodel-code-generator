@@ -15,7 +15,7 @@ render
   write target server/README.md (target)
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['write']
+  11 runtime modules ['write']
 publish
 remove server/routers/store.py
 render
@@ -33,7 +33,7 @@ render
   write target server/README.md (target)
   unchanged target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
 restore server/routers/store.py
 render
   target=fastapi schema_version=1
@@ -51,21 +51,21 @@ render
   unchanged target server/py.typed (target)
   delete target server/routers/store.py (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
 publish
 {
   "files": {
-    "README.md": "sha256:7a830676b8eba569d0401bbb115c35a34aade5cc62b1c0917905f287a4354e2a",
-    "__init__.py": "sha256:c713562d4d122c1ef82ac132794829a4c5e464388280ac1da6962f21fd8f27b1",
+    "README.md": "sha256:e9a6b4d705b0a2d5c6b4336e3fbaa1992166a37bc0e09697a45367578a743eeb",
+    "__init__.py": "sha256:39bff22deb97aaa5b085ef74435b62ab30a58fe4a2639d9fcd3c7ae65b9ac906",
     "_generated/__init__.py": "sha256:a792d5739e3676bad9222272582e0d6ea9471f05a146f4aaedbb53569ebb3ad4",
     "_generated/contract.py": "sha256:6d480aacdb723f7ac66bb664bf33479ee12d647f88c1ee61a772002c701739c0",
     "application.py": "sha256:e2a4c6d31c167d4d2edc7a07333389227a5b1d42aed20fb0766b10c24075ab38",
     "errors.py": "sha256:1d233d3874a47379092ea61d70974917b64dc0c40ad979772d1e0290b493e512",
     "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "routers/__init__.py": "sha256:7e21a48efe05e35b4aff391273607d83c005e455bbc593a444778aaf50e6c334",
-    "routers/pets.py": "sha256:27026da2c3ff3ac31014ad74d4798587c383615169b7457d851dc45eba08ece4",
+    "routers/pets.py": "sha256:2ef33a34fa9db312ea517e066463855ce23ddd321c146560281779961b3e65d4",
     "routers/untagged.py": "sha256:5fcfd5f46835c8b830f90f38ccb93baaffec7e89276eaafe46b1a0bffc4669e8",
-    "services.py": "sha256:b76513b0b76b2a5c4ab10e1c55dc13b47fb8087daf811ce7ea0709a2db706f07"
+    "services.py": "sha256:1f385301d50cb70a0bc6271db81de65c00e9a9b2eb82f5e9528f7e9e8c82dd04"
   },
   "format": 1,
   "generator": {
@@ -96,4 +96,4 @@ render
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']

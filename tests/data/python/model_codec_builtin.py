@@ -13,11 +13,9 @@ import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime, time
-from functools import reduce
 from itertools import starmap
-from operator import or_
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, get_args, get_type_hints
+from typing import TYPE_CHECKING, Any, get_type_hints
 
 from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
@@ -412,11 +410,6 @@ class _NativeServerCases:
                 name = re.sub(r"\W", "_", name).lower()
                 service = next(service for service in self.services.values() if hasattr(service, route.name))
                 native_type = get_type_hints(getattr(service, route.name), include_extras=True)[name]
-                members = tuple(
-                    member for member in get_args(native_type) if getattr(member, "__name__", "") != "Unset"
-                )
-                if members:
-                    native_type = reduce(or_, members)
         return route, native_type
 
     def request(self, route: Any, value: object) -> object:

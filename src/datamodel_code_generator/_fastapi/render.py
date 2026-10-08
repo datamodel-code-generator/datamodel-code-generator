@@ -19,7 +19,13 @@ from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
-from datamodel_code_generator._target_contract import ConstructorType, LiteralScalar, LiteralSequence
+from datamodel_code_generator._target_contract import (
+    ConstructorType,
+    LiteralScalar,
+    LiteralSequence,
+    NoneType,
+    UnionType,
+)
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role
 
@@ -116,14 +122,9 @@ _INPUT_RUNTIME: Final = ("model_codecs/parameters.py", "server/requests.py")
 
 
 def _reads_inputs(spec: OperationSpec) -> bool:
-    """Return whether an operation reads an input through an adapter or receives an absent one."""
-    if (body := spec.body) is not None and (
-        body.decision.transport == "adapter" or (body.decision.transport == "fastapi_native" and not body.required)
-    ):
-        return True
-    return any(
-        argument.kind == "adapter" or (argument.native is not None and argument.native.default is Default.ABSENT)
-        for argument in spec.arguments
+    """Return whether an operation reads an input through an adapter."""
+    return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
+        argument.kind == "adapter" for argument in spec.arguments
     )
 
 
@@ -309,7 +310,7 @@ class ServerRenderer:  # noqa: PLR0904
         )
 
     def runtime(self) -> Iterator[RenderedFile]:
-        """Copy the server runtime, with the request adapters when an operation reads or omits an input through them."""
+        """Copy the server runtime, with the request adapters when an operation reads an input through them."""
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
         for path, text in runtime_sources((*_SERVER_RUNTIME, *inputs)):
             yield self.file(path, "runtime", text, verbatim=True)
@@ -437,7 +438,7 @@ class ServerRenderer:  # noqa: PLR0904
         )
         call = Group(
             f"{'await ' if asynchronous else ''}{handler}(",
-            tuple((f"{argument.name}=", _value(module, spec, argument, record)) for argument in spec.arguments),
+            tuple((f"{argument.name}=", _value(spec, argument, record)) for argument in spec.arguments),
             ")",
         )
         dispatch = module.local("_runtime.server.responses", "dispatch")
@@ -520,11 +521,10 @@ class ServerRenderer:  # noqa: PLR0904
         annotated = module.name("typing", "Annotated")
         if body.decision.transport == "fastapi_native":
             media = body.media[0]
-            keywords = [f"media_type={media.media_type!r}"]
-            if not body.required:
-                keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
             api = module.name("fastapi", "Form" if body.form else "Body")
-            return Group(f"{argument.name}: {annotated}[{_body(module, media)}, {api}(", _items(keywords), ")]")
+            head = f"{argument.name}: {annotated}[{_body(module, media, required=body.required)}, {api}("
+            keywords = _items((f"media_type={media.media_type!r}",))
+            return Group(head, keywords, ")]" if body.required else ")] = None")
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
@@ -532,19 +532,18 @@ class ServerRenderer:  # noqa: PLR0904
         return f"{argument.name}: {annotated}[{kind}, {depends}({plan}.BODY)]"
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for a body, with UNSET for an optional one."""
+        """Return the type the handler receives for a body, with None for an optional one."""
         kinds = dict.fromkeys(self.media_type(module, media) for media in body.media)
-        if not body.required:
-            kinds[module.local("_runtime.model_codecs.unset", "Unset")] = None
+        if not (body.required or any(_nullable(_payload(media)) for media in body.media)):
+            kinds["None"] = None
         return " | ".join(kinds)
 
     @staticmethod
     def media_type(module: Module, media: MediaSpec) -> str:
         """Return one media's payload type: the model's type, or the media surface without a schema."""
-        use = media.use
-        if media.kind == "binary" or use is None or use.type is None:
+        if (value := _payload(media)) is None:
             return module.name("typing", "Any") if media.kind == "json" else "str" if media.kind == "text" else "bytes"
-        return module.static(use.type)
+        return module.static(value)
 
     def services_module(self) -> str:
         """Return the services module: one Protocol per router group with an abstract method per operation."""
@@ -746,22 +745,38 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
     if field.api == "Header":
         keywords.append("convert_underscores=False")
     keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
-    default = ""
     if field.default is Default.ABSENT:
-        keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
-    elif not isinstance(field.default, Default):
-        default = f" = {_default(module, field.default)}"
-    base, metadata = module.types.parts(field.type)
-    head = ", ".join((base, *metadata, f"{module.name('fastapi', field.api)}("))
+        parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
+        default = " = None"
+    else:
+        base, metadata = module.types.parts(field.type)
+        parts = (base, *metadata)
+        default = "" if isinstance(field.default, Default) else f" = {_default(module, field.default)}"
+    head = ", ".join((*parts, f"{module.name('fastapi', field.api)}("))
     return Group(f"{name}: {module.name('typing', 'Annotated')}[{head}", _items(keywords), f")]{default}")
 
 
-def _body(module: Module, media: MediaSpec) -> str:
-    return (
-        module.name("typing", "Any")
-        if media.use is None or media.use.type is None
-        else module.annotation(media.use.type)
-    )
+def _payload(media: MediaSpec) -> FinalPythonType | None:
+    """Return the model type of a media's payload, or None for binary media and media without a schema."""
+    return None if media.kind == "binary" or media.use is None else media.use.type
+
+
+def _nullable(value: FinalPythonType | None) -> bool:
+    """Return whether a type already takes None, so an optional input of it needs no None member."""
+    return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
+
+
+def _none(module: Module, text: str, value: FinalPythonType | None) -> str:
+    """Return a runtime annotation that also takes None, which stays out of the served schema of a non-nullable type."""
+    if _nullable(value):
+        return text
+    return f"{text} | {module.name('pydantic.json_schema', 'SkipJsonSchema')}[None]"
+
+
+def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
+    value = None if media.use is None else media.use.type
+    text = module.name("typing", "Any") if value is None else module.annotation(value)
+    return text if required else _none(module, text, value)
 
 
 def _adapter(module: Module, value: FinalPythonType) -> str:
@@ -775,7 +790,7 @@ def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
 
 
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
-    """Return the type a method receives for a parameter: the model's type, or Any without one, with UNSET if absent."""
+    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
     assert parameter is not None
     if parameter.type is not None:
         text = module.static(parameter.type)
@@ -783,9 +798,9 @@ def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
         text = "str"
     else:
         text = module.name("typing", "Any")
-    if parameter.required or parameter.default is not Default.ABSENT:
+    if parameter.required or parameter.default is not Default.ABSENT or _nullable(parameter.type):
         return text
-    return f"{text} | {module.local('_runtime.model_codecs.unset', 'Unset')}"
+    return f"{text} | None"
 
 
 def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group:
@@ -920,22 +935,14 @@ def _response_description(spec: OperationSpec) -> object:
     return None if represented is None else fact(represented.declaration, "description")
 
 
-def _value(module: Module, spec: OperationSpec, argument: Argument, record: str) -> str:
+def _value(spec: OperationSpec, argument: Argument, record: str) -> str:
     if argument.kind == "adapter":
         return f"{record}.{argument.name}"
     if argument.kind == "media_type":
         return "body[0]"
     if argument.kind == "body" and spec.body is not None and len(spec.body.media) > 1:
         return "body[1]"
-    native = argument.native
-    body = spec.body
-    absent = (native is not None and native.default is Default.ABSENT) or (
-        argument.kind == "body"
-        and body is not None
-        and body.decision.transport == "fastapi_native"
-        and not body.required
-    )
-    return f"{module.local('_runtime.server.requests', 'present')}({argument.name})" if absent else argument.name
+    return argument.name
 
 
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group | None:
@@ -1084,11 +1091,9 @@ from .application import (
     create_app,
 )
 from .errors import AuthConfigurationError, HandlerConfigurationError
-from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.server.responses import HTTPResult
 
 __all__ = [
-    "UNSET",
     "AsyncAuthorize",
     "AuthConfigurationError",
     "Authorize",
@@ -1099,7 +1104,6 @@ __all__ = [
     "OperationDependencies",
     "OperationKey",
     "RequirementSets",
-    "Unset",
     "build_router",
     "create_app",
 ]

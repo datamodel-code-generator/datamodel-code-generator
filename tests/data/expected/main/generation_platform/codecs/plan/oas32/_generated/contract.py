@@ -14,7 +14,6 @@ from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
@@ -48,8 +47,8 @@ class GetSearch:
     class Parameters:
         """The adapter parameters of get__search."""
 
-        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | Unset
-        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | Unset
+        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | None
+        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -99,12 +98,12 @@ class GetSpread:
     class Parameters:
         """The adapter parameters of get__spread."""
 
-        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | Unset
-        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | Unset
-        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | Unset
-        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | Unset
-        x_counts: dict[str, int] | Unset
-        x_tallies: dict[str, int] | Unset
+        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | None
+        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | None
+        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | None
+        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | None
+        x_counts: dict[str, int] | None
+        x_tallies: dict[str, int] | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -208,8 +207,8 @@ class PostRaw:
     class Parameters:
         """The adapter parameters of post__raw."""
 
-        querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | Unset
-        note: str | Unset
+        querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | None
+        note: str | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

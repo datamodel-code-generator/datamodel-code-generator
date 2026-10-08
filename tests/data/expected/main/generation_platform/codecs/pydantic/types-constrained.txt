@@ -1,7 +1,7 @@
 code: native 'abc' json="abc"
-code-invalid: ValidationError string_pattern_mismatch@[]
+code-invalid: ValidationError string_pattern_mismatch@['constrained-str'],none_required@['none']
 price: native Decimal('9.5') json="9.5"
-price-invalid: ValidationError less_than_equal@[]
+price-invalid: ValidationError less_than_equal@['decimal'],none_required@['none']
 pet: native Dog(kind='dog') set=['kind'] json={"kind":"dog"}
 counts: native {'a': 1, 'b': 2} json={"a":1,"b":2}
 counts-invalid: ValidationError int_parsing@['a']

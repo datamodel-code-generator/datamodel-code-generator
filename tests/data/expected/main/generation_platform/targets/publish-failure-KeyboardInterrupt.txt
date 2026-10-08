@@ -20,7 +20,7 @@ generate
   written target server/py.typed (target)
   written remote_lock remote.lock
   written target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['written']
+  11 runtime modules ['written']
 tree
   models.py
   remote.lock
@@ -36,4 +36,4 @@ tree
   server/routers/pets.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']

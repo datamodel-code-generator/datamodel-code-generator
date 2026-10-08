@@ -144,7 +144,7 @@ _DEFAULT_STATUS: Final = 200
 
 
 class Default(Enum):
-    """How an optional native argument behaves when the request omits it."""
+    """Whether a request must send a native argument, or the handler receives None for an absent one."""
 
     REQUIRED = "required"
     ABSENT = "absent"

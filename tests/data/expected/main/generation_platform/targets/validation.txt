@@ -21,4 +21,4 @@ render
   write target server/README.md (target)
   write target server/py.typed (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['write']
+  11 runtime modules ['write']
