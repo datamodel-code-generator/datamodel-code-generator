@@ -5638,7 +5638,10 @@ This affects import statements and type annotation syntax in generated code.
 
 Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-The `--union-mode` flag configures the code generation behavior.
+The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+Discriminated unions are not given a `union_mode`: Pydantic validates them by
+their discriminator tag, a separate mode that cannot be combined with
+`smart` or `left_to_right`.
 
 **Option relationships:**
 

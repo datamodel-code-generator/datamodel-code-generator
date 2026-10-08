@@ -5162,7 +5162,10 @@ def test_main_jsonschema_combine_one_of_object(output_file: Path) -> None:
     options=["--union-mode"],
     option_description="""Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-The `--union-mode` flag configures the code generation behavior.""",
+The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+Discriminated unions are not given a `union_mode`: Pydantic validates them by
+their discriminator tag, a separate mode that cannot be combined with
+`smart` or `left_to_right`.""",
     input_schema="jsonschema/combine_any_of_object.json",
     cli_args=["--union-mode", "left_to_right", "--output-model-type", "pydantic_v2.BaseModel"],
     golden_output="jsonschema/combine_any_of_object_left_to_right.py",
@@ -5172,7 +5175,10 @@ def test_main_jsonschema_combine_any_of_object(
 ) -> None:
     """Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-    The `--union-mode` flag configures the code generation behavior.
+    The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+    Discriminated unions are not given a `union_mode`: Pydantic validates them by
+    their discriminator tag, a separate mode that cannot be combined with
+    `smart` or `left_to_right`.
     """
     extra_args = ["--output-model-type", output_model]
     if union_mode is not None:

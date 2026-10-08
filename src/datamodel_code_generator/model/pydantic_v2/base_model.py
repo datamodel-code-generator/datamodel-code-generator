@@ -806,7 +806,8 @@ class DataModelField(_PydanticBaseDataModelField):
             data["frozen"] = True
 
         if "union_mode" in data:
-            if self.data_type.is_union:
+            # A discriminated union is its own validation mode, so pydantic rejects union_mode alongside it.
+            if self.data_type.is_union and "discriminator" not in data:
                 data["union_mode"] = data.pop("union_mode").value
             else:
                 data.pop("union_mode")
