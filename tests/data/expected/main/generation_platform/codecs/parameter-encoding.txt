@@ -45,7 +45,7 @@ path username simple scalar/string: /%D8%A7%D9%84%D8%AE%D9%88%D8%A7%D8%B1%D8%B2%
 query thing form* array/string: ?thing=one%20thing&thing=another%20thing => ["one thing","another thing"]
 query freeForm form* object/string: ?page=4&pageSize=50 => {"page":4,"pageSize":50}
 header X-Token simple array/integer: X-Token: 12345678,90099 => [12345678,90099]
-cookie greeting form* scalar/string: Cookie: greeting=Hello%2C%20world%21 => "Hello, world!"
+cookie greeting form* scalar/string: Cookie: greeting=Hello%2C%20world! => "Hello%2C%20world!"
 cookie cookie cookie* object/string: Cookie: greeting=Hello%2C%20world!; code=42 => {"greeting":"Hello%2C%20world!","code":42}
 query q form* scalar/string: ?q=a/b?c%23d%26e%3Df%2Bg%5Bh%5D%41%25zz%2Ci => "a/b?c#d&e=f+g[h]A%zz,i"
 query q form array/string: ?q=a%2Cb,c/d => ["a,b","c/d"]
@@ -86,8 +86,14 @@ header X simple scalar/string: ParameterEncodingError A header value contains co
 header X simple array/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
 header X simple* object/string: ParameterEncodingError An exploded header member name cannot contain '='
 header X simple* object/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
-cookie c cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
-cookie c d cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
+cookie c cookie* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c d cookie* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie greeting form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
+cookie c d form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 query c text/plain scalar/string: ParameterEncodingError The parameter content media or value is not builtin
 querystring qs text/plain scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query

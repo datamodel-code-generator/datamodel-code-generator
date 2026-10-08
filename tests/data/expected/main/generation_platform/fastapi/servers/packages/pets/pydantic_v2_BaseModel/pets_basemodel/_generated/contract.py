@@ -6,15 +6,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Final, TypedDict
 
 import pets_basemodel_models
 from fastapi import params
 from pydantic import TypeAdapter
 
-from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
@@ -34,27 +31,6 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of list_pets."""
-
-        session: str | None
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='session',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='session',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
-            ),
-        ),
-        record=Parameters,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(

@@ -187,6 +187,41 @@
       },
       {
         "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=a%20b%2Bc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=50%off"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=\"a b\""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=one; session=two"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=a;b"
+        }
+      },
+      {
+        "method": "GET",
         "url": "/search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi",
         "headers": {
           "Cookie": "session=abc",
@@ -1938,6 +1973,27 @@
       {
         "method": "GET",
         "url": "/values/5?blob=abc&size=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=3"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=%33"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=1; visits=2"
+        }
       }
     ],
     "package_snapshots": [
@@ -2028,6 +2084,27 @@
       {
         "method": "GET",
         "url": "/values/5?blob=abc&size=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=3"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=%33"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=1; visits=2"
+        }
       }
     ],
     "backends": [
@@ -2116,6 +2193,27 @@
       {
         "method": "GET",
         "url": "/values/5?blob=abc&size=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=3"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=%33"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "Cookie": "visits=1; visits=2"
+        }
       }
     ],
     "package_snapshots": []

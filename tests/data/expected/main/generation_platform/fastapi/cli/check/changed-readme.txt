@@ -1,6 +1,6 @@
 --- server/README.md
 +++ server/README.md (expected)
-@@ -90,5 +90,3 @@
+@@ -91,5 +91,3 @@
  When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
  Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
  run it again when a new version of datamodel-code-generator changes them.

@@ -35,7 +35,6 @@ class GetPetsPetId:
         """The adapter parameters of get__pets_pet_id."""
 
         filter: plan_oas31_models.Filter | None
-        session: str | None
         coords: plan_oas31_models.Coords | None
         ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | None
 
@@ -53,16 +52,6 @@ class GetPetsPetId:
                     reserved_names=('api_key', 'coords', 'ids', 'tags', 'when'),
                 ),
                 adapter=TypeAdapter(plan_oas31_models.Filter),
-            ),
-            ParameterArgument(
-                name='session',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='session',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
             ),
             ParameterArgument(
                 name='coords',

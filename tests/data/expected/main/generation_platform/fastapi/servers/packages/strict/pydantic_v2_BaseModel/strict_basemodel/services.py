@@ -36,4 +36,5 @@ class UntaggedService(Protocol):
         x_trace: pydantic.StrictInt | None,
         x_tag: pydantic.StrictStr | None,
         blob: bytes | None,
+        visits: pydantic.StrictInt | None,
     ) -> None | HTTPResult[None] | Response: ...

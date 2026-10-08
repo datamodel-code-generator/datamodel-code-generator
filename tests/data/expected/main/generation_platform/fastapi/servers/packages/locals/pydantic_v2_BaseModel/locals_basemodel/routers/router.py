@@ -6,7 +6,7 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, Query, params
+from fastapi import APIRouter, Cookie, Query, params
 from fastapi.responses import Response
 
 from .._generated import contract as contract_1
@@ -30,7 +30,7 @@ def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
         contract: Annotated[str | None, Query(alias='contract')] = None,
         dispatch: Annotated[str | None, Query(alias='dispatch')] = None,
         checked: Annotated[str | None, Query(alias='checked')] = None,
-        parameters: Annotated[contract_1.Wiring.Parameters, Depends(contract_1.Wiring.PARAMETERS)],
+        wiring_handler: Annotated[str | None, Cookie(alias='wiring_handler')] = None,
     ) -> object:
         return dispatch_1(
             wiring_handler_1(
@@ -38,7 +38,7 @@ def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
                 contract=contract,
                 dispatch=dispatch,
                 checked=checked,
-                wiring_handler=parameters.wiring_handler,
+                wiring_handler=wiring_handler,
             ),
             contract_1.Wiring.RESPONSES,
         )
@@ -54,15 +54,6 @@ def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
         tags=['router'],
         response_description='Done.',
         responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {
-                    'name': 'wiring_handler',
-                    'in': 'cookie',
-                    'schema': {'type': 'string'},
-                },
-            ],
-        },
         dependencies=wiring_1.dependencies.get('wiring'),
     )
 

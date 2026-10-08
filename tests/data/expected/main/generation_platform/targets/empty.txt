@@ -14,7 +14,7 @@ render
   11 runtime modules ['write']
 {
   "files": {
-    "README.md": "sha256:ff550d74e57a1cc4d20b299e4f23c6f8f774eeb527c8e2d6349107dc5b139220",
+    "README.md": "sha256:6c81484e12bded884a330d0ad915b02d594a9f5baac51729a9ac7478006d4083",
     "__init__.py": "sha256:263aeae25cd6931d93496ecd43db9290450e4e6dd6f2f331174cae35ec33867b",
     "_generated/__init__.py": "sha256:d22165340f71942f0e29783a9c49bd0810bdc252b0459e25962b3e5a4595b5ef",
     "_generated/contract.py": "sha256:0391566268d8e0d5bae96328778f9ac39976a906b953fb9ff58012ed64af84d5",

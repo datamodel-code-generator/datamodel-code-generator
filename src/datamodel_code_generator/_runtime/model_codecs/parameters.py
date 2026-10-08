@@ -272,10 +272,10 @@ def _encode_header(plan: ParameterPlan, entries: list[_Entry]) -> str:
 
 def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     pairs = [(plan.name if key is None else key, text) for key, text in entries]
-    if plan.style == "form":
+    if plan.style == "form" and plan.shape != "scalar":
         return [(quote(key, safe=""), quote(text, safe="")) for key, text in pairs]
     if not all(_TOKEN.fullmatch(key) and _COOKIE_OCTETS.fullmatch(text) for key, text in pairs):
-        msg = "A cookie-style name must be a token and its value unquoted cookie octets"
+        msg = "A cookie name must be a token and its value unquoted cookie octets"
         raise ParameterEncodingError(msg)
     return list(pairs)
 
@@ -586,7 +586,7 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
-    if plan.style == "form":
+    if plan.style == "form" and plan.shape != "scalar":
         pairs = [
             (percent_decode(item.name or b"", plus=False), percent_decode(item.value, plus=False)) for item in fragments
         ]

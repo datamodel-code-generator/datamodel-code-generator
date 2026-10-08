@@ -278,6 +278,24 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
             "signature": []
           }
         ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The animal.",
@@ -318,16 +336,7 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "cookie",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/ping": {

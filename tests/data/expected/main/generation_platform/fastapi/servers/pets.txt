@@ -9,7 +9,7 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
   list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a%20b')
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
@@ -84,7 +84,7 @@ build missing: AttributeError: 'object' object has no attribute 'get_inventory'
   list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a%20b')
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]

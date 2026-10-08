@@ -11507,10 +11507,17 @@ the server.
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
-form-style cookies, header and path arrays, objects, enums and literals of non-string values, strict integers,
+cookie arrays, header and path arrays, objects, enums and literals of non-string values, strict integers,
 numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
 and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
 the method as its model, with uploads read to `bytes`.
+
+A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
+as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
+quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
+values as they are, too. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
+percent-decode it either; cookie arrays and objects, one cookie for each item or property, keep the `form` style's
+percent-encoding.
 
 An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
 spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,

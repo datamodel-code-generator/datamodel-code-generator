@@ -821,7 +821,7 @@
         "explode": true,
         "shape": "scalar"
       },
-      "value": "Hello, world!"
+      "value": "Hello%2C%20world!"
     },
     {
       "plan": {
@@ -1355,6 +1355,66 @@
         "location": "cookie",
         "name": "c d",
         "style": "cookie",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "ab"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "greeting",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "Hello, world!"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "a;b"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "a\tb"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "caf\u00e9"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "\"ab\""
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c d",
+        "style": "form",
         "explode": true,
         "shape": "scalar"
       },
