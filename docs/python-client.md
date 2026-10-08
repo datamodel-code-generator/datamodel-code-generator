@@ -2770,9 +2770,14 @@ view, and the client. An injected HTTP client's native timeouts supply the initi
 `TimeoutOptions` merges each phase separately. `timeout=None` clears all four phase limits, while
 `TimeoutOptions(read=None)` clears only the read limit. `total_timeout=None` removes an inherited total budget.
 Durations must be finite and nonnegative; booleans are rejected. Invalid values raise `ConfigurationError` with the
-option's `field_path`. `total_timeout=0` raises `APITimeoutError` before preparing or sending a request.
+option's `field_path`. `total_timeout=0` is valid configuration; starting a call with it raises
+`APITimeoutError` before preparing or sending a request.
 
 ### An optional budget across attempts
+
+The experimental runtime no longer supplies the previous 60-second whole-call budget. Set
+`ClientOptions(total_timeout=60)` to retain that limit. Native phase timeouts bound each I/O wait; they do not
+limit the total duration of a call that keeps making progress.
 
 ```python
 from pets import Client

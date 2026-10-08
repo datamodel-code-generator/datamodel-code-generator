@@ -199,7 +199,7 @@ class UploadOptions:
 class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
-    `idle_timeout` bounds a receive waiting for a message and inherits the call's stream idle timeout. Compression is
+    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. Compression is
     `deflate` only where the helper permits it.
     """
 

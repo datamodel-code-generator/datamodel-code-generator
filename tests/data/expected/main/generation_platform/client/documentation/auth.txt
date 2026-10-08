@@ -540,6 +540,8 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
 `timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
 removes the optional budget across attempts.
+The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
 |---|---|
@@ -578,8 +580,8 @@ an options value cannot invent that declaration, and explicit None disables an i
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
 still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
-phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
