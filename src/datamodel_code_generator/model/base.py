@@ -543,6 +543,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     PREPARE_PYTHON_PATTERNS: ClassVar[
         Callable[[DataModelFieldBase, str, dict[str, PythonRuntimeExpression]], None] | None
     ] = None
+    PREPARE_TYPE_ALIAS_FIELD: ClassVar[
+        Callable[
+            [DataModelFieldBase, dict[str, PythonRuntimeExpression], Callable[[DataModelFieldBase, DataType], None]],
+            bool,
+        ]
+        | None
+    ] = None
     _FIELD_IMPORTS_CACHE_MAX_SIZE: ClassVar[int] = 4096
     _field_imports_cache: ClassVar[dict[tuple[Any, ...], tuple[Import, ...]]] = {}
     _SEMANTIC_CACHE_KEYS: ClassVar[tuple[str, ...]] = (
@@ -2451,6 +2458,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.clear_imports_cache()
         if dedup_key_cache := getattr(self, "_dedup_key_cache", None):
             dedup_key_cache.clear()
+
+    def refresh_field_config(self) -> None:
+        """Update config derived from field types once the parser has finished replacing them."""
 
     @property
     def reference_classes(self) -> frozenset[str]:

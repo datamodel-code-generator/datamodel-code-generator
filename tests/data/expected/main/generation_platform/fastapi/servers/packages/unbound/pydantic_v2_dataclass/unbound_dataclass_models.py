@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, conint
+from typing import Annotated
+
+from pydantic import AwareDatetime, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -13,7 +15,9 @@ class Value:
     id: int
 
 
-FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", conint(ge=1))
+FieldValuesIdGetPathIdParameter = TypeAliasType(
+    "FieldValuesIdGetPathIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
 FieldValuesIdGetQueryAtParameter = TypeAliasType("FieldValuesIdGetQueryAtParameter", AwareDatetime)
