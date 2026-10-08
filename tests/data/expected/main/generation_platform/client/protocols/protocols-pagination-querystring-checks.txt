@@ -1,8 +1,8 @@
 # protocols-pagination-querystring-checks
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['search.undeclared'].continuation.write /paths/~1search/get: The cursor of 'search.undeclared' writes '/cursor', which names no property of the querystring 'criteria' of GET /search
-  E_CONFIG_VALUE config protocols.helpers['search.types'].continuation.write /paths/~1search/get: The cursor of 'search.types' reads integer values, which the property '/term' of the querystring 'criteria' of GET /search does not accept
-  E_CONFIG_VALUE config protocols.helpers['search.types'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.types' gives string values, which the property '/page' of the querystring 'criteria' of GET /search does not accept
-  E_CONFIG_VALUE config protocols.helpers['search.nested'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.nested' writes '/term/number', which names no property of the querystring 'criteria' of GET /search
-  E_CONFIG_VALUE config protocols.helpers['search.null'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.null' can give null, which cannot be written to the property '/term' of the querystring 'criteria' of GET /search
+  E_CONFIG_VALUE config protocols['search.undeclared'].continuation.write /paths/~1search/get: The cursor of 'search.undeclared' writes '/cursor', which names no property of the querystring 'criteria' of GET /search
+  E_CONFIG_VALUE config protocols['search.types'].continuation.write /paths/~1search/get: The cursor of 'search.types' reads integer values, which the property '/term' of the querystring 'criteria' of GET /search does not accept
+  E_CONFIG_VALUE config protocols['search.types'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.types' gives string values, which the property '/page' of the querystring 'criteria' of GET /search does not accept
+  E_CONFIG_VALUE config protocols['search.nested'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.nested' writes '/term/number', which names no property of the querystring 'criteria' of GET /search
+  E_CONFIG_VALUE config protocols['search.null'].bindings[0].target /paths/~1search/get: The binding 0 of 'search.null' can give null, which cannot be written to the property '/term' of the querystring 'criteria' of GET /search

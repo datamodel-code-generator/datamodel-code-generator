@@ -5987,6 +5987,35 @@ class Pet:
 
 ---
 
+## Targeting a Pydantic version
+
+Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
+`datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+
+When the target is unset:
+
+- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
+  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
+
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
+| --- | --- | --- |
+| Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
+| `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
+| Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
+| Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
+| `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
+| Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
+
+| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| --- | --- | --- |
+| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
+
+`2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
+
+---
+
 ## dataclasses
 
 **Use `--output-model-type dataclasses.dataclass`**
@@ -18458,13 +18487,18 @@ default to None.
 
 Target Pydantic version for generated code compatibility.
 
-The `--target-pydantic-version` flag controls Pydantic version-specific config:
+The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
+Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **2**: Uses `populate_by_name=True` (compatible with Pydantic 2.0-2.10)
-- **2.11**: Uses `validate_by_name=True` (for Pydantic 2.11+)
-- **2.12**: Uses `validate_by_name=True` and allows features that require Pydantic 2.12+
+- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
+  unchanged and keeps `populate_by_name=True` like `2`
+- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+  `json_schema_extra` for deprecated fields, and dictionary-key models defined first
+- **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
+  `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
+- **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 
-This prevents breaking changes when generated code is used on older Pydantic versions.
+See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
 !!! tip "Usage"
 
@@ -18630,7 +18664,10 @@ This affects import statements and type annotation syntax in generated code.
 
 Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
 
-The `--union-mode` flag configures the code generation behavior.
+The `--union-mode` flag sets Pydantic's `union_mode` on generated union fields.
+Discriminated unions are not given a `union_mode`: Pydantic validates them by
+their discriminator tag, a separate mode that cannot be combined with
+`smart` or `left_to_right`.
 
 **Option relationships:**
 
@@ -44996,16 +45033,21 @@ The proposed 2.8.2 floor applies to **DCG's runtime**, not the environment that 
 `--target-pydantic-version` values such as 2, 2.11 and 2.12 remain unchanged. Raising the runtime floor alone is not
 a reason to delete every existing compatibility branch.
 
-The following classification reflects the current source. Runtime feature switches in
-`model/pydantic_v2/version.py` are often used to choose emitted code, so their effects span both environments.
+The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
+`model/pydantic_v2/version.py` keys every generated-code boundary on `--target-pydantic-version`. Leaving it unset
+gives the newest supported feature forms, while config key naming keeps its existing rule (`populate_by_name` unless
+the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime floor therefore cannot
+change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
 | --- | --- | --- |
 | DCG configuration/internal Pydantic models | Internal runtime compatibility: validating generator configuration and constructing internal model/field objects relies on the installed Pydantic. | Keep the minimum DCG-runtime configuration and generation tests; reassess only when the actual floor changes. |
-| Dataclass alias, 2.4 boundary | Both: `dataclass.py` constructs internal fields with an alias fallback and changes emitted `Field` assignments/validation and serialization aliases so generated dataclasses work on old Pydantic. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
-| `deprecated` / `json_schema_extra`, 2.7 boundary | Both: `base_model.py` selects recognized field keys using the runtime version, changing whether generated metadata is emitted as a direct field argument or JSON Schema extras. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
-| `regex_engine`, 2.5 boundary | Generated-code compatibility: the version module retains the unsupported capability flag; the current emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)). Removing an unused flag does not establish that old generated models support those expressions. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
-| RootModel, dictionary keys, forward references, 2.8 boundary | Both: the installed runtime selects `_INCLUDE_DICT_KEY_REFERENCE_CLASSES`, affecting dependency sorting and emitted model order for dictionary-key references. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
+| Dataclass alias, 2.4 boundary | Generated-code compatibility: targets before 2.4 (`2`) use the `DataModelFieldBackport` alias fallback, which emits `Field` assignments with validation and serialization aliases for non-identifier aliases. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
+| `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11` and `2.12` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
+| `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)) for every target. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
+| RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11` and `2.12` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
+| `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11` and `2.12` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
+| Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11` and `2.12` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | Discriminator / Union | Both: internal schema/model construction and emitted union/discriminator annotations must agree; existing force-optional and payload cases exercise runtime-sensitive behavior. | Keep generation assertions and instantiate generated union cases on separately pinned consumer versions. |
 | `additionalProperties` | Both: schema interpretation plus emitted typed extras, recursive references and runtime validators affect consumer behavior. | Preserve schema/alias/recursive extra-property tests and verify generated validation, rather than treating all failures as DCG-runtime-only. |
 | Payload and generated-code execution | Both are currently exercised together in pinned environments: generated code is imported and validated using the same environment's Pydantic. | Split producer and consumer environments where necessary to retain old consumer coverage after raising DCG's own minimum. |

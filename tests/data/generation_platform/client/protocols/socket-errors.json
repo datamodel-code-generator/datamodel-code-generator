@@ -1,0 +1,59 @@
+{
+  "codec.unknown": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "xml"},
+    "receive": {"codec": "utf8"}
+  },
+  "codec.schema_missing": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "json"},
+    "receive": {"codec": "utf8"}
+  },
+  "codec.schema_extra": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "utf8", "schema": {"pointer": "/components/schemas/ClientMessage"}},
+    "receive": {"codec": "utf8"}
+  },
+  "frame.text": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "utf8", "frame": "binary"},
+    "receive": {"codec": "utf8"}
+  },
+  "frame.binary": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "utf8"},
+    "receive": {"codec": "bytes", "frame": "text"}
+  },
+  "frame.json": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "send": {"codec": "json", "frame": "binary", "schema": {"pointer": "/components/schemas/ClientMessage"}},
+    "receive": {"codec": "utf8", "frame": "pong"}
+  },
+  "subprotocols.token": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "subprotocols": ["chat v1", 5],
+    "send": {"codec": "utf8"},
+    "receive": {"codec": "utf8"}
+  },
+  "subprotocols.repeated": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "subprotocols": ["chat.v1", "chat.v1"],
+    "send": {"codec": "utf8"},
+    "receive": {"codec": "utf8"}
+  },
+  "message.type": {
+    "kind": "websocket",
+    "operation": "/paths/~1feed~1socket/get",
+    "compression": "yes please",
+    "send": "utf8",
+    "receive": {"codec": "utf8", "extra": 1}
+  }
+}

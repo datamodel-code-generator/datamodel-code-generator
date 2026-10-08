@@ -327,7 +327,7 @@ upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNS
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
-| `protocols` | A helper file path, a `ProtocolConfiguration`, or none | None | Target file: `protocols = "client-protocols.yaml"`, relative to the target file; Python: a `Path`, relative to the working directory, or a `ProtocolConfiguration` record |
+| `protocols` | A helper file path, a `ProtocolConfiguration`, or none | None | Target file: `protocols = "client-protocols.json"`, relative to the target file; Python: a `Path`, relative to the working directory, or a `ProtocolConfiguration` record |
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.toml -->
 <!-- fmt: off -->
@@ -337,7 +337,7 @@ schema_version = 1
 output = "client"
 package = "client"
 model_package = "models"
-protocols = "client-protocols.yaml"
+protocols = "client-protocols.json"
 ```
 
 <!-- fmt: on -->
@@ -349,93 +349,104 @@ only when the target is generated, so its problems are reported then, with the t
 
 ### The helper file
 
-The file is UTF-8 YAML holding one mapping with `schema_version: 1` and `helpers`, a mapping from each helper's name
-to its definition, in declaration order:
+The file holds one JSON object mapping each helper's name to its definition, in declaration order:
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  users.all:
-    kind: pagination
-    enabled: false
-    operation: /paths/~1users/get
-    items: {from: body, pointer: /data}
-    item_schema: {pointer: /components/schemas/User, document: ../helpers.yaml}
-    continuation:
-      kind: cursor
-      read: {from: body, pointer: /next_cursor}
-      write: {in: query, name: cursor}
-      end: [{kind: missing}, {kind: "null"}]
-      empty_string: value
-    bindings:
-      - target: {in: header, name: snapshot}
-        value:
-          source: initial
-          selector: {from: header, name: Snapshot, occurrence: all}
-  jobs.run:
-    kind: polling
-    enabled: false
-    create: /paths/~1jobs/post
-    accepted_statuses: [202]
-    poll: /paths/~1jobs~1{jobId}/get
-    bindings:
-      - target: {in: path, name: jobId}
-        value:
-          source: initial
-          selector: {from: body, pointer: /id}
-    state: {from: body, pointer: /status}
-    pending: [queued, running]
-    succeeded: [done]
-    failed: [failed]
-    cancelled: [cancelled]
-    result:
-      kind: inline
-      selector: {from: body, pointer: ""}
-      schema: {pointer: /components/schemas/Job}
-    interval: {seconds: 2, retry_after_header: Retry-After}
-    remote_cancel:
-      operation: /paths/~1jobs~1{jobId}/delete
-      bindings:
-        - target: {in: path, name: jobId}
-          value:
-            source: initial
-            selector: {from: body, pointer: /id}
-    immediate_result:
-      statuses: [200, 201]
-      selector: {from: body, pointer: ""}
-      schema: {pointer: /components/schemas/Job}
-    expires_at: {from: body, pointer: /expires}
-  records.watch:
-    kind: ndjson
-    enabled: false
-    operation: /paths/~1records/get
-    media: application/x-ndjson
-    event_schema: {pointer: /components/schemas/Record, document: ../helpers-external.yaml}
-    completion: {kind: sentinel, value: "[DONE]"}
-    final_line: allow_eof
-    resume:
-      enabled: true
-      cursor: {from: body, pointer: /id}
-      write: {in: query, name: after}
-      reopen_operation: /paths/~1records/get
-      delivery: at_least_once
-      missing: inherit
-      "null": clear
-      expires_at: {from: header, name: X-Expires}
+```json
+{
+  "users.all": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User", "document": "../helpers.yaml"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "value"
+    },
+    "bindings": [
+      {
+        "target": {"in": "header", "name": "snapshot"},
+        "value": {"source": "initial", "selector": {"from": "header", "name": "Snapshot", "occurrence": "all"}}
+      }
+    ]
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "enabled": false,
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued", "running"],
+    "succeeded": ["done"],
+    "failed": ["failed"],
+    "cancelled": ["cancelled"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": ""},
+      "schema": {"pointer": "/components/schemas/Job"}
+    },
+    "interval": {"seconds": 2, "retry_after_header": "Retry-After"},
+    "remote_cancel": {
+      "operation": "/paths/~1jobs~1{jobId}/delete",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "jobId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ]
+    },
+    "immediate_result": {
+      "statuses": [200, 201],
+      "selector": {"from": "body", "pointer": ""},
+      "schema": {"pointer": "/components/schemas/Job"}
+    },
+    "expires_at": {"from": "body", "pointer": "/expires"}
+  },
+  "records.watch": {
+    "kind": "ndjson",
+    "enabled": false,
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {"pointer": "/components/schemas/Record", "document": "../helpers-external.yaml"},
+    "completion": {"kind": "sentinel", "value": "[DONE]"},
+    "final_line": "allow_eof",
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/id"},
+      "write": {"in": "query", "name": "after"},
+      "reopen_operation": "/paths/~1records/get",
+      "delivery": "at_least_once",
+      "missing": "inherit",
+      "null": "clear",
+      "expires_at": {"from": "header", "name": "X-Expires"}
+    }
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.json -->
 
-- A file that cannot be read, is not UTF-8 or YAML, holds more than one document, uses an anchor, an alias, or a
-  merge key, nests collections more than 64 levels deep, repeats a key in one mapping, or is not a mapping fails with
-  `E_CONFIG_VALUE`. Keys must be strings; quote `"null"`, which YAML otherwise reads as null.
-- The file is read with the generator's own YAML rules: only `true` and `false` are booleans, in any of the cases
-  `true`, `True`, and `TRUE`, so `yes` is a string; dates stay strings; and other scalars follow PyYAML's YAML 1.1
-  rules, so `1_000` is an integer. A tag that builds another type, such as `!!omap`, is not a JSON value.
+- The file is read as JSON options such as `--aliases` read a JSON file: UTF-8 text parsed by Python's `json`
+  module, so a key repeated in one object keeps its last value. A file that cannot be read, text that is not JSON,
+  including a path that names no file, and a value that is not an object fail with `E_CONFIG_VALUE` and the message
+  those options give, such as `Invalid JSON for protocols: ...` or `Expected a JSON object, got list`. Before parsing,
+  text that opens more than 64 arrays and objects at once fails the same way, with
+  `Invalid JSON for protocols: nests collections deeper than 64 levels`. `NaN` and `Infinity`, which the parser
+  accepts, are not JSON values for a literal.
 - Every key is checked at every level. A key the definition does not have, including a setting of another kind or
   one that the chosen variant does not take, fails with `E_CONFIG_UNKNOWN`; a missing required key or a value of
   the wrong type fails with `E_CONFIG_VALUE`; and settings that contradict each other fail with `E_CONFIG_CONFLICT`.
@@ -514,8 +525,8 @@ with one of these names, generation fails with `E_NAME_COLLISION` instead of ren
 <!-- fmt: off -->
 
 ```text
-E_NAME_COLLISION target protocols.helpers['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
-E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
+E_NAME_COLLISION target protocols['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
+E_NAME_COLLISION target protocols['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
 ```
 
 <!-- fmt: on -->
@@ -523,7 +534,7 @@ E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The po
 
 ### Python records
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+`ProtocolConfiguration(helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
 `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
@@ -641,19 +652,22 @@ the `literal` step, or for an offset by the page's item count with `page_items_c
 a literal step, and generation refuses `page_items_count` for it. The position is written to `write` like a cursor, so
 its target must accept integers, and `Page.continuation` has the kind `offset` or `page`.
 
-```yaml
-helpers:
-  users.by_offset:
-    kind: pagination
-    operation: /paths/~1users/get
-    items: {from: body, pointer: /data}
-    item_schema: {pointer: /components/schemas/User}
-    continuation:
-      kind: offset
-      write: {in: query, name: offset}
-      first: 0
-      step: {page_items_count: true}
-      total: {from: header, name: X-Total-Count}
+```json
+{
+  "users.by_offset": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"page_items_count": true},
+      "total": {"from": "header", "name": "X-Total-Count"}
+    }
+  }
+}
 ```
 
 The traversal ends at a page whose `has_more` reads `false`, or once the items counted before the next position reach
@@ -682,14 +696,16 @@ covers, or a value that is not a string, raises `ProtocolDataError`. A `link` co
 the `header` field, every value of it, and follows the one whose `rel` lists the relation, `next` unless `rel` names
 another; a page without that link is the last. An empty page with a next URL does not end the traversal.
 
-```yaml
-helpers:
-  users.linked:
-    kind: pagination
-    operation: /paths/~1users/get
-    items: {from: body, pointer: /data}
-    item_schema: {pointer: /components/schemas/User}
-    continuation: {kind: link, header: Link}
+```json
+{
+  "users.linked": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  }
+}
 ```
 
 The Link header is read strictly. Links are separated by commas, each a `<URI-Reference>` followed by `;` and its
@@ -862,47 +878,47 @@ through a union or a map are not supported yet:
 <!-- fmt: off -->
 
 ```text
-E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
-E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.input'].bindings[0].value.source /paths/~1users/get: The binding 0 of 'bindings.input' reads the helper's input, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.reads' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[0].value.selector /paths/~1users/get: The binding 0 pointer '/nothing' of 'bindings.reads' names no property of the GET /users response
-E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[1].value.selector /paths/~1users/get: The binding 1 of 'bindings.reads' reads the header 'X-Missing', which GET /users does not declare
-E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.reads'].bindings[2].value.selector /paths/~1users/get: The binding 2 pointer '/grouped/admins' of 'bindings.reads' reads through a union or map, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.types' gives integer values, which the header parameter 'X-Cursor' of GET /users does not accept
-E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.types' gives string values, which the query parameter 'size' of GET /users does not accept
-E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' gives array values, which the cookie parameter 'session' of GET /users does not accept
-E_CONFIG_VALUE config protocols.helpers['bindings.null'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.null' can give null, which cannot be written to the header parameter 'X-Cursor' of GET /users
-E_CONFIG_VALUE config protocols.helpers['bindings.null'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.null' can give null, which cannot be written to the query parameter 'size' of GET /users
-E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.conflicts' writes the same target as its cursor
-E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
-E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
-E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
-E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives '..', which makes the segment of the path parameter 'folder' of GET /folders/{folder} a dot segment
-E_CONFIG_VALUE config protocols.helpers['bindings.label_empty'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_empty' gives '', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
-E_CONFIG_VALUE config protocols.helpers['bindings.label_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_dot' gives '.', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
-E_CONFIG_VALUE config protocols.helpers['bindings.path_null'].bindings[0].target /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.path_null' can give null, which cannot be written to the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json
-E_CONFIG_VALUE config protocols.helpers['bindings.joined_dots'].bindings[0].value.literal /paths/~1joined~1{first}{second}/get: The binding 0 of 'bindings.joined_dots' gives '.', which makes the segment of the path parameter 'first' of GET /joined/{first}{second} a dot segment
-E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
-E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
-E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
-E_CONFIG_VALUE config protocols.helpers['responses.hidden'].continuation.write /paths/~1hidden/get: The cursor of 'responses.hidden' reads array values, which the query parameter 'cursor' of GET /hidden does not accept
-E_CLIENT_UNSUPPORTED target protocols.helpers['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response
-E_CONFIG_VALUE config protocols.helpers['items.scalar'].items /paths/~1users/get: The items pointer '/count' of 'items.scalar' selects no JSON array of the GET /users response
-E_CONFIG_VALUE config protocols.helpers['items.unknown_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Nobody' of 'items.unknown_schema' does not exist in its document
-E_CONFIG_VALUE config protocols.helpers['items.other_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Label' of 'items.other_schema' is not the item schema of the array its items pointer selects
-E_CONFIG_VALUE config protocols.helpers['cursor.absent'].continuation.read /paths/~1users/get: The cursor pointer '/nothing' of 'cursor.absent' names no property of the GET /users response
-E_CONFIG_VALUE config protocols.helpers['cursor.header'].continuation.read /paths/~1users/get: The cursor of 'cursor.header' reads the header 'X-Missing', which GET /users does not declare
-E_CONFIG_VALUE config protocols.helpers['cursor.types'].continuation.write /paths/~1users/get: The cursor of 'cursor.types' reads array, boolean, integer, number, or object values, which the query parameter 'cursor' of GET /users does not accept
-E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end /paths/~1users/get: The cursor of 'cursor.null' can read null, which no end condition covers
-E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end[1].value /paths/~1users/get: The end value 5 of 'cursor.null' is integer, which its cursor never reads
-E_CONFIG_VALUE config protocols.helpers['cursor.number'].continuation.end[1].value /paths/~1users/get: The end value 2.0 of 'cursor.number' is number, which its cursor never reads
-E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.write /paths/~1users/get: The cursor of 'cursor.union' reads integer values, which the query parameter 'cursor' of GET /users does not accept
-E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.end /paths/~1users/get: The cursor of 'cursor.union' can read null, which no end condition covers
-E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /paths/~1users/get: The cursor pointer '/grouped/admins' of 'cursor.map' reads through a union or map, which is not supported yet
+E_NAME_COLLISION target protocols['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
+E_CLIENT_UNSUPPORTED target protocols['bindings.input'].bindings[0].value.source /paths/~1users/get: The binding 0 of 'bindings.input' reads the helper's input, which is not supported yet
+E_CONFIG_VALUE config protocols['bindings.reads'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.reads' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['bindings.reads'].bindings[0].value.selector /paths/~1users/get: The binding 0 pointer '/nothing' of 'bindings.reads' names no property of the GET /users response
+E_CONFIG_VALUE config protocols['bindings.reads'].bindings[1].value.selector /paths/~1users/get: The binding 1 of 'bindings.reads' reads the header 'X-Missing', which GET /users does not declare
+E_CLIENT_UNSUPPORTED target protocols['bindings.reads'].bindings[2].value.selector /paths/~1users/get: The binding 2 pointer '/grouped/admins' of 'bindings.reads' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['bindings.types'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.types' gives integer values, which the header parameter 'X-Cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols['bindings.types'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.types' gives string values, which the query parameter 'size' of GET /users does not accept
+E_CONFIG_VALUE config protocols['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' gives array values, which the cookie parameter 'session' of GET /users does not accept
+E_CONFIG_VALUE config protocols['bindings.null'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.null' can give null, which cannot be written to the header parameter 'X-Cursor' of GET /users
+E_CONFIG_VALUE config protocols['bindings.null'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.null' can give null, which cannot be written to the query parameter 'size' of GET /users
+E_CONFIG_CONFLICT config protocols['bindings.conflicts'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.conflicts' writes the same target as its cursor
+E_CONFIG_CONFLICT config protocols['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
+E_CONFIG_CONFLICT config protocols['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
+E_CONFIG_CONFLICT config protocols['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
+E_CONFIG_VALUE config protocols['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives '..', which makes the segment of the path parameter 'folder' of GET /folders/{folder} a dot segment
+E_CONFIG_VALUE config protocols['bindings.label_empty'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_empty' gives '', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols['bindings.label_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_dot' gives '.', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols['bindings.path_null'].bindings[0].target /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.path_null' can give null, which cannot be written to the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json
+E_CONFIG_VALUE config protocols['bindings.joined_dots'].bindings[0].value.literal /paths/~1joined~1{first}{second}/get: The binding 0 of 'bindings.joined_dots' gives '.', which makes the segment of the path parameter 'first' of GET /joined/{first}{second} a dot segment
+E_CONFIG_VALUE config protocols['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
+E_CONFIG_VALUE config protocols['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
+E_CLIENT_UNSUPPORTED target protocols['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
+E_CONFIG_VALUE config protocols['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
+E_CONFIG_VALUE config protocols['responses.hidden'].continuation.write /paths/~1hidden/get: The cursor of 'responses.hidden' reads array values, which the query parameter 'cursor' of GET /hidden does not accept
+E_CLIENT_UNSUPPORTED target protocols['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response
+E_CONFIG_VALUE config protocols['items.scalar'].items /paths/~1users/get: The items pointer '/count' of 'items.scalar' selects no JSON array of the GET /users response
+E_CONFIG_VALUE config protocols['items.unknown_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Nobody' of 'items.unknown_schema' does not exist in its document
+E_CONFIG_VALUE config protocols['items.other_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Label' of 'items.other_schema' is not the item schema of the array its items pointer selects
+E_CONFIG_VALUE config protocols['cursor.absent'].continuation.read /paths/~1users/get: The cursor pointer '/nothing' of 'cursor.absent' names no property of the GET /users response
+E_CONFIG_VALUE config protocols['cursor.header'].continuation.read /paths/~1users/get: The cursor of 'cursor.header' reads the header 'X-Missing', which GET /users does not declare
+E_CONFIG_VALUE config protocols['cursor.types'].continuation.write /paths/~1users/get: The cursor of 'cursor.types' reads array, boolean, integer, number, or object values, which the query parameter 'cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols['cursor.null'].continuation.end /paths/~1users/get: The cursor of 'cursor.null' can read null, which no end condition covers
+E_CONFIG_VALUE config protocols['cursor.null'].continuation.end[1].value /paths/~1users/get: The end value 5 of 'cursor.null' is integer, which its cursor never reads
+E_CONFIG_VALUE config protocols['cursor.number'].continuation.end[1].value /paths/~1users/get: The end value 2.0 of 'cursor.number' is number, which its cursor never reads
+E_CONFIG_VALUE config protocols['cursor.union'].continuation.write /paths/~1users/get: The cursor of 'cursor.union' reads integer values, which the query parameter 'cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols['cursor.union'].continuation.end /paths/~1users/get: The cursor of 'cursor.union' can read null, which no end condition covers
+E_CLIENT_UNSUPPORTED target protocols['cursor.map'].continuation.read /paths/~1users/get: The cursor pointer '/grouped/admins' of 'cursor.map' reads through a union or map, which is not supported yet
 ```
 
 <!-- fmt: on -->
@@ -1135,34 +1151,42 @@ never expire, and no expiry is assumed. An immediate result has none.
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  jobs.tracked:
-    kind: polling
-    create: /paths/~1jobs/post
-    accepted_statuses: [202]
-    poll: /paths/~1jobs~1{jobId}/get
-    bindings:
-      - target: {in: path, name: jobId}
-        value: {source: initial, selector: {from: body, pointer: /id}}
-    state: {from: body, pointer: /status}
-    pending: [queued, running]
-    succeeded: [done]
-    failed: [failed]
-    cancelled: [cancelled]
-    result:
-      kind: inline
-      selector: {from: body, pointer: /result}
-      schema: {pointer: /components/schemas/Report}
-    remote_cancel:
-      operation: /paths/~1jobs~1{jobId}/delete
-      bindings:
-        - target: {in: path, name: jobId}
-          value: {source: previous, selector: {from: body, pointer: /id}}
-        - target: {in: header, name: X-Reason}
-          value: {literal: requested}
-    expires_at: {from: body, pointer: /expires}
+```json
+{
+  "jobs.tracked": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      }
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued", "running"],
+    "succeeded": ["done"],
+    "failed": ["failed"],
+    "cancelled": ["cancelled"],
+    "result": {
+      "kind": "inline",
+      "selector": {"from": "body", "pointer": "/result"},
+      "schema": {"pointer": "/components/schemas/Report"}
+    },
+    "remote_cancel": {
+      "operation": "/paths/~1jobs~1{jobId}/delete",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "jobId"},
+          "value": {"source": "previous", "selector": {"from": "body", "pointer": "/id"}}
+        },
+        {"target": {"in": "header", "name": "X-Reason"}, "value": {"literal": "requested"}}
+      ]
+    },
+    "expires_at": {"from": "body", "pointer": "/expires"}
+  }
+}
 ```
 
 <!-- fmt: on -->
@@ -1193,49 +1217,49 @@ binding, and pointers that read through a union or a map are not supported yet:
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
-E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
-E_CONFIG_VALUE config protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The expiry of 'checks.later' reads integer values, where only a string gives a date and time
-E_CONFIG_VALUE config protocols.helpers['checks.later'].remote_cancel.operation /paths/~1archives/post: POST /archives must declare a success response for the remote cancel of 'checks.later'
-E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
-E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
-E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
-E_CONFIG_VALUE config protocols.helpers['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[5].target /paths/~1jobs~1{jobId}/get: The binding 5 of 'checks.bindings' gives integer values, which the header parameter 'X-Trace' of GET /jobs/{jobId} does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives '..', which makes the segment of the path parameter 'jobId' of GET /jobs/{jobId} a dot segment
-E_CONFIG_VALUE config protocols.helpers['checks.bodyless'].bindings[0].value.selector /paths/~1exports/post: The binding 0 of 'checks.bodyless' reads the body of the 202 response of POST /exports, which is no JSON model
-E_CONFIG_VALUE config protocols.helpers['checks.required'].bindings /paths/~1exports~1find/get: GET /exports/find requires the querystring parameter 'filter', which no binding of 'checks.required' writes
-E_CONFIG_VALUE config protocols.helpers['checks.required'].result.bindings /paths/~1reports/post: POST /reports requires a request body, which no binding of 'checks.required' writes
-E_CONFIG_VALUE config protocols.helpers['checks.unwritten'].bindings /paths/~1jobs~1{jobId}/get: GET /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.unwritten' writes
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.unwritten'].result.bindings /paths/~1notes/post: The polling helper 'checks.unwritten' writes a request body of POST /notes other than JSON, which is not supported yet
-E_CONFIG_CONFLICT config protocols.helpers['checks.overlaps'].result.bindings[1].target /paths/~1reports/post: The result binding 1 of 'checks.overlaps' writes a target overlapping that of its result binding 0
-E_CONFIG_VALUE config protocols.helpers['checks.fetch'].result.operation /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the result of 'checks.fetch'
-E_CONFIG_VALUE config protocols.helpers['checks.header'].result.selector /paths/~1jobs~1{jobId}/get: The result of 'checks.header' reads a header, where only a body pointer reads a result
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/labels/rows' of 'checks.union' reads through a union or map, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.absent'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/nothing' of 'checks.absent' names no property of the GET /jobs/{jobId} response
-E_CONFIG_VALUE config protocols.helpers['checks.missing_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Missing' of 'checks.missing_schema' does not exist in its document
-E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Report' of 'checks.other_schema' is not the schema its pointer reads
-E_CONFIG_VALUE config protocols.helpers['checks.none_immediate'].immediate_result /paths/~1jobs/post: The immediate result of 'checks.none_immediate' gives a result, which a helper without a result never has
-E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.statuses[0] /paths/~1jobs/post: The immediate status 201 of 'checks.immediate' selects no success response of POST /jobs
-E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate' reads models.ExportState, which is not its result type models.Report
-E_CONFIG_VALUE config protocols.helpers['checks.immediate_models'].immediate_result.statuses[0] /paths/~1exports/post: The immediate status 200 of 'checks.immediate_models' selects no success response of POST /exports
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
-E_CONFIG_VALUE config protocols.helpers['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
-E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[1].target /paths/~1jobs~1{jobId}/get: The binding 1 of 'checks.credentials' writes the header 'x-api-key', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.credentials' writes the query parameter 'api_key', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.credentials'].result.bindings[0].target /paths/~1exports~1status/get: The result binding 0 of 'checks.credentials' writes the query field 'api_key', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
-E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
-E_CONFIG_VALUE config protocols.helpers['checks.cancel'].expires_at /paths/~1jobs/post: The expiry of 'checks.cancel' reads the header 'Expires', which POST /jobs does not declare
-E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings[0].target /paths/~1jobs~1{jobId}/delete: The cancel binding 0 of 'checks.cancel' gives integer values, which the header parameter 'X-Reason' of DELETE /jobs/{jobId} does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings /paths/~1jobs~1{jobId}/delete: DELETE /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.cancel' writes
+E_CONFIG_VALUE config protocols['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols['checks.later'].expires_at /paths/~1jobs/post: The expiry of 'checks.later' reads integer values, where only a string gives a date and time
+E_CONFIG_VALUE config protocols['checks.later'].remote_cancel.operation /paths/~1archives/post: POST /archives must declare a success response for the remote cancel of 'checks.later'
+E_CONFIG_VALUE config protocols['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
+E_CONFIG_VALUE config protocols['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
+E_CONFIG_VALUE config protocols['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
+E_CONFIG_VALUE config protocols['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
+E_CONFIG_VALUE config protocols['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_CONFLICT config protocols['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
+E_CLIENT_UNSUPPORTED target protocols['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
+E_CONFIG_VALUE config protocols['checks.bindings'].bindings[5].target /paths/~1jobs~1{jobId}/get: The binding 5 of 'checks.bindings' gives integer values, which the header parameter 'X-Trace' of GET /jobs/{jobId} does not accept
+E_CONFIG_VALUE config protocols['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives '..', which makes the segment of the path parameter 'jobId' of GET /jobs/{jobId} a dot segment
+E_CONFIG_VALUE config protocols['checks.bodyless'].bindings[0].value.selector /paths/~1exports/post: The binding 0 of 'checks.bodyless' reads the body of the 202 response of POST /exports, which is no JSON model
+E_CONFIG_VALUE config protocols['checks.required'].bindings /paths/~1exports~1find/get: GET /exports/find requires the querystring parameter 'filter', which no binding of 'checks.required' writes
+E_CONFIG_VALUE config protocols['checks.required'].result.bindings /paths/~1reports/post: POST /reports requires a request body, which no binding of 'checks.required' writes
+E_CONFIG_VALUE config protocols['checks.unwritten'].bindings /paths/~1jobs~1{jobId}/get: GET /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.unwritten' writes
+E_CLIENT_UNSUPPORTED target protocols['checks.unwritten'].result.bindings /paths/~1notes/post: The polling helper 'checks.unwritten' writes a request body of POST /notes other than JSON, which is not supported yet
+E_CONFIG_CONFLICT config protocols['checks.overlaps'].result.bindings[1].target /paths/~1reports/post: The result binding 1 of 'checks.overlaps' writes a target overlapping that of its result binding 0
+E_CONFIG_VALUE config protocols['checks.fetch'].result.operation /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the result of 'checks.fetch'
+E_CONFIG_VALUE config protocols['checks.header'].result.selector /paths/~1jobs~1{jobId}/get: The result of 'checks.header' reads a header, where only a body pointer reads a result
+E_CLIENT_UNSUPPORTED target protocols['checks.union'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/labels/rows' of 'checks.union' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.absent'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/nothing' of 'checks.absent' names no property of the GET /jobs/{jobId} response
+E_CONFIG_VALUE config protocols['checks.missing_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Missing' of 'checks.missing_schema' does not exist in its document
+E_CONFIG_VALUE config protocols['checks.other_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Report' of 'checks.other_schema' is not the schema its pointer reads
+E_CONFIG_VALUE config protocols['checks.none_immediate'].immediate_result /paths/~1jobs/post: The immediate result of 'checks.none_immediate' gives a result, which a helper without a result never has
+E_CONFIG_VALUE config protocols['checks.immediate'].immediate_result.statuses[0] /paths/~1jobs/post: The immediate status 201 of 'checks.immediate' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols['checks.immediate'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate' reads models.ExportState, which is not its result type models.Report
+E_CONFIG_VALUE config protocols['checks.immediate_models'].immediate_result.statuses[0] /paths/~1exports/post: The immediate status 200 of 'checks.immediate_models' selects no success response of POST /exports
+E_CLIENT_UNSUPPORTED target protocols['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
+E_CONFIG_VALUE config protocols['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
+E_CONFIG_VALUE config protocols['checks.credentials'].bindings[1].target /paths/~1jobs~1{jobId}/get: The binding 1 of 'checks.credentials' writes the header 'x-api-key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.credentials'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.credentials' writes the query parameter 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.credentials'].result.bindings[0].target /paths/~1exports~1status/get: The result binding 0 of 'checks.credentials' writes the query field 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
+E_CONFIG_VALUE config protocols['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
+E_CLIENT_UNSUPPORTED target protocols['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
+E_CONFIG_VALUE config protocols['checks.cancel'].expires_at /paths/~1jobs/post: The expiry of 'checks.cancel' reads the header 'Expires', which POST /jobs does not declare
+E_CONFIG_VALUE config protocols['checks.cancel'].remote_cancel.bindings[0].target /paths/~1jobs~1{jobId}/delete: The cancel binding 0 of 'checks.cancel' gives integer values, which the header parameter 'X-Reason' of DELETE /jobs/{jobId} does not accept
+E_CONFIG_VALUE config protocols['checks.cancel'].remote_cancel.bindings /paths/~1jobs~1{jobId}/delete: DELETE /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.cancel' writes
 ```
 
 <!-- fmt: on -->
@@ -1437,43 +1461,43 @@ bindings that read the previous response or the helper's input are not supported
 <!-- fmt: off -->
 
 ```text
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].abort /paths/~1files/post: The resumable_upload helper 'checks.later' declares remote abort, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The resumable_upload helper 'checks.later' declares a session URL, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.created'].create.operation /paths/~1drafts/post: POST /drafts must declare a success response for the upload helper 'checks.created'
-E_CONFIG_VALUE config protocols.helpers['checks.size'].create.size /paths/~1files/post: The size of 'checks.size' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.size_body'].create.size /paths/~1files~1{fileId}~1status/post: The size of 'checks.size_body' writes 'body', where only a path, query, or header parameter takes it
-E_CONFIG_VALUE config protocols.helpers['checks.size_body'].probe.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The probe binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
-E_CONFIG_VALUE config protocols.helpers['checks.size_body'].append.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The append binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
-E_CONFIG_VALUE config protocols.helpers['checks.size_type'].create.size /paths/~1files/post: The size of 'checks.size_type' gives integer values, which the header parameter 'X-Name' of POST /files does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.expiry_status'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_status' reads the status, which gives no server expiry
-E_CONFIG_VALUE config protocols.helpers['checks.expiry_type'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_type' reads integer values, where only string values fit
-E_CONFIG_VALUE config protocols.helpers['checks.expiry_header'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_header' reads the header 'X-Expires', which POST /files does not declare
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.probe_sources'].probe.bindings[0].value.source /paths/~1files~1{fileId}/head: The probe binding 0 of 'checks.probe_sources' reads the previous response, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.probe_required'].probe.bindings /paths/~1files~1{fileId}/head: HEAD /files/{fileId} requires the path parameter 'fileId', which no binding of 'checks.probe_required' writes
-E_CONFIG_VALUE config protocols.helpers['checks.probe_body'].probe.bindings /paths/~1files~1{fileId}~1status/post: POST /files/{fileId}/status requires a request body, which no binding of 'checks.probe_body' writes
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.probe_form'].probe.bindings /paths/~1files~1{fileId}~1form/post: The upload helper 'checks.probe_form' writes a request body of POST /files/{fileId}/form other than JSON, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.probe_media'].probe.bindings /paths/~1files~1{fileId}~1search/post: The upload helper 'checks.probe_media' writes a request body of POST /files/{fileId}/search, which has no default media type; set the operation's request_media_type
-E_CONFIG_VALUE config protocols.helpers['checks.probe_none'].probe.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the probe of 'checks.probe_none'
-E_CONFIG_VALUE config protocols.helpers['checks.offset_type'].probe.remote_offset /paths/~1files~1{fileId}~1status/get: The remote offset of 'checks.offset_type' reads string values, where only integer values fit
-E_CONFIG_VALUE config protocols.helpers['checks.offset_status'].probe.remote_offset /paths/~1files~1{fileId}/head: The remote offset of 'checks.offset_status' reads the status, which gives no remote offset
-E_CONFIG_VALUE config protocols.helpers['checks.append_media'].append.operation /paths/~1files~1{fileId}/put: PUT /files/{fileId} must take exactly one binary request media for the chunks of 'checks.append_media'
-E_CONFIG_VALUE config protocols.helpers['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must take exactly one binary request media for the chunks of 'checks.append_none'
-E_CONFIG_VALUE config protocols.helpers['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the appends of 'checks.append_none'
-E_CONFIG_CONFLICT config protocols.helpers['checks.append_none'].append.offset /paths/~1files~1{fileId}~1gone/delete: The chunk offset of 'checks.append_none' writes the same target as its append binding 0
-E_CONFIG_CONFLICT config protocols.helpers['checks.append_overlap'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_overlap' writes the same target as its append binding 1
-E_CONFIG_CONFLICT config protocols.helpers['checks.append_length'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_length' writes the same target as its chunk offset
-E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_places' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_places' writes 'body', where only a path, query, or header parameter takes it
-E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.bindings /paths/~1files~1{fileId}/patch: PATCH /files/{fileId} requires the header parameter 'Upload-Offset', which no binding of 'checks.append_places' writes
-E_CONFIG_VALUE config protocols.helpers['checks.append_types'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_types' gives integer values, which the header parameter 'X-Note' of PATCH /files/{fileId} does not accept
-E_CONFIG_CONFLICT config protocols.helpers['checks.checksum_overlap'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_overlap' writes the same target as its chunk offset
-E_CONFIG_VALUE config protocols.helpers['checks.checksum_place'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_place' writes the cookie 'session', which carries credentials no helper writes
-E_CONFIG_VALUE config protocols.helpers['checks.checksum_type'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_type' gives string values, which the header parameter 'X-Count' of PATCH /files/{fileId} does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.append_body'].append.bindings[1].target /paths/~1files~1{fileId}/patch: The append binding 1 of 'checks.append_body' writes the request body, which is the chunk
-E_CONFIG_VALUE config protocols.helpers['checks.completion_media'].completion.operation /paths/~1files~1{fileId}~1finish/post: POST /files/{fileId}/finish must declare exactly one JSON success response for the completion of 'checks.completion_media'
-E_CONFIG_VALUE config protocols.helpers['checks.completion_missing'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Missing' of 'checks.completion_missing' does not exist in its document
-E_CONFIG_VALUE config protocols.helpers['checks.completion_other'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Note' of 'checks.completion_other' is not the schema of the POST /files/{fileId}/complete response
-E_CONFIG_VALUE config protocols.helpers['checks.completion_body'].completion.bindings /paths/~1files~1{fileId}~1complete/post: POST /files/{fileId}/complete requires a request body, which no binding of 'checks.completion_body' writes
+E_CLIENT_UNSUPPORTED target protocols['checks.later'].abort /paths/~1files/post: The resumable_upload helper 'checks.later' declares remote abort, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols['checks.later'].create.session_url /paths/~1files/post: The resumable_upload helper 'checks.later' declares a session URL, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.created'].create.operation /paths/~1drafts/post: POST /drafts must declare a success response for the upload helper 'checks.created'
+E_CONFIG_VALUE config protocols['checks.size'].create.size /paths/~1files/post: The size of 'checks.size' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.size_body'].create.size /paths/~1files~1{fileId}~1status/post: The size of 'checks.size_body' writes 'body', where only a path, query, or header parameter takes it
+E_CONFIG_VALUE config protocols['checks.size_body'].probe.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The probe binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
+E_CONFIG_VALUE config protocols['checks.size_body'].append.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The append binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
+E_CONFIG_VALUE config protocols['checks.size_type'].create.size /paths/~1files/post: The size of 'checks.size_type' gives integer values, which the header parameter 'X-Name' of POST /files does not accept
+E_CONFIG_VALUE config protocols['checks.expiry_status'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_status' reads the status, which gives no server expiry
+E_CONFIG_VALUE config protocols['checks.expiry_type'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_type' reads integer values, where only string values fit
+E_CONFIG_VALUE config protocols['checks.expiry_header'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_header' reads the header 'X-Expires', which POST /files does not declare
+E_CLIENT_UNSUPPORTED target protocols['checks.probe_sources'].probe.bindings[0].value.source /paths/~1files~1{fileId}/head: The probe binding 0 of 'checks.probe_sources' reads the previous response, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.probe_required'].probe.bindings /paths/~1files~1{fileId}/head: HEAD /files/{fileId} requires the path parameter 'fileId', which no binding of 'checks.probe_required' writes
+E_CONFIG_VALUE config protocols['checks.probe_body'].probe.bindings /paths/~1files~1{fileId}~1status/post: POST /files/{fileId}/status requires a request body, which no binding of 'checks.probe_body' writes
+E_CLIENT_UNSUPPORTED target protocols['checks.probe_form'].probe.bindings /paths/~1files~1{fileId}~1form/post: The upload helper 'checks.probe_form' writes a request body of POST /files/{fileId}/form other than JSON, which is not supported yet
+E_CONFIG_VALUE config protocols['checks.probe_media'].probe.bindings /paths/~1files~1{fileId}~1search/post: The upload helper 'checks.probe_media' writes a request body of POST /files/{fileId}/search, which has no default media type; set the operation's request_media_type
+E_CONFIG_VALUE config protocols['checks.probe_none'].probe.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the probe of 'checks.probe_none'
+E_CONFIG_VALUE config protocols['checks.offset_type'].probe.remote_offset /paths/~1files~1{fileId}~1status/get: The remote offset of 'checks.offset_type' reads string values, where only integer values fit
+E_CONFIG_VALUE config protocols['checks.offset_status'].probe.remote_offset /paths/~1files~1{fileId}/head: The remote offset of 'checks.offset_status' reads the status, which gives no remote offset
+E_CONFIG_VALUE config protocols['checks.append_media'].append.operation /paths/~1files~1{fileId}/put: PUT /files/{fileId} must take exactly one binary request media for the chunks of 'checks.append_media'
+E_CONFIG_VALUE config protocols['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must take exactly one binary request media for the chunks of 'checks.append_none'
+E_CONFIG_VALUE config protocols['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the appends of 'checks.append_none'
+E_CONFIG_CONFLICT config protocols['checks.append_none'].append.offset /paths/~1files~1{fileId}~1gone/delete: The chunk offset of 'checks.append_none' writes the same target as its append binding 0
+E_CONFIG_CONFLICT config protocols['checks.append_overlap'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_overlap' writes the same target as its append binding 1
+E_CONFIG_CONFLICT config protocols['checks.append_length'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_length' writes the same target as its chunk offset
+E_CONFIG_VALUE config protocols['checks.append_places'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_places' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.append_places'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_places' writes 'body', where only a path, query, or header parameter takes it
+E_CONFIG_VALUE config protocols['checks.append_places'].append.bindings /paths/~1files~1{fileId}/patch: PATCH /files/{fileId} requires the header parameter 'Upload-Offset', which no binding of 'checks.append_places' writes
+E_CONFIG_VALUE config protocols['checks.append_types'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_types' gives integer values, which the header parameter 'X-Note' of PATCH /files/{fileId} does not accept
+E_CONFIG_CONFLICT config protocols['checks.checksum_overlap'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_overlap' writes the same target as its chunk offset
+E_CONFIG_VALUE config protocols['checks.checksum_place'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_place' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.checksum_type'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_type' gives string values, which the header parameter 'X-Count' of PATCH /files/{fileId} does not accept
+E_CONFIG_VALUE config protocols['checks.append_body'].append.bindings[1].target /paths/~1files~1{fileId}/patch: The append binding 1 of 'checks.append_body' writes the request body, which is the chunk
+E_CONFIG_VALUE config protocols['checks.completion_media'].completion.operation /paths/~1files~1{fileId}~1finish/post: POST /files/{fileId}/finish must declare exactly one JSON success response for the completion of 'checks.completion_media'
+E_CONFIG_VALUE config protocols['checks.completion_missing'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Missing' of 'checks.completion_missing' does not exist in its document
+E_CONFIG_VALUE config protocols['checks.completion_other'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Note' of 'checks.completion_other' is not the schema of the POST /files/{fileId}/complete response
+E_CONFIG_VALUE config protocols['checks.completion_body'].completion.bindings /paths/~1files~1{fileId}~1complete/post: POST /files/{fileId}/complete requires a request body, which no binding of 'checks.completion_body' writes
 ```
 
 <!-- fmt: on -->
@@ -1593,52 +1617,62 @@ inherit` keeping the cursor before or `error`, and what null does, `null: clear`
 into the reopen request, read from the open response for `initial` or the latest open or reopen response for
 `previous`, and `expires_at` reads the server's expiry from a header of the open response:
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  events.live:
-    kind: sse
-    operation: /paths/~1events/get
-    media: text/event-stream
-    event_schema: {pointer: /components/schemas/Message}
-    completion: {kind: eof}
-    resume:
-      enabled: true
-      cursor: event_id
-      write: {in: header, name: Last-Event-ID}
-      reopen_operation: /paths/~1events/get
-      delivery: at_least_once
-  events.tracked:
-    kind: sse
-    operation: /paths/~1events/get
-    media: text/event-stream
-    event_schema:
-      discriminator: {from: event_type}
-      mapping:
-        created: {pointer: /components/schemas/Created}
-    unknown: raw
-    error_events:
-      error: {pointer: /components/schemas/StreamError}
-    completion: {kind: event_type, value: done}
-    resume:
-      enabled: true
-      cursor: event_id
-      write: {in: header, name: Last-Event-ID}
-      reopen_operation: /paths/~1streams~1{streamId}/get
-      delivery: at_least_once
-      bindings:
-        - {target: {in: path, name: streamId}, value: {source: initial, selector: {from: header, name: X-Stream-Id}}}
-        - {target: {in: query, name: token}, value: {source: previous, selector: {from: header, name: X-Resume-Token}}}
-        - {target: {in: query, name: mode}, value: {literal: resume}}
-      reconnect_on: [transport_interruption, incomplete_eof]
-      expires_at: {from: header, name: X-Stream-Expires}
+```json
+{
+  "events.live": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "events.tracked": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "discriminator": {"from": "event_type"},
+      "mapping": {"created": {"pointer": "/components/schemas/Created"}}
+    },
+    "unknown": "raw",
+    "error_events": {"error": {"pointer": "/components/schemas/StreamError"}},
+    "completion": {"kind": "event_type", "value": "done"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1streams~1{streamId}/get",
+      "delivery": "at_least_once",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "streamId"},
+          "value": {"source": "initial", "selector": {"from": "header", "name": "X-Stream-Id"}}
+        },
+        {
+          "target": {"in": "query", "name": "token"},
+          "value": {"source": "previous", "selector": {"from": "header", "name": "X-Resume-Token"}}
+        },
+        {"target": {"in": "query", "name": "mode"}, "value": {"literal": "resume"}}
+      ],
+      "reconnect_on": ["transport_interruption", "incomplete_eof"],
+      "expires_at": {"from": "header", "name": "X-Stream-Expires"}
+    }
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-json -->
 
 The helper then also has `resume`, which takes a `ResumeState` and the options `open` takes; the asyncio one is awaited
 once and returns the stream:
@@ -1737,13 +1771,13 @@ events:
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
-E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
-E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
-E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
-E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
-E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
-E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
+E_CONFIG_VALUE config protocols['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
+E_CONFIG_VALUE config protocols['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
+E_CONFIG_VALUE config protocols['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CONFIG_CONFLICT config protocols['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
+E_CONFIG_CONFLICT config protocols['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
+E_CONFIG_VALUE config protocols['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
 ```
 
 <!-- fmt: on -->
@@ -1761,22 +1795,22 @@ must write each of its required parameters and its body:
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_header'].resume.cursor /paths/~1events/get: The cursor of 'checks.cursor_header' reads a header, where only a body pointer reads an event's cursor
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_absent'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/id' of 'checks.cursor_absent' names no property of any event schema
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_required'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/seq' of 'checks.cursor_required' names no property of '/components/schemas/Created'
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_types'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_types' reads integer values, which the header parameter 'Last-Event-ID' of GET /events does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_cookie'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_cookie' writes the cookie 'session', which carries credentials no helper writes
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cursor_path'].resume.write /paths/~1streams~1{streamId}/get: The cursor of 'checks.cursor_path' is written to the path parameter 'streamId' of GET /streams/{streamId}, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cleared_body'].resume.write /paths/~1feed/post: The cursor of 'checks.cleared_body' can be cleared, which only a header or query parameter can omit; writing it to the request body of POST /feed is not supported yet
-E_CONFIG_VALUE config protocols.helpers['checks.cleared_required'].resume.write /paths/~1replay/get: The cursor of 'checks.cleared_required' can be cleared, which the query parameter 'from' of GET /replay, a required one, cannot omit
-E_CONFIG_VALUE config protocols.helpers['checks.reopen_media'].resume.reopen_operation /paths/~1records/get: GET /records declares no text/event-stream success response for the SSE helper 'checks.reopen_media' to reopen its stream with
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[0].value.selector /paths/~1events/get: The binding 0 of 'checks.bindings' reads the body of the 200 response of GET /events, which is no JSON model
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].resume.bindings[1].value.source /paths/~1streams~1{streamId}/get: The binding 1 of 'checks.bindings' reads the helper's input, which is not supported yet
-E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].resume.bindings[2].target /paths/~1streams~1{streamId}/get: The binding 2 of 'checks.bindings' writes the same target as its cursor
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
-E_CONFIG_VALUE config protocols.helpers['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
-E_CONFIG_VALUE config protocols.helpers['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols['checks.cursor_header'].resume.cursor /paths/~1events/get: The cursor of 'checks.cursor_header' reads a header, where only a body pointer reads an event's cursor
+E_CONFIG_VALUE config protocols['checks.cursor_absent'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/id' of 'checks.cursor_absent' names no property of any event schema
+E_CONFIG_VALUE config protocols['checks.cursor_required'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/seq' of 'checks.cursor_required' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols['checks.cursor_types'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_types' reads integer values, which the header parameter 'Last-Event-ID' of GET /events does not accept
+E_CONFIG_VALUE config protocols['checks.cursor_cookie'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_cookie' writes the cookie 'session', which carries credentials no helper writes
+E_CLIENT_UNSUPPORTED target protocols['checks.cursor_path'].resume.write /paths/~1streams~1{streamId}/get: The cursor of 'checks.cursor_path' is written to the path parameter 'streamId' of GET /streams/{streamId}, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols['checks.cleared_body'].resume.write /paths/~1feed/post: The cursor of 'checks.cleared_body' can be cleared, which only a header or query parameter can omit; writing it to the request body of POST /feed is not supported yet
+E_CONFIG_VALUE config protocols['checks.cleared_required'].resume.write /paths/~1replay/get: The cursor of 'checks.cleared_required' can be cleared, which the query parameter 'from' of GET /replay, a required one, cannot omit
+E_CONFIG_VALUE config protocols['checks.reopen_media'].resume.reopen_operation /paths/~1records/get: GET /records declares no text/event-stream success response for the SSE helper 'checks.reopen_media' to reopen its stream with
+E_CONFIG_VALUE config protocols['checks.bindings'].resume.bindings[0].value.selector /paths/~1events/get: The binding 0 of 'checks.bindings' reads the body of the 200 response of GET /events, which is no JSON model
+E_CLIENT_UNSUPPORTED target protocols['checks.bindings'].resume.bindings[1].value.source /paths/~1streams~1{streamId}/get: The binding 1 of 'checks.bindings' reads the helper's input, which is not supported yet
+E_CONFIG_CONFLICT config protocols['checks.bindings'].resume.bindings[2].target /paths/~1streams~1{streamId}/get: The binding 2 of 'checks.bindings' writes the same target as its cursor
+E_CONFIG_VALUE config protocols['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
+E_CONFIG_VALUE config protocols['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
+E_CONFIG_VALUE config protocols['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
+E_CONFIG_VALUE config protocols['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes
 ```
 
 <!-- fmt: on -->
@@ -1821,15 +1855,17 @@ with Client() as client, client.protocols.records.all.open() as stream:
         print(record.text)
 ```
 
-```yaml
-helpers:
-  records.all:
-    kind: ndjson
-    operation: /paths/~1records/get
-    media: application/x-ndjson
-    event_schema: {pointer: /components/schemas/Record}
-    completion: {kind: eof}
-    final_line: require_newline
+```json
+{
+  "records.all": {
+    "kind": "ndjson",
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {"pointer": "/components/schemas/Record"},
+    "completion": {"kind": "eof"},
+    "final_line": "require_newline"
+  }
+}
 ```
 
 ### Records
@@ -1865,10 +1901,10 @@ and resumption checks are those of SSE helpers, and an NDJSON cursor is always a
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
-E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
-E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
-E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
+E_CONFIG_VALUE config protocols['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
+E_CONFIG_VALUE config protocols['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
+E_CONFIG_VALUE config protocols['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
 ```
 
 <!-- fmt: on -->
@@ -1916,15 +1952,17 @@ with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as se
         print(message.sequence, message.data)
 ```
 
-```yaml
-helpers:
-  rooms.chat:
-    kind: websocket
-    operation: /paths/~1rooms~1{room}~1socket/get
-    subprotocols: [chat.v2, chat.v1]
-    compression: true
-    send: {codec: json, schema: {pointer: /components/schemas/ClientMessage}}
-    receive: {codec: json, schema: {pointer: /components/schemas/ServerMessage}}
+```json
+{
+  "rooms.chat": {
+    "kind": "websocket",
+    "operation": "/paths/~1rooms~1{room}~1socket/get",
+    "subprotocols": ["chat.v2", "chat.v1"],
+    "compression": true,
+    "send": {"codec": "json", "schema": {"pointer": "/components/schemas/ClientMessage"}},
+    "receive": {"codec": "json", "schema": {"pointer": "/components/schemas/ServerMessage"}}
+  }
+}
 ```
 
 `send` and `receive` declare how the messages of each direction are coded: `codec: json` with a `schema`, whose value
@@ -2034,21 +2072,21 @@ The operation must be a GET without a request body, and each JSON message's sche
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
-E_CONFIG_VALUE config protocols.helpers['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
-E_CONFIG_VALUE config protocols.helpers['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
-E_CONFIG_VALUE config protocols.helpers['codec.unknown'].send.codec: protocols.helpers['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
-E_CONFIG_VALUE config protocols.helpers['codec.schema_missing'].send.schema: protocols.helpers['codec.schema_missing'].send needs 'schema' for JSON messages
-E_CONFIG_CONFLICT config protocols.helpers['codec.schema_extra'].send.schema: protocols.helpers['codec.schema_extra'].send.schema applies only to JSON messages
-E_CONFIG_CONFLICT config protocols.helpers['frame.text'].send.frame: protocols.helpers['frame.text'].send.frame must be 'text' for utf8 messages
-E_CONFIG_CONFLICT config protocols.helpers['frame.binary'].receive.frame: protocols.helpers['frame.binary'].receive.frame must be 'binary' for bytes messages
-E_CONFIG_VALUE config protocols.helpers['frame.json'].receive.frame: protocols.helpers['frame.json'].receive.frame must be 'text' or 'binary'
-E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[0]: protocols.helpers['subprotocols.token'].subprotocols[0] must be a subprotocol token
-E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[1]: protocols.helpers['subprotocols.token'].subprotocols[1] must be a subprotocol token
-E_CONFIG_VALUE config protocols.helpers['subprotocols.repeated'].subprotocols[1]: protocols.helpers['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
-E_CONFIG_VALUE config protocols.helpers['message.type'].compression: protocols.helpers['message.type'].compression must be a boolean
-E_CONFIG_VALUE config protocols.helpers['message.type'].send: protocols.helpers['message.type'].send must be a message definition
-E_CONFIG_UNKNOWN config protocols.helpers['message.type'].receive.extra: protocols.helpers['message.type'].receive has no key 'extra'
+E_CONFIG_VALUE config protocols['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
+E_CONFIG_VALUE config protocols['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
+E_CONFIG_VALUE config protocols['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CONFIG_VALUE config protocols['codec.unknown'].send.codec: protocols['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
+E_CONFIG_VALUE config protocols['codec.schema_missing'].send.schema: protocols['codec.schema_missing'].send needs 'schema' for JSON messages
+E_CONFIG_CONFLICT config protocols['codec.schema_extra'].send.schema: protocols['codec.schema_extra'].send.schema applies only to JSON messages
+E_CONFIG_CONFLICT config protocols['frame.text'].send.frame: protocols['frame.text'].send.frame must be 'text' for utf8 messages
+E_CONFIG_CONFLICT config protocols['frame.binary'].receive.frame: protocols['frame.binary'].receive.frame must be 'binary' for bytes messages
+E_CONFIG_VALUE config protocols['frame.json'].receive.frame: protocols['frame.json'].receive.frame must be 'text' or 'binary'
+E_CONFIG_VALUE config protocols['subprotocols.token'].subprotocols[0]: protocols['subprotocols.token'].subprotocols[0] must be a subprotocol token
+E_CONFIG_VALUE config protocols['subprotocols.token'].subprotocols[1]: protocols['subprotocols.token'].subprotocols[1] must be a subprotocol token
+E_CONFIG_VALUE config protocols['subprotocols.repeated'].subprotocols[1]: protocols['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
+E_CONFIG_VALUE config protocols['message.type'].compression: protocols['message.type'].compression must be a boolean
+E_CONFIG_VALUE config protocols['message.type'].send: protocols['message.type'].send must be a message definition
+E_CONFIG_UNKNOWN config protocols['message.type'].receive.extra: protocols['message.type'].receive has no key 'extra'
 ```
 
 <!-- fmt: on -->
@@ -2061,22 +2099,23 @@ stored response without sending, revalidates a stale one with its `ETag` or `Las
 sends the request as an ordinary call. Nothing is cached for ordinary methods, and a client without a helper or a
 store keeps no cache state. The helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike:
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  users.profile:
-    kind: cache
-    operation: /paths/~1users~1{userId}/get
-    validator: both
-    authenticated: false
-    vary_allowlist: [Accept-Language]
+```json
+{
+  "users.profile": {
+    "kind": "cache",
+    "operation": "/paths/~1users~1{userId}/get",
+    "validator": "both",
+    "authenticated": false,
+    "vary_allowlist": ["Accept-Language"]
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.json -->
 
 | Setting | Meaning |
 |---|---|
@@ -2224,19 +2263,19 @@ declared anonymous cannot fetch an operation that requires credentials:
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which changes state; only GET is cached
-E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which takes a request body
-E_CONFIG_VALUE config protocols.helpers['users.created'].statuses[0] /paths/~1users/post: The cacheable status 200 of 'users.created' is no declared 2xx success of POST /users
-E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].operation /paths/~1users~1{userId}/head: The cache helper 'users.checked' fetches HEAD /users/{userId}, and HEAD is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].statuses[0] /paths/~1users~1{userId}/head: The cacheable status 200 of 'users.checked' has a response other than one natively decoded JSON body, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['reports.get'].operation /paths/~1reports/get: The cache helper 'reports.get' fetches GET /reports, which takes a request body
-E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[0] /paths/~1reports/get: The cacheable status 200 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[1] /paths/~1reports/get: The cacheable status 204 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
-E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
-E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
-E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
-E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
-E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
+E_CONFIG_VALUE config protocols['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which changes state; only GET is cached
+E_CONFIG_VALUE config protocols['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which takes a request body
+E_CONFIG_VALUE config protocols['users.created'].statuses[0] /paths/~1users/post: The cacheable status 200 of 'users.created' is no declared 2xx success of POST /users
+E_CLIENT_UNSUPPORTED target protocols['users.checked'].operation /paths/~1users~1{userId}/head: The cache helper 'users.checked' fetches HEAD /users/{userId}, and HEAD is not supported yet
+E_CLIENT_UNSUPPORTED target protocols['users.checked'].statuses[0] /paths/~1users~1{userId}/head: The cacheable status 200 of 'users.checked' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols['reports.get'].operation /paths/~1reports/get: The cache helper 'reports.get' fetches GET /reports, which takes a request body
+E_CLIENT_UNSUPPORTED target protocols['reports.get'].statuses[0] /paths/~1reports/get: The cacheable status 200 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols['reports.get'].statuses[1] /paths/~1reports/get: The cacheable status 204 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+E_CONFIG_VALUE config protocols['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
+E_CONFIG_VALUE config protocols['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
 ```
 
 <!-- fmt: on -->
@@ -3704,53 +3743,44 @@ so keys of different sizes can share a key set during rotation, and a signature 
 `("keys", "<index>")`, and any other error, including cancellation, propagates unchanged. The signature settings are the
 same as for HMAC:
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  rfc8032.ed25519:
-    kind: webhook
-    event_schema:
-      pointer: /components/schemas/Push
-    signature:
-      kind: ed25519
-      header: X-Signature
-      encoding: hex
-      prefix: ''
-  wycheproof.rsa:
-    kind: webhook
-    event_schema:
-      pointer: /components/schemas/Count
-    signature:
-      kind: rsa-pss-sha256
-      header: X-Signature
-      encoding: hex
-      prefix: ''
+```json
+{
+  "rfc8032.ed25519": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {"kind": "ed25519", "header": "X-Signature", "encoding": "hex", "prefix": ""}
+  },
+  "wycheproof.rsa": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Count"},
+    "signature": {"kind": "rsa-pss-sha256", "header": "X-Signature", "encoding": "hex", "prefix": ""}
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-json -->
 
 ### Signature settings
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  standard.message:
-    kind: webhook
-    event_schema:
-      pointer: /components/schemas/Message
-    signature:
-      kind: standard_webhooks
+```json
+{
+  "standard.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "standard_webhooks"}
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.json -->
 
 | Signature kind | Authenticated bytes and configuration |
 |---|---|
@@ -3771,17 +3801,17 @@ Invalid configuration is rejected during generation:
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE config protocols.helpers['shape.missing'].signature: protocols.helpers['shape.missing'] needs 'signature'
-E_CONFIG_VALUE config protocols.helpers['shape.values'].signature: protocols.helpers['shape.values'].signature must be a signature
-E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
-E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.header: protocols.helpers['shape.ed25519'].signature needs 'header'
-E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.timestamp: protocols.helpers['shape.adapter'].signature needs 'timestamp'
-E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.delivery_id: protocols.helpers['shape.adapter'].signature needs 'delivery_id'
-E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.timestamp: protocols.helpers['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
-E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.delivery_id: protocols.helpers['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
-E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.header: protocols.helpers['shape.settings'].signature.header must be a header name
-E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.encoding: protocols.helpers['shape.settings'].signature.encoding must be 'hex' or 'base64'
-E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: protocols.helpers['shape.settings'].signature.prefix must be visible ASCII text
+E_CONFIG_VALUE config protocols['shape.missing'].signature: protocols['shape.missing'] needs 'signature'
+E_CONFIG_VALUE config protocols['shape.values'].signature: protocols['shape.values'].signature must be a signature
+E_CONFIG_VALUE config protocols['shape.kind'].signature.kind: protocols['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
+E_CONFIG_VALUE config protocols['shape.ed25519'].signature.header: protocols['shape.ed25519'].signature needs 'header'
+E_CONFIG_VALUE config protocols['shape.adapter'].signature.timestamp: protocols['shape.adapter'].signature needs 'timestamp'
+E_CONFIG_VALUE config protocols['shape.adapter'].signature.delivery_id: protocols['shape.adapter'].signature needs 'delivery_id'
+E_CONFIG_VALUE config protocols['shape.adapter_facts'].signature.timestamp: protocols['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
+E_CONFIG_VALUE config protocols['shape.adapter_facts'].signature.delivery_id: protocols['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
+E_CONFIG_VALUE config protocols['shape.settings'].signature.header: protocols['shape.settings'].signature.header must be a header name
+E_CONFIG_VALUE config protocols['shape.settings'].signature.encoding: protocols['shape.settings'].signature.encoding must be 'hex' or 'base64'
+E_CONFIG_VALUE config protocols['shape.settings'].signature.prefix: protocols['shape.settings'].signature.prefix must be visible ASCII text
 ```
 
 <!-- fmt: on -->
@@ -3800,46 +3830,39 @@ member must be a string equal to a mapped name, compared exactly; otherwise deco
 `location=BodySelector(pointer=...)` and `condition` `missing` for an absent member, `null`, `type` for another JSON
 type, or `value` for an unknown name. There is no `unknown` setting for webhooks.
 
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-yaml -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-json -->
 <!-- fmt: off -->
 
-```yaml
-schema_version: 1
-helpers:
-  stripe.event:
-    kind: webhook
-    event_schema:
-      discriminator:
-        from: body
-        pointer: /type
-      mapping:
-        invoice.paid:
-          pointer: /components/schemas/Invoice
-        invoice.updated:
-          pointer: /components/schemas/Invoice
-        customer.created:
-          pointer: /components/schemas/Customer
-    signature:
-      kind: adapter
-      timestamp: required
-      delivery_id: none
-  unsigned.event:
-    kind: webhook
-    event_schema:
-      discriminator:
-        from: body
-        pointer: /meta/type
-      mapping:
-        invoice.paid:
-          pointer: /components/schemas/Invoice
-        customer.created:
-          pointer: /components/schemas/Customer
-    signature:
-      kind: none
+```json
+{
+  "stripe.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/type"},
+      "mapping": {
+        "invoice.paid": {"pointer": "/components/schemas/Invoice"},
+        "invoice.updated": {"pointer": "/components/schemas/Invoice"},
+        "customer.created": {"pointer": "/components/schemas/Customer"}
+      }
+    },
+    "signature": {"kind": "adapter", "timestamp": "required", "delivery_id": "none"}
+  },
+  "unsigned.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/meta/type"},
+      "mapping": {
+        "invoice.paid": {"pointer": "/components/schemas/Invoice"},
+        "customer.created": {"pointer": "/components/schemas/Customer"}
+      }
+    },
+    "signature": {"kind": "none"}
+  }
+}
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-yaml -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-json -->
 
 ### Adapter signatures
 

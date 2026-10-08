@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from datamodel_code_generator import DataModelType
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.types import DataTypeManager as DataTypeManagerABC
 
 DEFAULT_TARGET_PYTHON_VERSION = PythonVersion(f"{sys.version_info.major}.{sys.version_info.minor}")
@@ -42,8 +43,9 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
     use_root_model_type_alias: bool = False,  # noqa: FBT001, FBT002
     include_graphql_models: bool = True,  # noqa: FBT001, FBT002
     use_type_alias_type: bool = False,  # noqa: FBT001, FBT002
+    target_pydantic_version: TargetPydanticVersion | None = None,
 ) -> DataModelSet:
-    """Get the appropriate model types for the given output format and Python version."""
+    """Get the model types for the output format, target Python version, and target Pydantic version."""
     from datamodel_code_generator import DataModelType  # noqa: PLC0415
 
     pydantic_v2_models = {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
@@ -88,17 +90,23 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
         case DataModelType.PydanticV2Dataclass:
             from . import pydantic_v2  # noqa: PLC0415
             from .pydantic_v2 import dataclass as pydantic_v2_dataclass  # noqa: PLC0415
-            from .pydantic_v2.version import PYDANTIC_V2_DATACLASS_TYPE_ALIAS_NEEDS_FALLBACK  # noqa: PLC0415
+            from .pydantic_v2.version import (  # noqa: PLC0415
+                PYDANTIC_V2_DATACLASS_ALIAS_MINIMUM,
+                PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM,
+                target_supports,
+            )
 
             type_alias_class, scalar_class, union_class = get_auxiliary_model_types()
-            if PYDANTIC_V2_DATACLASS_TYPE_ALIAS_NEEDS_FALLBACK:
+            if not target_supports(target_pydantic_version, PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM):
                 from .pydantic_v2.type_alias import TypeAlias as CompatibleTypeAlias  # noqa: PLC0415
 
                 type_alias_class = CompatibleTypeAlias
             return DataModelSet(
                 data_model=pydantic_v2_dataclass.DataClass,
                 root_model=type_alias_class,
-                field_model=pydantic_v2_dataclass.DataModelField,
+                field_model=pydantic_v2_dataclass.DataModelField
+                if target_supports(target_pydantic_version, PYDANTIC_V2_DATACLASS_ALIAS_MINIMUM)
+                else pydantic_v2_dataclass.DataModelFieldBackport,
                 data_type_manager=pydantic_v2.DataTypeManager,
                 dump_resolve_reference_action=None,
                 scalar_model=scalar_class,
