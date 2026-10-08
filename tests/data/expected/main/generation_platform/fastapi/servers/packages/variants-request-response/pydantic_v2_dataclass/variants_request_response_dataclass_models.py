@@ -3,14 +3,16 @@
 
 from __future__ import annotations
 
-from pydantic import conint, constr
+from typing import Annotated
+
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
-PetId = TypeAliasType("PetId", conint(ge=1))
+PetId = TypeAliasType("PetId", Annotated[int, Field(ge=1)])
 
 
-Name = TypeAliasType("Name", constr(min_length=1))
+Name = TypeAliasType("Name", Annotated[str, Field(min_length=1)])
 
 
 @dataclass

@@ -6,7 +6,7 @@ from __future__ import annotations
 from re import compile
 from typing import Annotated
 
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
 Code = TypeAliasType(
@@ -35,10 +35,14 @@ Mapping1 = TypeAliasType(
 Mapping = TypeAliasType("Mapping", dict[str, Mapping1])
 
 
-Keys = TypeAliasType("Keys", dict[constr(pattern=compile('^(?=key)[a-z0-9_]+$')), int])
+Keys = TypeAliasType(
+    "Keys", dict[Annotated[str, Field(pattern=compile('^(?=key)[a-z0-9_]+$'))], int]
+)
 
 
-Tags = TypeAliasType("Tags", dict[constr(pattern=compile('^(?=t)')), str])
+Tags = TypeAliasType(
+    "Tags", dict[Annotated[str, Field(pattern=compile('^(?=t)'))], str]
+)
 
 
 Either1 = TypeAliasType(

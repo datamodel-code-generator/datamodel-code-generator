@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import AwareDatetime, conint, constr
+from pydantic import AwareDatetime, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -30,7 +31,9 @@ class Error:
     message: str
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", conint(ge=1, le=100))
+FieldPetsGetQueryLimitParameter = TypeAliasType(
+    "FieldPetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+)
 
 
 FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
@@ -56,10 +59,14 @@ FieldPetsGetResponse = TypeAliasType("FieldPetsGetResponse", list[Pet])
 FieldPetsMineGetResponse = TypeAliasType("FieldPetsMineGetResponse", list[Pet])
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", conint(ge=1))
+FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
-FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType("FieldPetsPetIdDeletePathPetIdParameter", conint(ge=1))
+FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
 FieldStoreInventoryGetResponse = TypeAliasType("FieldStoreInventoryGetResponse", dict[str, int])

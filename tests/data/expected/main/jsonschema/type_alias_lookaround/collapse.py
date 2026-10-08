@@ -12,7 +12,7 @@ from typing_extensions import TypeAliasType
 Codes = TypeAliasType(
     "Codes",
     Annotated[
-        list[dict[constr(pattern=compile('^(?=k)[a-z]+$')), int]],
+        list[dict[Annotated[str, Field(pattern=compile('^(?=k)[a-z]+$'))], int]],
         Field(..., min_length=1),
     ],
 )

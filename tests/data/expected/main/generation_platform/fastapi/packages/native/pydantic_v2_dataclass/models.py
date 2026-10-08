@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import AwareDatetime, ConfigDict, EmailStr, Field, conint, constr
 from pydantic.dataclasses import dataclass
@@ -51,7 +51,7 @@ class Color(StrEnum):
     blue = 'blue'
 
 
-Code = TypeAliasType("Code", constr(max_length=3))
+Code = TypeAliasType("Code", Annotated[str, Field(max_length=3)])
 
 
 @dataclass

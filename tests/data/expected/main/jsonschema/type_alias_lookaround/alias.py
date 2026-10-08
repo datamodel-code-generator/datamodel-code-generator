@@ -4,29 +4,44 @@
 from __future__ import annotations
 
 from re import compile
+from typing import Annotated
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
-Code = TypeAliasType("Code", constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8))
+Code = TypeAliasType(
+    "Code", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
+)
 
 
-Dup = TypeAliasType("Dup", constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8))
+Dup = TypeAliasType(
+    "Dup", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
+)
 
 
-Codes = TypeAliasType("Codes", list[constr(pattern=compile('^(?=x)[a-z]+$'))])
+Codes = TypeAliasType(
+    "Codes", list[Annotated[str, Field(pattern=compile('^(?=x)[a-z]+$'))]]
+)
 
 
-Mapping = TypeAliasType("Mapping", dict[str, constr(pattern=compile('^[a-z]+(?<!z)$'))])
+Mapping = TypeAliasType(
+    "Mapping", dict[str, Annotated[str, Field(pattern=compile('^[a-z]+(?<!z)$'))]]
+)
 
 
-Keys = TypeAliasType("Keys", dict[constr(pattern=compile('^(?=key)[a-z0-9_]+$')), int])
+Keys = TypeAliasType(
+    "Keys", dict[Annotated[str, Field(pattern=compile('^(?=key)[a-z0-9_]+$'))], int]
+)
 
 
-Tags = TypeAliasType("Tags", dict[constr(pattern=compile('^(?=t)')), str])
+Tags = TypeAliasType(
+    "Tags", dict[Annotated[str, Field(pattern=compile('^(?=t)'))], str]
+)
 
 
-Either = TypeAliasType("Either", constr(pattern=compile('^(?!no)[a-z]+$')) | int)
+Either = TypeAliasType(
+    "Either", Annotated[str, Field(pattern=compile('^(?!no)[a-z]+$'))] | int
+)
 
 
 class Holder(BaseModel):

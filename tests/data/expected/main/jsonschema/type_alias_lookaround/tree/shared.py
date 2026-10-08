@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 from re import compile
+from typing import Annotated
 
-from pydantic import constr
+from pydantic import Field
 from typing_extensions import TypeAliasType
 
-Code = TypeAliasType("Code", constr(pattern=compile('^(?!bad)[a-z]+$')))
+Code = TypeAliasType("Code", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'))])

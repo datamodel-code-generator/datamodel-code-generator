@@ -290,6 +290,9 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/strict_types_matrix.json": (
         "pydantic serializes Decimal JSON values as strings while the source schema requires number"
     ),
+    "jsonschema/type_alias_annotated/shadowed_imports.json": (
+        "pydantic serializes Decimal JSON values as strings while the source schema requires number"
+    ),
     "jsonschema/unique_items_schema_validators.json": (
         "pydantic drops extra nested object properties while dumping, which can collapse distinct uniqueItems values"
     ),

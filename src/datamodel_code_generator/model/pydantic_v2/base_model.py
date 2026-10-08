@@ -21,7 +21,13 @@ from pydantic.alias_generators import to_camel, to_pascal, to_snake
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.enums import AliasGenerator, TargetPydanticVersion, _is_pydantic_version_at_least
-from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
+from datamodel_code_generator.imports import (
+    IMPORT_ANNOTATED,
+    IMPORT_ANY,
+    IMPORT_DICT,
+    IMPORT_UNION,
+    Import,
+)
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
@@ -45,6 +51,10 @@ from datamodel_code_generator.model.pydantic_base import Constraints as _Constra
 from datamodel_code_generator.model.pydantic_base import (
     DataModelField as _PydanticBaseDataModelField,
 )
+from datamodel_code_generator.model.pydantic_v2._annotated_types import (
+    AnnotatedConstraintDataType,
+    annotated_constraint_metadata,
+)
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
     build_base_config_parameters,
@@ -58,12 +68,17 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_ALIAS_GENERATOR_TO_PASCAL,
     IMPORT_ALIAS_GENERATOR_TO_SNAKE,
     IMPORT_BASE_MODEL,
+    IMPORT_CONBYTES,
+    IMPORT_CONDECIMAL,
     IMPORT_CONFIG_DICT,
+    IMPORT_CONFLOAT,
+    IMPORT_CONINT,
     IMPORT_CONSTR,
     IMPORT_FIELD,
     IMPORT_FIELD_VALIDATOR,
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
+    IMPORT_MULTIPLE_OF,
     IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
@@ -106,6 +121,13 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
+_ANNOTATED_CONSTRAINT_BASES: dict[tuple[str | None, str], str] = {
+    (IMPORT_CONSTR.from_, IMPORT_CONSTR.import_): "str",
+    (IMPORT_CONINT.from_, IMPORT_CONINT.import_): "int",
+    (IMPORT_CONFLOAT.from_, IMPORT_CONFLOAT.import_): "float",
+    (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): "Decimal",
+    (IMPORT_CONBYTES.from_, IMPORT_CONBYTES.import_): "bytes",
+}
 
 
 class _RawRepr:
@@ -523,17 +545,46 @@ def _prepare_python_patterns(
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
 
 
-def _copy_with_python_patterns(data_type: DataType, prepared: dict[str, PythonRuntimeExpression]) -> DataType | None:
-    """Copy only the path to Python-only patterns; collapsed fields may share the other nodes."""
-    nested = [_copy_with_python_patterns(nested_type, prepared) for nested_type in data_type.data_types]
-    dict_key = None if data_type.dict_key is None else _copy_with_python_patterns(data_type.dict_key, prepared)
-    pattern = _compiled_python_pattern(data_type.kwargs.get("pattern"), None, prepared) if data_type.kwargs else None
-    if pattern is None and dict_key is None and not any(nested):
+def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntimeExpression]) -> DataType | None:
+    """Copy only the path to alias-specific nodes; collapsed fields may share the other nodes.
+
+    ``con*`` calls render as ``Annotated`` constraints because type checkers reject calls in aliases,
+    and patterns that need Python's engine are compiled because an alias has no model config.
+    """
+    nested = [_copy_alias_data_type(nested_type, prepared) for nested_type in data_type.data_types]
+    dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared)
+    kwargs = data_type.kwargs
+    pattern = _compiled_python_pattern(kwargs.get("pattern"), None, prepared) if kwargs else None
+    base = (
+        _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
+        if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
+        else None
+    )
+    if pattern is None and base is None and dict_key is None and not any(nested):
         return None
-    copied = data_type.model_copy()
+    runtime_imports = data_type.runtime_expression_imports
+    if base is None:
+        copied = data_type.model_copy()
+    else:
+        values: dict[str, Any] = {
+            **dict(data_type),
+            "type": None,
+            "parent": None,
+            "children": [],
+            "constrained_base": base,
+        }
+        copied = AnnotatedConstraintDataType.model_construct(**values)
+        field_keywords, multiple_of = annotated_constraint_metadata(base, cast("dict[str, Any]", kwargs))
+        annotation_imports = (IMPORT_FIELD,) if field_keywords else ()
+        if multiple_of is not None:
+            annotation_imports = (*annotation_imports, IMPORT_MULTIPLE_OF)
+        if annotation_imports:
+            annotation_imports = (IMPORT_ANNOTATED, *annotation_imports)
+        runtime_imports = (*annotation_imports, *runtime_imports)
     if pattern is not None:
-        copied.kwargs = {**cast("dict[str, Any]", data_type.kwargs), "pattern": pattern}
-        copied._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
+        copied.kwargs = {**cast("dict[str, Any]", kwargs), "pattern": pattern}
+        runtime_imports = (*runtime_imports, pattern.import_)
+    copied._set_runtime_expression_imports(runtime_imports)  # noqa: SLF001
     if any(nested):
         copied.data_types = [
             copied_type or nested_type for copied_type, nested_type in zip(nested, data_type.data_types, strict=True)
@@ -546,14 +597,14 @@ def _copy_with_python_patterns(data_type: DataType, prepared: dict[str, PythonRu
     return copied
 
 
-def _compile_alias_python_patterns(
+def _prepare_type_alias_field(
     field: DataModelFieldBase,
     prepared: dict[str, PythonRuntimeExpression],
     replace_data_type: Callable[[DataModelFieldBase, DataType], None],
 ) -> bool:
-    """Compile a type alias's Python-only patterns, since an alias has no config to select the engine."""
+    """Make a type alias body a valid type expression that validates without a model config."""
     changed = _prepare_field_python_pattern(field, None, prepared)
-    if (data_type := _copy_with_python_patterns(field.data_type, prepared)) is None:
+    if (data_type := _copy_alias_data_type(field.data_type, prepared)) is None:
         return changed
     replace_data_type(field, data_type)
     return True
@@ -572,7 +623,7 @@ class DataModelField(_PydanticBaseDataModelField):
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
-    COMPILE_ALIAS_PYTHON_PATTERNS = staticmethod(_compile_alias_python_patterns)
+    PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",

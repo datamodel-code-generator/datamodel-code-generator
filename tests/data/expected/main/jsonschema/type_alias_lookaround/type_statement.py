@@ -4,28 +4,29 @@
 from __future__ import annotations
 
 from re import compile
+from typing import Annotated
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, Field
 
-type Code = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
-
-
-type Dup = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
+type Code = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
-type Codes = list[constr(pattern=compile('^(?=x)[a-z]+$'))]
+type Dup = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
-type Mapping = dict[str, constr(pattern=compile('^[a-z]+(?<!z)$'))]
+type Codes = list[Annotated[str, Field(pattern=compile('^(?=x)[a-z]+$'))]]
 
 
-type Keys = dict[constr(pattern=compile('^(?=key)[a-z0-9_]+$')), int]
+type Mapping = dict[str, Annotated[str, Field(pattern=compile('^[a-z]+(?<!z)$'))]]
 
 
-type Tags = dict[constr(pattern=compile('^(?=t)')), str]
+type Keys = dict[Annotated[str, Field(pattern=compile('^(?=key)[a-z0-9_]+$'))], int]
 
 
-type Either = constr(pattern=compile('^(?!no)[a-z]+$')) | int
+type Tags = dict[Annotated[str, Field(pattern=compile('^(?=t)'))], str]
+
+
+type Either = Annotated[str, Field(pattern=compile('^(?!no)[a-z]+$'))] | int
 
 
 class Holder(BaseModel):
