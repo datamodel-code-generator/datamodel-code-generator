@@ -373,11 +373,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.protocols.toml",
+            example_id="python-client.protocols.pyproject",
             path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-protocols"]["toml"]
-            ),
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-protocols.toml")),
         ),
         DocsExample(
             example_id="python-client.protocols.json",
@@ -788,11 +786,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.body-fields.toml",
+            example_id="python-client.body-fields.pyproject",
             path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-body-fields"]["toml"]
-            ),
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-fields.toml")),
         ),
         DocsExample(
             example_id="python-client.body-fields.diagnostics",
