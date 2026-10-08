@@ -214,11 +214,7 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
     ),
     **dict.fromkeys(
-        (
-            "jsonschema/numeric_allof_types/null_template.json",
-            "jsonschema/root_alias_constraints/null_numeric.json",
-            "jsonschema/root_alias_constraints/null_pattern.json",
-        ),
+        ("jsonschema/root_alias_constraints/null_pattern.json",),
         "msgspec conversion rejects constraint metadata on generated null-only aliases",
     ),
     "jsonschema/type_union_constraints/enum_field.json": (

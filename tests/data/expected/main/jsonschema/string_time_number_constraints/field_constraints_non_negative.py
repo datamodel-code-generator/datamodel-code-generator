@@ -6,11 +6,11 @@ from __future__ import annotations
 
 from datetime import date, time
 
-from pydantic import BaseModel, Field, NonNegativeFloat, RootModel
+from pydantic import BaseModel, NonNegativeFloat, RootModel
 
 
 class ItemsMinimumItem(RootModel[time]):
-    root: time = Field(..., ge=0)
+    root: time
 
 
 class Time(RootModel[time]):
@@ -22,13 +22,13 @@ class InheritedMinimum(RootModel[time]):
 
 
 class StringTimeNumberConstraints(BaseModel):
-    minimum: time | None = Field(None, ge=0)
-    maximum: time | None = Field(None, le=10)
-    exclusive_minimum: time | None = Field(None, gt=0)
-    exclusive_maximum: time | None = Field(None, lt=10)
-    multiple_of: time | None = Field(None, multiple_of=0.5)
-    nullable_minimum: time | None = Field(None, ge=0)
+    minimum: time | None = None
+    maximum: time | None = None
+    exclusive_minimum: time | None = None
+    exclusive_maximum: time | None = None
+    multiple_of: time | None = None
+    nullable_minimum: time | None = None
     items_minimum: list[ItemsMinimumItem] | None = None
     inherited_minimum: InheritedMinimum | None = None
-    date_minimum: date | None = Field(None, ge=0)
+    date_minimum: date | None = None
     number_minimum: NonNegativeFloat | None = None

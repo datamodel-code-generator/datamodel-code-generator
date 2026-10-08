@@ -129,6 +129,10 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/number_constraints_on_numeric_string_formats.json": (
+        "hypothesis-jsonschema generates arbitrary strings for the decimal, integer and unixtime formats; "
+        "test_main_number_constraints_on_numeric_string_formats checks their generated number bounds"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/allof_outer_constraints/duration_length.json",

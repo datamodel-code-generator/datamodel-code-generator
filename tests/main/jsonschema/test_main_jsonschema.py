@@ -4579,6 +4579,53 @@ def test_main_string_time_number_constraints(output_file: Path, expected_file: s
         assert_func=assert_file_content,
         expected_file=f"string_time_number_constraints/{expected_file}",
         extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test number keywords constrain only fields whose schema types hold numbers."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_non_numbers.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"number_constraints_on_non_numbers/{expected_file}",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("field_constraints.py", ["--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_numeric_string_formats(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test number keywords still constrain string formats that map to numeric types."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_numeric_string_formats.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"number_constraints_on_numeric_string_formats/{expected_file}",
+        extra_args=extra_args,
     )
 
 
