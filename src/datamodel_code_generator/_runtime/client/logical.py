@@ -36,7 +36,7 @@ class OperationSession:
     def __init__(self, *, total_timeout: float | None, clock: Clock) -> None:
         self.started = clock.monotonic()
         self.session_id = str(uuid4())
-        self.deadline = None if total_timeout is None else Budget(self.started + total_timeout, clock)
+        self.deadline: Budget | None = None if total_timeout is None else Budget(self.started + total_timeout, clock)
         self.sends = 0
 
 
@@ -51,7 +51,7 @@ class LogicalCallContext:
         self.started = self.monotonic()
         self.operation_id = operation_id
         self.call_id = str(uuid4())
-        self.deadline = (
+        self.deadline: Budget | None = (
             None if settings.total_timeout is None else Budget(self.started + settings.total_timeout, settings.clock)
         )
         self.delivery_state = self.earlier = DeliveryState.NOT_SENT
