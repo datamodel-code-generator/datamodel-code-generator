@@ -9,7 +9,8 @@ from functools import cached_property
 
 from models import Pet as _dcg_type_0
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.pagination import (
     Page,
     Pager,
@@ -27,9 +28,9 @@ from . import PaginationOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def pets(self) -> PetsProtocols:
