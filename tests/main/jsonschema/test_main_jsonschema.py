@@ -2386,6 +2386,26 @@ def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Pat
     )
 
 
+def test_main_alias_generator_template_data_dataclass_target_pydantic_version(output_file: Path) -> None:
+    """Leave dataclass fields unpinned for --target-pydantic-version 2 when template data names a generator."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_template_data_dataclass_target_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--snake-case-field",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
+
+
 @pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])
 def test_main_alias_generator_requires_pydantic_v2(
     output_file: Path, capsys: pytest.CaptureFixture[str], output_model_type: str
