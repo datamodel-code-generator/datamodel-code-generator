@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.retry_safety: retry_safety must be 'method_default', 'idempotent', or 'never'

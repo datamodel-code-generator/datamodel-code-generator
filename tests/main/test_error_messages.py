@@ -491,6 +491,7 @@ def test_directory_auto_input_does_not_infer_from_generated_files(
     ("directory_name", "extra_args"),
     [
         pytest.param("output", (), id="plain"),
+        pytest.param("output", ("--check",), id="plain-check"),
         pytest.param("output.py.d", (), id="dotted"),
         pytest.param("output.py.d", ("--check",), id="dotted-check"),
     ],

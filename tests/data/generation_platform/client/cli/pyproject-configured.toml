@@ -1,0 +1,14 @@
+[tool.datamodel-codegen]
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-signature-style = "unpack"
+client-body-arguments = "both"
+client-default-base-url = "https://api.example.com/v1"
+client-server-base-url = "https://api.example.com/"
+client-protocols = "protocols.json"
+client-resource-names = { pets = "animals" }
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1pets/get" = { name = "list_all", parameter_names = { "query:limit" = "page_size" } }

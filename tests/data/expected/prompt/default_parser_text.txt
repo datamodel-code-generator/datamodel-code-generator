@@ -213,6 +213,17 @@
 - `--watch-delay`: Set debounce delay in seconds for watch mode.
 
 ### Target Generation Options
+- `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
+- `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
+- `--client-model-package`: Name the import path of the models the client package imports (experimental).
+- `--client-operations`: Set the client settings of single operations (experimental).
+- `--client-output`: Write the client package to this directory (experimental).
+- `--client-package`: Name the import path of the client package (experimental).
+- `--client-protocols`: Declare the protocol helpers of the client package (experimental).
+- `--client-resource-names`: Name the resources of tags (experimental).
+- `--client-server-base-url`: Resolve relative server URLs against this base URL (experimental).
+- `--client-signature-style`: Declare the arguments of the operation methods (experimental).
+- `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
 - `--no-server-include-request`
 - `--server-body-mode`: Choose how service methods receive request bodies (experimental).
