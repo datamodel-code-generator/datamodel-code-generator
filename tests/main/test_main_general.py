@@ -3134,8 +3134,26 @@ def test_check_file_undecodable(output_file: Path, capsys: pytest.CaptureFixture
     )
 
 
+def test_check_file_without_byte_order_mark(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --check reports an existing file without the byte order mark the configured encoding requires."""
+    input_path = tmp_path / "person.json"
+    input_path.write_text((DATA_PATH / "jsonschema" / "person.json").read_text(encoding="utf-8"), encoding="utf-16")
+    output_file.write_bytes("# Different content\n".encode("utf-16-le"))
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--encoding", "utf-16", "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Unable to decode output {output_file.as_posix()} using encoding 'utf-16': ",
+    )
+
+
 def test_check_directory_file_undecodable(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test --check reports an output directory with a file the configured encoding cannot decode."""
+    """Test --check names the file in an output directory the configured encoding cannot decode."""
     input_path = OPEN_API_DATA_PATH / "modular.yaml"
     run_main_and_assert(
         input_path=input_path,
@@ -3143,7 +3161,8 @@ def test_check_directory_file_undecodable(output_dir: Path, capsys: pytest.Captu
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
     )
-    (output_dir / "foo" / "bar.py").write_bytes(b"\xff\n")
+    undecodable_file = output_dir / "foo" / "bar.py"
+    undecodable_file.write_bytes(b"\xff\n")
     run_main_and_assert(
         input_path=input_path,
         output_path=output_dir,
@@ -3152,7 +3171,7 @@ def test_check_directory_file_undecodable(output_dir: Path, capsys: pytest.Captu
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            f"Unable to decode output {output_dir.as_posix()} using encoding 'utf-8': "
+            f"Unable to decode output {undecodable_file.as_posix()} using encoding 'utf-8': "
             "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n"
         ),
     )
