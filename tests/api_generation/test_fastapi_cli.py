@@ -1342,24 +1342,6 @@ def test_fastapi_cli_failures(
     )
 
 
-def test_fastapi_cli_ruff_failure(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Report what Ruff cannot fix in the server directory as an error, without publishing files."""
-    monkeypatch.chdir(tmp_path)
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server("--formatters", "ruff-check", output="my-server"),
-        copy_files=_inputs(tmp_path, "pyproject-ruff.toml"),
-        expected_exit=Exit.ERROR,
-        output_should_not_exist=True,
-    )
-    message, _, command = capsys.readouterr().err.splitlines()[0].rpartition(": ")
-    assert_output(f"{message}\n{Path(command).name}\n", EXPECTED / "cli" / "ruff-failure.txt")
-
-
 @pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
 def test_fastapi_cli_model_error_context(
     case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch

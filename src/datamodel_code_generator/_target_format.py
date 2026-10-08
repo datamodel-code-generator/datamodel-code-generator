@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from datamodel_code_generator.format import CodeFormatter
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TargetCodeFormatter(CodeFormatter):
@@ -29,12 +26,3 @@ class TargetCodeFormatter(CodeFormatter):
         """Return the model Ruff check command with the model package as third party for the isort rules."""
         option = f"lint.isort.known-third-party = {json.dumps([self.model_root])}"
         return (*super()._ruff_check_command(ruff_path=ruff_path), "--config", option, *paths)
-
-    def format_directory(self, directory: Path) -> None:
-        """Run the model Ruff formatters, reporting a failed Ruff run as a generation error."""
-        try:
-            super().format_directory(directory)
-        except RuntimeError as error:
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
-            raise Error(str(error)) from error

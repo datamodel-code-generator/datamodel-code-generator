@@ -1,2 +1,0 @@
-Error: Ruff command failed with exit code 1
-my-server
