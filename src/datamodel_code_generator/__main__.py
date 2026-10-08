@@ -1082,6 +1082,22 @@ def _normalize_line_endings(text: str) -> str:
     return text.replace("\r\n", "\n")
 
 
+class _OutputDecodeError(UnicodeError):
+    """An existing output file that the configured encoding cannot decode."""
+
+    def __init__(self, path: Path, error: UnicodeError) -> None:
+        super().__init__(str(error))
+        self.path = path
+
+
+def _read_existing_output(path: Path, encoding: str) -> str:
+    """Read an existing output file with LF line endings, naming it when the encoding cannot decode it."""
+    try:
+        return _normalize_line_endings(path.read_text(encoding=encoding))
+    except UnicodeError as e:
+        raise _OutputDecodeError(path, e) from e
+
+
 class OutputComparisonOptions(NamedTuple):
     """Formatting context for a generated-output comparison."""
 
@@ -1150,7 +1166,7 @@ def _compare_single_file(
     generated_content = _normalize_line_endings(generated_path.read_text(encoding=encoding))
 
     display_path = comparison.single_file_display_path or actual_path.as_posix()
-    actual_content = _normalize_line_endings(actual_path.read_text(encoding=encoding))
+    actual_content = _read_existing_output(actual_path, encoding)
 
     if generated_content == actual_content:
         return False, []
@@ -1195,7 +1211,7 @@ def _compare_directories(
 
     for rel_path in sorted(generated_files & actual_files):
         generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
-        actual_content = _normalize_line_endings((actual_dir / rel_path).read_text(encoding=encoding))
+        actual_content = _read_existing_output(actual_dir / rel_path, encoding)
         if generated_content != actual_content:
             changed_files.append(
                 DirectoryChangedFile(
@@ -2919,14 +2935,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         print(traceback.format_exc(), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
 
-    if (
-        config.output is not None
-        and config.output.is_dir()
-        and generate_output is not None
-        and generate_output.is_file()
-    ):
-        print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
-        return cleanup_and_return(Exit.ERROR)
+    if config.output is not None and generate_output is not None:
+        if config.output.is_dir():
+            if generate_output.is_file():
+                print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
+                return cleanup_and_return(Exit.ERROR)
+        elif config.check and is_directory_output and generate_output.is_file():
+            is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
         _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
@@ -2970,12 +2985,19 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 
     if config.check and config.output is not None and generate_output is not None:
-        comparison = _compare_generated_outputs(
-            generate_output,
-            config.output,
-            config.encoding,
-            OutputComparisonOptions(is_directory_output=is_directory_output),
-        )
+        try:
+            comparison = _compare_generated_outputs(
+                generate_output,
+                config.output,
+                config.encoding,
+                OutputComparisonOptions(is_directory_output=is_directory_output),
+            )
+        except _OutputDecodeError as e:
+            print(  # noqa: T201
+                f"Unable to decode output {e.path.as_posix()} using encoding {config.encoding!r}: {e}",
+                file=sys.stderr,
+            )
+            return cleanup_and_return(Exit.ERROR)
         _write_comparison_output(comparison, namespace.output_format)
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 

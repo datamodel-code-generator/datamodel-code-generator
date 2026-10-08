@@ -612,6 +612,7 @@ class _Finisher:
         self.cwd = planner.cwd
         self.target_id = planner.target_id
         self.models = planner.models
+        self.root = planner.root
 
     def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
         version = self.effective.target_python_version.version_key
@@ -676,14 +677,17 @@ class _Finisher:
         )
 
     def defer(self, formatter: TargetCodeFormatter, texts: dict[PurePosixPath, str], paths: set[PurePosixPath]) -> None:
-        """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory."""
+        """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory.
+
+        The staged package keeps the target directory's name, which Ruff reads as the package name.
+        """
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
 
         if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
             return
         encoding = self.effective.encoding
         with ExitStack() as stack:
-            staged = _staging(stack, self.config.output, self.cwd)
+            staged = _staging(stack, self.config.output, self.cwd) / self.root.name
             for path in paths:
                 (location := staged.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
                 location.write_text(texts[path], encoding=encoding)
