@@ -253,8 +253,6 @@ General utility, HTTP, checking, and project integration options.
 - `--watch`: Watch input file(s) for changes and regenerate output automatically
 - `--watch-delay`: Debounce delay in seconds for watch mode (default: 0.5)
 - `--version`: show version
-- `--diagnostics-json`: Write the selected target's diagnostics as JSON to PATH, or to stdout with -.
-- `--dependency-format`: Print what adds the generated package to a project as a uv add command (default) or requirements lines. Choices: `uv`, `requirements`.
 
 ## Target Generation Options
 

@@ -29,10 +29,10 @@
   {
     "id": "cli-option.generate-server",
     "kind": "cli-option",
-    "message": "FastAPI server generation from the CLI is experimental; its options, generated package, and diagnostics may change.",
-    "note": "--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml and in its profiles. --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.",
+    "message": "FastAPI server generation from the CLI is experimental; its options and generated package may change.",
+    "note": "--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.",
     "since_version": "0.84.0",
-    "target": "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys), --diagnostics-json, and --dependency-format",
+    "target": "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)",
     "tracking_issue": null
   },
   {
