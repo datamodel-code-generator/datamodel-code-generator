@@ -2293,7 +2293,9 @@ def test_main_invalid_enum_name_snake_case_field(output_file: Path) -> None:
     option_description="""Use a Pydantic v2 alias generator in model_config.
 
 The `--alias-generator` option emits a per-model ConfigDict alias generator for
-Pydantic v2 BaseModel output and omits matching per-field aliases.""",
+Pydantic v2 BaseModel output and omits matching per-field aliases. With
+`--target-pydantic-version 2` every field alias is written out, so aliases do not
+depend on the generator of the installed Pydantic.""",
     input_schema="jsonschema/alias_generator.json",
     cli_args=["--snake-case-field", "--alias-generator", "to_camel", "--output-model-type", "pydantic_v2.BaseModel"],
     golden_output="jsonschema/alias_generator_pydantic_v2.py",

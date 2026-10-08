@@ -106,6 +106,10 @@ When the target is unset:
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
+With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
+constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime
+`populate_by_name=True` still accepts both.
+
 ---
 
 ## dataclasses

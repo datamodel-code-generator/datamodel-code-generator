@@ -799,7 +799,7 @@ class DataModelField(_PydanticBaseDataModelField):
         if (union_mode := data.pop("union_mode", None)) and self.data_type.is_union and "discriminator" not in data:
             data["union_mode"] = union_mode.value
 
-        alias_generator_name = self._update_alias_for_alias_generator(data)
+        pinned_alias = self._update_alias_for_alias_generator(data)
         has_alias = "alias" in data
         alias = data.get("alias")
 
@@ -830,8 +830,8 @@ class DataModelField(_PydanticBaseDataModelField):
             if serialization_alias != self.name:
                 data["serialization_alias"] = serialization_alias
 
-        if alias_generator_name is not None:
-            self._pin_generated_alias_for_target(data, alias_generator_name)
+        if pinned_alias is not None and "alias" not in data:
+            data["alias"] = pinned_alias
 
         # **extra is not supported in pydantic 2.0
         extra_field_keys = tuple(
@@ -851,35 +851,32 @@ class DataModelField(_PydanticBaseDataModelField):
                 data.pop(key)
 
     def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
-        """Keep only an alias the parent's generator does not reproduce and return that generator's name."""
+        """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
+
+        A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel, the only model
+        that renders or inherits the generator: never a RootModel, enum, union or type alias.
+        """
         if self.name is None or self.is_pydantic_extra_field:
             return None
         if (generator_name := self._alias_generator_name_from_parent()) is None:
             return None
-        alias = data.get("alias")
-        if alias is None and self._automatic_alias_disabled_for_alias_generator():
-            return generator_name
-        if (wire_name := alias if alias is not None else self.original_name) is None:
-            return generator_name
-        if _generate_alias(generator_name, self.name) == wire_name:
-            data.pop("alias", None)
-            return generator_name
-        data["alias"] = wire_name
-        return generator_name
-
-    def _pin_generated_alias_for_target(self, data: dict[str, Any], generator_name: str) -> None:
-        """Set the 2.8+ generated alias on a model field without one when the target predates those algorithms.
-
-        Only models that take the shared model config carry the generator: never a RootModel, enum or type alias.
-        """
-        if "alias" in data or (parent := self.parent) is None or (name := self.name) is None:
-            return
+        pinned_alias: str | None = None
         if (
-            not model_target_supports(parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
-            and parent.SUPPORTS_GENERIC_BASE_CLASS
+            not model_target_supports(parent := self.parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
+            and isinstance(parent, BaseModel)
             and not parent.IS_ROOT_MODEL
         ):
-            data["alias"] = _generate_alias(generator_name, name)
+            pinned_alias = _generate_alias(generator_name, self.name)
+        alias = data.get("alias")
+        if alias is None and self._automatic_alias_disabled_for_alias_generator():
+            return pinned_alias
+        if (wire_name := alias if alias is not None else self.original_name) is None:
+            return pinned_alias
+        if (_generate_alias(generator_name, self.name) if pinned_alias is None else pinned_alias) == wire_name:
+            data.pop("alias", None)
+            return pinned_alias
+        data["alias"] = wire_name
+        return pinned_alias
 
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:

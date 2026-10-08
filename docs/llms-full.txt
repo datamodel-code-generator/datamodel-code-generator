@@ -6025,6 +6025,10 @@ When the target is unset:
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
+With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
+constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime
+`populate_by_name=True` still accepts both.
+
 ---
 
 ## dataclasses
@@ -13172,7 +13176,9 @@ Reuse equivalent models and tune the scope or root-model behavior when schemas r
 Use a Pydantic v2 alias generator in model_config.
 
 The `--alias-generator` option emits a per-model ConfigDict alias generator for
-Pydantic v2 BaseModel output and omits matching per-field aliases.
+Pydantic v2 BaseModel output and omits matching per-field aliases. With
+`--target-pydantic-version 2` every field alias is written out, so aliases do not
+depend on the generator of the installed Pydantic.
 
 **Related:** [`--output-model-type`](#output-model-type), [`--snake-case-field`](field-customization.md#snake-case-field)
 

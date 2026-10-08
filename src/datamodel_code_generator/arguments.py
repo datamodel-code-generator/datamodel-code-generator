@@ -552,7 +552,8 @@ model_options.add_argument(
 model_options.add_argument(
     "--alias-generator",
     help="Pydantic v2 BaseModel alias generator to use in ConfigDict. "
-    "Matching generated aliases are omitted from individual Field() calls.",
+    "Matching generated aliases are omitted from individual Field() calls, "
+    "except with --target-pydantic-version 2, which writes every alias.",
     choices=[a.value for a in AliasGenerator],
     default=None,
 )
