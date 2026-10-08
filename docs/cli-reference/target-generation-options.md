@@ -124,6 +124,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -134,7 +135,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -260,6 +261,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
     from fastapi import Request
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -270,7 +272,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -396,6 +398,7 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
     from fastapi import Request
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -406,7 +409,7 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -531,6 +534,7 @@ methods. `--server-handler-modes` overrides it for single operations.
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -541,7 +545,7 @@ methods. `--server-handler-modes` overrides it for single operations.
         async def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -668,6 +672,7 @@ pyproject.toml, `server-handler-modes` is a table, and a command-line value repl
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -678,7 +683,7 @@ pyproject.toml, `server-handler-modes` is a table, and a command-line value repl
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -804,6 +809,7 @@ Each service method takes a `request` keyword argument as well as the operation'
     from fastapi import Request
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -815,7 +821,7 @@ Each service method takes a `request` keyword argument as well as the operation'
             self,
             *,
             request: Request,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -944,6 +950,7 @@ Choose how the server package lays out its routes (experimental).
     from ._generated import contract
     from ._generated.contract import OperationDependencies
     from ._runtime.server.application import Dependency, Wiring, build
+    from ._runtime.server.requests import absent, present
     from ._runtime.server.responses import dispatch
     from .services import Service
 
@@ -951,8 +958,14 @@ Choose how the server package lays out its routes (experimental).
     def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         list_pets_handler = wiring.handlers['list_pets']
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit', default_factory=absent)],
+        ) -> object:
+            return dispatch(
+                list_pets_handler(limit=present(limit)),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -1148,6 +1161,7 @@ generates.
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -1158,7 +1172,7 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -1283,6 +1297,7 @@ snake_case form of their operationId, or of their method and path.
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -1293,7 +1308,7 @@ snake_case form of their operationId, or of their method and path.
         def list_all(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -1419,6 +1434,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -1429,7 +1445,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -1554,6 +1570,7 @@ generation prints name the package by it; the package imports its own modules re
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -1564,7 +1581,7 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -1689,6 +1706,7 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -1699,7 +1717,7 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
         def list_pets(
             self,
             *,
-            page_size: int,
+            page_size: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]
@@ -1827,6 +1845,7 @@ primary response from the declared success responses.
     from .._generated import contract
     from .._generated.contract import OperationDependencies
     from .._runtime.server.application import Dependency, Wiring, build
+    from .._runtime.server.requests import absent, present
     from .._runtime.server.responses import dispatch
     from ..services import PetsService
 
@@ -1834,8 +1853,14 @@ primary response from the declared success responses.
     def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         list_pets_handler = wiring.handlers['list_pets']
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit', default_factory=absent)],
+        ) -> object:
+            return dispatch(
+                list_pets_handler(limit=present(limit)),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -2031,6 +2056,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
     import models
     from fastapi.responses import Response
 
+    from ._runtime.model_codecs.unset import Unset
     from ._runtime.server.responses import HTTPResult
 
 
@@ -2041,7 +2067,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
         def list_pets(
             self,
             *,
-            limit: int,
+            limit: int | Unset,
         ) -> (
             models.FieldPetsGetResponse
             | HTTPResult[models.FieldPetsGetResponse]

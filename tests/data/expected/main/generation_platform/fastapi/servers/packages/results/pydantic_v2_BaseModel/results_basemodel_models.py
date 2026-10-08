@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, RootModel, conint, constr
+from typing_extensions import TypeAliasType
 
 
 class Thing(BaseModel):
@@ -14,8 +15,7 @@ class Problem(BaseModel):
     title: str
 
 
-class FieldResultsGetQueryCaseParameter(RootModel[str]):
-    root: str
+FieldResultsGetQueryCaseParameter = TypeAliasType("FieldResultsGetQueryCaseParameter", str)
 
 
 class FieldResultsGetResponse(RootModel[str]):
@@ -30,37 +30,32 @@ class FieldResultsGetResponse201LocationHeader(RootModel[str]):
     root: str
 
 
-class FieldPlainGetQueryCaseParameter(RootModel[str]):
-    root: str
+FieldPlainGetQueryCaseParameter = TypeAliasType("FieldPlainGetQueryCaseParameter", str)
 
 
 class FieldPlainGetResponse(RootModel[constr(max_length=3)]):
     root: constr(max_length=3)
 
 
-class FieldLatinGetQueryCaseParameter(RootModel[str]):
-    root: str
+FieldLatinGetQueryCaseParameter = TypeAliasType("FieldLatinGetQueryCaseParameter", str)
 
 
 class FieldLatinGetResponse(RootModel[str]):
     root: str
 
 
-class FieldNothingGetQueryCaseParameter(RootModel[str]):
-    root: str
+FieldNothingGetQueryCaseParameter = TypeAliasType("FieldNothingGetQueryCaseParameter", str)
 
 
 class FieldNothingGetResponse(BaseModel):
     pass
 
 
-class FieldBlobGetQueryCaseParameter(RootModel[str]):
-    root: str
+FieldBlobGetQueryCaseParameter = TypeAliasType("FieldBlobGetQueryCaseParameter", str)
 
 
 class FieldBlobGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldEmptyPostQueryCaseParameter(RootModel[str]):
-    root: str
+FieldEmptyPostQueryCaseParameter = TypeAliasType("FieldEmptyPostQueryCaseParameter", str)

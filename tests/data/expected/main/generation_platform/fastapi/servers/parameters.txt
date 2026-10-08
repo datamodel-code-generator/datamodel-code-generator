@@ -1,13 +1,13 @@
 # parameters
 serve pydantic_v2.BaseModel
-service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, repeat, search
+service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, get_sizes, repeat, search
 service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
 > GET /search
 < 422 application/json [{"type": "string_too_short", "loc": ["cookie", "session"]}]
 > GET /search
-  search(session='abc', code='AB', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code=UNSET, filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
 < 204 - b''
 > GET /search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi
 < 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}]
@@ -19,7 +19,7 @@ service UntaggedService without its methods: TypeError
   search(session='abc', code='B', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
 < 204 - b''
 > GET /search?filter%5Bname%5D=n&filter%5Bid%5D=1
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code=UNSET, filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
 < 204 - b''
 > GET /ratios?ratios=1&ratios=2.5
   get_ratios(ratios=[1.0, 2.5], limits=[1, 2])
@@ -35,6 +35,14 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > GET /ratios?ratios=1&limits=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limits", 0]}]
+> GET /sizes
+  get_sizes(size=10, words=['a', 'b'])
+< 204 - b''
+> GET /sizes?size=3&words=x&words=y
+  get_sizes(size=3, words=['x', 'y'])
+< 204 - b''
+> GET /sizes?size=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
 > GET /repeat/1/again/1
   repeat(id=1)
 < 204 - b''

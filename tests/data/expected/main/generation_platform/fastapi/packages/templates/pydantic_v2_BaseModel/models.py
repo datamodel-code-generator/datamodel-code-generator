@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, RootModel, conint, constr
+from pydantic import AwareDatetime, BaseModel, Field, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class Pet(BaseModel):
@@ -25,12 +27,12 @@ class Error(BaseModel):
     message: str
 
 
-class FieldPetsGetQueryLimitParameter(RootModel[conint(ge=1, le=100)]):
-    root: conint(ge=1, le=100) = 20
+FieldPetsGetQueryLimitParameter = TypeAliasType(
+    "FieldPetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+)
 
 
-class FieldPetsGetQueryTagsParameter(RootModel[list[str]]):
-    root: list[str]
+FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
 
 
 class FieldPetsGetQueryKindParameter(StrEnum):
@@ -38,16 +40,13 @@ class FieldPetsGetQueryKindParameter(StrEnum):
     dog = 'dog'
 
 
-class FieldPetsGetHeaderXRequestIdParameter(RootModel[UUID]):
-    root: UUID
+FieldPetsGetHeaderXRequestIdParameter = TypeAliasType("FieldPetsGetHeaderXRequestIdParameter", UUID)
 
 
-class FieldPetsGetQuerySinceParameter(RootModel[AwareDatetime]):
-    root: AwareDatetime
+FieldPetsGetQuerySinceParameter = TypeAliasType("FieldPetsGetQuerySinceParameter", AwareDatetime)
 
 
-class FieldPetsGetCookieSessionParameter(RootModel[str]):
-    root: str
+FieldPetsGetCookieSessionParameter = TypeAliasType("FieldPetsGetCookieSessionParameter", str)
 
 
 class FieldPetsGetResponse(RootModel[list[Pet]]):
@@ -58,12 +57,14 @@ class FieldPetsMineGetResponse(RootModel[list[Pet]]):
     root: list[Pet]
 
 
-class FieldPetsPetIdGetPathPetIdParameter(RootModel[conint(ge=1)]):
-    root: conint(ge=1)
+FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
-class FieldPetsPetIdDeletePathPetIdParameter(RootModel[conint(ge=1)]):
-    root: conint(ge=1)
+FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
 class FieldStoreInventoryGetResponse(RootModel[dict[str, int]]):

@@ -23,7 +23,6 @@
               "maximum": 100,
               "minimum": 1,
               "description": "Page size.",
-              "default": 20,
               "title": "Limit"
             },
             "description": "Page size."
