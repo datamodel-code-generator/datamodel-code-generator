@@ -236,6 +236,17 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
+| [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
+| [`--client-model-package`](target-generation-options.md#client-model-package) | Name the import path of the models the client package imports (experimental). |
+| [`--client-operations`](target-generation-options.md#client-operations) | Set the client settings of single operations (experimental). |
+| [`--client-output`](target-generation-options.md#client-output) | Write the client package to this directory (experimental). |
+| [`--client-package`](target-generation-options.md#client-package) | Name the import path of the client package (experimental). |
+| [`--client-protocols`](target-generation-options.md#client-protocols) | Declare the protocol helpers of the client package (experimental). |
+| [`--client-resource-names`](target-generation-options.md#client-resource-names) | Name the resources of tags (experimental). |
+| [`--client-server-base-url`](target-generation-options.md#client-server-base-url) | Resolve relative server URLs against this base URL (experimental). |
+| [`--client-signature-style`](target-generation-options.md#client-signature-style) | Declare the arguments of the operation methods (experimental). |
+| [`--generate-client`](target-generation-options.md#generate-client) | Generate an HTTPX2 client package for the models (experimental). |
 | [`--generate-server`](target-generation-options.md#generate-server) | Generate a FastAPI server package for the models (experimental). |
 | [`--server-body-mode`](target-generation-options.md#server-body-mode) | Choose how service methods receive request bodies (experimental). |
 | [`--server-body-modes`](target-generation-options.md#server-body-modes) | Set the body mode of single operations (experimental). |
@@ -299,6 +310,16 @@ All options sorted alphabetically:
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
+- [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
+- [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
+- [`--client-model-package`](target-generation-options.md#client-model-package) - Name the import path of the models the client package import...
+- [`--client-operations`](target-generation-options.md#client-operations) - Set the client settings of single operations (experimental).
+- [`--client-output`](target-generation-options.md#client-output) - Write the client package to this directory (experimental).
+- [`--client-package`](target-generation-options.md#client-package) - Name the import path of the client package (experimental).
+- [`--client-protocols`](target-generation-options.md#client-protocols) - Declare the protocol helpers of the client package (experime...
+- [`--client-resource-names`](target-generation-options.md#client-resource-names) - Name the resources of tags (experimental).
+- [`--client-server-base-url`](target-generation-options.md#client-server-base-url) - Resolve relative server URLs against this base URL (experime...
+- [`--client-signature-style`](target-generation-options.md#client-signature-style) - Declare the arguments of the operation methods (experimental...
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models) - Collapse duplicate models by replacing references instead of...
 - [`--collapse-root-models`](model-customization.md#collapse-root-models) - Inline root model definitions instead of creating separate w...
 - [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) - Select which name to keep when collapsing root models with o...
@@ -340,6 +361,7 @@ All options sorted alphabetically:
 - [`--formatters`](template-customization.md#formatters) - Specify code formatters to apply to generated output.
 - [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses) - Generate frozen dataclasses with optional keyword-only field...
 - [`--generate-cli-command`](general-options.md#generate-cli-command) - Generate CLI command from pyproject.toml configuration.
+- [`--generate-client`](target-generation-options.md#generate-client) - Generate an HTTPX2 client package for the models (experiment...
 - [`--generate-prompt`](utility-options.md#generate-prompt) - Generate a prompt for consulting LLMs about CLI options
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config) - Generate pyproject.toml configuration from CLI arguments.
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators) - Generate experimental Pydantic v2 model validators for JSON ...
