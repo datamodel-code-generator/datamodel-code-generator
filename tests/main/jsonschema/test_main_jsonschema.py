@@ -4543,6 +4543,19 @@ def test_main_strict_types_with_constraints(output_file: Path) -> None:
     )
 
 
+@LEGACY_BLACK_SKIP
+def test_main_strict_types_time(output_file: Path) -> None:
+    """Test strict float keeps string time formats as time while numbers stay strict."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "strict_types_time.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="strict_types_time.py",
+        extra_args=["--strict-types", "str", "bytes", "int", "float", "bool"],
+    )
+
+
 def test_main_selective_constraint_kwargs_pydantic_v2(output_file: Path) -> None:
     """Test primitive constraints are preserved without dumping the full schema object."""
     run_main_and_assert(
