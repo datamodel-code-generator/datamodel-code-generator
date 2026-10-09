@@ -157,8 +157,9 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
                 entries.append((key, lexical(item, "string")))
             return entries
         case _:
-            msg = "The value does not have the parameter's declared shape"
-            raise ParameterEncodingError(msg)
+            pass
+    msg = "The value does not have the parameter's declared shape"
+    raise ParameterEncodingError(msg)
 
 
 def _percent(plan: ParameterPlan, kept: str) -> Callable[[str], str]:
@@ -274,8 +275,9 @@ def _content(plan: ParameterPlan, value: JSONValue) -> str:
         case "text", str():
             return value
         case _:
-            msg = "The parameter content media or value is not builtin"
-            raise ParameterEncodingError(msg)
+            pass
+    msg = "The parameter content media or value is not builtin"
+    raise ParameterEncodingError(msg)
 
 
 def _querystring_text(plan: ParameterPlan, value: JSONValue) -> str:
@@ -283,7 +285,8 @@ def _querystring_text(plan: ParameterPlan, value: JSONValue) -> str:
         case "form":
             return encode_form(value, plan.fields, plan.additional).decode("ascii")
         case _:
-            return quote(_content(plan, value), safe="")
+            pass
+    return quote(_content(plan, value), safe="")
 
 
 def querystring(plan: ParameterPlan, value: object) -> str:
@@ -312,7 +315,8 @@ def _style_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
         case "header":
             return [(plan.name, _encode_header(plan, entries))]
         case _:
-            return _encode_cookie(plan, entries)
+            pass
+    return _encode_cookie(plan, entries)
 
 
 def _content_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
@@ -323,7 +327,8 @@ def _content_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
         case "query":
             return [(quote(plan.name, safe=""), quote(text, safe=""))]
         case _:
-            return [(plan.name, _header_text(text, item=False))]
+            pass
+    return [(plan.name, _header_text(text, item=False))]
 
 
 def pairs(plan: ParameterPlan, value: object) -> list[tuple[str | None, str]]:
