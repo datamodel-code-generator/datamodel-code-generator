@@ -336,7 +336,6 @@ class PaginationCycleError(ProtocolDataError):
         *,
         page_index: int,
         first_seen_page_index: int,
-        resume_state: ResumeState | None = None,
         location: Selector | RequestTarget | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
@@ -350,7 +349,6 @@ class PaginationCycleError(ProtocolDataError):
         """Keep the repeating page and the page that first returned the continuation."""
         error_count(page_index, "page_index")
         error_count(first_seen_page_index, "first_seen_page_index")
-        _resume_state(resume_state)
         super().__init__(
             condition="inconsistent",
             location=location,
@@ -365,7 +363,6 @@ class PaginationCycleError(ProtocolDataError):
         )
         self.page_index = page_index
         self.first_seen_page_index = first_seen_page_index
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (

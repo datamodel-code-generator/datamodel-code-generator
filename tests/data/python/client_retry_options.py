@@ -519,7 +519,7 @@ class _KeySigner:
     """A signer that claims the idempotency key header, which the call refuses before signing."""
 
     def __init__(self, auth: ModuleType) -> None:
-        self.capabilities = auth.SignerCapabilities((), ("Idempotency-Key",), (), False)
+        self.capabilities = auth.SignerCapabilities((), ("Idempotency-Key",), ())
 
     def sign(self, request: object) -> object:
         return request

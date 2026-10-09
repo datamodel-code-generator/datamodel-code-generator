@@ -1,0 +1,14 @@
+# stream-resume msgspec.Struct
+  > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","payload":{"x":1}}'
+  checkpoint with a plain payload = 'ResumeState'
+  < closed
+  > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","payload":{"x":1}}'
+  checkpoint with a raw payload ! DecodeError: DecodeError(operation_id='streamFeed', reason='unencodable', location='body') [operation_id='streamFeed', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('Encoding objects of type msgspec.Raw is unsupported')] unencodable
+  < closed
+asyncio
+  > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","payload":{"x":1}}'
+  async checkpoint with a plain payload = 'ResumeState'
+  < closed
+  > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","payload":{"x":1}}'
+  async checkpoint with a raw payload ! DecodeError: DecodeError(operation_id='streamFeed', reason='unencodable', location='body') [operation_id='streamFeed', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('Encoding objects of type msgspec.Raw is unsupported')] unencodable
+  < closed

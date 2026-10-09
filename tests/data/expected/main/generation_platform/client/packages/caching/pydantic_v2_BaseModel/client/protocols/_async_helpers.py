@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.cache import afetch
 from .._runtime.protocols.caches import CacheResult
+from .._runtime.protocols.client import AsyncClientCore
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
@@ -20,9 +21,9 @@ from . import CacheOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def users(self) -> AsyncUsersProtocols:

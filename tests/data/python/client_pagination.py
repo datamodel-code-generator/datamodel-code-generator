@@ -235,7 +235,7 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
         ("page response", {"items": (), "data": None, "response": None}),
         ("page continuation", {"items": (), "data": None, "response": first.response, "continuation": "a"}),
     ):
-        record(lines, label, lambda arguments=arguments: harness.protocols.Page(**arguments))
+        record(lines, label, lambda arguments=arguments: summary(harness.protocols.Page(**arguments)))
     record(lines, "page frozen", lambda: setattr(first, "data", None))
     record(lines, "page equality", lambda: (first == first, first == second, hash(first) == hash(first)))
 
@@ -273,16 +273,16 @@ def _data(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
         (
             "duplicate cursor header",
             api.protocols.users.by_header,
-            lambda _: httpx2.Response(
-                200, headers=[("X-Next", "a"), ("x-next", "b")], json={"data": [{"id": "1"}]}
-            ),
+            lambda _: httpx2.Response(200, headers=[("X-Next", "a"), ("x-next", "b")], json={"data": [{"id": "1"}]}),
         ),
         ("invalid page", loose, raw_response(200, b"{", "application/json")),
         ("page its model refuses", loose, json_response(200, {"data": [{"name": "x"}]})),
     ):
         exchange.respond(responder)
         drained(lines, label, helper.iterate())
-    exchange.respond(json_response(200, {"data": [{"id": "1"}], "next": 7}), json_response(200, {"data": [], "next": None}))
+    exchange.respond(
+        json_response(200, {"data": [{"id": "1"}], "next": 7}), json_response(200, {"data": [], "next": None})
+    )
     drained(lines, "integer cursor", loose.iterate())
     exchange.respond(
         json_response(200, {"result": {"items": [{"id": "1"}], "next": "n1"}}),
@@ -293,19 +293,11 @@ def _data(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
 
 def _sizes(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse cursors and pages over their limits, and a page over a smaller response limit as any call does."""
-    options, protocols = harness.options, harness.protocols
+    options = harness.options
     helper = api.protocols.users.all
     for label, settings, responder in (
-        ("cursor over its limit", {"pagination_options": protocols.PaginationOptions(max_cursor_bytes=4)}, users("1", cursor="abcde")),
-        ("multibyte cursor", {"pagination_options": protocols.PaginationOptions(max_cursor_bytes=4)}, users("1", cursor="ééé")),
-        ("page over its limit", {"pagination_options": protocols.PaginationOptions(max_page_bytes=10)}, users("1")),
         ("response limit smaller", {"options": options.RequestOptions(max_response_bytes=10)}, users("1")),
-        (
-            "response limit removed",
-            {"options": options.RequestOptions(max_response_bytes=None), "pagination_options": protocols.PaginationOptions(max_page_bytes=10)},
-            users("1"),
-        ),
-        ("equal limits", {"options": options.RequestOptions(max_response_bytes=10), "pagination_options": protocols.PaginationOptions(max_page_bytes=10)}, users("1")),
+        ("response limit removed", {"options": options.RequestOptions(max_response_bytes=None)}, users("1")),
     ):
         exchange.respond(responder)
         drained(lines, label, helper.iterate(**settings))
@@ -356,9 +348,13 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     exchange.respond(users("1", cursor="a"))
     first = fetched(lines, "page for limits", helper.page)
     for label, settings in (("page limit", {"max_pages": 1}), ("item limit", {"max_items": 1})):
-        record(lines, f"next page past its {label}", lambda settings=settings: helper.next_page(
-            first, pagination_options=protocols.PaginationOptions(**settings)
-        ))
+        record(
+            lines,
+            f"next page past its {label}",
+            lambda settings=settings: helper.next_page(
+                first, pagination_options=protocols.PaginationOptions(**settings)
+            ),
+        )
 
 
 def _targets(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

@@ -33,7 +33,7 @@
   query start near the total ['1', '2']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  query start page = [1] continuation=Continuation(kind='offset') status=200 attempts=1
+  query start page = [1] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   query start next page = [2] continuation=None status=200 attempts=1
@@ -161,7 +161,7 @@
   null total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  first counted page = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  first counted page = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next counted page = [3] continuation=None status=200 attempts=1
@@ -176,7 +176,7 @@
   async literal offsets ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async first page number = [1] continuation=Continuation(kind='page') status=200 attempts=1
+  async first page number = [1] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async next page number = [2] continuation=None status=200 attempts=1

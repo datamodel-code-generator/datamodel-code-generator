@@ -10,7 +10,8 @@ from functools import cached_property
 from models import ClientMessage as _dcg_type_0
 from models import ServerMessage as _dcg_type_1
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.websocket import AsyncWebSocketSession, aconnect_socket
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import WSOptions, _plans
@@ -19,9 +20,9 @@ from . import WSOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def rooms(self) -> AsyncRoomsProtocols:

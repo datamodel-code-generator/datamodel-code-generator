@@ -184,17 +184,14 @@ def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     helper = api.protocols.users.all
     for label, session in (
         ("session timeout", options.SessionOptions(total_timeout=0)),
-        ("earlier session timeout", options.SessionOptions(total_timeout=0, deadline=options.Deadline.after(60))),
-        ("earlier session deadline", options.SessionOptions(total_timeout=60, deadline=options.Deadline.after(0))),
     ):
         pager = helper.iterate(session_options=session)
         error = _failure(lambda pager=pager: next(pager))
         lines.append(f"  {label} ! {describe(error)} {_session(error)} {progress(pager)}")
-    deadline = options.Deadline.after(1.0)
-    pager = helper.iterate(session_options=options.SessionOptions(deadline=deadline))
+    pager = helper.iterate(session_options=options.SessionOptions(total_timeout=1.0))
     exchange.respond(users("1", cursor="a"))
     record(lines, "first item before the deadline", lambda pager=pager: next(pager).id)
-    time.sleep(max(deadline.remaining(), 0) + 0.05)
+    time.sleep(1.05)
     record(lines, "next page after the deadline", lambda: next(pager))
     exchange.respond(users("1"))
     drained(lines, "no session timeout", helper.iterate(session_options=options.SessionOptions(total_timeout=None)))

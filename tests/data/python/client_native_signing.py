@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import io
 from typing import TYPE_CHECKING
 
 import httpx2
@@ -26,7 +27,6 @@ class _Signatures:
             allowed_origins=(origin,),
             managed_headers=(f"X-Signature-{index}",),
             managed_query=(f"sig{index}",),
-            requires_body_digest=False,
         )
 
     @property
@@ -41,7 +41,6 @@ class _Signatures:
             request.origin.replace(self.origin, "<origin>"),
             request.query,
             tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in request.headers),
-            request.body_digest,
             request.attempt_index,
             request.hop_index,
             tuple(self.events),
@@ -62,48 +61,15 @@ class _AsyncSigner(_Signatures):
         return self.fields(request)
 
 
-class _Attempt:
-    def __init__(self, events: list[str], *, known: bool) -> None:
-        self.events = events
-        self.known = known
-
-    @property
-    def content_length(self) -> int | None:
-        self.events.append("length")
-        return 19 if self.known else None
-
-    @property
-    def content_type(self) -> str | None:
-        self.events.append("type")
-        return "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        self.events.append("read")
-        yield b"chunk-one"
-        yield b"\x00chunk-two"
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        for chunk in self.iter_bytes():
-            yield chunk
-
-    def close(self) -> None:
-        self.events.append("close")
-
-    async def aclose(self) -> None:
-        self.close()
+def _chunks(events: list[str]) -> Iterator[bytes]:
+    events.append("read")
+    yield b"chunk-one"
+    yield b"\x00chunk-two"
 
 
-class _Factory:
-    def __init__(self, events: list[str], *, known: bool) -> None:
-        self.events = events
-        self.known = known
-
-    def __call__(self, context: object) -> _Attempt:
-        self.events.append("open")
-        return _Attempt(self.events, known=self.known)
-
-    async def acall(self, context: object) -> _Attempt:
-        return self(context)
+async def _achunks(events: list[str]) -> AsyncIterator[bytes]:
+    for chunk in _chunks(events):
+        yield chunk
 
 
 def _operation(
@@ -125,13 +91,10 @@ def _operation(
     if label == "typed-known":
         return lambda: resource.signed_body(body=b"signed\x00bytes")
     body: object = b"encoded\x00bytes"
-    if label != "raw-encoded":
-        factory = _Factory(events, known=label == "raw-known")
-        body = (
-            bodies.AsyncBodyFactory(factory.acall, content_type="application/octet-stream")
-            if asynchronous
-            else bodies.BodyFactory(factory, content_type="application/octet-stream")
-        )
+    if label == "raw-known":
+        body = io.BytesIO(b"chunk-one\x00chunk-two")
+    elif label != "raw-encoded":
+        body = _achunks(events) if asynchronous else _chunks(events)
     return lambda: api.request_raw(
         "PUT", origin + "/raw/%7e/%2F?dup=one&dup=two&blank=&plus=+&space=%20&slash=%2f", body=body
     )

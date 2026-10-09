@@ -7,6 +7,7 @@ import json
 import threading
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import parse_qs
 
@@ -382,7 +383,7 @@ def _expiry(package: ModuleType, auth: ModuleType, lines: list[str]) -> None:
             )
 
 
-def _faults(auth: ModuleType, lines: list[str]) -> None:
+def _faults(package: ModuleType, auth: ModuleType, lines: list[str]) -> None:
     """Keep the token set of a refresh that failed, so the next call sends the same refresh token again."""
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
@@ -441,6 +442,29 @@ def _faults(auth: ModuleType, lines: list[str]) -> None:
         lines.append(
             f"  one refresh for concurrent callers = {first.line} / {second.line} sent={script.refresh_tokens}"
         )
+    source = Path(__file__).parents[1] / "generation_platform/client/timeout-boundaries.json"
+    vector = json.loads(source.read_text())
+    options = importlib.import_module(package.__name__ + ".options")
+    gate = threading.Event()
+    script = _Sent(rotated, gate=gate)
+    with (
+        provider(script) as family,
+        package.Client(options=options.ClientOptions(auth=auth.AuthConfig({"oauth": family}))) as api,
+    ):
+        first = Caller(lambda: family.get(_context(auth)), _outcome)
+        first.start()
+        script.entered.wait(LIMIT)
+        try:
+            request = options.RequestOptions(total_timeout=vector["refresh_wait"])
+            record(
+                lines,
+                "generated caller expires while waiting for refresh",
+                lambda: api.auth.oauth_read(options=request),
+            )
+        finally:
+            gate.set()
+            first.join(LIMIT)
+        lines.append(f"    original refresh = {first.line} sent={script.refresh_tokens}")
     script = _Sent()
     with provider(script, token_set=_tokens(auth, refresh=None)) as family:
         current = family.get(_context(auth))
@@ -491,7 +515,7 @@ def oauth_refresh(package: ModuleType, lines: list[str]) -> None:
     _configuration(auth, lines)
     port = _wire(package, auth, options, lines)
     _expiry(package, auth, lines)
-    _faults(auth, lines)
+    _faults(package, auth, lines)
     run(lambda: _async(auth, lines))
     for index, line in enumerate(lines):
         lines[index] = line.replace(f":{port}", ":<port>")

@@ -216,63 +216,27 @@ class _AsyncEvents:
         self.events.on_event(event)
 
 
-class _Factory:
-    """An application's upload factory that records whether its permit is held when opened and closed."""
+class _Payload:
+    """An application's upload payload that records whether its permit is held when its bytes are read."""
 
     def __init__(self, usage: _Usage, *, failing: bool = False) -> None:
         self.usage = usage
         self.failing = failing
         self.opened: list[int] = []
-        self.closed: list[int] = []
 
-    def _open(self, context: object) -> None:
-        del context
+    def _open(self) -> None:
         self.opened.append(self.usage.active)
         if self.failing:
-            msg = "Upload factory failed"
+            msg = "Upload payload failed"
             raise RuntimeError(msg)
 
-    def open(self, context: object) -> _Body:
-        self._open(context)
-        return _Body(self)
-
-    async def aopen(self, context: object) -> _AsyncBody:
-        self._open(context)
-        return _AsyncBody(self)
-
-
-class _Body:
-    """One application body attempt, with its bytes and an idempotent close."""
-
-    def __init__(self, factory: _Factory) -> None:
-        self.factory = factory
-        self.closed = False
-
-    @property
-    def content_length(self) -> int:
-        return len(_PNG)
-
-    @property
-    def content_type(self) -> str:
-        return "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
+    def __iter__(self) -> Iterator[bytes]:
+        self._open()
         yield _PNG
 
-    def close(self) -> None:
-        if not self.closed:
-            self.closed = True
-            self.factory.closed.append(self.factory.usage.active)
-
-
-class _AsyncBody(_Body):
-    """An application body attempt with native asynchronous iteration and cleanup."""
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        self._open()
         yield _PNG
-
-    async def aclose(self) -> None:
-        self.close()
 
 
 def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
@@ -368,7 +332,7 @@ def _sync_ownership(package: ModuleType, lines: list[str]) -> None:
 def _sync_waiting_body(package: ModuleType, lines: list[str]) -> None:
     options, bodies, types = _modules(package)
     limiter = _SemaphoreLimiter()
-    factory = _Factory(limiter.usage)
+    payload = _Payload(limiter.usage)
     exchange = Exchange(lines)
     exchange.respond(json_response(200, _PET), raw_response(200, _PNG, "image/png"))
     http = exchange.client()
@@ -381,19 +345,19 @@ def _sync_waiting_body(package: ModuleType, lines: list[str]) -> None:
                 target=lambda: record(
                     result,
                     "waiting upload",
-                    lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open)),
+                    lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload),
                 ),
                 daemon=True,
             )
             upload.start()
             waiting = limiter.waiting.wait(timeout=10)
             lines.append(
-                f"  waiting behind stream={waiting} factory={factory.opened} queued={len(exchange.responders)} "
+                f"  waiting behind stream={waiting} payload={payload.opened} queued={len(exchange.responders)} "
                 f"{limiter.usage.report}"
             )
         upload.join(timeout=10)
         lines.extend(result)
-        lines.append(f"  waiting upload joined={not upload.is_alive()} factory={factory.opened}/{factory.closed}")
+        lines.append(f"  waiting upload joined={not upload.is_alive()} payload={payload.opened}")
         lines.append(f"  semaphore concurrency {limiter.usage.report}")
     http.close()
 
@@ -463,17 +427,17 @@ def _sync_failures(package: ModuleType, lines: list[str]) -> None:
             record(lines, "stream close release failure", stream.close)
         lines.append(f"    {limiter.usage.report}")
         limiter = _SemaphoreLimiter()
-        factory = _Factory(limiter.usage, failing=True)
+        payload = _Payload(limiter.usage, failing=True)
         record(
             lines,
-            "factory failure after grant",
+            "payload failure after grant",
             lambda: api.pets.photos.upload(
                 pet_id=_photo(package),
-                body=bodies.BodyFactory(factory.open),
+                body=payload,
                 options=options.RequestOptions(limiter=limiter),
             ),
         )
-        lines.append(f"  failed factory {factory.opened}/{factory.closed} {limiter.usage.report}")
+        lines.append(f"  failed payload {payload.opened} {limiter.usage.report}")
         for failure in (KeyboardInterrupt(), SystemExit(7)):
             limiter = _SemaphoreLimiter(acquire_failure=failure)
             try:
@@ -556,7 +520,7 @@ def _sync_admission(package: ModuleType, lines: list[str]) -> None:
     with package.Client(http_client=http) as api:
         for label, refused in (("zero timeout", {"total_timeout": 0}), ("closed client admission", {})):
             limiter = _SemaphoreLimiter()
-            factory = _Factory(limiter.usage)
+            payload = _Payload(limiter.usage)
             events = _Events(limiter.usage)
             request = options.RequestOptions(limiter=limiter, hooks=(events,), **refused)
             if not refused:
@@ -564,12 +528,10 @@ def _sync_admission(package: ModuleType, lines: list[str]) -> None:
             record(
                 lines,
                 label,
-                lambda: api.pets.photos.upload(
-                    pet_id=_photo(package), body=bodies.BodyFactory(factory.open), options=request
-                ),
+                lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=request),
             )
             lines.append(
-                f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
+                f"    {limiter.usage.report} payload={payload.opened} "
                 f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
             )
     http.close()
@@ -644,7 +606,7 @@ async def _async_ownership(package: ModuleType, lines: list[str]) -> None:
 async def _async_waiting_body(package: ModuleType, lines: list[str]) -> None:
     options, bodies, types = _modules(package)
     limiter = _AsyncSemaphoreLimiter()
-    factory = _Factory(limiter.usage)
+    payload = _Payload(limiter.usage)
     exchange = Exchange(lines)
     exchange.respond(json_response(200, _PET), raw_response(200, _PNG, "image/png"))
     http = exchange.async_client()
@@ -657,14 +619,14 @@ async def _async_waiting_body(package: ModuleType, lines: list[str]) -> None:
                 arecord(
                     result,
                     "async waiting upload",
-                    lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen)),
+                    lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload),
                 )
             )
             waiting = asyncio.create_task(limiter.waiting.wait())
             try:
                 done, _ = await asyncio.wait((waiting,), timeout=10)
                 lines.append(
-                    f"  async waiting behind stream={bool(done)} factory={factory.opened} queued={len(exchange.responders)} "
+                    f"  async waiting behind stream={bool(done)} payload={payload.opened} queued={len(exchange.responders)} "
                     f"{limiter.usage.report}"
                 )
             finally:
@@ -672,7 +634,7 @@ async def _async_waiting_body(package: ModuleType, lines: list[str]) -> None:
                 await asyncio.gather(waiting, return_exceptions=True)
         await upload
         lines.extend(result)
-        lines.append(f"  async waiting upload factory={factory.opened}/{factory.closed}")
+        lines.append(f"  async waiting upload payload={payload.opened}")
         lines.append(f"  async semaphore concurrency {limiter.usage.report}")
     await http.aclose()
 
@@ -742,17 +704,17 @@ async def _async_failures(package: ModuleType, lines: list[str]) -> None:
             await arecord(lines, "async stream close release failure", stream.aclose)
         lines.append(f"    {limiter.usage.report}")
         limiter = _AsyncSemaphoreLimiter()
-        factory = _Factory(limiter.usage, failing=True)
+        payload = _Payload(limiter.usage, failing=True)
         await arecord(
             lines,
-            "async factory failure after grant",
+            "async payload failure after grant",
             lambda: api.pets.photos.upload(
                 pet_id=_photo(package),
-                body=bodies.AsyncBodyFactory(factory.aopen),
+                body=payload,
                 options=options.RequestOptions(limiter=limiter),
             ),
         )
-        lines.append(f"  async failed factory {factory.opened}/{factory.closed} {limiter.usage.report}")
+        lines.append(f"  async failed payload {payload.opened} {limiter.usage.report}")
         failure = asyncio.CancelledError()
         limiter = _AsyncSemaphoreLimiter(acquire_failure=failure)
         try:
@@ -839,7 +801,7 @@ async def _async_admission(package: ModuleType, lines: list[str]) -> None:
     async with package.AsyncClient(http_client=http) as api:
         for label, refused in (("async zero timeout", {"total_timeout": 0}), ("async closed client admission", {})):
             limiter = _AsyncSemaphoreLimiter()
-            factory = _Factory(limiter.usage)
+            payload = _Payload(limiter.usage)
             events = _Events(limiter.usage)
             request = options.RequestOptions(limiter=limiter, hooks=(_AsyncEvents(events),), **refused)
             if not refused:
@@ -847,12 +809,10 @@ async def _async_admission(package: ModuleType, lines: list[str]) -> None:
             await arecord(
                 lines,
                 label,
-                lambda: api.pets.photos.upload(
-                    pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen), options=request
-                ),
+                lambda: api.pets.photos.upload(pet_id=_photo(package), body=payload, options=request),
             )
             lines.append(
-                f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
+                f"    {limiter.usage.report} payload={payload.opened} "
                 f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
             )
     await http.aclose()

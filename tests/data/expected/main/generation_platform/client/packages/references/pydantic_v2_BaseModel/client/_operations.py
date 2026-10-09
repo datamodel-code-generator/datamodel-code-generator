@@ -113,6 +113,7 @@ OPERATION_2: Final[OperationPlan[ListOwnersResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
+                reserved_names=('metadata_key',),
             ),
             codec=model_bindings.codec_8,
         ),

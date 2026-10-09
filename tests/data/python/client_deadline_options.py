@@ -30,16 +30,14 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
                 f"phase {field} {label}",
                 lambda field=field, value=value: options.TimeoutOptions(**{field: value}),
             )
-        for field in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
+        for field in ("total_timeout",):
             record(
                 lines,
                 f"option {field} {label}",
                 lambda field=field, value=value: options.RequestOptions(**{field: value}),
             )
-        record(lines, f"deadline {label}", lambda value=value: options.Deadline.after(value))
     for field, value in (
         ("timeout", False),
-        ("deadline", 0),
         ("limiter", object()),
         ("clock", object()),
     ):
@@ -47,35 +45,12 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     record(lines, "timeout unset", options.TimeoutOptions)
     record(lines, "timeout zero", lambda: options.TimeoutOptions(connect=0, read=0.0, write=0, pool=0))
     record(lines, "timeout mixed", lambda: options.TimeoutOptions(connect=None, read=1, write=2.5))
-    record(lines, "deadline constructor", options.Deadline)
-    elapsed = options.Deadline.after(0)
-    future = options.Deadline.after(3600)
-    lines.append(
-        f"  deadlines expired={elapsed.remaining()} future={0 < future.remaining() <= 3600} ordered={future.at > elapsed.at}"
-    )
-    deadline_at = future.at
-    try:
-        setattr(future, "at", deadline_at + 1)
-    except (AttributeError, TypeError):
-        rejected = True
-    else:
-        rejected = False
-    lines.append(f"  deadline readonly rejected={rejected} unchanged={future.at == deadline_at}")
-    options.ClientOptions(
-        timeout=None,
-        total_timeout=None,
-        deadline=None,
-        limiter=None,
-        stream_idle_timeout=None,
-        stream_total_timeout=None,
-    )
-    values = options.RequestOptions(
-        total_timeout=0,
-        stream_idle_timeout=1,
-        stream_total_timeout=2.5,
-        deadline=future,
-    )
-    lines.append(f"  seconds {values.total_timeout}/{values.stream_idle_timeout}/{values.stream_total_timeout}")
+    lines.append(f"  public deadline exported={hasattr(options, 'Deadline')}")
+    for removed in ("deadline", "stream_idle_timeout", "stream_total_timeout"):
+        record(lines, f"removed option {removed}", lambda removed=removed: options.RequestOptions(**{removed: None}))
+    options.ClientOptions(timeout=None, total_timeout=None, limiter=None)
+    values = options.RequestOptions(total_timeout=0)
+    lines.append(f"  seconds {values.total_timeout}")
     context = hooks.LimiterContext(
         operation_id=None,
         origin="https://example.com",
@@ -87,7 +62,7 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         f"  limiter context fields={tuple(item.name for item in fields(context))} readonly={outcome(lambda: setattr(context, 'origin', 'changed'))}"
     )
     lines.append(
-        f"  slotted {tuple(hasattr(value, '__dict__') for value in (future, values, context, options.TimeoutOptions()))}"
+        f"  slotted {tuple(hasattr(value, '__dict__') for value in (values, context, options.TimeoutOptions()))}"
     )
 
 
@@ -149,7 +124,6 @@ def _hints(options: ModuleType, errors: ModuleType, hooks: ModuleType, lines: li
         options.TimeoutOptions,
         options.ClientOptions,
         options.RequestOptions,
-        options.Deadline,
         options.Clock,
         hooks.LimiterContext,
         errors.SDKError,
@@ -158,10 +132,6 @@ def _hints(options: ModuleType, errors: ModuleType, hooks: ModuleType, lines: li
     ):
         lines.append(f"  hints {owner.__name__} {tuple(get_type_hints(owner.__init__))}")
     for method in (
-        options.Deadline.after,
-        options.Deadline.remaining,
-        options.Deadline.at.fget,
-        options.Deadline.clock.fget,
         hooks.Limiter.acquire,
         hooks.AsyncLimiter.acquire,
         hooks.Permit.release,
@@ -194,7 +164,7 @@ def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> N
             )
             cleared = view.with_options(options.RequestOptions(timeout=None))
             exchange.respond(raw_response(200, b"cleared"))
-            call = options.RequestOptions(timeout=options.TimeoutOptions(read=8), deadline=None)
+            call = options.RequestOptions(timeout=options.TimeoutOptions(read=8))
             record(
                 lines,
                 "nested timeout clear",
@@ -218,8 +188,7 @@ def _attempt_timeout(package: ModuleType, options: ModuleType, lines: list[str])
     """Hand each attempt the time left until the absolute deadline as every unlimited phase's timeout."""
     refusing = _Refusing()
     settings = options.ClientOptions(
-        total_timeout=None,
-        deadline=options.Deadline.after(3600),
+        total_timeout=3600,
         timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
         retry=options.RetryOptions(max_retries=1, initial_delay=0, jitter="none"),
     )
@@ -233,16 +202,10 @@ def _attempt_timeout(package: ModuleType, options: ModuleType, lines: list[str])
 
 
 def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Keep deadlines on the clock they were made on, and move a deadline from another clock onto a call's clock."""
+    """Use the client's clock for its optional budget without a separate absolute deadline value."""
     for name in ("monotonic", "time", "random"):
         record(lines, f"clock {name} type", lambda name=name: options.Clock(**{name: 1.0}))
-    record(lines, "deadline clock type", lambda: options.Deadline.after(1, clock=object()))
     fake = options.Clock(monotonic=lambda: 100.0)
-    deadline = options.Deadline.after(5, clock=fake)
-    lines.append(
-        f"  fake clock deadline at={deadline.at} remaining={deadline.remaining()} clock={deadline.clock is fake}"
-        f" system={options.Deadline.after(1).clock == options.Clock()}"
-    )
 
     class Unhashable:
         __hash__ = None
@@ -251,29 +214,17 @@ def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             return 100.0
 
     odd = options.Clock(monotonic=Unhashable())
-    held = options.RequestOptions(deadline=options.Deadline.after(5, clock=odd))
-    lines.append(f"  hashing ignores sources clock={hash(odd) == hash(fake)} request={hash(held) == hash(held)}")
+    lines.append(f"  hashing ignores sources clock={hash(odd) == hash(fake)}")
     refusing = _Refusing()
-    system = options.Deadline.after(3600)
     settings = options.ClientOptions(
-        total_timeout=None,
+        total_timeout=5,
         clock=fake,
-        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
+        timeout=None,
         retry=options.RetryOptions(max_retries=0),
     )
     with httpx2.Client(transport=refusing) as native, package.Client(http_client=native, options=settings) as api:
-        for label, given in (("same clock", deadline), ("system clock", system)):
-            record(
-                lines,
-                f"deadline on the {label}",
-                lambda given=given: api.request_raw(
-                    "GET", "https://example.com/clock", options=options.RequestOptions(deadline=given)
-                ),
-            )
-    same, moved = refusing.timeouts
-    lines.append(
-        f"  kept={same} moved onto the call's clock by its remaining time={system.remaining() <= moved['read'] <= 3600}"
-    )
+        record(lines, "budget on the client clock", lambda: api.request_raw("GET", "https://example.com/clock"))
+    lines.append(f"  native phases {refusing.timeouts}")
 
 
 def deadline_options(package: ModuleType, lines: list[str]) -> None:
