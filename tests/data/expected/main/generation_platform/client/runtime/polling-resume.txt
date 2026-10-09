@@ -6,7 +6,7 @@ pending operations
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   pending saved {"bound": ["j1", "running"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
-  state repr ResumeState(version=1)
+  state type dict
   resumed LroHandle(phase='pending', polls=0) progress {'polls': 0}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
@@ -95,15 +95,15 @@ settled operations
 errors that keep a checkpoint
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  long server delay ! PollWaitLimitError resume_state=ResumeState
+  long server delay ! PollWaitLimitError carries a checkpoint=False
   long server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   resumed polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  status after a huge server delay ! PollWaitLimitError resume_state=ResumeState
-  wait after a huge server delay ! PollWaitLimitError resume_state=ResumeState
+  status after a huge server delay ! PollWaitLimitError carries a checkpoint=False
+  wait after a huge server delay ! PollWaitLimitError carries a checkpoint=False
   huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
@@ -114,7 +114,7 @@ errors that keep a checkpoint
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   first poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  poll limit ! SessionLimitError resume_state=ResumeState
+  poll limit ! SessionLimitError carries a checkpoint=False
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   resumed at the same limit polls afresh = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
@@ -123,30 +123,31 @@ refused states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   not a state ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  another helper's state = LroHandle(phase='pending', polls=0)
   expired state ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
   resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Trace') [field_path=('options', 'headers', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
   resumed with poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
 malformed states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unknown member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  unknown phase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  fetch with values of the poll ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  fetch with values of the create response ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  unknown member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  unknown phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  fetch with values of the poll ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  fetch with values of the create response ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
   fetch value of another type = LroHandle(phase='pending', polls=0)
-  null fetch value ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  object fetch value ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  short bindings ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  cancel values without a remote cancel ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  expiry without an offset ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  null fetch value = LroHandle(phase='pending', polls=0)
+  object fetch value = LroHandle(phase='pending', polls=0)
+  short bindings ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  cancel values without a remote cancel ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  expiry without an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  fetch of a helper without one ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  fetch of a helper without one ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
   dot segment for a poll ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=False
-  dot segment for a fetch ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=False
+  dot segment for a fetch = LroHandle(phase='pending', polls=0)
 remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -216,7 +217,7 @@ server expiries
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   resume past the expiry ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  import past the expiry = ResumeState(version=1)
+  JSON round trip past the expiry = True
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   polling past the expiry = Report(rows=4)
@@ -270,7 +271,7 @@ async resume
   resumed fetch = Report(rows=4)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  async long server delay ! PollWaitLimitError resume_state=ResumeState
+  async long server delay ! PollWaitLimitError carries a checkpoint=False
 async remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

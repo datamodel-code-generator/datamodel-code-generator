@@ -416,7 +416,6 @@ class PollWaitLimitError(ProtocolError):
         kind: Literal["wait", "deadline"],
         required_wait: float,
         limit: float,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -426,11 +425,10 @@ class PollWaitLimitError(ProtocolError):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep the required wait, the limit it exceeds, and any exportable resume state."""
+        """Keep the required wait and the limit it exceeds."""
         error_choice(kind, ("wait", "deadline"), "kind")
         required = error_time(required_wait, "required_wait")
         allowed = error_time(limit, "limit")
-        _resume_state(resume_state)
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -444,7 +442,6 @@ class PollWaitLimitError(ProtocolError):
         self.kind = kind
         self.required_wait = required
         self.limit = allowed
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("kind", self.kind), ("required_wait", self.required_wait), ("limit", self.limit))
@@ -1017,7 +1014,7 @@ class DeliveryUnknownError(ProtocolError):
 
 
 class UploadDeliveryUnknownError(DeliveryUnknownError):
-    """An upload append, part, or completion whose outcome stays unknown; the state is kept for an explicit resume.
+    """An upload append, part, or completion whose outcome stays unknown; the handle's checkpoint resumes it.
 
     The `part` phase is reserved for the parts profile.
     """
@@ -1028,7 +1025,6 @@ class UploadDeliveryUnknownError(DeliveryUnknownError):
         phase: Literal["append", "part", "complete"],
         progress: UploadProgress,
         delivery_state: DeliveryState,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -1043,7 +1039,6 @@ class UploadDeliveryUnknownError(DeliveryUnknownError):
         _upload_progress(progress)
         super().__init__(
             delivery_state=delivery_state,
-            resume_state=resume_state,
             helper_id=helper_id,
             operation=operation,
             operation_id=operation_id,
@@ -1113,7 +1108,6 @@ class UploadOffsetError(ProtocolDataError):
         expected_offset: int,
         remote_offset: int,
         size: int,
-        resume_state: ResumeState | None = None,
         location: Selector | RequestTarget | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
@@ -1132,7 +1126,6 @@ class UploadOffsetError(ProtocolDataError):
             ("size", size),
         ):
             error_count(value, name)
-        _resume_state(resume_state)
         super().__init__(
             condition="inconsistent",
             location=location,
@@ -1149,7 +1142,6 @@ class UploadOffsetError(ProtocolDataError):
         self.expected_offset = expected_offset
         self.remote_offset = remote_offset
         self.size = size
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (

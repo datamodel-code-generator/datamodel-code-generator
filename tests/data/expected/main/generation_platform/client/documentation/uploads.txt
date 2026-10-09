@@ -388,8 +388,6 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | Limit | Effective default |
 |---|---|
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
-| chunks per upload | 10000; None removes it |
-| probes after an append of unknown outcome | 3; 0 probes none |
 | session total timeout | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
@@ -403,15 +401,17 @@ closed.
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
 confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
 the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
-resent blindly: the server's offset is probed instead, and an unchanged offset sends the range again, the chunk's end
-confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that regresses,
-passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
-raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+resent blindly: the server's offset is probed once instead, and an unchanged offset sends the range again, the chunk's
+end confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that
+regresses, passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and a probe that
+fails raises `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
 
-`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values later calls write, and a
-completion of unknown outcome, sending nothing; a complete upload has no checkpoint. `resume` checks it and the
-source's size, then probes the server's offset once; it never creates the upload again, and a completion of unknown
-outcome raises again. A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run`
+`checkpoint()` returns plain JSON, sending nothing: the content's `size`, the `chunk` size, the `confirmed` offset, the
+values later calls write (`bound`), a completion of unknown outcome (`phase` and `delivery`), and the server's
+`expires_at`; a complete upload has no checkpoint, and errors carry none. `resume` checks it and the source's size,
+then probes the server's offset once; it never creates the upload again, and a completion of unknown outcome raises
+again. A value that is not JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises
+`ConfigurationError`, and a checkpoint past the server's declared expiry `UploadExpiredError`. `advance` and `run`
 at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
 uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 

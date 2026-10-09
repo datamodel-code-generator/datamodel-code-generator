@@ -2,8 +2,8 @@
 
 A helper's `start` creates the operation in one child call and returns a handle. The handle polls only when `status` or
 `wait` asks, first waiting out the interval and any server delay the helper declares, and fetches a result at most once.
-Its `checkpoint` saves the values its next poll writes, which the helper's `resume` polls again in a session of its own
-without creating the operation again.
+Its `checkpoint` returns the values its next poll writes as plain JSON, which the helper's `resume` polls again in a
+session of its own without creating the operation again.
 """
 
 from __future__ import annotations
@@ -17,12 +17,10 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, ove
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import ConfigurationError, DecodeError
+from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     OperationCancelledError,
@@ -41,16 +39,9 @@ from .records import (
     PollSnapshot,
     StatusSelector,
     canonical_json,
+    plain_copy,
 )
-from .resume import (
-    MalformedStateError,
-    ResumeState,
-    require_state,
-    saved_expiry,
-    state_array,
-    state_expiry,
-    state_fields,
-)
+from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
 from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
@@ -98,7 +89,6 @@ class _Phase(Enum):
 
 
 _STATE: Final = frozenset({"phase", "bound", "seed", "cancel", "expires_at"})
-_UNREAD: Final = "unread"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -145,7 +135,7 @@ class PollingPlan(Generic[T, P, C]):
     success reads its result from the final poll with `inline`, fetches it with `fetch` writing `fetch_bindings`, or
     has none. After each response, `interval` seconds pass before the next poll, or the longer delay the
     `retry_after_header` gives. `cancel` is the declared remote cancellation, and `expires_at` reads the server's
-    expiry of the operation from an accepted create response. `children` are the operations a resumed handle may send.
+    expiry of the operation from an accepted create response.
     """
 
     helper_id: str
@@ -157,7 +147,6 @@ class PollingPlan(Generic[T, P, C]):
     state: Selector
     pending: tuple[JSONValue, ...]
     succeeded: tuple[JSONValue, ...]
-    fingerprint: str
     bindings: tuple[PageBinding, ...] = ()
     failed: tuple[JSONValue, ...] = ()
     cancelled: tuple[JSONValue, ...] = ()
@@ -179,7 +168,6 @@ class PollingPlan(Generic[T, P, C]):
     fetched: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    children: tuple[OperationPlan[Any], ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
@@ -211,7 +199,6 @@ class PollingPlan(Generic[T, P, C]):
         object.__setattr__(self, "fetched", fetched)
         object.__setattr__(self, "headers", polled.headers.union(*(item.headers for item in others)))
         object.__setattr__(self, "queries", polled.queries.union(*(item.queries for item in others)))
-        object.__setattr__(self, "children", (polled.call, *(item.call for item in others)))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -327,7 +314,7 @@ class _Operation(Generic[T, P]):
     Only a settled child call changes the phase, so a failure that settles none, such as a transport error, a
     deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again unless a session
     limit it hit stays spent. The handle keeps what its last pending poll and remote cancel write, which its checkpoint
-    saves.
+    returns.
 
     `_lock` is held by the one step that polls or fetches, across its waits and sends; `_guard` only while what a
     step settles is written or read together, so a checkpoint or a remote cancel never waits for a step.
@@ -389,35 +376,28 @@ class _Operation(Generic[T, P]):
             "polls": self._polls,
         })
 
-    def checkpoint(self) -> ResumeState:
-        """Return a checkpoint the helper's `resume` continues from, sending nothing.
+    def checkpoint(self) -> JSONValue:
+        """Return the server values the helper's `resume` continues from, as plain JSON, sending nothing.
 
-        A pending handle saves what the next poll and a remote cancel write and the values the create response gave
-        the result fetch; a success whose result fetch is due saves what the fetch writes. Both save the server's
-        expiry, under the helper's identity, but neither polls, results, the session, nor the call's options. A closed
-        handle is checkpointed as it stood, and a handle another thread or task is polling as its last settled step
-        left it. A settled operation has nothing left to continue and refuses with ProtocolStateError.
+        A pending handle returns what the next poll and a remote cancel write and the values the create response gave
+        the result fetch; a success whose result fetch is due returns what the fetch writes. Both keep the server's
+        expiry, but neither polls, results, the session, nor the call's options. A closed handle is checkpointed as it
+        stood, and a handle another thread or task is polling as its last settled step left it. A settled operation
+        has nothing left to continue and refuses with ProtocolStateError.
         """
-        if (saved := self._saved()) is None:
-            action = "checkpoint"
-            raise self._state_error(action, self._phase.value)
-        return saved
-
-    def _saved(self) -> ResumeState | None:
-        """Return a checkpoint of the handle as it stands, or None once the operation settled with its outcome."""
         with self._guard:
             if (pending := self._phase is _Phase.PENDING) or (
                 self._phase is _Phase.SUCCEEDED and isinstance(self._result, Missing)
             ):
-                state: JSONValue = {
+                return plain_copy({
                     "phase": "pending" if pending else "fetch",
-                    "bound": list(self._bound),
-                    "seed": list(self._seed) if pending else [],
-                    "cancel": list(self._cancel) if pending else [],
+                    "bound": self._bound,
+                    "seed": self._seed if pending else (),
+                    "cancel": self._cancel if pending else (),
                     "expires_at": saved_expiry(self._expires_at),
-                }
-                return ResumeState(helper=self._plan.fingerprint, state=state)
-        return None
+                })
+        action = "checkpoint"
+        raise self._state_error(action, self._phase.value)
 
     def _state_error(self, action: str, state: str) -> ProtocolStateError:
         plan = self._plan
@@ -429,17 +409,13 @@ class _Operation(Generic[T, P]):
             parent_session_id=self._session.session_id,
         )
 
-    def _limit(self, limit: int, kind: Literal["polls"], *, created: bool = True) -> SessionLimitError:
-        """Return the error of a session limit reached while the operation is unsettled.
-
-        It keeps a checkpoint of the handle once the operation was created.
-        """
+    def _limit(self, limit: int, kind: Literal["polls"]) -> SessionLimitError:
+        """Return the error of a session limit reached while the operation is unsettled; `checkpoint` continues it."""
         plan = self._plan
         return SessionLimitError(
             kind=kind,
             limit=limit,
             progress=self.progress,
-            resume_state=self._saved() if created else None,
             helper_id=plan.helper_id,
             operation=plan.operation,
             parent_session_id=self._session.session_id,
@@ -500,7 +476,6 @@ class _Operation(Generic[T, P]):
             kind=kind,
             required_wait=required,
             limit=limit,
-            resume_state=self._saved(),
             helper_id=plan.helper_id,
             operation=plan.poll_operation,
             parent_session_id=self._session.session_id,
@@ -746,44 +721,6 @@ class _Operation(Generic[T, P]):
     def _poll_request(self) -> tuple[tuple[object, ...], object, None]:
         return (*self._plan.polled.request(self._bound), None)
 
-    def _checked(
-        self, call: OperationPlan[Any], request: Callable[[], tuple[tuple[object, ...], object, None]]
-    ) -> None:
-        """Prepare a request the restored handle sends next as its call would, refusing saved values it cannot send."""
-        try:
-            self._client.checked_page(call, request, None, self._limits.options)
-        except (DecodeError, ProtocolDataError, CodecError):
-            raise MalformedStateError from None
-
-    def _seeded(self) -> None:
-        """Refuse a saved value a result fetch's `initial` binding writes to a parameter that cannot send it.
-
-        Each is encoded as the fetch encodes its parameter, before the final poll gives the fetch's other values; a
-        value written into the fetch's querystring or body is checked when the fetch request is built. Saved values
-        that alone make a path segment a dot segment are refused as a server's; a segment that also takes a value the
-        final poll gives is checked when the fetch is built.
-        """
-        plan = self._plan
-        if (fetched := plan.fetched) is None:
-            return
-        bindings = plan.fetch_bindings
-        given = {
-            cast("int", position): value
-            for binding, (position, pointer), value in zip(bindings, fetched.writes, self._seed, strict=True)
-            if binding.source == "initial" and pointer is None
-        }
-        try:
-            self._client.checked_arguments(fetched.call, given, self._limits.options)
-        except DecodeError:
-            raise MalformedStateError from None
-        self._dots(
-            fetched,
-            tuple(
-                value if binding.source == "initial" else binding.literal if binding.selector is None else _UNREAD
-                for binding, value in zip(bindings, self._seed, strict=True)
-            ),
-        )
-
     def _dots(self, targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> None:
         """Refuse saved values making a path segment a dot segment once encoded, as if a server had just given them."""
         from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
@@ -792,10 +729,9 @@ class _Operation(Generic[T, P]):
             raise self._error(None, "value", read, self._plan.operation)
 
     def _restore(self, state: JSONValue) -> None:
-        """Restore a handle from a checkpoint's decoded state, refusing what does not fit the helper.
+        """Restore a handle from a checkpoint, refusing what does not fit the helper and saved dot segments.
 
-        A pending handle prepares its poll, the result fetch's saved values, and a remote cancel, and one whose result
-        fetch is due prepares the fetch, without sending.
+        Saved values are encoded as the server's are when the next poll, fetch, or remote cancel is built.
         """
         plan = self._plan
         require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
@@ -809,7 +745,6 @@ class _Operation(Generic[T, P]):
             assert fetched is not None
             self._phase, self._bound = _Phase.SUCCEEDED, _literals(plan.fetch_bindings, bound)
             self._dots(fetched, self._bound)
-            self._checked(fetched.call, self._fetch_request)
             return
         cancels = () if plan.cancel is None else plan.cancel.bindings
         require_state(
@@ -824,11 +759,8 @@ class _Operation(Generic[T, P]):
             for binding, value in zip(plan.fetch_bindings, seed, strict=True)
         )
         self._dots(plan.polled, self._bound)
-        self._checked(plan.polled.call, self._poll_request)
-        self._seeded()
         if (remote := plan.cancel) is not None:
             self._dots(remote.targeted, self._cancel)
-            self._checked(remote.targeted.call, _sent(remote.targeted, self._cancel))
 
 
 def _receipt(
@@ -1126,12 +1058,6 @@ def _session(limits: _Limits) -> OperationSession:
     )
 
 
-def _resume_error(
-    plan: PollingPlan[T, P, C], condition: Literal["fingerprint", "expired", "malformed"]
-) -> ResumeStateError:
-    return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
-
-
 def _restored(
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1140,20 +1066,16 @@ def _restored(
 ) -> OperationT:
     """Return the handle a checkpoint continues in a session of its own, without sending.
 
-    The checkpoint must be this helper's, fit it, and be unexpired by the client's wall clock.
+    A checkpoint that is not JSON or does not fit the helper raises ConfigurationError, and one past the server's
+    expiry by the client's wall clock ResumeStateError.
     """
-    if not isinstance(state, ResumeState):
-        raise _invalid(plan, ("state",))
-    helper, state_json = state_fields(state)
-    if helper != plan.fingerprint:
-        raise _resume_error(plan, "fingerprint")
     handle = make(_session(limits))
     try:
-        handle._restore(json_value(state_json))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    except MalformedStateError:
-        raise _resume_error(plan, "malformed") from None
+        handle._restore(plain_copy(state))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    except (MalformedStateError, TypeError, ValueError):
+        raise _invalid(plan, ("state",)) from None
     if (expires_at := handle._expires_at) is not None and expires_at.timestamp() <= limits.clock.time():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        raise _resume_error(plan, "expired")
+        raise ResumeStateError(condition="expired", helper_id=plan.helper_id, operation=plan.operation)
     return handle
 
 
