@@ -1,10 +1,14 @@
-"""Call delivery state and an optional monotonic budget across native HTTP attempts."""
+"""Call delivery state and an optional monotonic budget across native HTTP attempts.
+
+Both clients run one call flow, written as asyncio code: the asyncio client awaits it, and the synchronous client runs
+it with `run_sync`, its I/O blocking inside awaits that never suspend.
+"""
 
 from __future__ import annotations
 
 from enum import Enum
 from functools import partial
-from typing import TYPE_CHECKING, Final, TypeVar
+from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
 import anyio
 
@@ -12,7 +16,7 @@ from .errors import APITimeoutError, SDKError, add_secondary, kept_primary
 from .timing import Budget, ResolvedTimeoutOptions
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Coroutine, Generator
 
     from .options import Settings
     from .timing import Clock
@@ -30,6 +34,41 @@ class Delivery(Enum):
 
 
 _REACHED: Final = (Delivery.NOT_SENT, Delivery.MAYBE_SENT, Delivery.RESPONSE_STARTED)
+
+
+def run_sync(flow: Coroutine[object, None, T]) -> T:
+    """Run a call flow both clients share for the synchronous client, whose I/O blocks inside each await.
+
+    No await of the synchronous client suspends, so the flow ends in its first step, without an event loop.
+    """
+    try:
+        flow.send(None)
+    except StopIteration as finished:
+        result: T = finished.value
+        return result
+    raise AssertionError
+
+
+class Ready(Generic[T]):
+    """Present a generator to the shared flow as an asynchronous iterator whose steps never suspend."""
+
+    __slots__ = ("_items",)
+
+    def __init__(self, items: Generator[T, None, None]) -> None:
+        self._items = items
+
+    def __aiter__(self) -> Ready[T]:
+        return self
+
+    async def __anext__(self) -> T:
+        try:
+            return next(self._items)
+        except StopIteration:
+            raise StopAsyncIteration from None
+
+    async def aclose(self) -> None:
+        """Stop iterating, closing the generator."""
+        self._items.close()
 
 
 async def in_thread(function: Callable[..., T], *arguments: object) -> T:
