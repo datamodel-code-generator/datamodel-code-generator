@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 from time import sleep
 from typing import TYPE_CHECKING, Final, TypeVar
 from uuid import uuid4
@@ -15,6 +16,7 @@ from .errors import (
     DeadlinePhase,
     DeliveryState,
     SDKError,
+    add_secondary,
     kept_primary,
 )
 from .timing import Budget, ResolvedTimeoutOptions
@@ -26,8 +28,36 @@ if TYPE_CHECKING:
     from .timing import Clock
 
 ErrorT = TypeVar("ErrorT", bound=SDKError)
+T = TypeVar("T")
 
 _REACHED: Final = (DeliveryState.NOT_SENT, DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
+
+
+async def in_thread(function: Callable[..., T], *arguments: object) -> T:
+    """Run a blocking file call in a thread and return or raise only once it has finished.
+
+    A cancelled caller still waits for the running call, so a file is never closed, moved or removed under it; the
+    first cancellation then propagates, with a failure of that call beside it. The call is an executor future, not a
+    task, so cancelling every task of the loop cannot end the wait early.
+    """
+    import asyncio  # noqa: PLC0415 - Only an asyncio call that opens a path reaches a thread.
+
+    work = asyncio.get_running_loop().run_in_executor(None, partial(function, *arguments))
+    cancelled: asyncio.CancelledError | None = None
+    while not work.done():
+        try:
+            if cancelled is None:
+                await asyncio.wait((work,))
+            else:
+                with anyio.CancelScope(shield=True):
+                    await asyncio.wait((work,))
+        except asyncio.CancelledError as error:  # noqa: PERF203 - Every cancellation waits for the same call.
+            cancelled = cancelled or error
+    if cancelled is None:
+        return work.result()
+    if (failure := work.exception()) is not None:
+        add_secondary(cancelled, failure)
+    raise cancelled
 
 
 class OperationSession:

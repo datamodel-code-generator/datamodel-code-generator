@@ -1,83 +1,32 @@
 # retries pydantic_v2.BaseModel
   bytes retained = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'retained'), ('POST', b'/idempotent', b'retained')] pending=0
+    wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
   borrowed entry offset = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/hop-0', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
-    file closed=False offset=14 reads=[65536, 65536, 65536, 65536, 65536, 65536]
-  borrowed next call offset = FieldIdempotentPostResponse(root='ok')
+    caller file open=True offset=14 reads=[7, 7, 7]
+  next call offset = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'fix-payload')] pending=0
-  owned file final close = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'owned'), ('POST', b'/idempotent', b'owned'), ('POST', b'/hop-1', b'owned')] pending=0
-  owned reuse refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    owned closed=True closes=1
-  borrowed unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'unseekable')] pending=1
-  borrowed unseekable reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    file closes=0 reads=[65536, 65536]
-  owned unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'unseekable')] pending=1
-  owned unseekable reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    file closes=1 reads=[65536, 65536]
-  path reopened = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'path body'), ('POST', b'/hop-0', b'path body'), ('POST', b'/idempotent', b'path body')] pending=0
-  path changed between attempts ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    wire=[('POST', b'/idempotent', b'path body')] pending=1
-  borrowed stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'one-shot')] pending=1
-  borrowed stream reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    stream begins=1 closes=0
-  owned stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'one-shot')] pending=1
-  owned stream reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    stream begins=1 closes=1
+  file grown between attempts = FieldIdempotentPostResponse(root='ok')
+    wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
+    grown file size=20 reads=[14, 14]
+  file closed between attempts ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError('I/O operation on closed file.')] body_not_replayable
+    wire=[('POST', b'/idempotent', b'native payload')] pending=1
+  native path replay = FieldIdempotentPostResponse(root='ok')
+    wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/hop-0', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
+  nonseekable file ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+    wire=[('POST', b'/idempotent', b'native payload')] pending=1
+  native iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+    wire=[('POST', b'/idempotent', b'native payload')] pending=1
   303 drops consumed body = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'one-shot'), ('GET', b'/hop-0', b'')] pending=0
-    stream begins=1 closes=1
-  factory per candidate hop = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/hop-0', b'factory'), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, False), (0, 1, False), (1, 0, False)] one_call=True closes=[1, 1, 1]
-  factory A B A refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_not_replayable
-    wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/idempotent', b'factory')] pending=1
-  factory immediate next call refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    contexts=[(0, 0, False), (1, 0, False), (2, 0, False), (0, 0, False)] closes=(1, 1)
-  factory observed length changed ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    wire=[('POST', b'/idempotent', b'factory')] pending=1
-    closes=(1, 1)
-  bodyless redirect retry restores source = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'factory'), ('GET', b'/hop-0', b''), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, False), (1, 0, False)] closes=[1, 1]
-  async bytes retained = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'retained'), ('POST', b'/idempotent', b'retained')] pending=0
-  async borrowed entry offset = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/hop-0', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
-    file closed=False closes=0 reads=[65536, 65536, 65536, 65536, 65536, 65536]
-  async owned entry offset = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/hop-0', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
-    file closed=True closes=1 reads=[65536, 65536, 65536, 65536, 65536, 65536]
-  async owned reuse refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    owned closes=1
-  async unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'unseekable')] pending=1
-    file closes=1 reads=[65536, 65536]
-  async path reopened = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'path body'), ('POST', b'/idempotent', b'path body'), ('POST', b'/hop-1', b'path body')] pending=0
-  async path changed ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    wire=[('POST', b'/idempotent', b'path body')] pending=1
-  async borrowed stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'one-shot')] pending=1
-  async borrowed stream reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    stream begins=1 closes=0
-  async owned stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
-    wire=[('POST', b'/idempotent', b'one-shot')] pending=1
-  async owned stream reuse ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    stream begins=1 closes=1
-  async factory per candidate hop = FieldIdempotentPostResponse(root='ok')
-    wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/hop-0', b'factory'), ('POST', b'/idempotent', b'factory')] pending=0
-    contexts=[(0, 0, False), (0, 1, False), (1, 0, False)] one_call=True closes=[1, 1, 1]
-  async factory A B A refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_not_replayable
-    wire=[('POST', b'/idempotent', b'factory'), ('POST', b'/idempotent', b'factory')] pending=1
-  async factory immediate next call refused ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-    contexts=[(0, 0, False), (1, 0, False), (2, 0, False), (0, 0, False)] closes=(1, 1)
-  async factory observed length changed ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_changed', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
-    wire=[('POST', b'/idempotent', b'factory')] pending=1
-    closes=(1, 1)
+    wire=[('POST', b'/idempotent', b'native payload'), ('GET', b'/hop-0', b'')] pending=0
+  async bytes = FieldIdempotentPostResponse(root='ok')
+    wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
+  async file = FieldIdempotentPostResponse(root='ok')
+    wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
+  async path = FieldIdempotentPostResponse(root='ok')
+    wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
+  async native iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+    wire=[('POST', b'/idempotent', b'native payload')] pending=1
+  async native async iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+    wire=[('POST', b'/idempotent', b'native payload')] pending=1
+    async caller file open=True offset=14 reads=[7, 7]

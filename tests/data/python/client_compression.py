@@ -91,7 +91,7 @@ def _values(harness: _Harness, lines: list[str]) -> None:
 
 
 def _inherited(harness: _Harness, lines: list[str]) -> None:
-    exchange, bodies = harness.exchange, harness.bodies
+    exchange = harness.exchange
     with harness.client() as api:
         exchange.respond(_created())
         record(lines, "declared body", lambda: api.items.create_item(body=harness.item("compressed")))
@@ -114,9 +114,9 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(raw_response(503), _stored())
         record(lines, "bytes retried", lambda: api.items.put_blob(body=b"a" * 70000))
         exchange.respond(raw_response(503), _stored())
-        record(lines, "file retried", lambda: api.items.put_blob(body=bodies.FileBody(io.BytesIO(b"file body"))))
+        record(lines, "file retried", lambda: api.items.put_blob(body=io.BytesIO(b"file body")))
         exchange.respond(raw_response(503))
-        record(lines, "stream once", lambda: api.items.put_blob(body=bodies.StreamBody(iter((b"one", b"shot")))))
+        record(lines, "stream once", lambda: api.items.put_blob(body=iter((b"one", b"shot"))))
         exchange.respond(_created())
         record(lines, "raw view", lambda: api.items.with_raw_response.create_item(body=harness.item()).info.status_code)
         conflict = harness.call(headers=(("Content-Encoding", "br"),))
@@ -139,33 +139,27 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         record(lines, "client disabled", lambda: api.items.put_blob(body=b"disabled"))
 
 
-class _DigestSigner:
-    """A signer that needs the body digest; it keeps each digest and adds a fixed header."""
+class _HeaderSigner:
+    """Add a signature header without pre-reading the binary input."""
 
     def __init__(self, auth: ModuleType) -> None:
         self.auth = auth
-        self.digests: list[bytes] = []
         self.capabilities = auth.SignerCapabilities(
             allowed_origins=("https://api.example.com",),
             managed_headers=("x-signed",),
             managed_query=(),
-            requires_body_digest=True,
         )
 
     def sign(self, request: Any) -> Any:
-        self.digests.append(request.body_digest)
         return self.auth.SignatureFields(headers=(("x-signed", "yes"),), query=())
 
 
 def _signed(harness: _Harness, lines: list[str]) -> None:
     exchange = harness.exchange
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signer = _DigestSigner(auth)
+    signer = _HeaderSigner(auth)
 
     def digested(request: httpx2.Request) -> httpx2.Response:
-        lines.append(
-            f"    signed digest of the sent bytes {hashlib.sha256(request.content).digest() == signer.digests[-1]}"
-        )
         lengths = request.headers.get_list("content-length")
         lines.append(f"    signed framing correct {lengths == [str(len(request.content))]}")
         return httpx2.Response(204)
@@ -176,13 +170,16 @@ def _signed(harness: _Harness, lines: list[str]) -> None:
     with harness.client("gzip", auth=config) as api:
         exchange.respond(digested)
         record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", content_length=harness.length(6)))
-        file = harness.bodies.FileBody(io.BytesIO(b"file"))
+        file = io.BytesIO(b"file")
+        exchange.respond(raw_response(204))
         record(lines, "signed file", lambda: api.items.put_blob(body=file))
+        lines.append(f"    signed caller file open {not file.closed}")
+        file.close()
 
 
 def _framing(harness: _Harness, lines: list[str]) -> None:
     """Replace a typed length after compression, keeping bytes sized and streamed bodies chunked."""
-    exchange, bodies = harness.exchange, harness.bodies
+    exchange = harness.exchange
 
     def sized(request: httpx2.Request) -> httpx2.Response:
         lengths = request.headers.get_list("content-length")
@@ -203,7 +200,7 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
         record(
             lines,
             "typed file length",
-            lambda: api.items.put_blob(body=bodies.FileBody(io.BytesIO(b"framed")), content_length=length),
+            lambda: api.items.put_blob(body=io.BytesIO(b"framed"), content_length=length),
         )
 
     async def asynchronous() -> None:
@@ -215,7 +212,7 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
             await arecord(
                 lines,
                 "async typed file length",
-                lambda: api.items.put_blob(body=bodies.AsyncFileBody(io.BytesIO(b"framed")), content_length=length),
+                lambda: api.items.put_blob(body=io.BytesIO(b"framed"), content_length=length),
             )
 
     run(asynchronous)
@@ -301,7 +298,7 @@ def _stream_resume(harness: _Harness, lines: list[str]) -> None:
 
 
 async def _async(harness: _Harness, lines: list[str]) -> None:
-    exchange, bodies = harness.exchange, harness.bodies
+    exchange = harness.exchange
 
     async def chunks() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async]
         yield b"async "
@@ -311,11 +308,9 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(_created())
         await arecord(lines, "async declared", lambda: api.items.create_item(body=harness.item()))
         exchange.respond(raw_response(503), _stored())
-        await arecord(
-            lines, "async file retried", lambda: api.items.put_blob(body=bodies.AsyncFileBody(io.BytesIO(b"file")))
-        )
+        await arecord(lines, "async file retried", lambda: api.items.put_blob(body=io.BytesIO(b"file")))
         exchange.respond(_stored())
-        await arecord(lines, "async stream", lambda: api.items.put_blob(body=bodies.AsyncStreamBody(chunks())))
+        await arecord(lines, "async stream", lambda: api.items.put_blob(body=chunks()))
         exchange.respond(_stored())
         await arecord(lines, "async undeclared", lambda: api.items.create_note(body=harness.item()))
         exchange.respond(*_results((["a"], "c2"), (["b"], None)))

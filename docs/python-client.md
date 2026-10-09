@@ -3005,8 +3005,11 @@ session may additionally stop before its next step when its total budget has exp
 body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
 `response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
 Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
-existing target unchanged. Async file operations run one at a time in a thread, and a cancelled caller still waits for
-the running one, so file work finishes before the file is released, closed or rewound. Saved buffered bytes remain usable after the call completes.
+existing target unchanged. In async calls these file calls run one at a time in a worker thread, and a cancelled
+caller waits for the running one before the temporary file is removed, so a partly written file never takes the
+target's name. A cancellation that arrives while the final move is running lets that move finish: the call then
+raises the cancellation although the complete file is at the target, replacing an existing one under
+`overwrite=True`. Saved buffered bytes remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -3137,9 +3140,8 @@ Closing a root refuses new calls from the root and its views. It closes its crea
 a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
 and callers close their streaming responses with `with` or `async with`.
 
-Responses, body attempts and limiter permits are released in `finally`. A later release failure is attached to the
-primary error; with no primary error, the release failure propagates. Async file work runs in a thread and settles
-before its file is released, closed or rewound, also when the caller is cancelled.
+Responses, files opened from paths and limiter permits are released in `finally`. A later release failure is attached
+to the primary error; with no primary error, the release failure propagates.
 
 ## Errors
 
@@ -3166,14 +3168,14 @@ is the `cause`. A final status declared neither as a success nor as an error, su
 `APIStatusError` with the reason `unexpected_status`.
 
 A request `DecodeError` has the reason `unencodable`, with the argument's path as `location` and never its value, or
-`body_not_replayable`, `body_in_use`, `body_changed`, or `digest_unavailable` at the `location` `("body",)`. A response
+`body_not_replayable` at the `location` `("body",)`. A response
 `DecodeError` has the reason `invalid_syntax`, `invalid_value` when the model or schema refuses the value,
 `unexpected_media_type` with the response's `media_type`, `forbidden_body`, `missing_body`, `invalid_framing`,
 `invalid_header` with the `location` `("header", name)`, or `response_too_large` with its `limit` and `observed` size.
 `AuthError` has the reason `provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`,
 `timeout`, `reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
 
-A failing callback raises `SDKError` itself with the reason `limiter_failed`, `body_factory_failed`, or `hook_failed`
+A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed`
 and the callback's exception as `cause`. A hook that fails after the call completed keeps that success as the error's
 `completed_result`, which is `None` otherwise. Helpers raise `ProtocolError` and the subclasses described with each
 helper.
@@ -3183,7 +3185,7 @@ helper.
 `RetryOptions` applies on clients, views, and calls. Its fields merge independently; omitted fields inherit, while a
 status set replaces the inherited set. `retry=None` is invalid. Automatic retries require a candidate failure or
 status, operation safety, replayable input, and enough time. JSON/model decoding, arbitrary callbacks,
-body-factory programming errors, cancellation, and logical deadlines never restart a request.
+cancellation, and logical deadlines never restart a request.
 
 | Field | Effective default | Meaning |
 |---|---|---|
@@ -3326,10 +3328,9 @@ The generated README lists the operations that accept a coding.
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
-accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3341,39 +3342,69 @@ Immutable bytes and JSON encoding results are retained and reused without rerunn
 The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
 fixes its boundary once per logical call and can replay only if every part can replay.
 
-`FileBody(file)` records the current offset at call entry and seeks back there for each attempt when possible.
-Borrowed files stay open and their final position is not restored. Concurrent reads of one borrowed file by different
-calls are rejected. `FileBody.from_path(path)` and `AsyncFileBody.from_path(path)` reopen for each attempt and compare
-device, inode, size, and modification time; identical stat data does not guarantee identical bytes. The caller must
-keep input immutable. Explicit async file adapters own one worker with at most one disk chunk in flight; their
-caller closes them when borrowed. File and multipart reads use chunks of at most 64 KiB.
+A binary body, and the content of a multipart `FilePart`, is one of the inputs below. Each is consumed in exactly
+one way, and nothing is buffered or spooled to make a one-shot input replayable.
+
+| Input | Calls | How it is read | Framing | Sent again |
+| --- | --- | --- | --- | --- |
+| `bytes` | sync, async | Sent as given. | `Content-Length` | Yes |
+| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there when it can seek, else until it returns no bytes. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
+| `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length`; chunked when its file cannot seek, such as a FIFO | Yes; no when its file cannot seek |
+| Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
+| Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
+| Async iterable of `bytes` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
+
+A `str` is not read as a path. `str`, `bytearray`, `memoryview`, synchronous text-mode files, a synchronous file
+that is already closed, and a path that cannot be opened raise a request `DecodeError` with the reason `unencodable`
+before anything is sent; the underlying `OSError` or `ValueError` is the `cause`. Pass `bytes`, or a file opened in
+binary mode. An async file object is not inspected before it is read: one opened in text mode or already closed fails
+while the request is being sent, as `APIConnectionError` with that failure as `cause`.
+
+A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. From a seekable
+file the call sends the bytes between the position and the end it measured at call entry, also when the file grows
+afterward; an async file or a file that cannot seek is read until it returns no bytes. A path the call opened is
+closed when the call ends; if that close fails, the failure is attached to an error already
+propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
+
+Sync calls do all file I/O on the calling thread. In async calls, where the file I/O runs depends on who opened the
+file:
+
+| File | Async call |
+| --- | --- |
+| A path given as a body or `FilePart`, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A synchronous file object the caller opened | `tell`, `seek` and each `read` of at most 64 KiB block the event loop, as HTTPX2 reads multipart files. |
+| An async file object | `await read(65536)` on the event loop; the file decides where its I/O runs. |
+| `stream_to(path)` | The temporary file is created, written about 64 KiB at a time, moved to the target, or removed in a worker thread. |
+| `stream_to(file_object)` | Each `write` blocks the event loop. |
+
+Only one file call of a body or download runs at a time, so memory stays bounded by the chunk size. When a call is
+cancelled or times out while a file call is running in a thread, the call waits for that one file call to finish
+before it closes, moves or removes the file, and then lets the cancellation propagate; a failure of that file call
+is named in a note on the cancellation. To keep a slow caller-opened file off the loop, pass its path, an async file
+object such as `await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async
+file is read in 64 KiB chunks even though iterating it would yield lines.
+
+A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
+position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
+sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
+call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
+part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
+`cause`.
 
 ```python
 from pathlib import Path
 
 from pets import Client
-from pets.bodies import FileBody
 from pets.options import RequestOptions, RetryOptions
 
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
-    response = client.request_raw(
-        "PUT", url, body=FileBody.from_path(path), options=RequestOptions(retry=RetryOptions(max_retries=2))
-    )
+    response = client.request_raw("PUT", url, body=path, options=RequestOptions(retry=RetryOptions(max_retries=2)))
     return response.read()
 ```
 
-`StreamBody` and `AsyncStreamBody` are one-shot. After consumption they cannot replay, and the SDK does not buffer or
-spool them to create replayability. Owned iterators are closed; borrowed iterators remain caller-owned.
-
-`BodyFactory` and `AsyncBodyFactory` must return a fresh `BodyAttempt` or `AsyncBodyAttempt` with the same payload for
-every invocation. Each returned attempt is SDK-owned and closes on success, failure, or interruption. A factory is
-responsible for freshness across all calls: the detection ledger covers a logical call and an immediate cross-call
-guard, rather than indefinite object history. Length/fingerprint/stat checks detect available evidence of changes
-without buffering the whole payload; a detected change raises a request `DecodeError` with the reason `body_changed`
-and the `location` `("body",)`. A factory callback failure raises `SDKError` with the reason `body_factory_failed` and
-the callback exception as `cause`, and does not retry. A body that cannot be sent again raises a request `DecodeError`
-with the reason `body_not_replayable`, or `body_in_use` while another call is reading it.
+The experimental runtime no longer has `FileBody`, `StreamBody`, `BodyFactory` or their async counterparts; pass the
+file, path or iterable itself. Callers manage the lifetime and concurrent use of their own files and iterables.
 
 ## Redirects and transport construction
 
@@ -3572,9 +3603,9 @@ operation = ClientOperationConfig(
 
 ### Sign the finalized request
 
-Signers declare their allowed origins, managed header/query names, and whether they require a SHA-256 body digest.
+Signers declare their allowed origins and managed header/query names.
 They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
-hook and send. `SigningInput.query` is the exact raw query bytes; its headers and body digest describe that hop's
+hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe that hop's
 unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
 callbacks or sends; arbitrary signer exceptions raise `AuthError` with the reason `signing_failed` and do not retry.
 
@@ -3586,14 +3617,13 @@ from pets.auth import AuthConfig, SignatureFields, SignerCapabilities, SigningIn
 from pets.options import RequestOptions
 
 
-class PayloadSigner:
+class RequestSigner:
     def __init__(self, key: bytes, origin: str) -> None:
         self._key = key
         self._capabilities = SignerCapabilities(
             allowed_origins=(origin,),
-            managed_headers=("X-Payload-Signature",),
+            managed_headers=("X-Request-Signature",),
             managed_query=(),
-            requires_body_digest=True,
         )
 
     @property
@@ -3601,29 +3631,20 @@ class PayloadSigner:
         return self._capabilities
 
     def sign(self, request: SigningInput) -> SignatureFields:
-        assert request.body_digest is not None
-        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8") + b"\n" + request.body_digest
+        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8")
         signature = hmac.digest(self._key, message, "sha256").hex()
-        return SignatureFields(headers=(("X-Payload-Signature", signature),), query=())
+        return SignatureFields(headers=(("X-Request-Signature", signature),), query=())
 
 
 def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> bytes:
-    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(PayloadSigner(key, origin),))
+    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(RequestSigner(key, origin),))
     view = client.with_options(RequestOptions(auth=auth))
     return view.auth.signed_body(body=payload)
 ```
 
-This example defines its own canonical input; a service's signature protocol must define the same bytes. Signatures
-are rebuilt for every attempt and redirect hop. Unsigned calls do not hash bodies or invoke signer/provider callbacks.
-Hashing bytes, files, or complete seekable multipart input costs time proportional to payload size and consumes the
-call deadline. Seekable sources are restored to their original position after hashing, and reads remain chunked.
-
-`BodyFactory(..., sha256=digest)` and `AsyncBodyFactory(..., sha256=digest)` accept an optional 32-byte declaration for
-the exact whole payload. A digest-declaring factory is not read to compute the digest; its declaration and replay
-identity remain the application's obligations. A one-shot stream or digest-less factory cannot satisfy a signer
-that requires a digest and fails before sending, without implicit spooling. A file-part factory's digest is not the
-multipart payload's digest: factory-containing multipart is rejected for digest-required signing, while it remains
-supported without such a signer. No multipart digest field is added.
+This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
+are rebuilt for every attempt and redirect hop. Unsigned calls do not invoke signer/provider callbacks.
+A signer does not receive the body or a digest of it: the SDK never pre-reads or hashes a body for signing.
 
 Credential values, signing inputs, and returned signature values are omitted from their representations and from
 hook events. A credential or signature placed in the query is part of the request URL, which HTTPX2 logs at INFO level

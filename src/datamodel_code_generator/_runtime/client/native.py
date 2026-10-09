@@ -40,9 +40,6 @@ def delivery(error: BaseException, *, send_started: bool, response_started: bool
 def native_error(error: Exception, *, send_started: bool, response_started: bool = False) -> SDKError:
     """Convert an ordinary native failure; BaseException interruptions are never intercepted."""
     state = delivery(error, send_started=send_started, response_started=response_started)
-    if isinstance(error, SDKError):
-        error.delivery_state = state
-        return error
     phase = _phase(error)
     if isinstance(error, httpx2.TimeoutException):
         return APITimeoutError(

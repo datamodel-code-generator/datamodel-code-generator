@@ -33,6 +33,7 @@
   async cancelled while opening CancelledError notes [] partial files 0
   async removal denied CancelledError notes ['Secondary cleanup failure: PermissionError'] partial files 1
   async read while opening ConfigurationError secondary [] then read 196608 partial files 0
+  async cancelled while writing CancelledError events ['write entered', 'cancelled done=False', 'write left', 'closed'] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async full disk room 0 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async full disk room 1 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async file object write OSError secondary [] then b'pong'

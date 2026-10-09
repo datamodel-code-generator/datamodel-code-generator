@@ -121,7 +121,6 @@ def auth_challenges(package: ModuleType, lines: list[str]) -> None:
     """Compare independent challenge grammar oracles against actual 401 recovery."""
     auth = importlib.import_module(f"{package.__name__}.auth")
     options = importlib.import_module(f"{package.__name__}.options")
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange = Exchange(lines)
     with exchange.client() as native:
         for label, values in _CHALLENGES:
@@ -158,7 +157,7 @@ def auth_challenges(package: ModuleType, lines: list[str]) -> None:
             ("unsafe no recovery", "unsafe_auth", 401, {}, options.RequestOptions(), b"request"),
             (
                 "body before safety", "idempotent_auth", 401, {}, options.RequestOptions(),
-                bodies.StreamBody(iter((b"request",))),
+                iter((b"request",)),
             ),
             (
                 "never before disabled", "never_auth", 401, {},

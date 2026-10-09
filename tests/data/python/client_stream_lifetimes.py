@@ -134,6 +134,26 @@ class _Gate:
             await asyncio.sleep(0.01)
 
 
+class _HeldFile(io.FileIO):
+    """A download file whose writes wait in their thread until the scenario lets them go."""
+
+    def __init__(self, handle: int, mode: str, gate: _Gate, events: list[str]) -> None:
+        super().__init__(handle, mode)
+        self.gate, self.events = gate, events
+
+    def write(self, data: Any) -> int:
+        self.events.append("write entered")
+        self.gate.hold()
+        size = super().write(data)
+        self.events.append("write left")
+        return size
+
+    def close(self) -> None:
+        if not self.closed:
+            self.events.append("closed")
+        super().close()
+
+
 def _denied(path: Path, *, missing_ok: bool = False) -> None:
     raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
@@ -563,6 +583,22 @@ async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], direct
         for path in directory.glob("*.part"):
             path.unlink()
         lines.append(f"  async {label} {result} partial files {left.count(True)}")
+    gate, events = _Gate(), []
+    exchange.respond(_body())
+    async with streaming.request_raw("GET", _URL) as response:
+        with pytest.MonkeyPatch.context() as fault:
+            fault.setattr(os, "fdopen", lambda handle, mode: _HeldFile(handle, mode, gate, events))
+            task = asyncio.create_task(response.stream_to(target))
+            await gate.reached()
+            task.cancel()
+            await asyncio.sleep(0)
+            events.append(f"cancelled done={task.done()}")
+            gate.released.set()
+            try:
+                result = await aoutcome(lambda: task)
+            except asyncio.CancelledError:
+                result = "CancelledError"
+    lines.append(f"  async cancelled while writing {result} events {events} {_files(directory)}")
 
 
 async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:

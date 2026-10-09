@@ -1,8 +1,8 @@
 mypy pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 pyright pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 ty pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
-clients_negative.py 74 marked lines
-mypy clients_negative.py: 74/74 marked lines with one error, 0 elsewhere, 0 in other files
+clients_negative.py 73 marked lines
+mypy clients_negative.py: 73/73 marked lines with one error, 0 elsewhere, 0 in other files
   49 call-arg
   50 arg-type
   51 call-overload
@@ -19,46 +19,43 @@ mypy clients_negative.py: 74/74 marked lines with one error, 0 elsewhere, 0 in o
   73 call-arg
   77 misc
   79 assignment
-  88 arg-type
   89 arg-type
-  90 list-item
-  91 arg-type
-  92 arg-type
-  104 arg-type
+  90 arg-type
+  91 list-item
   105 arg-type
-  106 arg-type
-  107 assignment
-  109 arg-type
-  110 arg-type
-  111 assignment
-  118 assignment
-  123 arg-type
-  124 dict-item
-  128 arg-type
-  129 arg-type
+  106 type-var
+  107 arg-type
+  108 arg-type
+  109 assignment
+  111 arg-type
+  112 arg-type
+  113 assignment
+  120 assignment
+  125 arg-type
+  126 dict-item
   130 arg-type
-  131 call-arg
-  132 call-arg
+  131 arg-type
+  132 arg-type
   133 call-arg
-  134 arg-type
+  134 call-arg
   135 call-arg
   136 arg-type
-  137 arg-type
-  138 misc
-  139 misc
-  143 assignment
-  144 assignment
+  137 call-arg
+  138 arg-type
+  139 arg-type
+  140 misc
+  141 misc
   145 assignment
   146 assignment
-  147 arg-type
-  153 arg-type
-  154 arg-type
-  155 call-arg
-  156 call-arg
-  157 arg-type
-  158 assignment
-  162 arg-type
-  163 arg-type
+  147 assignment
+  148 assignment
+  149 arg-type
+  155 arg-type
+  156 arg-type
+  157 call-arg
+  158 call-arg
+  159 arg-type
+  160 assignment
   164 arg-type
   165 arg-type
   166 arg-type
@@ -67,17 +64,19 @@ mypy clients_negative.py: 74/74 marked lines with one error, 0 elsewhere, 0 in o
   169 arg-type
   170 arg-type
   171 arg-type
-  172 call-arg
+  172 arg-type
   173 arg-type
-  174 arg-type
-  175 call-arg
-  176 call-arg
-  177 misc
-  184 arg-type
-  186 misc
-  187 call-arg
-  188 assignment
-pyright clients_negative.py: 71/74 marked lines with one error, 0 elsewhere, 0 in other files
+  174 call-arg
+  175 arg-type
+  176 arg-type
+  177 call-arg
+  178 call-arg
+  179 misc
+  186 arg-type
+  188 misc
+  189 call-arg
+  190 assignment
+pyright clients_negative.py: 70/73 marked lines with one error, 0 elsewhere, 0 in other files
   49 reportCallIssue
   50 reportArgumentType
   51 reportArgumentType
@@ -97,46 +96,43 @@ pyright clients_negative.py: 71/74 marked lines with one error, 0 elsewhere, 0 i
   73 reportCallIssue
   77 reportGeneralTypeIssues
   79 reportAssignmentType
-  88 reportArgumentType
   89 reportArgumentType
   90 reportArgumentType
   91 reportArgumentType
-  92 reportArgumentType
-  104 reportArgumentType
   105 reportArgumentType
   106 reportArgumentType
-  107 reportAssignmentType
-  109 reportArgumentType
-  110 reportArgumentType
-  111 reportAssignmentType
-  118 reportAssignmentType
-  123 reportArgumentType
-  124 reportArgumentType
-  128 reportArgumentType
-  129 reportArgumentType
+  107 reportArgumentType
+  108 reportArgumentType
+  109 reportAssignmentType
+  111 reportArgumentType
+  112 reportArgumentType
+  113 reportAssignmentType
+  120 reportAssignmentType
+  125 reportArgumentType
+  126 reportArgumentType
   130 reportArgumentType
-  131 reportCallIssue
-  132 reportCallIssue
+  131 reportArgumentType
+  132 reportArgumentType
   133 reportCallIssue
-  134 reportArgumentType
+  134 reportCallIssue
   135 reportCallIssue
   136 reportArgumentType
-  137 reportArgumentType
-  138 reportAttributeAccessIssue
-  139 reportAttributeAccessIssue
-  143 reportAssignmentType
-  144 reportAssignmentType
+  137 reportCallIssue
+  138 reportArgumentType
+  139 reportArgumentType
+  140 reportAttributeAccessIssue
+  141 reportAttributeAccessIssue
   145 reportAssignmentType
   146 reportAssignmentType
-  147 reportArgumentType
-  153 reportArgumentType
-  154 reportArgumentType
-  155 reportCallIssue
-  156 reportCallIssue
-  157 reportArgumentType
-  158 reportAttributeAccessIssue
-  162 reportArgumentType
-  163 reportArgumentType
+  147 reportAssignmentType
+  148 reportAssignmentType
+  149 reportArgumentType
+  155 reportArgumentType
+  156 reportArgumentType
+  157 reportCallIssue
+  158 reportCallIssue
+  159 reportArgumentType
+  160 reportAttributeAccessIssue
   164 reportArgumentType
   165 reportArgumentType
   166 reportArgumentType
@@ -145,17 +141,19 @@ pyright clients_negative.py: 71/74 marked lines with one error, 0 elsewhere, 0 i
   169 reportArgumentType
   170 reportArgumentType
   171 reportArgumentType
-  172 reportCallIssue
+  172 reportArgumentType
   173 reportArgumentType
-  174 reportArgumentType
-  175 reportCallIssue
-  176 reportCallIssue
-  177 reportAttributeAccessIssue
-  184 reportArgumentType
-  186 reportAttributeAccessIssue
-  187 reportCallIssue
+  174 reportCallIssue
+  175 reportArgumentType
+  176 reportArgumentType
+  177 reportCallIssue
+  178 reportCallIssue
+  179 reportAttributeAccessIssue
+  186 reportArgumentType
   188 reportAttributeAccessIssue
-ty clients_negative.py: 73/74 marked lines with one error, 0 elsewhere, 0 in other files
+  189 reportCallIssue
+  190 reportAttributeAccessIssue
+ty clients_negative.py: 72/73 marked lines with one error, 0 elsewhere, 0 in other files
   49 missing-argument
   50 invalid-argument-type
   51 no-matching-overload
@@ -172,46 +170,43 @@ ty clients_negative.py: 73/74 marked lines with one error, 0 elsewhere, 0 in oth
   73 missing-argument
   77 invalid-await
   79 invalid-assignment
-  88 invalid-argument-type
   89 invalid-argument-type
   90 invalid-argument-type
   91 invalid-argument-type
-  92 invalid-argument-type
-  104 invalid-argument-type
   105 invalid-argument-type
   106 invalid-argument-type
-  107 invalid-assignment
-  109 invalid-argument-type
-  110 invalid-argument-type
-  111 invalid-assignment
-  118 invalid-assignment
-  123 invalid-argument-type
-  124 invalid-argument-type
-  128 invalid-argument-type
-  129 invalid-argument-type
+  107 invalid-argument-type
+  108 invalid-argument-type
+  109 invalid-assignment
+  111 invalid-argument-type
+  112 invalid-argument-type
+  113 invalid-assignment
+  120 invalid-assignment
+  125 invalid-argument-type
+  126 invalid-argument-type
   130 invalid-argument-type
-  131 unknown-argument
-  132 unknown-argument
+  131 invalid-argument-type
+  132 invalid-argument-type
   133 unknown-argument
-  134 invalid-argument-type
+  134 unknown-argument
   135 unknown-argument
   136 invalid-argument-type
-  137 invalid-argument-type
-  138 invalid-assignment
-  139 invalid-assignment
-  143 invalid-assignment
-  144 invalid-assignment
+  137 unknown-argument
+  138 invalid-argument-type
+  139 invalid-argument-type
+  140 invalid-assignment
+  141 invalid-assignment
   145 invalid-assignment
   146 invalid-assignment
-  147 invalid-argument-type
-  153 invalid-argument-type
-  154 invalid-argument-type
-  155 missing-argument
-  156 missing-argument
-  157 invalid-argument-type
-  158 invalid-assignment
-  162 invalid-argument-type
-  163 invalid-argument-type
+  147 invalid-assignment
+  148 invalid-assignment
+  149 invalid-argument-type
+  155 invalid-argument-type
+  156 invalid-argument-type
+  157 missing-argument
+  158 missing-argument
+  159 invalid-argument-type
+  160 invalid-assignment
   164 invalid-argument-type
   165 invalid-argument-type
   166 invalid-argument-type
@@ -220,15 +215,17 @@ ty clients_negative.py: 73/74 marked lines with one error, 0 elsewhere, 0 in oth
   169 invalid-argument-type
   170 invalid-argument-type
   171 invalid-argument-type
-  172 unknown-argument
+  172 invalid-argument-type
   173 invalid-argument-type
-  174 invalid-argument-type
-  175 missing-argument
-  176 too-many-positional-arguments
-  177 invalid-assignment
-  184 invalid-argument-type
-  186 invalid-assignment
+  174 unknown-argument
+  175 invalid-argument-type
+  176 invalid-argument-type
+  177 missing-argument
+  178 too-many-positional-arguments
+  179 invalid-assignment
+  186 invalid-argument-type
   188 invalid-assignment
+  190 invalid-assignment
 signatures_negative.py 2 marked lines
 mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
   41 misc

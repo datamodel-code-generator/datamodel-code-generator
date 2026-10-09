@@ -520,7 +520,7 @@ def _signer_credentials(harness: Harness, api: Any, lines: list[str], mode: str)
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
     signer_type = _AsyncSigner if mode == "async" else _Signer
     signer = signer_type(
-        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("x-TrAcE",), ("limit", "term"), False),
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("x-TrAcE",), ("limit", "term")),
         auth.SignatureFields((), ()),
     )
     api = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
@@ -541,7 +541,7 @@ def _signed_resume(harness: Harness, lines: list[str]) -> None:
     """Resume a safe token with freshly signed credentials through a real synchronous exchange."""
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
     signer = _Signer(
-        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",), False),
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",)),
         auth.SignatureFields((("X-Signature", "signed-header"),), (("signature", "signed-query"),)),
     )
     exchange = Exchange(lines)
@@ -565,7 +565,7 @@ async def _async_signed_resume(harness: Harness, lines: list[str]) -> None:
     """Resume a safe token with freshly signed credentials through a real asyncio exchange."""
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
     signer = _AsyncSigner(
-        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",), False),
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",)),
         auth.SignatureFields((("X-Signature", "signed-header"),), (("signature", "signed-query"),)),
     )
     exchange = Exchange(lines)

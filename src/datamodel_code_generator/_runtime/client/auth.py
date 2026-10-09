@@ -231,19 +231,16 @@ CredentialProviderInput: TypeAlias = CredentialProvider | AsyncCredentialProvide
 
 @dataclass(frozen=True, slots=True)
 class SignerCapabilities:
-    """The destinations, wire fields and body digest needed by a signer."""
+    """The destinations and wire fields managed by a signer."""
 
     allowed_origins: tuple[str, ...] = field(repr=False)
     managed_headers: tuple[str, ...] = field(repr=False)
     managed_query: tuple[str, ...] = field(repr=False)
-    requires_body_digest: bool = field(repr=False)
 
     def __post_init__(self) -> None:
         """Copy declared collections without choosing destinations or invoking a signer."""
         for name in ("allowed_origins", "managed_headers", "managed_query"):
             object.__setattr__(self, name, _strings(getattr(self, name), (name,)))
-        if type(self.requires_body_digest) is not bool:
-            raise ConfigurationError(field_path=("requires_body_digest",), reason="invalid_type")
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,7 +252,6 @@ class SigningInput:
     origin: str = field(repr=False)
     query: bytes = field(repr=False)
     headers: HeadersView = field(repr=False)
-    body_digest: bytes | None = field(repr=False)
     attempt_index: int = field(repr=False)
     hop_index: int = field(repr=False)
 
@@ -291,7 +287,7 @@ class RequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     def sign(self, request: SigningInput) -> SignatureFields:
@@ -304,7 +300,7 @@ class AsyncRequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     async def sign(self, request: SigningInput) -> SignatureFields:

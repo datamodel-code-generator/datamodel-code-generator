@@ -25,17 +25,8 @@ from typing_extensions import Self, TypeIs
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.unset import UNSET, Unset
-from .bodies import (
-    AsyncBodyFactory,
-    AsyncFileBody,
-    AsyncStreamBody,
-    BodyAttemptContext,
-    BodyFactory,
-    EncodedAttempt,
-    FileBody,
-    StreamBody,
-)
-from .body_sources import RequestCoding, bind_async_body, bind_body, capture_async_body, capture_body
+from .bodies import EncodedAttempt, is_file_input
+from .body_sources import RequestCoding, bind_body, capture_body
 from .coding import ContentDecoder
 from .errors import (
     APIConnectionError,
@@ -59,7 +50,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary, quiet_close
+from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import (
     async_response_bytes,
     native_async_client,
@@ -136,8 +127,8 @@ if TYPE_CHECKING:
         BoundCredential,
         HopCredentials,
     )
-    from .bodies import AsyncBodyAttempt, BodyAttempt
-    from .body_sources import AsyncBodyBindings, AsyncBodySource, BodyBindings, BodySource
+    from .bodies import AsyncContent, SyncContent
+    from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ParameterSpec, ServerPlan
@@ -158,7 +149,6 @@ _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
-_BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
 _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
@@ -521,15 +511,6 @@ def request_body(request: httpx2.Request) -> EncodedAttempt | None:
     return cast("EncodedAttempt | None", request.extensions.get(_BODY))
 
 
-def _context(call: Call) -> BodyAttemptContext:
-    return BodyAttemptContext(
-        call_id=call.call_id,
-        attempt_index=call.attempt_index,
-        hop_index=call.hop_index,
-        remaining_timeout=call.remaining(),
-    )
-
-
 def _checked_raw(method: object, url: object) -> tuple[str, str]:
     """Normalize the raw method and validate its native URL before sending."""
     if not isinstance(method, str) or not _TOKEN.fullmatch(method):
@@ -604,26 +585,29 @@ def _compressed(
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
 
 
-def _abandoned(
-    call: Call,
-    owned: tuple[BodySource | None, BodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            call.retry_blocked |= not _discarded(resource.close, failure)
+def _close_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
+    if owner is not None:
+        _close_failed(owner.close(), call, error)
 
 
-async def _aabandoned(
-    call: Call,
-    owned: tuple[AsyncBodySource | None, AsyncBodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed asyncio call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            await call.cleanup(resource.aclose, error=failure)
+async def _aclose_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
+    if owner is not None:
+        _close_failed(await owner.aclose(), call, error)
+
+
+def _close_failed(failures: list[OSError], call: Call, error: BaseException | None) -> None:
+    if not failures:
+        return
+    if error is not None:
+        add_secondary(error, *failures)
+        return
+    failure = SDKError(
+        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failures.pop(0)
+    )
+    add_secondary(failure, *failures)
+    raise failure
 
 
 def strip_credentials(
@@ -1148,7 +1132,7 @@ class Core(Generic[AdapterT, HandleT]):
     def _raw_prepared(
         self, method: object, url: object, body: object, options: RequestOptions | None
     ) -> tuple[httpx2.Request, object]:
-        """Return a raw call's request to any URL, with the client's fixed headers and a factory's media type.
+        """Return a raw call's request to any URL, with the client's fixed headers.
 
         Bytes are the request's attempt; any other body is returned beside it, to build its own attempt.
         """
@@ -1158,7 +1142,7 @@ class Core(Generic[AdapterT, HandleT]):
             call = () if options is None else options.query
             query = _query(self._settings.query, [pair for pair in explicit.split("&") if pair], call)
             target = f"{base}?{query}" if query else base
-        media_type = body.content_type if isinstance(body, (BodyFactory, AsyncBodyFactory)) else None
+        media_type = None
         if is_multipart(body):
             body = MultipartSource(body, boundary := new_boundary())
             media_type = f"multipart/form-data; boundary={boundary}"
@@ -1376,30 +1360,6 @@ def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTr
             if getattr(resolved, name) != getattr(DEFAULT_TRANSPORT, name):
                 raise ConfigurationError(field_path=("transport", name), reason="injected_transport")
     return resolved
-
-
-def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
-    try:
-        close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-async def _areleased(close: Callable[[], Awaitable[None]], operation_id: str | None, call_id: str) -> None:
-    try:
-        await close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-def _discarded(close: Callable[[], object], error: BaseException) -> bool:
-    """Run a close while an error propagates, keeping its failure beside that error."""
-    if (failure := quiet_close(close)) is None:
-        return True
-    if not isinstance(failure, Exception) and isinstance(error, Exception):
-        raise failure
-    add_secondary(error, failure)
-    return False
 
 
 @contextmanager
@@ -1754,18 +1714,14 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], T],
         opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
         entry: BodyBindings | None = None
         source: BodySource | None = None
         try:
-            entry = (
-                capture_body(body)
-                if body is not UNSET and (isinstance(body, (FileBody, StreamBody)) or is_multipart(body))
-                else None
-            )
+            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
 
             call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
@@ -1781,20 +1737,20 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
-                source, entry = source if coding is None else coding.source(source), None
+                if coding is not None:
+                    source = coding.source(source)
 
             result = self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            _abandoned(call, (source, entry), failure)
+            _close_body(source or entry, call, failure)
             raise failure from None
-        if source is not None:
-            try:
-                _released(source.close, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, RawResponse):
-                    result.discard(error)
-                raise
+        try:
+            _close_body(source or entry, call)
+        except SDKError as error:
+            if isinstance(result, RawResponse):
+                result.discard(error)
+            raise
         return result
 
     def _exchange(
@@ -1994,9 +1950,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             auth.pending = None
 
     @staticmethod
-    def _authenticated_request(
-        request: httpx2.Request, attempt: BodyAttempt | None, source: BodySource | None, call: Call
-    ) -> httpx2.Request:
+    def _authenticated_request(request: httpx2.Request, call: Call) -> httpx2.Request:
         from .auth import SigningInput  # noqa: PLC0415
         from .auth_policy import BoundAuth, apply_signature, place_credentials, sign_request  # noqa: PLC0415
         from .urls import origin_text, signing_query  # noqa: PLC0415
@@ -2009,11 +1963,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             request = place_credentials(request, bound, auth.credentials)
         if not bound.signers:
             return request
-        digest = None
-        if bound.requires_body_digest and attempt is not None:
-            from .body_sources import digest_body  # noqa: PLC0415
-
-            digest = digest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
         for signer in bound.signers:
             signing = SigningInput(
@@ -2022,7 +1971,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
                 headers=HeadersView(request_fields(request)),
-                body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
@@ -2057,7 +2005,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(  # noqa: PLR0912, PLR0915
+    def _send(
         self,
         request: httpx2.Request,
         source: BodySource | None,
@@ -2065,13 +2013,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
-        attempt: BodyAttempt | None = request_body(request)
+        attempt: SyncContent | None = request_body(request)
         permit: Permit | None = None
-        response: httpx2.Response | None = None
         try:
             call.next_send()
 
-            self._authorize(source, call)
+            self._authorize(call)
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -2089,9 +2036,9 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 self._authenticate(call)
 
             if source is not None and call.body_enabled:
-                attempt = source.open(_context(call))
+                attempt = source.open()
 
-            outgoing = self._outgoing(request, attempt, source, call)
+            outgoing = self._outgoing(request, attempt, call)
             if call.events is not None and call.hop_index == 0:
                 call.events.emit(call.events.attempting())
             _usable_credentials(call)
@@ -2113,18 +2060,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
             call.delivery_state = DeliveryState.RESPONSE_STARTED
-            if attempt is not None:
-                released_attempt, attempt = attempt, None
-                _released(released_attempt.close, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], None]] = []
-            if response is not None:
-                closes.append(response.close)
-            if attempt is not None:
-                closes.append(attempt.close)
             if permit is not None:
                 closes.append(partial(_release_permit, permit))
             self._release_resources(call, tuple(closes), failure)
@@ -2158,19 +2098,13 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         )
         self._release_resources(call, closes, error)
 
-    def _authorize(self, source: BodySource | None, call: Call) -> None:
-        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
-        if (auth := call.auth) is None:
+    def _authorize(self, call: Call) -> None:
+        """Take the call's credentials before any permit."""
+        if call.auth is None:
             return
-        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # noqa: PLC0415
-
-            require_digest_source(source)
         self._authenticate(call)
 
-    def _outgoing(
-        self, request: httpx2.Request, attempt: BodyAttempt | None, source: BodySource | None, call: Call
-    ) -> httpx2.Request:
+    def _outgoing(self, request: httpx2.Request, attempt: SyncContent | None, call: Call) -> httpx2.Request:
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
@@ -2191,7 +2125,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
-            outgoing = self._authenticated_request(outgoing, attempt, source, call)
+            outgoing = self._authenticated_request(outgoing, call)
         return outgoing
 
     @staticmethod
@@ -2476,18 +2410,14 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
-        entry: AsyncBodyBindings | None = None
-        source: AsyncBodySource | None = None
+        entry: BodyBindings | None = None
+        source: BodySource | None = None
         try:
-            entry = (
-                await capture_async_body(body, cleanup=call.cleanup)
-                if body is not UNSET and (isinstance(body, (AsyncFileBody, AsyncStreamBody)) or is_multipart(body))
-                else None
-            )
+            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
 
             call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
@@ -2502,27 +2432,27 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
             if not isinstance(deferred, Unset):
-                source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
-                source, entry = source if coding is None else coding.async_source(source), None
+                source = bind_body(deferred, entry=entry, asynchronous=True)
+                if coding is not None:
+                    source = coding.source(source)
 
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            await _aabandoned(call, (source, entry), failure)
+            await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
             raise failure from None
-        if source is not None:
-            try:
-                await _areleased(source.aclose, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, AsyncRawResponse):
-                    await result.discard(error)
-                raise
+        try:
+            await _aclose_body(source or entry, call)
+        except BaseException as error:
+            if isinstance(result, AsyncRawResponse):
+                await result.discard(error)
+            raise
         return result
 
     async def _exchange(
         self,
         original: httpx2.Request,
-        source: AsyncBodySource | None,
+        source: BodySource | None,
         call: Call,
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
@@ -2586,7 +2516,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = original
             visited = call.restart(original)
 
-    async def _status_plan(self, info: ResponseInfo, source: AsyncBodySource | None, call: Call) -> RetryDelay | None:
+    async def _status_plan(self, info: ResponseInfo, source: BodySource | None, call: Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
         if call.handshake and info.status_code != _SWITCHING:
             return call.retry(
@@ -2720,8 +2650,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     @staticmethod
     async def _authenticated_request(
         request: httpx2.Request,
-        attempt: AsyncBodyAttempt | None,
-        source: AsyncBodySource | None,
         call: Call,
     ) -> httpx2.Request:
         from .auth import SigningInput  # noqa: PLC0415
@@ -2736,11 +2664,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = place_credentials(request, bound, auth.credentials)
         if not bound.signers:
             return request
-        digest = None
-        if bound.requires_body_digest and attempt is not None:
-            from .body_sources import adigest_body  # noqa: PLC0415
-
-            digest = await adigest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
         for signer in bound.signers:
             signing = SigningInput(
@@ -2749,7 +2672,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
                 headers=HeadersView(request_fields(request)),
-                body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
@@ -2784,21 +2706,20 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(  # noqa: PLR0912, PLR0915
+    async def _send(
         self,
         request: httpx2.Request,
-        source: AsyncBodySource | None,
+        source: BodySource | None,
         call: Call,
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
-        attempt: AsyncBodyAttempt | None = request_body(request)
+        attempt: AsyncContent | None = request_body(request)
         permit: AsyncPermit | None = None
-        response: httpx2.Response | None = None
         try:
             call.next_send()
 
-            await self._authorize(source, call)
+            await self._authorize(call)
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -2816,9 +2737,9 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await self._authenticate(call)
 
             if source is not None and call.body_enabled:
-                attempt = await source.aopen(_context(call))
+                attempt = await source.aopen()
 
-            outgoing = await self._outgoing(request, attempt, source, call)
+            outgoing = await self._outgoing(request, attempt, call)
             if call.events is not None and call.hop_index == 0:
                 await call.events.aemit(call.events.attempting())
             _usable_credentials(call)
@@ -2840,18 +2761,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
             call.delivery_state = DeliveryState.RESPONSE_STARTED
-            if attempt is not None:
-                released_attempt, attempt = attempt, None
-                await _areleased(released_attempt.aclose, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], Awaitable[None]]] = []
-            if response is not None:
-                closes.append(response.aclose)
-            if attempt is not None:
-                closes.append(attempt.aclose)
             if permit is not None:
                 closes.append(partial(_arelease_permit, permit))
             await self._release_resources(call, tuple(closes), failure)
@@ -2887,19 +2801,13 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         )
         await self._release_resources(call, closes, error)
 
-    async def _authorize(self, source: AsyncBodySource | None, call: Call) -> None:
-        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
-        if (auth := call.auth) is None:
+    async def _authorize(self, call: Call) -> None:
+        """Take the call's credentials before any permit."""
+        if call.auth is None:
             return
-        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # noqa: PLC0415
-
-            require_digest_source(source)
         await self._authenticate(call)
 
-    async def _outgoing(
-        self, request: httpx2.Request, attempt: AsyncBodyAttempt | None, source: AsyncBodySource | None, call: Call
-    ) -> httpx2.Request:
+    async def _outgoing(self, request: httpx2.Request, attempt: AsyncContent | None, call: Call) -> httpx2.Request:
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
@@ -2920,7 +2828,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
-            outgoing = await self._authenticated_request(outgoing, attempt, source, call)
+            outgoing = await self._authenticated_request(outgoing, call)
         return outgoing
 
     @staticmethod
