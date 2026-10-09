@@ -6,7 +6,7 @@ import hmac
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-from pets.errors import ProtocolSizeError, WebhookVerificationError
+from pets.errors import ProtocolDataError
 from pets.protocols import (
     KeySet,
     ResolvedWebhookOptions,
@@ -42,29 +42,29 @@ class StripeVerifier:
         now: datetime,
         limits: ResolvedWebhookOptions,
     ) -> VerifiedSignature:
-        """Return the signed timestamp and the matched key, or raise WebhookVerificationError."""
+        """Return the signed timestamp and the matched key, or raise ProtocolDataError."""
         del now
         values = [value for name, value in ordered_headers if name.lower() == "stripe-signature"]
         items = [item.partition("=") for item in (values[0].split(",") if len(values) == 1 else ())]
         stamps = [value for scheme, _, value in items if scheme == "t"]
         encoded = [value for scheme, _, value in items if scheme == "v1"]
         if len(stamps) != 1 or not (stamps[0].isascii() and stamps[0].isdigit()) or not encoded:
-            raise WebhookVerificationError(condition="malformed_signature")
+            raise ProtocolDataError(reason="malformed_signature")
         if (count := len(encoded)) > limits.max_signatures:
-            raise ProtocolSizeError(kind="signatures", unit="items", limit=limits.max_signatures, observed=count)
+            raise ProtocolDataError(reason="too_large")
         try:
             signatures = [bytes.fromhex(value) for value in encoded if value.isascii()]
         except ValueError:
             signatures = []
         if len(signatures) != count:
-            raise WebhookVerificationError(condition="malformed_signature")
+            raise ProtocolDataError(reason="malformed_signature")
         signed = stamps[0].encode() + b"." + raw_body
         for key in keys.keys:
             expected = hmac.new(key.secret, signed, "sha256").digest()
             if any(hmac.compare_digest(expected, signature) for signature in signatures):
                 moment = datetime.fromtimestamp(int(stamps[0]), timezone.utc)
                 return VerifiedSignature(delivery_id=None, timestamp=moment, matched_key_id=key.name)
-        raise WebhookVerificationError(condition="invalid_signature")
+        raise ProtocolDataError(reason="invalid_signature")
 
 
 def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes) -> Invoice | Customer:

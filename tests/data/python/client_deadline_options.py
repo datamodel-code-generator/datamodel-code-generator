@@ -67,56 +67,25 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
 
 
 def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
-    state = errors.DeliveryState.NOT_SENT
     headers = responses.HeadersView((("Authorization", "private-secret"),))
     info = responses.ResponseInfo(
         status_code=200, headers=headers, call_id="safe-call", elapsed=0.5, content_type=None, attempt_count=3
     )
     for error in (
         errors.SDKError(attempt_count=1, elapsed=2),
-        errors.APITimeoutError(reason="phase_timeout", effective_timeout=1, phase="connect", delivery_state=state),
-        errors.APITimeoutError(reason="deadline_exceeded", deadline_at=-1, phase="encode", delivery_state=state),
+        errors.APITimeoutError(reason="phase_timeout"),
+        errors.APITimeoutError(reason="deadline_exceeded"),
     ):
         lines.append(
-            f"  error {error} code={error.reason_code} attempts={error.attempt_count} elapsed={error.elapsed}"
+            f"  error {error} reason={error.reason} attempts={error.attempt_count} elapsed={error.elapsed}"
             f" request={error.request_id}"
         )
         error.info = info
         error.cause = RuntimeError("private-secret")
-        error.secondary_errors = (RuntimeError("private-secret"),)
         lines.append(f"  with response {error} safe={'private-secret' not in repr(error) + str(error)}")
     answered = errors.SDKError(info=info, attempt_count=9, elapsed=9)
     lines.append(f"  response measurements attempts={answered.attempt_count} elapsed={answered.elapsed}")
-    phase = errors.APITimeoutError(effective_timeout=0, phase="pool", delivery_state=state)
-    deadline = errors.APITimeoutError(deadline_at=-1, delivery_state=state)
-    lines.append(
-        f"  hierarchy phase={isinstance(phase, errors.APIConnectionError)} deadline={isinstance(deadline, errors.APIConnectionError)} effective={phase.effective_timeout} absolute={deadline.deadline_at}"
-    )
-    for phase_name in ("read", "write"):
-        value = errors.APITimeoutError(effective_timeout=2.5, phase=phase_name, delivery_state=state)
-        lines.append(f"  phase {value.phase} cap={value.effective_timeout}")
-    for label, constructor, values in (
-        ("attempt count", errors.SDKError, {"attempt_count": -1}),
-        ("attempt bool", errors.SDKError, {"attempt_count": True}),
-        ("deadline without its expiry", errors.APITimeoutError, {"reason": "deadline_exceeded"}),
-    ):
-        record(lines, f"invalid error {label}", lambda constructor=constructor, values=values: constructor(**values))
-    for label, value in (
-        ("bool", False),
-        ("negative", -1),
-        ("nan", float("nan")),
-        ("infinity", float("inf")),
-        ("text", "1"),
-        ("overflow", 10**400),
-    ):
-        record(
-            lines,
-            f"invalid effective timeout {label}",
-            lambda value=value: errors.APITimeoutError(effective_timeout=value, phase="read", delivery_state=state),
-        )
-    record(lines, "invalid deadline", lambda: errors.APITimeoutError(deadline_at=float("nan")))
-    for label, value in (("negative", -1), ("infinity", float("inf"))):
-        record(lines, f"invalid elapsed {label}", lambda value=value: errors.SDKError(elapsed=value))
+    lines.append(f"  hierarchy timeout={issubclass(errors.APITimeoutError, errors.APIConnectionError)}")
 
 
 def _hints(options: ModuleType, errors: ModuleType, hooks: ModuleType, lines: list[str]) -> None:

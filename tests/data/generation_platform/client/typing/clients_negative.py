@@ -13,7 +13,6 @@ from pets.errors import (
     AuthError,
     ConfigurationError,
     DecodeError,
-    DeliveryState,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
@@ -150,8 +149,7 @@ def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, a
 
 
 def misuse_deadline_errors(error: SDKError) -> None:
-    state = DeliveryState.NOT_SENT
-    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
+    APITimeoutError(reason=1)  # error
     AuthError(reason="expired")  # error
     DecodeError(direction="request")  # error
     APIStatusError(body=b"")  # error
@@ -185,4 +183,4 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Configu
     )
     info.attempt_count = 1  # error
     ConfigurationError(field_path=("redirects",), reason="redirect_refused", body_available=False)  # error
-    error.delivery_state = "NOT_SENT"  # error
+    error.field_path = "redirects"  # error

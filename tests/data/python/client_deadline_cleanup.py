@@ -116,10 +116,9 @@ class _TerminalHook:
 
 def _measurements(error: BaseException) -> tuple[object, ...]:
     return (
-        getattr(error, "reason_code", None),
+        getattr(error, "reason", None),
         getattr(error, "attempt_count", None),
         getattr(getattr(error, "info", None), "attempt_count", None),
-        getattr(error, "completed_result", None) is not None,
     )
 
 
@@ -244,7 +243,6 @@ async def _terminal_native(package: ModuleType, options: ModuleType, errors: Mod
                         if isinstance(before, RuntimeError)
                         else error is expected,
                         getattr(error, "attempt_count", None),
-                        tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
                         tuple(getattr(error, "__notes__", ())),
                         getattr(error.__cause__, "reason", type(error.__cause__).__name__),
                     ),
@@ -274,10 +272,9 @@ async def _expired(package: ModuleType, options: ModuleType, errors: ModuleType,
                 "expired deadline result",
                 lambda error=error: (
                     type(error).__name__,
-                    error.reason_code,
-                    error.phase,
+                    error.reason,
                     error.attempt_count,
-                    tuple(type(item).__name__ for item in error.secondary_errors),
+                    tuple(getattr(error, "__notes__", ())),
                 ),
             )
         await api.aclose()

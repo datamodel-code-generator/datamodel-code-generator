@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, Final, Literal, cast
 
 import httpx2
 
-from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
+from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DecodeError
+from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
 
-    from .errors import IOPhase
+    from .hooks import IOPhase
     from .options import ResolvedTransportOptions
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
@@ -29,45 +30,29 @@ def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
     return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
-def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> DeliveryState:
-    """Classify only by the public send boundary and native exception class."""
+def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> Delivery:
+    """Classify how far a failed send got, only by the public send boundary and native exception class."""
     if response_started:
-        return DeliveryState.RESPONSE_STARTED
+        return Delivery.RESPONSE_STARTED
     if not send_started or isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
-        return DeliveryState.NOT_SENT
-    return DeliveryState.MAYBE_SENT
+        return Delivery.NOT_SENT
+    return Delivery.MAYBE_SENT
 
 
-def native_error(error: Exception, *, send_started: bool, response_started: bool = False) -> SDKError:
+def native_error(error: Exception) -> APIConnectionError:
     """Convert an ordinary native failure; BaseException interruptions are never intercepted."""
-    state = delivery(error, send_started=send_started, response_started=response_started)
-    phase = _phase(error)
     if isinstance(error, httpx2.TimeoutException):
-        return APITimeoutError(
-            phase=phase,
-            reason="phase_timeout",
-            effective_timeout=_expired_cap(error, phase),
-            delivery_state=state,
-            cause=error,
-        )
-    return APIConnectionError(phase=phase, delivery_state=state, cause=error)
+        return APITimeoutError(reason="phase_timeout", cause=error)
+    return APIConnectionError(cause=error)
 
 
-def _phase(error: Exception) -> IOPhase:
+def io_phase(error: APIConnectionError) -> IOPhase:
+    """Return the I/O phase whose native failure caused a transport error, or unknown without one."""
+    cause = error.cause
     for kinds, phase in _PHASES:
-        if isinstance(error, kinds):
+        if isinstance(cause, kinds):
             return phase
     return "unknown"
-
-
-def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
-    """Return the phase timeout the failed request carried, when the native error kept its request."""
-    try:
-        caps: object = error.request.extensions.get("timeout")
-    except RuntimeError:
-        return None
-    cap = cast("dict[str, object]", caps).get(phase) if isinstance(caps, dict) else None
-    return float(cap) if isinstance(cap, (int, float)) else None
 
 
 def transport_retry_reason(
@@ -105,12 +90,8 @@ def cloned(
     )
 
 
-def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> SDKError:
-    from ..protocols.errors import ProtocolDataError  # noqa: PLC0415 - Load protocol errors only on this failure.
-
-    return ProtocolDataError(
-        condition="malformed", operation_id=operation_id, call_id=info.call_id, info=info, cause=error
-    )
+def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:
+    return DecodeError(reason="malformed_coding", operation_id=operation_id, info=info, cause=error)
 
 
 class _Held(httpx2.SyncByteStream):

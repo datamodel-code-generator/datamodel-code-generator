@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
-from pets.errors import PaginationCycleError, SessionLimitError
+from pets.errors import ProtocolDataError, SessionLimitError
 from pets.options import RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncPager,
@@ -59,7 +59,7 @@ def checkpoints(client: Client) -> None:
     try:
         for user in pager:
             assert_type(user, User)
-    except (SessionLimitError, PaginationCycleError):
+    except (SessionLimitError, ProtocolDataError):
         state = pager.checkpoint()
         assert_type(state, JSONValue)
         resumed = helper.resume(

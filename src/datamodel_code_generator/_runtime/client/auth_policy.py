@@ -6,7 +6,6 @@ import base64
 import inspect
 import re
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING, Final, Literal
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -22,7 +21,7 @@ from .auth import (
     SignerCapabilities,
 )
 from .auth_challenges import invalid_token
-from .errors import AuthError, ConfigurationError, DeliveryState, is_auth_classified
+from .errors import AuthError, ConfigurationError, is_auth_classified
 from .native import cloned, request_fields
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
 from .urls import URLValidationError, canonical_origin
@@ -423,23 +422,21 @@ def validate_ownership(
         raise ConfigurationError(field_path=("auth",), reason="name_collision")
 
 
-def _expiry(token: AccessToken, delivery: DeliveryState, clock: Clock) -> float | None:
+def _expiry(token: AccessToken, clock: Clock) -> float | None:
     if (expires := token.expires_at) is None:
         return None
     try:
         timestamp = None if expires.utcoffset() is None else expires.timestamp()
     except (TypeError, ValueError) as cause:
-        raise AuthError(reason="invalid_expiry", delivery_state=delivery, cause=cause) from None
+        raise AuthError(reason="invalid_expiry", cause=cause) from None
     if timestamp is None:
-        raise AuthError(reason="invalid_expiry", delivery_state=delivery)
+        raise AuthError(reason="invalid_expiry")
     if (remaining := timestamp - clock.time()) <= 0:
-        raise AuthError(reason="token_expired", expires_at=expires, delivery_state=delivery)
+        raise AuthError(reason="token_expired", expires_at=expires)
     return clock.monotonic() + remaining
 
 
-def _material(
-    value: object, scheme: SecurityScheme, _context: CredentialContext, delivery: DeliveryState, clock: Clock
-) -> AcquiredCredential:
+def _material(value: object, scheme: SecurityScheme, _context: CredentialContext, clock: Clock) -> AcquiredCredential:
     if isinstance(value, ApiKeyCredential) and scheme.kind == "api_key":
         return AcquiredCredential(value, None)
     if isinstance(value, BasicCredential) and scheme.kind == "basic":
@@ -448,7 +445,7 @@ def _material(
         token = value.token
         if token.token_type.lower() != "bearer":
             raise ConfigurationError(field_path=("auth", "token_type"), reason="unsupported_token_type")
-        return AcquiredCredential(value, _expiry(token, delivery, clock))
+        return AcquiredCredential(value, _expiry(token, clock))
     if inspect.iscoroutine(value):
         value.close()
     raise ConfigurationError(field_path=("auth", "credentials", scheme.name), reason="invalid_material")
@@ -472,34 +469,27 @@ class _Wrapped:
         return False
 
 
-def _provider_failure(delivery: DeliveryState, cause: Exception) -> AuthError:
-    return AuthError(reason="provider_failed", delivery_state=delivery, cause=cause)
+def _provider_failure(cause: Exception) -> AuthError:
+    return AuthError(reason="provider_failed", cause=cause)
 
 
-def _signing_failure(delivery: DeliveryState, cause: Exception) -> AuthError:
-    return AuthError(reason="signing_failed", delivery_state=delivery, cause=cause)
+def _signing_failure(cause: Exception) -> AuthError:
+    return AuthError(reason="signing_failed", cause=cause)
 
 
-def _calls(failure: Callable[[DeliveryState, Exception], AuthError]) -> dict[DeliveryState, _Wrapped]:
-    """Prepare one callback wrapper per delivery state the call may have reached, so no call allocates one."""
-    return {state: _Wrapped(partial(failure, state)) for state in DeliveryState}
+_PROVIDER: Final = _Wrapped(_provider_failure)
+_SIGNING: Final = _Wrapped(_signing_failure)
 
 
-_GET: Final = _calls(_provider_failure)
-_INVALIDATE: Final = _Wrapped(partial(_provider_failure, DeliveryState.RESPONSE_STARTED))
-_REFRESH: Final = _calls(_provider_failure)
-_SIGNING: Final = _calls(_signing_failure)
-
-
-def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+def get_credential(binding: BoundCredential, context: CredentialContext) -> object:
     """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it."""
-    with _GET[delivery]:
+    with _PROVIDER:
         return binding.provider.get(context)
 
 
-async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext) -> object:
     """Ask an asynchronous provider for material in the existing caller-owned operation; the caller validates it."""
-    with _GET[delivery]:
+    with _PROVIDER:
         return await binding.provider.get(context)
 
 
@@ -512,45 +502,42 @@ def accept_credential(
     value: object,
     binding: BoundCredential | AsyncBoundCredential,
     context: CredentialContext,
-    delivery: DeliveryState,
     clock: Clock,
 ) -> AcquiredCredential:
     """Validate the material that will be sent: its kind, token type, and expiry on the call's clock."""
-    return _material(value, binding.scheme, context, delivery, clock)
+    return _material(value, binding.scheme, context, clock)
 
 
 def invalidate_credential(binding: BoundCredential, version: TokenVersion) -> None:
     """Invalidate only the version retained from the actual sent request."""
     assert binding.refreshable is not None
-    with _INVALIDATE:
+    with _PROVIDER:
         binding.refreshable.invalidate(version)
 
 
 async def ainvalidate_credential(binding: AsyncBoundCredential, version: TokenVersion) -> None:
     """Asynchronously invalidate the saved version without initiating acquisition."""
     assert binding.refreshable is not None
-    with _INVALIDATE:
+    with _PROVIDER:
         await binding.refreshable.invalidate(version)
 
 
-def refresh_credential(
-    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState, clock: Clock
-) -> AcquiredCredential:
+def refresh_credential(binding: BoundCredential, context: CredentialContext, clock: Clock) -> AcquiredCredential:
     """Execute one explicitly admitted synchronous refresh callback."""
     assert binding.refreshable is not None
-    with _REFRESH[delivery]:
+    with _PROVIDER:
         value = binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context, delivery, clock)
+    return _material(value, binding.scheme, context, clock)
 
 
 async def arefresh_credential(
-    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState, clock: Clock
+    binding: AsyncBoundCredential, context: CredentialContext, clock: Clock
 ) -> AcquiredCredential:
     """Execute one explicitly admitted asynchronous refresh callback."""
     assert binding.refreshable is not None
-    with _REFRESH[delivery]:
+    with _PROVIDER:
         value = await binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context, delivery, clock)
+    return _material(value, binding.scheme, context, clock)
 
 
 def credentials_expired(acquired: HopCredentials | AsyncHopCredentials, *, now: float) -> bool:
@@ -624,16 +611,16 @@ def _signature(value: object) -> SignatureFields:
     raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_result")
 
 
-def sign_request(signer: RequestSigner, request: SigningInput, delivery: DeliveryState) -> SignatureFields:
+def sign_request(signer: RequestSigner, request: SigningInput) -> SignatureFields:
     """Run a synchronous signer without converting native interruptions."""
-    with _SIGNING[delivery]:
+    with _SIGNING:
         value = signer.sign(request)
     return _signature(value)
 
 
-async def asign_request(signer: AsyncRequestSigner, request: SigningInput, delivery: DeliveryState) -> SignatureFields:
+async def asign_request(signer: AsyncRequestSigner, request: SigningInput) -> SignatureFields:
     """Run an asynchronous signer in the existing bounded operation task."""
-    with _SIGNING[delivery]:
+    with _SIGNING:
         value = await signer.sign(request)
     return _signature(value)
 

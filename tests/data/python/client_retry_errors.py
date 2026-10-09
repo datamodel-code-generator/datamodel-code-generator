@@ -26,19 +26,14 @@ def retry_errors(package: ModuleType, lines: list[str]) -> None:
         attempt_count=2,
     )
     cause = ValueError("secret-cause")
-    secondary = OSError("secret-cleanup")
     error = errors.ConfigurationError(
         field_path=("redirects",),
         reason="redirect_refused",
-        delivery_state=errors.DeliveryState.RESPONSE_STARTED,
         operation_id="redirect_operation",
-        call_id="redirect-call",
-        parent_session_id="parent-session",
         info=info,
         cause=cause,
-        secondary_errors=(secondary,),
     )
-    record(lines, "redirect error", lambda: (str(error), error.reason_code, error.delivery_state.value))
+    record(lines, "redirect error", lambda: (str(error), error.reason))
     record(
         lines,
         "redirect metadata",
@@ -47,8 +42,6 @@ def retry_errors(package: ModuleType, lines: list[str]) -> None:
             isinstance(error, errors.APIConnectionError),
             error.info is info,
             error.cause is cause,
-            error.secondary_errors == (secondary,),
-            error.parent_session_id,
         ),
     )
     record(lines, "redirect measurements", lambda: (error.attempt_count, error.elapsed, error.request_id))
@@ -58,12 +51,7 @@ def retry_errors(package: ModuleType, lines: list[str]) -> None:
     record(
         lines,
         "redirect without response",
-        lambda: (bare.info is None, bare.attempt_count, bare.elapsed, bare.request_id, bare.delivery_state.value),
-    )
-    record(
-        lines,
-        "redirect invalid delivery",
-        lambda: errors.ConfigurationError(reason="redirect_refused", delivery_state="RESPONSE_STARTED"),
+        lambda: (bare.info is None, bare.attempt_count, bare.elapsed, bare.request_id),
     )
     record(
         lines,

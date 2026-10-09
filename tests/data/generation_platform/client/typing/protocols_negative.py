@@ -2,18 +2,7 @@
 
 from __future__ import annotations
 
-from pets.errors import (
-    IncompleteFrameError,
-    OperationFailedError,
-    PaginationCycleError,
-    PollWaitLimitError,
-    ProtocolDataError,
-    SessionLimitError,
-    StreamDecodeError,
-    StreamInterruptedError,
-    StreamRemoteError,
-    StreamResumeExhaustedError,
-)
+from pets.errors import ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
 from pets.protocols import (
     HeaderSelector,
@@ -60,27 +49,13 @@ def wrong_options(security: ProtocolSecurityContext) -> None:
     RequestOptions(protocols=ProtocolClientOptions())  # error
 
 
-def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet]) -> None:
-    """Reject undeclared literals, fixed fields, mutation, and payloads narrowed without a decision."""
-    SessionLimitError(kind="bytes", limit=1, progress={})  # error
-    SessionLimitError(kind="pages", limit=1, progress={"bytes": 1})  # error
-    StreamResumeExhaustedError(kind="pages", limit=1, progress={})  # error
-    PaginationCycleError(page_index=1, first_seen_page_index=0, condition="inconsistent")  # error
-    PaginationCycleError(page_index=1, first_seen_page_index=0, continuation=1)  # error
-    IncompleteFrameError(buffered_bytes=1, sequence=0, condition="eof")  # error
-    PollWaitLimitError(kind="interval", required_wait=1, limit=0)  # error
-    StreamInterruptedError(condition="closed", sequence=0)  # error
-    StreamDecodeError(sequence=0, raw_prefix="text", truncated=False)  # error
+def wrong_errors(failure: ProtocolDataError) -> None:
+    """Reject missing and wrongly typed fields, mutation, and payloads narrowed without a decision."""
+    SessionLimitError(limit=1, progress={})  # error
+    SessionLimitError(reason="pages", limit=1, progress={"bytes": 1})  # error
+    StreamInterruptedError(reason="eof")  # error
     ProtocolDataError(location="/cursor")  # error
-    wrong: OperationFailedError[int] = failure  # error
-    failure.snapshot = snapshot  # error
-    limit = SessionLimitError(kind="pages", limit=1, progress={"pages": 1})
+    limit = SessionLimitError(reason="pages", limit=1, progress={"pages": 1})
     limit.progress["pages"] = 2  # error
-    del wrong
-
-
-def wrong_payloads(failure: OperationFailedError, remote: StreamRemoteError) -> None:
-    """Refuse model use of an unparameterized payload without an explicit decision."""
-    typed: Pet = failure.snapshot.data  # error
-    message: str = remote.data  # error
-    del typed, message
+    typed: Pet = failure.data  # error
+    del typed

@@ -150,7 +150,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     stamp, delivery, parts, elements = _signed(plan, raw_body, headers, values)
     if not elements:
         reject("malformed_signature", helper_id)
-    size("signatures", limits.max_signatures, len(elements), helper_id)
+    size(limits.max_signatures, len(elements), helper_id)
     signatures = tuple(signature_bytes(plan.encoding, plan.prefix, algorithm.size, element) for element in elements)
     if None in signatures:
         reject("malformed_signature", helper_id)

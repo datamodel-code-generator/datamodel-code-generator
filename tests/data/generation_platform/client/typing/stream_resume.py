@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pets.errors import StreamInterruptedError, StreamResumeExhaustedError
+from pets.errors import SessionLimitError, StreamInterruptedError
 from pets.options import RequestOptions, SessionOptions
 from pets.model_codecs import JSONValue
 from pets.protocols import AsyncEventStream, EventStream, StreamOptions, UnknownEvent
@@ -36,8 +36,8 @@ def resumed(client: Client) -> None:
     assert_type(client.protocols.marks.bound.resume(state), EventStream[Mark])
     try:
         next(again)
-    except StreamResumeExhaustedError as error:
-        assert_type(error.limit, int)
+    except SessionLimitError as error:
+        assert_type(error.limit, float)
     except StreamInterruptedError as error:
         assert_type(error.sequence, int)
 

@@ -169,7 +169,7 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
 
 
 def _cycles(api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """End with PaginationCycleError at a URL an earlier page gave, however the server spelled it."""
+    """End with a pagination cycle at a URL an earlier page gave, however the server spelled it."""
     helper = api.protocols.users.follow
     exchange.respond(
         user_page("1", next="?cursor=a"), user_page("2", next="?cursor=b"), user_page("3", next="?cursor=a")

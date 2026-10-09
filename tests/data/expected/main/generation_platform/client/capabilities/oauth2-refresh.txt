@@ -9,27 +9,27 @@ copied runtime
   client/__init__.py: 4
   client/auth.py: 485
   client/auth_challenges.py: 99
-  client/auth_policy.py: 660
+  client/auth_policy.py: 647
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2869
+  client/client.py: 2827
   client/codecs.py: 101
-  client/errors.py: 723
-  client/events.py: 515
+  client/errors.py: 387
+  client/events.py: 498
   client/grants.py: 282
   client/hooks.py: 148
-  client/logical.py: 231
+  client/logical.py: 199
   client/media.py: 77
   client/multipart.py: 546
-  client/native.py: 224
-  client/oauth.py: 764
-  client/operations.py: 838
+  client/native.py: 205
+  client/oauth.py: 760
+  client/operations.py: 835
   client/options.py: 628
   client/paths.py: 40
-  client/raw.py: 940
-  client/refresh.py: 366
+  client/raw.py: 925
+  client/refresh.py: 352
   client/responses.py: 88
-  client/retry.py: 335
+  client/retry.py: 345
   client/scopes.py: 29
   client/security.py: 82
   client/timing.py: 121
@@ -41,13 +41,7 @@ copied runtime
   model_codecs/parameters.py: 674
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
-  protocols/__init__.py: 4
-  protocols/errors.py: 1097
-  protocols/records.py: 243
-  protocols/references.py: 16
-  protocols/resume.py: 110
-  protocols/sources.py: 43
-total 42 modules, 14652 lines
+total 36 modules, 12654 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

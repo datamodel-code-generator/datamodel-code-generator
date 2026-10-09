@@ -60,8 +60,8 @@ def contracts(now: datetime, limits: ResolvedWebhookOptions) -> None:
     assert_type(limits.past_tolerance, float)
     operation = OperationRef(pointer="/webhooks/event/post")
     assert_type(operation.document, str | None)
-    failure = ConfigurationError(field_path=("keys",), reason="invalid_value", operation=operation)
-    assert_type(failure.operation, OperationRef | None)
+    failure = ConfigurationError(field_path=("keys",), reason="invalid_value", helper_id="event")
+    assert_type(failure.helper_id, str | None)
 
 
 def accepts_event(event: VerifiedWebhook[object]) -> None:

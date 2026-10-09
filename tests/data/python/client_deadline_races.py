@@ -29,9 +29,9 @@ def _snapshot(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
         getattr(error, "attempt_count", None),
-        getattr(error, "phase", None),
+        getattr(error, "reason", None),
         type(getattr(error, "cause", None)).__name__,
-        tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
     )
 
 
@@ -476,7 +476,7 @@ async def _late_permits(package: ModuleType, options: ModuleType, lines: list[st
                 transport.sent,
                 limiter.cancelled.is_set(),
                 limiter.permit.released,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+                tuple(getattr(errors[0], "__notes__", ())),
             ),
         )
 
@@ -511,7 +511,7 @@ async def _released_responses(package: ModuleType, options: ModuleType, lines: l
                 transport.sent,
                 body.closed,
                 body.completed,
-                tuple(type(error).__name__ for error in getattr(next(iter(errors), None), "secondary_errors", ())),
+                tuple(getattr(next(iter(errors), None), "__notes__", ())),
                 tuple(getattr(next(iter(errors), None), "__notes__", ())),
             ),
         )

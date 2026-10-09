@@ -147,7 +147,7 @@ def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -
 def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for stage in ("call_start", "retry_scheduled"):
         failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
+            reason="phase_timeout"
         )
         limiter, events, exchange = _ShapeLimiter(_SemaphoreLimiter(), failure), _Events(), Exchange([])
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
@@ -216,7 +216,7 @@ async def _async(
 async def _async_presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for stage in ("call_start", "retry_scheduled"):
         failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
+            reason="phase_timeout"
         )
         limiter, events, exchange = _ShapeLimiter(_AsyncSemaphoreLimiter(), failure), _Events(), Exchange([])
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))

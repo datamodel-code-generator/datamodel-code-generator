@@ -45,7 +45,6 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         info = getattr(error, "info", None)
         return (
             type(error).__name__,
-            getattr(error, "delivery_state", None),
             getattr(error, "reason", None),
             getattr(info, "status_code", None),
             getattr(error, "attempt_count", None),
@@ -330,8 +329,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             try:
                 await api.retry.with_response.post_unsafe(body=b"once")
             except Exception as error:  # noqa: BLE001
-                state = getattr(error, "delivery_state", None)
-                lines.append(f"  async native response hook failure {label} ! {type(error).__name__} {state}")
+                lines.append(f"  async native response hook failure {label} ! {type(error).__name__}")
             lines.append(f"    unused={len(exchange.responders)}")
             exchange.responders.clear()
 
