@@ -9,13 +9,13 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart_responses import object_branch
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
-    model_branch,
 )
 from .types.default import SendPartsResponse
 
@@ -28,12 +28,11 @@ OPERATION_0: Final[OperationPlan[SendPartsResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
+            object_branch(
                 '200',
                 'multipart/form-data',
-                'multipart',
                 model_bindings.codec_1,
-                parts=(PartPlan('name', 'string'),),
+                (PartPlan('name', 'string'),),
             ),
         ),
         (),

@@ -546,22 +546,30 @@ _MULTIPART_NAMES: Final = (
     "AsyncBodyInput",
     "AsyncMultipartBody",
     "BodyInput",
-    "DecodedPart",
     "FieldPart",
     "FilePart",
     "MultipartBody",
-    "MultipartData",
 )
-_BODIES: Final = (
-    '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n'
-    "from ._runtime.client.bodies import (\n"
-    + "".join(f"    {name},\n" for name in _BODY_NAMES)
-    + ")\nfrom ._runtime.client.multipart import (\n"
-    + "".join(f"    {name},\n" for name in _MULTIPART_NAMES)
-    + ")\nfrom ._runtime.client.operations import FormData\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, "FormData")))
-    + "]\n"
-)
+_RESPONSE_PART_NAMES: Final = ("DecodedPart", "MultipartData")
+_PARTS: Final = "_runtime.client.multipart_responses"
+
+
+def _bodies(capabilities: Capabilities) -> str:
+    """Return the bodies module: request bodies, and the parts of multipart responses when one is declared."""
+    parts = _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()
+    return "".join((
+        '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n',
+        "from ._runtime.client.bodies import (\n",
+        *(f"    {name},\n" for name in _BODY_NAMES),
+        ")\nfrom ._runtime.client.multipart import (\n",
+        *(f"    {name},\n" for name in _MULTIPART_NAMES),
+        *((f"){chr(10)}from .{_PARTS} import {', '.join(parts)}{chr(10)}",) if parts else (")\n",)),
+        "from ._runtime.client.operations import FormData\n\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, *parts, "FormData"))),
+        "]\n",
+    ))
+
+
 _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
@@ -1110,7 +1118,7 @@ class _Typing:
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
         """Return the values the field parts of a body sent as parts take: each member's, JSONValue for any extra."""
-        keys = (self.key("json", part.use) for part in member_parts(media) if not part.plan.file)
+        keys = (self.key("json", part.use) for part in member_parts(media) if not part.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
     def codec(self, module: Module, use: TypeUseBinding) -> str:
@@ -1894,17 +1902,11 @@ class _Registry(_Typing):
     def sent_plan(self, module: Module, part: PartSpec) -> Group:
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
-        flags = (
-            ("repeated=", plan.repeated),
-            ("file=", plan.file),
-            ("required=", plan.required),
-            ("excluded=", plan.excluded),
-        )
         return _call(
             module.local("_runtime.client.multipart", "PartPlan"),
             (
                 ("", repr(plan.name)),
-                *((flag, "True") for flag, value in flags if value),
+                *((("repeated=", "True"),) if plan.repeated else ()),
                 *((("codec=", self.codec(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
                 *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
@@ -1923,10 +1925,6 @@ class _Registry(_Typing):
             entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
         if media.content_types:
             entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
-        if media.parts:
-            entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
-        if media.additional_part is not None:
-            entries.append(("additional_part=", _part_plan(module, media.additional_part)))
         return entries
 
     def decoder(self, module: Module, spec: OperationSpec) -> Group:
@@ -1956,12 +1954,24 @@ class _Registry(_Typing):
             elif media.members is not None:
                 branches.append(self.parts_branch(module, status, media))
             elif media.use is None or media.use.id not in self.accessors:
-                name = {"json": "wire_branch", "text": "text_branch", "multipart": "multipart_branch"}.get(
-                    media.kind, "form_branch"
-                )
-                branches.append(f"{module.local(_RUNTIME, name)}({status}, {media_type})")
-            else:
+                runtime, name = {
+                    "json": (_RUNTIME, "wire_branch"),
+                    "text": (_RUNTIME, "text_branch"),
+                    "multipart": (_PARTS, "multipart_branch"),
+                }.get(media.kind, (_RUNTIME, "form_branch"))
+                branches.append(f"{module.local(runtime, name)}({status}, {media_type})")
+            elif media.kind == "multipart":
                 entries: list[tuple[str, Doc]] = [
+                    ("", status),
+                    ("", media_type),
+                    ("", self.codec(module, media.use)),
+                    ("", _tuple(_part_plan(module, item) for item in media.parts)),
+                ]
+                if media.additional_part is not None:
+                    entries.append(("", _part_plan(module, media.additional_part)))
+                branches.append(_call(module.local(_PARTS, "object_branch"), entries))
+            else:
+                entries = [
                     ("", status),
                     ("", media_type),
                     ("", repr(media.kind)),
@@ -1973,12 +1983,12 @@ class _Registry(_Typing):
 
     def parts_branch(self, module: Module, status: str, media: MediaSpec) -> Group:
         """Return the branch of a form-data response with file parts: its reader of each member's parts."""
-        reader = f"{module.local(_RUNTIME, 'PartsReader')}[{self.values(module, self.parts(media))}]"
+        reader = f"{module.local(_PARTS, 'PartsReader')}[{self.values(module, self.parts(media))}]"
         entries: list[tuple[str, Doc]] = [("", _tuple(self.read_part(module, part) for part in media.members or ()))]
         if media.extra is not None:
             entries.append(("additional=", self.read_part(module, media.extra)))
         return _call(
-            module.local(_RUNTIME, "parts_branch"),
+            module.local(_PARTS, "parts_branch"),
             (("", status), ("", repr(media.media_type)), ("", _call(reader, entries))),
         )
 
@@ -1989,17 +1999,16 @@ class _Registry(_Typing):
             (flag, "True")
             for flag, value in (
                 ("repeated=", plan.repeated),
-                ("required=", plan.required),
-                ("excluded=", plan.excluded),
+                ("required=", part.required),
+                ("excluded=", part.excluded),
             )
             if value
         ]
-        multipart = "_runtime.client.multipart"
         if part.use is None:
-            return _call(module.local(multipart, "file_part"), (("", repr(plan.name)), *flags))
+            return _call(module.local(_PARTS, "file_part"), (("", repr(plan.name)), *flags))
         codec = self.codec(module, part.use)
         return _call(
-            module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", codec), *flags)
+            module.local(_PARTS, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", codec), *flags)
         )
 
 
@@ -3272,16 +3281,19 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
 `bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
+raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
+files, including paths, are sent with `Content-Length` for the bytes measured at call
 entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
 files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
 async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
-all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
-read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
-loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
+file parts can. Files are read at most 64 KiB at a time. In async calls a
+path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
+reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
+async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
 call running in a thread before it closes the file.
 
 ## Redirects and transport construction
@@ -3762,6 +3774,12 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             signatures=self.signatures,
             backends=declared_backends(self.codecs),
             keywords=resources.records is not None,
+            multipart_responses=any(
+                media.kind == "multipart"
+                for spec in self.plan.operations
+                for response in spec.responses
+                for media in response.media
+            ),
         )
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
@@ -3772,7 +3790,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
-            self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
+            self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),

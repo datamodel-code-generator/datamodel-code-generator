@@ -11,12 +11,19 @@ from models import Address as _dcg_type_0
 from models import Draft as _dcg_type_1
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan, file_part, value_part
+from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart_responses import (
+    PartsReader,
+    file_part,
+    multipart_branch,
+    object_branch,
+    parts_branch,
+    value_part,
+)
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
     ParameterSpec,
-    PartsReader,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
@@ -24,8 +31,6 @@ from ._runtime.client.operations import (
     empty_branch,
     form_branch,
     model_branch,
-    multipart_branch,
-    parts_branch,
     text_branch,
     wire_branch,
 )
@@ -124,12 +129,11 @@ OPERATION_2: Final[OperationPlan[ReadProfileResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
+            object_branch(
                 '200',
                 'multipart/form-data',
-                'multipart',
                 model_bindings.codec_3,
-                parts=(
+                (
                     PartPlan('name', 'string'),
                     PartPlan('age', 'integer'),
                     PartPlan('score', 'number'),
@@ -138,7 +142,7 @@ OPERATION_2: Final[OperationPlan[ReadProfileResponse]] = OperationPlan(
                     PartPlan('tags', 'string', repeated=True),
                     PartPlan('address', 'json'),
                 ),
-                additional_part=PartPlan('', 'integer'),
+                PartPlan('', 'integer'),
             ),
         ),
         (),
@@ -184,12 +188,11 @@ OPERATION_5: Final[OperationPlan[ReadPartsResponse]] = OperationPlan(
     responses=ResponseDecoder(
         (
             multipart_branch('200', 'multipart/mixed'),
-            model_branch(
+            object_branch(
                 '202',
                 'multipart/form-data',
-                'multipart',
                 model_bindings.codec_5,
-                parts=(PartPlan('id', 'integer'),),
+                (PartPlan('id', 'integer'),),
             ),
         ),
         (),
@@ -223,13 +226,13 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan('id', excluded=True, codec=model_bindings.codec_18),
-                    PartPlan('title', required=True, codec=model_bindings.codec_19),
+                    PartPlan('id', codec=model_bindings.codec_18),
+                    PartPlan('title', codec=model_bindings.codec_19),
                     PartPlan('count', codec=model_bindings.codec_20),
                     PartPlan('tags', repeated=True, codec=model_bindings.codec_21),
                     PartPlan('meta', codec=model_bindings.codec_22),
-                    PartPlan('photo', file=True, required=True),
-                    PartPlan('pages', repeated=True, file=True),
+                    PartPlan('photo'),
+                    PartPlan('pages', repeated=True),
                 ),
                 additional_part=PartPlan('', codec=model_bindings.codec_23),
             ),
@@ -317,7 +320,7 @@ OPERATION_9: Final[OperationPlan[SubmitAvatarResponse]] = OperationPlan(
                 kind='multipart',
                 parts=(
                     PartPlan('caption', codec=model_bindings.codec_32),
-                    PartPlan('avatar', file=True),
+                    PartPlan('avatar'),
                 ),
                 additional_part=PartPlan(''),
             ),
@@ -342,7 +345,7 @@ OPERATION_10: Final[OperationPlan[SubmitScansResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(PartPlan('note', codec=model_bindings.codec_33),),
-                additional_part=PartPlan('', file=True),
+                additional_part=PartPlan(''),
             ),
         ),
         default='multipart/form-data',
@@ -360,7 +363,7 @@ OPERATION_11: Final[OperationPlan[SubmitPhotosResponse]] = OperationPlan(
             BodyMedia(
                 media_type='multipart/form-data',
                 kind='multipart',
-                parts=(PartPlan('photo', file=True, required=True),),
+                parts=(PartPlan('photo'),),
             ),
         ),
         default='multipart/form-data',
@@ -379,7 +382,7 @@ OPERATION_12: Final[OperationPlan[SubmitLabelsResponse]] = OperationPlan(
             BodyMedia(
                 media_type='multipart/form-data',
                 kind='multipart',
-                parts=(PartPlan('sheet', file=True),),
+                parts=(PartPlan('sheet'),),
                 additional_part=PartPlan('', codec=model_bindings.codec_34),
             ),
         ),
@@ -527,18 +530,8 @@ OPERATION_16: Final[OperationPlan[SubmitCoverResponse]] = OperationPlan(
                         codec=model_bindings.codec_37,
                         content_types=('application/vnd.meta+json',),
                     ),
-                    PartPlan(
-                        'cover',
-                        file=True,
-                        required=True,
-                        content_types=('image/png', 'image/jpeg'),
-                    ),
-                    PartPlan(
-                        'scans',
-                        repeated=True,
-                        file=True,
-                        content_types=('image/*',),
-                    ),
+                    PartPlan('cover', content_types=('image/png', 'image/jpeg')),
+                    PartPlan('scans', repeated=True, content_types=('image/*',)),
                     PartPlan(
                         'extra',
                         codec=model_bindings.codec_38,
@@ -663,7 +656,7 @@ OPERATION_19: Final[OperationPlan[SubmitAlbumResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan('photo', file=True, required=True),
+                    PartPlan('photo'),
                     PartPlan(
                         'bounds',
                         codec=model_bindings.codec_39,

@@ -297,7 +297,7 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan('photo', file=True, required=True),
+                    PartPlan('photo'),
                     PartPlan('caption', codec=model_bindings.codec_16),
                 ),
                 additional_part=PartPlan(''),
