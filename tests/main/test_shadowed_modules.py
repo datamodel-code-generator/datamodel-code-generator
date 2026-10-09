@@ -183,13 +183,13 @@ def test_input_diff_does_not_warn(name: str, output: str, output_dir: Path) -> N
 
 @pytest.mark.abnormal_path("a directory that can be written but not listed is not portable to Windows or root")
 def test_unlistable_directory_does_not_stop_generation(output_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A directory whose entries cannot be read is written like any other and reports nothing."""
-    listdir = os.listdir
+    """A directory whose entries cannot be read is written like any other and reports nothing.
+
+    The output directory is the only one the run lists, so every listing fails.
+    """
 
     def fail(path: Path) -> list[str]:
-        if path == output_dir:
-            raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
-        return listdir(path)
+        raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
     _run("package", output_dir)
     monkeypatch.setattr(os, "listdir", fail)
