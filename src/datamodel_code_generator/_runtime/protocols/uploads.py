@@ -1059,15 +1059,11 @@ def _ignored(
     """Confirm an append by its success response alone."""
 
 
-def _sized(
-    core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int
-) -> tuple[object, ...]:
+def _sized(plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int) -> tuple[object, ...]:
     """Return the create arguments with the content's size where the helper declares it, built as a caller's value."""
     if (position := plan.size_position) is None:
         return arguments
-    create = plan.create
-    wire = tuple(size if index == position else UNSET for index in range(len(create.parameters)))
-    value = core.restored_request(create, wire, None)[0][position]
+    value = plan.create.parameters[position].restored(size)
     return (*arguments[:position], value, *arguments[position:])
 
 
@@ -1088,7 +1084,7 @@ def start_upload(  # noqa: PLR0913
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
-    handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 
@@ -1109,7 +1105,7 @@ async def astart_upload(  # noqa: PLR0913
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
-    await handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 

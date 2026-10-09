@@ -378,6 +378,13 @@ See the runtime reference for their limits.
     "operation": "marks.stream_deep_marks",
     "method": "GET",
     "path": "/deep-marks"
+  },
+  {
+    "helper": "searches.keyed",
+    "kind": "sse",
+    "operation": "searches.search_feed",
+    "method": "POST",
+    "path": "/search-feed"
   }
 ]
 ```

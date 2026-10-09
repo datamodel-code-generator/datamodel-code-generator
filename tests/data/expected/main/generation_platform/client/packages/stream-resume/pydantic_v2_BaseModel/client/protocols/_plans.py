@@ -21,6 +21,7 @@ from .._runtime.protocols.records import (
     BodyTarget,
     HeaderSelector,
     ParameterTarget,
+    QuerystringTarget,
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import (
@@ -300,5 +301,23 @@ STREAM_13: Final[EventPlan[_dcg_type_4]] = EventPlan(
                 literal={'api_key': 'SERVER_KEY'},
             ),
         ),
+    ),
+)
+
+
+STREAM_14: Final[EventPlan[_dcg_type_4]] = EventPlan(
+    helper_id='searches.keyed',
+    operation=OperationRef(pointer='/paths/~1search-feed/post'),
+    call=_operations.OPERATION_0,
+    media='text/event-stream',
+    event=model_bindings.codec_53,
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1search-feed/post'),
+        call=_operations.OPERATION_0,
+        media='text/event-stream',
+        write=QuerystringTarget(name='criteria', pointer=''),
+        own=True,
+        cursor=BodySelector(pointer='/scope'),
+        null='error',
     ),
 )

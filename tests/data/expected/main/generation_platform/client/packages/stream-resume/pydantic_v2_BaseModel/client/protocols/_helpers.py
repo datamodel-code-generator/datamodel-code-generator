@@ -86,6 +86,11 @@ class SearchesProtocols:
         """The searches.ticks SSE helper."""
         return SearchesTicksSse(self._core)
 
+    @cached_property
+    def keyed(self) -> SearchesKeyedSse:
+        """The searches.keyed SSE helper."""
+        return SearchesKeyedSse(self._core)
+
 
 class FeedProtocols:
     """The feed protocol helpers."""
@@ -876,6 +881,60 @@ class MarksDeepboundSse:
             _plans.STREAM_13,
             state,
             (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class SearchesKeyedSse:
+    """The searches.keyed SSE helper of POST /search-feed."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def open(
+        self,
+        *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_6]:
+        """Open the event stream of POST /search-feed, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_14,
+            (criteria,),
+            body=body,
+            media_type=media_type,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: JSONValue,
+        *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_6]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return resume_events(
+            self._core,
+            _plans.STREAM_14,
+            state,
+            (criteria,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,

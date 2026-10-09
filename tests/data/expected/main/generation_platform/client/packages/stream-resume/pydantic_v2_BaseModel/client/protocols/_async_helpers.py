@@ -86,6 +86,11 @@ class AsyncSearchesProtocols:
         """The searches.ticks SSE helper."""
         return AsyncSearchesTicksSse(self._core)
 
+    @cached_property
+    def keyed(self) -> AsyncSearchesKeyedSse:
+        """The searches.keyed SSE helper."""
+        return AsyncSearchesKeyedSse(self._core)
+
 
 class AsyncFeedProtocols:
     """The feed protocol helpers."""
@@ -876,6 +881,60 @@ class AsyncMarksDeepboundSse:
             _plans.STREAM_13,
             state,
             (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncSearchesKeyedSse:
+    """The searches.keyed SSE helper of POST /search-feed."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_6]:
+        """Open the event stream of POST /search-feed, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_14,
+            (criteria,),
+            body=body,
+            media_type=media_type,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: JSONValue,
+        *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_6]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_14,
+            state,
+            (criteria,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,

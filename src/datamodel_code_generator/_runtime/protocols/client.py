@@ -21,9 +21,7 @@ from ..client.client import (
     build_request,
     decode_response,
     delivery_state,
-    encode_parameter_value,
     request_body,
-    request_decode_error,
     strip_credentials,
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
@@ -35,7 +33,6 @@ from ..client.errors import (
 )
 from ..client.logical import LogicalCallContext
 from ..client.native import request_fields
-from ..client.operations import request_errors
 from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOptions, Settings
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
@@ -64,7 +61,7 @@ _UNAUTHORIZED = 401
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
-    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
+    """Return whether an argument carries credentials: a credential header or a scheme's query field.
 
     Exploded form and deepObject query parameters send only their property names or bracketed names, including
     additional properties. Other query serializers retain the declaration name as their emitted field.
@@ -73,8 +70,6 @@ def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], quer
     name = plan.name
     secret = False
     match plan.location:
-        case "cookie":
-            secret = True
         case "header":
             secret = name.lower() in headers
         case "query":
@@ -429,52 +424,24 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
                 query |= frozenset(capabilities.managed_query)
         return headers, query
 
-    def unsaved_argument(
-        self, operation: OperationPlan[object], saved: Sequence[JSONValue | Unset]
+    def credential_argument(
+        self, operation: OperationPlan[object], written: Sequence[JSONValue | Unset]
     ) -> tuple[str, str] | None:
-        """Return the location and name of the first given argument a checkpoint never saves, or None.
+        """Return the location and name of the first written argument that carries credentials, or None.
 
-        It is a cookie, a header the client treats as a credential, a query parameter at the position of a declared
-        security scheme, or a querystring whose value has a field at such a position.
+        It is a header the client treats as a credential, a query parameter at the position of a declared security
+        scheme, or a querystring whose value has a field at such a position; generation already refuses a write to a
+        cookie or to a fixed credential name, so these are the fields a server value names at run time.
         """
         headers, queries = self._secret_positions(operation, None)
         return next(
             (
                 (spec.plan.location, spec.plan.name)
-                for spec, value in zip(operation.parameters, saved, strict=True)
+                for spec, value in zip(operation.parameters, written, strict=True)
                 if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
             ),
             None,
         )
-
-    @staticmethod
-    def restored_request(
-        operation: OperationPlan[object],
-        arguments: tuple[JSONValue | Unset, ...],
-        body: tuple[JSONValue, str, str | None] | None,
-    ) -> tuple[tuple[object, ...], object, str | None]:
-        """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
-
-        Each value is validated against its schema and built into its native value, and a concrete media type is
-        selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
-        raises a request DecodeError.
-        """
-        restored = tuple(
-            value
-            if isinstance(value, Unset)
-            else encode_parameter_value(operation, spec, partial(spec.restored, value))
-            for spec, value in zip(operation.parameters, arguments, strict=True)
-        )
-        if body is None or (request := operation.body) is None:
-            return restored, UNSET, None
-        wire, declared, concrete = body
-        media_type = declared if concrete is None else concrete
-        if (media := request.selected(operation.operation_id, media_type)[0]).media_type != declared:
-            raise request_decode_error(operation, ("body",))
-        try:
-            return restored, media.restored(wire), media_type
-        except request_errors(media.codec) as error:
-            raise request_decode_error(operation, ("body",), error) from None
 
     def _page_request(
         self,

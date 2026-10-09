@@ -1855,7 +1855,7 @@ deadline start afresh, and the reopen counts as no reconnection. Before sending 
 or does not fit the helper, such as a missing or extra member, an empty event ID, or an expiry of another form, with
 `ConfigurationError(field_path=("state",))`, and an expired one with `ResumeStateError(condition="expired")`. The cursor
 and the bindings' values are written as a server's are: a saved dot segment for a path parameter raises
-`ProtocolDataError`, a value the reopen would send as a cookie, a credential header, or a security scheme's query field,
+`ProtocolDataError`, a value the reopen would send as a credential header or a security scheme's query field,
 including a property of an exploded form or deepObject query parameter, raises `ConfigurationError` with the reason
 `wrong_capability`, and one the request cannot encode, such as an event ID ending in a space, raises the request's
 `DecodeError`.

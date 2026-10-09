@@ -819,8 +819,15 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
             )
     with resumes.client(resumes.client_options()) as api:
         _cleared_guards(resumes, api)
-        resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         query = resumes.harness.models.FeedQuery(topic="t")
+        keyed = api.protocols.searches.keyed
+        resumes.reply(b'data: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
+        with keyed.open(body=query, stream_options=resumes.reconnect) as stream:
+            next(stream)
+            _guarded(lines, "credential reconnect into a querystring", partial(next, stream))
+            state = stream.checkpoint()
+        _guarded(lines, "credential resume into a querystring", partial(keyed.resume, state, body=query))
+        resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         with api.protocols.feed.ticks.open(
             body=query, options=options.RequestOptions(query=(("tag", "kept"),))
         ) as stream:

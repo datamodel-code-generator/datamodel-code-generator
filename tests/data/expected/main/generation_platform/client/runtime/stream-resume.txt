@@ -667,6 +667,14 @@ cleared resume patch deep scope[after]
   < closed
   > GET https://api.example.com/deep-marks?other=unrelated last-event-id=None
   < closed
+  > POST https://api.example.com/search-feed last-event-id=None body=b'{"topic":"t"}'
+credential reconnect into a querystring
+  < closed
+  refused ConfigurationError condition=None path=('arguments', 'querystring', 'criteria') operation='/paths/~1search-feed/post' operation_id='searchFeed' cause=NoneType context=NoneType
+  new sends=0
+credential resume into a querystring
+  refused ConfigurationError condition=None path=('arguments', 'querystring', 'criteria') operation='/paths/~1search-feed/post' operation_id='searchFeed' cause=NoneType context=NoneType
+  new sends=0
   > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t"}'
   < closed
   > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t","after":1}'

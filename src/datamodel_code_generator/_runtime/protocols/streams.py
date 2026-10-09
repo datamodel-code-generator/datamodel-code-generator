@@ -528,7 +528,7 @@ def _reopen_request(
     request takes nothing else. A cleared cursor's parameter is omitted.
     """
     sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, position.bound, position.cursor)[0]
-    if (unsaved := core.unsaved_argument(resume.call, _wires(sent))) is not None:
+    if (unsaved := core.credential_argument(resume.call, _wires(sent))) is not None:
         raise ConfigurationError(
             field_path=("arguments", *unsaved),
             reason="wrong_capability",

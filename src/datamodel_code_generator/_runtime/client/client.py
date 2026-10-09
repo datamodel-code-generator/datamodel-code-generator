@@ -130,7 +130,7 @@ if TYPE_CHECKING:
     from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
-    from .operations import OperationPlan, ParameterSpec, ServerPlan
+    from .operations import OperationPlan, ServerPlan
     from .options import ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
@@ -365,14 +365,6 @@ def request_decode_error(
 def exploded_object(plan: ParameterPlan) -> bool:
     """Return whether a parameter sends each property of its object value as a field of its own."""
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
-
-
-def encode_parameter_value(operation: OperationPlan[object], spec: ParameterSpec, code: Callable[[], R]) -> R:
-    """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
-    try:
-        return code()
-    except request_errors(spec.codec) as error:
-        raise request_decode_error(operation, (spec.plan.location, spec.plan.name), error) from None
 
 
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
