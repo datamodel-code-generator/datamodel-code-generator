@@ -103,16 +103,16 @@ service UntaggedService without its methods: TypeError
 > GET /search?filter[name]=n&filter[unknown]=extra
 < 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}, {"type": "extra_forbidden", "loc": ["query", "filter", "unknown"]}]
 > GET /search?filter[name]=n&filter[id]=05
-  search(session='abc', code='AB', filter=Filter(id=5, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=5, name='n'), ids=None, x_ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /search?filter[name]=n&filter[id]=%2B1
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=None, x_ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /search?filter[name]=n&filter[id]=1.0
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=None, x_ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /items/1?ratio=2.2
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=<FieldItemsLevelGetQueryRatioParameter.number_2_2: 2.2>, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=None, ratio=<FieldItemsLevelGetQueryRatioParameter.number_2_2: 2.2>, x_flag=None, kind=None, tier=None, levels=None)
 < 204 - b''
 > GET /items/1?ratio=%EF%BC%92.%EF%BC%92
 < 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]
