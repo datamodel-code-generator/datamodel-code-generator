@@ -193,11 +193,9 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     fetched(lines, "next followed page at another server", lambda: helper.next_page(first, options=moved))
 
 
-def _secured(harness: Harness, *origins: Any, **settings: Any) -> dict[str, Any]:
-    """Return client keywords whose protocol security context allows the origins, with any other settings."""
-    protocols = harness.protocols
-    context = protocols.ProtocolSecurityContext(credential_partition="tenant", allowed_origins=origins)
-    return {"protocols": harness.options.ProtocolClientOptions(security=context), **settings}
+def _allowed(*origins: Any, **settings: Any) -> dict[str, Any]:
+    """Return client keywords that allow the origins beyond the server's, with any other settings."""
+    return {"allowed_origins": origins, **settings}
 
 
 def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, dict[str, str]], ...]:
@@ -219,7 +217,7 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
     return (
         (
             "allowed origin and back",
-            _secured(harness, other),
+            _allowed(other),
             (
                 user_page("1", next=f"{_OTHER}/v1/users?cursor=2"),
                 user_page("2", next="?cursor=3"),
@@ -231,7 +229,7 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
         ),
         (
             "scheme credentials kept from another origin",
-            _secured(harness, other, default_headers=patched),
+            _allowed(other, default_headers=patched),
             (
                 user_page("1", next=f"{_OTHER}/v1/users?api_key=k&cursor=2"),
                 user_page("2", next=f"{_SERVER}/users?api_key=k&cursor=3"),
@@ -242,21 +240,21 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
         ),
         (
             "same origin bearer",
-            _secured(harness, other),
+            _allowed(other),
             (_links("<?page=2>; rel=next"), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
             bearer,
         ),
         (
             "bearer kept from another origin",
-            _secured(harness, other),
+            _allowed(other),
             (_links(secure), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
             bearer,
         ),
         (
             "other scheme's query key at the same origin",
-            _secured(harness, other),
+            _allowed(other),
             (_links("<?api_key=leak&page=2>; rel=next"), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
             bearer,

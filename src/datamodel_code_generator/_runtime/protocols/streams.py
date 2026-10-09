@@ -34,7 +34,7 @@ from ..client.errors import (
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET, Unset
@@ -292,7 +292,6 @@ def _limits(
     plan: EventPlan[T],
     stream_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
@@ -304,13 +303,10 @@ def _limits(
     for name, value, kind in (
         ("stream_options", stream_options, StreamOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,), "invalid_value")
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (stream_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+    kinds = (stream_options, core.helper_defaults(plan.helper_id))
     reconnect = layered(kinds, "reconnect", _DEFAULTS.reconnect)
     request = options if isinstance(options, RequestOptions) else None
     if (resume := plan.resume) is None:
@@ -326,7 +322,7 @@ def _limits(
         reconnect=reconnect,
         max_reconnects=layered(kinds, "max_reconnects", _DEFAULTS.max_reconnects),
         max_reconnect_wait=layered(kinds, "max_reconnect_wait", _DEFAULTS.max_reconnect_wait),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -1406,13 +1402,12 @@ def open_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> EventStream[T]:
     """Open a helper's stream in a session of its own, returning once its response is a declared success.
 
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     session = _session(limits)
     given = (arguments, body, media_type)
     response = _sent(core, plan.call, given, limits, session, plan.media)
@@ -1433,10 +1428,9 @@ async def aopen_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     session = _session(limits)
     given = (arguments, body, media_type)
     response = await _asent(core, plan.call, given, limits, session, plan.media)
@@ -1458,7 +1452,6 @@ def resume_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> EventStream[T]:
     """Reopen a helper's stream after a checkpoint's cursor in a session of its own, checking the checkpoint first.
 
@@ -1466,7 +1459,7 @@ def resume_events(  # noqa: PLR0913
     sequences and reconnections count afresh. A reopen of the helper's own operation sends the caller's arguments and
     body again.
     """
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)
@@ -1485,10 +1478,9 @@ async def aresume_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncEventStream[T]:
     """Reopen a helper's asyncio stream after a checkpoint's cursor, as `resume_events` does."""
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)

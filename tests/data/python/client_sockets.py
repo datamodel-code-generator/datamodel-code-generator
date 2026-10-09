@@ -334,7 +334,6 @@ def _refusals(harness: _Harness, api: Any) -> None:
         ),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
-        ("session options of another type", lambda: chat.connect(room=harness.room(), session_options=harness.ws())),
     ):
         record(lines, label, call)
 
@@ -387,7 +386,7 @@ def _limits(harness: _Harness, api: Any) -> None:
         (
             "session deadline",
             Play(),
-            {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)},
+            {"ws_options": harness.ws(idle_timeout=None, total_timeout=1.0)},
         ),
         ("abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ("server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
@@ -413,18 +412,17 @@ def _clocked(harness: _Harness) -> None:
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
     frozen = options.Clock(monotonic=lambda: 100.0)
-    for label, clock, idle, session in (
+    for label, clock, idle, total in (
         ("idle on a stepped clock", options.Clock(monotonic=lambda: float(next(ticks))), 60.0, None),
         ("idle on a frozen clock", frozen, 0.05, None),
-        ("session deadline on a frozen clock", frozen, None, options.SessionOptions(total_timeout=0.05)),
+        ("session deadline on a frozen clock", frozen, None, 0.05),
     ):
         (play,) = server.play(Play())
         with harness.api(clock=clock) as api:
             session = api.protocols.rooms.chat.connect(
                 room=harness.room(),
                 options=options.RequestOptions(total_timeout=None),
-                ws_options=harness.ws(idle_timeout=idle),
-                session_options=session,
+                ws_options=harness.ws(idle_timeout=idle, total_timeout=total),
             )
             record(lines, label, session.receive)
         harness.report(play)
@@ -440,8 +438,7 @@ async def _async_clocked(harness: _Harness, frozen: Any) -> None:
         api.protocols.rooms.chat.connect(
             room=harness.room(),
             options=options.RequestOptions(total_timeout=None),
-            ws_options=harness.ws(idle_timeout=None),
-            session_options=options.SessionOptions(total_timeout=0.05),
+            ws_options=harness.ws(idle_timeout=None, total_timeout=0.05),
         ) as session,
     ):
         await arecord(harness.lines, "async session deadline on a frozen clock", session.receive)
@@ -926,7 +923,7 @@ async def _async_sockets(harness: _Harness) -> None:
 
 async def _async_failures(harness: _Harness, api: Any) -> None:
     """Classify asyncio refusals and session failures; a failure leaving a connect's block leaves it as raised."""
-    lines, server, options = harness.lines, harness.server, harness.options
+    lines, server = harness.lines, harness.server
     chat = api.protocols.rooms.chat
     for label, play, arguments in (
         ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
@@ -934,7 +931,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
         (
             "async session deadline",
             Play(),
-            {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)},
+            {"ws_options": harness.ws(idle_timeout=None, total_timeout=1.0)},
         ),
         ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),

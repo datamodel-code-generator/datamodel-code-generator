@@ -239,10 +239,6 @@ class _Uploads(Harness):
         """Return upload options."""
         return self.protocols.UploadOptions(**settings)
 
-    def session(self, **settings: Any) -> Any:
-        """Return session options."""
-        return self.options.SessionOptions(**settings)
-
 
 def _progress(value: object) -> str:
     """Describe an upload step's outcome: progress, an upload error with its own fields, or anything else."""
@@ -633,7 +629,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
-    helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
+    helper, finish = api.protocols.files.upload, api.protocols.files.finish
     lines.append("checkpoint, store as JSON text, and resume")
     exchange.respond(server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
@@ -701,15 +697,10 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     record(
         lines, "resume with a path value of dots and an iterator for a source", lambda: helper.resume(iter(()), dotted)
     )
-    lines.append("a checkpoint resumed under another security partition, with that client's own credentials")
-    secured = harness.client_options(
-        protocols=harness.options.ProtocolClientOptions(
-            security=protocols.ProtocolSecurityContext(credential_partition="tenant-a")
-        )
-    )
-    with exchange.client() as native, harness.package.Client(http_client=native, **secured) as secured_api:
+    lines.append("a checkpoint resumed by another client, with that client's own credentials")
+    with exchange.client() as native, harness.package.Client(http_client=native, **harness.client_options()) as other:
         exchange.respond(server)
-        record(lines, "resume", lambda: secured_api.protocols.files.upload.resume(harness.source(), state))
+        record(lines, "resume", lambda: other.protocols.files.upload.resume(harness.source(), state))
 
 
 def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
@@ -759,11 +750,11 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     ):
         helper = timed.protocols.files.upload
         for label, session in (
-            ("explicit", harness.session(total_timeout=values["total_timeout"])),
+            ("explicit", harness.uploads(total_timeout=values["total_timeout"])),
             ("default", None),
         ):
             exchange.respond(server, server)
-            handle = helper.start(harness.source(), tus_resumable=harness.tus, session_options=session)
+            handle = helper.start(harness.source(), tus_resumable=harness.tus, upload_options=session)
             step(lines, f"{label} advance", handle.advance)
             state = handle.checkpoint()
             record(
@@ -789,7 +780,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, call in (
         (
             "options of another type",
-            lambda: helper.start(harness.source(), tus_resumable=harness.tus, upload_options=harness.session()),
+            lambda: helper.start(harness.source(), tus_resumable=harness.tus, upload_options=options.RequestOptions()),
         ),
         (
             "a fixed idempotency key",
@@ -830,12 +821,10 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("a removed chunk count", {"max_parts": 2})):
         record(lines, f"upload options with {label}", lambda value=value: harness.uploads(**value))
     lines.append("defaults from the client")
-    defaults = options.ProtocolClientOptions(
-        defaults={"files.upload": harness.protocols.ProtocolDefaults(options=harness.uploads(chunk_bytes=2))}
-    )
+    defaults = {"files.upload": harness.uploads(chunk_bytes=2)}
     with (
         exchange.client() as native,
-        harness.package.Client(http_client=native, **harness.client_options(protocols=defaults)) as other,
+        harness.package.Client(http_client=native, **harness.client_options(helper_defaults=defaults)) as other,
     ):
         exchange.respond(server, server)
         handle = other.protocols.files.upload.start(harness.source(), tus_resumable=harness.tus)
@@ -965,12 +954,12 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         package.AsyncClient(http_client=native, **harness.client_options(clock=clock)) as timed,
     ):
         for label, session in (
-            ("explicit", harness.session(total_timeout=values["total_timeout"])),
+            ("explicit", harness.uploads(total_timeout=values["total_timeout"])),
             ("default", None),
         ):
             exchange.respond(server, server)
             handle = await timed.protocols.files.upload.start(
-                content, tus_resumable=harness.tus, session_options=session
+                content, tus_resumable=harness.tus, upload_options=session
             )
             await astep(lines, f"async {label} advance", handle.advance)
             ticks[0] += values["clock_step"]
@@ -1150,11 +1139,7 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_completion_oauth(harness, lines))
     token = _CompletionTransport(token=True)
     token.release.set()
-    settings = harness.client_options(
-        protocols=harness.options.ProtocolClientOptions(
-            security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
-        ),
-    )
+    settings = harness.client_options()
     _file_terminal(harness, lines, settings=settings, token=token, credentials=_completion_provider(harness, token))
     run(lambda: _async_file_terminal_oauth(harness, lines))
 
@@ -1163,11 +1148,7 @@ async def _async_file_terminal_oauth(harness: _Uploads, lines: list[str]) -> Non
     """Stop resource and completion credential sends after a terminal file change."""
     token = _CompletionTransport(token=True, asynchronous=True)
     token.release.set()
-    settings = harness.client_options(
-        protocols=harness.options.ProtocolClientOptions(
-            security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
-        ),
-    )
+    settings = harness.client_options()
     credentials = _completion_provider(harness, token, asynchronous=True)
     await _async_file_terminal(harness, lines, settings=settings, token=token, credentials=credentials)
 

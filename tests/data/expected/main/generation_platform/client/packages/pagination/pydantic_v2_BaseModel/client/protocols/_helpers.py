@@ -23,7 +23,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, Unset
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
 from ..types.loose import ListLooseResponse
@@ -203,7 +203,6 @@ class UsersAllPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -212,7 +211,6 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -223,7 +221,6 @@ class UsersAllPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -232,7 +229,6 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -241,7 +237,6 @@ class UsersAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -250,7 +245,6 @@ class UsersAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -262,7 +256,6 @@ class UsersAllPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -272,7 +265,6 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -291,7 +283,6 @@ class UsersByHeaderPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -300,7 +291,6 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -311,7 +301,6 @@ class UsersByHeaderPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -320,7 +309,6 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -329,7 +317,6 @@ class UsersByHeaderPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -338,7 +325,6 @@ class UsersByHeaderPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -350,7 +336,6 @@ class UsersByHeaderPagination:
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -360,7 +345,6 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -379,7 +363,6 @@ class UsersSearchPagination:
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, SearchUsersResponse]:
         """Fetch the first page of POST /users/search."""
         return first_page(
@@ -390,7 +373,6 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -401,7 +383,6 @@ class UsersSearchPagination:
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, SearchUsersResponse]:
         """Return a pager over the items of POST /users/search; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -412,7 +393,6 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -421,7 +401,6 @@ class UsersSearchPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, SearchUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -430,7 +409,6 @@ class UsersSearchPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -442,7 +420,6 @@ class UsersSearchPagination:
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, SearchUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -454,7 +431,6 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -471,7 +447,6 @@ class LooseAllPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return first_page(
@@ -480,7 +455,6 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -489,7 +463,6 @@ class LooseAllPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -498,7 +471,6 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -507,7 +479,6 @@ class LooseAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -516,7 +487,6 @@ class LooseAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -526,7 +496,6 @@ class LooseAllPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -536,7 +505,6 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -553,7 +521,6 @@ class LooseTokensPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return first_page(
@@ -562,7 +529,6 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -571,7 +537,6 @@ class LooseTokensPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -580,7 +545,6 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -589,7 +553,6 @@ class LooseTokensPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -598,7 +561,6 @@ class LooseTokensPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -608,7 +570,6 @@ class LooseTokensPagination:
         cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -618,7 +579,6 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -635,7 +595,6 @@ class NestedAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListNestedResponse]:
         """Fetch the first page of GET /nested."""
         return first_page(
@@ -644,7 +603,6 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -653,7 +611,6 @@ class NestedAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListNestedResponse]:
         """Return a pager over the items of GET /nested; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -662,7 +619,6 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -671,7 +627,6 @@ class NestedAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListNestedResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -680,7 +635,6 @@ class NestedAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -690,7 +644,6 @@ class NestedAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListNestedResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -700,7 +653,6 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -717,7 +669,6 @@ class LabelsAllPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_2, ListLabelsResponse]:
         """Fetch the first page of GET /labels."""
         return first_page(
@@ -726,7 +677,6 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -735,7 +685,6 @@ class LabelsAllPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_2, ListLabelsResponse]:
         """Return a pager over the items of GET /labels; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -744,7 +693,6 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -753,7 +701,6 @@ class LabelsAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_2, ListLabelsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -762,7 +709,6 @@ class LabelsAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -772,7 +718,6 @@ class LabelsAllPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_2, ListLabelsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -782,7 +727,6 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -799,7 +743,6 @@ class LabelsSetsPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_2, ListLabelSetsResponse]:
         """Fetch the first page of GET /label-sets."""
         return first_page(
@@ -808,7 +751,6 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -817,7 +759,6 @@ class LabelsSetsPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_2, ListLabelSetsResponse]:
         """Return a pager over the items of GET /label-sets; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -826,7 +767,6 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -835,7 +775,6 @@ class LabelsSetsPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_2, ListLabelSetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -844,7 +783,6 @@ class LabelsSetsPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -854,7 +792,6 @@ class LabelsSetsPagination:
         after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_2, ListLabelSetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -864,7 +801,6 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -881,7 +817,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListArchiveResponse]:
         """Fetch the first page of GET /archive/{cursor}."""
         return first_page(
@@ -890,7 +825,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -899,7 +833,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListArchiveResponse]:
         """Return a pager over the items of GET /archive/{cursor}; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -908,7 +841,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -917,7 +849,6 @@ class ArchiveAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListArchiveResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -926,7 +857,6 @@ class ArchiveAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -936,7 +866,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListArchiveResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -946,7 +875,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -963,7 +891,6 @@ class StatusesAllPagination:
         code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListStatusesResponse]:
         """Fetch the first page of GET /statuses."""
         return first_page(
@@ -972,7 +899,6 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -981,7 +907,6 @@ class StatusesAllPagination:
         code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListStatusesResponse]:
         """Return a pager over the items of GET /statuses; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -990,7 +915,6 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -999,7 +923,6 @@ class StatusesAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListStatusesResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -1008,7 +931,6 @@ class StatusesAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -1018,7 +940,6 @@ class StatusesAllPagination:
         code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListStatusesResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -1028,7 +949,6 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -1045,7 +965,6 @@ class SecureUsersPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListSecureUsersResponse]:
         """Fetch the first page of GET /secure/users."""
         return first_page(
@@ -1054,7 +973,6 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -1063,7 +981,6 @@ class SecureUsersPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListSecureUsersResponse]:
         """Return a pager over the items of GET /secure/users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -1072,7 +989,6 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -1081,7 +997,6 @@ class SecureUsersPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListSecureUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -1090,7 +1005,6 @@ class SecureUsersPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -1100,7 +1014,6 @@ class SecureUsersPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, ListSecureUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -1110,5 +1023,4 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )

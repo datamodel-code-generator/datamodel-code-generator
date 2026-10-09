@@ -141,18 +141,12 @@ class Polling(Harness):
 
     def client_options(self, **settings: Any) -> dict[str, Any]:
         """Return client keywords that retry at once and poll each helper without a noticeable interval."""
-        protocols = self.protocols
-        fast = protocols.ProtocolDefaults(options=protocols.PollOptions(interval=0.000001))
-        defaults = self.options.ProtocolClientOptions(defaults=dict.fromkeys(_HELPERS, fast))
-        return super().client_options(protocols=defaults, **settings)
+        fast = self.protocols.PollOptions(interval=0.000001)
+        return super().client_options(helper_defaults=dict.fromkeys(_HELPERS, fast), **settings)
 
     def polls(self, **settings: Any) -> Any:
         """Return poll options."""
         return self.protocols.PollOptions(**settings)
-
-    def session(self, **settings: Any) -> Any:
-        """Return session options."""
-        return self.options.SessionOptions(**settings)
 
     def request(self, **settings: Any) -> Any:
         """Return request options."""
@@ -247,7 +241,7 @@ def _creates(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
         step(lines, label, lambda: helper.start(body=body))
     lines.append("options")
     for label, settings in (
-        ("poll options of another type", {"poll_options": harness.session()}),
+        ("poll options of another type", {"poll_options": harness.request()}),
         ("fixed idempotency key", {"options": harness.request(idempotency_key="fixed-key")}),
         ("patched written header", {"options": harness.request(extra_headers={"x-trace": "mine"})}),
     ):
@@ -330,33 +324,24 @@ def _waits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> 
     step(lines, "undeclared delay header", api.protocols.jobs.inline.start(body=body).status)
     lines.append("intervals and deadlines")
     for label, polls in (
-        ("interval past the session", harness.polls(interval=30)),
-        ("interval past the session without a wait limit", harness.polls(interval=30, max_wait=None)),
-        ("interval past the wait limit", harness.polls(interval=30, max_wait=10)),
+        ("interval past the session", harness.polls(interval=30, total_timeout=5)),
+        ("interval past the session without a wait limit", harness.polls(interval=30, max_wait=None, total_timeout=5)),
+        ("interval past the wait limit", harness.polls(interval=30, max_wait=10, total_timeout=5)),
     ):
-        session = harness.session(total_timeout=5)
-        step(
-            lines,
-            label,
-            lambda polls=polls, session=session: helper.start(body=body, poll_options=polls, session_options=session),
-        )
-    deadline = harness.session(total_timeout=0.5)
+        step(lines, label, lambda polls=polls: helper.start(body=body, poll_options=polls))
     step(
         lines,
         "interval past the session deadline",
-        lambda: helper.start(body=body, poll_options=harness.polls(interval=1), session_options=deadline),
+        lambda: helper.start(body=body, poll_options=harness.polls(interval=1, total_timeout=0.5)),
     )
     exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
-    handle = helper.start(
-        body=body, poll_options=harness.polls(max_wait=None), session_options=harness.session(total_timeout=60)
-    )
+    handle = helper.start(body=body, poll_options=harness.polls(max_wait=None, total_timeout=60))
     step(lines, "server delay past the session", handle.status)
     exchange.respond(job("queued", 202), job("done"))
     handle = helper.start(
         body=body,
-        poll_options=harness.polls(interval=_PAUSE),
+        poll_options=harness.polls(interval=_PAUSE, total_timeout=None),
         options=harness.request(extra_headers={"X-Client": "tests"}, extra_query={"lang": "en"}),
-        session_options=harness.session(total_timeout=None),
     )
     step(lines, "session without a deadline, with other patches", handle.status)
 
@@ -418,7 +403,7 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
         clock.value = 1000.0
         delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"}), delayed)
-        handle = helper.start(body=body, session_options=harness.session(total_timeout=60))
+        handle = helper.start(body=body, poll_options=harness.polls(total_timeout=60))
         clock.value += 31
         step(lines, "poll once the clock passes the delay", handle.status)
         step(lines, "delay past the session", handle.status, measured)
@@ -441,7 +426,7 @@ async def _async_clocked(harness: Polling, lines: list[str]) -> None:
         helper = api.protocols.jobs.run
         delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"}), delayed)
-        handle = await helper.start(body=body, session_options=harness.session(total_timeout=60))
+        handle = await helper.start(body=body, poll_options=harness.polls(total_timeout=60))
         clock.value += 31
         await astep(lines, "async poll once the clock passes the delay", handle.status)
         await astep(lines, "async delay past the session", handle.status, measured)
@@ -449,8 +434,8 @@ async def _async_clocked(harness: Polling, lines: list[str]) -> None:
         handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         await astep(lines, "async interval on a frozen clock", handle.status)
         exchange.respond(job("queued", 202), job("done"))
-        unlimited = harness.session(total_timeout=None)
-        handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE), session_options=unlimited)
+        unlimited = harness.polls(interval=_PAUSE, total_timeout=None)
+        handle = await helper.start(body=body, poll_options=unlimited)
         await astep(lines, "async interval without a deadline on a frozen clock", handle.status)
 
 

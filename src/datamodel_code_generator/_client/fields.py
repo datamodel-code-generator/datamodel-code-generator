@@ -115,7 +115,8 @@ class _Fields:
                     _problem(
                         "E_NAME_COLLISION",
                         f"The {branch.media_type} body fields of {_label(spec)} cannot take the argument names "
-                        f"{', '.join(map(repr, taken))}; name them with body_field_names",
+                        f"{', '.join(map(repr, taken))}; name them with the operation's body_field_names in "
+                        "--client-operations",
                         spec,
                     )
                 )

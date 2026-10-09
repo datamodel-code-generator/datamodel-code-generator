@@ -321,12 +321,12 @@ name
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
-  stored after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  unstored after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/30
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/30
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h", authorization: Challenge answered] b''
-  304 after an auth challenge = revalidated 30:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"h"'), ('Content-Length', '22')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  sent again after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async miss = network 20:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]

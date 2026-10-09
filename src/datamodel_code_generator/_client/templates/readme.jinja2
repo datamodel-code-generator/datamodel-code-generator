@@ -106,9 +106,9 @@ operation again, and a helper that declares a remote cancellation returns a hand
 the runtime reference for their limits and checkpoints.
 {%- endif %}
 {%- if "cache" in kinds %}
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 {%- endif %}
 {%- if "resumable_upload" in kinds %}
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and

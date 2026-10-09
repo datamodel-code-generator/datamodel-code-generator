@@ -453,7 +453,7 @@ class WebSocketHelper:
     """Open a WebSocket through an operation's handshake, and send and receive typed messages on it.
 
     The operation is a GET without a request body; the subprotocols are offered in order, one of which the server must
-    select when any is offered, and compression permits the caller's deflate.
+    select when any is offered.
     """
 
     kind: ClassVar[Literal["websocket"]] = "websocket"
@@ -462,7 +462,6 @@ class WebSocketHelper:
     send: WebSocketMessage
     receive: WebSocketMessage
     subprotocols: tuple[str, ...] = ()
-    compression: bool = False
     enabled: bool = True
 
 
@@ -1450,7 +1449,6 @@ class _Validator:  # noqa: PLR0904
                 "enabled": (self.boolean, True),
                 "operation": (self.operation, REQUIRED),
                 "subprotocols": (self.subprotocols, ()),
-                "compression": (self.boolean, False),
                 "send": (self.message, REQUIRED),
                 "receive": (self.message, REQUIRED),
             },
