@@ -31,6 +31,10 @@ class _Statuses:
 
 
 _RECEIVED: Final = 1767225600.0
+_LATE_RECEIPTS: Final = (
+    ("RFC850 next century at the last second of 2099", 4102444799.0, "Friday, 01-Jan-00 00:00:00 GMT"),
+    ("RFC850 next century from 2060", 2840140800.0, "Monday, 05-Jan-05 00:00:00 GMT"),
+)
 
 
 class _Clock:
@@ -212,13 +216,14 @@ def _hints(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
+    received = [_RECEIVED]
     with (
         exchange.client() as native,
         package.Client(
             http_client=native,
             options=options.ClientOptions(
                 retry=options.RetryOptions(initial_delay=0, max_retry_after=0.01),
-                clock=options.Clock(time=lambda: _RECEIVED),
+                clock=options.Clock(time=lambda: received[0]),
             ),
         ) as api,
     ):
@@ -253,6 +258,13 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
             exchange.respond(_response(503, tuple(("Retry-After", value) for value in values)), _response(200))
             record(lines, f"delay {label}", lambda: outcome(api.retry.with_response.get_safe))
             lines.append(f"    unused={len(exchange.responders)}")
+        for label, receipt, value in _LATE_RECEIPTS:
+            received[0] = receipt
+            exchange.responders.clear()
+            exchange.respond(_response(503, (("Retry-After", value),)), _response(200))
+            record(lines, f"delay {label}", lambda: outcome(api.retry.with_response.get_safe))
+            lines.append(f"    unused={len(exchange.responders)}")
+        received[0] = _RECEIVED
         for label, fields, retry in (
             (
                 "vendor maximum",

@@ -204,8 +204,8 @@ def _integer(value: str) -> float | None:
 def http_date(value: str, received_wall_time: float) -> datetime | None:
     """Return the UTC time of an HTTP date, read as the standard library reads RFC 5322 dates, or None for another one.
 
-    A date without a zone, or with an unknown one, is UTC. The two-digit year of an RFC 850 date is the latest that is
-    at most 50 years after the receipt wall time, as RFC 9110 reads it.
+    A date without a zone, or with an unknown one, is UTC. The two-digit year of an RFC 850 date is the one within the
+    50 years after the receipt wall time, or else the most recent past one, as RFC 9110 reads it.
     """
     try:
         date = parsedate_to_datetime(value)
@@ -214,9 +214,13 @@ def http_date(value: str, received_wall_time: float) -> datetime | None:
         if (matched := _RFC850_YEAR.match(value)) is None:
             return date
         received = datetime.fromtimestamp(received_wall_time, timezone.utc)
+        limit = (received.year + _YEAR_WINDOW, *received.utctimetuple()[1:6])
+        rest = date.utctimetuple()[1:6]
         year = received.year // 100 * 100 + int(matched["year"])
-        if (year, *date.utctimetuple()[1:6]) > (received.year + _YEAR_WINDOW, *received.utctimetuple()[1:6]):
+        if (year, *rest) > limit:
             year -= 100
+        elif (year + 100, *rest) <= limit:
+            year += 100
         return date.replace(year=year)
     except (TypeError, ValueError, IndexError, OverflowError):
         return None
