@@ -1509,13 +1509,15 @@ def _structured_output_json_schema() -> str:
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
     if is_directory_output:
-        for generated_file in sorted(generated_output.rglob("*")):
+        generated_files = sorted(generated_output.rglob("*"))
+        for generated_file in generated_files:
             if not generated_file.is_file():
                 continue
             target = actual_output / generated_file.relative_to(generated_output)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(generated_file, target)
-        return
+        if generated_files or not generated_output.is_file():
+            return
 
     if not generated_output.exists():
         return
