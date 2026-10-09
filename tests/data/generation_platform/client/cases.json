@@ -5090,5 +5090,14 @@
         "_operations.py"
       ]
     ]
+  },
+  "multipart-referenced-items": {
+    "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
