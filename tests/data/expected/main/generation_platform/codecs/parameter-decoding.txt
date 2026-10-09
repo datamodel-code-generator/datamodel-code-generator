@@ -87,4 +87,4 @@ querystring qs application/json scalar/string {"query":"%7B%22a%22%3A1%7D"}: {"a
 querystring qs application/json scalar/string {"query":"%7B"}: WireValidationError json.syntax
 querystring qs text/plain scalar/string {"query":"a+b%20c"}: "a+b c"
 operation: path.id=7, query.q="a", query.page=2, header.X-Rate=5, cookie.session="abc"
-operation: parameter.required The query parameter 'q' is required
+operation: parameter.required The query parameter 'q' is required | parameter.encoding The header parameter 'X-Rate': A header value must be UTF-8
