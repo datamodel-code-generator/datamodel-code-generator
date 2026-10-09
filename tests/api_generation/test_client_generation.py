@@ -275,8 +275,11 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
     assert_output(report, EXPECTED / f"{expected}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
-    for path, content in client_documents(case, tmp_path / "documentation", builtin_sources=builtin_sources).items():
-        assert_output(content, EXPECTED / "packages" / expected / "pydantic_v2_BaseModel" / path)
+    documents = client_documents(case, tmp_path / "documentation", builtin_sources=builtin_sources)
+    write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
+    assert_exact_directory_content(
+        tmp_path / "documents", EXPECTED / "packages" / expected / "pydantic_v2_BaseModel", "*.md"
+    )
 
 
 @pytest.mark.parametrize(
@@ -321,8 +324,11 @@ def test_client_helper_spellings(first: str, second: str, expected: str, tmp_pat
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, and documentation ownership visible."""
-    for path, content in client_documents(case, tmp_path).items():
-        assert_output(content, EXPECTED / "packages" / case / "pydantic_v2_BaseModel" / path)
+    documents = client_documents(case, tmp_path / "render")
+    write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
+    assert_exact_directory_content(
+        tmp_path / "documents", EXPECTED / "packages" / case / "pydantic_v2_BaseModel", "*.md"
+    )
 
 
 @pytest.mark.parametrize(
