@@ -320,6 +320,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
+        self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
         self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
@@ -579,12 +580,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         require_update_action_models: list[str],
         future_imports_str: str,
     ) -> Result | None:
-        """Record the module's final models once its output exists."""
+        """Record the module's final models and the imports the parser finalized for it once its output exists."""
         result = super()._generate_module_output(
             ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
         )
         if result is not None:
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
+            self.model_imports.update(_imported_names(self.imports), _imported_names(ctx.imports))
         return result
 
     def referenced_document(self, document: str, ref: str) -> str | None:
@@ -615,6 +617,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
         self.acquisitions.clear()
         self.module_outputs.clear()
+        self.model_imports.clear()
         self.operations.clear()
         self.resolutions.clear()
         self.unions.clear()
@@ -630,6 +633,17 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._walked_schemas.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+def _imported_names(imports: Imports) -> Iterator[str]:
+    """Yield every module and module member that the import statements of a collection name."""
+    for module, names in imports.items():
+        members = (name.partition(" as ")[0] for name in names)
+        if module is None:
+            yield from members
+        else:
+            yield module
+            yield from (f"{module}.{member}" for member in members)
 
 
 def _escape(tokens: tuple[str, ...]) -> str:
@@ -3262,7 +3276,7 @@ def bind_operations(
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Mapping
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
     from pathlib import Path
     from urllib.parse import ParseResult
 
@@ -3280,6 +3294,7 @@ if TYPE_CHECKING:
         TypeUseRole,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
 
     class _DeclarationLike(Protocol):

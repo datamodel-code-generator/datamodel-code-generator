@@ -37,7 +37,7 @@
   session total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   request budget ends after acquisition
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -53,7 +53,7 @@
   > GET https://api.example.com/events accept=text/event-stream
   buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+  buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   client close with an open stream = None
@@ -84,7 +84,7 @@
   async session total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async request budget ends after acquisition
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -100,12 +100,12 @@
   > GET https://api.example.com/events accept=text/event-stream
   async buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  async buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+  async buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async cancelled first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   async step cancelled
-  async after the cancellation ! ProtocolStateError: ProtocolStateError(state='failed', action='anext') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async after the cancellation ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.failed') [field_path=('anext', 'failed')] invalid_state
   > GET https://api.example.com/events accept=text/event-stream
   async before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   async client close with an open stream = None

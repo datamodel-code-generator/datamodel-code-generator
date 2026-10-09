@@ -1,37 +1,37 @@
 # pets pydantic_v2.BaseModel
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout
+  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read cap default APIConnectionError secondary []
+  stream read cap default APIConnectionError notes []
   stream observed read cap [5.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read cap disabled APIConnectionError secondary []
+  stream read cap disabled APIConnectionError notes []
   stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream idle APITimeoutError
+  stream idle APITimeoutError notes []
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read APITimeoutError
+  stream read APITimeoutError notes []
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 200 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 503 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=False SDKError secondary []
-  stream permit release count 1
+  stream close failure primary=False SDKError notes []
+  stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=True DecodeError secondary ['SDKError']
-  stream permit release count 1
+  stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  stream close count 1
   buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
@@ -47,30 +47,30 @@
   stream interruption close original True released 1
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream close interruption over a read failure True ['Secondary cleanup failure: APIConnectionError'] released 1
+  stream close interruption over a read failure True ['Secondary failure: APIConnectionError'] released 1
   HTTP2 sync warm connection b'ready'
-  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout
+  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
   HTTP2 sync protocols ['h2'] requests 2
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] phase_timeout
+  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read cap default APIConnectionError secondary []
+  async stream read cap default APIConnectionError notes []
   async stream observed read cap [5.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read cap disabled APIConnectionError secondary []
+  async stream read cap disabled APIConnectionError notes []
   async stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream idle APITimeoutError
+  async stream idle APITimeoutError notes []
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read APITimeoutError
+  async stream read APITimeoutError notes []
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] deadline_exceeded
+  async buffered acquisition ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('')] deadline_exceeded
   > GET https://example.com/native-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream native cancellation propagated
@@ -90,12 +90,12 @@
   async stream cancel raise_for_status propagated ('raise_for_status cancelled',) released 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=False SDKError secondary []
-  async stream permit release count 1
+  async stream close failure primary=False SDKError notes []
+  async stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=True DecodeError secondary ['SDKError']
-  async stream permit release count 1
+  async stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  async stream close count 1
   async buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
@@ -111,11 +111,11 @@
   async stream interruption aclose original True released 1
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream close interruption over a read failure True ['Secondary cleanup failure: APIConnectionError'] released 1
+  async stream close interruption over a read failure True ['Secondary failure: APIConnectionError'] released 1
   > GET https://example.com/cleanup-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream cleanup cancellation _Stop original True
   async stream cancelled cleanup released 0
   HTTP2 async warm connection b'ready'
-  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] phase_timeout
+  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('')] phase_timeout
   HTTP2 async protocols ['h2'] requests 2

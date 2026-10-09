@@ -183,7 +183,7 @@ class ClientTarget:
             *DEPENDENCIES,
             *BACKEND_DEPENDENCIES.get(backend, ()),
             *webhook_dependencies(webhooks),
-            *model_dependencies(request.models),
+            *model_dependencies(request.model_imports),
         )
         renderer = ClientRenderer(
             config=config,

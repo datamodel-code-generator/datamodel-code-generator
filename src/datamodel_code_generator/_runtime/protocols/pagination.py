@@ -23,7 +23,7 @@ from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 from ..model_codecs.unset import UNSET, Unset
-from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
+from .errors import ProtocolDataError, SessionLimitError
 from .options import PaginationOptions, layered
 from .records import (
     BodySelector,
@@ -381,9 +381,7 @@ _DEFAULTS: Final = _Limits()
 
 
 def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(
-        field_path=path, reason="invalid_value", helper_id=plan.helper_id, operation=plan.operation
-    )
+    return ConfigurationError(field_path=path, reason="invalid_value", helper_id=plan.helper_id)
 
 
 def _limits(
@@ -435,7 +433,7 @@ def _data_error(
     location: Selector,
 ) -> ProtocolDataError:
     return ProtocolDataError(
-        condition=condition, location=location, helper_id=plan.helper_id, operation=plan.operation, info=info
+        reason=condition, location=location, helper_id=plan.helper_id, operation=plan.operation, info=info
     )
 
 
@@ -652,32 +650,16 @@ class _Walk(Generic[T, P]):
             if (read := dotted_read(parameters, segment, parts, written, self.callers)) is not None:
                 raise _data_error(plan, info, "value", read)
 
-    def session_id(self) -> str | None:
-        """Return the identifier of the walk's session once it started."""
-        return None if (session := self.session) is None else session.session_id
-
     def limit(self, limit: int, kind: Literal["items", "pages"]) -> SessionLimitError:
         """Return the error of a session limit reached while pages remain."""
         plan = self.plan
         return SessionLimitError(
-            kind=kind,
-            limit=limit,
-            progress=self.progress(),
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self.session_id(),
+            reason=kind, limit=limit, progress=self.progress(), helper_id=plan.helper_id, operation=plan.operation
         )
 
-    def state_error(self, action: str, state: str) -> ProtocolStateError:
+    def state_error(self, action: str, state: str) -> ConfigurationError:
         """Return the refusal of an action the pager's state forbids."""
-        plan = self.plan
-        return ProtocolStateError(
-            state=state,
-            action=action,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self.session_id(),
-        )
+        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self.plan.helper_id)
 
     def ready(self) -> OperationSession | None:
         """Return the session the next page is fetched in, or None when no page remains.
@@ -699,13 +681,11 @@ class _Walk(Generic[T, P]):
             plan = self.plan
             rule = plan.continuation
             assert not isinstance(rule, CountPlan)
-            raise PaginationCycleError(
-                page_index=link.index,
-                first_seen_page_index=link.seen,
+            raise ProtocolDataError(
+                reason="pagination_cycle",
                 location=rule.read,
                 helper_id=plan.helper_id,
                 operation=plan.operation,
-                parent_session_id=self.session_id(),
                 info=link.response,
             )
         if (session := self.session) is None:
@@ -769,7 +749,7 @@ class _Walk(Generic[T, P]):
             rule = plan.continuation
             assert isinstance(rule, CountPlan)
             raise ProtocolDataError(
-                condition="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
+                reason="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
             )
         self.start = position
 
@@ -968,9 +948,7 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     """Return the link of a page this helper fetched, refusing any other page."""
     link = page._link if isinstance(page, Page) else None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     if link is None or link.fingerprint != plan.fingerprint:
-        raise ConfigurationError(
-            field_path=("page",), reason="binding_mismatch", helper_id=plan.helper_id, operation=plan.operation
-        )
+        raise ConfigurationError(field_path=("page",), reason="binding_mismatch", helper_id=plan.helper_id)
     return link
 
 
@@ -1018,7 +996,7 @@ def _restored(
         if not isinstance(state, str):
             raise _invalid(plan, ("state",))
         walk.origins = core.follow_origins(plan.call, limits.options)
-        stripped = core.follow_query(plan.call, limits.options)
+        stripped = core.follow_query()
         state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
         digest = sha256(canonical_json(state)).digest()
@@ -1079,7 +1057,7 @@ class _Traversal(Generic[T, P]):
         """Return the session of the next fetch, or None once no page remains; a refusal fails the pager."""
         try:
             return self._walk.ready()
-        except (SessionLimitError, PaginationCycleError):
+        except (SessionLimitError, ProtocolDataError):
             self._state = _State.FAILED
             raise
 
@@ -1161,7 +1139,7 @@ class Pager(_Traversal[T, P]):
     """Iterate over a helper's items, or over its pages with `iter_pages`, fetching each page only when it is needed.
 
     A pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration or
-    consuming it from two threads at once raises ProtocolStateError.
+    consuming it from two threads at once raises ConfigurationError.
     """
 
     __slots__ = ("_core",)
@@ -1213,7 +1191,7 @@ class Pager(_Traversal[T, P]):
             raise
 
     def close(self) -> None:
-        """Stop the pager; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
     def __enter__(self) -> Self:
@@ -1232,7 +1210,7 @@ class AsyncPager(_Traversal[T, P]):
     """Iterate over a helper's items with asyncio, or over its pages with `iter_pages`, fetching pages when needed.
 
     An asyncio pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration
-    or consuming it from two tasks at once raises ProtocolStateError.
+    or consuming it from two tasks at once raises ConfigurationError.
     """
 
     __slots__ = ("_core",)
@@ -1284,7 +1262,7 @@ class AsyncPager(_Traversal[T, P]):
             raise
 
     async def aclose(self) -> None:
-        """Stop the pager; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
 
     async def __aenter__(self) -> Self:

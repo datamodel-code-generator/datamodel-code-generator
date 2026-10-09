@@ -7,7 +7,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Literal
 
 from pets import AsyncClient, Client
-from pets.errors import ConcurrentReceiveError, DeliveryUnknownError, WebSocketClosedError
+from pets.errors import APIConnectionError, ConfigurationError, WebSocketClosedError
 from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncWebSocketSession,
@@ -67,13 +67,13 @@ def sockets(
     del messages, widened
 
 
-def failures(error: WebSocketClosedError, unknown: DeliveryUnknownError, busy: ConcurrentReceiveError) -> None:
-    """Read the close code, reason, and cleanliness, how far a message got, and the receive state."""
+def failures(error: WebSocketClosedError, unknown: APIConnectionError, busy: ConfigurationError) -> None:
+    """Read the close code, reason, and cleanliness, a message's unknown delivery, and the receive state."""
     assert_type(error.code, int | None)
     assert_type(error.reason, str)
     assert_type(error.clean, bool)
-    assert_type(unknown.message_id, str | None)
-    assert_type(busy.state, str)
+    assert_type(unknown.reason, str | None)
+    assert_type(busy.field_path, tuple[str | int, ...])
 
 
 def options() -> ClientOptions:

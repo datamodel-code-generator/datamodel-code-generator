@@ -52,58 +52,58 @@ settled operations
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait = Report(rows=6)
-  checkpoint of a fetched result ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  checkpoint of a fetched result ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  failed wait ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
-  failed checkpoint ! ProtocolStateError: ProtocolStateError(state='failed', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  failed wait ! ProtocolDataError: status=200 data=Job:j1 operation_failed
+  failed checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.failed') [field_path=('checkpoint', 'failed')] invalid_state
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  cancelled wait ! OperationCancelledError: PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1) operation_cancelled_error session=True
-  cancelled checkpoint ! ProtocolStateError: ProtocolStateError(state='cancelled', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  cancelled wait ! ProtocolDataError: status=200 data=Job:j1 operation_cancelled
+  cancelled checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.cancelled') [field_path=('checkpoint', 'cancelled')] invalid_state
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed fetch ! InternalServerError: InternalServerError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{}', body_bytes=b'{}', truncated=False] internal_server_error session=True
+  failed fetch ! InternalServerError: Error code: 500 - {} [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False]
   fetch due saved {"bound": ["j1"], "cancel": [], "expires_at": null, "phase": "fetch", "seed": []}
-  resumed fetch status ! ProtocolStateError: ProtocolStateError(state='succeeded', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  resumed fetch status ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.succeeded') [field_path=('status', 'succeeded')] invalid_state
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed fetch = Report(rows=7)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  immediate checkpoint ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  immediate checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inline wait = Report(rows=8)
-  inline checkpoint ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  inline checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait without a result = None
-  checkpoint without a result ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  checkpoint without a result ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
 errors that keep a checkpoint
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  long server delay ! PollWaitLimitError
+  long server delay ! SessionLimitError
   long server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   resumed polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  status after a huge server delay ! PollWaitLimitError
-  wait after a huge server delay ! PollWaitLimitError
+  status after a huge server delay ! SessionLimitError
+  wait after a huge server delay ! SessionLimitError
   huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
@@ -122,31 +122,31 @@ errors that keep a checkpoint
 refused states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  not a state ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  not a state ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   another helper's state = LroHandle(phase='pending', polls=0)
-  expired state ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
-  resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Trace') [field_path=('options', 'headers', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  resumed with poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  expired state ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
+  resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Trace') [field_path=('options', 'headers', 'X-Trace')] invalid_value
+  resumed with poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',)] invalid_value
 malformed states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unknown member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  unknown phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  fetch with values of the poll ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  fetch with values of the create response ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  unknown member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  unknown phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  fetch with values of the poll ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  fetch with values of the create response ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   fetch value of another type = LroHandle(phase='pending', polls=0)
   null fetch value = LroHandle(phase='pending', polls=0)
   object fetch value = LroHandle(phase='pending', polls=0)
-  short bindings ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  cancel values without a remote cancel ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  expiry without an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable session=True
+  short bindings ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  cancel values without a remote cancel ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  expiry without an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  fetch of a helper without one ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  dot segment for a poll ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=False
+  fetch of a helper without one ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  dot segment for a poll ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/id')] value
   dot segment for a fetch = LroHandle(phase='pending', polls=0)
 remote cancellation
   > POST https://api.example.com/jobs
@@ -165,7 +165,7 @@ remote cancellation
   cancel again = CancelReceipt(status=204, data=NoneType:None)
   > DELETE https://api.example.com/jobs/j9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
-  cancel refused ! ConflictError: ConflictError(status_code=409, operation_id='cancelJob', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='cancelJob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=b'{"message":"conflict"}', body_bytes=b'{"message":"conflict"}', truncated=False] conflict_error session=True
+  cancel refused ! ConflictError: Error code: 409 - {"message":"conflict"} [operation_id='cancelJob', status_code=409, body=b'{"message":"conflict"}', body_bytes=b'{"message":"conflict"}', truncated=False]
   tracked saved {"bound": ["j5"], "cancel": ["j9", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
   resumed class JobsTrackedHandle
   > DELETE https://api.example.com/jobs/j9
@@ -174,17 +174,17 @@ remote cancellation
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   status after the cancel = PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j9)
-  cancel once cancelled ! ProtocolStateError: ProtocolStateError(state='cancelled', action='cancel_remote') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
-  wait ! OperationCancelledError: PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j9) operation_cancelled_error session=True
+  cancel once cancelled ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.cancelled') [field_path=('cancel_remote', 'cancelled')] invalid_state
+  wait ! ProtocolDataError: status=200 data=Job:j9 operation_cancelled
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   close = None
-  cancel after close ! ProtocolStateError: ProtocolStateError(state='closed', action='cancel_remote') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  cancel after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.closed') [field_path=('cancel_remote', 'closed')] invalid_state
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  poll without a cancel value ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  poll without a cancel value ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='missing') [operation_id='getJob', location=BodySelector(pointer='/id')] missing
   progress {'polls': 1}
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
@@ -216,29 +216,29 @@ server expiries
   leap second with a fraction and an offset expires_at=2999-01-01T00:00:00.500000+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  resume past the expiry ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  resume past the expiry ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
   JSON round trip past the expiry = True
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   polling past the expiry = Report(rows=4)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  missing expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  missing expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='missing') [operation_id='createJob', location=BodySelector(pointer='/expires')] missing
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  null expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  null expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='null') [operation_id='createJob', location=BodySelector(pointer='/expires')] null
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  numeric expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='type') [operation_id='createJob', condition='type', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  numeric expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='type') [operation_id='createJob', location=BodySelector(pointer='/expires')] type
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unparsable expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  unparsable expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  impossible date ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  impossible date ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
 checkpoints on the client clock
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -246,7 +246,7 @@ checkpoints on the client clock
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   expiry before the client's wall clock = mappingproxy({'polls': 0})
-  expiry at the client's wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error session=False
+  expiry at the client's wall clock ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
 async resume
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -265,13 +265,13 @@ async resume
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed fetch ! InternalServerError: InternalServerError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{}', body_bytes=b'{}', truncated=False] internal_server_error session=True
+  failed fetch ! InternalServerError: Error code: 500 - {} [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False]
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed fetch = Report(rows=4)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  async long server delay ! PollWaitLimitError
+  async long server delay ! SessionLimitError
 async remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -290,4 +290,4 @@ async remote cancellation
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
   resumed cancel = CancelReceipt(status=204, data=NoneType:None)
   close = None
-  cancel after close ! ProtocolStateError: ProtocolStateError(state='closed', action='cancel_remote') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  cancel after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.closed') [field_path=('cancel_remote', 'closed')] invalid_state

@@ -3,7 +3,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   miss = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-length', '21'), ('content-type', 'application/json')]
   fresh hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-type', 'application/json'), ('Content-Length', '21')]
-  fresh hit over the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getUser', call_id='<call>', reason='response_too_large') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=5, observed=21] response_too_large
+  fresh hit over the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getUser', reason='response_too_large') [operation_id='getUser', body_bytes=b'', truncated=False, limit=5, observed=21] response_too_large
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged past max-age stored = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -82,7 +82,7 @@
   dated revalidated = revalidated 7:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('etag', '"d"'), ('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('Content-Length', '21')]
   > GET https://api.example.com/users/7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-modified-since: Wed, 21 Oct 2015 07:28:00 GMT] b''
-  dated changed date ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error
+  dated changed date ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent
   > GET https://api.example.com/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   etag helper without an etag = network [] status=200 network=200 attempts=1 type=application/json request_id=None headers=[('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('cache-control', 'max-age=0'), ('content-length', '11'), ('content-type', 'application/json')]
@@ -94,7 +94,7 @@
   mismatch stored = network 8:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/8
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "e"] b''
-  304 of another validator ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error
+  304 of another validator ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent
   > GET https://api.example.com/users/8
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   after a refused 304 the entry is gone = network 8:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
@@ -103,10 +103,10 @@
   304 with another vary = revalidated 8:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"e"'), ('vary', 'accept-language'), ('Content-Length', '21')]
   > GET https://api.example.com/users/8
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  after the vary change ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"id":8,"name":"cat"}', body_bytes=b'{"id":8,"name":"cat"}', truncated=False, cause=1 validation error for Error
+  after the vary change ! NotFoundError: Error code: 404 - {"id":8,"name":"cat"} [operation_id='getUser', status_code=404, body=b'{"id":8,"name":"cat"}', body_bytes=b'{"id":8,"name":"cat"}', truncated=False, cause=1 validation error for Error
 message
   Field required [type=missing, input_value={'id': 8, 'name': 'cat'}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] not_found_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing]
   > GET https://api.example.com/users/25
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged stored = network 25:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"g"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -153,7 +153,7 @@ message
   bob key = network 43:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/43
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
-  alice key again ! APIConnectionError: APIConnectionError(operation_id='getUser', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getUser', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
+  alice key again ! APIConnectionError: APIConnectionError(operation_id='getUser', cause='RemoteProtocolError') [operation_id='getUser', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   bob key again = fresh_cache 43:bob status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   > GET https://api.example.com/users/40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -295,18 +295,18 @@ message
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store, if-none-match: "f"] b''
   request no-store 304 = network 11:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('etag', '"k"'), ('content-length', '22'), ('content-type', 'application/json')]
-  request only-if-cached ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  request no-cache value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  request bad max-age ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  request malformed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  request range ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Range') [field_path=('headers', 'Range'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  request if-match ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.If-Match') [field_path=('headers', 'If-Match'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  request only-if-cached ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control')] invalid_value
+  request no-cache value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control')] invalid_value
+  request bad max-age ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control')] invalid_value
+  request malformed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Cache-Control') [field_path=('headers', 'Cache-Control')] invalid_value
+  request range ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Range') [field_path=('headers', 'Range')] invalid_value
+  request if-match ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.If-Match') [field_path=('headers', 'If-Match')] invalid_value
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  still fresh ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Error(message='gone'), body_bytes=b'{"message":"gone"}', truncated=False] not_found_error
+  still fresh ! NotFoundError: Error code: 404 - {"message":"gone"} [operation_id='getUser', status_code=404, body=Error(message='gone'), body_bytes=b'{"message":"gone"}', truncated=False]
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  validators stored ! DecodeError: DecodeError(status_code=200, operation_id='getUser', call_id='<call>', reason='invalid_value') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":"x"}', truncated=False, cause=2 validation errors for User
+  validators stored ! DecodeError: DecodeError(status_code=200, operation_id='getUser', reason='invalid_value') [operation_id='getUser', body_bytes=b'{"id":"x"}', truncated=False, cause=2 validation errors for User
 id
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='x', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
@@ -315,18 +315,18 @@ name
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
-  matching caller validator ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error
+  matching caller validator ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-modified-since: Wed, 21 Oct 2015 07:28:00 GMT] b''
-  matching caller date ! APIStatusError: APIStatusError(status_code=302, operation_id='getUser', call_id='<call>', reason='unexpected_status') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  matching caller date ! APIStatusError: Error code: 302 [operation_id='getUser', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
   other caller validator = network 13:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  other caller date ! CacheValidatorConflictError: CacheValidatorConflictError(reason='binding_mismatch', field_path='If-Modified-Since') [field_path=('If-Modified-Since',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  caller validator twice ! CacheValidatorConflictError: CacheValidatorConflictError(reason='binding_mismatch', field_path='If-None-Match') [field_path=('If-None-Match',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
+  other caller date ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='If-Modified-Since') [field_path=('If-Modified-Since',)] binding_mismatch
+  caller validator twice ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='If-None-Match') [field_path=('If-None-Match',)] binding_mismatch
   > GET https://api.example.com/users/18
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
-  cold 304 ! APIStatusError: APIStatusError(status_code=302, operation_id='getUser', call_id='<call>', reason='unexpected_status') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  cold 304 ! APIStatusError: Error code: 302 [operation_id='getUser', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/30
@@ -349,7 +349,7 @@ name
   async removed = network 20:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'no-store'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async error ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False] not_found_error
+  async error ! NotFoundError: Error code: 404 - {"message":"no"} [operation_id='getUser', status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False]
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store] b''
   async request no-store = network 20:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]

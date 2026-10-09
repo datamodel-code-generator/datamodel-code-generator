@@ -2,8 +2,44 @@
 render
   UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 7: ordinal not in range(256)
 render
-  Error: application.py: The generated Python source is invalid: invalid syntax
+  new models.py
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/pets.py
+  new server/routers/store.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  4 runtime modules ['new']
 render
-  Error: application.py: The generated Python source is invalid: 'return' outside function
+  new models.py
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/pets.py
+  new server/routers/store.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  4 runtime modules ['new']
 render
-  Error: __init__.py: The generated Python source is invalid: invalid syntax; application.py: The generated Python source is invalid: invalid syntax; routers/__init__.py: The generated Python source is invalid: invalid syntax; routers/pets.py: The generated Python source is invalid: invalid syntax; routers/store.py: The generated Python source is invalid: invalid syntax; routers/untagged.py: The generated Python source is invalid: invalid syntax; _generated/__init__.py: The generated Python source is invalid: invalid syntax; _generated/contract.py: The generated Python source is invalid: invalid syntax; services.py: The generated Python source is invalid: invalid syntax
+  new models.py
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/pets.py
+  new server/routers/store.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  4 runtime modules ['new']

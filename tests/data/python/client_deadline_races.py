@@ -29,9 +29,9 @@ def _snapshot(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
         getattr(error, "attempt_count", None),
-        getattr(error, "phase", None),
+        getattr(error, "reason", None),
         type(getattr(error, "cause", None)).__name__,
-        tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
     )
 
 
@@ -390,95 +390,26 @@ async def _expired_read(package: ModuleType, options: ModuleType, lines: list[st
     record(lines, "deadline after buffered read resources", lambda: (transport.sent, transport.body.closed))
 
 
-class _WaitingHook:
-    def __init__(self) -> None:
-        self.entered = asyncio.Event()
-
-    async def on_event(self, event: object) -> None:
-        if getattr(event, "name") == "attempt_start":
-            self.entered.set()
-            await asyncio.Event().wait()
-
-
 async def _nested_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Cancel the caller's task while a hook waits before the send; nothing is sent."""
-    hook = _WaitingHook()
+    """Cancel the caller's task while a native request hook waits before the send; nothing is sent."""
+    entered = asyncio.Event()
+
+    async def waiting(request: httpx2.Request) -> None:
+        del request
+        entered.set()
+        await asyncio.Event().wait()
+
     transport = _AsyncFault(_unexpected_send)
-    async with httpx2.AsyncClient(transport=transport) as native:
+    async with httpx2.AsyncClient(transport=transport, event_hooks={"request": [waiting]}) as native:
         api = package.AsyncClient(
-            http_client=native, options=options.ClientOptions(hooks=(hook,), clock=options.Clock(monotonic=_Clock()))
+            http_client=native, options=options.ClientOptions(clock=options.Clock(monotonic=_Clock()))
         )
         caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
-        await hook.entered.wait()
+        await entered.wait()
         caller.cancel()
-        await arecord(lines, "nested hook native", lambda: caller)
+        await arecord(lines, "nested request hook native", lambda: caller)
         await api.aclose()
-    record(lines, "nested hook native sends", lambda: transport.sent)
-
-
-class _LatePermit:
-    def __init__(self, *, failure: bool = False) -> None:
-        self.released = 0
-        self.failure = failure
-
-    async def release(self) -> None:
-        self.released += 1
-        if self.failure:
-            msg = "late permit release failed"
-            raise RuntimeError(msg)
-
-
-class _LateLimiter:
-    def __init__(self, *, deferred: bool) -> None:
-        self.started = asyncio.Event()
-        self.cancelled = asyncio.Event()
-        self.proceed = asyncio.Event()
-        self.permit = _LatePermit()
-        self.deferred = deferred
-
-    async def acquire(self, context: object) -> _LatePermit:
-        del context
-        self.started.set()
-        try:
-            await self.proceed.wait()
-        except asyncio.CancelledError:
-            self.cancelled.set()
-            if not self.deferred:
-                raise
-            await self.proceed.wait()
-        return self.permit
-
-
-async def _late_permits(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Cancel the caller's task while a limiter acquires; a limiter that swallows it hands back a released permit."""
-    for label, deferred in (("cancelled acquire", False), ("acquire swallowing the cancellation", True)):
-        limiter = _LateLimiter(deferred=deferred)
-        transport = _AsyncFault(_unexpected_send)
-        async with httpx2.AsyncClient(transport=transport) as native:
-            api = package.AsyncClient(
-                http_client=native, options=options.ClientOptions(total_timeout=None, limiter=limiter)
-            )
-            errors: list[BaseException] = []
-            caller = asyncio.create_task(
-                _acaptured(lambda api=api: api.request_raw("GET", "https://race.example/permit"), errors)
-            )
-            await limiter.started.wait()
-            caller.cancel()
-            if deferred:
-                await limiter.cancelled.wait()
-                limiter.proceed.set()
-            await arecord(lines, label, lambda caller=caller: caller)
-            await api.aclose()
-        record(
-            lines,
-            f"{label} resources",
-            lambda limiter=limiter, transport=transport, errors=errors: (
-                transport.sent,
-                limiter.cancelled.is_set(),
-                limiter.permit.released,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
-            ),
-        )
+    record(lines, "nested request hook native sends", lambda: transport.sent)
 
 
 async def _released_responses(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -511,26 +442,10 @@ async def _released_responses(package: ModuleType, options: ModuleType, lines: l
                 transport.sent,
                 body.closed,
                 body.completed,
-                tuple(type(error).__name__ for error in getattr(next(iter(errors), None), "secondary_errors", ())),
+                tuple(getattr(next(iter(errors), None), "__notes__", ())),
                 tuple(getattr(next(iter(errors), None), "__notes__", ())),
             ),
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -539,7 +454,6 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
     await _async_races(package, options, lines)
     await _expired_read(package, options, lines)
     await _nested_wait(package, options, lines)
-    await _late_permits(package, options, lines)
     await _released_responses(package, options, lines)
 
 

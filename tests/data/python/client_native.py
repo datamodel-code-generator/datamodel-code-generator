@@ -27,8 +27,7 @@ def _details(value: object) -> str:
     if isinstance(value, BaseException):
         info = getattr(value, "info", None)
         return (
-            f"{type(value).__name__} delivery={getattr(value, 'delivery_state', None)} "
-            f"phase={getattr(value, 'phase', None)} stop={getattr(value, 'retry_stop_reason', None)} "
+            f"{type(value).__name__} "
             f"attempts={getattr(value, 'attempt_count', None)} reason={getattr(value, 'reason', None)} "
             f"status={None if info is None else info.status_code} cause={type(getattr(value, 'cause', None)).__name__}"
         )
@@ -295,16 +294,12 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
     mode = "async" if asynchronous else "sync"
     errors = importlib.import_module(f"{package.__name__}.errors")
     error_details: Callable[[Exception], str] = lambda error: (
-        "APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect "
-        "retry_outcome=permitted status=None cause=ConnectError"
+        "APIConnectionError retry_outcome=permitted status=None cause=ConnectError"
         if (
             type(error) is errors.APIConnectionError
-            and getattr(error, "delivery_state", None) is errors.DeliveryState.NOT_SENT
-            and getattr(error, "phase", None) == "connect"
             and getattr(error, "info", None) is None
             and type(getattr(error, "cause", None)) is httpx2.ConnectError
-            and (getattr(error, "retry_stop_reason", None), getattr(error, "attempt_count", None))
-            in (("transport_not_retryable", 1), ("max_retries_exhausted", 3))
+            and getattr(error, "attempt_count", None) in (1, 3)
         )
         else _details(error)
     )
@@ -349,12 +344,10 @@ _LOCATIONS = (
 def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     mode = "async" if asynchronous else "sync"
     server = NativeFixture()
-    events: list[str] = []
     client_options = options.ClientOptions(
         base_url=server.url,
         transport=options.TransportOptions(ssl_context=server.verify),
         retry=options.RetryOptions(initial_delay=0, jitter="none"),
-        hooks=(_Events(events),),
     )
     try:
         if asynchronous:
@@ -368,7 +361,6 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                             for enabled in (False, True):
                                 request_options = options.RequestOptions(follow_redirects=enabled)
                                 for raw in (False, True):
-                                    events.clear()
                                     call = (
                                         api.retry.with_raw_response.get_safe
                                         if raw
@@ -379,7 +371,6 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                                         f"{mode} location {status}/{name}/{enabled}/{raw}",
                                         lambda: _acalled(lambda: call(options=request_options)),
                                     )
-                                    lines.append(f"  header events={events.count('response_headers')}")
 
             run(calls)
         else:
@@ -391,14 +382,12 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                         for enabled in (False, True):
                             request_options = options.RequestOptions(follow_redirects=enabled)
                             for raw in (False, True):
-                                events.clear()
                                 call = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                                 record(
                                     lines,
                                     f"{mode} location {status}/{name}/{enabled}/{raw}",
                                     lambda: _called(lambda: call(options=request_options)),
                                 )
-                                lines.append(f"  header events={events.count('response_headers')}")
         lines.append(f"  {mode} location arrivals={len(server.requests)}")
     finally:
         server.stop()
@@ -511,42 +500,41 @@ def native_wire(package: ModuleType, lines: list[str]) -> None:
         _location_hooks(package, options, lines, asynchronous=asynchronous)
 
 
-class _HeaderHook:
-    """Fail or cancel only after the malformed redirect's resource headers have been published."""
+class _ResponseHook:
+    """Fail or interrupt each response the injected HTTP client receives, recording the statuses it saw."""
 
-    def __init__(self, token: object, error: BaseException | None) -> None:
-        self.token = token
+    def __init__(self, error: BaseException) -> None:
         self.error = error
-        self.events: list[str] = []
+        self.statuses: list[int] = []
 
-    def on_event(self, event: object) -> None:
-        name = event.name
-        self.events.append(name)
-        if name == "response_headers":
-            if self.error is not None:
-                raise self.error
-            self.token.cancel()
+    def __call__(self, response: httpx2.Response) -> None:
+        self.statuses.append(response.status_code)
+        raise self.error
+
+    async def asynchronous(self, response: httpx2.Response) -> None:
+        self(response)
 
 
 def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
-
+    """Fail or interrupt a malformed redirect in the injected client's response hook, before HTTPX2 reads its Location."""
     mode = "async" if asynchronous else "sync"
     server = NativeFixture()
     server.status, server.location = 302, _LOCATIONS[0][1]
+    settings = options.ClientOptions(base_url=server.url)
     try:
         for error in (RuntimeError("controlled"), Stop()):
             for raw in (False, True):
-                hook = _HeaderHook(None, error)
-                settings = options.ClientOptions(
-                    base_url=server.url,
-                    transport=options.TransportOptions(ssl_context=server.verify),
-                    hooks=(hook,),
-                )
-                label = f"{mode} malformed Location header-hook {type(error).__name__} raw={raw}"
+                hook = _ResponseHook(error)
+                label = f"{mode} malformed Location response-hook {type(error).__name__} raw={raw}"
                 if asynchronous:
 
                     async def call() -> None:
-                        async with package.AsyncClient(options=settings) as api:
+                        async with (
+                            httpx2.AsyncClient(
+                                verify=server.verify, trust_env=False, event_hooks={"response": [hook.asynchronous]}
+                            ) as native,
+                            package.AsyncClient(http_client=native, options=settings) as api,
+                        ):
                             operation = (
                                 api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                             )
@@ -554,41 +542,36 @@ def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], 
                                 await operation()
                             except BaseException as failure:
                                 lines.append(
-                                    f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                    f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                                 )
                             else:
                                 lines.append(f"  {label}: unexpectedly returned")
 
                     run(call)
                 else:
-                    with package.Client(options=settings) as api:
+                    with (
+                        httpx2.Client(
+                            verify=server.verify, trust_env=False, event_hooks={"response": [hook]}
+                        ) as native,
+                        package.Client(http_client=native, options=settings) as api,
+                    ):
                         operation = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                         try:
                             operation()
                         except BaseException as failure:
                             lines.append(
-                                f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                             )
                         else:
                             lines.append(f"  {label}: unexpectedly returned")
-                lines.append(f"  header-hook events={hook.events}")
-        lines.append(f"  {mode} header-hook arrivals={len(server.requests)}")
+                lines.append(f"  response-hook statuses={hook.statuses}")
+        lines.append(f"  {mode} response-hook arrivals={len(server.requests)}")
     finally:
         server.stop()
 
 
-class _Events:
-    """Collect only event kinds, without retaining contexts or request material."""
-
-    def __init__(self, values: list[str]) -> None:
-        self.values = values
-
-    def on_event(self, event: object) -> None:
-        self.values.append(event.name)
-
-
 def native_faults(package: ModuleType, lines: list[str]) -> None:
-    """Inject abnormal native send exceptions at the HTTP transport boundary, without trace events."""
+    """Inject abnormal native send exceptions at the HTTP transport boundary."""
     from unittest.mock import patch
 
     options = importlib.import_module(f"{package.__name__}.options")

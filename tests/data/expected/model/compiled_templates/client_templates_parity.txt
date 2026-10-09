@@ -61,11 +61,18 @@ class Client(ClientView):
     def __init__(
         self,
         *,
+        api_key: Secret | None = None,
+        oauth: Secret | TokenSource | None = None,
         options: ClientOptions | None = None,
         http_client: HTTPClient | Unset | None = UNSET,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = SyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = SyncCore.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            credentials=SchemeCredentials({"api_key": api_key, "oauth": oauth}),
+        )
 
     def close(self) -> None:
         self._core.close()
@@ -236,11 +243,12 @@ class AsyncClient(AsyncClientView):
     def __init__(
         self,
         *,
+        token: Secret | TokenSource | None = None,
         options: ClientOptions | None = None,
         http_client: HTTPClient | Unset | None = UNSET,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = AsyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = AsyncCore.create(_DEFAULTS, options=options, http_client=http_client, credentials=SchemeCredentials({"bearer": token}))
 
     async def aclose(self) -> None:
         await self._core.aclose()

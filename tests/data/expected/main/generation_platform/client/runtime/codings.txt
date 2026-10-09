@@ -4,7 +4,7 @@
   coding gzip = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding x-gzip ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb2R0\xd6QP\xcaK\xccM\x052\x95\xd2\xf2+\x94j\x01\xa1\xfb\xdb7\x18\x00\x00\x00', truncated=False, cause=1 validation error for Pet
+  coding x-gzip ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='invalid_syntax') [operation_id='getPet', body_bytes=b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb2R0\xd6QP\xcaK\xccM\x052\x95\xd2\xf2+\x94j\x01\xa1\xfb\xdb7\x18\x00\x00\x00', truncated=False, cause=1 validation error for Pet
   Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'\x1f\x8b\x08\x00\x00\x0...fb\xdb7\x18\x00\x00\x00', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/v1/pets/3
@@ -18,21 +18,21 @@
   coding identity = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding members ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id"', truncated=False, cause=1 validation error for Pet
+  coding members ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='invalid_syntax') [operation_id='getPet', body_bytes=b'{"id"', truncated=False, cause=1 validation error for Pet
   Invalid JSON: EOF while parsing an object at line 1 column 5 [type=json_invalid, input_value=b'{"id"', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding layers ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] protocol_data_error
+  coding layers ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] malformed_coding
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding unknown ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] protocol_data_error
+  coding unknown ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] malformed_coding
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   coding truncated = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding corrupt ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] protocol_data_error
+  coding corrupt ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] malformed_coding
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   coding deflate trailing = Pet(id=3, name='fox', tag=None)
@@ -41,10 +41,10 @@
   coding gzip trailing = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding bomb past the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=1048576, observed=2097152] response_too_large
+  coding bomb past the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=1048576, observed=2097152] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
+  coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   coding chunked = 4000
@@ -54,17 +54,17 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] internal_server_error
+  coding error ! InternalServerError: Error code: 500 - {"code": 7, "message": "boom"} [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] internal_server_error
+  coding error truncated ! InternalServerError: Error code: 500 - {"code": 7, "message": "boom"} [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'moved', body_bytes=b'moved', truncated=False] unexpected_status
+  coding redirect ! APIStatusError: Error code: 302 - moved [operation_id='listPets', status_code=302, body=b'moved', body_bytes=b'moved', truncated=False] unexpected_status
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   coding bodyless = None
@@ -79,7 +79,7 @@
   async coding truncated = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
+  async coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding corrupt ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] protocol_data_error
+  async coding corrupt ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] malformed_coding

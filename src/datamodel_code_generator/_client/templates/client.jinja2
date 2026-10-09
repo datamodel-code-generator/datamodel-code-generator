@@ -63,11 +63,14 @@ class {{ name }}({{ name }}View):
     def __init__(
         self,
         *,
+{%- for argument in credentials %}
+        {{ argument.name }}: {{ argument.annotation }} | None = None,
+{%- endfor %}
         options: {{ options }} | None = None,
         http_client: {{ http_client }} | {{ unset }} | None = {{ unset_value }},
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = {{ core }}.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = {{ create }}
 
 {{ lifecycle }}
 

@@ -1,769 +1,138 @@
-"""Exceptions of protocol helpers whose fields name protocol records, loaded only when a helper or caller needs them.
+"""Exceptions of protocol helpers, copied and exported only for packages that declare a helper.
 
-The generated `errors` module exports them beside every other exception; their messages name only safe metadata.
+Transport failures stay APIConnectionError or APITimeoutError, refused settings and calls ConfigurationError, and
+values that do not decode as their declared model DecodeError; these classes cover what is left.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from datetime import datetime
 from types import MappingProxyType
-from typing import Final, Generic, Literal, TypeAlias, get_args
+from typing import Final
 
-from typing_extensions import TypeIs, TypeVar
-
-from ..client.errors import (
-    APIConnectionError,
-    ConfigurationError,
-    DeliveryState,
-    ProtocolError,
-    ProtocolStoreError,
-    RetryStopReason,
-    error_choice,
-    error_count,
-    error_string,
-    error_time,
-)
+from ..client.errors import SDKError
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from .records import (
-    PROGRESS_KEYS,
-    PollSnapshot,
-    ProgressKey,
-    ProtocolProgress,
-    RequestTarget,
-    Selector,
-)
-from .references import OperationRef
-from .resume import ResumeStateError
-from .sources import UploadProgress
+from .records import ProtocolProgress, RequestTarget, Selector  # noqa: TC001 - Public annotations support get_type_hints().
+from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
 
 __all__ = (
-    "CacheProtocolError",
-    "CacheStoreError",
-    "CacheValidatorConflictError",
-    "ConcurrentReceiveError",
-    "DeliveryUnknownError",
-    "IncompleteFrameError",
-    "NonResumableSourceError",
-    "OperationCancelledError",
-    "OperationFailedError",
-    "PaginationCycleError",
-    "PollWaitLimitError",
-    "PollingStateError",
+    "HELPER_ERRORS",
+    "MAX_CLOSE_REASON",
+    "MAX_RAW_PREFIX",
     "ProtocolDataError",
-    "ProtocolStateError",
-    "ResumeStateError",
     "SessionLimitError",
-    "StreamDecodeError",
     "StreamInterruptedError",
-    "StreamRemoteError",
-    "StreamResumeExhaustedError",
-    "UploadDeliveryUnknownError",
-    "UploadExpiredError",
-    "UploadOffsetError",
-    "UploadSourceChangedError",
     "WebSocketClosedError",
-    "WebSocketHandshakeError",
 )
 
-E_co = TypeVar("E_co", covariant=True, default=object)
-P_co = TypeVar("P_co", covariant=True, default=object)
-
-_DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
-_SessionLimitKind: TypeAlias = Literal["pages", "items", "polls", "reconnects", "parts"]
-
-HandshakeCondition: TypeAlias = Literal["negotiation"]
-
-_DATA_CONDITIONS: Final = get_args(_DataCondition)
-_HANDSHAKE_CONDITIONS: Final = get_args(HandshakeCondition)
-_UNKNOWN_DELIVERIES: Final = (DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
-MAX_CLOSE_REASON: Final = 123
-_SESSION_LIMIT_KINDS: Final = get_args(_SessionLimitKind)
-_LOCATIONS: Final = (*get_args(Selector), *get_args(RequestTarget))
-_VALIDATOR_HEADERS: Final = ("If-None-Match", "If-Modified-Since")
 MAX_RAW_PREFIX: Final = 65536
+MAX_CLOSE_REASON: Final = 123
 
 
-def _location(value: object) -> None:
-    if value is not None and not isinstance(value, _LOCATIONS):
-        msg = "location must be a selector, a request target, or None"
-        raise ValueError(msg)
+class ProtocolDataError(SDKError):
+    """Received protocol data a helper cannot use, or a failure the server reports through it.
 
+    `reason` is `missing`, `null`, `type`, `value`, `malformed`, `inconsistent` or `too_large` for data that breaks
+    the helper's rules; `pagination_cycle` for a continuation already seen; `operation_failed` or
+    `operation_cancelled` for a polled operation that reached that declared state; `error_event` for a declared error
+    event of a stream; and `malformed_signature`, `invalid_signature`, `missing_key` or `timestamp_window` for a
+    webhook that failed verification. `data` is the value the server sent with it: the final poll's data or the
+    event's, decoded as declared.
+    """
 
-def _is_progress_key(value: object) -> TypeIs[ProgressKey]:
-    return value in PROGRESS_KEYS
-
-
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
-
-
-def _progress(value: object) -> ProtocolProgress:
-    if _is_mapping(value):
-        progress: dict[ProgressKey, int] = {
-            key: error_count(count, "progress") for key, count in value.items() if _is_progress_key(key)
-        }
-        if len(progress) == len(value):
-            return MappingProxyType(progress)
-    msg = "progress must map progress keys to nonnegative integers"
-    raise ValueError(msg)
-
-
-def _snapshot(value: object) -> None:
-    if not isinstance(value, PollSnapshot):
-        msg = "snapshot must be a PollSnapshot"
-        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
-
-
-def _raw_prefix(value: object, field: str = "raw_prefix") -> None:
-    if not isinstance(value, bytes) or len(value) > MAX_RAW_PREFIX:
-        msg = f"{field} must be at most 65536 bytes"
-        raise ValueError(msg)
-
-
-def _context(helper_id: object, operation: object) -> None:
-    error_string(helper_id, "helper_id", optional=True)
-    if operation is not None and not isinstance(operation, OperationRef):
-        msg = "operation must be an OperationRef or None"
-        raise ValueError(msg)
-
-
-def _upload_progress(value: object) -> None:
-    if not isinstance(value, UploadProgress):
-        msg = "progress must be an UploadProgress"
-        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
-
-
-def _aware(value: object) -> None:
-    if not isinstance(value, datetime) or value.utcoffset() is None:
-        msg = "expires_at must be a timezone-aware datetime"
-        raise ValueError(msg)
-
-
-def _flag(value: object, field: str) -> None:
-    if type(value) is not bool:
-        msg = f"{field} must be a bool"
-        raise ValueError(msg)
-
-
-class ProtocolDataError(ProtocolError):
-    """Received data that is missing, null, of another type or value, malformed, or inconsistent."""
-
-    condition: _DataCondition
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        condition: _DataCondition = "value",
+        reason: str = "value",
         location: Selector | RequestTarget | None = None,
+        data: object = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep which rule the received data broke and the selector or target it concerns."""
-        error_choice(condition, _DATA_CONDITIONS, "condition")
-        _location(location)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.condition = condition
+        """Keep which rule the data broke, the selector or target it concerns, and the value that came with it."""
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
+        self.helper_id = helper_id
+        self.operation = operation
         self.location = location
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
+        self.data = data
 
 
-class ProtocolStateError(ProtocolError):
-    """An operation the helper's current state forbids, such as concurrent consumption or a finished handle."""
+class SessionLimitError(SDKError):
+    """A finite cap of a helper session reached while the operation goes on; partial progress is never a success.
 
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        state: str,
-        action: str,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the SDK-defined state and method names."""
-        error_string(state, "state")
-        error_string(action, "action")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.state = state
-        self.action = action
+    `reason` names the cap: `pages`, `items`, `polls`, `reconnects` or `parts`, or `wait` or `deadline` for a
+    server-required wait, kept in `required_wait`, longer than the allowed wait or the remaining deadline. The handle's
+    checkpoint continues it.
+    """
 
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("state", self.state), ("action", self.action))
-
-
-class SessionLimitError(ProtocolError):
-    """A finite session cap reached while continuation remains; partial progress is never a success."""
-
-    kind: _SessionLimitKind
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        kind: _SessionLimitKind,
-        limit: int,
-        progress: ProtocolProgress,
+        reason: str,
+        limit: float,
+        progress: ProtocolProgress | None = None,
+        required_wait: float | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep the exhausted cap and a read-only copy of the progress."""
-        error_choice(kind, _SESSION_LIMIT_KINDS, "kind")
-        error_count(limit, "limit")
-        copied = _progress(progress)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.kind = kind
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
+        self.helper_id = helper_id
+        self.operation = operation
         self.limit = limit
-        self.progress = copied
+        self.progress: ProtocolProgress = MappingProxyType(dict(progress or {}))
+        self.required_wait = required_wait
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("kind", self.kind), ("limit", self.limit))
+        return (*super()._details(), ("limit", self.limit))
 
 
-class StreamResumeExhaustedError(SessionLimitError):
-    """Automatic stream reconnection that exhausted its reconnect budget; it never ends as a normal EOF."""
+class StreamInterruptedError(SDKError):
+    """A stream that ended (`eof`) or failed (`transport`) before its declared termination.
 
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        kind: Literal["reconnects"],
-        limit: int,
-        progress: ProtocolProgress,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the exhausted reconnection budget with the stream's progress."""
-        error_choice(kind, ("reconnects",), "kind")
-        super().__init__(
-            kind=kind,
-            limit=limit,
-            progress=progress,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
+    `sequence` is the last record delivered.
+    """
 
-
-class PaginationCycleError(ProtocolDataError):
-    """A continuation already seen in this session; its condition is always inconsistent and the value is not kept."""
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        page_index: int,
-        first_seen_page_index: int,
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the repeating page and the page that first returned the continuation."""
-        error_count(page_index, "page_index")
-        error_count(first_seen_page_index, "first_seen_page_index")
-        super().__init__(
-            condition="inconsistent",
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.page_index = page_index
-        self.first_seen_page_index = first_seen_page_index
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("page_index", self.page_index),
-            ("first_seen_page_index", self.first_seen_page_index),
-        )
-
-
-class PollingStateError(ProtocolDataError):
-    """A polled state of another type or of no declared value; success is never inferred from it."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: Literal["type", "value"] = "value",
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep whether the state had another type or an undeclared value."""
-        error_choice(condition, ("type", "value"), "condition")
-        super().__init__(
-            condition=condition,
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-
-
-class PollWaitLimitError(ProtocolError):
-    """A server-required wait longer than the allowed wait or the remaining deadline; nothing is sent early."""
-
-    kind: Literal["wait", "deadline"]
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        kind: Literal["wait", "deadline"],
-        required_wait: float,
-        limit: float,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the required wait and the limit it exceeds."""
-        error_choice(kind, ("wait", "deadline"), "kind")
-        required = error_time(required_wait, "required_wait")
-        allowed = error_time(limit, "limit")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.kind = kind
-        self.required_wait = required
-        self.limit = allowed
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("kind", self.kind), ("required_wait", self.required_wait), ("limit", self.limit))
-
-
-class OperationFailedError(ProtocolError, Generic[P_co]):
-    """A remote operation that reached its declared failed state; its final poll stays available."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        snapshot: PollSnapshot[P_co],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the terminal poll snapshot for explicit inspection."""
-        _snapshot(snapshot)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self._snapshot = snapshot
-
-    @property
-    def snapshot(self) -> PollSnapshot[P_co]:
-        """Return the poll that reported the terminal state."""
-        return self._snapshot
-
-
-class OperationCancelledError(ProtocolError, Generic[P_co]):
-    """A remote operation that reached its declared cancelled state; local cancellation is never this."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        snapshot: PollSnapshot[P_co],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the terminal poll snapshot for explicit inspection."""
-        _snapshot(snapshot)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self._snapshot = snapshot
-
-    @property
-    def snapshot(self) -> PollSnapshot[P_co]:
-        """Return the poll that reported the terminal state."""
-        return self._snapshot
-
-
-class StreamDecodeError(ProtocolDataError):
-    """A stream record that failed to decode or validate; it never triggers an automatic reconnect."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        sequence: int,
-        raw_prefix: bytes,
-        truncated: bool,
-        condition: _DataCondition = "malformed",
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the sequence, at most 64 KiB of raw bytes, and decode cause without its traceback."""
-        error_count(sequence, "sequence")
-        _raw_prefix(raw_prefix)
-        _flag(truncated, "truncated")
-        super().__init__(
-            condition=condition,
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=None if cause is None else cause.with_traceback(None),
-            secondary_errors=secondary_errors,
-        )
-        self.sequence = sequence
-        self.raw_prefix = raw_prefix
-        self.truncated = truncated
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("sequence", self.sequence), ("truncated", self.truncated))
-
-
-class StreamInterruptedError(ProtocolError):
-    """A stream that ended or failed before its declared termination."""
-
-    condition: Literal["eof", "transport"]
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: Literal["eof", "transport"],
+        reason: str,
         sequence: int,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep how the stream stopped and the last sequence delivered."""
-        error_choice(condition, ("eof", "transport"), "condition")
-        error_count(sequence, "sequence")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.condition = condition
-        self.sequence = sequence
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition), ("sequence", self.sequence))
-
-
-class IncompleteFrameError(StreamInterruptedError):
-    """An NDJSON body whose last line has no line end at EOF; its condition is always eof."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        buffered_bytes: int,
-        sequence: int,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep how many bytes of the incomplete frame were buffered."""
-        error_count(buffered_bytes, "buffered_bytes")
-        super().__init__(
-            condition="eof",
-            sequence=sequence,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.buffered_bytes = buffered_bytes
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("buffered_bytes", self.buffered_bytes))
-
-
-class StreamRemoteError(ProtocolError, Generic[E_co]):
-    """A declared error event of a stream, raised instead of yielding it; its typed data stays available."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        event_type: str | None,
-        data: E_co,
-        sequence: int,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the event type, the typed error value, and its sequence."""
-        error_string(event_type, "event_type", optional=True)
-        error_count(sequence, "sequence")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.event_type = event_type
-        self._data = data
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
+        self.helper_id = helper_id
+        self.operation = operation
         self.sequence = sequence
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("sequence", self.sequence))
 
-    @property
-    def data(self) -> E_co:
-        """Return the decoded error event value."""
-        return self._data
 
-
-class CacheStoreError(ProtocolStoreError):
-    """A cache store operation that failed or broke the store contract; no request is sent again because of it."""
-
-
-class CacheProtocolError(ProtocolDataError):
-    """A response the cache cannot apply, such as a 304 without a usable entry; its condition is always inconsistent."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the response's context; the condition is fixed."""
-        super().__init__(
-            condition="inconsistent",
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-
-
-class CacheValidatorConflictError(ConfigurationError):
-    """A validator header the caller gave that differs from the stored entry's; the value itself is never kept."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        header_name: Literal["If-None-Match", "If-Modified-Since"],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        source_uri: str | None = None,
-        source_pointer: str | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the header's name as the field path; the condition is fixed."""
-        error_choice(header_name, _VALIDATOR_HEADERS, "header_name")
-        super().__init__(
-            field_path=(header_name,),
-            reason="binding_mismatch",
-            helper_id=helper_id,
-            operation=operation,
-            source_uri=source_uri,
-            source_pointer=source_pointer,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.header_name = header_name
-
-
-class ConcurrentReceiveError(ProtocolStateError):
-    """A receive while another receive of the same session waits; its state is receiving and its action receive."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Fix the state and the action."""
-        super().__init__(
-            state="receiving",
-            action="receive",
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-
-
-class WebSocketClosedError(ProtocolError):
+class WebSocketClosedError(SDKError):
     """A WebSocket connection that closed: the close code and reason received, and whether the closure was normal.
 
     A normal closure ends a session's iteration; receive raises this class either way. The reason never appears in
     messages.
     """
 
-    _reason_code = "web_socket_closed_error"
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
@@ -774,321 +143,18 @@ class WebSocketClosedError(ProtocolError):
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep the close code, at most 123 UTF-8 bytes of reason, and whether the closure was normal."""
-        if code is not None:
-            error_count(code, "code")
-        error_string(reason, "reason")
-        if len(reason.encode("utf-8", "replace")) > MAX_CLOSE_REASON:
-            msg = "reason must be at most 123 UTF-8 bytes"
-            raise ValueError(msg)
-        _flag(clean, "clean")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
+        """Keep the close code, the close reason, and whether the closure was normal."""
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
+        self.helper_id = helper_id
+        self.operation = operation
         self.code = code
-        self.reason: str = reason
         self.clean = clean
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        kept = tuple(item for item in super()._details() if item[0] != "reason")
-        return (*kept, ("code", self.code), ("clean", self.clean))
+        return (("operation_id", self.operation_id), ("code", self.code), ("clean", self.clean))
 
 
-class WebSocketHandshakeError(APIConnectionError):
-    """A WebSocket handshake whose 101 selected no subprotocol the helper offered; never retried."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: HandshakeCondition,
-        delivery_state: DeliveryState,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep what the handshake broke; its phase is always connect."""
-        error_choice(condition, _HANDSHAKE_CONDITIONS, "condition")
-        _context(helper_id, operation)
-        super().__init__(
-            delivery_state=delivery_state,
-            phase="connect",
-            retry_stop_reason=retry_stop_reason,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.condition: HandshakeCondition = condition
-        self.helper_id = helper_id
-        self.operation = operation
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
-
-
-class DeliveryUnknownError(ProtocolError):
-    """A message whose delivery is unknown: it may have reached the peer; it is never sent again automatically."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_state: DeliveryState,
-        message_id: str | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep how far the message may have got and its declared message ID."""
-        if delivery_state not in _UNKNOWN_DELIVERIES:
-            msg = "delivery_state must be MAYBE_SENT or RESPONSE_STARTED"
-            raise ValueError(msg)
-        error_string(message_id, "message_id", optional=True)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            delivery_state=delivery_state,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.message_id = message_id
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class UploadDeliveryUnknownError(DeliveryUnknownError):
-    """An upload append, part, or completion whose outcome stays unknown; the handle's checkpoint resumes it.
-
-    The `part` phase is reserved for the parts profile.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        phase: Literal["append", "part", "complete"],
-        progress: UploadProgress,
-        delivery_state: DeliveryState,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the phase whose outcome is unknown and the progress the server confirmed before it."""
-        error_choice(phase, ("append", "part", "complete"), "phase")
-        _upload_progress(progress)
-        super().__init__(
-            delivery_state=delivery_state,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.phase = phase
-        self.progress = progress
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("phase", self.phase))
-
-
-class UploadSourceChangedError(ProtocolDataError):
-    """Upload content whose size is not the upload's; nothing more is sent.
-
-    `expected_size` is the upload's size and `actual_size` the size the source has now.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        expected_size: int,
-        actual_size: int,
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the upload's size and the size the source has now."""
-        error_count(expected_size, "expected_size")
-        error_count(actual_size, "actual_size")
-        super().__init__(
-            condition="inconsistent",
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.expected_size = expected_size
-        self.actual_size = actual_size
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("expected_size", self.expected_size), ("actual_size", self.actual_size))
-
-
-class UploadOffsetError(ProtocolDataError):
-    """A remote upload offset that regressed, passed the content, or committed part of a chunk where none may be."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        confirmed_offset: int,
-        expected_offset: int,
-        remote_offset: int,
-        size: int,
-        location: Selector | RequestTarget | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the confirmed, expected, and remote offsets and the size of the content."""
-        for name, value in (
-            ("confirmed_offset", confirmed_offset),
-            ("expected_offset", expected_offset),
-            ("remote_offset", remote_offset),
-            ("size", size),
-        ):
-            error_count(value, name)
-        super().__init__(
-            condition="inconsistent",
-            location=location,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.confirmed_offset = confirmed_offset
-        self.expected_offset = expected_offset
-        self.remote_offset = remote_offset
-        self.size = size
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("confirmed_offset", self.confirmed_offset),
-            ("expected_offset", self.expected_offset),
-            ("remote_offset", self.remote_offset),
-            ("size", self.size),
-        )
-
-
-class UploadExpiredError(ResumeStateError):
-    """An upload checkpoint past the expiry its server declared; its condition is always expired."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        expires_at: datetime,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the server's UTC expiry."""
-        _aware(expires_at)
-        super().__init__(
-            condition="expired",
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.expires_at = expires_at
-
-
-class NonResumableSourceError(ConfigurationError):
-    """An upload source that cannot be read again, such as a one-shot stream or a reader that cannot seek."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        source_kind: Literal["iterable", "iterator", "stream", "reader"],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the kind of source given; the condition is wrong_capability at the source argument."""
-        error_choice(source_kind, ("iterable", "iterator", "stream", "reader"), "source_kind")
-        super().__init__(
-            field_path=("source",),
-            reason="wrong_capability",
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.source_kind = source_kind
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("source_kind", self.source_kind))
+HELPER_ERRORS: Final = (ProtocolDataError, SessionLimitError, StreamInterruptedError, WebSocketClosedError)

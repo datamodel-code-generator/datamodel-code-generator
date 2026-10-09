@@ -4,37 +4,37 @@
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 typed body=True hops=1 = None
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 response body=True hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '25')])
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw body=True hops=1 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 stream body=True hops=1 = b''
-    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 typed body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 escape body=True hops=1 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
@@ -42,43 +42,43 @@
   > HEAD https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw body=True hops=2 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 302, ('HEAD', 'https://api.example.com/done'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 typed body=True hops=1 = None
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 response body=True hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '25')])
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw body=True hops=1 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 stream body=True hops=1 = b''
-    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 typed body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 escape body=True hops=1 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 200] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > HEAD https://api.example.com/redirected
@@ -86,4 +86,4 @@
   > HEAD https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw body=True hops=2 = b''
-    ends=[('call_end', 200, 'success', 1)] unused=0
+    hops=[('HEAD', 'https://api.example.com/v1/pets/3'), 303, ('HEAD', 'https://api.example.com/redirected'), 302, ('HEAD', 'https://api.example.com/done'), 200] unused=0

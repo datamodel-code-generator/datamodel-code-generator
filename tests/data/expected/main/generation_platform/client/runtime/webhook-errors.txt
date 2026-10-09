@@ -1,61 +1,30 @@
 # pets-protocols pydantic_v2.BaseModel
-  ProtocolError: base=SDKError sdk=True reason=protocol_error
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=ProtocolError(operation_id='webhook', call_id='call-1') repr=ProtocolError() secret=False
-  ConfigurationError: base=SDKError sdk=True reason=binding_mismatch
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,field_path,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors,source_pointer,source_uri
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=ConfigurationError(operation_id='webhook', call_id='call-1', reason='binding_mismatch', field_path='private-webhook-marker') repr=ConfigurationError() secret=True
-  ProtocolDataError: base=ProtocolError sdk=True reason=protocol_data_error
-    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,location,operation,operation_id,parent_session_id,reason,secondary_errors
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/True retained=True
-    str=ProtocolDataError(operation_id='webhook', call_id='call-1', condition='malformed') repr=ProtocolDataError() secret=False
-  ProtocolSizeError: base=ProtocolError sdk=True reason=protocol_size_error
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,observed,operation,operation_id,parent_session_id,reason,secondary_errors,unit
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=ProtocolSizeError(operation_id='webhook', call_id='call-1', kind='keys', limit=8, observed=9) repr=ProtocolSizeError() secret=False
-  WebhookVerificationError: base=ProtocolError sdk=True reason=webhook_verification_error
-    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=WebhookVerificationError(operation_id='webhook', call_id='call-1', condition='invalid_signature') repr=WebhookVerificationError() secret=False
-  protocol defaults: (None, None, None, None, None, None, None, ()) ProtocolError()
-  configuration defaults: (None, None, None, None, None, None, None, ()) ConfigurationError(reason='invalid_value')
-  verification defaults: (None, None, None, None, None, None, None, ()) WebhookVerificationError(condition='missing_key')
-  store defaults: (None, None, None, None, None, None, None, ()) ProtocolStoreError(action='get')
-  configuration reason: unknown_field
-  configuration reason: invalid_value
-  configuration reason: missing_metadata
-  configuration reason: missing_adapter
-  configuration reason: wrong_capability
-  configuration reason: security_partition
-  configuration reason: binding_mismatch
-  verification condition: malformed_signature
-  verification condition: invalid_signature
-  verification condition: missing_key
-  verification condition: timestamp_window
-  store action: get entry=None
-  store action: set entry=None
-  store action: delete entry=None
+  ConfigurationError: base=SDKError reason=binding_mismatch
+    fields=attempt_count,cause,elapsed,field_path,helper_id,info,operation_id,reason,source_pointer,source_uri
+    context=True/True retained=True
+    str=ConfigurationError(operation_id='webhook', reason='binding_mismatch', field_path='private-webhook-marker') secret=True
+  ProtocolDataError: base=SDKError reason=malformed
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='malformed') secret=False
+  ProtocolDataError: base=SDKError reason=too_large
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='too_large') secret=False
+  ProtocolDataError: base=SDKError reason=malformed_signature
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='malformed_signature') secret=False
+  ProtocolDataError: base=SDKError reason=invalid_signature
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='invalid_signature') secret=False
+  ProtocolDataError: base=SDKError reason=missing_key
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='missing_key') secret=False
+  ProtocolDataError: base=SDKError reason=timestamp_window
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='timestamp_window') secret=False
   copied configuration path: True
-  configuration missing path = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  configuration missing reason = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  configuration reason unknown ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  configuration reason type ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  configuration helper type ! ValueError: helper_id must be a string or None []
-  helper type ! ValueError: helper_id must be a string or None []
-  operation type ! ValueError: operation must be an OperationRef or None []
-  verification missing condition ! TypeError: WebhookVerificationError.__init__() missing 1 required keyword-only argument: 'condition' []
-  verification condition unknown ! ValueError: condition must be one of its declared values []
-  verification condition type ! ValueError: condition must be one of its declared values []
-  store missing action ! TypeError: ProtocolStoreError.__init__() missing 1 required keyword-only argument: 'action' []
-  store action unknown ! ValueError: action must be one of its declared values []
-  store action type ! ValueError: action must be one of its declared values []
-  store entry type ! ValueError: entry_id must be a string or None []
-  positional message ! TypeError: WebhookVerificationError.__init__() takes 1 positional argument but 2 positional arguments (and 1 keyword-only argument) were given []
-  extra signature ! TypeError: SDKError.__init__() got an unexpected keyword argument 'signature' []

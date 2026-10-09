@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Mapping
+
+    import httpx2
+
+    from .urls import Origin
 
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
@@ -43,6 +50,52 @@ class SecurityBinding:
 
     schemes: tuple[SecuritySchemeEntry, ...]
     alternatives: tuple[tuple[SecurityRequirement, ...], ...]
+
+
+Placement: TypeAlias = tuple[SecurityScheme, object]
+Send: TypeAlias = "Callable[[httpx2.Request], httpx2.Response]"
+AsyncSend: TypeAlias = "Callable[[httpx2.Request], Awaitable[httpx2.Response]]"
+
+
+class Credentials:
+    """The credentials a generated client was given, by scheme name; the package's auth module places them."""
+
+    def __init__(self, values: Mapping[str, object]) -> None:
+        """Keep the credentials given, leaving out None."""
+        self.values = {name: value for name, value in values.items() if value is not None}
+
+    def selected(self, binding: SecurityBinding) -> tuple[Placement, ...] | None:
+        """Return the placements of an operation's first credentialed alternative the credentials satisfy, or None.
+
+        An anonymous alternative, and an operation declaring empty security, take none, and an anonymous alternative
+        applies only when no other alternative is satisfied.
+        """
+        values = self.values
+        anonymous = not binding.alternatives
+        for alternative in binding.alternatives:
+            if not alternative:
+                anonymous = True
+            elif all(item.scheme.name in values for item in alternative):
+                return tuple((item.scheme, values[item.scheme.name]) for item in alternative)
+        return () if anonymous else None
+
+    def auth(  # noqa: PLR0913
+        self,
+        placements: tuple[Placement, ...],
+        *,
+        origin: Origin | None,
+        replayable: Callable[[httpx2.Request], bool],
+        challenge_less: bool,
+        send: Send | None = None,
+        async_send: AsyncSend | None = None,
+    ) -> httpx2.Auth:
+        """Return the HTTPX2 Auth that places a call's credentials on its requests."""
+        raise NotImplementedError
+
+
+def positional(placements: tuple[Placement, ...]) -> bool:
+    """Return whether a placement sends a credential elsewhere than in Authorization, which HTTPX2 keeps in origin."""
+    return any(scheme.location != "header" or scheme.wire_name.lower() != "authorization" for scheme, _ in placements)
 
 
 @lru_cache(maxsize=32)

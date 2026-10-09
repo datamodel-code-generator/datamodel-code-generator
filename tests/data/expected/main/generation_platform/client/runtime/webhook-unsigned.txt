@@ -3,19 +3,19 @@
   message = Message(test=1)
   invoice by nested type = Invoice(type='invoice', id='in_1', amount=5)
   customer = Customer(type='c', id='cus_1', email='a@b')
-  no type member ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  meta not an object ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  null type ! ProtocolDataError: ProtocolDataError(condition='null') [condition='null', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  numeric type ! ProtocolDataError: ProtocolDataError(condition='type') [condition='type', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  list type ! ProtocolDataError: ProtocolDataError(condition='type') [condition='type', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  unknown type ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  type in another case ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  type with a space ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  known type, invalid event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  not JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  no type member ! ProtocolDataError: ProtocolDataError(reason='missing') [location=BodySelector(pointer='/meta/type')] missing
+  meta not an object ! ProtocolDataError: ProtocolDataError(reason='missing') [location=BodySelector(pointer='/meta/type')] missing
+  null type ! ProtocolDataError: ProtocolDataError(reason='null') [location=BodySelector(pointer='/meta/type')] null
+  numeric type ! ProtocolDataError: ProtocolDataError(reason='type') [location=BodySelector(pointer='/meta/type')] type
+  list type ! ProtocolDataError: ProtocolDataError(reason='type') [location=BodySelector(pointer='/meta/type')] type
+  unknown type ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  type in another case ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  type with a space ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  known type, invalid event ! ProtocolDataError: ProtocolDataError(reason='value') [] value
+  not JSON ! ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
   body at limit = Message(test=1)
-  body over limit ! ProtocolSizeError: ProtocolSizeError(kind='body', limit=10, observed=11) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='body', unit='bytes', limit=10, observed=11] protocol_size_error
-  text body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  bytearray body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  body over limit ! ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
+  text body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  bytearray body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
   headers argument=TypeError
