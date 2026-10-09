@@ -1,4 +1,4 @@
-"""Call identities and an optional monotonic budget across native HTTP attempts."""
+"""Call delivery state and an optional monotonic budget across native HTTP attempts."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ from enum import Enum
 from functools import partial
 from time import sleep
 from typing import TYPE_CHECKING, Final, TypeVar
-from uuid import uuid4
 
 import anyio
 
@@ -62,17 +61,16 @@ async def in_thread(function: Callable[..., T], *arguments: object) -> T:
 
 
 class OperationSession:
-    """The identity and earliest absolute deadline shared by a helper's calls."""
+    """The earliest absolute deadline and send count shared by a helper's calls."""
 
     def __init__(self, *, total_timeout: float | None, clock: Clock) -> None:
         self.started = clock.monotonic()
-        self.session_id = str(uuid4())
         self.deadline: Budget | None = None if total_timeout is None else Budget(self.started + total_timeout, clock)
         self.sends = 0
 
 
 class LogicalCallContext:
-    """Keep one call's clock, identity and deadline without owning its task or resources."""
+    """Keep one call's clock and deadline without owning its task or resources."""
 
     session: OperationSession | None = None
 
@@ -81,7 +79,6 @@ class LogicalCallContext:
         self.monotonic = settings.clock.monotonic
         self.started = self.monotonic()
         self.operation_id = operation_id
-        self.call_id = str(uuid4())
         self.deadline: Budget | None = (
             None if settings.total_timeout is None else Budget(self.started + settings.total_timeout, settings.clock)
         )
@@ -89,11 +86,6 @@ class LogicalCallContext:
         self.streaming = self.retry_blocked = self.handing_off = False
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
-
-    @property
-    def parent_session_id(self) -> str | None:
-        """Return the helper session's safe correlation identifier."""
-        return None if self.session is None else self.session.session_id
 
     def remaining(self) -> float | None:
         """Return seconds until the absolute deadline, or None for an unlimited call."""

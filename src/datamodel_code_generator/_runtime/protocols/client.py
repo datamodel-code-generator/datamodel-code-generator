@@ -171,11 +171,6 @@ class _SessionCall(Call):
 
         return secret_names(schemes)[1]
 
-    def restart(self, original: httpx2.Request) -> None:
-        """Begin the next resource candidate at the original URL."""
-        self.url = str(original.url)
-        super().restart(original)
-
 
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
@@ -488,7 +483,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         """
         settings = self._call_settings(options, operation.operation_id)
         call = _SessionCall(settings, operation, session)
-        events = call.events = self._started(call, operation.path)
+        self._admitted(call)
         decoder = call.decoder = operation.responses
         prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
@@ -504,16 +499,11 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         try:
             _, result = self._run(call, body, prepare, receive)
 
-            if events is not None:
-                events.finish()
-
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, delivery_state(call))
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -533,7 +523,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         the response answered a redirect.
         """
         call = Call(settings, operation)
-        events = call.events = self._started(call, operation.path)
+        self._admitted(call)
         decoder = call.decoder = operation.responses
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
@@ -552,14 +542,9 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         try:
             _, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
 
-            if events is not None:
-                events.finish()
-
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -583,7 +568,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         """
         settings = self._call_settings(options, operation.operation_id)
         call = _SocketCall(settings, operation, session, open_timeout)
-        events = call.events = self._started(call, operation.path)
+        self._admitted(call)
         call.decoder = operation.responses
         result: RawResponse | None = None
         opened: list[httpx2.Response] = []
@@ -613,17 +598,12 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             if result.info.status_code != _SWITCHING:
                 refused(result)
             accept(result.info)
-            if events is not None:
-                events.finish(handed_off=True)
-
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result, call, opened[-1]
 
@@ -660,7 +640,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         """
         settings = self._call_settings(options, operation.operation_id)
         call = _SessionCall(settings, operation, session)
-        events = call.events = await self._started(call, operation.path)
+        self._admitted(call)
         decoder = call.decoder = operation.responses
         prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
@@ -676,16 +656,11 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         try:
             _, result = await self._run(call, body, prepare, receive)
 
-            if events is not None:
-                await events.afinish()
-
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, delivery_state(call))
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -705,7 +680,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         the response answered a redirect.
         """
         call = Call(settings, operation)
-        events = call.events = await self._started(call, operation.path)
+        self._admitted(call)
         decoder = call.decoder = operation.responses
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
@@ -724,14 +699,9 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         try:
             _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
 
-            if events is not None:
-                await events.afinish()
-
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -750,7 +720,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
         settings = self._call_settings(options, operation.operation_id)
         call = _SocketCall(settings, operation, session, open_timeout)
-        events = call.events = await self._started(call, operation.path)
+        self._admitted(call)
         call.decoder = operation.responses
         result: AsyncRawResponse | None = None
         opened: list[httpx2.Response] = []
@@ -780,16 +750,11 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             if result.info.status_code != _SWITCHING:
                 await arefused(result)
             accept(result.info)
-            if events is not None:
-                await events.afinish(handed_off=True)
-
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result, call, opened[-1]

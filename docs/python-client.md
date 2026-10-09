@@ -891,8 +891,8 @@ client's options, `with_options`, or the call, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
 mixing items with pages raise `ConfigurationError` with the reason `invalid_state`. After a failure, cancellation
-included, and after `close()`, every step raises it, and nothing is fetched again. Hooks and limiters see each page's
-call with the session's `parent_session_id`.
+included, and after `close()`, every step raises it, and nothing is fetched again. Each page is an ordinary request
+of the HTTP client, which its `event_hooks` see.
 
 ### Checkpoints and resume
 
@@ -1862,8 +1862,7 @@ cursor's selector, or for an event ID the target it is written to, as `location`
 and a value it would send as a credential raises `ConfigurationError` with the reason `wrong_capability`. A decode,
 size, remote, idle, or deadline failure, the declared end, a reopen answered with an error, and closing never reconnect.
 Events the server sends again after a reopen are delivered again, numbered on: nothing removes duplicates. Every open
-and reopen reports its own hook events, so an interrupted response reports `stream_end` with the outcome `error` before
-its reopen starts. No options of a resuming helper, the client's, a view's, or the call's, may patch a header or query
+and reopen is its own request of the HTTP client, which its `event_hooks` see. No options of a resuming helper, the client's, a view's, or the call's, may patch a header or query
 parameter its reopen writes or fix an idempotency key.
 
 ### Stream generation checks
@@ -2090,7 +2089,7 @@ prints `httpx2[ws]` among the packages to add for a package with WebSocket helpe
 
 ### Handshakes
 
-The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline, sent as
+The handshake is one logical call of the operation, with initial authentication and deadline, sent as
 a GET with the upgrade headers through the client's HTTP client: its transport, proxy, TLS, and `event_hooks` apply
 as to any call. Only a 101 response whose subprotocol the helper offered opens the session; HTTPX2 checks nothing else
 of it, as its own WebSocket client does. Any other response is read up to `max_error_body_bytes` and raises the
@@ -2100,12 +2099,10 @@ follows, and 401s; a refused upgrade never renews a token. Only an initial trans
 proven unsent before session handover may use the call's existing retry policy. A handshake that may have reached
 the server is never sent again.
 
-The handshake's limiter permit is held for the whole session and released when it closes or fails. When the helper
-offers subprotocols, the server must select one of them, or `connect` raises `APIConnectionError` with the
+When the helper offers subprotocols, the server must select one of them, or `connect` raises `APIConnectionError` with the
 reason `negotiation_failed`; `session.subprotocol` is the selected one and `session.response` the 101 response.
 Credentials are sent as the operation's security declares, only to the server's origin. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
-request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent. The
-handshake's hooks end with the call outcome `handed_off`, and the session's end emits `stream_end`.
+request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent.
 
 ### Sessions
 
@@ -2278,11 +2275,11 @@ def cached_client() -> Client:
 `CacheResult[T]` is immutable: `data: T`, the decoded body; `source`, `network` for a response the network sent,
 `fresh_cache` for a fresh stored response answered without sending, or `revalidated` for a stored response a 304
 confirmed; `response: ResponseInfo`; and `network_status`, the status the network returned, 304 for a revalidation and
-`None` for a fresh answer. A fresh answer's `response` has a new `call_id`, every count 0, and the elapsed time of the
-lookup and decoding; a revalidation's has the 304 call's identity, counts, and elapsed time, with the stored status and
+`None` for a fresh answer. A fresh answer's `response` has every count 0 and the elapsed time of the
+lookup and decoding; a revalidation's has the 304 call's counts and elapsed time, with the stored status and
 the merged headers, request id, and content type. A stored body is decoded again on every use, so callers never share a
-model object. A fresh answer sends nothing, so it emits no call events to hooks and takes no limiter permit; a network
-fetch emits the events of an ordinary call.
+model object. A fresh answer sends nothing, so the HTTP client's `event_hooks` see no request; a network fetch is an
+ordinary request.
 
 An entry is fresh while its age is below its freshness lifetime and below `CacheOptions.max_ttl`. The lifetime is the
 response's `Cache-Control: max-age`, else `Expires` minus `Date`, else 0; the age follows RFC 9111 from `Age`, `Date`,
@@ -2758,7 +2755,7 @@ takes its own TypedDict.
 ### Calls
 
 A call gives the body or the fields of the media type it sends, never both, and an explicit `UNSET` counts as
-omitted. The method refuses any other binding before any hook, request, or stream: with `TypeError` for a body with
+omitted. The method refuses any other binding before any request or stream: with `TypeError` for a body with
 fields, a missing required field, a field of another media type, or fields for a media type that takes none, and with
 `ConfigurationError` for a missing or undeclared media type, as it does for bodies:
 
@@ -2767,20 +2764,10 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
-  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
-  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
-  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] missing
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
-  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
-  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=True context={}
 update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', reason='without_body', field_path='media_type') [operation_id='updatePet', field_path=('media_type',)] without_body
 ```
 
@@ -2879,7 +2866,6 @@ These settings apply to typed operations and `request_raw`, including their resp
 |---|---|---|
 | `timeout` | Owned client: connect 5, read/write/pool 600 seconds; injected client: its native timeouts | Native I/O phase limits |
 | `total_timeout` | `None` | Optional budget across attempts and retry waits, starting at call entry |
-| `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
 | `clock` | `Clock()`, the system clock | Client only: time and jitter sources |
 
 Omitted fields remain `UNSET` until resolution. Each field inherits from the request, the nearest `with_options`
@@ -2920,8 +2906,8 @@ Connect and pool timeouts may qualify for a retry under the safety and replay ru
 
 Async calls run in their caller's task. Cancel that task through the native backend; its cancellation exception
 propagates unchanged. The SDK never uncancels the task, selects a competing outcome, or wraps a `BaseException`.
-Responses, permits, and bodies are released in `finally`, and user hook callbacks run in the caller's cancellation
-scope. Synchronous preparation and callbacks remain cooperative.
+Responses and bodies are released in `finally`, and callbacks such as the HTTP client's `event_hooks` run in the
+caller's cancellation scope. Synchronous preparation and callbacks remain cooperative.
 
 ### Streaming after handoff
 
@@ -2964,7 +2950,7 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, token expiry, and protocol helper sessions, poll intervals, and stream deadlines |
 | `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
@@ -2976,113 +2962,63 @@ A private request budget uses its client's monotonic source. Retry and polling w
 to ordinary sleeps, and I/O timeouts use the duration measured before the operation. A frozen test clock therefore
 leaves waits in real time.
 
-A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
+A test that should not wait for full-jitter backoff draws zero from its random source:
 
 ```python
 from pets import Client
-from pets.hooks import CallEvent
 from pets.options import ClientOptions, Clock, RetryOptions
 
 
-class SteppedClock:
-    def __init__(self) -> None:
-        self.now = 0.0
-
-    def __call__(self) -> float:
-        return self.now
-
-    def on_event(self, event: CallEvent) -> None:
-        if event.name == "retry_scheduled" and event.duration is not None:
-            self.now += event.duration
-
-
 def instant_retries(url: str) -> Client:
-    stepped = SteppedClock()
-    clock = Clock(monotonic=stepped, random=lambda: 0.5)
-    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
+    clock = Clock(random=lambda: 0.0)
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), clock=clock))
 ```
 
-Each retry of this client is scheduled at half its backoff cap and starts at once, while its hooks and errors report
-the delays the retry policy chose.
+Each retry of this client starts at once, unless the server asks for a delay, which is still waited for in real time.
 
-## Application concurrency limits
+## Instrumentation
 
-There is no default application limiter. Configure one on a client, view, or request through `limiter`. A sync
-`Limiter.acquire(context)` returns a `Permit`; `AsyncLimiter.acquire(context)` is awaited and returns an `AsyncPermit`.
-Their `release()` methods are respectively synchronous and asynchronous, and must be idempotent. A client refuses a
-limiter of the opposite mode with `ConfigurationError` before I/O. The Protocols are exported from `pets.hooks`.
-
-The immutable `LimiterContext` contains exactly `operation_id`, `origin`, `call_id`, `parent_session_id`, and
-`remaining_timeout`. The origin has no path or query, and `remaining_timeout` is a snapshot taken
-on entry. Contexts carry no credentials, headers, or bodies. A synchronous limiter must cooperate with these limits
-when it blocks; the SDK cannot forcibly interrupt its callback. Async acquisition is bounded by the call itself.
-
-This asyncio limiter shares four permits across all calls through its configured view:
+The SDK adds no hook or limiter layer of its own. Instrument calls on the HTTP client: pass an `httpx2.Client` or
+`httpx2.AsyncClient` with `event_hooks`, or one whose transport wraps another, as `http_client`. A request hook runs
+before every attempt the SDK sends and before every redirect HTTPX2 follows, with the request's final method, URL and
+headers, credentials included; a response hook runs for every response once its headers arrived. An ordinary exception
+a hook raises ends the call as `APIConnectionError` with that exception as `cause`, and the call is not sent again,
+since the request may already have reached the server; an interruption propagates unchanged. Limit
+concurrency the same way, with the HTTP client's connection pool limits or an application semaphore around calls.
 
 ```python
-import asyncio
+import httpx2
 
-from pets import AsyncClient
-from pets.hooks import AsyncLimiter, AsyncPermit, LimiterContext
-from pets.options import RequestOptions
-
-
-class SemaphorePermit:
-    """Release one asyncio semaphore slot exactly once."""
-
-    def __init__(self, semaphore: asyncio.Semaphore) -> None:
-        self._semaphore = semaphore
-        self._released = False
-
-    async def release(self) -> None:
-        if not self._released:
-            self._released = True
-            self._semaphore.release()
+from pets import Client
+from pets.options import ClientOptions
 
 
-class SemaphoreLimiter:
-    """Share one concurrency limit among calls made through the configured client or view."""
-
-    def __init__(self, limit: int) -> None:
-        self._semaphore = asyncio.Semaphore(limit)
-
-    async def acquire(self, context: LimiterContext) -> AsyncPermit:
-        await self._semaphore.acquire()
-        return SemaphorePermit(self._semaphore)
+def log_request(request: httpx2.Request) -> None:
+    print(request.method, request.url.path)
 
 
-async def read_limited(client: AsyncClient, urls: tuple[str, ...]) -> tuple[bytes, ...]:
-    limiter: AsyncLimiter = SemaphoreLimiter(4)
-    view = client.with_options(RequestOptions(limiter=limiter))
+def log_response(response: httpx2.Response) -> None:
+    print(response.status_code, response.request.url.path)
 
-    async def read(url: str) -> bytes:
-        response = await view.request_raw("GET", url)
-        return await response.read()
 
-    return tuple(await asyncio.gather(*(read(url) for url in urls)))
+def instrumented(url: str, http: httpx2.Client) -> Client:
+    http.event_hooks = {"request": [log_request], "response": [log_response]}
+    return Client(http_client=http, options=ClientOptions(base_url=url))
 ```
 
-The SDK waits for a permit before opening the request body and retains it until the response is released. A streamed
-response retains its permit until the handle closes; buffered responses release it before returning. Cancellation,
-deadline expiry, hook failure, and an abandoned stream all release acquired permits, including a permit an async
-callback returns after cancellation. The SDK releases permits but does not own the limiter itself.
-
-Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. Acquisition failure raises
-`SDKError` with the reason `limiter_failed` and the callback exception as `cause`. Release failure is recorded as the
-original release exception when no earlier error exists, or named in the notes of the error already propagating.
+An injected client stays the caller's: close it after the SDK client.
 
 ### Counters and cleanup
 
-Each logical call has one `call_id`. `attempt_count` counts attempts at send time; preparation and hook failures
-before sending do not increment it. `ResponseInfo` and every `SDKError` expose `attempt_count`, `elapsed`, and
-`request_id`, and terminal call events expose `attempt_count`. Errors expose these measurements even when no response
+`attempt_count` counts attempts at send time; preparation failures before sending do not increment it.
+`ResponseInfo` and every `SDKError` expose `attempt_count`, `elapsed`, and `request_id`. Errors expose these measurements even when no response
 arrived: their `info` remains `None` in that case.
 
 Closing a root refuses new calls from the root and its views. It closes its created native HTTP client once;
 a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
 and callers close their streaming responses with `with` or `async with`.
 
-Responses, files opened from paths and limiter permits are released in `finally`. A later release failure is named in
+Responses and files opened from paths are released in `finally`. A later release failure is named in
 the notes of the primary error (`Secondary failure: <ClassName>`); with no primary error, the release failure
 propagates.
 
@@ -3093,7 +3029,7 @@ constructor is keyword-only and does not validate field values. Each carries `re
 `None`, `operation_id`, `info`, the response metadata when one arrived, `cause`, and the measurements `attempt_count`,
 `elapsed`, and `request_id`. Messages name only safe call metadata (the class, `operation_id`, `reason`, and a few
 class-specific details), never payloads, headers, or credentials. A secondary failure beside the primary error, such as
-a cleanup, hook, or invalidation failure, is named in the primary error's `__notes__`, never in an attribute or in its
+a cleanup or invalidation failure, is named in the primary error's `__notes__`, never in an attribute or in its
 place.
 
 | Exception | Raised for | Fields beside the shared ones |
@@ -3125,8 +3061,7 @@ where a member is at fault, and at most 64 KiB of it as `body_bytes`. `AuthError
 It keeps no credential material or provider description itself; the `cause` of `provider_failed` is the application's
 own exception from its credential callable or token callback.
 
-A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed` and the callback's
-exception as `cause`. Helpers raise `ProtocolDataError`, `SessionLimitError`, `StreamInterruptedError`, and
+Helpers raise `ProtocolDataError`, `SessionLimitError`, `StreamInterruptedError`, and
 `WebSocketClosedError`, described with each helper, and `SDKError` with the reason `store_failed` for a cache store that
 fails.
 
@@ -3176,7 +3111,7 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
 ```
 
 Buffered and streaming raw APIs return the final HTTP response when status retries end, including non-2xx statuses.
-Transport, policy, deadline, and cancellation failures still raise. A hook failure, or a response release failure,
+Transport, policy, deadline, and cancellation failures still raise. A response release failure
 stops a planned retry after its response was discarded: the call then raises that response's `APIStatusError` with the
 failure named in its notes.
 Typed operations retain final response metadata in their `APIStatusError`. A streaming response can retry during
@@ -3555,7 +3490,7 @@ def signed_upload(client: Client, key: bytes, payload: bytes) -> bytes:
 A signature header other than `Authorization` is copied to a redirect HTTPX2 follows; set `follow_redirects=False`
 for signed calls whose redirects may leave the server's origin.
 
-Credential values do not appear in repr or hook events. A credential placed in the query is part of the request URL,
+Credential values do not appear in repr. A credential placed in the query is part of the request URL,
 which HTTPX2 logs at INFO level on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay
 private. Errors retain safe metadata and their causes, which can hold an exception a credential callable raised;
 apply your own policy before logging causes.

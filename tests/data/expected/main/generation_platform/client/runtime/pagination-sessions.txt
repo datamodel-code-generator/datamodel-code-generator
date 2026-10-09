@@ -36,12 +36,12 @@
   interrupted page: KeyboardInterrupt
   item after the interruption ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
     progress {'pages': 0, 'items': 0}
+    request hook GET https://api.example.com/users
   item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.fetching') [field_path=('next', 'fetching')] invalid_state
   close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   items after the concurrent steps ['1']
-  limiter sessions 1 named=True
   default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001}
   explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages progress={'pages': 2, 'items': 2}
   default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001}
@@ -73,25 +73,23 @@
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   view keeps defaults ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+    request hook GET https://api.example.com/users
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook 200
+    request hook GET https://api.example.com/users?cursor=a
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook 200
   hooked items ['1', '2']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  another pager ['1']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary call = 1
-  one session per pager=True named=True ordinary={None}
-  limiter sessions 3 ordinary=None
+    request hook GET https://api.example.com/loose
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing one session=True
+    response hook 200
+  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  call end hook failure ! SDKError: SDKError(operation_id='listUsers', reason='hook_failed') [operation_id='listUsers', cause=RuntimeError('hook failed on call_end')] hook_failed
+  response hook failure ! APIConnectionError: APIConnectionError(operation_id='listUsers', cause='RuntimeError') [operation_id='listUsers', cause=RuntimeError('response hook failed on 200')]
   after the hook failure ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -108,19 +106,23 @@
   async explicit session clock first = User(id='1', name=None)
   async explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
     progress {'pages': 1, 'items': 1}
+    async request hook GET https://api.example.com/users
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    async request hook GET https://api.example.com/users?cursor=a
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async hooked items ['1', '2']
-  async sessions 1 named=True
+    async request hook GET https://api.example.com/loose
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
+    async request hook GET https://api.example.com/users
   async item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.fetching') [field_path=('anext', 'fetching')] invalid_state
   async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async items after the concurrent steps ['1']
+    async request hook GET https://api.example.com/users
   async cancelled page: CancelledError
   async after the cancellation [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.failed') [field_path=('aiter', 'failed')] invalid_state

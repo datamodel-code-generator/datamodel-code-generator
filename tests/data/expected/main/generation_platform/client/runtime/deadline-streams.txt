@@ -26,12 +26,12 @@
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=False SDKError notes []
-  stream permit release count 1
+  stream close failure primary=False SDKError notes []
+  stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=True DecodeError notes ['Secondary failure: SDKError']
-  stream permit release count 1
+  stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  stream close count 1
   buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
@@ -90,12 +90,12 @@
   async stream cancel raise_for_status propagated ('raise_for_status cancelled',) released 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=False SDKError notes []
-  async stream permit release count 1
+  async stream close failure primary=False SDKError notes []
+  async stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=True DecodeError notes ['Secondary failure: SDKError']
-  async stream permit release count 1
+  async stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  async stream close count 1
   async buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''

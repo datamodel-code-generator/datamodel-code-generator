@@ -12,7 +12,6 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
-from uuid import uuid4
 
 import httpx2
 from typing_extensions import TypeVar
@@ -332,7 +331,6 @@ class _Fetch(Generic[T]):
         return ResponseInfo(
             status_code=status,
             headers=headers,
-            call_id=str(uuid4()),
             elapsed=0.0,
             content_type=content,
             request_id=request_id,

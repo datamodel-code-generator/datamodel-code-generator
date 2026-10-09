@@ -5,7 +5,6 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
@@ -36,7 +35,6 @@ render pydantic_v2.dataclass
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
@@ -67,7 +65,6 @@ render dataclasses.dataclass
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
@@ -98,7 +95,6 @@ render typing.TypedDict
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
@@ -129,7 +125,6 @@ render msgspec.Struct
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py

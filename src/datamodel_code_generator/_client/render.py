@@ -97,27 +97,6 @@ def __getattr__(name: str) -> object:
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
-_HOOKS: Final = '''"""Hooks that observe each call's events, and the events they receive."""
-
-from ._runtime.client.hooks import (
-    AsyncHook,
-    AsyncLimiter,
-    AsyncPermit,
-    CallEvent,
-    CallOutcome,
-    EventName,
-    Hook,
-    Limiter,
-    LimiterContext,
-    Permit,
-    RetryReason,
-)
-
-__all__ = [
-    "AsyncHook", "AsyncLimiter", "AsyncPermit", "CallEvent", "CallOutcome", "EventName",
-    "Hook", "Limiter", "LimiterContext", "Permit", "RetryReason",
-]
-'''
 _OPTION_NAMES: Final = (
     "ClientOptions",
     "Clock",
@@ -201,7 +180,7 @@ _NATIVE_AUTH: Final = (
     "`auth` on `ClientOptions`, a view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the "
     "credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP "
     "client's own Auth. Sign requests with an `httpx2.Auth` of your own, which reads the body natively. Credential "
-    "values do not appear in repr or hook events; a query credential is part of the request URL, which the `httpx2` "
+    "values do not appear in repr; a query credential is part of the request URL, which the `httpx2` "
     "logger records at INFO level."
 )
 _OAUTH_REQUESTS: Final = (
@@ -3174,7 +3153,7 @@ Status errors retain the final available response. Buffered and streaming raw AP
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
 failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
+set an optional session total timeout. Close an abandoned stream to release its response.
 
 ## Idempotency and replayable input
 
@@ -3206,6 +3185,9 @@ call running in a thread before it closes the file.
 ## Redirects and transport construction
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
+Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
+attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
+as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
@@ -3247,10 +3229,9 @@ start of the body. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
 key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
-finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
-cancellation propagates unchanged, and user callbacks are not shielded.
+Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
+new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
+caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""
 
     def _compression_runtime(self) -> str:
@@ -3547,7 +3528,7 @@ transport failure as the cause. A frame an SSE body ends in the middle of is
 discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
-active streams; each stream releases its own response and limiter permit.
+active streams; each stream releases its own response.
 {lines}{_RESUMED if resumed else ""}"""
 
     def socket_runtime(self) -> str:
@@ -3561,7 +3542,7 @@ active streams; each stream releases its own response and limiter permit.
 A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
 `AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
 task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
-sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
 transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
 raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
 for the helper, then the default below. The session types are imported from:
@@ -3577,7 +3558,7 @@ for the helper, then the default below. The session types are imported from:
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | session total timeout | None |
 
-The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
+The connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
 and a second one raises `ConfigurationError` with the reason `invalid_state`; HTTPX2 writes sends one at a time beside
 it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON
@@ -3661,7 +3642,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
             self.file(PurePosixPath("options.py"), "options", _options(capabilities)),
-            self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             *(

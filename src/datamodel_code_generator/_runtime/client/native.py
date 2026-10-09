@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
@@ -12,17 +12,9 @@ from .logical import Delivery
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
 
-    from .hooks import IOPhase
     from .options import ResolvedTransportOptions
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
-
-_PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
-    ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
-    ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
-    ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
-)
 
 
 def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
@@ -44,15 +36,6 @@ def native_error(error: Exception) -> APIConnectionError:
     if isinstance(error, httpx2.TimeoutException):
         return APITimeoutError(reason="phase_timeout", cause=error)
     return APIConnectionError(cause=error)
-
-
-def io_phase(error: APIConnectionError) -> IOPhase:
-    """Return the I/O phase whose native failure caused a transport error, or unknown without one."""
-    cause = error.cause
-    for kinds, phase in _PHASES:
-        if isinstance(cause, kinds):
-            return phase
-    return "unknown"
 
 
 def transport_retry_reason(

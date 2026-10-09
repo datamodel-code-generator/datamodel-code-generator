@@ -1,7 +1,7 @@
 """WebSocket helpers: the handshake as one child call of a session of their own, and typed sessions over HTTPX2's.
 
 A helper sends its channel's GET with the upgrade headers through the client's call path and HTTP client, so
-authentication, limiters, hooks, timeouts, and the HTTP client's transport, proxy, and TLS settings apply to the
+authentication, timeouts, and the HTTP client's event hooks, transport, proxy, and TLS settings apply to the
 handshake as to any call; a handshake is never redirected, and only one proven unsent is retried. The 101's connection
 then carries an HTTPX2 WebSocket session, through which the typed session sends and receives whole messages.
 """

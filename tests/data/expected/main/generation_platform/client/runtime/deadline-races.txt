@@ -48,12 +48,8 @@
   async native/closing/deadline/result resources = (1, 0)
   deadline after buffered read = ('returned',)
   deadline after buffered read resources = (1, 1)
-  nested hook native = ('CancelledError', None, None, 'NoneType', ())
-  nested hook native sends = 0
-  cancelled acquire = ('CancelledError', None, None, 'NoneType', ())
-  cancelled acquire resources = (0, True, 0, ())
-  acquire swallowing the cancellation = ('APIConnectionError', 1, None, 'RuntimeError', ())
-  acquire swallowing the cancellation resources = (1, True, 1, ())
+  nested request hook native = ('CancelledError', None, None, 'NoneType', ())
+  nested request hook native sends = 0
   released response cancelled=False failure=False = ('returned',)
   released response cancelled=False failure=False resources = (1, 1, True, (), ())
   released response cancelled=False failure=True = ('SDKError', 1, 'cleanup_failed', 'RuntimeError', ())

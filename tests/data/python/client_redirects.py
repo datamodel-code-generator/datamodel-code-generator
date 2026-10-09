@@ -19,17 +19,29 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-class _Events:
-    def __init__(self) -> None:
-        self.values: list[tuple[object, ...]] = []
+class _Hops:
+    """Record each request HTTPX2 sends, followed redirects included, and each response, through its event hooks."""
 
-    def on_event(self, event: object) -> None:
-        self.values.append(
-            tuple(
-                getattr(event, name)
-                for name in ("name", "attempt_index", "status", "origin", "attempt_count", "outcome")
-            )
-        )
+    def __init__(self) -> None:
+        self.values: list[object] = []
+
+    def request(self, request: httpx2.Request) -> None:
+        self.values.append((request.method, str(request.url)))
+
+    def response(self, response: httpx2.Response) -> None:
+        self.values.append(response.status_code)
+
+    async def arequest(self, request: httpx2.Request) -> None:
+        self.request(request)
+
+    async def aresponse(self, response: httpx2.Response) -> None:
+        self.response(response)
+
+    def hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.request], "response": [self.response]}
+
+    def async_hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.arequest], "response": [self.aresponse]}
 
 
 async def _chunks() -> AsyncIterator[bytes]:
@@ -62,14 +74,12 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
     """Follow each redirect status as HTTPX2 does, across origins too, and stop at its limit."""
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    events = _Events()
+    hops = _Hops()
     with (
-        exchange.client(max_redirects=2) as native,
+        exchange.client(max_redirects=2, event_hooks=hops.hooks()) as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(
-                retry=options.RetryOptions(initial_delay=0), follow_redirects=True, hooks=(events,)
-            ),
+            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0), follow_redirects=True),
         ) as api,
     ):
         for label, status, fields, follow in (
@@ -86,7 +96,7 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
             ("invalid port", 302, (("Location", "https://api.example.com:port/done"),), True),
         ):
             exchange.responders.clear()
-            events.values.clear()
+            hops.values.clear()
             exchange.respond(_response(status, fields), _response(200))
             request = options.RequestOptions(follow_redirects=follow)
             record(
@@ -94,7 +104,7 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                 label,
                 lambda request=request: outcome(lambda: api.retry.with_response.get_safe(options=request)),
             )
-            lines.append(f"    unused={len(exchange.responders)} events={events.values!r}")
+            lines.append(f"    unused={len(exchange.responders)} hops={hops.values!r}")
         exchange.responders.clear()
         exchange.respond(*(_response(302, (("Location", f"/hop{index}"),)) for index in range(3)), _response(200))
         record(lines, "past the native limit", lambda: outcome(api.retry.with_response.get_safe))
@@ -346,15 +356,6 @@ def redirects(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async(package, options, lines))
 
 
-class _HeadEvents:
-    def __init__(self) -> None:
-        self.ends: list[tuple[object, ...]] = []
-
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) in {"call_end", "stream_end"}:
-            self.ends.append(tuple(getattr(event, name) for name in ("name", "status", "outcome", "attempt_count")))
-
-
 def _head_calls(api: Any, pet: object, *, asynchronous: bool) -> dict[str, Callable[[], object]]:
     """Return the typed, response, raw, streaming, and raw-request HEAD calls of a client."""
     pets = api.pets
@@ -412,36 +413,32 @@ def _head_responses(exchange: Exchange, payload: bytes, hops: int) -> None:
 
 async def _async_head_redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     pet = argument(package, "headPet", "path", "petId", 3)
-    exchange, events = Exchange(lines), _HeadEvents()
+    exchange, hops = Exchange(lines), _Hops()
     async with (
-        exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native, options=options.ClientOptions(follow_redirects=True, hooks=(events,))
-        ) as api,
+        exchange.async_client(event_hooks=hops.async_hooks()) as native,
+        package.AsyncClient(http_client=native, options=options.ClientOptions(follow_redirects=True)) as api,
     ):
         calls = _head_calls(api, pet, asynchronous=True)
-        for mode, payload, hops in _HEAD_MODES:
-            _head_responses(exchange, payload, hops)
-            await arecord(lines, f"async HEAD303 {mode} body={bool(payload)} hops={hops}", calls[mode])
-            lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
-            events.ends.clear()
+        for mode, payload, count in _HEAD_MODES:
+            _head_responses(exchange, payload, count)
+            await arecord(lines, f"async HEAD303 {mode} body={bool(payload)} hops={count}", calls[mode])
+            lines.append(f"    hops={hops.values!r} unused={len(exchange.responders)}")
+            hops.values.clear()
 
 
 def head_redirects(package: ModuleType, lines: list[str]) -> None:
     """Keep HEAD's typed bodyless declaration after HTTPX2 changes a 303 to GET."""
     options = importlib.import_module(f"{package.__name__}.options")
     pet = argument(package, "headPet", "path", "petId", 3)
-    exchange, events = Exchange(lines), _HeadEvents()
+    exchange, hops = Exchange(lines), _Hops()
     with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native, options=options.ClientOptions(follow_redirects=True, hooks=(events,))
-        ) as api,
+        exchange.client(event_hooks=hops.hooks()) as native,
+        package.Client(http_client=native, options=options.ClientOptions(follow_redirects=True)) as api,
     ):
         calls = _head_calls(api, pet, asynchronous=False)
-        for mode, payload, hops in _HEAD_MODES:
-            _head_responses(exchange, payload, hops)
-            record(lines, f"HEAD303 {mode} body={bool(payload)} hops={hops}", calls[mode])
-            lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
-            events.ends.clear()
+        for mode, payload, count in _HEAD_MODES:
+            _head_responses(exchange, payload, count)
+            record(lines, f"HEAD303 {mode} body={bool(payload)} hops={count}", calls[mode])
+            lines.append(f"    hops={hops.values!r} unused={len(exchange.responders)}")
+            hops.values.clear()
     run(lambda: _async_head_redirects(package, options, lines))

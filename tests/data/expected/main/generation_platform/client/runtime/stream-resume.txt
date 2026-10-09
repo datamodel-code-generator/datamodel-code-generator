@@ -68,12 +68,10 @@ reconnections
   interrupted and reopened with a duplicate
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
   > GET https://api.example.com/events?topic=news last-event-id='1'
     2 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
     3 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
-    hook stream_end outcome=success
     end
     progress {'reconnects': 1} response 200
   > GET https://api.example.com/events last-event-id=None
@@ -214,36 +212,28 @@ another reopen operation
   resume a dot segment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] value
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open without the stream ID ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] missing
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open with two stream IDs ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] malformed
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open with a dot segment stream ID ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] value
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open without the expiry ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Stream-Expires', occurrence='single')] missing
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open with two expiries ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='X-Stream-Expires', occurrence='single')] malformed
   > GET https://api.example.com/events last-event-id=None
   < closed
-    hook stream_end outcome=error
   open with an unreadable expiry ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='X-Stream-Expires', occurrence='single')] value
   > GET https://api.example.com/events last-event-id=None
   reopen without the token
     1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
   < closed
-    hook stream_end outcome=error
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
-    hook stream_end outcome=error
     ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Resume-Token', occurrence='single')] missing
 bound path values
   > GET https://api.example.com/rooms/r0 last-event-id=None
@@ -387,11 +377,9 @@ asyncio
   async reopened
     1 message id='1' retry=1 data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
   > GET https://api.example.com/events?topic=news last-event-id='1'
     2 message id='2' retry=1 data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
-    hook stream_end outcome=success
     end
   async saved {"bound": [], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id='2'

@@ -11,7 +11,7 @@
   entry text freshness ! TypeError: freshness_seconds has the wrong type []
   entry text body ! TypeError: body has the wrong type []
   entry headers ! TypeError: headers has the wrong type []
-  result = CacheResult(source='network', response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='c', elapsed=0.0, content_type=None, request_id=None, attempt_count=1), network_status=200)
+  result = CacheResult(source='network', response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.0, content_type=None, request_id=None, attempt_count=1), network_status=200)
   result source ! ValueError: source must be network, fresh_cache, or revalidated []
   result response ! TypeError: response has the wrong type []
   result status ! TypeError: network_status has the wrong type []
@@ -72,83 +72,43 @@
   text options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
   closed client ! ConfigurationError: ConfigurationError(operation_id='getUser', reason='client_closed', field_path='client.closed') [operation_id='getUser', field_path=('client', 'closed')] client_closed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   recorded miss = network 21:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
-    event response_headers status=304
-    event attempt_end status=304
-    event call_end status=304
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'etag', 'Content-Length'] fresh=False
   recorded revalidation = revalidated 21:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"a"'), ('Content-Length', '22')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     delete
   recorded unstored = network 21:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=() values=0 bytes=11 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   list without vary = network [] status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"l"'), ('cache-control', 'max-age=0'), ('content-length', '11'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "l"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=11 headers=['vary', 'cache-control', 'content-type', 'Content-Length'] fresh=True
   list in another vary slot = network [] status=200 network=200 attempts=1 type=application/json request_id=None headers=[('vary', 'Accept-Language'), ('cache-control', 'max-age=60'), ('content-length', '11'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   healing stored = network 21:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=304
-    event attempt_end status=304
-    event call_end status=304
     delete
   refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=304
-    event attempt_end status=304
-    event call_end status=304
     delete
   refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
@@ -158,86 +118,46 @@
     get key=32
   lookup store error ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
   exchange failure ! SDKError: SDKError(reason='store_failed') [cause=RuntimeError('down')] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
   exchange result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   deletable stored = network 21:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     delete
   delete result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   deletable stored again = network 21:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     delete
   delete failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('gone')] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/23
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
-  hook failure stores nothing ! SDKError: SDKError(operation_id='getUser', reason='hook_failed') [operation_id='getUser', cause=RuntimeError('hook failed')] hook_failed
+  response hook failure stores nothing ! APIConnectionError: APIConnectionError(operation_id='getUser', cause='RuntimeError') [operation_id='getUser', cause=RuntimeError('response hook failed')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/23
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
-  after a hook failure = network 23:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+  after a response hook failure = network 23:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-  hit without events = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
+  hit without a request = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security')] security_partition
   no credentials ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',)] binding_mismatch
   > GET https://api.example.com/secure/users/1
@@ -294,96 +214,51 @@
     get key=32
   granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   async recorded stored = network 24:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     delete
   async recorded unstored = network 24:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=404
-    event attempt_end status=404
-    event call_end status=404
   async recorded error ! NotFoundError: Error code: 404 - {"message":"no"} [operation_id='getUser', status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False]
     get key=32
   async lookup failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('disk')] store_failed
     get key=32
   async lookup store error ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
   async exchange result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   async healing stored = network 24:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=304
-    event attempt_end status=304
-    event call_end status=304
     delete
   async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=304
-    event attempt_end status=304
-    event call_end status=304
     delete
   async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False
   async deletable = network 24:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-    event call_start status=None
-    event attempt_start status=None
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
     delete
   async delete result ! SDKError: SDKError(reason='store_failed') [] store_failed
   > GET https://api.example.com/secure/users/1

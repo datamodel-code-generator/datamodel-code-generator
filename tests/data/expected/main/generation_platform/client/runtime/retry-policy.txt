@@ -4,7 +4,7 @@
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   default succeeds = (FieldSafeGetResponse(root='server payload'), 2)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('retry_scheduled', 0, None, True, None, 'status', 1), ('attempt_start', 1, None, False, None, None, 1), ('response_headers', 1, 200, True, None, None, 2), ('attempt_end', 1, 200, True, None, None, 2), ('call_end', 1, 200, True, 'success', None, 2)] unused=0
+    statuses=[503, 200] unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
@@ -12,39 +12,39 @@
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   default exhausted = ('InternalServerError', 3, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('retry_scheduled', 0, None, True, None, 'status', 1), ('attempt_start', 1, None, False, None, None, 1), ('response_headers', 1, 503, True, None, None, 2), ('attempt_end', 1, 503, True, None, None, 2), ('retry_scheduled', 1, None, True, None, 'status', 2), ('attempt_start', 2, None, False, None, None, 2), ('response_headers', 2, 503, True, None, None, 3), ('attempt_end', 2, 503, True, None, None, 3), ('call_end', 2, 503, True, 'error', None, 3)] unused=0
+    statuses=[503, 503, 503] unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   excluded before disabled = ('NotFoundError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 404)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 404, True, None, None, 1), ('attempt_end', 0, 404, True, None, None, 1), ('call_end', 0, 404, True, 'error', None, 1)] unused=0
+    statuses=[404] unused=0
   > GET https://api.example.com/never
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   never before disabled = ('InternalServerError', 1, b'server payload', FieldNeverGetResponse(root='server payload'), None, False, 503)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('call_end', 0, 503, True, 'error', None, 1)] unused=0
+    statuses=[503] unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   disabled = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('call_end', 0, 503, True, 'error', None, 1)] unused=0
+    statuses=[503] unused=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   unsafe = ('InternalServerError', 1, b'server payload', FieldUnsafePostResponse(root='server payload'), None, False, 503)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('call_end', 0, 503, True, 'error', None, 1)] unused=0
+    statuses=[503] unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   > POST https://api.example.com/idempotent
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   declared idempotent = (FieldIdempotentPostResponse(root='server payload'), 2)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('retry_scheduled', 0, None, True, None, 'status', 1), ('attempt_start', 1, None, False, None, None, 1), ('response_headers', 1, 200, True, None, None, 2), ('attempt_end', 1, 200, True, None, None, 2), ('call_end', 1, 200, True, 'success', None, 2)] unused=0
+    statuses=[503, 200] unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   explicit statuses replace = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('call_end', 0, 503, True, 'error', None, 1)] unused=0
+    statuses=[503] unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   explicit conflict status = (FieldSafeGetResponse(root='server payload'), 2)
-    events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 409, True, None, None, 1), ('attempt_end', 0, 409, True, None, None, 1), ('retry_scheduled', 0, None, True, None, 'status', 1), ('attempt_start', 1, None, False, None, None, 1), ('response_headers', 1, 200, True, None, None, 2), ('attempt_end', 1, 200, True, None, None, 2), ('call_end', 1, 200, True, 'success', None, 2)] unused=0
+    statuses=[409, 200] unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
@@ -300,7 +300,7 @@
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   automatic declared key = (None, None)
-    uuid4=True canonical=True attempts=2 retries=1 unused=0
+    uuid4=True canonical=True attempts=2 unused=0
   native ConnectError get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
   native ConnectError post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
   native ConnectError post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
@@ -372,7 +372,7 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   saturated none = (FieldVendorGetResponse(root='server payload'), 5)
-    delays=(0.25, 0.5, 0.5, 0.5) expected=(0.25, 0.5, 0.5, 0.5) match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
@@ -380,25 +380,25 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full jitter = (FieldVendorGetResponse(root='server payload'), 3)
-    delays=(1.0, 2.0) expected=(1.0, 2.0) match=True draws=2/2 unused=0
+    draws=2/2 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full lower bound = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(0.0,) expected=(0.0,) match=True draws=1/1 unused=0
+    draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full upper edge = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(1.0,) expected=(1.0,) match=True draws=1/1 unused=0
+    draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   subnormal upper edge = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(0.0,) expected=(0.0,) match=True draws=1/1 unused=0
+    draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
@@ -406,63 +406,47 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   zero remains zero = (FieldVendorGetResponse(root='server payload'), 3)
-    delays=(0.0, 0.0) expected=(0.0, 0.0) match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server exact cap = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(60.0,) expected=(60.0,) match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server over cap no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server unlimited cap = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(61.0,) expected=(61.0,) match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server deadline equality no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   backoff deadline equality = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   jitter deadline rejection = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True draws=1/1 unused=0
+    draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   success no RNG = (FieldVendorGetResponse(root='server payload'), 1)
-    delays=() expected=() match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   excluded status no RNG = ('NotFoundError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 404)
-    delays=() expected=() match=True draws=0/0 unused=0
+    draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server forbids no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True draws=0/0 unused=0
-  > GET https://api.example.com/vendor
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  > GET https://api.example.com/vendor
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  receipt target survives headers hook = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(0.5,) expected=(0.5,) match=True
-  > GET https://api.example.com/vendor
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  > GET https://api.example.com/vendor
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  chosen target survives end hook = (FieldVendorGetResponse(root='server payload'), 2)
-    delays=(0.25,) expected=(0.25,) match=True
-  > GET https://api.example.com/vendor
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  original server cap survives hook = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    delays=() expected=() match=True
+    draws=0/0 unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
@@ -476,7 +460,7 @@
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   async retry = Response(FieldSafeGetResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
-    counts=(2, None) events=[('call_start', None, None, False, None, None, 0), ('attempt_start', 0, None, False, None, None, 0), ('response_headers', 0, 503, True, None, None, 1), ('attempt_end', 0, 503, True, None, None, 1), ('retry_scheduled', 0, None, True, None, 'status', 1), ('attempt_start', 1, None, False, None, None, 1), ('response_headers', 1, 200, True, None, None, 2), ('attempt_end', 1, 200, True, None, None, 2), ('call_end', 1, 200, True, 'success', None, 2)]
+    counts=(2, None) statuses=[503, 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
@@ -490,7 +474,7 @@
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   async automatic declared key = None
-    uuid4=True canonical=True attempts=2 retries=1 unused=0
+    uuid4=True canonical=True attempts=2 unused=0
   async native ConnectError get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
   async native ConnectError post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
   async native ConnectError post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0

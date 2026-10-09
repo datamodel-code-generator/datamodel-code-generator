@@ -10,7 +10,6 @@ file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
 file client/bodies.py; matches published True
 file client/errors.py; matches published True
-file client/hooks.py; matches published True
 file client/model_codecs.py; matches published True
 file client/options.py; matches published True
 file client/protocols/__init__.py; matches published True
@@ -51,7 +50,6 @@ file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
 file client/bodies.py; matches published True
 file client/errors.py; matches published True
-file client/hooks.py; matches published True
 file client/model_codecs.py; matches published True
 file client/options.py; matches published True
 file client/protocols/__init__.py; matches published True

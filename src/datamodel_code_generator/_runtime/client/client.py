@@ -6,7 +6,6 @@ borrowed HTTP clients and providers retain their caller's lifetime.
 
 from __future__ import annotations
 
-import inspect
 import re
 from contextlib import (
     AbstractAsyncContextManager,
@@ -18,10 +17,10 @@ from contextlib import (
 from dataclasses import dataclass, replace
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
-from urllib.parse import quote, unquote_plus, urlsplit
+from urllib.parse import quote, unquote_plus
 
 import httpx2
-from typing_extensions import Self, TypeIs
+from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
@@ -38,8 +37,6 @@ from .errors import (
     kept_primary,
     too_large,
 )
-from .events import CallEvents, call_events
-from .hooks import LimiterContext
 from .logical import Delivery, LogicalCallContext
 from .media import normalized
 from .multipart import encode_parts, is_multipart
@@ -69,9 +66,7 @@ from .options import (
     ServerSelection,
     Settings,
     TimeoutOptions,
-    awaited,
     checked_base_url,
-    context,
     layered_retry,
     resolve_transport_options,
 )
@@ -109,7 +104,6 @@ if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterFragment
     from .bodies import AsyncContent, SyncContent
     from .body_sources import BodyBindings, BodySource
-    from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ServerPlan
     from .options import NativeAuth, ResolvedTransportOptions
@@ -167,9 +161,6 @@ def _layered(
         settings.max_stream_bytes if isinstance(layer.max_stream_bytes, Unset) else layer.max_stream_bytes,
         (*settings.headers, layer.headers) if layer.headers else settings.headers,
         (*settings.query, layer.query) if layer.query else settings.query,
-        settings.hooks if isinstance(layer.hooks, Unset) else layer.hooks,
-        settings.context if isinstance(layer.context, Unset) else context({**settings.context, **layer.context}),
-        settings.async_hooks if isinstance(layer.hooks, Unset) else awaited(layer.hooks),
         retry=layered_retry(settings.retry, layer.retry, operation_id),
         follow_redirects=settings.follow_redirects
         if isinstance(layer.follow_redirects, Unset)
@@ -178,7 +169,6 @@ def _layered(
         auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
         timeout=_timeouts(settings.timeout, layer.timeout),
         total_timeout=settings.total_timeout if isinstance(layer.total_timeout, Unset) else layer.total_timeout,
-        limiter=settings.limiter if isinstance(layer.limiter, Unset) else layer.limiter,
         compression=layer.compression if isinstance(layer, ClientOptions) else settings.compression,
         clock=settings.clock,
     )
@@ -442,7 +432,6 @@ def _info(status: int, headers: HeadersView, request_id_header: str | None, call
     return ResponseInfo(
         status_code=status,
         headers=headers,
-        call_id=call.call_id,
         attempt_count=call.attempt_count,
         elapsed=call.monotonic() - call.started,
         content_type=None if content_type is None else normalized(content_type),
@@ -662,6 +651,18 @@ def _answered(error: Exception, outgoing: httpx2.Request, hooks: list[Callable[.
     return failed is not outgoing
 
 
+def _failed_send(
+    error: Exception, outgoing: httpx2.Request, call: Call, hooks: dict[str, list[Callable[..., object]]]
+) -> APIConnectionError:
+    """Record how far a failed native send got and convert it; a failure a request hook raised is never sent again."""
+    if (request_hooks := hooks["request"]) and _in_hook(error, request_hooks):
+        call.retry_blocked = True
+    call.delivery_state = delivery(
+        error, send_started=True, response_started=_answered(error, outgoing, hooks["response"])
+    )
+    return native_error(error)
+
+
 def _redirects(response: httpx2.Response) -> int:
     """Count the redirects HTTPX2 followed, leaving out the responses an Auth flow answered, such as a challenge."""
     return sum(hop.has_redirect_location for hop in response.history)
@@ -700,7 +701,6 @@ class Call(LogicalCallContext):
         "attempt_index",
         "current_origin",
         "decoder",
-        "events",
         "idempotency",
         "initial_origin",
         "key",
@@ -708,7 +708,6 @@ class Call(LogicalCallContext):
         "last_info",
         "method",
         "operation",
-        "permit",
         "placements",
         "previous_cap",
         "raw_response",
@@ -726,7 +725,6 @@ class Call(LogicalCallContext):
         self.placements: tuple[Placement, ...] = ()
         self.operation = operation
         self.decoder: ResponseDecoder[object] = RAW_DECODER
-        self.events: CallEvents | None = None
         self.request_id_header = None if operation is None else operation.request_id_header
         self.retry_safety: Literal["method_default", "idempotent", "never"] = (
             "method_default" if operation is None else operation.retry_safety
@@ -747,10 +745,9 @@ class Call(LogicalCallContext):
         self.received_at = self.started
         self.received_wall_time = 0.0
         self.response_transferred = False
-        self.permit: Permit | AsyncPermit | None = None
 
     def bind(self) -> None:
-        """Validate operation-bound controls before hooks, encoding, and any send."""
+        """Validate operation-bound controls before encoding and any send."""
         operation = self.operation
         if self.idempotency is None and isinstance(self.key, IdempotencyKey):
             raise ConfigurationError(field_path=("idempotency_key",), reason="not_declared")
@@ -868,12 +865,10 @@ class Call(LogicalCallContext):
         if self.retry_blocked:
             raise self.stopped(error)
 
-    def restart(self, original: httpx2.Request) -> None:
+    def restart(self) -> None:
         """Begin the next resource candidate from the once-encoded original request."""
         self.attempt_index += 1
         self.current_origin = self.initial_origin
-        if self.events is not None:
-            self.events.prepare(str(original.url), self.attempt_index)
 
     def follow(self, outgoing: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool | None:
         """Return whether HTTPX2 follows a redirect of the outgoing request, or None for the HTTP client's own choice.
@@ -1210,99 +1205,10 @@ async def _astreamed(opened: Callable[[], Awaitable[AsyncRawResponse]]) -> Async
     await handle.aclose()
 
 
-def _is_limiter(value: object) -> TypeIs[Limiter]:
-    acquire = getattr(value, "acquire", None)
-    return callable(acquire) and not inspect.iscoroutinefunction(acquire)
-
-
-def _is_async_limiter(value: object) -> TypeIs[AsyncLimiter]:
-    return inspect.iscoroutinefunction(getattr(value, "acquire", None))
-
-
-def _is_permit(value: object) -> TypeIs[Permit]:
-    release = getattr(value, "release", None)
-    return callable(release) and not inspect.iscoroutinefunction(release)
-
-
-def _is_async_permit(value: object) -> TypeIs[AsyncPermit]:
-    return inspect.iscoroutinefunction(getattr(value, "release", None))
-
-
-def _limiter_context(call: LogicalCallContext, url: str) -> LimiterContext:
-    parts = urlsplit(url)
-    return LimiterContext(
-        operation_id=call.operation_id,
-        origin=f"{parts.scheme}://{parts.netloc}",
-        call_id=call.call_id,
-        parent_session_id=call.parent_session_id,
-        remaining_timeout=call.remaining(),
-    )
-
-
-def _release_permit(permit: Permit) -> None:
-    try:
-        permit.release()
-    except Exception as error:  # noqa: BLE001
-        raise SDKError(reason="limiter_failed", cause=error) from None
-
-
-async def _arelease_permit(permit: AsyncPermit) -> None:
-    try:
-        await permit.release()
-    except Exception as error:  # noqa: BLE001
-        raise SDKError(reason="limiter_failed", cause=error) from None
-
-
-def _acquire(limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None) -> Permit:
-    """Acquire a mode-correct permit, leaving all post-acquisition work to its owner."""
-    if not _is_limiter(limiter):
-        raise ConfigurationError(field_path=("limiter",), reason="async_limiter")
-    if events is not None:
-        events.origin = _limiter_context(call, url).origin
-        events.emit(events.event("limiter_wait"))
-    try:
-        permit = limiter.acquire(_limiter_context(call, url))
-    except Exception as error:  # noqa: BLE001
-        raise SDKError(reason="limiter_failed", cause=error) from None
-    if not _is_permit(permit):
-        raise SDKError(reason="limiter_failed", cause=TypeError("Expected a synchronous Permit"))
-    return permit
-
-
-async def _aacquire(
-    limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None
-) -> AsyncPermit:
-    """Acquire an async permit in the caller's task, which a stop of the call interrupts."""
-    if not _is_async_limiter(limiter):
-        raise ConfigurationError(field_path=("limiter",), reason="sync_limiter")
-    if events is not None:
-        events.origin = _limiter_context(call, url).origin
-        await events.aemit(events.event("limiter_wait"))
-    try:
-        permit = await limiter.acquire(_limiter_context(call, url))
-    except Exception as error:  # noqa: BLE001
-        raise SDKError(reason="limiter_failed", cause=error) from None
-    if not _is_async_permit(permit):
-        raise SDKError(reason="limiter_failed", cause=TypeError("Expected an asynchronous Permit"))
-    return permit
-
-
 class ClientCore(Core["httpx2.Client", "RawResponse"]):
     """Run the calls of a synchronous client and its views through one transport adapter."""
 
     __slots__ = ()
-
-    def _started(self, call: LogicalCallContext, path: str | None) -> CallEvents | None:
-        """Admit a call, reporting both boundary events when it is already stopped."""
-        events = call_events(call.settings, call=call, path=path, asynchronous=False)
-        try:
-            self._admitted(call)
-        except BaseException as error:  # noqa: BLE001
-            failure = call.failure(error)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
-        return events
 
     @classmethod
     def create(
@@ -1346,7 +1252,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
         call = Call(settings, operation)
-        events = call.events = self._started(call, operation.path)
+        self._admitted(call)
         decoder = operation.responses
 
         def prepare() -> tuple[httpx2.Request, object]:
@@ -1374,14 +1280,9 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive)
 
-            if events is not None:
-                events.finish()
-
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1405,7 +1306,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         """
         call = self._raw_call(operation, options, _call)
         call.handing_off = stream
-        events = call.events = self._started(call, operation.path)
+        self._admitted(call)
         decoder = operation.responses
         result: RawResponse | None = None
 
@@ -1436,8 +1337,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 result.raise_for_status()
             if _call is not None:
                 decoder.streamed(result.info)
-            if events is not None:
-                events.finish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -1445,9 +1344,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1492,8 +1389,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = Call(self._call_settings(options, None))
         call.handing_off = stream
-        events = call.events = self._started(call, None)
-        result: RawResponse | None = None
+        self._admitted(call)
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
             return self._raw_response(response, info, call, stream=stream)
@@ -1503,21 +1399,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
         try:
             result = self._run(call, body, prepare, receive)
-
-            if events is not None:
-                events.finish(handed_off=stream)
-
-            if stream:
-                call.handoff()
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if result is not None:
-                result.discard(failure)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
-        else:
-            return result
+            raise failure from failure.__cause__
+        if stream:
+            call.handoff()
+        return result
 
     def stream_raw(
         self,
@@ -1546,8 +1433,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             call.bind()
             if call.operation is not None and call.operation.security is not None:
                 self._bind_auth(call)
-            if (events := call.events) is not None:
-                events.emit(events.starting(call.settings))
 
             request, deferred = prepare()
             request = call.prepared(request)
@@ -1562,7 +1447,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             _close_body(source or entry, call, failure)
-            raise failure from None
+            raise failure from failure.__cause__
         try:
             _close_body(source or entry, call)
         except SDKError as error:
@@ -1579,9 +1464,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], T],
     ) -> T:
         """Read and decode error bodies before deciding whether a complete status response may retry."""
-        events = call.events
-        if events is not None:
-            events.prepare(str(original.url), call.attempt_index)
         while True:
             response: httpx2.Response | None = None
             info: ResponseInfo | None = None
@@ -1592,8 +1474,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 response = self._send(original, source, call)
                 info = self._response_info(response, call.request_id_header, call)
                 call.received(info)
-                if events is not None:
-                    events.emit(events.responding(info))
                 planned = _status_plan(info, source, call)
                 if planned is None:
                     result = receive(response, info)
@@ -1607,12 +1487,14 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             except BaseException as error:  # noqa: BLE001
                 failure = self._exchange_failure(error, response, call, info)
                 if not is_transport(failure) or call.sends == sends_before:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
             self._wait_retry(planned, cast("BaseException", failure), call)
-            call.restart(original)
+            call.restart()
 
     def _exchange_failure(
         self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
@@ -1627,34 +1509,15 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
     @staticmethod
     def _wait_retry(planned: RetryDelay, failure: BaseException, call: Call) -> None:
         """Finish the released candidate before its interruptible absolute wait."""
-        events = call.events
         call.last_failure = failure
-        if events is not None:
-            events.finish(error=failure, intermediate=True)
-        call.resending(failure)
-        if events is not None:
-            events.emit(
-                events.event(
-                    "retry_scheduled",
-                    sent=True,
-                    duration=max(0.0, planned.not_before - call.monotonic()),
-                    retry_reason=planned.reason,
-                )
-            )
         call.resending(failure)
         call.sleep_until(planned.not_before)
         call.resending(failure)
 
     def _raw_response(self, response: httpx2.Response, info: ResponseInfo, call: Call, *, stream: bool) -> RawResponse:
-        permit, call.permit = call.permit, None
 
         def release() -> None:
-            self._release_resources(
-                call,
-                (response.close, partial(_release_permit, cast("Permit", permit)))
-                if permit is not None
-                else (response.close,),
-            )
+            self._release_resources(call, (response.close,))
 
         handle = RawResponse(
             info,
@@ -1666,7 +1529,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             raw_source=partial(response_bytes, response),
             native=response,
             close=release,
-            events=call.events if stream else None,
             call=call,
         )
         call.response_transferred = True
@@ -1680,45 +1542,26 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         source: BodySource | None,
         call: Call,
     ) -> httpx2.Response:
-        """Send one native request and hand its response and permit to the call together."""
+        """Send one native request and hand its response to the call."""
         attempt: SyncContent | EncodedAttempt | None = request_body(request)
-        permit: Permit | None = None
         try:
             call.next_send()
-            if (limiter := call.settings.limiter) is not None:
-                permit = _acquire(limiter, call, str(request.url), call.events)
-                if call.events is not None:
-                    call.events.emit(call.events.event("limiter_acquired"))
             if source is not None:
                 attempt = source.open()
 
             outgoing = self._outgoing(request, attempt, source, call)
-            if call.events is not None:
-                call.events.emit(call.events.attempting())
             call.admit_send()
-            if call.events is not None:
-                call.events.sending()
             try:
                 response = self._native_send(outgoing, call, source=source)
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                call.delivery_state = delivery(
-                    error,
-                    send_started=True,
-                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                )
-                raise native_error(error) from None
+                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
             call.delivery_state = Delivery.RESPONSE_STARTED
-            call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call)
-            closes: list[Callable[[], None]] = []
-            if permit is not None:
-                closes.append(partial(_release_permit, permit))
-            self._release_resources(call, tuple(closes), failure)
-            raise failure from None
+            raise failure from failure.__cause__
 
     def _native_send(self, outgoing: httpx2.Request, call: Call, *, source: BodySource | None) -> httpx2.Response:
         """Send through the HTTP client with the call's Auth, or else its own, following redirects as the call allows.
@@ -1761,11 +1604,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             raise primary
 
     def _close_response(self, response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
-        permit, call.permit = call.permit, None
-        closes = (
-            (response.close,) if permit is None else (response.close, partial(_release_permit, cast("Permit", permit)))
-        )
-        self._release_resources(call, closes, error)
+        self._release_resources(call, (response.close,), error)
 
     @staticmethod
     def _outgoing(
@@ -1836,18 +1675,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     __slots__ = ()
     _asynchronous: ClassVar[bool] = True
 
-    async def _started(self, call: LogicalCallContext, path: str | None) -> CallEvents | None:
-        """Admit a call, reporting both boundary events when it is already stopped."""
-        events = call_events(call.settings, call=call, path=path, asynchronous=True)
-        try:
-            self._admitted(call)
-        except BaseException as error:  # noqa: BLE001
-            failure = call.failure(error)
-            if events is not None:
-                await events.aended(failure, starting=True)
-            raise failure from None
-        return events
-
     @classmethod
     def create(
         cls,
@@ -1890,7 +1717,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
         call = Call(settings, operation)
-        events = call.events = await self._started(call, operation.path)
+        self._admitted(call)
         decoder = operation.responses
 
         def prepare() -> tuple[httpx2.Request, object]:
@@ -1918,14 +1745,9 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = await self._run(call, body, prepare, receive)
 
-            if events is not None:
-                await events.afinish()
-
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1949,7 +1771,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """
         call = self._raw_call(operation, options, _call)
         call.handing_off = stream
-        events = call.events = await self._started(call, operation.path)
+        self._admitted(call)
         decoder = operation.responses
         result: AsyncRawResponse | None = None
 
@@ -1980,8 +1802,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await result.raise_for_status()
             if _call is not None:
                 decoder.streamed(result.info)
-            if events is not None:
-                await events.afinish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -1989,9 +1809,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -2036,8 +1854,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = Call(self._call_settings(options, None))
         call.handing_off = stream
-        events = call.events = await self._started(call, None)
-        result: AsyncRawResponse | None = None
+        self._admitted(call)
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
             return await self._raw_response(response, info, call, stream=stream)
@@ -2047,21 +1864,12 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
         try:
             result = await self._run(call, body, prepare, receive)
-
-            if events is not None:
-                await events.afinish(handed_off=stream)
-
-            if stream:
-                call.handoff()
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if result is not None:
-                await result.discard(failure)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
-        else:
-            return result
+            raise failure from failure.__cause__
+        if stream:
+            call.handoff()
+        return result
 
     def stream_raw(
         self,
@@ -2090,8 +1898,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.bind()
             if call.operation is not None and call.operation.security is not None:
                 self._bind_auth(call)
-            if (events := call.events) is not None:
-                await events.aemit(events.starting(call.settings))
 
             request, deferred = prepare()
             request = call.prepared(request)
@@ -2106,7 +1912,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
-            raise failure from None
+            raise failure from failure.__cause__
         try:
             await _aclose_body(source or entry, call)
         except BaseException as error:
@@ -2123,9 +1929,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
     ) -> T:
         """Read and decode error bodies before deciding whether a complete status response may retry."""
-        events = call.events
-        if events is not None:
-            events.prepare(str(original.url), call.attempt_index)
         while True:
             response: httpx2.Response | None = None
             info: ResponseInfo | None = None
@@ -2136,8 +1939,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 response = await self._send(original, source, call)
                 info = self._response_info(response, call.request_id_header, call)
                 call.received(info)
-                if events is not None:
-                    await events.aemit(events.responding(info))
                 planned = _status_plan(info, source, call)
                 if planned is None:
                     result = await receive(response, info)
@@ -2151,12 +1952,14 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except BaseException as error:  # noqa: BLE001
                 failure = await self._exchange_failure(error, response, call, info)
                 if not is_transport(failure) or call.sends == sends_before:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
             await self._wait_retry(planned, cast("BaseException", failure), call)
-            call.restart(original)
+            call.restart()
 
     async def _exchange_failure(
         self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
@@ -2171,20 +1974,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     @staticmethod
     async def _wait_retry(planned: RetryDelay, failure: BaseException, call: Call) -> None:
         """Finish the released candidate before its interruptible absolute wait."""
-        events = call.events
         call.last_failure = failure
-        if events is not None:
-            await events.afinish(error=failure, intermediate=True)
-        call.resending(failure)
-        if events is not None:
-            await events.aemit(
-                events.event(
-                    "retry_scheduled",
-                    sent=True,
-                    duration=max(0.0, planned.not_before - call.monotonic()),
-                    retry_reason=planned.reason,
-                )
-            )
         call.resending(failure)
         await call.asleep_until(planned.not_before)
         call.resending(failure)
@@ -2192,15 +1982,9 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     async def _raw_response(
         self, response: httpx2.Response, info: ResponseInfo, call: Call, *, stream: bool
     ) -> AsyncRawResponse:
-        permit, call.permit = call.permit, None
 
         async def release() -> None:
-            await self._release_resources(
-                call,
-                (response.aclose, partial(_arelease_permit, cast("AsyncPermit", permit)))
-                if permit is not None
-                else (response.aclose,),
-            )
+            await self._release_resources(call, (response.aclose,))
 
         handle = AsyncRawResponse(
             info,
@@ -2212,7 +1996,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raw_source=partial(async_response_bytes, response),
             native=response,
             close=release,
-            events=call.events if stream else None,
             call=call,
         )
         call.response_transferred = True
@@ -2226,45 +2009,26 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         source: BodySource | None,
         call: Call,
     ) -> httpx2.Response:
-        """Send one native request and hand its response and permit to the call together."""
+        """Send one native request and hand its response to the call."""
         attempt: AsyncContent | EncodedAttempt | None = request_body(request)
-        permit: AsyncPermit | None = None
         try:
             call.next_send()
-            if (limiter := call.settings.limiter) is not None:
-                permit = await _aacquire(limiter, call, str(request.url), call.events)
-                if call.events is not None:
-                    await call.events.aemit(call.events.event("limiter_acquired"))
             if source is not None:
                 attempt = await source.aopen()
 
             outgoing = self._outgoing(request, attempt, source, call)
-            if call.events is not None:
-                await call.events.aemit(call.events.attempting())
             call.admit_send()
-            if call.events is not None:
-                call.events.sending()
             try:
                 response = await self._native_send(outgoing, call, source=source)
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                call.delivery_state = delivery(
-                    error,
-                    send_started=True,
-                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                )
-                raise native_error(error) from None
+                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
             call.delivery_state = Delivery.RESPONSE_STARTED
-            call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call)
-            closes: list[Callable[[], Awaitable[None]]] = []
-            if permit is not None:
-                closes.append(partial(_arelease_permit, permit))
-            await self._release_resources(call, tuple(closes), failure)
-            raise failure from None
+            raise failure from failure.__cause__
 
     async def _native_send(self, outgoing: httpx2.Request, call: Call, *, source: BodySource | None) -> httpx2.Response:
         """Send through the asyncio HTTP client as the synchronous client sends, token requests included."""
@@ -2304,13 +2068,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise primary
 
     async def _close_response(self, response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
-        permit, call.permit = call.permit, None
-        closes = (
-            (response.aclose,)
-            if permit is None
-            else (response.aclose, partial(_arelease_permit, cast("AsyncPermit", permit)))
-        )
-        await self._release_resources(call, closes, error)
+        await self._release_resources(call, (response.aclose,), error)
 
     @staticmethod
     def _outgoing(

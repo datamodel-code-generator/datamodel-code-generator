@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from pathlib import Path
@@ -35,7 +34,6 @@ from pets.errors import (
     NotFoundError,
     SDKError,
 )
-from pets.hooks import AsyncLimiter, AsyncPermit, CallEvent, Limiter, LimiterContext, Permit
 from pets.options import (
     UNSET,
     ClientOptions,
@@ -215,23 +213,29 @@ def transports() -> None:
     assert_type(AsyncClient(http_client=httpx2.AsyncClient()).with_options(RequestOptions()), AsyncClientView)
 
 
-class Tracer:
-    def on_event(self, event: CallEvent) -> None:
-        del event
+def trace(request: httpx2.Request) -> None:
+    del request
 
 
-class AsyncTracer:
-    async def on_event(self, event: CallEvent) -> None:
-        del event
+def inspect(response: httpx2.Response) -> None:
+    del response
 
 
-def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
-    options = ClientOptions(hooks=(Tracer(), AsyncTracer()), context={"tenant": "t", "retry": 1, "user": None})
-    Client(options=options)
-    try:
-        client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
-    except SDKError as error:
-        assert_type(error.reason, str | None)
+async def atrace(request: httpx2.Request) -> None:
+    del request
+
+
+def event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+    with httpx2.Client(event_hooks={"request": [trace], "response": [inspect]}) as native:
+        try:
+            Client(http_client=native).pets.get_pet(pet_id=pet)
+        except SDKError as error:
+            assert_type(error.reason, str | None)
+
+
+async def async_event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+    async with httpx2.AsyncClient(event_hooks={"request": [atrace]}) as native:
+        await AsyncClient(http_client=native).pets.get_pet(pet_id=pet)
 
 
 def timing_options(client: Client) -> None:
@@ -246,10 +250,8 @@ def timing_options(client: Client) -> None:
     assert_type(configured.clock, Clock | Unset)
     assert_type(configured.timeout, TimeoutOptions | Unset | None)
     assert_type(configured.total_timeout, float | Unset | None)
-    assert_type(configured.limiter, Limiter | AsyncLimiter | Unset | None)
     Client(options=configured)
     assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0)), ClientView)
-    client.with_options(RequestOptions(limiter=None))
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
@@ -266,15 +268,11 @@ class SteppedClock:
     def __call__(self) -> float:
         return self.now
 
-    def on_event(self, event: CallEvent) -> None:
-        if event.name == "retry_scheduled" and event.duration is not None:
-            self.now += event.duration
-
 
 def instant_retries(url: str) -> Client:
     stepped = SteppedClock()
     clock = Clock(monotonic=stepped, random=lambda: 0.5)
-    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), clock=clock))
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
@@ -283,66 +281,11 @@ def download(client: Client, url: str, destination: BinaryIO) -> None:
         response.stream_to(destination)
 
 
-class SemaphorePermit:
-    """Release one asyncio semaphore slot exactly once."""
-
-    def __init__(self, semaphore: asyncio.Semaphore) -> None:
-        self._semaphore = semaphore
-        self._released = False
-
-    async def release(self) -> None:
-        if not self._released:
-            self._released = True
-            self._semaphore.release()
-
-
-class SemaphoreLimiter:
-    """Share one concurrency limit among calls made through the configured client or view."""
-
-    def __init__(self, limit: int) -> None:
-        self._semaphore = asyncio.Semaphore(limit)
-
-    async def acquire(self, context: LimiterContext) -> AsyncPermit:
-        await self._semaphore.acquire()
-        return SemaphorePermit(self._semaphore)
-
-
-async def read_limited(client: AsyncClient, urls: tuple[str, ...]) -> tuple[bytes, ...]:
-    limiter: AsyncLimiter = SemaphoreLimiter(4)
-    view = client.with_options(RequestOptions(limiter=limiter))
-
-    async def read(url: str) -> bytes:
-        response = await view.request_raw("GET", url)
-        return await response.read()
-
-    return tuple(await asyncio.gather(*(read(url) for url in urls)))
-
-
-def limiter_contract(limiter: Limiter, context: LimiterContext) -> None:
-    assert_type(context.operation_id, str | None)
-    assert_type(context.origin, str)
-    assert_type(context.call_id, str)
-    assert_type(context.parent_session_id, str | None)
-    assert_type(context.remaining_timeout, float | None)
-    permit = limiter.acquire(context)
-    assert_type(permit, Permit)
-    permit.release()
-    Client(options=ClientOptions(limiter=limiter))
-
-
-async def async_limiter_contract(limiter: AsyncLimiter, context: LimiterContext) -> None:
-    permit = await limiter.acquire(context)
-    assert_type(permit, AsyncPermit)
-    await permit.release()
-    AsyncClient(options=ClientOptions(limiter=limiter))
-
-
-def error_measurements(error: SDKError, event: CallEvent, info: ResponseInfo) -> None:
+def error_measurements(error: SDKError, info: ResponseInfo) -> None:
     assert_type(error.attempt_count, int)
     assert_type(error.elapsed, float)
     assert_type(error.request_id, str | None)
     assert_type(error.operation_id, str | None)
-    assert_type(event.attempt_count, int)
     assert_type(info.attempt_count, int)
     assert_type(info.elapsed, float)
     deadline = APITimeoutError(reason="deadline_exceeded")

@@ -168,11 +168,6 @@ def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
 
 
-def is_hook_failure(error: object) -> TypeGuard[SDKError]:
-    """Return whether an error is a hook's failure, which stops the call."""
-    return type(error) is SDKError and error.reason == "hook_failed"
-
-
 def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
     """Return the start of an error body as text, marking where it was cut."""
     text = body.decode("utf-8", "replace").strip()

@@ -1,20 +1,19 @@
-"""Exercise generated deadline, limiter, and error surfaces through public package modules."""
+"""Exercise generated deadline and error surfaces through public package modules."""
 
 from __future__ import annotations
 
 import importlib
-from dataclasses import fields
 from typing import TYPE_CHECKING, get_type_hints
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, outcome, raw_response, record
+from tests.data.python.client_runtime import Exchange, raw_response, record
 
 if TYPE_CHECKING:
     from types import ModuleType
 
 
-def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
+def _values(options: ModuleType, lines: list[str]) -> None:
     for label, value in (
         ("bool", True),
         ("negative", -1),
@@ -38,7 +37,6 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
             )
     for field, value in (
         ("timeout", False),
-        ("limiter", object()),
         ("clock", object()),
     ):
         record(lines, f"option {field} type", lambda field=field, value=value: options.ClientOptions(**{field: value}))
@@ -48,28 +46,16 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     lines.append(f"  public deadline exported={hasattr(options, 'Deadline')}")
     for removed in ("deadline", "stream_idle_timeout", "stream_total_timeout"):
         record(lines, f"removed option {removed}", lambda removed=removed: options.RequestOptions(**{removed: None}))
-    options.ClientOptions(timeout=None, total_timeout=None, limiter=None)
+    options.ClientOptions(timeout=None, total_timeout=None)
     values = options.RequestOptions(total_timeout=0)
     lines.append(f"  seconds {values.total_timeout}")
-    context = hooks.LimiterContext(
-        operation_id=None,
-        origin="https://example.com",
-        call_id="safe-call",
-        parent_session_id=None,
-        remaining_timeout=None,
-    )
-    lines.append(
-        f"  limiter context fields={tuple(item.name for item in fields(context))} readonly={outcome(lambda: setattr(context, 'origin', 'changed'))}"
-    )
-    lines.append(
-        f"  slotted {tuple(hasattr(value, '__dict__') for value in (values, context, options.TimeoutOptions()))}"
-    )
+    lines.append(f"  slotted {tuple(hasattr(value, '__dict__') for value in (values, options.TimeoutOptions()))}")
 
 
 def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     headers = responses.HeadersView((("Authorization", "private-secret"),))
     info = responses.ResponseInfo(
-        status_code=200, headers=headers, call_id="safe-call", elapsed=0.5, content_type=None, attempt_count=3
+        status_code=200, headers=headers, elapsed=0.5, content_type=None, attempt_count=3
     )
     for error in (
         errors.SDKError(attempt_count=1, elapsed=2),
@@ -88,25 +74,17 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
     lines.append(f"  hierarchy timeout={issubclass(errors.APITimeoutError, errors.APIConnectionError)}")
 
 
-def _hints(options: ModuleType, errors: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
+def _hints(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for owner in (
         options.TimeoutOptions,
         options.ClientOptions,
         options.RequestOptions,
         options.Clock,
-        hooks.LimiterContext,
         errors.SDKError,
         errors.APIConnectionError,
         errors.APITimeoutError,
     ):
         lines.append(f"  hints {owner.__name__} {tuple(get_type_hints(owner.__init__))}")
-    for method in (
-        hooks.Limiter.acquire,
-        hooks.AsyncLimiter.acquire,
-        hooks.Permit.release,
-        hooks.AsyncPermit.release,
-    ):
-        lines.append(f"  hints {method.__qualname__} {tuple(get_type_hints(method))}")
 
 
 def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -198,12 +176,12 @@ def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 
 def deadline_options(package: ModuleType, lines: list[str]) -> None:
     """Report public option validation, error shape, annotations, and timeout inheritance over real TLS."""
-    options, errors, hooks, responses = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors", "hooks", "responses")
+    options, errors, responses = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors", "responses")
     )
-    _values(options, hooks, lines)
+    _values(options, lines)
     _errors(errors, responses, lines)
-    _hints(options, errors, hooks, lines)
+    _hints(options, errors, lines)
     _live_calls(package, options, lines)
     _attempt_timeout(package, options, lines)
     _clocks(package, options, lines)

@@ -71,17 +71,6 @@ class _Chunks:
         self.closes += 1
 
 
-class _Move:
-    """Move the file after entry to exercise its retained initial offset."""
-
-    def __init__(self, file: _File) -> None:
-        self.file = file
-
-    def on_event(self, event: Any) -> None:
-        if event.name == "call_start":
-            self.file.seek(0)
-
-
 class _Replies:
     """Keep compact observations of real TLS requests and supply the requested status sequence."""
 
@@ -95,14 +84,12 @@ class _Replies:
         for index, status in enumerate(statuses):
 
             def respond(request: httpx2.Request, status: int = status, index: int = index) -> httpx2.Response:
-                self.requests.append(
-                    (
-                        request.method,
-                        request.url.raw_path,
-                        request.headers.get("content-type"),
-                        request.content,
-                    )
-                )
+                self.requests.append((
+                    request.method,
+                    request.url.raw_path,
+                    request.headers.get("content-type"),
+                    request.content,
+                ))
                 if change is not None and index == 0:
                     change()
                 fields = {"Content-Type": "text/plain"}
@@ -140,11 +127,11 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
         file = _File(data["file"].encode())
         file.seek(data["offset"])
         replies.reset(*data["hops"])
-        record(
-            lines,
-            "borrowed entry offset",
-            lambda: api.retry.post_idempotent(body=file, options=options.RequestOptions(hooks=(_Move(file),))),
-        )
+        with (
+            exchange.client(event_hooks={"request": [lambda _: file.seek(0)]}) as moving,
+            package.Client(http_client=moving, options=config) as moved,
+        ):
+            record(lines, "borrowed entry offset", lambda: moved.retry.post_idempotent(body=file))
         replies.report(lines)
         lines.append(f"    caller file open={not file.closed} offset={file.tell()} reads={file.reads}")
         file.seek(data["next_offset"])
@@ -186,9 +173,7 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
 async def _async_replay(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     exchange = Exchange([])
     replies = _Replies(exchange)
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0), follow_redirects=True
-    )
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), follow_redirects=True)
     with tempfile.TemporaryDirectory() as directory:
         async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
             file = _File(data["file"].encode())

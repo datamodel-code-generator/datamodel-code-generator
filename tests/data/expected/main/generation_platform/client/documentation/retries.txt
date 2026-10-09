@@ -3,7 +3,6 @@
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
@@ -211,7 +210,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
 
 
@@ -268,7 +267,7 @@ Status errors retain the final available response. Buffered and streaming raw AP
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
 failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
+set an optional session total timeout. Close an abandoned stream to release its response.
 
 ## Idempotency and replayable input
 
@@ -300,6 +299,9 @@ call running in a thread before it closes the file.
 ## Redirects and transport construction
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
+Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
+attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
+as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
@@ -330,8 +332,8 @@ closes only the native client the SDK created. Request views share that root and
 No operation of this API requires a security scheme, so its clients take no credentials. `auth` on `ClientOptions`, a
 view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and
 `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth. Sign requests with
-an `httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr or hook events; a
-query credential is part of the request URL, which the `httpx2` logger records at INFO level.
+an `httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr; a query credential
+is part of the request URL, which the `httpx2` logger records at INFO level.
 
 ## Errors and cleanup
 
@@ -345,10 +347,9 @@ start of the body. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
 key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
-finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
-cancellation propagates unchanged, and user callbacks are not shielded.
+Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
+new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
+caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## Request compression
 

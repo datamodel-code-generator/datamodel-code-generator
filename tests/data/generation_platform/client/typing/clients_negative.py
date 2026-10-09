@@ -14,7 +14,6 @@ from pets.errors import (
     DecodeError,
     SDKError,
 )
-from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
 from pets.options import (
     ClientOptions,
     Clock,
@@ -118,12 +117,7 @@ def misuse_multipart_data(data: object) -> None:
     del narrowed, data
 
 
-def misuse_hooks() -> None:
-    RequestOptions(hooks=("trace",))  # error
-    RequestOptions(context={"tags": ["a"]})  # error
-
-
-def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
+def misuse_timing(phase: TimeoutOptions) -> None:
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
@@ -134,16 +128,6 @@ def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
     phase.read = 1  # error
-    context.remaining_timeout = 0  # error
-
-
-def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, async_permit: AsyncPermit) -> None:
-    wrong_sync: Limiter = asynchronous  # error
-    wrong_async: AsyncLimiter = sync  # error
-    wrong_permit: Permit = async_permit  # error
-    wrong_async_permit: AsyncPermit = permit  # error
-    RequestOptions(limiter="queue")  # error
-    del wrong_sync, wrong_async, wrong_permit, wrong_async_permit
 
 
 def misuse_deadline_errors(error: SDKError) -> None:
@@ -174,7 +158,6 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Configu
     ResponseInfo(
         status_code=200,
         headers=info.headers,
-        call_id=info.call_id,
         elapsed=0,
         content_type=None,
         attempt_count="one",  # error

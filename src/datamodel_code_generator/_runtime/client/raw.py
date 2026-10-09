@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     import httpx2
 
     from ..model_codecs.media import JSONValue
-    from .events import CallEvents
     from .logical import LogicalCallContext
     from .operations import ResponseDecoder
     from .options import Settings
@@ -196,7 +195,6 @@ class _Raw(Generic[SourceT, HandleT]):
         "_call",
         "_classify",
         "_decoder",
-        "_events",
         "_info",
         "_limits",
         "_native",
@@ -217,14 +215,9 @@ class _Raw(Generic[SourceT, HandleT]):
         source: SourceT,
         raw_source: SourceT,
         native: httpx2.Response,
-        events: CallEvents | None,
         call: LogicalCallContext,
     ) -> None:
-        """Keep response metadata, status classification, limits, the decoded and raw body sources, and release.
-
-        A streaming handle of a call with hooks keeps its events, which report the stream's end once it was handed over.
-        """
-        self._events = events
+        """Keep response metadata, status classification, limits, the decoded and raw body sources, and release."""
         self._call = call
         self._info = info
         self._decoder = decoder
@@ -335,9 +328,11 @@ class _Raw(Generic[SourceT, HandleT]):
 
 def _cleanup_failure(failure: Exception) -> SDKError:
     """Return the failure of releasing a response, which a release that already classified it keeps."""
-    if isinstance(failure, SDKError) and failure.reason == "cleanup_failed":
-        return failure
-    return SDKError(reason="cleanup_failed", cause=failure)
+    return (
+        failure
+        if isinstance(failure, SDKError) and failure.reason == "cleanup_failed"
+        else SDKError(reason="cleanup_failed", cause=failure)
+    )
 
 
 def checked(response: _Raw[SourceT, HandleT]) -> None:
@@ -408,7 +403,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         native: httpx2.Response,
         close: Callable[[], None],
         call: LogicalCallContext,
-        events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -420,7 +414,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             source=source,
             raw_source=raw_source,
             native=native,
-            events=events,
             call=call,
         )
         self._close: Callable[[], None] | None = close
@@ -473,10 +466,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raise
 
     def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix.
-
-        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
-        """
+        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -535,7 +525,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             self._end("failed", error)
             raise
@@ -567,7 +557,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             if not isinstance(error, GeneratorExit):
                 self._end("failed", error)
@@ -599,10 +589,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     def _end(self, state: State, error: BaseException | None = None) -> None:
-        """Enter a final state, releasing the native connection once.
-
-        A handed-over stream then reports its end to its call's hooks.
-        """
+        """Enter a final state, releasing the native connection once."""
         self._state = state
         close, self._close = self._close, None
         if close is None:
@@ -620,20 +607,12 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
                 add_secondary(error, interruption)
-                self._released(error, early=state == "closed")
                 return
             if error is not None:
                 add_secondary(interruption, error)
-            self._released(interruption, early=state == "closed")
             raise
-        self._released(error, early=state == "closed")
         if failed is not None:
             raise failed
-
-    def _released(self, error: BaseException | None, *, early: bool) -> None:
-        """Report a handed-over stream's end after its native connection was released."""
-        if (events := self._events) is not None:
-            events.streamed(error, early=early)
 
 
 class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
@@ -654,7 +633,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         native: httpx2.Response,
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
-        events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -666,7 +644,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             source=source,
             raw_source=raw_source,
             native=native,
-            events=events,
             call=call,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
@@ -741,10 +718,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
 
     async def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix.
-
-        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
-        """
+        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -803,7 +777,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             await self._end("failed", error)
             raise
@@ -841,7 +815,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             if not isinstance(error, GeneratorExit):
                 await self._end("failed", error)
@@ -873,10 +847,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
-        """Enter a final state, releasing the native connection once.
-
-        A handed-over stream then reports its end to its call's hooks.
-        """
+        """Enter a final state, releasing the native connection once."""
         self._state = state
         close, self._close = self._close, None
         if close is None:
@@ -894,17 +865,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
                 add_secondary(error, interruption)
-                await self._released(error, early=state == "closed")
                 return
             if error is not None:
                 add_secondary(interruption, error)
-            await self._released(interruption, early=state == "closed")
             raise
-        await self._released(error, early=state == "closed")
         if failed is not None:
             raise failed
-
-    async def _released(self, error: BaseException | None, *, early: bool) -> None:
-        """Report a handed-over stream's end after its native connection was released."""
-        if (events := self._events) is not None:
-            await events.astreamed(error, early=early)

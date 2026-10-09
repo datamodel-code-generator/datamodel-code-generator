@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 import math
 import re
 from collections.abc import Mapping
@@ -16,10 +15,8 @@ from uuid import uuid4
 
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import json_bytes
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError, is_sequence
-from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
     Clock,
@@ -55,8 +52,6 @@ HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 
 MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
-MAX_CONTEXT_BYTES: Final = 8 * 1024
-NO_CONTEXT: Final[Mapping[str, JSONScalar]] = MappingProxyType({})
 _SCHEMES: Final = frozenset({"http", "https"})
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f]*")
@@ -114,54 +109,6 @@ def _pair(item: object, field: str) -> tuple[str, str | None]:
             case _:
                 pass
     raise ConfigurationError(field_path=(field,), reason="invalid_type")
-
-
-def _hooks(value: object) -> tuple[Hook | AsyncHook, ...]:
-    """Return a copy of a tuple of hooks, refusing anything that has no on_event method."""
-    if not is_sequence(value) or len(hooks := tuple(hook for hook in value if _is_hook(hook))) != len(value):
-        raise ConfigurationError(field_path=("hooks",), reason="invalid_type")
-    return hooks
-
-
-def _is_hook(value: object) -> TypeIs[Hook | AsyncHook]:
-    return callable(getattr(value, "on_event", None))
-
-
-def awaited(hooks: tuple[Hook | AsyncHook, ...]) -> bool:
-    """Return whether any of the hooks is asynchronous, which only an asyncio client can await."""
-    return any(inspect.iscoroutinefunction(hook.on_event) for hook in hooks)
-
-
-def context(value: object) -> Mapping[str, JSONScalar]:
-    """Return a copy of a call context, refusing a context of other names or values, or over 8 KiB of JSON.
-
-    Its names are strings and its values JSON scalars.
-    """
-    if not _is_context(value):
-        raise ConfigurationError(field_path=("context",), reason="invalid_type")
-    if len(json_bytes(copied := dict(value))) > MAX_CONTEXT_BYTES:
-        raise ConfigurationError(field_path=("context",), reason="out_of_range")
-    return MappingProxyType(copied)
-
-
-def _is_context(value: object) -> TypeIs[Mapping[str, JSONScalar]]:
-    return _is_mapping(value) and all(type(key) is str and _scalar(item) for key, item in value.items())
-
-
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
-
-
-def _scalar(value: object) -> bool:
-    match value:
-        case None | bool() | str():
-            return True
-        case int():
-            return True
-        case float():
-            return math.isfinite(value)
-        case _:
-            return False
 
 
 def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callable[[str], str]) -> None:
@@ -466,10 +413,6 @@ def resolve_transport_options(options: TransportOptions | Unset) -> ResolvedTran
     )
 
 
-def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
-    return callable(getattr(value, "acquire", None))
-
-
 _CODING: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-z-]+")
 _ENCODERS: Final = frozenset({"gzip"})
 
@@ -497,11 +440,8 @@ class _Options:
     max_response_bytes: int | Unset | None = UNSET
     max_error_body_bytes: int | Unset = UNSET
     max_stream_bytes: int | Unset | None = UNSET
-    hooks: tuple[Hook | AsyncHook, ...] | Unset = UNSET
-    context: Mapping[str, JSONScalar] | Unset = UNSET
     timeout: TimeoutOptions | Unset | None = UNSET
     total_timeout: float | Unset | None = UNSET
-    limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
     retry: RetryOptions | Unset = UNSET
     follow_redirects: bool | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
@@ -509,8 +449,6 @@ class _Options:
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
-        if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
-            raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
         if (value := self.total_timeout) is not None and not isinstance(value, Unset):
             object.__setattr__(self, "total_timeout", seconds(value, ("total_timeout",)))  # noqa: PLC2801
 
@@ -520,10 +458,6 @@ class _Options:
         checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
         checked_instance(self.follow_redirects, (bool, Unset), ("follow_redirects",))
         checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
-        if not isinstance(self.hooks, Unset):
-            object.__setattr__(self, "hooks", _hooks(self.hooks))
-        if not isinstance(self.context, Unset):
-            object.__setattr__(self, "context", context(self.context))
         if self.headers != ():
             object.__setattr__(self, "headers", _header_patch(self.headers))
         if self.query != ():
@@ -548,8 +482,7 @@ class ClientOptions(_Options):
     """Settings of one client; every field left UNSET takes the generated default.
 
     Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
-    removes them. Its hooks observe every call's events, with its context. Its clock times every call, and no view or
-    call changes it.
+    removes them. Its clock times every call, and no view or call changes it.
     """
 
     compression: Literal["gzip"] | None = "gzip"
@@ -572,8 +505,6 @@ class RequestOptions(_Options):
     """Settings of one call; every field left UNSET inherits the client's.
 
     Its headers and query patch the lower layers' last: the client's, a view's, and those the call's parameters give.
-    Its hooks replace the lower layers' rather than adding to them, and its context replaces their values of the names
-    it gives.
     """
 
 
@@ -588,12 +519,8 @@ class Settings:
     max_stream_bytes: int | None
     headers: tuple[HeaderPatch, ...] = ()
     query: tuple[QueryPatch, ...] = ()
-    hooks: tuple[Hook | AsyncHook, ...] = ()
-    context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
-    async_hooks: bool = False
     timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
     total_timeout: float | None = None
-    limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     follow_redirects: bool | None = None
     idempotency_key: IdempotencyKey | Unset | None = UNSET

@@ -195,41 +195,35 @@ text
   < closed
   another media type ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False, media_type='application/json'] unexpected_media_type
   > GET https://api.example.com/events accept=text/event-stream
-  hooked end at EOF
+  response end at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > POST https://api.example.com/feed accept=text/event-stream
-  hooked end at the sentinel
+  response end at the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > GET https://api.example.com/events accept=text/event-stream
-  hooked cut frame at EOF
+  response cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > POST https://api.example.com/feed accept=text/event-stream
-  hooked EOF before the sentinel
+  response EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', reason='eof', sequence=1) [operation_id='streamFeed', sequence=1] eof
   > GET https://api.example.com/events accept=text/event-stream
-  hooked undecodable event
+  response undecodable event
   < closed
-    hook stream_end outcome=error
     ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', reason='value', location='event.1') [operation_id='streamEvents', location=('event', 1), body_bytes=b'{}', truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] value
   > GET https://api.example.com/events accept=text/event-stream
-  hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  response early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=cancel
   > GET https://api.example.com/events accept=text/event-stream
   async one byte at a time
     1 message id='7' retry=None data=Message{'text': 'multi'} raw='{"text":\n"multi"}'
@@ -277,38 +271,35 @@ text
   async left early 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events accept=text/event-stream
-  async hooked end at EOF
+  < closed
+  async declared error status ! NotFoundError: Error code: 404 - {"detail": "missing"} [operation_id='streamEvents', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False]
+  > GET https://api.example.com/events accept=text/event-stream
+  async response end at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > POST https://api.example.com/feed accept=text/event-stream
-  async hooked end at the sentinel
+  async response end at the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > GET https://api.example.com/events accept=text/event-stream
-  async hooked cut frame at EOF
+  async response cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > POST https://api.example.com/feed accept=text/event-stream
-  async hooked EOF before the sentinel
+  async response EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', reason='eof', sequence=1) [operation_id='streamFeed', sequence=1] eof
   > GET https://api.example.com/events accept=text/event-stream
-  async hooked undecodable event
+  async response undecodable event
   < closed
-    hook stream_end outcome=error
     ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', reason='value', location='event.1') [operation_id='streamEvents', location=('event', 1), body_bytes=b'{}', truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] value
   > GET https://api.example.com/events accept=text/event-stream
-  async hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  async response early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=cancel
