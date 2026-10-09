@@ -1,3 +1,3 @@
 # api-pointer-percent
 render pydantic_v2.BaseModel default
-  diagnostic SchemaParseError: Error at schema path '#/components/schemas/%': API_REF_NONCANONICAL_POINTER: '#/components/schemas/%'
+  diagnostic Error: Error at schema path '#/components/schemas/%': API_REF_NONCANONICAL_POINTER: '#/components/schemas/%'
