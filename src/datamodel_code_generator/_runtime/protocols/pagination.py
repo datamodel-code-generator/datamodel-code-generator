@@ -17,12 +17,10 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import ConfigurationError, SDKError
+from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
-from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
-from ..model_codecs.errors import CodecError
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
@@ -39,10 +37,6 @@ from .records import (
     plain_copy,
     record_instance,
 )
-from .resume import MalformedStateError as _MalformedError
-from .resume import require_state as _require
-from .resume import state_array as _array
-from .resume import state_text as _text
 from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
@@ -75,9 +69,7 @@ __all__ = (
     "first_page",
     "following_page",
     "iterate_pages",
-    "resent",
     "resume_pages",
-    "saved_request",
 )
 
 T = TypeVar("T")
@@ -92,7 +84,6 @@ _REFERENCE: Final = re.compile(
     r"(?:[A-Za-z0-9\-._~:/?@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*"
 )
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
-_BODY_FIELDS: Final = 3
 
 
 @final
@@ -1037,50 +1028,6 @@ def _restored(
     walk.first = _first(plan, state)
     walk.link = _Link(plan.fingerprint, request, -1, 0, state, (), digest, None, None, _History({digest: 0}, -1))
     return walk
-
-
-def saved_request(
-    arguments: tuple[JSONValue | Unset, ...], body: tuple[JSONValue, str, str | None] | None
-) -> tuple[JSONValue, JSONValue]:
-    """Return how a checkpoint keeps a request's wire values: each argument in an array, empty when omitted.
-
-    The body is kept as its wire value with its declared and concrete media types, or as an empty array without one.
-    """
-    return [[] if isinstance(value, Unset) else [value] for value in arguments], [] if body is None else list(body)
-
-
-def resent(
-    core: ClientCore | AsyncClientCore, call: OperationPlan[object], arguments: JSONValue, body: JSONValue
-) -> _Request:
-    """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
-
-    An argument a checkpoint never saves is refused, and so is a value its codec refuses, path arguments that make a
-    segment a dot segment once encoded, a body the operation does not take, and a media type its select method refuses.
-    """
-    saved = [_array(argument) for argument in _array(arguments)]
-    _require(len(saved) == len(call.parameters) and all(len(argument) <= 1 for argument in saved))
-    wire = tuple(argument[0] if argument else UNSET for argument in saved)
-    _require(core.unsaved_argument(call, wire) is None)
-    sent = _array(body)
-    given: tuple[JSONValue, str, str | None] | None = None
-    if sent:
-        _require(len(sent) == _BODY_FIELDS and call.body is not None)
-        declared, concrete = _text(sent[1]), _text(sent[2])
-        _require(declared is not None)
-        given = sent[0], cast("str", declared), concrete
-    try:
-        restored, restored_body, media_type = core.restored_request(call, wire, given)
-        texts = {
-            spec.plan.name: spec.path_text(value)
-            for spec, value in zip(call.parameters, wire, strict=True)
-            if spec.plan.location == "path" and not isinstance(value, Unset)
-        }
-    except (SDKError, CodecError):
-        raise _MalformedError from None
-    _require(
-        not any(texts.keys() >= {*names} and dot_segment(segment, texts) for segment, names in path_segments(call.path))
-    )
-    return _Request(restored, restored_body, media_type)
 
 
 class _State(Enum):

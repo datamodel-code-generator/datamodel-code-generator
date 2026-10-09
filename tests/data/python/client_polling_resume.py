@@ -43,9 +43,8 @@ def _failure(call: Callable[[], object]) -> Any:
 
 
 def _kept(lines: list[str], label: str, error: Any, handle: Any) -> Any:
-    """Report a failure and whether it carries a checkpoint, returning the handle's own checkpoint."""
-    carried = getattr(error, "resume_state", None) is not None
-    lines.append(f"  {label} ! {type(error).__name__} carries a checkpoint={carried}")
+    """Report a failure, returning the handle's own checkpoint."""
+    lines.append(f"  {label} ! {type(error).__name__}")
     return handle.checkpoint()
 
 

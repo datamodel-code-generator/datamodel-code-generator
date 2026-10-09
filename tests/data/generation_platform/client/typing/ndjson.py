@@ -15,7 +15,7 @@ from typing_extensions import assert_type
 def records(client: Client, query: SearchQuery) -> None:
     """Yield typed records and their data, keep unknown records in the union, and read error records as object."""
     stream = client.protocols.records.all.open(
-        stream_options=StreamOptions(max_line_bytes=1024, max_event_bytes=512),
+        stream_options=StreamOptions(idle_timeout=5),
         options=RequestOptions(),
         session_options=SessionOptions(total_timeout=30),
     )

@@ -47,48 +47,43 @@ def _events(*frames: str) -> tuple[bytes, ...]:
 
 
 def _saved(lines: list[str], label: str, state: Any) -> None:
-    """Report what an exported token saved, its expiry included."""
-    lines.append(f"  {label} saved {json.dumps(json.loads(state.export())['state'], sort_keys=True)}")
+    """Report a checkpoint, its expiry included, after a round trip through JSON text."""
+    lines.append(f"  {label} saved {json.dumps(json.loads(json.dumps(state)), sort_keys=True)}")
 
 
-def _kept(lines: list[str], error: BaseException) -> Any:
-    """Report a stream's failure and whether it keeps a resume state, returning the state."""
-    state = getattr(error, "resume_state", None)
-    lines.append(f"    ! {describe(error)} resume_state={type(state).__name__}")
-    return state
+def _kept(lines: list[str], error: BaseException) -> None:
+    """Report a stream's failure."""
+    lines.append(f"    ! {describe(error)}")
 
 
-def _drained(lines: list[str], label: str, stream: Iterable[Any]) -> Any:
-    """Report every event a stream yields, then its end or its failure, returning the failure's resume state."""
+def _drained(lines: list[str], label: str, stream: Any) -> Any:
+    """Report every event a stream yields, then its end or its failure, returning the stream's checkpoint after one."""
     lines.append(f"  {label}")
     try:
         lines.extend(f"    {_event(event)}" for event in stream)
     except Exception as error:  # ruff: ignore[blind-except]
-        return _kept(lines, error)
+        _kept(lines, error)
+        return _failure(stream.checkpoint)
     lines.append("    end")
     return None
 
 
-async def _adrained(lines: list[str], label: str, stream: AsyncIterator[Any]) -> Any:
-    """Report every event an asyncio stream yields, then its end or its failure, returning the failure's state."""
+async def _adrained(lines: list[str], label: str, stream: Any) -> Any:
+    """Report every event an asyncio stream yields, then its end or its failure, as `_drained` does."""
     lines.append(f"  {label}")
     try:
         async for event in stream:
             lines.append(f"    {_event(event)}")  # ruff: ignore[manual-list-comprehension] - Keep events delivered before an interruption.
     except Exception as error:  # ruff: ignore[blind-except]
-        return _kept(lines, error)
+        _kept(lines, error)
+        return _failure(stream.checkpoint)
     lines.append("    end")
     return None
 
 
-def _crafted(harness: _Harness, state: Any, saved: dict[str, Any]) -> Any:
-    """Return a token of another's helper with a replaced protocol state."""
-    return harness.protocols.ResumeState(helper=json.loads(state.export())["helper"], state=saved)
-
-
 def _replaced(state: Any, **members: Any) -> dict[str, Any]:
-    """Return the protocol state of an export with some members replaced."""
-    return {**json.loads(state.export())["state"], **members}
+    """Return a checkpoint with some members replaced."""
+    return {**state, **members}
 
 
 class _Resumes:
@@ -205,9 +200,7 @@ def _clocked(package: ModuleType, lines: list[str]) -> None:
         record(
             lines,
             "expired on the client wall clock",
-            lambda: helper.resume(
-                _crafted(resumes.harness, state, _replaced(state, expires_at="1960-01-01T00:00:00+00:00"))
-            ),
+            lambda: helper.resume(_replaced(state, expires_at="1960-01-01T00:00:00+00:00")),
         )
 
 
@@ -249,14 +242,23 @@ def _cursors(resumes: _Resumes, api: Any) -> None:
     state = stream.checkpoint()
     _saved(lines, "after the end", state)
     lines.append(f"  state repr {state!r}")
-    resumes.reply(*_events('data: {"text": "d"}\n\n', 'id\ndata: {"text": "cleared"}\n\n'))
-    resumed = helper.resume(resumes.harness.protocols.import_state(state.export()))
+    resumes.reply(
+        *_events(
+            'data: {"text": "d"}\n\n',
+            'id\ndata: {"text": "empty before any ID"}\n\n',
+            'id: 3\ndata: {"text": "e"}\n\n',
+            'id\ndata: {"text": "cleared"}\n\n',
+        )
+    )
+    resumed = helper.resume(json.loads(json.dumps(state)), topic=resumes.argument("query", "topic", "news"))
     lines.append(f"  resumed response {resumed.response.status_code} progress {dict(resumed.progress)}")
     _drained(lines, "resumed", resumed)
     cleared = resumed.checkpoint()
     _saved(lines, "cleared", cleared)
     resumes.reply(*_events('id: 9\ndata: {"text": "fresh"}\n\n'))
-    _drained(lines, "resumed without a cursor", helper.resume(cleared))
+    _drained(
+        lines, "resumed without a cursor", helper.resume(cleared, topic=resumes.argument("query", "topic", "news"))
+    )
 
 
 def _checkpoints(resumes: _Resumes, api: Any) -> None:
@@ -322,7 +324,11 @@ def _reconnects(resumes: _Resumes, api: Any) -> None:
     )
     _saved(lines, "interruption", state)
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
-    _drained(lines, "resumed after the interruption", helper.resume(state))
+    _drained(
+        lines,
+        "resumed after the interruption",
+        helper.resume(state, topic=resumes.argument("query", "topic", "news")),
+    )
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n', "data: cut"))
     _drained(lines, "cut frame without incomplete_eof", helper.open(stream_options=resumes.reconnect))
     resumes.reply(b'retry: 1\nid: 1\ndata: {"text": "a"}\n\n', cut)
@@ -342,9 +348,6 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     first = b'id: 1\ndata: {"text": "a"}\n\n'
     resumes.reply(first, b"data: {broken\n\n")
     _drained(lines, "undecodable event", helper.open(stream_options=resumes.reconnect))
-    small = harness.protocols.StreamOptions(reconnect=True, max_line_bytes=24)
-    resumes.reply(first, b'data: {"text": "far too long for the line limit"}\n\n')
-    _drained(lines, "line over its limit", helper.open(stream_options=small))
     resumes.reply(first, harness.idle())
     _drained(lines, "idle read", helper.open(stream_options=resumes.reconnect))
     level = harness.options.RequestOptions(timeout=harness.options.TimeoutOptions(read=60.0))
@@ -382,12 +385,12 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     _drained(lines, "error event", tracked.open(stream_options=resumes.reconnect))
 
 
-def _failure(call: Callable[[], object]) -> BaseException | None:
+def _failure(call: Callable[[], object]) -> Any:
+    """Return what a call returns, or the failure it raises."""
     try:
-        call()
+        return call()
     except Exception as error:  # ruff: ignore[blind-except]
         return error
-    return None
 
 
 def _budgets(resumes: _Resumes, api: Any) -> None:
@@ -438,9 +441,9 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
     _saved(lines, "tracked", state)
     resumes.reply(b"event: done\ndata: {}\n\n", headers=(("X-Resume-Token", "t4"),))
     _drained(lines, "resumed with the bindings", helper.resume(state))
-    expired = _crafted(harness, state, _replaced(state, expires_at=_PAST.isoformat()))
+    expired = _replaced(state, expires_at=_PAST.isoformat())
     record(lines, "resume an expired state", lambda: helper.resume(expired))
-    dotted = _crafted(harness, state, _replaced(state, bound=["..", "t1", "resume"]))
+    dotted = _replaced(state, bound=["..", "t1", "resume"])
     record(lines, "resume a dot segment", lambda: helper.resume(dotted))
     hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),))).protocols.events.tracked
     for label, headers in (
@@ -511,7 +514,7 @@ def _ticks(resumes: _Resumes, api: Any) -> None:
     )
     _saved(lines, "ticks", state)
     resumes.reply(*_events("data: [DONE]\n\n"))
-    _drained(lines, "resumed writing the body", helper.resume(state))
+    _drained(lines, "resumed writing the body", helper.resume(state, body=query))
     for label, frame in (
         ("missing cursor", "event: tick\ndata: {}\n\n"),
         ("null cursor", 'event: tick\ndata: {"seq": null}\n\n'),
@@ -537,7 +540,7 @@ def _unencodable(resumes: _Resumes, api: Any) -> None:
 
 def _exploded(resumes: _Resumes, api: Any) -> None:
     """Refuse a checkpoint whose exploded object query cursor contains a credential field."""
-    lines, harness, helper = resumes.lines, resumes.harness, api.protocols.marks.scoped
+    lines, helper = resumes.lines, api.protocols.marks.scoped
     lines.append("cursors written as exploded query fields")
     resumes.reply(*_events('data: {"scope": {"after": "5"}}\n\n', 'data: {"scope": {"api_key": "k"}}\n\n'))
     stream = helper.open()
@@ -547,7 +550,7 @@ def _exploded(resumes: _Resumes, api: Any) -> None:
     lines.append(f"  {_event(next(stream))}")
     record(lines, "checkpoint of a credential field", stream.checkpoint)
     stream.close()
-    crafted = _crafted(harness, state, _replaced(state, cursor={"api_key": "k"}))
+    crafted = _replaced(state, cursor={"api_key": "k"})
     record(lines, "resume a credential field", lambda: helper.resume(crafted))
     resumes.reply(*_events('data: {"scope": {"after": "6"}}\n\n'))
     _drained(lines, "resumed after the scope", helper.resume(state))
@@ -571,7 +574,7 @@ def _origins(lines: list[str], error: BaseException) -> None:
 
 def _refusals(resumes: _Resumes, api: Any) -> None:
     """Refuse a state that is not one, another helper's, or that does not fit."""
-    lines, harness, helper = resumes.lines, resumes.harness, api.protocols.events.live
+    lines, helper = resumes.lines, api.protocols.events.live
     lines.append("refusals")
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n'))
     stream = helper.open(topic=resumes.argument("query", "topic", "news"))
@@ -584,25 +587,25 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
     other = records.checkpoint()
     records.close()
     record(lines, "resume a string", lambda: helper.resume("state"))
-    record(lines, "resume another helper's state", lambda: helper.resume(other))
+    record(lines, "resume an object", lambda: helper.resume(object()))
     for label, saved in (
         ("missing members", {"cursor": "1"}),
         ("cursor not a string", _replaced(state, cursor=5)),
         ("empty cursor", _replaced(state, cursor="")),
         ("bound values of another count", _replaced(state, bound=["x"])),
-        ("a saved cookie", _replaced(state, arguments=[[], [], ["c"]])),
+        ("an extra member", _replaced(state, arguments=[[], [], ["c"]])),
         ("an expiry of another form", _replaced(state, expires_at="soon")),
         ("cursor the reopen cannot encode", _replaced(state, cursor="5 ")),
     ):
-        record(lines, f"resume {label}", lambda saved=saved: helper.resume(_crafted(harness, state, saved)))
+        record(lines, f"resume {label}", lambda saved=saved: helper.resume(saved))
     record(
         lines,
         "object cursor",
-        lambda: api.protocols.records.all.resume(_crafted(harness, other, _replaced(other, cursor={"a": 1}))),
+        lambda: api.protocols.records.all.resume(_replaced(other, cursor={"a": 1})),
     )
     _cursor_refusals(resumes, api)
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
-    _drained(lines, "resume after the refusals", helper.resume(state))
+    _drained(lines, "resume after the refusals", helper.resume(state, topic=resumes.argument("query", "topic", "news")))
 
 
 def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
@@ -613,7 +616,7 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     next(tracked)
     saved = tracked.checkpoint()
     tracked.close()
-    crafted = _crafted(harness, saved, _replaced(saved, arguments=[[]]))
+    crafted = _replaced(saved, arguments=[[]])
     record(lines, "resume arguments of another operation", lambda: api.protocols.events.tracked.resume(crafted))
     query = harness.models.FeedQuery(topic="t")
     resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))
@@ -642,56 +645,14 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     record(
         lines,
         "ticks cleared cursor",
-        lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor=None))),
+        lambda: api.protocols.feed.ticks.resume(_replaced(tick, cursor=None), body=query),
     )
-    record(
+    resumes.reply(*_events("data: [DONE]\n\n"))
+    _drained(
         lines,
-        "ticks cursor replaced by an object",
-        lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor={"$gt": 0}))),
+        "ticks cursor replaced by an object, written as the server's",
+        api.protocols.feed.ticks.resume(_replaced(tick, cursor={"$gt": 0}), body=query),
     )
-    for label, body in (
-        ("invalid saved body", [{"topic": []}, "application/json", None]),
-        ("invalid saved media", [{"topic": "t"}, "application/json", "application/xml"]),
-        ("mismatched saved media", [{"topic": "t"}, "application/other+json", "application/json"]),
-    ):
-        record(
-            lines,
-            label,
-            lambda body=body: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, body=body))),
-        )
-
-
-def stream_checkpoint_bodies(package: ModuleType, lines: list[str]) -> None:
-    """Refuse a checkpoint of a body its backend sends but cannot save, as an encoding failure of the body."""
-    resumes = _Resumes(package, lines)
-    with resumes.client(resumes.client_options()) as api:
-        for label, query in _payloads(resumes.harness):
-            resumes.reply(*_events('id: 1\ndata: {"seq": 1}\n\n'))
-            with api.protocols.feed.live.open(body=query) as stream:
-                next(stream)
-                record(lines, f"checkpoint with a {label}", lambda: type(stream.checkpoint()).__name__)
-    run(lambda: _async_checkpoint_bodies(package, lines))
-
-
-def _payloads(harness: _Harness) -> tuple[tuple[str, object], ...]:
-    """Return a body of builtins, and one whose free-form member only its backend's JSON encoder accepts."""
-    import msgspec  # noqa: PLC0415 - Only the msgspec scenario builds a raw member.
-
-    return tuple(
-        (label, harness.models.FeedQuery(topic="t", payload=payload))
-        for label, payload in (("plain payload", {"x": 1}), ("raw payload", msgspec.Raw(b'{"x":1}')))
-    )
-
-
-async def _async_checkpoint_bodies(package: ModuleType, lines: list[str]) -> None:
-    resumes = _Resumes(package, lines)
-    lines.append("asyncio")
-    async with resumes.async_client(resumes.client_options()) as api:
-        for label, query in _payloads(resumes.harness):
-            resumes.reply(*_events('id: 1\ndata: {"seq": 1}\n\n'))
-            async with await api.protocols.feed.live.open(body=query) as stream:
-                await anext(stream)
-                record(lines, f"async checkpoint with a {label}", lambda: type(stream.checkpoint()).__name__)
 
 
 async def _async_resume(package: ModuleType, lines: list[str]) -> None:
@@ -710,7 +671,9 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
         state = stream.checkpoint()
         _saved(lines, "async", state)
         resumes.reply(*_events('id: 3\ndata: {"text": "c"}\n\n'))
-        await _adrained(lines, "async resumed", await helper.resume(state))
+        await _adrained(
+            lines, "async resumed", await helper.resume(state, topic=resumes.argument("query", "topic", "news"))
+        )
         resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
         never = harness.protocols.StreamOptions(reconnect=True, max_reconnects=0)
         await _adrained(lines, "async no reconnection allowed", await helper.open(stream_options=never))
@@ -856,15 +819,24 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
             )
     with resumes.client(resumes.client_options()) as api:
         _cleared_guards(resumes, api)
-        resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         query = resumes.harness.models.FeedQuery(topic="t")
+        keyed = api.protocols.searches.keyed
+        resumes.reply(b'data: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
+        with keyed.open(body=query, stream_options=resumes.reconnect) as stream:
+            next(stream)
+            _guarded(lines, "credential reconnect into a querystring", partial(next, stream))
+            state = stream.checkpoint()
+        _guarded(lines, "credential resume into a querystring", partial(keyed.resume, state, body=query))
+        resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         with api.protocols.feed.ticks.open(
             body=query, options=options.RequestOptions(query=(("tag", "kept"),))
         ) as stream:
             next(stream)
             state = stream.checkpoint()
         resumes.reply(b"data: [DONE]\n\n")
-        api.protocols.feed.ticks.resume(state, options=options.RequestOptions(query=(("tag", "kept"),))).close()
+        api.protocols.feed.ticks.resume(
+            state, body=query, options=options.RequestOptions(query=(("tag", "kept"),))
+        ).close()
         patch = options.RequestOptions(query=(("tag", "kept"),))
         resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
         with api.protocols.records.all.open(options=patch) as stream:
@@ -888,20 +860,20 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
         state = stream.checkpoint()
         stream.close()
         resumes.reply(b'data: {"scope": null}\n\n', resumes.harness.interrupted())
-        resumed = helper.resume(state, stream_options=resumes.reconnect)
+        resumed = helper.resume(state, **given, stream_options=resumes.reconnect)
         next(resumed)
         cleared = resumed.checkpoint()
-        lines.append(f"  {name} saved cleared cursor={json.loads(cleared.export())['state']['cursor']!r}")
+        lines.append(f"  {name} saved cleared cursor={cleared['cursor']!r}")
         resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
         next(resumed)
         resumed.close()
         resumes.reply()
-        helper.resume(cleared).close()
+        helper.resume(cleared, **given).close()
         for field in ("after", "page") if name == "scoped" else ("scope[after]",) if name == "deep" else ("after",):
             _guarded(
                 lines,
                 f"cleared resume patch {name} {field}",
-                partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
+                partial(helper.resume, cleared, **given, options=options.RequestOptions(query=((field, "STALE"),))),
             )
     for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
         helper = getattr(api.protocols.marks, name)
@@ -971,20 +943,20 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             state = stream.checkpoint()
             await stream.aclose()
             resumes.reply(b'data: {"scope": null}\n\n', resumes.harness.interrupted())
-            resumed = await helper.resume(state, stream_options=resumes.reconnect)
+            resumed = await helper.resume(state, **given, stream_options=resumes.reconnect)
             await anext(resumed)
             cleared = resumed.checkpoint()
-            lines.append(f"  {name} saved cleared cursor={json.loads(cleared.export())['state']['cursor']!r}")
+            lines.append(f"  {name} saved cleared cursor={cleared['cursor']!r}")
             resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
             await anext(resumed)
             await resumed.aclose()
             resumes.reply()
-            await (await helper.resume(cleared)).aclose()
+            await (await helper.resume(cleared, **given)).aclose()
             for field in ("after", "page") if name == "scoped" else ("scope[after]",) if name == "deep" else ("after",):
                 await _aguarded(
                     lines,
                     f"cleared resume patch {name} {field}",
-                    partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
+                    partial(helper.resume, cleared, **given, options=options.RequestOptions(query=((field, "STALE"),))),
                 )
         for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
             helper = getattr(api.protocols.marks, name)
