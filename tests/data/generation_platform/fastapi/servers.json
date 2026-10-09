@@ -251,6 +251,13 @@
       },
       {
         "method": "GET",
+        "url": "/search?ids=1,%zz",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
         "url": "/search?code=A&code=B",
         "headers": {
           "Cookie": "session=abc"

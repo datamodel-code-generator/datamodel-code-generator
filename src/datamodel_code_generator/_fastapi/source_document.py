@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
-from datamodel_code_generator._api_manifest import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

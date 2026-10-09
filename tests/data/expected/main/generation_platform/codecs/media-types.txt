@@ -15,5 +15,5 @@ kind application/octet-stream: binary
 kind image/png: binary
 text 616263: "abc"
 text c3a9: "\u00e9"
-text ff: MediaError Text must be UTF-8
+text ff: MalformedError Text must be UTF-8
 unset: UNSET False True

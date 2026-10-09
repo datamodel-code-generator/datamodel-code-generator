@@ -17,7 +17,6 @@ render pydantic_v2.BaseModel
   server/_runtime/model_codecs/media.py (copied runtime)
   server/_runtime/model_codecs/parameters.py (copied runtime)
   server/_runtime/model_codecs/unset.py (copied runtime)
-  server/_runtime/model_codecs/wire.py (copied runtime)
   server/_runtime/server/__init__.py (copied runtime)
   server/_runtime/server/application.py (copied runtime)
   server/_runtime/server/errors.py (copied runtime)
