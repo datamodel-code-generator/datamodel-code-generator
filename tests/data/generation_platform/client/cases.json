@@ -5053,5 +5053,36 @@
     "model": {
       "reuse_model": true
     }
+  },
+  "parameter-content-defaults-30": {
+    "input": "parameter-content-defaults-30.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "parameter-content-defaults-31": {
+    "input": "parameter-content-defaults-31.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "media-item-parts": {
+    "input": "media-item-parts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }

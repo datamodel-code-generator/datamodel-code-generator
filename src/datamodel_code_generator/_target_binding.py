@@ -2599,6 +2599,21 @@ class _Contracts(_SchemaUses):
             references=tuple(references),
         )
 
+    def media_facts(
+        self, uses: tuple[TypeUseId, ...], schema: _Declaration, role: TypeUseRole, media: str
+    ) -> tuple[TypeUseId, ...]:
+        """Record the parts and the parameter default that the media's own schema keyword declares on its uses."""
+        multipart = media.strip().lower().startswith("multipart/")
+        default = self.schemas.default(schema) if role == "parameter" else None
+        for use in uses:
+            binding = self.uses[use]
+            if multipart:
+                binding = replace(binding, parts=self.schemas.parts(schema, binding.members))
+            if default is not None:
+                binding = replace(binding, default=default)
+            self.uses[use] = binding
+        return uses
+
     def media(  # noqa: PLR0913
         self,
         raw: YamlValue,
@@ -2627,27 +2642,28 @@ class _Contracts(_SchemaUses):
                     else ("value",)
                 )
                 uses.extend(
-                    self.use(
-                        owner,
-                        role,
-                        declaration,
-                        use_site,
+                    self.media_facts(
+                        tuple(
+                            self.use(
+                                owner,
+                                role,
+                                declaration,
+                                use_site,
+                                schema,
+                                _child(media_use, keyword),
+                                projection=projection,
+                                name=parameter_name,
+                                location=parameter_location,
+                                status=status,
+                                media=name,
+                            )
+                            for projection in projections
+                        ),
                         schema,
-                        _child(media_use, keyword),
-                        projection=projection,
-                        name=parameter_name,
-                        location=parameter_location,
-                        status=status,
-                        media=name,
+                        role,
+                        name,
                     )
-                    for projection in projections
                 )
-            if name.strip().lower().startswith("multipart/"):
-                for use in uses:
-                    binding = self.uses[use]
-                    self.uses[use] = replace(
-                        binding, parts=self.schemas.parts(_child(media_declaration, "schema"), binding.members)
-                    )
             encodings: list[WireDeclaration] = []
             encoding_declaration = _child(media_declaration, "encoding")
             if "encoding" in medium and encoding_declaration not in self.ignored_declarations:
