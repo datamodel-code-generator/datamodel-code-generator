@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import re
 import sys
 import traceback
-from dataclasses import replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_manifest import document_identity, shown
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._api_manifest import shown
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -20,11 +18,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.__main__ import OutputComparison
     from datamodel_code_generator._api_generation import PlannedTarget
-    from datamodel_code_generator._api_types import GeneratedProject, OperationSelector
-    from datamodel_code_generator._client.config import ClientGenerationConfig
-    from datamodel_code_generator._client.target import ClientTarget
-    from datamodel_code_generator._fastapi.config import FastAPIConfig
-    from datamodel_code_generator._fastapi.target import FastAPITarget
+    from datamodel_code_generator._api_types import GeneratedProject
     from datamodel_code_generator._publication import StagedFile
     from datamodel_code_generator._structured_output import CheckDifferencePayload
     from datamodel_code_generator._target_config import TargetConfig
@@ -33,10 +27,6 @@ _OK: Final = 0
 _DIFF: Final = 1
 _ERROR: Final = 2
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
-_SERVER_SETTINGS: Final = ("layout", "handler_mode", "include_request", "body_mode", "router_names")
-_OPERATION_SETTINGS: Final = ("handler_modes", "body_modes", "operation_names", "parameter_names")
-_INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
-_CLIENT_SETTINGS: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
 
 
 def run_target(  # noqa: PLR0913, PLR0917
@@ -63,46 +53,15 @@ def run_target(  # noqa: PLR0913, PLR0917
     try:
         return _run(args, namespace, config, pyproject_path, batch, lock, job)
     except Exception as error:  # noqa: BLE001
-        _failure(_keyed(error, config), encoding=config.encoding)
+        from datamodel_code_generator._target_selection import keyed  # noqa: PLC0415
+
+        _failure(keyed(error, config), encoding=config.encoding)
         return _ERROR
 
 
 def _selector(config: Any) -> str:
     """Return the option that selects the run's target."""
     return "--generate-server" if config.generate_client is None else "--generate-client"
-
-
-def _keyed(error: Exception, config: Any) -> Exception:
-    """Name the operation and resource client settings in an error by the keys they were given under.
-
-    A parameter name is named by its location and name, and a body field name by its media type and property.
-    """
-    if not isinstance(error, APIGenerationError) or config.generate_client is None:
-        return error
-    keys = {
-        "operations": list(config.client_operations or ()),
-        "resource_names": list(config.client_resource_names or ()),
-    }
-
-    def keyed(item: Diagnostic) -> Diagnostic:
-        if (path := item.option_path) is None or (found := _INDEXED.match(path)) is None:
-            return item
-        named = f"{found[1]}[{(key := keys[found[1]][int(found[2])])!r}]"
-        if (member := found[3]) is not None:
-            names = config.client_operations[key][member]
-            spelled = (
-                [f"[{name!r}]" for name in names]
-                if member == "parameter_names"
-                else [f"[{media!r}][{name!r}]" for media, fields in names.items() for name in fields]
-            )
-            named += f".{member}{spelled[int(found[4])]}"
-        return replace(item, option_path=f"{named}{path[found.end() :]}")
-
-    if (diagnostics := tuple(map(keyed, error.diagnostics))) == error.diagnostics:
-        return error
-    from datamodel_code_generator._client.config import OPTION_PREFIX  # noqa: PLC0415
-
-    return APIGenerationError(diagnostics, option_prefix=OPTION_PREFIX)
 
 
 def _run(  # noqa: PLR0913, PLR0917
@@ -123,11 +82,12 @@ def _run(  # noqa: PLR0913, PLR0917
         _write_comparison_output,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._api_generation import plan_target, prepare_target, render_target  # noqa: PLC0415
+    from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
 
     lockfile = _target_lockfile(config, pyproject_path)
     if flags := [flag for name, flag in _CONFLICTS if getattr(config, name)]:
         raise _refused(flags, _selector(config))
-    generator, target = (_server if config.generate_client is None else _client)(config, namespace, pyproject_path)
+    generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
     effective = _target_settings(config, args, lockfile)
     if batch is not None:
         effective.resolve_remote_lock(lock)
@@ -313,73 +273,6 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
         if (file := _json_file(source)) is not None:
             return (Path.cwd() / file).parent
     return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
-
-
-def _server(config: Any, namespace: Namespace, pyproject_path: Path | None) -> tuple[FastAPITarget, FastAPIConfig]:
-    """Map the --server-* settings onto the server configuration, leaving unset ones at their defaults.
-
-    Documents named in operation references resolve against the JSON file that holds the setting, else against the
-    pyproject.toml directory for settings read from it and the working directory for settings given as options.
-    """
-    from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice  # noqa: PLC0415
-    from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
-
-    values: dict[str, Any] = {
-        name: value for name in _SERVER_SETTINGS if (value := getattr(config, f"server_{name}")) is not None
-    }
-    for name in _OPERATION_SETTINGS:
-        if (entries := getattr(config, field := f"server_{name}")) is not None:
-            root = _base(config, namespace, pyproject_path, field)
-            values[name] = {_operation(key, root): value for key, value in entries.items()}
-    if (responses := config.server_primary_responses) is not None:
-        root = _base(config, namespace, pyproject_path, "server_primary_responses")
-        values["primary_responses"] = {
-            _operation(key, root): ResponseChoice(status_code=choice.status_code, media_type=choice.media_type)
-            for key, choice in responses.items()
-        }
-    return FastAPITarget(), FastAPIConfig(
-        output=config.server_output, package=config.server_package, model_package=config.server_model_package, **values
-    )
-
-
-def _client(
-    config: Any, namespace: Namespace, pyproject_path: Path | None
-) -> tuple[ClientTarget, ClientGenerationConfig]:
-    """Map the --client-* settings onto the client configuration, leaving unset ones at their defaults.
-
-    Operation references and the documents helpers name resolve like the operation references of the server settings.
-    """
-    from datamodel_code_generator._client.config import (  # noqa: PLC0415
-        ClientGenerationConfig,
-        ResourceName,
-        operation_configs,
-    )
-    from datamodel_code_generator._client.target import ClientTarget  # noqa: PLC0415
-
-    values: dict[str, Any] = {
-        name: value for name in _CLIENT_SETTINGS if (value := getattr(config, f"client_{name}")) is not None
-    }
-    if (names := config.client_resource_names) is not None:
-        values["resource_names"] = tuple(ResourceName(tag=tag, namespace=name) for tag, name in names.items())
-    if (entries := config.client_operations) is not None:
-        root = _base(config, namespace, pyproject_path, "client_operations")
-        values["operations"] = operation_configs(entries, partial(_operation, base=root))
-    return ClientTarget(_base(config, namespace, pyproject_path, "client_protocols")), ClientGenerationConfig(
-        output=config.client_output,
-        package=config.client_package,
-        model_package=config.client_model_package,
-        transport=config.generate_client,
-        protocols=config.client_protocols,
-        **values,
-    )
-
-
-def _operation(key: str, base: Path) -> OperationSelector:
-    """Read an operation reference: a pointer into the root document, or a document and a pointer joined by #."""
-    document, separator, pointer = key.partition("#")
-    if not separator:
-        return key
-    return OperationRef(pointer=pointer, document=document_identity(document, base) if document else None)
 
 
 def _conflict(message: str) -> Diagnostic:

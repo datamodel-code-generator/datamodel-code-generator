@@ -1,0 +1,102 @@
+{
+  "client_body_arguments": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_default_base_url": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_model_package": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_operations": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_output": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_package": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_protocols": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_resource_names": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_server_base_url": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "client_signature_style": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "generate_client": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "generate_server": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_body_mode": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_body_modes": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_handler_mode": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_handler_modes": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_include_request": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_layout": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_model_package": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_operation_names": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_output": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_package": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_parameter_names": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_primary_responses": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
+  "server_router_names": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  }
+}

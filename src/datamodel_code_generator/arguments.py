@@ -30,6 +30,9 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DataclassArguments,
@@ -45,6 +48,10 @@ from datamodel_code_generator.enums import (
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     StrictTypes,
     TargetPydanticVersion,
     UnionMode,
@@ -1553,7 +1560,7 @@ general_options.add_argument(
 # ======================================================================================
 target_selection_options.add_argument(
     "--generate-server",
-    choices=["fastapi"],
+    choices=[server.value for server in ServerType],
     default=None,
     help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
 )
@@ -1574,13 +1581,13 @@ target_options.add_argument(
 )
 target_options.add_argument(
     "--server-layout",
-    choices=["routers", "single"],
+    choices=[layout.value for layout in ServerLayout],
     default=None,
     help="Write one router module per tag (default) or a single routes module (experimental).",
 )
 target_options.add_argument(
     "--server-handler-mode",
-    choices=["sync", "async"],
+    choices=[mode.value for mode in ServerHandlerMode],
     default=None,
     help="Make service methods plain functions (default) or coroutine functions (experimental).",
 )
@@ -1599,7 +1606,7 @@ target_options.add_argument(
 )
 target_options.add_argument(
     "--server-body-mode",
-    choices=["typed", "request"],
+    choices=[mode.value for mode in ServerBodyMode],
     default=None,
     help="Pass request bodies as validated models (default) or as the raw Request (experimental).",
 )
@@ -1638,7 +1645,7 @@ target_options.add_argument(
 )
 target_selection_options.add_argument(
     "--generate-client",
-    choices=["httpx2"],
+    choices=[client.value for client in ClientType],
     default=None,
     help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
 )
@@ -1659,13 +1666,13 @@ target_options.add_argument(
 )
 target_options.add_argument(
     "--client-signature-style",
-    choices=["explicit", "unpack"],
+    choices=[style.value for style in ClientSignatureStyle],
     default=None,
     help="Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental).",
 )
 target_options.add_argument(
     "--client-body-arguments",
-    choices=["body", "both"],
+    choices=[arguments.value for arguments in ClientBodyArguments],
     default=None,
     help="Take request bodies as one body argument (default) or also as field arguments (experimental).",
 )
