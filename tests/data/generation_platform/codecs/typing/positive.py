@@ -6,7 +6,12 @@ from typing_extensions import assert_type
 
 from datamodel_code_generator._runtime.model_codecs.media import JSONValue, json_bytes, json_value
 from datamodel_code_generator._runtime.model_codecs.parameter_reads import RawParameter, decode_parameter
-from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan, pairs, querystring
+from datamodel_code_generator._runtime.model_codecs.parameters import (
+    ParameterLocation,
+    ParameterPlan,
+    pairs,
+    querystring,
+)
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 
 value: JSONValue = {"items": [1, 2.5, None, True, "text", ["list"]], "empty": {}}

@@ -80,7 +80,7 @@ class _Clock:
 
 
 def _clocked(harness: Polling, lines: list[str]) -> None:
-    """Read a server's expiry, a two-digit year as RFC 5322 reads it, and refuse an expired token on the client's wall clock."""
+    """Read a server's expiry, its two-digit year as RFC 5322 reads it, and refuse an expired token by wall clock."""
     exchange = Exchange(lines)
     wall = _Clock(datetime(2060, 1, 1, tzinfo=timezone.utc).timestamp())
     settings = harness.client_options(clock=harness.options.Clock(time=wall))
