@@ -1,31 +1,32 @@
-"""Attempt-owned source borrowing for optional OpenAPI contract consumers."""
+"""Attempt-owned source documents, whose pointers target settings name, for optional OpenAPI contract consumers."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, cast
 
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
+from datamodel_code_generator._generation_contract import AttemptId
 
 
-def borrow_source_member(value: dict[str, YamlValue], key: str) -> YamlValue:
-    """Read textual source keys, including integer YAML statuses, without copying the mapping."""
-    if key.isascii() and key.isdecimal() and str(number := int(key)) == key:
-        numeric = cast("dict[str | int, YamlValue]", value)
-        if number in numeric:
-            if key in value:
-                msg = "Source pointer is ambiguous between string and integer keys"
-                raise BindingCaptureError(msg)
-            return numeric[number]
-    return value[key]
+def _member(value: YamlValue, key: str) -> YamlValue:
+    """Return a list's item by index, or a mapping's member by key, its integer YAML key first."""
+    index = key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0"))
+    mapping = cast("dict[object, YamlValue]", value)
+    return (
+        value[int(key)]
+        if isinstance(value, list) and index
+        else mapping[int(key)]
+        if index and int(key) in mapping
+        else mapping[key]
+    )
 
 
 class SourceLease:
-    """Borrow only documents obtained by the model engine, until planning finishes.
+    """Hold the documents the model engine obtained until planning finishes, to check the pointers settings name.
 
-    Consumers may read borrowed nodes during planning but must project the values
-    they need before closing. This object never loads, validates, copies, or resolves
-    a document, and it is deliberately excluded from immutable contract batches.
+    Consumers learn only whether a pointer names a node, never the node: what a target reads of a schema comes from
+    the contract batch. This object never loads, validates, copies, or resolves a document, and it is deliberately
+    excluded from immutable contract batches.
     """
 
     def __init__(self) -> None:
@@ -36,25 +37,15 @@ class SourceLease:
         """Borrow a loaded document; its registration order is its document identity."""
         self._raw.append(document)
 
-    def borrow(self, location: SourceLocation) -> YamlValue:
-        """Read an original plain JSON pointer from an already borrowed document."""
-        if location.pointer and not location.pointer.startswith("/"):
-            msg = "Source locations require a plain JSON pointer"
-            raise BindingCaptureError(msg)
+    def exists(self, location: SourceLocation) -> bool:
+        """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
+        value: YamlValue = self._raw[location.document]
         try:
-            value: YamlValue = self._raw[location.document]
             for token in location.pointer.split("/")[1:]:
-                key = token.replace("~1", "/").replace("~0", "~")
-                index = key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0"))
-                value = (
-                    value[int(key)]
-                    if isinstance(value, list) and index
-                    else borrow_source_member(cast("dict[str, YamlValue]", value), key)
-                )
+                value = _member(value, token.replace("~1", "/").replace("~0", "~"))
         except (KeyError, IndexError, TypeError):
-            msg = "Source location does not identify an observed node"
-            raise BindingCaptureError(msg) from None
-        return value
+            return False
+        return True
 
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""

@@ -36,6 +36,7 @@ from datamodel_code_generator._target_contract import (
     NoneType,
     PartFacts,
     PartSchema,
+    SchemaSite,
     SourceLocation,
     TypeUseBinding,
     UnionType,
@@ -708,9 +709,9 @@ class Planner:
             and (plan := self.header_plans.get(use.id)) is not None
         )
 
-    def _extra_use(self, body: TypeUseBinding, extra: SourceLocation) -> TypeUseBinding | None:
+    def _extra_use(self, body: TypeUseBinding, extra: SchemaSite) -> TypeUseBinding | None:
         """Return the use the other properties of a body are read or sent by, when their schema is bound."""
-        return schema_use(self._schemas, extra, body.id.direction, self.wire.schema(extra)[0])
+        return schema_use(self._schemas, extra.location, body.id.direction, extra.target)
 
     def _sent(
         self,
@@ -726,16 +727,18 @@ class Planner:
         styled member writes the parts its style gives rather than one for each item.
         """
         parts = _parts(use)
-        extra = _extra(self.wire.schema(site)[0])
         declared_extra = parts.extra
         additional: PartSpec | None = PartSpec(plan=PartPlan(""))
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
             additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
-        elif isinstance(declared_extra, PartSchema) and (typed := self._extra_use(use, extra)) is not None:
+        elif (
+            isinstance(declared_extra, PartSchema)
+            and (typed := self._extra_use(use, extra := _site(declared_extra, site))) is not None
+        ):
             additional = PartSpec(
-                plan=PartPlan("", repeated=declared_extra.repeated), use=_part_use(use, extra, None, typed)
+                plan=PartPlan("", repeated=declared_extra.repeated), use=_part_use(use, extra.location, None, typed)
             )
         declared = dict(parts.members)
         members = _members(use)
@@ -780,7 +783,7 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema):
-            additional = self._read(use, "", _extra(self.wire.schema(site)[0]), declared_extra, required=False)
+            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, required=False)
         return tuple(
             self._read(
                 use,
@@ -809,14 +812,12 @@ class Planner:
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
             )
         plan = self._part_plan(name, location, part)
-        if plan.repeated:
-            resolved, _ = self.wire.schema(location)
-            location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
-        bound = schema_use(self._schemas, location, body.id.direction, self.wire.schema(location)[0]) or TypeUseBinding(
+        read = _site(part, location, items=plan.repeated)
+        bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
             body.id, "not_generated", None, None
         )
         return PartSpec(
-            plan=plan, use=_part_use(body, location, name or None, bound), required=required, excluded=excluded
+            plan=plan, use=_part_use(body, read.location, name or None, bound), required=required, excluded=excluded
         )
 
     def _part_plans(self, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
@@ -833,7 +834,7 @@ class Planner:
         if (declared_extra := parts.extra) == "closed":
             return plans, None
         if isinstance(declared_extra, PartSchema):
-            return plans, self._part_plan("", _extra(self.wire.schema(use.schema)[0]), declared_extra)
+            return plans, self._part_plan("", _site(declared_extra, use.schema).location, declared_extra)
         return plans, PartPlan("")
 
     def _part_plan(self, name: str, location: SourceLocation, part: PartSchema) -> PartPlan:
@@ -1109,8 +1110,10 @@ def schema_use(
     )
 
 
-def _extra(location: SourceLocation) -> SourceLocation:
-    return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
+def _site(part: PartSchema, location: SourceLocation, *, items: bool = False) -> SchemaSite:
+    """Return where a part's values are read: its schema's site, or its items' when it repeats, as recorded."""
+    found = part.items if items else part.own
+    return SchemaSite(location, location) if found is None else found
 
 
 def _part_use(

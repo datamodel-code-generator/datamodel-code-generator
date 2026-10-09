@@ -19,7 +19,7 @@ SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
     helper_id='rooms.chat',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,
-    fingerprint='eb202098c6264f2a3c2f2602885dba2b9653862ef831738c97b848024a1018d2',
+    fingerprint='8e3579adedfd28d2ed120cba25e62eed6d10946e9d86f081e213a5702d5f8e77',
     encoder=model_bindings.codec_4,
     decoder=model_bindings.codec_5,
     subprotocols=('chat.v2', 'chat.v1'),

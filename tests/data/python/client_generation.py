@@ -36,7 +36,6 @@ from tests.data.python.client_protocol_records import RECORDS
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRender, TargetRequest
     from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
@@ -257,22 +256,6 @@ def _render(
     return lines
 
 
-class _BindingDiagnosticsTarget(ClientTarget):
-    """Render a client package and keep the binding diagnostics of the batch it renders from."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.binding_diagnostics: list[str] = []
-
-    def render(self, request: TargetRequest) -> TargetRender:
-        """Keep the batch's binding diagnostics, then render as the client target does."""
-        self.binding_diagnostics = [
-            " ".join(["binding", item.code, *(f"{key}={value}" for key, value in item.details)])
-            for item in request.batch.diagnostics
-        ]
-        return super().render(request)
-
-
 def render_client(
     source: Path,
     root: Path,
@@ -281,29 +264,26 @@ def render_client(
     config: Mapping[str, Any],
     *,
     models: str = "models.py",
-    binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
-    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
+    """Render a document's client package under a root, returning the refusal and the Python modules.
 
-    The models go to the module or package path models names under the root. With binding_diagnostics, the
-    diagnostics also hold those of the model binding batch, which no package shows.
+    The models go to the module or package path models names under the root.
     """
-    target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
             model_config=model_config(root / models, backend, model),
             config=client_config(dict(config), root),
-            generator=target,
+            generator=ClientTarget(),
         )
     except Error as error:
-        return [f"Error: {error}", *(target.binding_diagnostics if binding_diagnostics else ())], {}
+        return [f"Error: {error}"], {}
     modules: Modules = {
         path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
-    return target.binding_diagnostics if binding_diagnostics else [], modules
+    return [], modules
 
 
 def _rendered(case: dict[str, Any], root: Path) -> dict[str, bytes]:
