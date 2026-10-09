@@ -72,9 +72,15 @@ class ResponseHeaders(Generic[T_co, M_co]):
         self._headers = {name.lower(): dict(branches) for name, branches in headers}
 
     def decode(self, info: ResponseInfo, name: str) -> T_co | M_co:
-        """Return a header's value or what its absence yields, or raise the response's DecodeError."""
+        """Return a header's value or what its absence yields, or raise the response's DecodeError.
+
+        A single-valued header that the response repeats is invalid; arrays and objects combine every occurrence.
+        """
         key = status_key(info.status_code, self._keys)
         if (branch := self._headers.get(name.lower(), {}).get(key or "")) is None:
+            raise _header_failure(info, self._operation_id, name)
+        single = branch.plan.content_media_type is not None or branch.plan.shape == "scalar"
+        if single and len(info.headers.get_all(name)) > 1:
             raise _header_failure(info, self._operation_id, name)
         fragments = tuple(
             ParameterFragment(header.encode("latin-1"), value.encode()) for header, value in info.headers.items()

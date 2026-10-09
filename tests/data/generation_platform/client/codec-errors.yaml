@@ -105,3 +105,19 @@ paths:
       responses:
         '204':
           description: An exploded form-data member naming another member.
+  /cycle:
+    get:
+      operationId: getCycle
+      parameters:
+        - name: q
+          in: query
+          schema: {$ref: '#/components/schemas/Loop'}
+      responses:
+        '204':
+          description: A parameter schema whose branches lead back to it.
+components:
+  schemas:
+    Loop:
+      anyOf: [{$ref: '#/components/schemas/Back'}]
+    Back:
+      allOf: [{$ref: '#/components/schemas/Loop'}]
