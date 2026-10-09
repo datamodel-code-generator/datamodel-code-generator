@@ -79,8 +79,8 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
             BodyFields(
                 media_type='application/json',
                 fields=(
-                    (0, 'name', True),
-                    (1, 'kind', True),
+                    (0, 'name', False),
+                    (1, 'kind', False),
                     (2, 'tag', False),
                     (3, 'birthDate', False),
                     (4, 'owner', False),
@@ -89,7 +89,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
             ),
             BodyFields(
                 media_type='application/x-www-form-urlencoded',
-                fields=((0, 'name', True), (2, 'tag', False)),
+                fields=((0, 'name', False), (2, 'tag', False)),
             ),
         ),
     ),
@@ -229,7 +229,7 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
         media=(
             BodyFields(
                 media_type='application/json',
-                fields=((0, 'email', True), (1, 'nickName', False)),
+                fields=((0, 'email', False), (1, 'nickName', False)),
             ),
         ),
     ),
@@ -263,6 +263,13 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
         ),
         default='application/json',
         required=True,
+    ),
+    fields=FieldArguments(
+        method='put_labels',
+        names=('size',),
+        media=(
+            BodyFields(media_type='application/json', fields=((0, 'size', False),)),
+        ),
     ),
 )
 
@@ -336,7 +343,7 @@ OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
         media=(
             BodyFields(
                 media_type='application/json',
-                fields=((0, 'name', True), (1, 'tag', False)),
+                fields=((0, 'name', False), (1, 'tag', False)),
             ),
         ),
     ),

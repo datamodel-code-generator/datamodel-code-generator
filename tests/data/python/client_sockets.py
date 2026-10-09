@@ -298,7 +298,7 @@ def _refusals(harness: _Harness, api: Any) -> None:
         (
             "redirect not followed",
             (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),),
-            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
+            {"options": options.RequestOptions(follow_redirects=True)},
         ),
         ("subprotocol not selected", (Play(subprotocol=None),), {}),
     )

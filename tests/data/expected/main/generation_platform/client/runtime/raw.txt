@@ -1,18 +1,19 @@
 # pets pydantic_v2.BaseModel
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' shared True
-    read b'{"id":3,"name":"fox"}' text '{"id":3,"name":"fox"}' json {'id': 3, 'name': 'fox'} pieces [b'{"id":3,"name":"fox"}'] [b'{"id":3,"name":"fox"}']
+  saved 200 'application/json' b'{"id":3,"name":"fox"}'
+    read b'{"id":3,"name":"fox"}' text '{"id":3,"name":"fox"}' json {'id': 3, 'name': 'fox'} pieces [b'{"id":3,"name":"fox"}']
+  saved raw bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_raw_bytes.buffered') [operation_id='getPet', field_path=('response', 'iter_raw_bytes', 'buffered'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
     closed twice True None True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved gzip 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  saved gzip 200 'application/json' b'{"id":3,"name":"fox"}'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved pieces [65536, 4464]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  saved error 418 'application/json' b'{"code":7,"message":"boom"}' b'{"code":7,"message":"boom"}' shared True r-1
+  saved error 418 'application/json' b'{"code":7,"message":"boom"}' r-1
   saved error status ! APIStatusError: APIStatusError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=418, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] api_status_error
   saved error status again ! APIStatusError: APIStatusError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=418, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] api_status_error
   > GET https://api.example.com/v1/pets/3
@@ -41,7 +42,7 @@
   saved identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=21] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=24] response_too_large
+  saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=100] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
@@ -61,11 +62,11 @@
   consumed iter_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_bytes.consumed') [operation_id='getPet', field_path=('response', 'iter_bytes', 'consumed'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
   consumed iter_raw_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_raw_bytes.consumed') [operation_id='getPet', field_path=('response', 'iter_raw_bytes', 'consumed'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
   consumed body_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.read.consumed') [operation_id='getPet', field_path=('response', 'read', 'consumed'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
-  consumed raw_body_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.read.consumed') [operation_id='getPet', field_path=('response', 'read', 'consumed'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   unread body_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.read.streaming') [operation_id='getPet', field_path=('response', 'read', 'streaming'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
-  read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False [b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00']
+  read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}'
+  raw bytes after a read ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_raw_bytes.buffered') [operation_id='getPet', field_path=('response', 'iter_raw_bytes', 'buffered'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   streamed coded [b'\x1f\x8b\x08\x00\x00\x00\x00', b'\x00\x02\xff\xabV\xcaL', b'Q\xb22\xd6Q\xcaK', b'\xccMU\xb2RJ\xcb', b'\xafP\xaa\x05\x00\xc4\x1a', b'\xc5\x91\x15\x00\x00\x00']
@@ -157,7 +158,7 @@
   moved again b'{}' ['failed.json', 'pet.json', 'private.json', 'raced.json']
   > POST https://hooks.example.com/ping?x=1
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
-  request 200 'text/plain' b'pong' b'pong' shared True
+  request 200 'text/plain' b'pong'
   > GET https://hooks.example.com/down
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   > GET https://hooks.example.com/down
@@ -179,10 +180,10 @@
   request options type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > GET https://x.example.com/
     [host: x.example.com, accept-encoding: gzip, deflate] b''
-  request url fragment = "200 'text/plain' b'fragment omitted' b'fragment omitted' shared True"
+  request url fragment = "200 'text/plain' b'fragment omitted'"
   > GET https://x.example.com/?a=1
     [host: x.example.com, accept-encoding: gzip, deflate] b''
-  request query fragment = "200 'text/plain' b'fragment omitted' b'fragment omitted' shared True"
+  request query fragment = "200 'text/plain' b'fragment omitted'"
   > GET https://hooks.example.com/stream
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   request capped ! DecodeError: DecodeError(status_code=200, call_id='<call>', reason='response_too_large') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=3, observed=6] response_too_large
@@ -198,11 +199,12 @@
   saved after close=b'{"id":3,"name":"fox"}'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' shared True b'{"id":3,"name":"fox"}' '{"id":3,"name":"fox"}' {'id': 3, 'name': 'fox'} [b'{"id":3,"name":"fox"}'] [b'{"id":3,"name":"fox"}']
+  async saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' '{"id":3,"name":"fox"}' {'id': 3, 'name': 'fox'} [b'{"id":3,"name":"fox"}']
+  async saved raw bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_raw_bytes.buffered') [operation_id='getPet', field_path=('response', 'iter_raw_bytes', 'buffered'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
     closed twice None True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved gzip 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  async saved gzip 200 'application/json' b'{"id":3,"name":"fox"}'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
@@ -211,7 +213,7 @@
   async saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet' call=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=24] response_too_large
+  async saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=100] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
@@ -231,7 +233,7 @@
   async consumed iter_raw_bytes ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='response_consumed', field_path='response.iter_raw_bytes.consumed') [operation_id='getPet', field_path=('response', 'iter_raw_bytes', 'consumed'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  async read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streamed coded [b'\x1f\x8b\x08\x00\x00\x00\x00', b'\x00\x02\xff\xabV\xcaL', b'Q\xb22\xd6Q\xcaK', b'\xccMU\xb2RJ\xcb', b'\xafP\xaa\x05\x00\xc4\x1a', b'\xc5\x91\x15\x00\x00\x00']

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from types import ModuleType
 
+_CODINGS: Final = {"Accept-Encoding": "gzip, deflate"}
 _CALL_ID: Final = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 _ERROR_FIELDS: Final = (
     "operation_id",
@@ -81,16 +82,19 @@ class Exchange:
         self.responders.extend(responders)
 
     def client(self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any) -> httpx2.Client:
-        """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`."""
+        """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`.
+
+        It asks for the codings every environment decodes, so reports never depend on the optional decoders installed.
+        """
         self.transports += 1
-        return kind(transport=LocalTransport(self, connections), **options)
+        return kind(transport=LocalTransport(self, connections), **{"headers": _CODINGS, **options})
 
     def async_client(
         self, connections: int = 10, kind: type[httpx2.AsyncClient] = httpx2.AsyncClient, **options: Any
     ) -> httpx2.AsyncClient:
         """Return an asyncio HTTPX2 client of a kind that sends through this exchange's server over `connections`."""
         self.transports += 1
-        return kind(transport=AsyncLocalTransport(self, connections), **options)
+        return kind(transport=AsyncLocalTransport(self, connections), **{"headers": _CODINGS, **options})
 
     def port(self) -> int:
         """Return the port of the server, starting it first."""

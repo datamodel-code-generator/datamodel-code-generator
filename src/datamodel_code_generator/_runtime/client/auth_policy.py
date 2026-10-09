@@ -25,7 +25,7 @@ from .auth_challenges import invalid_token
 from .errors import AuthError, ConfigurationError, DeliveryState, is_auth_classified
 from .native import cloned, request_fields
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
-from .urls import URLValidationError, canonical_origin, strip_query
+from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -579,16 +579,6 @@ def _query_url(url: str, added: tuple[tuple[str, str], ...]) -> str:
     parts = parsed.query.split("&") if parsed.query else []
     parts.extend(f"{quote(name, safe='-._~')}={quote(value, safe='-._~')}" for name, value in added)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(parts), parsed.fragment))
-
-
-def strip_managed_query(url: str, bound: BoundAuth | AsyncBoundAuth) -> str:
-    """Remove managed query fields a redirect target carries, retaining unrelated encoded query atoms.
-
-    Names compare as forms decode them, as for request patches. An unsigned request never carries a managed header or
-    cookie: patches, parameters, and raw requests naming one are refused before the first hop, and credentials and
-    signatures are placed only on each outgoing copy.
-    """
-    return strip_query(url, bound.managed_query)
 
 
 def _cookie_fields(headers: list[tuple[str, str]], cookies: list[tuple[str, str]]) -> list[tuple[str, str]]:

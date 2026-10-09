@@ -123,7 +123,7 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         record(lines, "header conflict", lambda: api.items.put_blob(body=b"x", options=conflict))
         exchange.respond(_stored())
         record(lines, "header without coding", lambda: api.items.create_note(body=harness.item(), options=conflict))
-        moved = harness.call(redirects=harness.options.RedirectOptions(enabled=True, allow_303_to_get=True))
+        moved = harness.call(follow_redirects=True)
         exchange.respond(raw_response(303, Location="https://api.example.com/items"), json_response(200, {"data": []}))
         record(
             lines,

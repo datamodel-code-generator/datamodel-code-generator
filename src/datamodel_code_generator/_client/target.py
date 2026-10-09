@@ -61,10 +61,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
-    from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
-    from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -136,7 +134,7 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         coded = frozenset(item.use for item in codecs.uses)
-        plan, named = plan_fields(plan, facts, coded, wire)
+        plan, named = plan_fields(plan, facts, coded)
         pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
         polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
         caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
@@ -172,9 +170,7 @@ class ClientTarget:
         data = _HelperDigests(request, codecs, wire)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
-        fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
-        fingerprints.update((spec.helper.name, data.upload(spec, metadata[spec.helper.name])) for spec in uploads)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
@@ -274,72 +270,6 @@ class _HelperDigests:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
-        })
-
-    def polling(self, spec: PollingSpec, settings: JSONValue) -> str:
-        """Return the digest of a polling helper's contract closure: its signature and settings, operations, and uses.
-
-        The signature spells the create call's arguments and the result type, and the uses are the create responses',
-        the poll's, the result fetch's, and the remote cancel's.
-        """
-        operation, helper, fetch = spec.operation, spec.helper, spec.fetch
-        body = operation.body
-        uses = (
-            *spec.create_uses,
-            spec.poll_use,
-            *(() if spec.fetch_use is None else (spec.fetch_use,)),
-            *spec.cancel_uses,
-        )
-        signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "result": None if spec.value is None else self.spelling.static(spec.value),
-            "uses": [self.type(use) for use in uses],
-            "settings": settings,
-        }
-        documents = self.request.documents
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [
-                documents.operation(item.contract.id)
-                for item in (operation, spec.poll, *(item for item in (fetch, spec.cancel) if item is not None))
-            ],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in uses],
-        })
-
-    def upload(self, spec: UploadSpec, settings: JSONValue) -> str:
-        """Return the digest of an upload helper's contract closure: its signature and settings, operations, and uses.
-
-        The signature spells the create call's arguments, the size it writes, and the result type, and the uses are the
-        create responses' and the completion's.
-        """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
-        uses = (*spec.create_uses, *(() if spec.completion_use is None else (spec.completion_use,)))
-        signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "size": None if spec.size is None else spec.size.python_name,
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "result": None if spec.completion_use is None else self.type(spec.completion_use),
-            "uses": [self.type(use) for use in uses],
-            "settings": settings,
-        }
-        documents = self.request.documents
-        operations = (operation, spec.probe, spec.append, *(() if spec.completion is None else (spec.completion,)))
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [documents.operation(item.contract.id) for item in operations],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in uses],
         })
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:

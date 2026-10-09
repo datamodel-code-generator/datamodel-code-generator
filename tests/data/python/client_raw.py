@@ -51,10 +51,9 @@ def _pet(package: ModuleType) -> object:
 
 
 def _saved(response: Any) -> str:
-    """Describe a response whose body is in memory: its status, media type, and both forms of its body."""
+    """Describe a response whose body is in memory: its status, media type, and its decoded body."""
     info = response.info
-    decoded, coded = response.body_bytes, response.raw_body_bytes
-    return f"{info.status_code} {info.content_type!r} {decoded!r} {coded!r} shared {decoded is coded}"
+    return f"{info.status_code} {info.content_type!r} {response.body_bytes!r}"
 
 
 def _files(directory: Path) -> list[str]:
@@ -141,14 +140,15 @@ def raw(package: ModuleType, lines: list[str]) -> None:
 
 
 def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Keep the body of a raw response in memory, both decoded and as it arrived, within the buffer limit."""
+    """Keep the decoded body of a raw response in memory within the buffer limit; its raw bytes are not kept."""
     errors, options, _, types = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = raw.get_pet(pet_id=pet)
     lines.append(f"  saved {_saved(kept)}")
-    pieces, coded = list(kept.iter_bytes()), list(kept.iter_raw_bytes())
-    lines.append(f"    read {kept.read()!r} text {kept.text()!r} json {kept.json()!r} pieces {pieces} {coded}")
+    pieces = list(kept.iter_bytes())
+    lines.append(f"    read {kept.read()!r} text {kept.text()!r} json {kept.json()!r} pieces {pieces}")
+    record(lines, "saved raw bytes", kept.iter_raw_bytes)
     kept.close()
     with kept as same:
         lines.append(f"    closed twice {same.read() == _PET} {same.raise_for_status()} {same is kept}")
@@ -227,13 +227,13 @@ def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             ("iter_bytes", response.iter_bytes),
             ("iter_raw_bytes", response.iter_raw_bytes),
             ("body_bytes", lambda: response.body_bytes),
-            ("raw_body_bytes", lambda: response.raw_body_bytes),
         ):
             record(lines, f"consumed {label}", action)
     exchange.respond(_gzip(200, _PET, 7))
     with streaming.get_pet(pet_id=pet) as response:
         record(lines, "unread body_bytes", lambda: response.body_bytes)
-        lines.append(f"  read first {response.read()!r} {_saved(response)} {list(response.iter_raw_bytes())}")
+        lines.append(f"  read first {response.read()!r} {_saved(response)}")
+        record(lines, "raw bytes after a read", lambda: list(response.iter_raw_bytes()))
     exchange.respond(_gzip(200, _PET, 7))
     with streaming.get_pet(pet_id=pet) as response:
         lines.append(f"  streamed coded {list(response.iter_raw_bytes())}")
@@ -451,10 +451,10 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = await raw.get_pet(pet_id=pet)
     pieces = [piece async for piece in kept.iter_bytes()]
-    coded = [piece async for piece in kept.iter_raw_bytes()]
     lines.append(
-        f"  async saved {_saved(kept)} {await kept.read()!r} {await kept.text()!r} {await kept.json()!r} {pieces} {coded}"
+        f"  async saved {_saved(kept)} {await kept.read()!r} {await kept.text()!r} {await kept.json()!r} {pieces}"
     )
+    record(lines, "async saved raw bytes", kept.iter_raw_bytes)
     await kept.aclose()
     async with kept as same:
         lines.append(f"    closed twice {await same.raise_for_status()} {same is kept}")
