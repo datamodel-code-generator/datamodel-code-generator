@@ -50,6 +50,8 @@
     request hook: GET /items
   raw request whose request hook fails ! APIConnectionError: APIConnectionError(cause='RuntimeError') [cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /v1/pets/3
+  get whose request hook refuses the connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('request hook failed')] attempts=1
+    request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 503
@@ -180,6 +182,8 @@
   async get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /items
   async raw request whose request hook fails ! APIConnectionError: APIConnectionError(cause='RuntimeError') [cause=RuntimeError('request hook failed')] attempts=1
+    request hook: GET /v1/pets/3
+  async get whose request hook refuses the connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('request hook failed')] attempts=1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
