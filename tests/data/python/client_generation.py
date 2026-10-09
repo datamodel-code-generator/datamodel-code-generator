@@ -387,6 +387,24 @@ def client_cli_arguments(pyproject: Path) -> list[str]:
     return arguments
 
 
+def client_generate_options(pyproject: Path, root: Path) -> tuple[Path, dict[str, Any]]:
+    """Spell the [tool.datamodel-codegen] keys of a pyproject.toml as the input and options of generate().
+
+    A JSON option given as a file is passed as the object the file under root holds.
+    """
+    import tomllib
+
+    options: dict[str, Any] = {}
+    for key, value in tomllib.loads(pyproject.read_text(encoding="utf-8"))["tool"]["datamodel-codegen"].items():
+        name = key.replace("-", "_")
+        match value:
+            case str() if name in {"client_protocols", "client_operations", "client_resource_names"}:
+                options[name] = json.loads((root / value).read_text(encoding="utf-8"))
+            case _:
+                options[name] = value
+    return Path(options.pop("input")), options
+
+
 def prepare_client_case(case_name: str, root: Path) -> None:
     """Copy a case's source and reference documents into a root."""
     _prepare_input(json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name], root)
