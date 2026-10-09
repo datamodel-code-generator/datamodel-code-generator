@@ -27,7 +27,7 @@ from ..client.client import (
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
 from ..client.logical import Delivery, LogicalCallContext
-from ..client.native import request_fields, wire_fields
+from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
@@ -107,6 +107,21 @@ def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes) -
 
 
 @dataclass(frozen=True, slots=True)
+class CacheIdentity:
+    """Whom a cache fetch asks as: its URL with any query credentials, and the values of the headers that tell it.
+
+    The headers are the credential headers and every header added or changed on the way to the network, by lowercase
+    name in order, each with its values, none for a header the request lacks. `authenticated` tells whether the request
+    carries credentials, and `authorized` whether an Auth ran on it.
+    """
+
+    url: str
+    headers: tuple[tuple[str, tuple[str, ...]], ...]
+    authenticated: bool
+    authorized: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class CacheRequest:
     """What a cache fetch keys and sends, prepared once before its call.
 
@@ -120,48 +135,34 @@ class CacheRequest:
     credential_headers: frozenset[str]
     credential_queries: frozenset[str]
 
-
-@dataclass(frozen=True, slots=True)
-class CacheIdentity:
-    """Whom a cache fetch asks as: its URL with any query credentials, and the values of the headers that tell it.
-
-    The headers are the credential headers and every header the request's Auth added or changed, by lowercase name in
-    order, each with its values, none for a header the request lacks. `authenticated` tells whether the request
-    carries credentials.
-    """
-
-    url: str
-    headers: tuple[tuple[str, tuple[str, ...]], ...]
-    authenticated: bool
-
-    def matches(self, sent: httpx2.Request) -> bool:
-        """Return whether a sent request asks as this identity: the same URL and the same values of the same headers."""
-        return absolute_target(str(sent.url)).url == self.url and self.headers == tuple(
-            (name, tuple(sent.headers.get_list(name))) for name, _ in self.headers
+    def identity(
+        self, sent: httpx2.Request, base: httpx2.Request | None = None, *, authorized: bool = False
+    ) -> CacheIdentity:
+        """Return the identity of a request as it is sent, against the one it was built from, by default this one."""
+        before, after = base or self.request, sent.headers
+        given = {name.lower() for name, _ in (*request_fields(before), *request_fields(sent))}
+        names = self.credential_headers.union(
+            name for name in given if before.headers.get_list(name) != after.get_list(name)
         )
+        headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
+        url = absolute_target(str(sent.url)).url
+        queries = self.credential_queries
+        authenticated = (
+            any(values for _, values in headers)
+            or sent.url != before.url
+            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+        )
+        return CacheIdentity(url, headers, authenticated, authorized)
 
-
-def _identity(prepared: CacheRequest, authed: httpx2.Request) -> CacheIdentity:
-    """Return the identity of a cache fetch's request as its Auth gives it to be sent first."""
-    before, after = prepared.request, authed.headers
-    given = {name.lower() for name, _ in (*request_fields(before), *request_fields(authed))}
-    names = prepared.credential_headers.union(
-        name for name in given if before.headers.get_list(name) != after.get_list(name)
-    )
-    headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
-    url = absolute_target(str(authed.url)).url
-    queries = prepared.credential_queries
-    authenticated = (
-        any(values for _, values in headers)
-        or authed.url != before.url
-        or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
-    )
-    return CacheIdentity(url, headers, authenticated)
-
-
-def _unsent(request: httpx2.Request) -> httpx2.Request:
-    """Return a copy of a bodiless request for an Auth to place credentials on without sending it."""
-    return httpx2.Request(request.method, request.url, headers=wire_fields(request_fields(request)))
+    def unsent(self) -> httpx2.Request:
+        """Return a copy of the bodiless request, with the call's timeout, for an Auth to place credentials on."""
+        request = self.request
+        return httpx2.Request(
+            request.method,
+            request.url,
+            headers=wire_fields(request_fields(request)),
+            extensions={"timeout": native_timeout(self.call.timeout())},
+        )
 
 
 class _SessionCall(Call):
@@ -363,13 +364,14 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         return self._helpers().defaults.get(name)
 
     def cache_store(self, name: str, create: Callable[[], object]) -> object:
-        """Return the store the client lends a cache helper, or else the one its root creates with `create` first.
+        """Return the store the client lends a cache helper, or else the one store its root creates with `create`.
 
-        Views share their root's stores; another client never does.
+        The root creates it at the first fetch of a helper no store is lent to; its views and its other such helpers
+        share it, and another client never does.
         """
         helpers = self._helpers()
-        if (store := helpers.cache_stores.get(name) or helpers.created.get(name)) is None:
-            store = helpers.created.setdefault(name, create())
+        if (store := helpers.cache_stores.get(name)) is None and (store := helpers.created.get("")) is None:
+            store = helpers.created.setdefault("", create())
         return store
 
     def cache_request(
@@ -539,7 +541,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         The Auth is the call's own, its credentials', or else the HTTP client's. Its flow runs on a copy of the request
         and is closed at its first request; the Auth's failure is the call's.
         """
-        call, request = prepared.call, _unsent(prepared.request)
+        call, request = prepared.call, prepared.unsent()
         client = self._shared.http_client
         auth = call.native_auth(
             self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
@@ -553,7 +555,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                 raise failure from failure.__cause__
             finally:
                 flow.close()
-        return _identity(prepared, request)
+        return prepared.identity(request, authorized=auth is not None)
 
     def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
@@ -715,7 +717,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
 
     async def acache_identity(self, prepared: CacheRequest) -> CacheIdentity:
         """Return a cache fetch's identity with asyncio, as the synchronous core does."""
-        call, request = prepared.call, _unsent(prepared.request)
+        call, request = prepared.call, prepared.unsent()
         client = self._shared.http_client
         auth = call.native_auth(
             self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
@@ -729,7 +731,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                 raise failure from failure.__cause__
             finally:
                 await flow.aclose()
-        return _identity(prepared, request)
+        return prepared.identity(request, authorized=auth is not None)
 
     async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,

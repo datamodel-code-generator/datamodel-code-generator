@@ -35,14 +35,14 @@ copied runtime
   model_codecs/wire.py: 144
   protocols/__init__.py: 4
   protocols/caches.py: 139
-  protocols/client.py: 827
+  protocols/client.py: 833
   protocols/errors.py: 163
   protocols/options.py: 254
   protocols/origins.py: 45
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/websocket.py: 936
-total 37 modules, 10939 lines
+total 37 modules, 10945 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

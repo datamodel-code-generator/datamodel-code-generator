@@ -213,7 +213,7 @@ class HelperSettings:
     """The helper settings of one client root, which its views share: helper defaults, lent stores, and origins.
 
     The defaults and the lent cache stores are keyed by helper name, and duplicate origins are dropped. `created`
-    holds the memory store the root creates on first use for a cache helper no store is lent to.
+    holds, under the empty name, the one memory store the root creates for the cache helpers no store is lent to.
     """
 
     __slots__ = ("allowed_origins", "cache_stores", "created", "defaults")

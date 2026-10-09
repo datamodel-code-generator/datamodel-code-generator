@@ -576,6 +576,7 @@ def cache_stores(package: ModuleType, lines: list[str]) -> None:
         _settings(cache, native, exchange, lines)
         _recorded(cache, native, exchange, lines)
         _credentials(cache, native, exchange, lines)
+        _rounds(cache, native, exchange, lines)
     run(lambda: _async_stores(cache, lines))
 
 
@@ -710,6 +711,9 @@ class _DictStore:
 
     def __init__(self) -> None:
         self.entries: dict[bytes, Any] = {}
+
+    def __len__(self) -> int:
+        return len(self.entries)
 
     def get(self, key: bytes) -> Any:
         """Return the entry of a key, or None."""
@@ -958,6 +962,50 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "next round fresh", lambda: helper.fetch(user_id=secure_user))
         granted_store.faults["get"] = OSError("down")
         fetched(lines, "granted", lambda: helper.fetch(user_id=secure_user))
+
+
+class _SessionAfterChallenge(httpx2.Auth):
+    """An Auth that adds nothing at first and answers a 401 with a session header of its user."""
+
+    def __init__(self, user: str) -> None:
+        self.user = user
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Send the request again with the session header when the server challenges it."""
+        if (yield request).status_code == 401:
+            request.headers["X-Session"] = self.user
+            yield request
+
+
+def _hooked(request: httpx2.Request) -> None:
+    """Add a header to every request the HTTP client sends, after any Auth."""
+    request.headers["X-Hooked"] = "yes"
+
+
+def _rounds(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Store nothing a later Auth round or a request hook sent as another identity than the lookup's."""
+    package, options = cache.package, cache.options
+    challenge = raw_response(401, **{"www-authenticate": 'Challenge realm="api"'})
+    private = {"cache-control": "private, max-age=60"}
+    six = cache.user_id(6)
+    exchange.respond(challenge, user(6, "alice session", **private), user(6, "anonymous", **private))
+    store = cache.protocols.MemoryCacheStore()
+    with package.Client(http_client=native, cache_stores={"users.profile": store}, bearer="token") as api:
+        session = api.with_options(auth=_SessionAfterChallenge("alice")).protocols.users.profile
+        fetched(lines, "session added after a challenge", lambda: session.fetch(user_id=six))
+        fetched(lines, "anonymous after the session", lambda: api.protocols.users.profile.fetch(user_id=six))
+        secure = argument(package, "getSecureUser", "path", "userId", 8)
+        answered = options.RequestOptions(auth=_ChallengeAuth())
+        exchange.respond(challenge, user(8, "answered", **private), challenge, user(8, "answered again", **private))
+        for label in ("challenge-first auth", "challenge-first auth again"):
+            fetched(lines, label, lambda: api.protocols.secure.profile.fetch(user_id=secure, options=answered))
+    exchange.respond(user(7, "hooked", **private), user(7, "hooked again", **private))
+    with (
+        exchange.client(event_hooks={"request": [_hooked]}) as hooked,
+        package.Client(http_client=hooked, cache_stores={"users.profile": cache.protocols.MemoryCacheStore()}) as api,
+    ):
+        for label in ("header a request hook adds", "header a request hook adds again"):
+            fetched(lines, label, lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(7)))
 
 
 async def _async_stores(cache: Caching, lines: list[str]) -> None:

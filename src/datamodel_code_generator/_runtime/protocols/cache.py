@@ -218,6 +218,7 @@ class _Fetch(Generic[T]):
         "prepared",
         "request",
         "requested_at",
+        "sending",
         "settings",
         "started",
         "usable",
@@ -243,6 +244,7 @@ class _Fetch(Generic[T]):
         self.max_entry_bytes, self.max_ttl, self.options = limits
         prepared = self.prepared = core.cache_request(plan.call, arguments, self.options)
         self.settings, self.request = prepared.settings, prepared.request
+        self.sending = self.request
         self.credential_headers = prepared.credential_headers
         headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
@@ -260,11 +262,12 @@ class _Fetch(Generic[T]):
     def keyed(self, identity: CacheIdentity) -> bytes:
         """Keep the identity the fetch asks as and return its base key, refusing one its helper's declaration denies.
 
-        A request carrying credentials needs a helper declared authenticated, and an anonymous one a helper declared
-        anonymous. The base key covers the method, the identity's URL and header values, the Accept header, and the
-        names its entries vary on.
+        A request carrying credentials needs a helper declared authenticated, and a helper declared authenticated needs
+        a request carrying credentials or an Auth, which may place them only after a challenge. The base key covers the
+        method, the identity's URL and header values, the Accept header, and the names its entries vary on.
         """
-        if identity.authenticated != self.plan.authenticated:
+        authenticated = self.plan.authenticated
+        if identity.authenticated > authenticated or authenticated > (identity.authenticated or identity.authorized):
             raise _configuration(self.plan, ("auth",), "binding_mismatch")
         self.identity = identity
         self.base_key = sha256(
@@ -340,13 +343,14 @@ class _Fetch(Generic[T]):
         validator = None if entry is None else _validator(self.plan, entry.headers)
         if validator is None or validator[0] in request.headers:
             return request
-        return httpx2.Request(
+        self.sending = httpx2.Request(
             request.method,
             request.url,
             headers=wire_fields((*request_fields(request), validator)),
             content=request.content,
             extensions=dict(request.extensions),
         )
+        return self.sending
 
     @staticmethod
     def modified(
@@ -384,12 +388,13 @@ class _Fetch(Generic[T]):
     def stored(self, received: _Received[T]) -> dict[str, Any] | None:
         """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
 
-        It is refused for a request sent as another identity than the one looked up, such as a rotated credential or
-        a renewed token, an unlisted status, a redirect, a body over the limit, a Set-Cookie, an unsupported or
-        malformed Cache-Control, no-store, a Vary outside the allowlist and the credential headers the key covers or
-        `*`, a revalidation whose Vary changed, and a response that is neither fresh nor revalidatable. The entry varies
-        on the response's Vary and on the headers its base key names, except the credential headers, and its date and
-        age are those of the response received, so a 304 without Age makes the entry's age 0.
+        It is refused for a request sent as another identity than the one looked up, such as a rotated credential, a
+        renewed token, or a header an Auth's later round or a request hook added, an unlisted status, a redirect, a
+        body over the limit, a Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the
+        allowlist and the credential headers the key covers or `*`, a revalidation whose Vary changed, and a response
+        that is neither fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key
+        names, except the credential headers, and its date and age are those of the response received, so a 304 without
+        Age makes the entry's age 0.
         """
         plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
@@ -435,7 +440,8 @@ class _Fetch(Generic[T]):
         usable, identity = self.usable, self.identity
         return (
             identity is not None
-            and identity.matches(received.sent)
+            and (sent := self.prepared.identity(received.sent, self.sending)).url == identity.url
+            and sent.headers == identity.headers
             and received.response.info.status_code in self.plan.statuses
             and not received.redirected
             and len(received.body) <= self.max_entry_bytes

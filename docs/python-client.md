@@ -2202,7 +2202,7 @@ store keeps no cache state. The helper is generated at `client.protocols.<name>`
 | `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
 | `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
-| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) needs no entry, since the key covers it, and fails generation. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
 
 `fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
 With asyncio, `fetch` is a coroutine:
@@ -2283,8 +2283,11 @@ than the entry's raises `ProtocolDataError` with the reason `inconsistent`; no r
 
 A response is stored only when its status is cacheable, its body is within `CacheOptions.max_entry_bytes`, it came
 without a redirect, it has no `Set-Cookie`, its `Cache-Control` has only RFC 9111 directives (`s-maxage` is ignored)
-and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or can be revalidated. A response that
-cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
+and no `no-store`, its `Vary` names only allowlisted headers or credential headers, and it is fresh or can be
+revalidated. A `Vary` on a credential header, such as `Authorization`, a cookie, or a declared scheme's header, needs
+no allowlisting: the key already covers the values the request is sent with, so such a response is stored and answers
+only requests sent with the same credentials. A response that cannot be stored removes the entry it supersedes, and
+errors and decoding failures store nothing and keep the entry.
 Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->

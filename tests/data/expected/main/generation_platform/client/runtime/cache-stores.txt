@@ -252,6 +252,30 @@
   next round fresh = fresh_cache 1:next status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
     get key=32
   granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-session: alice] b''
+  session added after a challenge = network 6:alice session status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '31'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  anonymous after the session = network 6:anonymous status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  challenge-first auth = network 8:answered status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '26'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  challenge-first auth again = network 8:answered again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '32'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/7
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-hooked: yes] b''
+  header a request hook adds = network 7:hooked status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/7
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-hooked: yes] b''
+  header a request hook adds again = network 7:hooked again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '30'), ('content-type', 'application/json')]
     get key=32
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
