@@ -8,8 +8,9 @@ See: _should_skip_exec() in conftest.py for the skip logic that these tests bypa
 
 from __future__ import annotations
 
+import shutil
 import sys
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
@@ -25,9 +26,6 @@ from .conftest import (
     get_current_version_args,
     run_main_and_assert,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 _CURRENT_PY_VERSION = PythonVersion(CURRENT_PYTHON_VERSION)
 _SKIP_BLACK = pytest.mark.skipif(
@@ -77,6 +75,21 @@ def test_openapi_api_exec_current_version(output_file: Path) -> None:
         skip_code_validation=False,
         force_exec_validation=True,
     )
+
+
+@_SKIP_BLACK
+def test_openapi_modular_relative_output_exec_current_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that a relative package output is imported from the working directory of each run."""
+    for name in ("first", "second"):
+        (tmp_path / name).mkdir()
+        monkeypatch.chdir(tmp_path / name)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "modular.yaml",
+            output_path=Path("model"),
+            extra_args=get_current_version_args("--output-model-type", "pydantic_v2.BaseModel"),
+            skip_code_validation=False,
+        )
+        shutil.rmtree("model")
 
 
 @_SKIP_BLACK

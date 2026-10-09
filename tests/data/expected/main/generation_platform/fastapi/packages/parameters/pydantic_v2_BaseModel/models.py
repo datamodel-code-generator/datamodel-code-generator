@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -121,10 +121,6 @@ FieldAdaptersGetQueryMailParameter = TypeAliasType("FieldAdaptersGetQueryMailPar
 
 
 FieldAdaptersGetQueryOtherParameter = TypeAliasType("FieldAdaptersGetQueryOtherParameter", str)
-
-
-class FieldAdaptersGetQueryNoneParameter(Enum):
-    NoneType_None = None
 
 
 FieldAdaptersGetQueryCountParameter = TypeAliasType("FieldAdaptersGetQueryCountParameter", int)
