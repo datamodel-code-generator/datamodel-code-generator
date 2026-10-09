@@ -61,6 +61,7 @@ _SYNC: Final = (
 )
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
+_DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
 _OCTETS: Final = "application/octet-stream"
 _FORM_DATA: Final = "multipart/form-data"
@@ -322,10 +323,13 @@ def _encoded(entries: list[Entry]) -> tuple[bytes | FormParts, str | None]:
     """Return a body's bytes and media type when every part is bytes, or else its parts and multipart/form-data.
 
     A body without parts has no media type, as HTTPX2 sends none, and each attempt of streamed parts names its
-    boundary. HTTPX2 checks every part's name and headers before any file input is opened.
+    boundary. A part header naming Content-Disposition is refused, as HTTPX2 writes it itself, and HTTPX2 checks every
+    part's name and headers before any file input is opened.
     """
     import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
 
+    if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
+        raise _malformed(None, ValueError(_DISPOSITION))
     try:
         if all(type(content) is bytes for _, _, content, _, _ in entries):
             native = httpx2.Request("POST", "/", files=native_files(entries))

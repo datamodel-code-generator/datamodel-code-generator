@@ -306,6 +306,7 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         record(lines, label, lambda value=value: _answered(exchange, lambda: api.forms.submit_parts(body=value)))
     for label, value in (
         ("part header on two lines", body((field("a", "1", headers=(("X-Trace", "a\r\nb"),)),))),
+        ("part header naming the disposition", body((field("a", "1", headers=(("content-disposition", "inline"),)),))),
         ("file part header that is no token", body((file("f", b"x", headers=(("Bad Header", "v"),)),))),
         ("part that is no part", body(("text",))),
         ("field of an object", body((field("a", object()),))),
