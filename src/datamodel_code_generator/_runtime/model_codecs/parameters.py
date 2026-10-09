@@ -74,10 +74,20 @@ class ParameterPlan:
     reserved_names: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        """Reject style, content, and shape combinations without a reversible builtin form."""
+        """Reject style, content, and shape combinations without a reversible builtin form.
+
+        A cookie sent as it is, a single value or one of the cookie style, needs a name that is a token.
+        """
         if not _reversible(self):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
+            raise ValueError(msg)
+        if (
+            self.location == "cookie"
+            and (self.style == "cookie" or self.shape == "scalar")
+            and not _TOKEN.fullmatch(self.name)
+        ):
+            msg = f"cookie parameter name {self.name!r} is not a token, which a cookie sent as it is needs"
             raise ValueError(msg)
 
 

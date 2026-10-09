@@ -767,6 +767,9 @@
   "codec-errors": {
     "input": "codec-errors.yaml"
   },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {

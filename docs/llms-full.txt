@@ -11546,7 +11546,7 @@ the method as its model, with uploads read to `bytes`.
 A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
 as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
 quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
-values as they are, too. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
+values as they are, too, and generation stops with an error for such a cookie whose name is not a token. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
 percent-decode it either; cookie arrays and objects, one cookie for each item or property, keep the `form` style's
 percent-encoding.
 

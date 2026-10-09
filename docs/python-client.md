@@ -2922,8 +2922,8 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   whitespace, control characters, or non-ASCII text (RFC 6265), so such a value fails with a request `DecodeError`
   of the reason `unencodable`, with a `ParameterEncodingError` cause, before anything is sent, instead of arriving
   cut short. Encode a value that needs those characters yourself, for example as Base64, and decode it in the
-  service. Array and object cookie parameters send one cookie for each item or property, percent-encoded in the
-  `form` style.
+  service. Such a parameter whose name is not a token stops generation with an error. Array and object cookie
+  parameters send one cookie for each item or property, percent-encoded in the `form` style.
 - **Headers.** Header values are converted through their native types. Read a body without any model with
   `with_raw_response` or `with_streaming_response` instead.
 

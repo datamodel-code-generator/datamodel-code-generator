@@ -87,13 +87,11 @@ header X simple array/string: ParameterEncodingError A header value contains con
 header X simple* object/string: ParameterEncodingError An exploded header member name cannot contain '='
 header X simple* object/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
 cookie c cookie* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
-cookie c d cookie* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie greeting form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
-cookie c d form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 query c text/plain scalar/string: ParameterEncodingError The parameter content media or value is not builtin
 querystring qs text/plain scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
