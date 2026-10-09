@@ -19,7 +19,10 @@ from .._runtime.server.security import authenticate as authenticate_1
 from ..services import SecurityService
 
 
-def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
+def _add_authenticate(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     security_1: SecurityService[object] = wiring.services['security']
     authenticate_handler_1 = checked(
         security_1.authenticate,

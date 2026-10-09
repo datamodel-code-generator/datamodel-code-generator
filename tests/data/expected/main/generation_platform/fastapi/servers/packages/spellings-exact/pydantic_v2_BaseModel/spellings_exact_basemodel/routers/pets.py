@@ -25,7 +25,10 @@ from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_pets_handler = checked(
         pets.list_pets,
@@ -58,7 +61,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_counts(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_counts_handler = checked(
         pets.list_counts,
@@ -91,7 +97,10 @@ def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_code(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     get_code_handler = checked(
         pets.get_code,
@@ -124,7 +133,10 @@ def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_literal(router: APIRouter, wiring: Wiring) -> None:
+def _add_literal(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     literal_handler = checked(
         pets.literal,
@@ -158,7 +170,10 @@ def _add_literal(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
+def _add_literal_model(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     literal_model_handler = checked(
         pets.literal_model,
@@ -190,7 +205,10 @@ def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     get_pet_handler = checked(
         pets.get_pet,

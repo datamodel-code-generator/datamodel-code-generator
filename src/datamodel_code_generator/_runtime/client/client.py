@@ -16,7 +16,7 @@ from contextlib import (
 )
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypedDict, TypeVar, cast
 from urllib.parse import quote, unquote_plus
 from uuid import uuid4
 
@@ -36,7 +36,7 @@ from .errors import (
     is_transport,
     kept_primary,
 )
-from .logical import Delivery, LogicalCallContext
+from .logical import Delivery, LogicalCallContext, run_sync
 from .media import normalized
 from .native import (
     async_decoded_bytes,
@@ -56,7 +56,7 @@ from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
 from .positions import positional, protected_positions, secret_names
-from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse
+from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
@@ -86,11 +86,14 @@ if TYPE_CHECKING:
     )
     from typing import Protocol, TypeAlias
 
+    from typing_extensions import Unpack
+
     from ..model_codecs.parameters import ParameterPlan
     from .content import AsyncContent, BodyBinder, BodyEntry, BodySource, RequestCoding, SyncContent
     from .operations import OperationPlan, ServerPlan
     from .options import NativeAuth, Pairs, RetryOptions, ServerSelection
     from .positions import CredentialPosition, Placement
+    from .raw import AnyRaw
     from .retry import RetryDelay
     from .timing import Clock
     from .urls import Origin
@@ -132,8 +135,8 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 R = TypeVar("R")
-AdapterT = TypeVar("AdapterT")
-HandleT = TypeVar("HandleT")
+AdapterT = TypeVar("AdapterT", bound="httpx2.Client | httpx2.AsyncClient")
+HandleT = TypeVar("HandleT", bound="AnyRaw")
 
 CLEANUP_TIMEOUT: Final = 5.0
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
@@ -146,6 +149,23 @@ _ERROR_STATUS: Final = 400
 _BODY: Final = "datamodel_code_generator.body"
 _SWITCHING: Final = 101
 _BYTES: Final = "A raw body must be bytes, since this package declares no binary or multipart request body"
+
+
+class CallKeywords(TypedDict, total=False):
+    """The keywords of an operation's call: its body or the body's fields, the media types, and the call's options."""
+
+    body: object
+    fields: tuple[object, ...]
+    media_type: str | None
+    options: RequestOptions | None
+    response_media_type: str | None
+
+
+class RawCallKeywords(CallKeywords, total=False):
+    """The keywords of a raw call: those of a call, whether it streams, and a helper's prepared call."""
+
+    stream: bool
+    _call: Call | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -479,16 +499,24 @@ def _bound(bodies: BodyBinder | None, content: object, entry: BodyEntry | None, 
     return bodies.bind(content, entry, asynchronous=asynchronous)
 
 
-def _close_body(owner: BodyEntry | None, call: Call, error: BaseException | None = None) -> None:
-    """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
-    if owner is not None:
-        _close_failed(owner.close(), call, error)
-
-
-async def _aclose_body(owner: BodyEntry | None, call: Call, error: BaseException | None = None) -> None:
+async def _aclose_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
     """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
-    if owner is not None:
-        _close_failed(await owner.aclose(), call, error)
+    _close_failed(await owner.aclose(), call, error)
+
+
+def _release_failure(call: Call, failure: BaseException, error: BaseException | None) -> BaseException | None:
+    """Return what a failed release of a response raises, or None when the earlier error stays primary.
+
+    A failure to release blocks retries; an ordinary one becomes a cleanup failure.
+    """
+    call.retry_blocked = True
+    failed = (
+        SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failure)
+        if isinstance(failure, Exception) and not isinstance(failure, SDKError)
+        else failure
+    )
+    primary = failed if error is None else kept_primary(error, failed)
+    return None if primary is error else primary
 
 
 def _close_failed(failures: list[OSError], call: Call, error: BaseException | None) -> None:
@@ -873,7 +901,7 @@ class _Shared(Generic[AdapterT]):
         self.security_schemes = defaults.security_schemes
         self.request_coding = defaults.request_coding
         self.bodies = defaults.bodies
-        coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
+        coding = http_client.headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.protocols: object = None
         self.credentials: Credentials | None = None
@@ -881,8 +909,15 @@ class _Shared(Generic[AdapterT]):
 
 
 class Core(Generic[AdapterT, HandleT]):
+    """The call flow both client modes share: the asyncio client awaits it, the synchronous one runs it with run_sync.
+
+    The flow awaits only the I/O each mode supplies, which the synchronous client performs as blocking calls inside
+    awaits that never suspend.
+    """
+
     __slots__ = ("_settings", "_shared", "_urls")
     _asynchronous: ClassVar[bool] = False
+    _CLOSE_ERRORS: ClassVar[type[BaseException]] = SDKError
 
     def __init__(self, shared: _Shared[AdapterT], settings: Settings) -> None:
         self._shared = shared
@@ -1005,7 +1040,7 @@ class Core(Generic[AdapterT, HandleT]):
             placements = None if security.alternatives and all(security.alternatives) else ()
         else:
             placements = credentials.selected(security)
-        native = cast("httpx2.Client | httpx2.AsyncClient", self._shared.http_client).auth
+        native = self._shared.http_client.auth
         if placements is None and (explicit is None or native is None):
             raise ConfigurationError(field_path=("auth",), reason="missing_credentials", operation_id=call.operation_id)
         call.placements = placements or ()
@@ -1093,45 +1128,6 @@ class Core(Generic[AdapterT, HandleT]):
         """Return the settings a call of the operation runs with under these options."""
         return self._call_settings(options, operation.operation_id)
 
-
-def _credentials(credentials: Credentials | None, settings: Settings, http_client: object) -> Credentials | None:
-    """Return the credentials given, refusing them beside an Auth of the client's options or of its HTTP client."""
-    if credentials is None or not credentials.values:
-        return None
-    if settings.auth is not UNSET or getattr(http_client, "auth", None) is not None:
-        raise ConfigurationError(field_path=("auth",), reason="conflicting_auth")
-    return credentials
-
-
-@contextmanager
-def _streamed(opened: Callable[[], RawResponse]) -> Generator[RawResponse, None, None]:
-    """Send on entering the block and yield the streaming response, which leaving the block closes."""
-    handle = opened()
-    try:
-        yield handle
-    except BaseException as error:
-        handle.discard(error)
-        raise
-    handle.close()
-
-
-@asynccontextmanager
-async def _astreamed(opened: Callable[[], Awaitable[AsyncRawResponse]]) -> AsyncGenerator[AsyncRawResponse, None]:
-    """Send on entering the block and yield the streaming response, which leaving the block closes."""
-    handle = await opened()
-    try:
-        yield handle
-    except BaseException as error:
-        await handle.discard(error)
-        raise
-    await handle.aclose()
-
-
-class ClientCore(Core["httpx2.Client", "RawResponse"]):
-    """Run the calls of a synchronous client and its views through one transport adapter."""
-
-    __slots__ = ()
-
     @classmethod
     def create(
         cls,
@@ -1150,489 +1146,21 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         checked = _credentials(credentials, settings, http_client)
         if protocols is not None:
             cast("_HelperSettings", protocols).check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
-        if http_client is None:
-            native = native_client()
-        elif isinstance(http_client, httpx2.Client):
-            native = http_client
-        else:
+        if (native := cls._native(http_client)) is None:
             raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
         shared = _Shared(defaults, native, created=http_client is None)
         shared.protocols, shared.credentials = protocols, checked
         return cls(shared, settings)
 
-    def execute(  # noqa: PLR0913
+    async def _execute(  # noqa: PLR0913, PLR0917
         self,
         operation: OperationPlan[T],
         arguments: tuple[object, ...],
-        *,
-        body: object = UNSET,
-        fields: tuple[object, ...] = (),
-        media_type: str | None = None,
-        options: RequestOptions | None = None,
-        response_media_type: str | None = None,
-    ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        settings = self._call_settings(options, operation.operation_id)
-        call = Call(settings, operation)
-        self._admitted(call)
-        decoder = operation.responses
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            nonlocal decoder
-            decoder = self._decoder(operation, response_media_type)
-            call.decoder = decoder
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=body,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-            )
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
-            received = self._read(response, info, decoder, call)
-
-            return decode_response(decoder, info, received, call.operation_id)
-
-        try:
-            if fields:
-                body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive)
-
-        except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
-            raise failure from failure.__cause__
-        else:
-            return result
-
-    def execute_raw(  # noqa: PLR0913
-        self,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        *,
-        body: object = UNSET,
-        fields: tuple[object, ...] = (),
-        media_type: str | None = None,
-        options: RequestOptions | None = None,
-        response_media_type: str | None = None,
-        stream: bool = False,
-        _call: Call | None = None,
-    ) -> RawResponse:
-        """Execute one encoded logical call through its retry and redirect policy.
-
-        A helper supplies its prepared call. A response other than a declared success of the response media type
-        raises the call's typed failure before the stream is handed over.
-        """
-        call = self._raw_call(operation, options, _call)
-        call.handing_off = stream
-        self._admitted(call)
-        decoder = operation.responses
-        result: RawResponse | None = None
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            nonlocal decoder
-            decoder = self._decoder(operation, response_media_type)
-            call.decoder = decoder
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=body,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-            )
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
-            return self._raw_response(response, info, call, stream=stream)
-
-        try:
-            if fields:
-                body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive)
-
-            if _call is not None:
-                result.raise_for_status()
-            if _call is not None:
-                decoder.streamed(result.info)
-
-            if stream:
-                call.handoff()
-        except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
-            if result is not None:
-                result.discard(failure)
-            raise failure from failure.__cause__
-        else:
-            return result
-
-    def stream(  # noqa: PLR0913
-        self,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        *,
-        body: object = UNSET,
-        fields: tuple[object, ...] = (),
-        media_type: str | None = None,
-        options: RequestOptions | None = None,
-        response_media_type: str | None = None,
-    ) -> AbstractContextManager[RawResponse]:
-        """Return a block that sends one call on entry and yields its streaming response until exit.
-
-        The call's arguments bind when the block is made, before it sends anything.
-        """
-        if fields:
-            body = operation.bound(body, fields, media_type)
-        return _streamed(
-            lambda: self.execute_raw(
-                operation,
-                arguments,
-                body=body,
-                media_type=media_type,
-                options=options,
-                response_media_type=response_media_type,
-                stream=True,
-            )
-        )
-
-    def request_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: object = UNSET,
-        options: RequestOptions | None = None,
-        stream: bool = False,
-    ) -> RawResponse:
-        """Execute an unbound raw call with the same resource and retry ownership."""
-        call = Call(self._call_settings(options, None))
-        call.handing_off = stream
-        self._admitted(call)
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
-            return self._raw_response(response, info, call, stream=stream)
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            return self._raw_prepared(method, url, body, options)
-
-        try:
-            result = self._run(call, body, prepare, receive)
-        except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
-            raise failure from failure.__cause__
-        if stream:
-            call.handoff()
-        return result
-
-    def stream_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: object = UNSET,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]:
-        """Return a block that sends a raw request on entry and yields its streaming response until exit."""
-        return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
-
-    def _run(
-        self,
-        call: Call,
         body: object,
-        prepare: Callable[[], tuple[httpx2.Request, object]],
-        receive: Callable[[httpx2.Response, ResponseInfo], T],
-    ) -> T:
-        """Own entry capture, the single encode, every hop, and closing the files opened from paths."""
-        entry: BodyEntry | None = None
-        source: BodySource | None = None
-        bodies = self._shared.bodies
-        try:
-            entry = None if bodies is None else bodies.capture(body)
-
-            call.bind()
-            if call.operation is not None and call.operation.security is not None:
-                self._bind_auth(call)
-
-            request, deferred = prepare()
-            request = call.prepared(request)
-            request, coding = _compressed(call, request, deferred, self._shared.request_coding)
-
-            if deferred is not UNSET:
-                source = _bound(bodies, deferred, entry, asynchronous=False)
-                if coding is not None:
-                    source = coding.source(source)
-
-            result = self._exchange(request, source, call, receive)
-        except BaseException as error:  # noqa: BLE001
-            failure = call.failure(error)
-            _close_body(source or entry, call, failure)
-            raise failure from failure.__cause__
-        try:
-            _close_body(source or entry, call)
-        except SDKError as error:
-            if isinstance(result, RawResponse):
-                result.discard(error)
-            raise
-        return result
-
-    def _exchange(
-        self,
-        original: httpx2.Request,
-        source: BodySource | None,
-        call: Call,
-        receive: Callable[[httpx2.Response, ResponseInfo], T],
-    ) -> T:
-        """Read and decode error bodies before deciding whether a complete status response may retry."""
-        while True:
-            response: httpx2.Response | None = None
-            info: ResponseInfo | None = None
-            failure: BaseException | None = None
-            sends_before = call.sends
-            call.response_transferred = False
-            try:
-                response = self._send(original, source, call)
-                info = self._response_info(response, call.request_id_header, call)
-                call.received(info)
-                planned = _status_plan(info, source, call)
-                if planned is None:
-                    result = receive(response, info)
-                    closing, response = response, None
-                    if not call.response_transferred:
-                        self._close_response(closing, call)
-                    return result
-                failure = call.decoder.failure(info, b"", truncated=True)
-                closing, response = response, None
-                self._close_response(closing, call, failure)
-            except BaseException as error:  # noqa: BLE001
-                failure = self._exchange_failure(error, response, call, info)
-                if not is_transport(failure) or call.sends == sends_before:
-                    failure = call.stopped(failure)
-                    raise failure from failure.__cause__
-                planned = call.retry(None, failure, replayable=source is None or source.replayable)
-                if planned is None:
-                    failure = call.stopped(failure)
-                    raise failure from failure.__cause__
-            self._wait_retry(planned, cast("BaseException", failure), call)
-            call.restart()
-
-    def _exchange_failure(
-        self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
-    ) -> BaseException:
-        failure = self._failure(error, call)
-        if isinstance(failure, SDKError) and info is not None:
-            failure.info = info
-        if response is not None and not call.response_transferred:
-            self._close_response(response, call, failure)
-        return failure
-
-    @staticmethod
-    def _wait_retry(planned: RetryDelay, failure: BaseException, call: Call) -> None:
-        """Finish the released candidate before its interruptible absolute wait."""
-        call.last_failure = failure
-        call.resending(failure)
-        call.sleep_until(planned.not_before)
-        call.resending(failure)
-
-    def _raw_response(self, response: httpx2.Response, info: ResponseInfo, call: Call, *, stream: bool) -> RawResponse:
-
-        def release() -> None:
-            self._release_resources(call, (response.close,))
-
-        handle = RawResponse(
-            info,
-            call.decoder,
-            call.operation_id,
-            lambda error: self._classified(error, call),
-            source=partial(decoded_bytes, response, info, call.operation_id),
-            raw_source=partial(response_bytes, response),
-            native=response,
-            close=release,
-            call=call,
-        )
-        call.response_transferred = True
-        if not stream:
-            handle.read()
-        return handle
-
-    def _send(
-        self,
-        request: httpx2.Request,
-        source: BodySource | None,
-        call: Call,
-    ) -> httpx2.Response:
-        """Send one native request and hand its response to the call."""
-        attempt: SyncContent | EncodedAttempt | None = request_body(request)
-        try:
-            call.next_send()
-            if source is not None:
-                attempt = source.open()
-
-            outgoing = self._outgoing(request, attempt, source, call)
-            call.admit_send()
-            try:
-                response = self._native_send(outgoing, call, source=source)
-            except SDKError:
-                raise
-            except Exception as error:  # noqa: BLE001
-                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
-            call.delivery_state = Delivery.RESPONSE_STARTED
-            return response  # noqa: TRY300
-        except BaseException as error:  # noqa: BLE001
-            failure = self._failure(error, call)
-            raise failure from failure.__cause__
-
-    def _native_send(self, outgoing: httpx2.Request, call: Call, *, source: BodySource | None) -> httpx2.Response:
-        """Send through the HTTP client with the call's Auth, or else its own, following redirects as the call allows.
-
-        Token requests go through the same client, without its Auth or redirects.
-        """
-        client = self._shared.http_client
-        follow = call.follow(outgoing, self._shared.security_schemes)
-        auth = call.native_auth(
-            self._shared.credentials,
-            source=source,
-            send=partial(client.send, auth=None, follow_redirects=False),
-        )
-        response = client.send(
-            outgoing,
-            stream=True,
-            auth=httpx2.USE_CLIENT_DEFAULT if auth is UNSET else cast("httpx2.Auth | None", auth),
-            follow_redirects=httpx2.USE_CLIENT_DEFAULT if follow is None else follow,
-        )
-        call.redirects_followed = _redirects(response)
-        return response
-
-    @staticmethod
-    def _release_resources(
-        call: Call, closes: tuple[Callable[[], None], ...], error: BaseException | None = None
-    ) -> None:
-        primary = error
-        for close in closes:
-            try:
-                close()
-            except BaseException as failure:  # noqa: BLE001, PERF203
-                call.retry_blocked = True
-                released = (
-                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failure)
-                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
-                    else failure
-                )
-                primary = released if primary is None else kept_primary(primary, released)
-        if primary is not None and primary is not error:
-            raise primary
-
-    def _close_response(self, response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
-        self._release_resources(call, (response.close,), error)
-
-    @staticmethod
-    def _outgoing(
-        request: httpx2.Request,
-        attempt: SyncContent | EncodedAttempt | None,
-        source: BodySource | None,
-        call: Call,
-    ) -> httpx2.Request:
-        """Hand the body to HTTPX2, which frames it, and fix the timeout before the call's Auth places credentials.
-
-        Bytes are given as they are and other bodies reopen their source, so a redirect HTTPX2 follows sends them
-        again; a stream of a known length is sent with that Content-Length.
-        """
-        content: bytes | _Replayed | None = None
-        if isinstance(attempt, EncodedAttempt):
-            content = attempt.content
-        elif attempt is not None:
-            assert source is not None
-            content = _Replayed(attempt, source)
-        return httpx2.Request(
-            request.method,
-            request.url,
-            headers=wire_fields(_framing(request, attempt)),
-            content=content,
-            extensions={"timeout": native_timeout(call.timeout())},
-        )
-
-    @staticmethod
-    def _read(
-        response: httpx2.Response,
-        info: ResponseInfo,
-        decoder: ResponseDecoder[object],
-        call: LogicalCallContext,
-    ) -> ReceivedBody:
-        received = ReceivedBody(success=decoder.success(info.status_code))
-        chunks = decoded_bytes(response, info, call.operation_id)
-        try:
-            for chunk in chunks:
-                if not received.add(chunk):
-                    break
-        except DecodeError as error:
-            received.problem = error
-        return received
-
-    def close(self) -> None:
-        """Close only the native client this root created, at most once even if close fails.
-
-        The WebSocket sessions open on it close first, so that none of their readers outlives its connection; a failing
-        close still closes the other sessions and the native client.
-        """
-        shared = self._shared
-        if shared.closed:
-            return
-        shared.closed = True
-        if shared.created:
-            try:
-                with ExitStack() as closing:
-                    closing.callback(shared.http_client.close)
-                    for close in tuple(shared.sockets):
-                        closing.callback(close)
-            except Exception as error:  # noqa: BLE001
-                raise SDKError(reason="close_failed", cause=error) from None
-
-
-class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
-    """Run the calls of an asyncio client and its views through one async transport adapter on one event loop."""
-
-    __slots__ = ()
-    _asynchronous: ClassVar[bool] = True
-
-    @classmethod
-    def create(
-        cls,
-        defaults: ClientDefaults,
-        *,
-        http_client: object = None,
-        credentials: Credentials | None = None,
-        protocols: object = None,
-        **keywords: Any,
-    ) -> Self:
-        """Borrow a mode-correct native client, or create and own one, with the root's settings.
-
-        The credentials of the package's declared schemes, by scheme name, replace the HTTP client's Auth.
-        """
-        settings = _root_settings(http_client, **keywords)
-        checked = _credentials(credentials, settings, http_client)
-        if protocols is not None:
-            cast("_HelperSettings", protocols).check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
-        if http_client is None:
-            native = native_async_client()
-        elif isinstance(http_client, httpx2.AsyncClient):
-            native = http_client
-        else:
-            raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
-        shared = _Shared(defaults, native, created=http_client is None)
-        shared.protocols, shared.credentials = protocols, checked
-        return cls(shared, settings)
-
-    async def execute(  # noqa: PLR0913
-        self,
-        operation: OperationPlan[T],
-        arguments: tuple[object, ...],
-        *,
-        body: object = UNSET,
-        fields: tuple[object, ...] = (),
-        media_type: str | None = None,
-        options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        fields: tuple[object, ...],
+        media_type: str | None,
+        options: RequestOptions | None,
+        response_media_type: str | None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
@@ -1670,7 +1198,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         else:
             return result
 
-    async def execute_raw(  # noqa: PLR0913
+    async def _execute_raw(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -1682,7 +1210,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         response_media_type: str | None = None,
         stream: bool = False,
         _call: Call | None = None,
-    ) -> AsyncRawResponse:
+    ) -> HandleT:
         """Execute one encoded logical call through its retry and redirect policy.
 
         A helper supplies its prepared call. A response other than a declared success of the response media type
@@ -1692,7 +1220,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         call.handing_off = stream
         self._admitted(call)
         decoder = operation.responses
-        result: AsyncRawResponse | None = None
+        result: HandleT | None = None
 
         def prepare() -> tuple[httpx2.Request, object]:
             nonlocal decoder
@@ -1708,7 +1236,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 accept=decoder.accept,
             )
 
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
             return await self._raw_response(response, info, call, stream=stream)
 
         try:
@@ -1717,8 +1245,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             result = await self._run(call, body, prepare, receive)
 
             if _call is not None:
-                await result.raise_for_status()
-            if _call is not None:
+                await settled(result)
                 decoder.streamed(result.info)
 
             if stream:
@@ -1726,55 +1253,20 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
-                await result.discard(failure)
+                await released(result, failure)
             raise failure from failure.__cause__
         else:
             return result
 
-    def stream(  # noqa: PLR0913
-        self,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        *,
-        body: object = UNSET,
-        fields: tuple[object, ...] = (),
-        media_type: str | None = None,
-        options: RequestOptions | None = None,
-        response_media_type: str | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Return a block that sends one call on entry and yields its streaming response until exit.
-
-        The call's arguments bind when the block is made, before it sends anything.
-        """
-        if fields:
-            body = operation.bound(body, fields, media_type)
-        return _astreamed(
-            lambda: self.execute_raw(
-                operation,
-                arguments,
-                body=body,
-                media_type=media_type,
-                options=options,
-                response_media_type=response_media_type,
-                stream=True,
-            )
-        )
-
-    async def request_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: object = UNSET,
-        options: RequestOptions | None = None,
-        stream: bool = False,
-    ) -> AsyncRawResponse:
+    async def _request_raw(
+        self, method: str, url: str, *, body: object, options: RequestOptions | None, stream: bool
+    ) -> HandleT:
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = Call(self._call_settings(options, None))
         call.handing_off = stream
         self._admitted(call)
 
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
             return await self._raw_response(response, info, call, stream=stream)
 
         def prepare() -> tuple[httpx2.Request, object]:
@@ -1788,17 +1280,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         if stream:
             call.handoff()
         return result
-
-    def stream_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: object = UNSET,
-        options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Return a block that sends a raw request on entry and yields its streaming response until exit."""
-        return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
     async def _run(
         self,
@@ -1823,31 +1304,38 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
             if deferred is not UNSET:
-                source = _bound(bodies, deferred, entry, asynchronous=True)
+                source = _bound(bodies, deferred, entry, asynchronous=self._asynchronous)
                 if coding is not None:
                     source = coding.source(source)
 
             result = await self._exchange(request, source, call, receive)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
+            if (owner := source or entry) is not None:
+                await self._close_body(owner, call, failure)
             raise failure from failure.__cause__
         try:
-            await _aclose_body(source or entry, call)
-        except BaseException as error:
-            if isinstance(result, AsyncRawResponse):
-                await result.discard(error)
+            if (owner := source or entry) is not None:
+                await self._close_body(owner, call)
+        except self._CLOSE_ERRORS as error:
+            if is_raw(result):
+                await released(result, error)
             raise
         return result
 
-    async def _exchange(
+    async def _exchange(  # noqa: PLR0915
         self,
         original: httpx2.Request,
         source: BodySource | None,
         call: Call,
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
     ) -> T:
-        """Read and decode error bodies before deciding whether a complete status response may retry."""
+        """Send each attempt, then read and decode error bodies before deciding whether a status response may retry.
+
+        Bytes are given to HTTPX2 as they are and other bodies reopen their source, so a redirect HTTPX2 follows sends
+        them again; a stream of a known length is sent with that Content-Length. The timeout is fixed before the call's
+        Auth places credentials.
+        """
         while True:
             response: httpx2.Response | None = None
             info: ResponseInfo | None = None
@@ -1855,7 +1343,29 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             sends_before = call.sends
             call.response_transferred = False
             try:
-                response = await self._send(original, source, call)
+                encoded = request_body(original)
+                attempt: SyncContent | AsyncContent | EncodedAttempt | None = encoded
+                content: bytes | _Replayed | _AsyncReplayed | None = None if encoded is None else encoded.content
+                call.next_send()
+                if source is not None:
+                    attempt, content = await self._opened(source)
+                outgoing = httpx2.Request(
+                    original.method,
+                    original.url,
+                    headers=wire_fields(_framing(original, attempt)),
+                    content=content,
+                    extensions={"timeout": native_timeout(call.timeout())},
+                )
+                call.admit_send()
+                try:
+                    response = await self._sent(
+                        outgoing, call, source, follow=call.follow(outgoing, self._shared.security_schemes)
+                    )
+                except SDKError:
+                    raise
+                except Exception as error:  # noqa: BLE001
+                    raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
+                call.redirects_followed = _redirects(response)
                 info = self._response_info(response, call.request_id_header, call)
                 call.received(info)
                 planned = _status_plan(info, source, call)
@@ -1869,7 +1379,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 closing, response = response, None
                 await self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
-                failure = await self._exchange_failure(error, response, call, info)
+                failure = self._failure(error, call)
+                if isinstance(failure, SDKError) and info is not None:
+                    failure.info = info
+                if response is not None and not call.response_transferred:
+                    await self._close_response(response, call, failure)
                 if not is_transport(failure) or call.sends == sends_before:
                     failure = call.stopped(failure)
                     raise failure from failure.__cause__
@@ -1877,159 +1391,327 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 if planned is None:
                     failure = call.stopped(failure)
                     raise failure from failure.__cause__
-            await self._wait_retry(planned, cast("BaseException", failure), call)
+            call.last_failure = failure
+            call.resending(failure)
+            await self._sleep_until(call, planned.not_before)
+            call.resending(failure)
             call.restart()
-
-    async def _exchange_failure(
-        self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
-    ) -> BaseException:
-        failure = self._failure(error, call)
-        if isinstance(failure, SDKError) and info is not None:
-            failure.info = info
-        if response is not None and not call.response_transferred:
-            await self._close_response(response, call, failure)
-        return failure
-
-    @staticmethod
-    async def _wait_retry(planned: RetryDelay, failure: BaseException, call: Call) -> None:
-        """Finish the released candidate before its interruptible absolute wait."""
-        call.last_failure = failure
-        call.resending(failure)
-        await call.asleep_until(planned.not_before)
-        call.resending(failure)
 
     async def _raw_response(
         self, response: httpx2.Response, info: ResponseInfo, call: Call, *, stream: bool
-    ) -> AsyncRawResponse:
-
-        async def release() -> None:
-            await self._release_resources(call, (response.aclose,))
-
-        handle = AsyncRawResponse(
-            info,
-            call.decoder,
-            call.operation_id,
-            lambda error: self._classified(error, call),
-            source=partial(async_decoded_bytes, response, info, call.operation_id),
-            raw_source=partial(async_response_bytes, response),
-            native=response,
-            close=release,
-            call=call,
-        )
+    ) -> HandleT:
+        handle = self._handle(response, info, call)
         call.response_transferred = True
         if not stream:
-            await handle.read()
+            await buffered(handle)
         return handle
 
-    async def _send(
-        self,
-        request: httpx2.Request,
-        source: BodySource | None,
-        call: Call,
+    @classmethod
+    def _native(cls, http_client: object) -> AdapterT | None:
+        """Return the HTTP client to borrow, a new one to own for None, or None for another mode's or another object."""
+        raise NotImplementedError
+
+    @staticmethod
+    async def _opened(source: BodySource) -> tuple[SyncContent | AsyncContent, _Replayed | _AsyncReplayed]:
+        """Open a body's next attempt, and the content HTTPX2 sends from it, which reopens its source on a redirect."""
+        raise NotImplementedError
+
+    async def _sent(
+        self, outgoing: httpx2.Request, call: Call, source: BodySource | None, *, follow: bool | None
     ) -> httpx2.Response:
-        """Send one native request and hand its response to the call."""
-        attempt: AsyncContent | EncodedAttempt | None = request_body(request)
-        try:
-            call.next_send()
-            if source is not None:
-                attempt = await source.aopen()
+        """Send through the HTTP client with the call's Auth, or else its own, following redirects as the call allows.
 
-            outgoing = self._outgoing(request, attempt, source, call)
-            call.admit_send()
+        Token requests go through the same client, without its Auth or redirects.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    async def _read(
+        response: httpx2.Response, info: ResponseInfo, decoder: ResponseDecoder[object], call: LogicalCallContext
+    ) -> ReceivedBody:
+        """Read a response's decoded body, keeping an error body's bounded prefix and a problem decoding it."""
+        raise NotImplementedError
+
+    @staticmethod
+    async def _close_response(response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
+        """Release a response's connection; a failure to release blocks retries and stays beside an earlier one."""
+        raise NotImplementedError
+
+    @staticmethod
+    async def _close_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
+        """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
+        raise NotImplementedError
+
+    @staticmethod
+    async def _sleep_until(call: Call, not_before: float) -> None:
+        """Wait before the next attempt, through the call's clock."""
+        raise NotImplementedError
+
+    def _handle(self, response: httpx2.Response, info: ResponseInfo, call: Call) -> HandleT:
+        """Return the raw response handle of a native response."""
+        raise NotImplementedError
+
+
+def _credentials(credentials: Credentials | None, settings: Settings, http_client: object) -> Credentials | None:
+    """Return the credentials given, refusing them beside an Auth of the client's options or of its HTTP client."""
+    if credentials is None or not credentials.values:
+        return None
+    if settings.auth is not UNSET or getattr(http_client, "auth", None) is not None:
+        raise ConfigurationError(field_path=("auth",), reason="conflicting_auth")
+    return credentials
+
+
+def _bound_fields(operation: OperationPlan[object], call: CallKeywords) -> CallKeywords:
+    """Bind a call's body fields into its body now, before a block sends it."""
+    if fields := call.pop("fields", ()):
+        call["body"] = operation.bound(call.get("body", UNSET), fields, call.get("media_type"))
+    return call
+
+
+@contextmanager
+def _streamed(opened: Callable[[], RawResponse]) -> Generator[RawResponse, None, None]:
+    """Send on entering the block and yield the streaming response, which leaving the block closes."""
+    handle = opened()
+    try:
+        yield handle
+    except BaseException as error:
+        handle.discard(error)
+        raise
+    handle.close()
+
+
+@asynccontextmanager
+async def _astreamed(opened: Callable[[], Awaitable[AsyncRawResponse]]) -> AsyncGenerator[AsyncRawResponse, None]:
+    """Send on entering the block and yield the streaming response, which leaving the block closes."""
+    handle = await opened()
+    try:
+        yield handle
+    except BaseException as error:
+        await handle.discard(error)
+        raise
+    await handle.aclose()
+
+
+class ClientCore(Core["httpx2.Client", "RawResponse"]):
+    """Run the calls of a synchronous client and its views through one transport adapter.
+
+    The calls run the flow the asyncio client awaits, over blocking I/O, so `run_sync` completes each in one step.
+    """
+
+    __slots__ = ()
+
+    def execute(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[T],
+        arguments: tuple[object, ...],
+        *,
+        body: object = UNSET,
+        fields: tuple[object, ...] = (),
+        media_type: str | None = None,
+        options: RequestOptions | None = None,
+        response_media_type: str | None = None,
+    ) -> Response[T]:
+        """Execute one encoded logical call through its retry and redirect policy."""
+        return run_sync(self._execute(operation, arguments, body, fields, media_type, options, response_media_type))
+
+    def execute_raw(
+        self, operation: OperationPlan[object], arguments: tuple[object, ...], **call: Unpack[RawCallKeywords]
+    ) -> RawResponse:
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper supplies its prepared call. A response other than a declared success of the response media type
+        raises the call's typed failure before the stream is handed over.
+        """
+        return run_sync(self._execute_raw(operation, arguments, **call))
+
+    def stream(
+        self, operation: OperationPlan[object], arguments: tuple[object, ...], **call: Unpack[CallKeywords]
+    ) -> AbstractContextManager[RawResponse]:
+        """Return a block that sends one call on entry and yields its streaming response until exit.
+
+        The call's arguments bind when the block is made, before it sends anything.
+        """
+        return _streamed(partial(self.execute_raw, operation, arguments, **_bound_fields(operation, call), stream=True))
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: object = UNSET,
+        options: RequestOptions | None = None,
+        stream: bool = False,
+    ) -> RawResponse:
+        """Execute an unbound raw call with the same resource and retry ownership."""
+        return run_sync(self._request_raw(method, url, body=body, options=options, stream=stream))
+
+    def stream_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: object = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Return a block that sends a raw request on entry and yields its streaming response until exit."""
+        return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
+
+    def close(self) -> None:
+        """Close only the native client this root created, at most once even if close fails.
+
+        The WebSocket sessions open on it close first, so that none of their readers outlives its connection; a failing
+        close still closes the other sessions and the native client.
+        """
+        shared = self._shared
+        if shared.closed:
+            return
+        shared.closed = True
+        if shared.created:
             try:
-                response = await self._native_send(outgoing, call, source=source)
-            except SDKError:
-                raise
+                with ExitStack() as closing:
+                    closing.callback(shared.http_client.close)
+                    for close in tuple(shared.sockets):
+                        closing.callback(close)
             except Exception as error:  # noqa: BLE001
-                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
-            call.delivery_state = Delivery.RESPONSE_STARTED
-            return response  # noqa: TRY300
-        except BaseException as error:  # noqa: BLE001
-            failure = self._failure(error, call)
-            raise failure from failure.__cause__
+                raise SDKError(reason="close_failed", cause=error) from None
 
-    async def _native_send(self, outgoing: httpx2.Request, call: Call, *, source: BodySource | None) -> httpx2.Response:
-        """Send through the asyncio HTTP client as the synchronous client sends, token requests included."""
+    @classmethod
+    def _native(cls, http_client: object) -> httpx2.Client | None:
+        if http_client is None:
+            return native_client()
+        return http_client if isinstance(http_client, httpx2.Client) else None
+
+    @staticmethod
+    async def _opened(source: BodySource) -> tuple[SyncContent, _Replayed]:
+        attempt = source.open()
+        return attempt, _Replayed(attempt, source)
+
+    async def _sent(
+        self, outgoing: httpx2.Request, call: Call, source: BodySource | None, *, follow: bool | None
+    ) -> httpx2.Response:
         client = self._shared.http_client
-        follow = call.follow(outgoing, self._shared.security_schemes)
         auth = call.native_auth(
             self._shared.credentials,
             source=source,
-            async_send=partial(client.send, auth=None, follow_redirects=False),
+            send=partial(client.send, auth=None, follow_redirects=False),
         )
-        response = await client.send(
+        return client.send(
             outgoing,
             stream=True,
             auth=httpx2.USE_CLIENT_DEFAULT if auth is UNSET else cast("httpx2.Auth | None", auth),
             follow_redirects=httpx2.USE_CLIENT_DEFAULT if follow is None else follow,
         )
-        call.redirects_followed = _redirects(response)
-        return response
-
-    @staticmethod
-    async def _release_resources(
-        call: Call, closes: tuple[Callable[[], Awaitable[None]], ...], error: BaseException | None = None
-    ) -> None:
-        primary = error
-        for close in closes:
-            try:
-                await call.cleanup(close)
-            except BaseException as failure:  # noqa: BLE001, PERF203
-                call.retry_blocked = True
-                released = (
-                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failure)
-                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
-                    else failure
-                )
-                primary = released if primary is None else kept_primary(primary, released)
-        if primary is not None and primary is not error:
-            raise primary
-
-    async def _close_response(self, response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
-        await self._release_resources(call, (response.aclose,), error)
-
-    @staticmethod
-    def _outgoing(
-        request: httpx2.Request,
-        attempt: AsyncContent | EncodedAttempt | None,
-        source: BodySource | None,
-        call: Call,
-    ) -> httpx2.Request:
-        """Hand the body to HTTPX2, which frames it, and fix the timeout before the call's Auth places credentials.
-
-        Bytes are given as they are and other bodies reopen their source, so a redirect HTTPX2 follows sends them
-        again; a stream of a known length is sent with that Content-Length.
-        """
-        content: bytes | _AsyncReplayed | None = None
-        if isinstance(attempt, EncodedAttempt):
-            content = attempt.content
-        elif attempt is not None:
-            assert source is not None
-            content = _AsyncReplayed(attempt, source)
-        return httpx2.Request(
-            request.method,
-            request.url,
-            headers=wire_fields(_framing(request, attempt)),
-            content=content,
-            extensions={"timeout": native_timeout(call.timeout())},
-        )
 
     @staticmethod
     async def _read(
-        response: httpx2.Response,
-        info: ResponseInfo,
-        decoder: ResponseDecoder[object],
-        call: LogicalCallContext,
+        response: httpx2.Response, info: ResponseInfo, decoder: ResponseDecoder[object], call: LogicalCallContext
     ) -> ReceivedBody:
         received = ReceivedBody(success=decoder.success(info.status_code))
-        chunks = async_decoded_bytes(response, info, call.operation_id)
+        chunks = decoded_bytes(response, info, call.operation_id)
         try:
-            async for chunk in chunks:
+            for chunk in chunks:
                 if not received.add(chunk):
                     break
         except DecodeError as error:
             received.problem = error
         return received
+
+    @staticmethod
+    async def _close_response(response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
+        raised = None
+        try:
+            response.close()
+        except BaseException as failure:  # noqa: BLE001
+            raised = _release_failure(call, failure, error)
+        if raised is not None:
+            raise raised
+
+    @staticmethod
+    async def _close_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
+        _close_failed(owner.close(), call, error)
+
+    @staticmethod
+    async def _sleep_until(call: Call, not_before: float) -> None:
+        call.sleep_until(not_before)
+
+    def _handle(self, response: httpx2.Response, info: ResponseInfo, call: Call) -> RawResponse:
+        return RawResponse(
+            info,
+            call.decoder,
+            call.operation_id,
+            lambda error: self._classified(error, call),
+            source=partial(decoded_bytes, response, info, call.operation_id),
+            raw_source=partial(response_bytes, response),
+            native=response,
+            close=partial(self._close_response, response, call),
+            call=call,
+        )
+
+
+class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
+    """Run the calls of an asyncio client and its views through one async transport adapter on one event loop."""
+
+    __slots__ = ()
+    _asynchronous: ClassVar[bool] = True
+    _CLOSE_ERRORS: ClassVar[type[BaseException]] = BaseException
+
+    async def execute(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[T],
+        arguments: tuple[object, ...],
+        *,
+        body: object = UNSET,
+        fields: tuple[object, ...] = (),
+        media_type: str | None = None,
+        options: RequestOptions | None = None,
+        response_media_type: str | None = None,
+    ) -> Response[T]:
+        """Execute one encoded logical call through its retry and redirect policy."""
+        return await self._execute(operation, arguments, body, fields, media_type, options, response_media_type)
+
+    async def execute_raw(
+        self, operation: OperationPlan[object], arguments: tuple[object, ...], **call: Unpack[RawCallKeywords]
+    ) -> AsyncRawResponse:
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper supplies its prepared call. A response other than a declared success of the response media type
+        raises the call's typed failure before the stream is handed over.
+        """
+        return await self._execute_raw(operation, arguments, **call)
+
+    def stream(
+        self, operation: OperationPlan[object], arguments: tuple[object, ...], **call: Unpack[CallKeywords]
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Return a block that sends one call on entry and yields its streaming response until exit.
+
+        The call's arguments bind when the block is made, before it sends anything.
+        """
+        return _astreamed(
+            partial(self.execute_raw, operation, arguments, **_bound_fields(operation, call), stream=True)
+        )
+
+    async def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: object = UNSET,
+        options: RequestOptions | None = None,
+        stream: bool = False,
+    ) -> AsyncRawResponse:
+        """Execute an unbound raw call with the same resource and retry ownership."""
+        return await self._request_raw(method, url, body=body, options=options, stream=stream)
+
+    def stream_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: object = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Return a block that sends a raw request on entry and yields its streaming response until exit."""
+        return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
     async def aclose(self) -> None:
         """Close only the native client this root created, at most once even if close fails."""
@@ -2042,3 +1724,75 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await shared.http_client.aclose()
             except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None
+
+    @classmethod
+    def _native(cls, http_client: object) -> httpx2.AsyncClient | None:
+        if http_client is None:
+            return native_async_client()
+        return http_client if isinstance(http_client, httpx2.AsyncClient) else None
+
+    @staticmethod
+    async def _opened(source: BodySource) -> tuple[AsyncContent, _AsyncReplayed]:
+        attempt = await source.aopen()
+        return attempt, _AsyncReplayed(attempt, source)
+
+    async def _sent(
+        self, outgoing: httpx2.Request, call: Call, source: BodySource | None, *, follow: bool | None
+    ) -> httpx2.Response:
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials,
+            source=source,
+            async_send=partial(client.send, auth=None, follow_redirects=False),
+        )
+        return await client.send(
+            outgoing,
+            stream=True,
+            auth=httpx2.USE_CLIENT_DEFAULT if auth is UNSET else cast("httpx2.Auth | None", auth),
+            follow_redirects=httpx2.USE_CLIENT_DEFAULT if follow is None else follow,
+        )
+
+    @staticmethod
+    async def _read(
+        response: httpx2.Response, info: ResponseInfo, decoder: ResponseDecoder[object], call: LogicalCallContext
+    ) -> ReceivedBody:
+        received = ReceivedBody(success=decoder.success(info.status_code))
+        chunks = async_decoded_bytes(response, info, call.operation_id)
+        try:
+            async for chunk in chunks:
+                if not received.add(chunk):
+                    break
+        except DecodeError as error:
+            received.problem = error
+        return received
+
+    @staticmethod
+    async def _close_response(response: httpx2.Response, call: Call, error: BaseException | None = None) -> None:
+        raised = None
+        try:
+            await response.aclose()
+        except BaseException as failure:  # noqa: BLE001
+            raised = _release_failure(call, failure, error)
+        if raised is not None:
+            raise raised
+
+    @staticmethod
+    async def _close_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
+        await call.cleanup(partial(_aclose_body, owner, call, error), error=error)
+
+    @staticmethod
+    async def _sleep_until(call: Call, not_before: float) -> None:
+        await call.asleep_until(not_before)
+
+    def _handle(self, response: httpx2.Response, info: ResponseInfo, call: Call) -> AsyncRawResponse:
+        return AsyncRawResponse(
+            info,
+            call.decoder,
+            call.operation_id,
+            lambda error: self._classified(error, call),
+            source=partial(async_decoded_bytes, response, info, call.operation_id),
+            raw_source=partial(async_response_bytes, response),
+            native=response,
+            close=partial(self._close_response, response, call),
+            call=call,
+        )

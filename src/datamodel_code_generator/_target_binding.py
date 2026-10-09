@@ -1495,9 +1495,7 @@ class _Projector:
             return self._project(data_type.data_types[0]), False
         preserve_order = data_type.preserve_union_member_order
         projected = tuple(self._project(child) for child in data_type.data_types)
-        flattened = tuple(
-            member for value in projected for member in (value.members if isinstance(value, UnionType) else (value,))
-        )
+        flattened = tuple(member for value in projected for member in _members(value))
         members = (
             projected if preserve_order else tuple(member for member in flattened if not isinstance(member, NoneType))
         )

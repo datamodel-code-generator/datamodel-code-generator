@@ -208,9 +208,8 @@ def http_date(value: str, received_wall_time: float) -> datetime | None:
     50 years after the receipt wall time, or else the most recent past one, as RFC 9110 reads it.
     """
     try:
-        date = parsedate_to_datetime(value)
-        if date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+        parsed = parsedate_to_datetime(value)
+        date = parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
         if (matched := _RFC850_YEAR.match(value)) is None:
             return date
         received = datetime.fromtimestamp(received_wall_time, timezone.utc)
