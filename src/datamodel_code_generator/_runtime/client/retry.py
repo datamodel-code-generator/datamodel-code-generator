@@ -15,10 +15,12 @@ from .logical import Delivery
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from .hooks import RetryReason
     from .options import ResolvedRetryOptions
     from .responses import HeadersView
 
+RetryReason: TypeAlias = Literal[
+    "status", "connect_timeout", "connect_error", "pool_timeout", "read_error", "auth_invalid_token"
+]
 _StopReason: TypeAlias = Literal[
     "unknown_delivery",
     "status_not_retryable",
@@ -300,7 +302,7 @@ def header_delay(headers: HeadersView, name: str, received_wall_time: float) -> 
 
 @dataclass(frozen=True, slots=True)
 class RetryDelay:
-    """One chosen backoff cap and absolute wait target, retained across cleanup and hooks."""
+    """One chosen backoff cap and absolute wait target, retained across cleanup."""
 
     reason: RetryReason
     backoff_cap: float

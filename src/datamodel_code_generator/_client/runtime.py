@@ -34,8 +34,6 @@ _CORE: Final = (
     "client/client.py",
     "client/codecs.py",
     "client/errors.py",
-    "client/events.py",
-    "client/hooks.py",
     "client/logical.py",
     "client/media.py",
     "client/multipart.py",

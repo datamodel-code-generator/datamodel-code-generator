@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
 
     from .auth import AsyncCredentialProvider, CredentialProvider
-    from .hooks import IOPhase
+    from .native import IOPhase
     from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
     from .timing import Clock
 

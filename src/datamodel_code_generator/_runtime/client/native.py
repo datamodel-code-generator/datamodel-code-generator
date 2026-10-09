@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 import httpx2
 
@@ -12,11 +12,11 @@ from .logical import Delivery
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
 
-    from .hooks import IOPhase
     from .options import ResolvedTransportOptions
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
 
+IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
 _PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
     ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
     ((httpx2.PoolTimeout,), "pool"),

@@ -184,11 +184,6 @@ def is_auth_classified(error: object) -> bool:
     return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
 
 
-def is_hook_failure(error: object) -> TypeGuard[SDKError]:
-    """Return whether an error is a hook's failure, which stops the call."""
-    return type(error) is SDKError and error.reason == "hook_failed"
-
-
 def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
     """Return the start of an error body as text, marking where it was cut."""
     text = body.decode("utf-8", "replace").strip()
