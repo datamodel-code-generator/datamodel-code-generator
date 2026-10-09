@@ -1,6 +1,10 @@
 # pets pydantic_v2.BaseModel
   stream close error measurements = ('cleanup_failed', 1, 1)
   stream close resources = (1, 1)
+  sync status failure then interrupted close result = (True, ('Secondary failure: InternalServerError',), None)
+  sync status failure then interrupted close resources = (1, 1)
+  sync status failure then caused interrupted close result = (True, ('Secondary failure: InternalServerError',), 'KeyError')
+  sync status failure then caused interrupted close resources = (1, 1)
   view call = (200, False, False)
   borrowed client remains open = True
   closed client refuses calls ! ConfigurationError: ConfigurationError(reason='client_closed', field_path='client.closed') [field_path=('client', 'closed')] client_closed
@@ -15,9 +19,9 @@
   async stream close resources = (1, 1)
   interrupted close result = ('CancelledError', ('native close',), True, None, (), 'NoneType')
   interrupted close resources = (1, 1)
-  status failure then interrupted close result = ('CancelledError', ('native close',), True, None, ('Secondary failure: InternalServerError',), 'NoneType')
+  status failure then interrupted close result = ('CancelledError', ('native close',), True, None, ('Secondary failure: InternalServerError',), None)
   status failure then interrupted close resources = (1, 1)
-  status failure then caused interrupted close result = ('CancelledError', ('caused native close',), True, None, ('Secondary failure: InternalServerError',), 'NoneType')
+  status failure then caused interrupted close result = ('CancelledError', ('caused native close',), True, None, ('Secondary failure: InternalServerError',), 'KeyError')
   status failure then caused interrupted close resources = (1, 1)
   status failure then failed close result = ('InternalServerError', (), False, 1, ('Secondary failure: SDKError',), 'NoneType')
   status failure then failed close resources = (1, 1)

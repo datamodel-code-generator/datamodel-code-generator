@@ -189,6 +189,35 @@ async def _interrupted(package: ModuleType, options: ModuleType, errors: ModuleT
         record(lines, f"{label} resources", lambda transport=transport: (transport.sends, transport.body.closed))
 
 
+def _sync_interrupted(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Interrupt a retryable status's close in a synchronous call, keeping the interruption's cause or linking one."""
+    caused = KeyboardInterrupt("caused native close")
+    caused.__cause__ = KeyError("native cause")
+    for label, failure in (
+        ("sync status failure then interrupted close", KeyboardInterrupt("native close")),
+        ("sync status failure then caused interrupted close", caused),
+    ):
+        transport = _Transport(_Body(close_failure=failure), 503)
+        with httpx2.Client(transport=transport) as client:
+            api = package.Client(
+                http_client=client, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+            )
+            try:
+                api.request_raw("GET", "https://close.example/")
+            except KeyboardInterrupt as error:
+                record(
+                    lines,
+                    f"{label} result",
+                    lambda error=error, failure=failure: (
+                        error is failure,
+                        tuple(getattr(error, "__notes__", ())),
+                        getattr(error.__cause__, "reason", type(error.__cause__).__name__),
+                    ),
+                )
+            api.close()
+        record(lines, f"{label} resources", lambda transport=transport: (transport.sends, transport.body.closed))
+
+
 async def _expired(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     """Stop a call whose deadline expired at its first boundary before anything is sent."""
     transport = _Transport()
@@ -250,4 +279,5 @@ def deadline_cleanup(package: ModuleType, lines: list[str]) -> None:
     """Exercise public generated close, cleanup failure, and cancellation paths over borrowed HTTPX2 clients."""
     options, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors"))
     _stream_error(package, errors, lines)
+    _sync_interrupted(package, options, lines)
     run(lambda: _async(package, options, errors, lines))

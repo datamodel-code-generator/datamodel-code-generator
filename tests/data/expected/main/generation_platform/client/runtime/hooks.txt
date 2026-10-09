@@ -151,6 +151,15 @@
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook: GET /v1/pets/3 503
+    request hook: GET /v1/pets/3
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook: GET /v1/pets/3 200
+  async get retried after a 503 = Response(Pet(id=3, name='fox', tag=None), 200, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')]) attempts=2
+    request hook: GET /v1/pets/3
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 302
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
@@ -169,6 +178,8 @@
   async raw request = b'ok'
     request hook: GET /v1/pets/3
   async get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
+    request hook: GET /items
+  async raw request whose request hook fails ! APIConnectionError: APIConnectionError(cause='RuntimeError') [cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
