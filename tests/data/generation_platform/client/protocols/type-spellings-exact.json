@@ -3,7 +3,7 @@
     "kind": "pagination",
     "operation": "/paths/~1pets/get",
     "items": {"from": "body", "pointer": "/items"},
-    "item_schema": {"pointer": "/components/schemas/pets.Pet"},
+    "item_schema": {"pointer": "/components/schemas/Sequence"},
     "continuation": {
       "kind": "cursor",
       "read": {"from": "body", "pointer": "/next"},

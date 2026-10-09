@@ -81,8 +81,13 @@ components:
       properties:
         items:
           type: array
-          items: {$ref: "#/components/schemas/pets.Pet"}
+          items: {$ref: "#/components/schemas/Sequence"}
         next: {type: string}
+    Sequence:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
     pets.Pet:
       type: object
       required: [name]

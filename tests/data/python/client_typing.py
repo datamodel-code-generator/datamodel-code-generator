@@ -27,19 +27,24 @@ def client_typing_report(
     *,
     package_targets: tuple[str, ...] = ("pets",),
 ) -> str:
-    """Check a case's package with the positive samples, then their negative samples line by line."""
+    """Check a case's package with the positive samples, then their negative samples line by line.
+
+    A case whose models name an output directory writes them as the `pets_models` package.
+    """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     copy_references(case, root)
+    model = dict(case.get("model", {}))
+    modular = model.pop("output", None) is not None
     generate_target(
         shutil.copy2(SOURCE / case["input"], root / "api.yaml"),
         model_config=GenerateConfig(
-            output=root / "pets_models.py",
+            output=root / ("pets_models" if modular else "pets_models.py"),
             input_file_type="openapi",
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
             formatters=[Formatter.BUILTIN],
-            **case.get("model", {}),
+            **model,
         ),
         config=client_config(
             {"output": "pets", "package": "pets", "model_package": "pets_models", **case.get("config", {})}, root

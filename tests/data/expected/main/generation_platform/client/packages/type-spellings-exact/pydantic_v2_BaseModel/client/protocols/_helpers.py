@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import cached_property
 from uuid import UUID
 
-from models.pets import Pet
+from models import Sequence as Sequence_1
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -67,7 +67,7 @@ class PetsAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[Pet, ListPetsResponse]:
+    ) -> Page[Sequence_1, ListPetsResponse]:
         """Fetch the first page of GET /pets."""
         return first_page(
             self._core,
@@ -86,7 +86,7 @@ class PetsAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[Pet, ListPetsResponse]:
+    ) -> Pager[Sequence_1, ListPetsResponse]:
         """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
         return iterate_pages(
             self._core,
@@ -99,12 +99,12 @@ class PetsAllPagination:
 
     def next_page(
         self,
-        page: Page[Pet, ListPetsResponse],
+        page: Page[Sequence_1, ListPetsResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[Pet, ListPetsResponse] | None:
+    ) -> Page[Sequence_1, ListPetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
             self._core,
@@ -124,7 +124,7 @@ class PetsAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[Pet, ListPetsResponse]:
+    ) -> Pager[Sequence_1, ListPetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
             self._core,

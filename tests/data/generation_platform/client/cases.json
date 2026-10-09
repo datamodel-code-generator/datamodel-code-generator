@@ -1488,6 +1488,11 @@
       ],
       [
         "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
         "resources",
         "default",
         "_sync.py"
@@ -1546,6 +1551,26 @@
       "reuse_model": true
     },
     "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-cycle": {
+    "input": "type-spellings-cycle.yaml",
+    "cwd": true,
+    "model": {
+      "output": "models"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
       [
         "client",
         "resources",
