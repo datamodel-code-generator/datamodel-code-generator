@@ -1,0 +1,7 @@
+# server/services.py
+def list_pets
+def create_pet
+def list_my_pets
+def get_pet
+def delete_pet
+def get_inventory

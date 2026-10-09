@@ -1556,6 +1556,10 @@ def _write_results_to_output(  # noqa: PLR0913
             )
             for name, result in sorted(results.items())
         }
+    if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
+        from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
+
+        warn_shadowed_modules(modules)
 
     for path, (body, future_imports, filename) in modules.items():
         if not path.parent.exists():

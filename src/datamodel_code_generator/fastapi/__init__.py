@@ -18,10 +18,7 @@ from datamodel_code_generator.api_types import (
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
-    PublicationRollbackError,
     SchemaRef,
-    TargetEditWarning,
-    TargetStateWarning,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -53,11 +50,8 @@ __all__ = [
     "GeneratedProject",
     "GenerationInput",
     "OperationRef",
-    "PublicationRollbackError",
     "ResponseChoice",
     "SchemaRef",
-    "TargetEditWarning",
-    "TargetStateWarning",
     "generate_fastapi",
     "render_fastapi",
 ]

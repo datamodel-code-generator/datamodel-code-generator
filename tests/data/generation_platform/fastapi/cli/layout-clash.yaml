@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: Clash, version: "1.0"}
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      responses:
+        "200":
+          description: The orders.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/other.Order"}
+components:
+  schemas:
+    server.Pet:
+      type: object
+      properties:
+        name: {type: string}
+    other.Order:
+      type: object
+      properties:
+        pet: {$ref: "#/components/schemas/server.Pet"}

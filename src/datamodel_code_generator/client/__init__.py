@@ -28,10 +28,7 @@ from datamodel_code_generator.api_types import (
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
-    PublicationRollbackError,
     SchemaRef,
-    TargetEditWarning,
-    TargetStateWarning,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -132,12 +129,9 @@ __all__ = [  # noqa: PLE0604
     "IdempotencyMetadata",
     "OperationRef",
     "ParameterName",
-    "PublicationRollbackError",
     "ResourceName",
     "RuntimeOperationMetadata",
     "SchemaRef",
-    "TargetEditWarning",
-    "TargetStateWarning",
     "generate_client",
     "render_client",
     *_LAZY,

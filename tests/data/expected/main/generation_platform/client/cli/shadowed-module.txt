@@ -1,0 +1,5 @@
+# first run
+UserWarning: <root>/client/resources/pets/_sync.py: The generated module is shadowed by the existing package directory <root>/client/resources/pets/_sync, which Python imports instead. Remove the stale directory to import the generated module.
+# unchanged run
+UserWarning: <root>/client/resources/pets/_sync.py: The generated module is shadowed by the existing package directory <root>/client/resources/pets/_sync, which Python imports instead. Remove the stale directory to import the generated module.
+# check run

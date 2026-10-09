@@ -1,3 +1,4 @@
+fastapi-server.nested-models.command: fastapi-server.md
 openapi.quick-start.schema: openapi.md
 openapi.quick-start.output: openapi.md
 openapi.read-only-write-only.schema: openapi.md
