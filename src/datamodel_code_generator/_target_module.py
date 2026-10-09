@@ -137,8 +137,17 @@ class TypeNames:
         self.exact = exact
         self.overrides = overrides or {}
         assert batch.hint_type is not None
-        self.composer = TypeComposer(batch.hint_type)
-        self.fixed = tuple(dict.fromkeys(self.identity(item) for item in batch.hint_imports))
+        self.composer = composer = TypeComposer(batch.hint_type)
+        written = (
+            composer.compose(members=("T", "U"), preserve_union_member_order=True),
+            composer.compose(base="T", is_optional=True),
+            composer.compose(base="T", is_sequence=True),
+        )
+        self.fixed = tuple(
+            dict.fromkeys(
+                self.identity(item) for item in (*batch.hint_imports, *(item for _, found in written for item in found))
+            )
+        )
 
     def identity(self, import_: Import) -> _Identity:
         """Return the module and name an import binds, after the import overrides."""
@@ -161,7 +170,7 @@ class TargetModule:
     def __init__(
         self, names: TypeNames, reserved: Iterable[str] = (), *, level: int = 0, qualified: bool = False
     ) -> None:
-        """Reserve the names the module defines, the builtins, and the fixed names that model types spell."""
+        """Reserve the names the module defines, the builtins, and the names model types and compositions write."""
         self.names = names
         self.level = level
         self.qualified = qualified
@@ -219,7 +228,8 @@ class TargetModule:
     def symbol(self, symbol: SymbolId) -> str:
         """Return the spelling of a generated model: an attribute of its module, or its own name with exact imports.
 
-        A module below the model package is imported from its parent, as a model module imports another one.
+        A module below the model package is imported from its parent, as a model module imports another one, and a
+        private module, such as the one the model generator moves an import cycle into, is imported whole.
         """
         module, name = self.names.symbols[symbol]
         if self.qualified:
@@ -227,7 +237,8 @@ class TargetModule:
         if self.names.exact:
             return self._claim((module, name), name)
         parent, _, leaf = module.rpartition(".")
-        return f"{self._claim((parent, leaf), leaf) if parent else self.module(module)}.{name}"
+        private = any(part.startswith("_") for part in module.split("."))
+        return f"{self._claim((parent, leaf), leaf) if parent and not private else self.module(module)}.{name}"
 
     def hint(self, value: TypeView | ModelHint, *, static: bool = True) -> str:
         """Return the spelling of a model type in this module, statically or as the annotation that validates it.

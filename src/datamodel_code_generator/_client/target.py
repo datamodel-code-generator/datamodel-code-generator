@@ -53,6 +53,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
+    UnionType,
 )
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_render import model_dependencies
@@ -258,7 +259,7 @@ class _HelperDigests:
             "body": None
             if body is None
             else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "item": self.spelling.hint(spec.item),
+            "item": self.spelled(spec.item),
             "page": self.type(spec.page),
             "settings": settings,
         }
@@ -342,9 +343,27 @@ class _HelperDigests:
             "type_uses": [self.contract(use) for use in spec.uses],
         })
 
+    def spelled(self, value: TypeView) -> str:
+        """Return a type's canonical spelling: its containers and unions by structure, its leaves as models spell them.
+
+        The model options that only style annotations, such as the union operator, leave the spelling unchanged, so a
+        regenerated package with the same contract keeps its fingerprints.
+        """
+        value = value.base if isinstance(value, AnnotatedType) else value
+        match value:
+            case GenericType():
+                arguments = ", ".join(self.spelled(item) for item in value.arguments)
+                base = self.spelled(value.base)
+                return f"{base}[{arguments or '()'}]" if arguments or value.tuple_form == "fixed" else base
+            case UnionType():
+                return " | ".join(self.spelled(member) for member in value.members)
+            case _:
+                pass
+        return self.spelling.hint(value)
+
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
-        return None if use is None or use.type is None else self.spelling.hint(use.type)
+        return None if use is None or use.type is None else self.spelled(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
         """Return a retained helper use's contract: its type, and the values or fields of every model type it reaches.
@@ -383,7 +402,7 @@ class _HelperDigests:
                 facts.nullable,
                 facts.read_only,
                 facts.write_only,
-                self.spelling.hint(facts.type),
+                self.spelled(facts.type),
                 facts.backend.emitted.emitted_default_kind,
                 repr(facts.backend.emitted.emitted_default_value),
             )

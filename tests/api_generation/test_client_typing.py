@@ -138,6 +138,8 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
         "pagination-counts",
         "pagination-links",
         "streams-mixed",
+        "type-spellings-cycle",
+        "type-spellings-exact",
         "type-spellings-legacy",
     ],
 )
