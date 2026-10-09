@@ -8,17 +8,17 @@ copied runtime
   __init__.py: 2
   client/__init__.py: 4
   client/auth.py: 334
-  client/client.py: 2047
+  client/client.py: 1801
   client/content.py: 102
   client/errors.py: 306
-  client/logical.py: 189
+  client/logical.py: 230
   client/media.py: 77
   client/native.py: 146
   client/operations.py: 839
   client/options.py: 300
   client/paths.py: 40
   client/positions.py: 79
-  client/raw.py: 836
+  client/raw.py: 710
   client/responses.py: 87
   client/retry.py: 316
   client/security.py: 94
@@ -34,13 +34,13 @@ copied runtime
   protocols/cache.py: 625
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 830
+  protocols/client.py: 815
   protocols/errors.py: 163
   protocols/options.py: 220
   protocols/origins.py: 45
   protocols/records.py: 243
   protocols/references.py: 16
-total 35 modules, 9219 lines
+total 35 modules, 8873 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

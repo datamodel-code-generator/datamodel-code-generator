@@ -26,10 +26,10 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.logical import Delivery, LogicalCallContext
+from ..client.logical import Delivery, LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
-from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
+from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
@@ -470,203 +470,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             headers = HeadersView(items)
         return build_request(method=prepared.method, url=url, headers=headers, body=request_body(prepared)), deferred
 
-
-class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore):
-    """Run declared helpers through the shared native HTTP client."""
-
-    __slots__ = ()
-
-    @classmethod
-    def from_client(cls, core: NativeClientCore) -> ClientCore:
-        """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return core.helper_view(cls)
-
-    @property
-    def sockets(self) -> set[Callable[[], None]]:
-        """Return the closes of the WebSocket sessions open on the HTTP client, which closing its creator runs first."""
-        return self._shared.sockets
-
-    def execute_page(  # ruff: ignore[too-many-arguments]
-        self,
-        operation: OperationPlan[T],
-        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
-        *,
-        body: object,
-        media_type: str | None,
-        options: RequestOptions | None,
-        session: OperationSession,
-        read_request: Callable[[str, HeadersView], None] | None = None,
-        failed: Callable[[BaseException, Delivery], None] | None = None,
-    ) -> R:
-        """Execute one page of a helper session as a child logical call, building what the page's response gives.
-
-        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
-        the call prepares; `body` is the caller's. What the
-        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
-        fields a followed URL is without.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SessionCall(settings, operation, session)
-        self._admitted(call)
-        decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options, read_request)
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = self._read(response, info, decoder, call)
-
-            data, wire, content = _page(decoder, info, received)
-            url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
-
-            return Response(data=data, info=info), result
-
-        try:
-            _, result = self._run(call, body, prepare, receive)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if failed is not None:
-                failed(failure, delivery_state(call))
-            raise failure from failure.__cause__
-        else:
-            return result
-
-    def cache_identity(self, prepared: CacheRequest) -> CacheIdentity:
-        """Return a cache fetch's identity: its request as the call's Auth gives it to be sent first, sending nothing.
-
-        The Auth is the call's own, its credentials', or else the HTTP client's. Its flow runs on a copy of the request
-        and is closed at its first request; the Auth's failure is the call's.
-        """
-        call, request = prepared.call, prepared.unsent()
-        client = self._shared.http_client
-        auth = call.native_auth(
-            self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
-        )
-        if (auth := client.auth if auth is UNSET else auth) is not None:
-            flow = auth.sync_auth_flow(request)
-            try:
-                request = next(flow)
-            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
-                failure = self._classified(error, call)
-                raise failure from failure.__cause__
-            finally:
-                flow.close()
-        return prepared.identity(request, authorized=auth is not None)
-
-    def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
-        self,
-        operation: OperationPlan[T],
-        request: httpx2.Request,
-        settings: Settings,
-        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
-        options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
-    ) -> R:
-        """Send a cache fetch's prepared request as one logical call, building what its response gives.
-
-        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
-        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
-        the response answered a redirect, and the request it answered as its Auth sent it.
-        """
-        call = Call(settings, operation)
-        self._admitted(call)
-        decoder = call.decoder = operation.responses
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = self._read(response, info, decoder, call)
-
-            redirected = call.redirects_followed > 0
-            return (
-                not_modified(info, redirected, response.request)
-                if info.status_code == _NOT_MODIFIED
-                else modified(
-                    decode_response(decoder, info, received, call.operation_id),
-                    received.content,
-                    redirected,
-                    response.request,
-                )
-            )
-
-        try:
-            _, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            raise failure from failure.__cause__
-        else:
-            return result
-
-    def open_socket(  # ruff: ignore[too-many-arguments]
-        self,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        upgrade: Mapping[str, str],
-        *,
-        options: RequestOptions | None,
-        session: OperationSession,
-        open_timeout: float | None,
-        check: Callable[[HeadersView], None],
-        accept: Callable[[ResponseInfo], None],
-    ) -> tuple[RawResponse, LogicalCallContext, httpx2.Response]:
-        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session.
-
-        The headers prepared pass the check before the upgrade headers join them and anything is sent. A 101 the accept
-        check passes is handed over as a streaming handle, with the call whose deadline bounds it and the native
-        response whose network stream the session takes; any other response raises the call's typed failure.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SocketCall(settings, operation, session, open_timeout)
-        self._admitted(call)
-        call.decoder = operation.responses
-        result: RawResponse | None = None
-        opened: list[httpx2.Response] = []
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            request, deferred = self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=UNSET,
-                media_type=None,
-                options=options,
-                accept=None,
-                checked=check,
-            )
-            request.headers.update(upgrade)
-            return request, deferred
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
-            opened.append(response)
-            return self._raw_response(response, info, call, stream=True)
-
-        try:
-            result = self._run(call, UNSET, prepare, receive)
-
-            if result.info.status_code != _SWITCHING:
-                refused(result)
-            accept(result.info)
-            call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if result is not None:
-                result.discard(failure)
-            raise failure from failure.__cause__
-        else:
-            return result, call, opened[-1]
-
-
-class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], NativeAsyncClientCore):
-    """Run declared helpers through the shared native HTTP client."""
-
-    __slots__ = ()
-
-    @classmethod
-    def from_client(cls, core: NativeAsyncClientCore) -> AsyncClientCore:
-        """Bind the declared helpers to the ordinary client's shared resources and option view."""
-        return core.helper_view(cls)
-
-    async def execute_page(  # ruff: ignore[too-many-arguments]
+    async def _execute_page(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
@@ -712,34 +516,15 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         else:
             return result
 
-    async def acache_identity(self, prepared: CacheRequest) -> CacheIdentity:
-        """Return a cache fetch's identity with asyncio, as the synchronous core does."""
-        call, request = prepared.call, prepared.unsent()
-        client = self._shared.http_client
-        auth = call.native_auth(
-            self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
-        )
-        if (auth := client.auth if auth is UNSET else auth) is not None:
-            flow = auth.async_auth_flow(request)
-            try:
-                request = await anext(flow)
-            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
-                failure = self._classified(error, call)
-                raise failure from failure.__cause__
-            finally:
-                await flow.aclose()
-        return prepared.identity(request, authorized=auth is not None)
-
-    async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    async def _execute_cached(
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
         settings: Settings,
         modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
         not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
-        options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
     ) -> R:
-        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
+        """Send a cache fetch's prepared request as one logical call, building what its response gives.
 
         A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
         operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
@@ -773,7 +558,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         else:
             return result
 
-    async def open_socket(  # ruff: ignore[too-many-arguments]
+    async def _open_socket(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -784,13 +569,18 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         open_timeout: float | None,
         check: Callable[[HeadersView], None],
         accept: Callable[[ResponseInfo], None],
-    ) -> tuple[AsyncRawResponse, LogicalCallContext, httpx2.Response]:
-        """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
+    ) -> tuple[HandleT, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session.
+
+        The headers prepared pass the check before the upgrade headers join them and anything is sent. A 101 the accept
+        check passes is handed over as a streaming handle, with the call whose deadline bounds it and the native
+        response whose network stream the session takes; any other response raises the call's typed failure.
+        """
         settings = self._call_settings(options, operation.operation_id)
         call = _SocketCall(settings, operation, session, open_timeout)
         self._admitted(call)
         call.decoder = operation.responses
-        result: AsyncRawResponse | None = None
+        result: HandleT | None = None
         opened: list[httpx2.Response] = []
 
         def prepare() -> tuple[httpx2.Request, object]:
@@ -807,7 +597,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             request.headers.update(upgrade)
             return request, deferred
 
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
             opened.append(response)
             return await self._raw_response(response, info, call, stream=True)
 
@@ -815,13 +605,208 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             result = await self._run(call, UNSET, prepare, receive)
 
             if result.info.status_code != _SWITCHING:
-                await arefused(result)
+                await refuse(result)
             accept(result.info)
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if result is not None:
-                await result.discard(failure)
+                await released(result, failure)
             raise failure from failure.__cause__
         else:
             return result, call, opened[-1]
+
+
+class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore):
+    """Run declared helpers through the shared native HTTP client."""
+
+    __slots__ = ()
+
+    @classmethod
+    def from_client(cls, core: NativeClientCore) -> ClientCore:
+        """Bind the declared helpers to the ordinary client's shared resources and option view."""
+        return core.helper_view(cls)
+
+    @property
+    def sockets(self) -> set[Callable[[], None]]:
+        """Return the closes of the WebSocket sessions open on the HTTP client, which closing its creator runs first."""
+        return self._shared.sockets
+
+    def execute_page(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[T],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        *,
+        body: object,
+        media_type: str | None,
+        options: RequestOptions | None,
+        session: OperationSession,
+        read_request: Callable[[str, HeadersView], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
+    ) -> R:
+        """Execute one page of a helper session as a child logical call, building what the page's response gives."""
+        return run_sync(
+            self._execute_page(
+                operation,
+                request,
+                build,
+                body=body,
+                media_type=media_type,
+                options=options,
+                session=session,
+                read_request=read_request,
+                failed=failed,
+            )
+        )
+
+    def cache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity: its request as the call's Auth gives it to be sent first, sending nothing.
+
+        The Auth is the call's own, its credentials', or else the HTTP client's. Its flow runs on a copy of the request
+        and is closed at its first request; the Auth's failure is the call's.
+        """
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.sync_auth_flow(request)
+            try:
+                request = next(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                flow.close()
+        return prepared.identity(request, authorized=auth is not None)
+
+    def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+        self,
+        operation: OperationPlan[T],
+        request: httpx2.Request,
+        settings: Settings,
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
+        options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical call, building what its response gives."""
+        return run_sync(self._execute_cached(operation, request, settings, modified, not_modified))
+
+    def open_socket(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[object],
+        arguments: tuple[object, ...],
+        upgrade: Mapping[str, str],
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[RawResponse, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session."""
+        return run_sync(
+            self._open_socket(
+                operation,
+                arguments,
+                upgrade,
+                options=options,
+                session=session,
+                open_timeout=open_timeout,
+                check=check,
+                accept=accept,
+            )
+        )
+
+
+class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], NativeAsyncClientCore):
+    """Run declared helpers through the shared native HTTP client."""
+
+    __slots__ = ()
+
+    @classmethod
+    def from_client(cls, core: NativeAsyncClientCore) -> AsyncClientCore:
+        """Bind the declared helpers to the ordinary client's shared resources and option view."""
+        return core.helper_view(cls)
+
+    async def execute_page(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[T],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        *,
+        body: object,
+        media_type: str | None,
+        options: RequestOptions | None,
+        session: OperationSession,
+        read_request: Callable[[str, HeadersView], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
+    ) -> R:
+        """Execute one page of a helper session as a child logical call, building what the page's response gives."""
+        return await self._execute_page(
+            operation,
+            request,
+            build,
+            body=body,
+            media_type=media_type,
+            options=options,
+            session=session,
+            read_request=read_request,
+            failed=failed,
+        )
+
+    async def acache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity with asyncio, as the synchronous core does."""
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.async_auth_flow(request)
+            try:
+                request = await anext(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                await flow.aclose()
+        return prepared.identity(request, authorized=auth is not None)
+
+    async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+        self,
+        operation: OperationPlan[T],
+        request: httpx2.Request,
+        settings: Settings,
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
+        options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives."""
+        return await self._execute_cached(operation, request, settings, modified, not_modified)
+
+    async def open_socket(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[object],
+        arguments: tuple[object, ...],
+        upgrade: Mapping[str, str],
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[AsyncRawResponse, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session."""
+        return await self._open_socket(
+            operation,
+            arguments,
+            upgrade,
+            options=options,
+            session=session,
+            open_timeout=open_timeout,
+            check=check,
+            accept=accept,
+        )
