@@ -379,7 +379,7 @@ helper, then the default below. The session types are imported from:
 
 | Limit | Effective default |
 |---|---|
-| open timeout | 5 seconds, also capped by the connect, read, write, and pool timeouts and the deadline; None removes it |
+| open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
