@@ -10,9 +10,8 @@ from __future__ import annotations
 import zlib
 from typing import TYPE_CHECKING, Final
 
-from .bodies import EncodedAttempt
+from .bodies import CHUNK, EncodedAttempt
 from .body_sources import RequestCoding
-from .coding import CHUNK
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator

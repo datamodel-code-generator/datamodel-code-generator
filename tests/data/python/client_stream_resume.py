@@ -126,7 +126,7 @@ class _Resumes:
     def redirects(self) -> Any:
         """Return call options that follow redirects."""
         options = self.harness.options
-        return options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
+        return options.RequestOptions(follow_redirects=True)
 
     def argument(self, location: str, name: str, wire: object, operation_id: str = "streamEvents") -> object:
         """Return an argument of an operation, the events one unless told otherwise, for a wire value."""

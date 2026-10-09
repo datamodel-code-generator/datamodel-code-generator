@@ -12,6 +12,7 @@ from models import JobRequest as _dcg_type_0
 from models import Report as _dcg_type_1
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.polling import (
     AsyncLroHandle,
@@ -19,7 +20,6 @@ from .._runtime.protocols.polling import (
     astart_operation,
 )
 from .._runtime.protocols.records import CancelReceipt
-from .._runtime.protocols.resume import ResumeState
 from ..options import RequestOptions, SessionOptions
 from ..types.exports import CancelExportsResponse, ExportStatusResponse
 from ..types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
@@ -121,7 +121,7 @@ class AsyncJobsRunPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -168,7 +168,7 @@ class AsyncJobsInlinePolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -215,7 +215,7 @@ class AsyncJobsReportPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -259,7 +259,7 @@ class AsyncExportsRunPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -313,7 +313,7 @@ class AsyncExportsLatestPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -361,7 +361,7 @@ class AsyncJobsTrackedPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
