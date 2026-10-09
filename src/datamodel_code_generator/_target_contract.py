@@ -445,7 +445,6 @@ class OperationContract:
     method: str
     path: str
     explicit_operation_id: bool
-    security_declared: bool
     servers_declared: bool
     order: int
     facts: tuple[tuple[str, FrozenLiteral], ...]

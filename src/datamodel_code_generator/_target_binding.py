@@ -2583,7 +2583,6 @@ class _Contracts(_SchemaUses):
             declaration.tokens[-1],
             item.use_site.tokens[-1],
             "operationId" in raw,
-            "security" in raw,
             "servers" in raw,
             order,
             facts,
