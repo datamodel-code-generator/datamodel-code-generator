@@ -264,14 +264,18 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
     ) -> tuple[str, ...] | None:
         """Return the field path of the first header, or query name, of a call's layers that matches, or None.
 
-        The call's own extra ones come first, then the default ones the client and its views merged.
+        The call's own extra ones come first, then the default ones the client and its views merged, except those the
+        call's own replace or remove.
         """
         call = None if options is None else options.extra_query if query else options.extra_headers
+        fold = str if query else str.lower
+        replaced: set[str] = set()
         for name, value in () if call is None else call.items():
             if matches(name, value):
                 return ("options", "extra_query" if query else "extra_headers", name)
+            replaced.add(fold(name))
         for name, value in self._settings.query if query else self._settings.headers:
-            if matches(name, value):
+            if fold(name) not in replaced and matches(name, value):
                 return ("default_query" if query else "default_headers", name)
         return None
 
