@@ -13,10 +13,8 @@ from urllib.parse import urlparse
 
 import yaml
 
-from datamodel_code_generator import Error, GenerateConfig, InvalidFileFormatError
+from datamodel_code_generator import Error, GenerateConfig
 from datamodel_code_generator.fastapi import (
-    APIGenerationError,
-    Diagnostic,
     FastAPIConfig,
     GeneratedProject,
     OperationRef,
@@ -104,12 +102,6 @@ def _relative(path: Path, root: Path) -> str:
     return (path.relative_to(root) if path.is_relative_to(root) else path.relative_to(root.resolve())).as_posix()
 
 
-def _diagnostic(item: Diagnostic) -> str:
-    fields = (item.stage, item.option_path, item.source_pointer, item.artifact_path)
-    location = " ".join(str(field) for field in fields if field is not None)
-    return f"  {item.code} {item.severity} {location}: {item.message}"
-
-
 def _runtime_line(actions: list[str]) -> list[str]:
     return [f"  {len(actions)} runtime modules {sorted(set(actions))}"] if actions else []
 
@@ -145,9 +137,9 @@ def _run(
         return (generate_fastapi if publish else render_fastapi)(
             _input(spec["input"], server), model_config=_model(model, root), config=_config(config)
         )
-    except (APIGenerationError, Error, RemoteLockError, OSError, UnicodeError) as error:
+    except (Error, RemoteLockError, OSError, UnicodeError) as error:
         if case["input"] in ({"path": "input-cycle-dict.yaml"}, {"path": "input-cycle-reference.yaml"}):
-            if not isinstance(error, (APIGenerationError, InvalidFileFormatError)):
+            if not isinstance(error, Error):
                 raise
             cycles = {
                 "input-cycle-dict.yaml": ("input-cycle-dict.yaml", "/x-cycle/self", (12, 10)),
@@ -161,11 +153,13 @@ def _run(
             }
             filename, pointer, location = cycles[spec["input"]["path"]]
             return "  " + cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
-        if isinstance(error, APIGenerationError):
-            return "\n".join((f"  Error: {error}", *(_diagnostic(item) for item in error.diagnostics))).replace(
-                root.resolve().as_posix(), "<root>"
-            )
-        return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
+        name = "Error" if isinstance(error, Error) else type(error).__name__
+        return (
+            f"  {name}: {error}"
+            .replace(root.resolve().as_posix(), "<root>")
+            .replace(str(root.resolve()), "<root>")
+            .replace("\\", "/")
+        )
 
 
 @dataclass
@@ -323,8 +317,8 @@ def target_config_report(case_name: str) -> str:
     values = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         config = _config(values)
-    except APIGenerationError as error:
-        return "\n".join((f"Error: {error}", *(_diagnostic(item).lstrip() for item in error.diagnostics))) + "\n"
+    except Error as error:
+        return f"Error: {error}\n"
     return "".join(
         f"{item.name}={value.as_posix() if isinstance(value := getattr(config, item.name), Path) else value!r}\n"
         for item in fields(config)

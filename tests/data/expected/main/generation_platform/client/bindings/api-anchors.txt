@@ -1,5 +1,3 @@
 # api-anchors
 render pydantic_v2.BaseModel default
-  diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /$schema: The schema dialect is not builtin
-  diagnostic BND_UNRESOLVED_REFERENCE binding /properties/self/$ref: A schema reference pointer does not exist
+  diagnostic Error: /$schema: The schema dialect is not builtin; /properties/self/$ref: A schema reference pointer does not exist
