@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.accepted_content_encodings: operations[0].runtime.accepted_content_encodings must be an array

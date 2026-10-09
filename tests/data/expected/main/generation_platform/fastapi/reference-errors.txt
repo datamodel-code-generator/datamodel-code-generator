@@ -1,0 +1,6 @@
+# reference-errors
+render pydantic_v2.BaseModel
+  Error: /components/securitySchemes/unobserved: The security scheme 'unobserved' references 'reference-errors-library.yaml#/components/securitySchemes/key', which reaches no loaded security scheme; /components/securitySchemes/missing: The security scheme 'missing' references '#/components/securitySchemes/absent', which reaches no loaded security scheme; /components/securitySchemes/refused: The security scheme 'refused' references 'urn:example:schemes#/key', which reaches no loaded security scheme
+  F_SECURITY_INVALID target /components/securitySchemes/unobserved: The security scheme 'unobserved' references 'reference-errors-library.yaml#/components/securitySchemes/key', which reaches no loaded security scheme
+  F_SECURITY_INVALID target /components/securitySchemes/missing: The security scheme 'missing' references '#/components/securitySchemes/absent', which reaches no loaded security scheme
+  F_SECURITY_INVALID target /components/securitySchemes/refused: The security scheme 'refused' references 'urn:example:schemes#/key', which reaches no loaded security scheme

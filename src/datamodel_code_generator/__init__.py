@@ -1520,6 +1520,7 @@ def _emit_stdout_results(
 
 
 _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR = "Single-module output requires a file path, not a directory"
+_MODULAR_OUTPUT_FILE_ERROR = "Modular references require an output directory, not a file"
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
 
 
@@ -1546,8 +1547,7 @@ def _write_results_to_output(  # noqa: PLR0913
         modules: dict[Path, tuple[str, str, str | None]] = {output: (results, "", input_filename)}
     else:
         if output.suffix:
-            msg = "Modular references require an output directory, not a file"
-            raise Error(msg)
+            raise Error(_MODULAR_OUTPUT_FILE_ERROR)
         modules = {
             output.joinpath(*name): (
                 result.body,
@@ -1685,15 +1685,20 @@ def _emit_results(  # noqa: PLR0913
             has_custom_file_header=has_custom_file_header,
         )
 
-    _write_results_to_output(
-        results,
-        output,
-        config,
-        input_filename=input_filename,
-        header_prefix=header_prefix,
-        header_suffix=header_suffix,
-        has_custom_file_header=has_custom_file_header,
-    )
+    try:
+        _write_results_to_output(
+            results,
+            output,
+            config,
+            input_filename=input_filename,
+            header_prefix=header_prefix,
+            header_suffix=header_suffix,
+            has_custom_file_header=has_custom_file_header,
+        )
+    except OSError as e:
+        if isinstance(results, str) or not output.is_file():
+            raise
+        raise Error(_MODULAR_OUTPUT_FILE_ERROR) from e
     if defer_formatting:
         _format_deferred_output(output, config, data_model_types, settings_path)
 

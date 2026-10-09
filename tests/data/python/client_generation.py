@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import re
 import shutil
 import warnings
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
+from functools import partial
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
+from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -30,20 +33,43 @@ from datamodel_code_generator._client.config import (
 )
 from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator._client.templates import ClientTemplates
-from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+    from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
+_DEFERRED_MODULES = (
+    "datamodel_code_generator._api_generation",
+    "datamodel_code_generator._client.target",
+    "datamodel_code_generator.json_config",
+)
+_PUBLIC_NAMES_PROBE = (
+    "import json, sys\n"
+    "import datamodel_code_generator.client as client\n"
+    "for name in client.__all__:\n"
+    "    getattr(client, name)\n"
+    "print(json.dumps([name for name in sys.argv[1:] if name in sys.modules]))\n"
+)
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
+
+
+def artifact_text(artifact: GeneratedArtifact, encoding: str = "utf-8") -> str:
+    """Decode a rendered file: a target file as reading its written text file does, a model file byte for byte.
+
+    The lines of a target file then end with LF on every platform, while model files keep the bytes that the
+    comparisons with ordinary model generation need.
+    """
+    if artifact.kind != "target":
+        return artifact.content.decode(encoding)
+    return io.TextIOWrapper(io.BytesIO(artifact.content), encoding=encoding).read()
 
 
 def _selector(value: object) -> object:
@@ -147,6 +173,33 @@ def generate_client(
     )
 
 
+def client_render_call(
+    source: Path,
+    root: Path,
+    package: str,
+    backend: str,
+    model: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> Callable[[], GeneratedProject]:
+    """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
+    return partial(
+        public_client.render_client,
+        source,
+        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
+        config=client_config(
+            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        ),
+    )
+
+
+def publication_client(case: dict[str, Any], root: Path, backend: str) -> GeneratedProject:
+    """Render a publication profile with all copied files and its dependency report."""
+    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
+    return client_render_call(
+        _prepare_input(case, root), root, "publication_client", backend, case.get("model"), case.get("config")
+    )()
+
+
 def _diagnostic(item: Diagnostic) -> str:
     location = " ".join(str(part) for part in (item.stage, item.option_path, item.source_pointer) if part is not None)
     return f"  {item.code} {location}: {item.message}"
@@ -183,16 +236,10 @@ def _render(
         model = {**model, "custom_template_dir": root / "builtin-sources"}
     try:
         with _working_directory(case, root):
-            if (toml := case.get("toml")) is not None:
-                (path := root / case["toml_path"]).parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(toml, encoding="utf-8")
-                config = load_target_config(path, ClientGenerationConfig, output=root / PACKAGE)
-            else:
-                config = client_config(case.get("config", {}), root)
             project = (generate_target if case.get("publish") else render_target)(
                 source,
                 model_config=model_config(root / "models.py", backend, model),
-                config=config,
+                config=client_config(case.get("config", {}), root),
                 generator=ClientTarget(),
             )
     except APIGenerationError as error:
@@ -206,14 +253,14 @@ def _render(
         return [f"  Error: {error}"]
     lines: list[str] = []
     for artifact in project.artifacts:
-        path, content = (root / artifact.path).relative_to(root), artifact.content or b""
+        path = (root / artifact.path).relative_to(root)
         if documents is not None and path.suffix in {".md", ".toml"}:
-            documents[path.as_posix()] = content.decode("utf-8")
+            documents[path.as_posix()] = artifact_text(artifact)
         match path.suffix, path.parts:
             case _, parts if "_runtime" in parts:
                 continue
             case ".py", parts:
-                modules[parts] = content.decode(case.get("model", {}).get("encoding", "utf-8"))
+                modules[parts] = artifact_text(artifact, case.get("model", {}).get("encoding", "utf-8"))
             case _:
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
@@ -225,6 +272,7 @@ class _BindingDiagnosticsTarget(ClientTarget):
     """Render a client package and keep the binding diagnostics of the batch it renders from."""
 
     def __init__(self) -> None:
+        super().__init__()
         self.binding_diagnostics: list[str] = []
 
     def render(self, request: TargetRequest) -> TargetRender:
@@ -263,7 +311,7 @@ def render_client(
         lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
         return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
     modules: Modules = {
-        path.parts: (artifact.content or b"").decode()
+        path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
@@ -319,6 +367,104 @@ def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) 
         if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def client_cli_arguments(pyproject: Path) -> list[str]:
+    """Spell the [tool.datamodel-codegen] keys of a pyproject.toml as the command-line options that set them."""
+    import tomllib
+
+    arguments: list[str] = []
+    for key, value in tomllib.loads(pyproject.read_text(encoding="utf-8"))["tool"]["datamodel-codegen"].items():
+        match value:
+            case True:
+                arguments.append(f"--{key}")
+            case list():
+                arguments.extend((f"--{key}", *value))
+            case dict():
+                arguments.extend((f"--{key}", json.dumps(value)))
+            case _:
+                arguments.extend((f"--{key}", str(value)))
+    return arguments
+
+
+def prepare_client_case(case_name: str, root: Path) -> None:
+    """Copy a case's source and reference documents into a root."""
+    _prepare_input(json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name], root)
+
+
+def client_cli_modules(case_name: str, root: Path) -> tuple[str, Modules]:
+    """Return the package a case's renders compare with and the Python modules a run wrote under root that it keeps.
+
+    The modules are those the case keeps of its first backend.
+    """
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    modules: Modules = {
+        parts: path.read_text(encoding="utf-8")
+        for path in root.rglob("*.py")
+        if "_runtime" not in (parts := path.relative_to(root).parts)
+    }
+    selected = case.get("modules", True)
+    kept = selected[case.get("backends", ["pydantic_v2.BaseModel"])[0]] if isinstance(selected, dict) else selected
+    return case.get("expected", case_name), modules if kept is True else {
+        parts: modules[parts] for parts in map(tuple, kept)
+    }
+
+
+def client_api_report(root: Path) -> str:
+    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited file.
+
+    The helpers are a JSON object whose documents resolve against the working directory, and the helper records
+    load from the public module on first use: a fresh interpreter that reads every public name imports neither the
+    JSON option schemas nor the generation modules.
+    """
+    import subprocess
+    import sys
+
+    import datamodel_code_generator.client as client_api
+    from datamodel_code_generator._client import protocols
+
+    hints = {"input_": client_api.GenerationInput, "model_config": GenerateConfig, "config": ClientGenerationConfig}
+    functions = (
+        (client_api.generate_client, type(None)),
+        (client_api.render_client, client_api.GeneratedProject),
+    )
+    lines = [
+        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
+        for function, result in functions
+    ]
+    lines.append(f"records {client_api.PaginationHelper is protocols.PaginationHelper}")
+    probe = subprocess.run(
+        [sys.executable, "-c", _PUBLIC_NAMES_PROBE, *_DEFERRED_MODULES], capture_output=True, text=True, check=True
+    )
+    lines.append(f"reading every public name imports {json.loads(probe.stdout)} of {list(_DEFERRED_MODULES)}")
+    try:
+        client_api.Missing  # noqa: B018
+    except AttributeError as error:
+        lines.append(f"AttributeError: {error}")
+    source = shutil.copy2(SOURCE / "cli" / "options.yaml", root / "api.yaml")
+    helpers = json.loads((SOURCE / "cli" / "protocols.json").read_text(encoding="utf-8"))
+    helpers["pets.all"]["operation"] = {"pointer": "/paths/~1pets/get", "document": "api.yaml"}
+    model = model_config(root / "models.py", "pydantic_v2.BaseModel", {})
+    config = client_config({"protocols": {"raw": helpers}}, root)
+    with _working_directory({"cwd": True}, root):
+        project = client_api.render_client(source, model_config=model, config=config)
+        lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+        for _ in range(2):
+            result = client_api.generate_client(source, model_config=model, config=config)
+            files = sorted(
+                path.relative_to(root).as_posix()
+                for path in root.rglob("*")
+                if path.is_file() and "_runtime" not in path.parts
+            )
+            lines.append(f"generate returned {result}; files {files}")
+        original = (owned := root / PACKAGE / "_client.py").read_bytes()
+        owned.write_text("# edited\n", encoding="utf-8")
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            result = client_api.generate_client(source, model_config=model, config=config)
+    restored = owned.read_bytes() == original
+    lines.append(f"generate returned {result}; edited file restored {restored}; warnings {len(recorded)}")
+    return "\n".join(lines) + "\n"
 
 
 def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
@@ -493,7 +639,7 @@ def client_input_report(case_name: str, root: Path) -> str:
 
 
 def client_documentation_report(case_name: str, root: Path, *, builtin_sources: bool = False) -> str:
-    """Report generated owned Markdown and packaging files for a finalized client selection.
+    """Report generated Markdown and packaging files for a finalized client selection.
 
     With builtin_sources, the files render from a copy of the builtin client templates, as in `client_render`.
     """
@@ -524,15 +670,10 @@ def _setting(value: object, root: Path) -> str:
 
 
 def client_config_report(case_name: str, root: Path) -> str:
-    """Construct one client configuration from Python values or a TOML file and report it or its diagnostics."""
+    """Construct one client configuration from Python values and report it or its diagnostics."""
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
-        if (toml := case.get("toml")) is not None:
-            (path := root / case.get("toml_path", "client.toml")).parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(toml, encoding="utf-8")
-            config = load_target_config(path, ClientGenerationConfig)
-        else:
-            config = client_config(case, root)
+        config = client_config(case, root)
     except APIGenerationError as error:
         return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
     except TypeError as error:
@@ -600,35 +741,35 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
     return "\n".join(lines) + "\n"
 
 
-def _artifact_diagnostic(item: Diagnostic) -> str:
-    return f"  {item.code} {item.artifact_path}: {item.message}"
-
-
 def _regenerate(source: Path, root: Path) -> list[str]:
     """Generate one regeneration fixture, reporting warnings and the files it leaves."""
     shutil.copy2(source, root / "api.yaml")
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
-        try:
-            generate_client(root / "api.yaml", root, "pets", "pydantic_v2.BaseModel")
-        except APIGenerationError as error:
-            lines = ["  APIGenerationError", *map(_artifact_diagnostic, error.diagnostics)]
-        else:
-            paths = sorted(path.relative_to(root) for path in root.rglob("*") if path.is_file())
-            lines = [f"  file {path.as_posix()}" for path in paths if "_runtime" not in path.parts]
-            lines.append(f"  runtime files {sum('_runtime' in path.parts for path in paths)}")
-    return [*lines, *(f"  {item.category.__name__}: {item.message}" for item in recorded)]
+        generate_client(root / "api.yaml", root, "pets", "pydantic_v2.BaseModel")
+    paths = sorted(path.relative_to(root) for path in root.rglob("*") if path.is_file())
+    return [
+        *(f"  file {path.as_posix()}" for path in paths if "_runtime" not in path.parts),
+        f"  runtime files {sum('_runtime' in path.parts for path in paths)}",
+        *(f"  {item.category.__name__}: {item.message}" for item in recorded),
+    ]
+
+
+def _written_as_text(path: Path, scratch: Path) -> bool:
+    """Return whether a file holds what a text-mode write of its text leaves, with the line ending of the platform."""
+    scratch.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return scratch.read_bytes() == path.read_bytes()
 
 
 def client_regeneration_report(root: Path) -> str:
-    """Regenerate a package from a changed API next to user code, an edited owned file, and an unmanaged file.
+    """Regenerate a package from a changed API over user code, an edited generated file, and a foreign file.
 
     The second version adds an operation in a new resource, removes the only operation of another, and renames a
-    parameter. The unmanaged file takes a path of the new resource, so that generation refuses to write anything until
-    it is moved away.
+    parameter. Like model generation, one run overwrites the edited file and the foreign file, which takes a path of
+    the new resource, keeps the user module, and leaves the modules of the removed resource in place.
     """
     source = SOURCE / "regeneration"
-    extensions, owned, unmanaged = (
+    extensions, generated, foreign = (
         root / "pets" / "extensions.py",
         root / "pets" / "_client.py",
         root / "pets" / "resources" / "orders" / "__init__.py",
@@ -636,21 +777,21 @@ def client_regeneration_report(root: Path) -> str:
     lines = ["# generate v1", *_regenerate(source / "v1.yaml", root)]
     shutil.copy2(source / "extensions.py", extensions)
     digest = hashlib.sha256(extensions.read_bytes()).hexdigest()
-    generated = owned.read_text(encoding="utf-8")
-    owned.write_text(edited := f"{generated}# Edited by hand.\n", encoding="utf-8")
-    unmanaged.parent.mkdir(parents=True)
-    unmanaged.write_text("# Someone else's module.\n", encoding="utf-8")
+    generated.write_text(edited := f"{generated.read_text(encoding='utf-8')}# Edited by hand.\n", encoding="utf-8")
+    foreign.parent.mkdir(parents=True)
+    foreign.write_text(written := "# Someone else's module.\n", encoding="utf-8")
     lines.extend((
         "# add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py",
         "# generate v2",
         *_regenerate(source / "v2.yaml", root),
-        f"  pets/_client.py edited {owned.read_text(encoding='utf-8') == edited}",
-        "# move pets/resources/orders/__init__.py away and generate v2",
-    ))
-    unmanaged.unlink()
-    lines.extend((
-        *_regenerate(source / "v2.yaml", root),
         f"  pets/extensions.py unchanged {hashlib.sha256(extensions.read_bytes()).hexdigest() == digest}",
-        f"  pets/_client.py edited {owned.read_text(encoding='utf-8') == edited}",
+        f"  pets/_client.py still edited {generated.read_text(encoding='utf-8') == edited}",
+        f"  pets/resources/orders/__init__.py still foreign {foreign.read_text(encoding='utf-8') == written}",
     ))
+    scratch = root / "text-mode-copy"
+    files = [root / "pets_models.py", *(path for path in (root / "pets").rglob("*") if path.is_file())]
+    lines.append(
+        "  generated files written like text files "
+        f"{all(_written_as_text(path, scratch) for path in files if path != extensions)}"
+    )
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"

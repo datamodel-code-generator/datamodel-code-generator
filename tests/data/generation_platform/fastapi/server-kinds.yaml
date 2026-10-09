@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Server parameter kinds read from model types, version: "1.0"}
+paths:
+  /values:
+    get:
+      operationId: getValues
+      parameters:
+        - {name: amount, in: query, schema: {type: number, format: decimal}}
+        - {name: amounts, in: query, explode: false, schema: {type: array, items: {type: number, format: decimal}}}
+        - {name: X-Amounts, in: header, schema: {type: array, items: {type: number, format: decimal}}}
+        - {name: step, in: query, schema: {type: number, multipleOf: 0.01}}
+        - {name: steps, in: query, explode: false, schema: {type: array, items: {type: number, multipleOf: 0.01}}}
+        - {name: ratio, in: query, schema: {type: number, enum: [2.2, 0.5]}}
+        - {name: level, in: query, schema: {type: integer, enum: [1, 2]}}
+        - {name: mixed, in: query, schema: {anyOf: [{type: integer}, {type: string}]}}
+        - {name: mixeds, in: query, explode: false, schema: {type: array, items: {anyOf: [{type: integer}, {type: string}]}}}
+        - {name: codes, in: query, explode: false, schema: {type: array, items: {type: string, pattern: "^[A-Z]+$"}}}
+        - {name: counts, in: query, explode: false, schema: {type: array, items: {type: integer, minimum: 0}}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Filter"}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Filter:
+      type: object
+      additionalProperties: false
+      properties:
+        price: {type: number, format: decimal}
+        count: {type: integer}

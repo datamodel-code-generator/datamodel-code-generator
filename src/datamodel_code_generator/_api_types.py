@@ -15,21 +15,16 @@ __all__ = [
     "APIGenerationError",
     "ArtifactAction",
     "ArtifactKind",
-    "ArtifactRecord",
     "Diagnostic",
     "DiagnosticSeverity",
     "DiagnosticStage",
     "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
-    "GenerationReport",
     "OperationRef",
     "OperationSelector",
-    "PublicationRollbackError",
     "SchemaRef",
-    "TargetEditWarning",
     "TargetKind",
-    "TargetStateWarning",
 ]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
@@ -37,8 +32,8 @@ DiagnosticSeverity: TypeAlias = Literal["error", "warning", "info"]
 DiagnosticStage: TypeAlias = Literal[
     "config", "input", "model", "binding", "target", "ownership", "format", "publication"
 ]
-ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target", "target_manifest"]
-ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
+ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target"]
+ArtifactAction: TypeAlias = Literal["write", "unchanged"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -60,29 +55,8 @@ class SchemaRef:
 OperationSelector: TypeAlias = OperationRef | str
 
 
-class TargetStateWarning(UserWarning):
-    """Warn that a target manifest of an old or unknown format owns no files."""
-
-
-class TargetEditWarning(UserWarning):
-    """Warn that a generation discards a change to a file the target owns."""
-
-
 class DocumentationAnnotationWarning(UserWarning):
     """Warn that a served document leaves out an annotation that has no JSON form."""
-
-
-class PublicationRollbackError(OSError):
-    """Report a failed publication whose rollback could not restore every destination.
-
-    The original failure is the ``__cause__``. Backups of destinations that were not restored stay in place.
-    """
-
-    def __init__(self, unrestored: tuple[Path, ...], backups: tuple[Path, ...]) -> None:
-        """Keep the destinations that were not restored and the backups left for recovery."""
-        self.unrestored = unrestored
-        self.backups = backups
-        super().__init__(f"Publication rollback failed for {', '.join(path.as_posix() for path in unrestored)}")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -122,63 +96,34 @@ def _error_message(item: Diagnostic, option_prefix: str | None) -> str:
             prefix = None if option_prefix is None else f"{option_prefix}-"
         field = name.split(".", 1)[0].split("[", 1)[0]
         option = name if prefix is None else f"--{prefix}{field.replace('_', '-')}{name[len(field) :]}"
+        holder, _, member = name.rpartition(".")
         if path in message:
             message = message.replace(path, option, 1)
+        elif holder and member.isidentifier() and holder in message:
+            message = message.replace(holder, option.removesuffix(f".{member}"), 1)
         else:
             location = option
     return message if location is None else f"{location}: {message}"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ArtifactRecord:
-    """Describe one published or compared file without its content."""
-
-    path: Path
-    kind: ArtifactKind
-    sha256: str
-    size: int
-    target_id: str | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class GeneratedArtifact:
-    """Carry one publication candidate; deletions carry no content."""
+    """Carry one generated file: its bytes, and whether writing them changes the file at its path."""
 
     path: Path
     kind: ArtifactKind
     action: ArtifactAction
-    content: bytes | None
-    sha256: str | None
-    target_id: str | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class GenerationReport:
-    """Summarize one publishing generation of a single target.
-
-    dependencies are the requirement specifiers the generated package needs at run time.
-    """
-
-    target: TargetKind
-    written_files: tuple[ArtifactRecord, ...]
-    unchanged_files: tuple[ArtifactRecord, ...]
-    deleted_files: tuple[ArtifactRecord, ...]
-    generator_version: str
-    runtime_revision: str
-    dependencies: tuple[str, ...] = ()
-    schema_version: Literal[1] = 1
+    content: bytes
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GeneratedProject:
-    """Return every publication candidate of one target without writing it.
+    """Return every generated file of one target without writing it.
 
     dependencies are the requirement specifiers the generated package needs at run time.
     """
 
     target: TargetKind
     artifacts: tuple[GeneratedArtifact, ...]
-    generator_version: str
-    runtime_revision: str
     dependencies: tuple[str, ...] = ()
     schema_version: Literal[1] = 1
