@@ -1500,12 +1500,14 @@ def test_malformed_remote_ref_body_has_format_and_url_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Translate malformed fetched bodies at the decoder boundary with their URL."""
+    from datamodel_code_generator.remote_lock import display_url
+
     parser = JsonSchemaParser("")
     monkeypatch.setattr(parser, "_get_text_from_url", lambda _: body)
 
     with pytest.raises(
         InvalidFileFormatError,
-        match=rf"Invalid file format for jsonschema at {url}",
+        match=rf"Invalid file format for jsonschema at {display_url(url)}",
     ):
         parser._get_ref_body_from_url(url)
 

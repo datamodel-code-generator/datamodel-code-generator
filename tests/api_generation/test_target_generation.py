@@ -279,3 +279,18 @@ def test_target_pyproject_output(
         capsys.readouterr().err + "\n".join(published) + "\n",
         EXPECTED / "configs" / "pyproject-output-override.txt",
     )
+
+
+@pytest.mark.allow_direct_assert("Validate named_document sanitizes remote URLs")
+def test_named_document_sanitizes_remote_urls() -> None:
+    """named_document strips userinfo and query tokens from remote URLs."""
+    url = "http://u:pw@127.0.0.1:8765/bad.yaml?token=SECRET#/x"
+    named = _api_manifest.named_document(url, url)
+    assert named == " in 'http://127.0.0.1:8765'"
+    assert "u:pw" not in named
+    assert "SECRET" not in named
+
+    relative_named = _api_manifest.named_document("bad.yaml", url)
+    assert relative_named == " in 'bad.yaml'"
+    assert "u:pw" not in relative_named
+    assert "SECRET" not in relative_named

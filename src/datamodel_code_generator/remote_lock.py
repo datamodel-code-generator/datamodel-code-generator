@@ -69,8 +69,8 @@ def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult
             return parsed, port
 
 
-def _display_url(url: str) -> str:
-    """Return a safe origin suitable for a committed lock.
+def display_url(url: str) -> str:
+    """Return a safe origin suitable for a committed lock or diagnostics.
 
     URL paths are deliberately omitted as deployments frequently put access
     tokens in a path segment. The request digest remains the identity; this
@@ -83,6 +83,9 @@ def _display_url(url: str) -> str:
         hostname = f"[{hostname}]"
     netloc = hostname if port is None else f"{hostname}:{port}"
     return urlunsplit((parsed.scheme.lower(), netloc, "", "", ""))
+
+
+_display_url = display_url
 
 
 def _request_sha256(

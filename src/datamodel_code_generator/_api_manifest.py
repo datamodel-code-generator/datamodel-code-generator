@@ -9,7 +9,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import url2pathname
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
@@ -82,6 +82,18 @@ def named_document(written: str | None, identity: str | None) -> str:
     """
     if written is None:
         return ""
+    if urlsplit(written).scheme in {"http", "https"}:
+        from datamodel_code_generator.remote_lock import (  # ruff: ignore[import-outside-top-level]
+            RemoteLockError,
+            display_url,
+        )
+
+        try:
+            target_display = display_url(written)
+        except (ValueError, RemoteLockError):
+            host = urlsplit(written).hostname or ""
+            target_display = urlunsplit((urlsplit(written).scheme.lower(), host, "", "", ""))
+        return f" in {target_display!r}"
     parts = urlsplit(identity or written)
     if parts.scheme != "file":
         return f" in {written!r}"
@@ -99,16 +111,14 @@ class RootInput:
 
 def persistent_uri(identity: str, root: Path, option_path: str) -> str:
     """Return the credential-free URI of a document identity, relative to the target root for a file."""
-    from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
-        _display_url,  # pyright: ignore[reportPrivateUsage]
-    )
+    from datamodel_code_generator.remote_lock import display_url  # ruff: ignore[import-outside-top-level]
 
     parts = urlsplit(identity)
     match parts.scheme:
         case "file":
             return relative_uri(Path(url2pathname(parts.path)), root, option_path)
         case "http" | "https":
-            return _display_url(identity)
+            return display_url(identity)
     return identity
 
 
