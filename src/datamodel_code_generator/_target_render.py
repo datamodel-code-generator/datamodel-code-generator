@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -13,7 +12,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
-    from datamodel_code_generator._target_contract import ModelArtifact
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
 MODEL_DEPENDENCIES: Final = (
@@ -24,10 +22,6 @@ MODEL_DEPENDENCIES: Final = (
     ("ulid", "python-ulid>=3.2.1"),
     ("pendulum", "pendulum>=3.2"),
 )
-_IMPORT: Final = re.compile(
-    r"^(?:from[ \t]+([\w.]+)[ \t]+import[ \t]+(\([^)]*\)|[^\n]*)|import[ \t]+([^\n]*))", re.MULTILINE
-)
-_COMMENT: Final = re.compile(r"#[^\n]*")
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "style": None,
     "explode": False,
@@ -78,21 +72,8 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> Gro
     return Group(f"{local('_runtime.model_codecs.parameters', type(plan).__name__)}(", tuple(entries), ")")
 
 
-def _imported(models: tuple[ModelArtifact, ...]) -> frozenset[str]:
-    """Return every module and imported name that the top-level import statements of the models name."""
-    names: set[str] = set()
-    for artifact in models:
-        for module, members, plain in _IMPORT.findall(artifact.content.decode(artifact.encoding)):
-            entries = [
-                item.split()[0] for item in _COMMENT.sub("", members or plain).strip("() \n").split(",") if item.split()
-            ]
-            names.update((module, *(f"{module}.{item}" for item in entries)) if module else entries)
-    return frozenset(names)
-
-
-def model_dependencies(models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
-    """Return the requirements of the optional libraries the models import, in declaration order."""
-    imported = _imported(models)
+def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
+    """Return the requirements of the optional libraries that the imported module and member names need, in order."""
     return tuple(
         dict.fromkeys(
             requirement

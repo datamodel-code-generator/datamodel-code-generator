@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.plan import ServerPlan
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._target_contract import ModelArtifact
 
 DEPENDENCIES: Final = ("fastapi>=0.141.1", "pydantic>=2.13.5")
 FORMS: Final = "python-multipart>=0.0.32"
@@ -78,7 +77,7 @@ class FastAPITarget:
         for problem in docs.problems:
             output = shown(config.output, request.cwd).as_posix()
             warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
-        return TargetRender(files=files, dependencies=_dependencies(plan, request.models))
+        return TargetRender(files=files, dependencies=_dependencies(plan, request.model_imports))
 
 
 def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
@@ -123,7 +122,7 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
     )
 
 
-def _dependencies(plan: ServerPlan, models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
+def _dependencies(plan: ServerPlan, model_imports: frozenset[str]) -> tuple[str, ...]:
     forms = any(
         (body := spec.body) is not None
         and (
@@ -134,5 +133,5 @@ def _dependencies(plan: ServerPlan, models: tuple[ModelArtifact, ...]) -> tuple[
     return (
         *DEPENDENCIES,
         *((FORMS,) if forms else ()),
-        *model_dependencies(models),
+        *model_dependencies(model_imports),
     )

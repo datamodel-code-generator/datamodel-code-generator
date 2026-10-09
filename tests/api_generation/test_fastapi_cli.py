@@ -59,6 +59,7 @@ CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
+MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -159,6 +160,31 @@ def test_fastapi_cli_generate(
         expected_file=PACKAGE / "models.py",
     )
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
+
+
+@pytest.mark.parametrize("case_name", MODEL_DEPENDENCIES)
+def test_fastapi_cli_model_dependencies(
+    case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements of the optional libraries that the import statements of the models name.
+
+    Import-like text elsewhere in a model file, such as a docstring header, names no requirement. The models are
+    compared, not run: they import optional libraries that a test environment need not hold.
+    """
+    monkeypatch.chdir(tmp_path)
+    expected = EXPECTED / "cli" / "model-dependencies"
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
+        copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
+        capsys=capsys,
+        expected_stderr=(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        assert_func=assert_file_content,
+        expected_file=expected / f"{case_name}.py",
+        skip_code_validation=True,
+    )
 
 
 @pytest.mark.parametrize("case_name", ["unchanged", "models-in-package", "package-in-models"])

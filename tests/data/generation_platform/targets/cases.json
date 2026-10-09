@@ -360,13 +360,6 @@
       {"render": {"model": {"target_python_version": "3.11"}}}
     ]
   },
-  "target-grammar": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.11"}}}
-    ]
-  },
   "target-grammar-modern": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
