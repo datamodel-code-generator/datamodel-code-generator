@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 import anyio
 from httpx2.websockets import AsyncWebSocketSession as _AsyncNative
-from httpx2.websockets import WebSocketDisconnect, WebSocketNetworkError
+from httpx2.websockets import WebSocketDisconnect
 from httpx2.websockets import WebSocketSession as _Native
 from typing_extensions import Self, TypeVar
 from wsproto.connection import ConnectionState
@@ -40,7 +40,6 @@ from ..client.errors import (
     is_client_closed,
     is_phase_timeout,
 )
-from ..client.native import native_error
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
@@ -366,15 +365,11 @@ class _Sockets(Generic[SendT, RecvT]):
         failure.info = self._info
         return failure
 
-    def _own(self, error: Exception) -> SDKError:
-        """Return a failure as the session's: an SDK one stamped, any other classified as a lost connection."""
-        if isinstance(error, SDKError):
-            return self._stamped(error)
-        if isinstance(error, WebSocketNetworkError):
-            return self._stamped(
-                APIConnectionError(phase="read", delivery_state=DeliveryState.RESPONSE_STARTED, cause=error)
-            )
-        return self._stamped(native_error(error, send_started=True, response_started=True))
+    def _lost(self, error: Exception) -> APIConnectionError:
+        """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
+        return self._stamped(
+            APIConnectionError(phase="read", delivery_state=DeliveryState.RESPONSE_STARTED, cause=error)
+        )
 
     def _halted(self) -> Exception | None:
         """Return the session deadline's failure once it passed, or None."""
@@ -425,12 +420,10 @@ class _Sockets(Generic[SendT, RecvT]):
             return True
 
     def _peer(self, closed: WebSocketDisconnect, connection: ConnectionState) -> SDKError:
-        """Return what a received closure means: this session's own close, a message over the limit, or the server's.
+        """Return what a received closure means: a message over the limit, or the server's closure.
 
         HTTPX2 closes with 1009 itself before reporting a message over the limit, so the closure is this end's own then.
         """
-        if self._state is _State.CLOSED:
-            return self._state_error("receive")
         if connection is ConnectionState.LOCAL_CLOSING:
             limit = self._limits.max_message_bytes
             return self._stamped(
@@ -526,6 +519,15 @@ class _Sockets(Generic[SendT, RecvT]):
             )
         )
 
+    def _ended_as(self, error: Exception) -> tuple[_State, int, str, BaseException | None]:
+        """Return how a failure or a received closure ends the session: its state, close code and reason, and error.
+
+        The server's closure is answered with its code and reason, and only one that was not normal is a failure.
+        """
+        if isinstance(error, WebSocketClosedError):
+            return _State.ENDED, error.code or _NORMAL, error.reason, None if error.clean else error
+        return _State.FAILED, self._close_code(error), "", error
+
     def _undelivered(self, error: Exception) -> DeliveryUnknownError:
         """Return how a send in progress ended: a message that may have gone is undelivered and never sent again."""
         return self._stamped(DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=error))
@@ -554,10 +556,10 @@ class _Sockets(Generic[SendT, RecvT]):
 class WebSocketSession(_Sockets[SendT, RecvT]):
     """A synchronous WebSocket session: send typed messages, and receive them or iterate over them.
 
-    The session owns its connection until it closes or fails; closing the client leaves it open, so close each session
-    itself. One receive runs at a time, beside sends, which HTTPX2 writes one at a time. A closure by the server ends
-    iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or `close()` every
-    step raises ProtocolStateError, and iteration after `close()` stops.
+    The session owns its connection until it closes or fails; the connection belongs to the HTTP client's pool, which
+    closes it with the client. One receive runs at a time, beside sends, which HTTPX2 writes one at a time. A closure by
+    the server ends iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or
+    `close()` every step raises ProtocolStateError, and iteration after `close()` stops.
     """
 
     __slots__ = ("_native", "_response")
@@ -589,6 +591,15 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         native.close(code, reason)
         native.__exit__(None, None, None)
 
+    def _end(self, error: Exception, action: str) -> Exception:
+        """End the session at a failure or a received closure, or report the end another step reached first."""
+        state, code, reason, failure = self._ended_as(error)
+        if not self._ending(state):
+            return self._state_error(action)
+        self._shut(code, reason)
+        finished(self._response, failure)
+        return error
+
     def send(self, value: SendT) -> None:
         """Send one whole message; a message that may have gone is final."""
         data = self._payload(value)
@@ -599,10 +610,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
                 self._native.send_text(data)
             else:
                 self._native.send_bytes(data)
-        except LocalProtocolError:
-            raise self._closing() from None
         except Exception as error:  # noqa: BLE001
-            raise self._failed(self._undelivered(error)) from None
+            closing = isinstance(error, LocalProtocolError)
+            raise self._closing() if closing else self._end(self._undelivered(error), "send") from None
         self._sent += 1
 
     def receive(self) -> Message[RecvT]:
@@ -619,16 +629,16 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         try:
             event = native.receive(self._wait(self._limits.idle_timeout))
         except TimeoutError:
-            raise self._failed(self._phase_timeout(self._limits.idle_timeout)) from None
+            raise self._end(self._phase_timeout(self._limits.idle_timeout), "receive") from None
         except WebSocketDisconnect as closed:
-            raise self._ended(self._peer(closed, native.connection.state)) from None
+            raise self._end(self._peer(closed, native.connection.state), "receive") from None
         except Exception as error:  # noqa: BLE001
-            raise self._failed(self._own(error)) from None
+            raise self._end(self._lost(error), "receive") from None
         try:
             return self._message(event)
         except StreamDecodeError as error:
             del event
-            raise self._failed(error.with_traceback(None)) from None
+            raise self._end(error.with_traceback(None), "receive") from None
 
     def ping(self, payload: bytes = b"") -> PingReceipt:
         """Send a ping, beside any send, and wait at most the pong timeout for its pong.
@@ -641,34 +651,12 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         started = time.monotonic()
         try:
             pong = self._native.ping(payload)
-        except LocalProtocolError:
-            raise self._closing() from None
         except Exception as error:  # noqa: BLE001
-            raise self._failed(self._own(error)) from None
+            closing = isinstance(error, LocalProtocolError)
+            raise self._closing() if closing else self._end(self._lost(error), "ping") from None
         if not pong.wait(self._wait(timeout := self._limits.pong_timeout)):
-            raise self._failed(self._phase_timeout(timeout))
+            raise self._end(self._phase_timeout(timeout), "ping")
         return PingReceipt(latency=time.monotonic() - started)
-
-    def _failed(self, error: Exception) -> Exception:
-        """End the session with a failure, closing the connection with the failure's code."""
-        if self._ending(_State.FAILED):
-            self._shut(self._close_code(error))
-            finished(self._response, error)
-        return error
-
-    def _ended(self, error: SDKError) -> Exception:
-        """End the session at a received closure, unless the session's deadline already passed.
-
-        A closure that was not normal ends the session as failed; the server's closure is answered with its code.
-        """
-        if (halt := self._halted()) is not None:
-            return self._failed(halt)
-        if not isinstance(error, WebSocketClosedError):
-            return self._failed(error)
-        if self._ending(_State.ENDED):
-            self._shut(error.code or _NORMAL, error.reason)
-            finished(self._response, None if error.clean else error)
-        return error
 
     def close(self, code: int = 1000, reason: str = "") -> None:
         """Close with a code and a reason; closing again does nothing."""
@@ -738,7 +726,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             response=upgraded,
         )
         self._stop = anyio.Event()
-        self._host: asyncio.Task[None] | None = None
+        self._host: asyncio.Task[None]
 
     async def _start(self) -> None:
         """Start the HTTPX2 session in its own task, returning once it runs."""
@@ -755,12 +743,23 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             await self._stop.wait()
 
     async def _shut(self, code: int, reason: str = "") -> None:
-        """Close the HTTPX2 session with a code and a reason and wait for its task to end."""
+        """Close the HTTPX2 session with a code and a reason and wait for its task, keeping its failure out."""
+        import asyncio  # noqa: PLC0415 - Only an asyncio session hosts a task.
+
         with anyio.CancelScope(shield=True):
             await self._native.close(code, reason)
             self._stop.set()
-            if (host := self._host) is not None:
-                await _joined(host)
+            await asyncio.gather(self._host, return_exceptions=True)
+
+    async def _end(self, error: Exception, action: str) -> Exception:
+        """End the session at a failure or a received closure, or report the end another step reached first."""
+        state, code, reason, failure = self._ended_as(error)
+        if not self._ending(state):
+            return self._state_error(action)
+        await self._shut(code, reason)
+        with anyio.CancelScope(shield=True):
+            await afinished(self._response, failure)
+        return error
 
     async def send(self, value: SendT) -> None:
         """Send one whole message; a message that may have gone is final."""
@@ -769,12 +768,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._checked()
         try:
             await (self._native.send_text(data) if isinstance(data, str) else self._native.send_bytes(data))
-        except LocalProtocolError:
-            raise self._closing() from None
         except Exception as error:  # noqa: BLE001
-            raise await self._failed(self._undelivered(error)) from None
+            closing = isinstance(error, LocalProtocolError)
+            raise self._closing() if closing else await self._end(self._undelivered(error), "send") from None
         except BaseException:
-            await self._failed(self._state_error("send"))
+            await self._end(self._state_error("send"), "send")
             raise
         self._sent += 1
 
@@ -792,17 +790,16 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         try:
             event = await native.receive(self._wait(self._limits.idle_timeout))
         except TimeoutError:
-            raise await self._failed(self._phase_timeout(self._limits.idle_timeout)) from None
+            raise await self._end(self._phase_timeout(self._limits.idle_timeout), "receive") from None
         except WebSocketDisconnect as closed:
-            raise await self._ended(self._peer(closed, native.connection.state)) from None
+            raise await self._end(self._peer(closed, native.connection.state), "receive") from None
         except Exception as error:  # noqa: BLE001
-            failure = self._state_error("receive") if self._closed_here() else await self._failed(self._own(error))
-            raise failure from None
+            raise await self._end(self._lost(error), "receive") from None
         try:
             return self._message(event)
         except StreamDecodeError as error:
             del event
-            raise await self._failed(error.with_traceback(None)) from None
+            raise await self._end(error.with_traceback(None), "receive") from None
 
     async def ping(self, payload: bytes = b"") -> PingReceipt:
         """Send a ping, beside any send, and wait at most the pong timeout for its pong."""
@@ -814,35 +811,15 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             pong = await self._native.ping(payload)
             with anyio.move_on_after(self._wait(timeout := self._limits.pong_timeout)) as waited:
                 await pong.wait()
-        except LocalProtocolError:
-            raise self._closing() from None
         except Exception as error:  # noqa: BLE001
-            raise await self._failed(self._own(error)) from None
+            closing = isinstance(error, LocalProtocolError)
+            raise self._closing() if closing else await self._end(self._lost(error), "ping") from None
         except BaseException:
-            await self._failed(self._state_error("ping"))
+            await self._end(self._state_error("ping"), "ping")
             raise
         if waited.cancelled_caught:
-            raise await self._failed(self._phase_timeout(timeout))
+            raise await self._end(self._phase_timeout(timeout), "ping")
         return PingReceipt(latency=time.monotonic() - started)
-
-    async def _failed(self, error: Exception) -> Exception:
-        """End the session with a failure, closing the connection with the failure's code."""
-        if self._ending(_State.FAILED):
-            await self._shut(self._close_code(error))
-            with anyio.CancelScope(shield=True):
-                await afinished(self._response, error)
-        return error
-
-    async def _ended(self, error: SDKError) -> Exception:
-        """End the session at a received closure, as the synchronous session does."""
-        if (halt := self._halted()) is not None:
-            return await self._failed(halt)
-        if not isinstance(error, WebSocketClosedError):
-            return await self._failed(error)
-        if self._ending(_State.ENDED):
-            await self._shut(error.code or _NORMAL, error.reason)
-            await afinished(self._response, None if error.clean else error)
-        return error
 
     async def aclose(self, code: int = 1000, reason: str = "") -> None:
         """Close with a code and a reason; closing again does nothing."""
@@ -879,15 +856,6 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     ) -> None:
         """Close the session."""
         await self.aclose()
-
-
-async def _joined(task: asyncio.Task[None]) -> None:
-    """Wait for a host task to end, keeping a failure of its task group out of the session's close."""
-    import asyncio  # noqa: PLC0415 - Only an asyncio session hosts a task.
-
-    await asyncio.wait((task,))
-    if not task.cancelled():
-        task.exception()
 
 
 def connect_socket(  # noqa: PLR0913

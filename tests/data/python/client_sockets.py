@@ -10,6 +10,7 @@ import logging
 import socket
 import subprocess
 import sys
+import threading
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -446,6 +447,38 @@ def _closing_connection(harness: _Harness, api: Any) -> None:
     record(lines, "send on a closing connection", lambda: session.send("late"))
     record(lines, "ping on a closing connection", session.ping)
     record(lines, "receive on a closing connection", session.receive)
+    record(lines, "iteration after the failure", lambda: list(session))
+    _closed_meanwhile(harness, api)
+
+
+def _closed_meanwhile(harness: _Harness, api: Any) -> None:
+    """End an iteration waiting in another thread when the session closes: its wait ends at its idle timeout.
+
+    The server learns that the thread sent its message before the thread waits; a close that comes first ends the
+    iteration the same way.
+    """
+    lines, server = harness.lines, harness.server
+    sent = threading.Event()
+
+    def talk(connection: ServerConnection) -> None:
+        connection.recv()
+        sent.set()
+
+    (play,) = server.play(Play(talk=talk))
+    session = api.protocols.feed.text.connect(ws_options=harness.ws(idle_timeout=0.3))
+    iterated: list[object] = []
+
+    def iterate() -> None:
+        session.send("go")
+        iterated.extend(session)
+
+    thread = threading.Thread(target=iterate)
+    thread.start()
+    sent.wait(10)
+    session.close(4000, "bye")
+    thread.join(10)
+    lines.append(f"  iteration closed meanwhile {iterated} {session!r}")
+    harness.report(play)
 
 
 class _Ends:
@@ -765,6 +798,11 @@ def _proxies(harness: _Harness) -> None:
         garbled.stop()
 
 
+async def _messages(session: Any) -> list[object]:
+    """Return the messages an asyncio iteration yields."""
+    return [message async for message in session]
+
+
 async def _async_refused(harness: _Harness) -> None:
     """Retry an asyncio handshake refused before sending, within its session budget and permit cleanup."""
     lines = harness.lines
@@ -843,6 +881,14 @@ async def _async_sockets(harness: _Harness) -> None:
         await arecord(lines, "async send on a closing connection", lambda: session.send("late"))
         await arecord(lines, "async ping on a closing connection", session.ping)
         await arecord(lines, "async receive on a closing connection", session.receive)
+        await arecord(lines, "async iteration after the failure", lambda: _messages(session))
+        (play,) = server.play(Play())
+        session = await api.protocols.feed.text.connect()
+        iterating = asyncio.create_task(_messages(session))
+        await asyncio.sleep(0)
+        await session.aclose(4000, "bye")
+        await arecord(lines, "async iteration closed meanwhile", lambda: iterating)
+        await harness.areport(play)
         (play,) = server.play(Play(talk=_answering))
         session = await api.protocols.feed.text.connect()
         waiting = asyncio.create_task(session.receive())
@@ -878,6 +924,13 @@ async def _async_sockets(harness: _Harness) -> None:
             pinging.cancel()
             cancelled = (await asyncio.gather(pinging, return_exceptions=True))[0]
             lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
+            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None))
+            sending = asyncio.create_task(session.send(_LARGE))
+            await asyncio.sleep(0)
+            sending.cancel()
+            cancelled = (await asyncio.gather(sending, return_exceptions=True))[0]
+            lines.append(f"  async send cancelled by its task {type(cancelled).__name__} {session!r}")
+            await arecord(lines, "async send after the cancelled send", lambda: session.send("late"))
     finally:
         silent_pongs.stop()
     silent = RawPeer(None)

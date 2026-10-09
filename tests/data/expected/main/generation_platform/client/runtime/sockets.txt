@@ -92,6 +92,9 @@
   send on a closing connection ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   ping on a closing connection ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   receive on a closing connection ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=32, observed=33) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='message', unit='bytes', limit=32, observed=33, cause=WebSocketDisconnect] protocol_size_error
+  iteration after the failure ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
+  iteration closed meanwhile [] WebSocketSession(helper_id='feed.text', state='closed', subprotocol=None)
+    server GET /feed/socket [] | closed 4000 'bye'
   idle on a stepped clock ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | still open
   idle on a frozen clock ! APITimeoutError: APITimeoutError(operation_id='roomSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.05) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
@@ -217,6 +220,9 @@
   async send on a closing connection ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   async ping on a closing connection ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   async receive on a closing connection ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=32, observed=33) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='message', unit='bytes', limit=32, observed=33, cause=WebSocketDisconnect] protocol_size_error
+  async iteration after the failure ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
+  async iteration closed meanwhile = []
+    server GET /feed/socket [] | closed 4000 'bye'
   async receive cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   async receive past wait_for ! TimeoutError:  []
   async send after the cancelled receives = None
@@ -227,6 +233,8 @@
   async receive after the client closed ! APIConnectionError: APIConnectionError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=WebSocketNetworkError] api_connection_error
   async unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+  async send cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+  async send after the cancelled send ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
   async open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout] phase_timeout
   async refused connection ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError] api_connection_error
   async refused retry with failed permit release ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError] api_connection_error
