@@ -156,7 +156,7 @@ ServerType: TypeAlias = Literal['fastapi']
 StrictTypesModel: TypeAlias = Literal['str', 'bytes', 'int', 'float', 'bool']
 
 
-TargetPydanticVersion: TypeAlias = Literal['2', '2.11', '2.12']
+TargetPydanticVersion: TypeAlias = Literal['2', '2.11', '2.12', '2.14']
 
 
 UnionMode: TypeAlias = Literal['smart', 'left_to_right']

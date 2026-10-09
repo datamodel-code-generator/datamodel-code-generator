@@ -50,9 +50,14 @@ from typing import get_type_hints
 sys.path[:0] = sys.argv[1:3]
 package, *names = sys.argv[3:]
 watched = ('webhook_events', 'adapters', 'verification', 'signatures', 'webhook_keys', 'public_keys')
+def binds_hmac():
+    # Pydantic 2.14 loads hmac itself, so look for a package module binding it rather than for the module.
+    hmac = sys.modules.get('hmac')
+    modules = [module for key, module in list(sys.modules.items()) if key.startswith(package + '.') and module]
+    return hmac is not None and any(vars(module).get('hmac') is hmac for module in modules)
 def loaded():
     runtime = [name for name in watched if f'{package}._runtime.protocols.{name}' in sys.modules]
-    return runtime + [name for name in ('hmac', 'cryptography') if name in sys.modules]
+    return runtime + ['hmac'] * binds_hmac() + [name for name in ('cryptography',) if name in sys.modules]
 for name in names:
     try:
         module = importlib.import_module(package + name)
