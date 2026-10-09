@@ -248,25 +248,26 @@ ty webhooks_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in ot
   33 unknown-argument
   34 unknown-argument
   35 unknown-argument
-protocols_negative.py 24 marked lines
-mypy protocols_negative.py: 24/24 marked lines with one error, 0 elsewhere, 0 in other files
-  28 assignment
+protocols_negative.py 25 marked lines
+mypy protocols_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in other files
+  27 assignment
+  28 misc
   29 misc
-  30 misc
+  30 arg-type
   31 arg-type
-  32 arg-type
-  33 call-arg
-  34 arg-type
+  32 call-arg
+  33 arg-type
+  34 assignment
   35 assignment
-  36 assignment
-  42 arg-type
-  43 call-arg
+  41 arg-type
+  42 call-arg
+  43 arg-type
   44 arg-type
   45 arg-type
-  46 call-arg
-  47 arg-type
-  48 dict-item
-  49 arg-type
+  46 dict-item
+  47 dict-item
+  48 call-arg
+  49 call-arg
   50 call-arg
   55 call-arg
   56 dict-item
@@ -274,24 +275,25 @@ mypy protocols_negative.py: 24/24 marked lines with one error, 0 elsewhere, 0 in
   58 arg-type
   60 index
   61 assignment
-pyright protocols_negative.py: 24/24 marked lines with one error, 0 elsewhere, 0 in other files
-  28 reportAssignmentType
+pyright protocols_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in other files
+  27 reportAssignmentType
+  28 reportAttributeAccessIssue
   29 reportAttributeAccessIssue
-  30 reportAttributeAccessIssue
+  30 reportArgumentType
   31 reportArgumentType
-  32 reportArgumentType
-  33 reportCallIssue
-  34 reportArgumentType
+  32 reportCallIssue
+  33 reportArgumentType
+  34 reportAssignmentType
   35 reportAssignmentType
-  36 reportAssignmentType
-  42 reportArgumentType
-  43 reportCallIssue
+  41 reportArgumentType
+  42 reportCallIssue
+  43 reportArgumentType
   44 reportArgumentType
   45 reportArgumentType
-  46 reportCallIssue
+  46 reportArgumentType
   47 reportArgumentType
-  48 reportArgumentType
-  49 reportArgumentType
+  48 reportCallIssue
+  49 reportCallIssue
   50 reportCallIssue
   55 reportCallIssue
   56 reportArgumentType
@@ -299,24 +301,25 @@ pyright protocols_negative.py: 24/24 marked lines with one error, 0 elsewhere, 0
   58 reportArgumentType
   60 reportIndexIssue
   61 reportAssignmentType
-ty protocols_negative.py: 24/24 marked lines with one error, 0 elsewhere, 0 in other files
+ty protocols_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in other files
+  27 invalid-assignment
   28 invalid-assignment
   29 invalid-assignment
-  30 invalid-assignment
+  30 invalid-argument-type
   31 invalid-argument-type
-  32 invalid-argument-type
-  33 too-many-positional-arguments
-  34 invalid-argument-type
+  32 too-many-positional-arguments
+  33 invalid-argument-type
+  34 invalid-assignment
   35 invalid-assignment
-  36 invalid-assignment
-  42 invalid-argument-type
-  43 unknown-argument
+  41 invalid-argument-type
+  42 unknown-argument
+  43 invalid-argument-type
   44 invalid-argument-type
   45 invalid-argument-type
-  46 missing-argument
+  46 invalid-argument-type
   47 invalid-argument-type
-  48 invalid-argument-type
-  49 invalid-argument-type
+  48 unknown-argument
+  49 unknown-argument
   50 unknown-argument
   55 missing-argument
   56 invalid-argument-type

@@ -1944,7 +1944,7 @@ references name resolve against the directory of the JSON file that holds them, 
         iterate_pages,
         resume_pages,
     )
-    from ..options import UNSET, RequestOptions, SessionOptions, Unset
+    from ..options import UNSET, RequestOptions, Unset
     from ..types.pets import ListPetsResponse
     from . import PaginationOptions, _plans
 
@@ -1989,7 +1989,6 @@ references name resolve against the directory of the JSON file that holds them, 
             cursor: str | Unset = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Page[_dcg_type_0, ListPetsResponse]:
             """Fetch the first page of GET /pets."""
             return first_page(
@@ -1998,7 +1997,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def iterate(
@@ -2008,7 +2006,6 @@ references name resolve against the directory of the JSON file that holds them, 
             cursor: str | Unset = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Pager[_dcg_type_0, ListPetsResponse]:
             """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
             return iterate_pages(
@@ -2017,7 +2014,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def next_page(
@@ -2026,7 +2022,6 @@ references name resolve against the directory of the JSON file that holds them, 
             *,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Page[_dcg_type_0, ListPetsResponse] | None:
             """Fetch the page after a page of this helper, or return None after the last page."""
             return following_page(
@@ -2035,7 +2030,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 page,
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def resume(
@@ -2046,7 +2040,6 @@ references name resolve against the directory of the JSON file that holds them, 
             cursor: str | Unset = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Pager[_dcg_type_0, ListPetsResponse]:
             """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
             return resume_pages(
@@ -2056,7 +2049,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
     ```
 

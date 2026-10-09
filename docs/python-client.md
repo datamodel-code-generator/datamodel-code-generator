@@ -650,8 +650,8 @@ with one of these names, generation fails instead of renaming it; name the argum
 <!-- fmt: off -->
 
 ```text
---client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
---client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
+--client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations
+--client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with the operation's parameter_names or body_field_names in --client-operations
 ```
 
 <!-- fmt: on -->
@@ -706,7 +706,6 @@ body as keywords, never field arguments, then `pagination_options` and `options`
         x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -715,7 +714,6 @@ body as keywords, never field arguments, then `pagination_options` and `options`
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1043,7 +1041,6 @@ and `options`, sends the create request, and returns a handle; the asyncio `star
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[GetReportResponse, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -1054,7 +1051,6 @@ and `options`, sends the create request, and returns a handle; the asyncio `star
             media_type=media_type,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1388,7 +1384,6 @@ keywords, never field arguments, without the parameter the helper writes the con
         x_name: str | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
@@ -1398,7 +1393,6 @@ keywords, never field arguments, without the parameter the helper writes the con
             (tus_resumable, x_name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -1408,7 +1402,6 @@ keywords, never field arguments, without the parameter the helper writes the con
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
@@ -1418,7 +1411,6 @@ keywords, never field arguments, without the parameter the helper writes the con
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1620,7 +1612,6 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_0]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -1629,7 +1620,6 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1788,7 +1778,6 @@ one is awaited once and returns the stream:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -1800,7 +1789,6 @@ one is awaited once and returns the stream:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1937,7 +1925,6 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
         topic: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_0]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
@@ -1946,7 +1933,6 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
             (topic,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -2032,7 +2018,6 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
         since: int | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> WebSocketSession[_dcg_type_0, _dcg_type_1]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
@@ -2041,7 +2026,6 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
             (room, since),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -2179,7 +2163,7 @@ The operation must be a GET without a request body, and each JSON message's sche
 --client-protocols['subprotocols.token'].subprotocols[0] must be a subprotocol token
 --client-protocols['subprotocols.token'].subprotocols[1] must be a subprotocol token
 --client-protocols['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
---client-protocols['message.type'].compression must be a boolean
+--client-protocols['message.type'] has no key 'compression'
 --client-protocols['message.type'].send must be a message definition
 --client-protocols['message.type'].receive has no key 'extra'
 ```
@@ -2263,7 +2247,7 @@ store methods, or whose methods are coroutines for a `Client` or plain functions
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
     store = MemoryCacheStore(max_entries=1000)
-    return Client(protocols=ProtocolClientOptions(cache_stores={"users.profile": store}))
+    return Client(cache_stores={"users.profile": store}, helper_defaults={"users.profile": CacheOptions(max_ttl=60)})
 ```
 
 <!-- fmt: on -->
@@ -2306,13 +2290,17 @@ Entries hold the body after content decoding and the headers without `Content-En
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those the client's, views', or
-call's headers name or a declared parameter fills. A request carrying credentials needs
-`ProtocolSecurityContext.credential_partition`, a helper declared authenticated, and the client's own credentials or
-Auth, not a view's or a call's Auth; anything else raises `ConfigurationError`. A response whose `Vary` names a
-credential header is never stored, and one partition is one permission set: credentials the client cannot see, such as
-a client certificate, need a partition of their own.
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
@@ -2659,9 +2647,9 @@ identifier, and when a body field name names no field argument or its operation 
 --client-operations: The body field name of the application/json property 'id' of POST /pets names no field argument
 --client-operations: The body field name of the application/xml property 'tag' of POST /pets names no field argument
 --client-operations: The body field name of the application/json property 'absent' of POST /pets names no field argument
-/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with body_field_names
-/paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with body_field_names
-/paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with body_field_names
+/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with the operation's body_field_names in --client-operations
+/paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with the operation's body_field_names in --client-operations
+/paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with the operation's body_field_names in --client-operations
 --client-operations: The body field name of the text/plain property 'q' of POST /search names no field argument
 ```
 

@@ -848,6 +848,12 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         fetched(lines, "hit without a request", lambda: helper.fetch(user_id=cache.user_id(23)))
 
 
+def _unavailable() -> str:
+    """Fail as a credential callable whose secret store is down."""
+    msg = "vault down"
+    raise RuntimeError(msg)
+
+
 def _token(value: str) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of an OAuth token response."""
     return json_response(200, {"access_token": value, "token_type": "Bearer", "expires_in": 3600})
@@ -866,6 +872,8 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
     secure_user = argument(package, "getSecureUser", "path", "userId", 1)
     with client({}) as unauthenticated:
         fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=secure_user))
+    with client({"bearer": _unavailable}) as broken:
+        fetched(lines, "failing credential", lambda: broken.protocols.secure.profile.fetch(user_id=secure_user))
     exchange.respond(
         user(1, etag='"t"', **{"cache-control": "max-age=60"}),
         user(1, "other"),
@@ -1003,6 +1011,13 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     oauth = importlib.import_module(f"{package.__name__}.auth").OauthClientCredentials(
         client_id="c", client_secret="secret"
     )
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, bearer=_unavailable) as broken,
+    ):
+        await afetched(
+            lines, "async failing credential", lambda: broken.protocols.secure.profile.fetch(user_id=secure_user)
+        )
     exchange.respond(_token("t1"))
     async with (
         exchange.async_client() as native,

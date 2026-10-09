@@ -168,6 +168,7 @@
     get key=32
   hit without a request = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   no credentials ! ConfigurationError: ConfigurationError(operation_id='getSecureUser', reason='missing_credentials', field_path='auth') [operation_id='getSecureUser', field_path=('auth',)] missing_credentials
+  failing credential ! AuthError: AuthError(operation_id='getSecureUser', reason='provider_failed') [operation_id='getSecureUser', cause=RuntimeError('vault down')] provider_failed
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   token stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
@@ -306,6 +307,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   async on behalf of u = network 1:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
   async on behalf of u again = fresh_cache 1:u status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  async failing credential ! AuthError: AuthError(operation_id='getSecureUser', reason='provider_failed') [operation_id='getSecureUser', cause=RuntimeError('vault down')] provider_failed
   > POST https://auth.example.com/token
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, authorization: Basic YzpzZWNyZXQ=, content-length: 29] b'grant_type=client_credentials'
     get key=32

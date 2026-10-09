@@ -144,9 +144,9 @@ class CacheIdentity:
 def _identity(prepared: CacheRequest, authed: httpx2.Request) -> CacheIdentity:
     """Return the identity of a cache fetch's request as its Auth gives it to be sent first."""
     before, after = prepared.request, authed.headers
-    names = {name.lower() for name, _ in (*request_fields(before), *request_fields(authed))}
+    given = {name.lower() for name, _ in (*request_fields(before), *request_fields(authed))}
     names = prepared.credential_headers.union(
-        name for name in names if before.headers.get_list(name) != after.get_list(name)
+        name for name in given if before.headers.get_list(name) != after.get_list(name)
     )
     headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
     url = absolute_target(str(authed.url)).url
@@ -358,17 +358,15 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         """Return the options the client's `helper_defaults` give one helper, or None."""
         return self._helpers().defaults.get(name)
 
-    def cache_store(self, name: str) -> object:
-        """Return the store the client lends a cache helper, or else the memory store its root creates on first use.
+    def cache_store(self, name: str, create: Callable[[], object]) -> object:
+        """Return the store the client lends a cache helper, or else the one its root creates with `create` first.
 
         Views share their root's stores; another client never does.
         """
         helpers = self._helpers()
-        if (store := helpers.cache_stores.get(name) or helpers.created.get(name)) is not None:
-            return store
-        from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore  # ruff: ignore[import-outside-top-level] - Only a cache fetch needs a store.
-
-        return helpers.created.setdefault(name, AsyncMemoryCacheStore() if self._asynchronous else MemoryCacheStore())
+        if (store := helpers.cache_stores.get(name) or helpers.created.get(name)) is None:
+            store = helpers.created.setdefault(name, create())
+        return store
 
     def cache_request(
         self, operation: OperationPlan[object], arguments: tuple[object, ...], options: RequestOptions | None

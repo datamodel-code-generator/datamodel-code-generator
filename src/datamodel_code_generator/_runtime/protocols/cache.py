@@ -22,6 +22,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
+from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError
@@ -547,7 +548,7 @@ def fetch(
     raise SDKError with the reason store_failed; the request is never sent again for them.
     """
     limits = _limits(core, plan, cache_options, options)
-    store = cast("CacheStore", core.cache_store(plan.helper_id))
+    store = cast("CacheStore", core.cache_store(plan.helper_id, MemoryCacheStore))
     state = _Fetch(core, plan, arguments, limits)
     key = state.keyed(core.cache_identity(state.prepared))
     found = None
@@ -586,7 +587,7 @@ async def afetch(
 ) -> CacheResult[T]:
     """Fetch as `fetch` does, awaiting the asynchronous store and the asyncio call."""
     limits = _limits(core, plan, cache_options, options)
-    store = cast("AsyncCacheStore", core.cache_store(plan.helper_id))
+    store = cast("AsyncCacheStore", core.cache_store(plan.helper_id, AsyncMemoryCacheStore))
     state = _Fetch(core, plan, arguments, limits)
     key = state.keyed(await core.acache_identity(state.prepared))
     found = None
