@@ -10645,3 +10645,114 @@ def test_main_openapi_api_scope_parameter_type_aliases_modules(
         runtime_validation_model_name="Item",
         runtime_validation_data={"code": "ab", "alias": "abcd"},
     )
+
+
+API_SCOPE_WITHOUT_MODELS_PATH = OPEN_API_DATA_PATH / "api_scope_without_models.yaml"
+EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH = EXPECTED_OPENAPI_PATH / "api_scope_without_models"
+
+
+@pytest.mark.parametrize(
+    ("output_name", "existing_file", "extra_args", "expected_exit", "expected_stdout"),
+    [
+        ("models.py", None, [], Exit.OK, "empty.txt"),
+        ("models.py", None, ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        ("models", None, ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        (None, None, ["--output-format", "json"], Exit.OK, "json_stdout.txt"),
+        ("models.py", "models.py", ["--output-format", "json"], Exit.OK, "json_output.txt"),
+        ("models.py", None, ["--check"], Exit.OK, "empty.txt"),
+        ("models.py", None, ["--check", "--output-format", "json"], Exit.OK, "check_success_json.txt"),
+        ("models", None, ["--check"], Exit.OK, "empty.txt"),
+        ("models.py", "models.py", ["--check"], Exit.DIFF, "check_extra_text.txt"),
+        ("models.py", "models.py", ["--check", "--output-format", "json"], Exit.DIFF, "check_extra_json.txt"),
+        ("models", "models", ["--check"], Exit.DIFF, "check_extra_text.txt"),
+        ("models", "models/__init__.py", ["--check"], Exit.DIFF, "check_extra_directory_text.txt"),
+        ("models.py", None, ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)], Exit.OK, "empty.txt"),
+        (
+            "models.py",
+            None,
+            ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH), "--output-format", "json"],
+            Exit.OK,
+            "input_diff_success_json.txt",
+        ),
+        ("models", None, ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)], Exit.OK, "empty.txt"),
+        (
+            "models.py",
+            None,
+            ["--diff-against", str(OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases.yaml")],
+            Exit.DIFF,
+            "input_diff_removed_text.txt",
+        ),
+    ],
+)
+def test_main_openapi_api_scope_without_models(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    output_name: str | None,
+    existing_file: str | None,
+    extra_args: list[str],
+    expected_exit: Exit,
+    expected_stdout: str,
+) -> None:
+    """Report an API scope run without models alike for text and JSON, files and directories."""
+    output_path = tmp_path / (output_name or "models.py")
+    checked_path = tmp_path / (existing_file or output_path.name)
+    if existing_file:
+        checked_path.parent.mkdir(exist_ok=True)
+        checked_path.write_text("outdated\n", encoding="utf-8")
+    run_main_with_args(
+        [
+            "--input",
+            str(API_SCOPE_WITHOUT_MODELS_PATH),
+            "--input-file-type",
+            "openapi",
+            "--openapi-scopes",
+            "api",
+            *(["--output", str(output_path)] if output_name else []),
+            *extra_args,
+        ],
+        expected_exit=expected_exit,
+    )
+    captured = capsys.readouterr()
+    assert_output(
+        captured.out.replace(output_path.as_posix(), "<OUTPUT>"),
+        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / expected_stdout,
+    )
+    assert_output(captured.err, EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / "empty.txt")
+    assert_output(
+        checked_path.read_text(encoding="utf-8") if checked_path.is_file() else "",
+        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / ("existing_output.txt" if existing_file else "empty.txt"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("existing_output", "extra_args", "expected_exit", "expected_stdout"),
+    [
+        (False, ["--output-format", "json"], Exit.OK, "jobs_json_output.txt"),
+        (False, ["--check"], Exit.OK, "empty.txt"),
+        (False, ["--check", "--output-format", "json"], Exit.OK, "jobs_check_success_json.txt"),
+        (True, ["--check"], Exit.DIFF, "jobs_check_extra_text.txt"),
+        (True, ["--check", "--output-format", "json"], Exit.DIFF, "jobs_check_extra_json.txt"),
+    ],
+)
+def test_main_openapi_api_scope_without_models_jobs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    *,
+    existing_output: bool,
+    extra_args: list[str],
+    expected_exit: Exit,
+    expected_stdout: str,
+) -> None:
+    """Report batch jobs without models like the single runs for their file and directory outputs."""
+    shutil.copyfile(API_SCOPE_WITHOUT_MODELS_PATH, tmp_path / API_SCOPE_WITHOUT_MODELS_PATH.name)
+    shutil.copyfile(DATA_PATH / "config" / "pyproject_api_scope_without_models_jobs.toml", tmp_path / "pyproject.toml")
+    if existing_output:
+        (tmp_path / "models.py").write_text("outdated\n", encoding="utf-8")
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", *extra_args], expected_exit=expected_exit)
+    captured = capsys.readouterr()
+    assert_output(
+        captured.out.replace(tmp_path.resolve().as_posix(), "<ROOT>"),
+        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / expected_stdout,
+    )
+    assert_output(captured.err, EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / "empty.txt")
