@@ -1,81 +1,61 @@
 # session-missing-reuse
 render pydantic_v2.BaseModel plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.BaseModel reuse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.BaseModel collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.BaseModel reuse-collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.dataclass reuse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.dataclass collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render pydantic_v2.dataclass reuse-collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render dataclasses.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render dataclasses.dataclass reuse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render dataclasses.dataclass collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render dataclasses.dataclass reuse-collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render typing.TypedDict reuse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render typing.TypedDict collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render typing.TypedDict reuse-collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render msgspec.Struct plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render msgspec.Struct reuse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render msgspec.Struct collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
 render msgspec.Struct reuse-collapse
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reuse.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Bad/properties/value/$ref: A schema reference pointer does not exist

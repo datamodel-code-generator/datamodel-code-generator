@@ -1,6 +1,3 @@
 # protocols-unsupported
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_NAME_COLLISION target protocols['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
-  E_NAME_COLLISION target protocols['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
-  E_CONFIG_VALUE config protocols['labels.all'].continuation.header /paths/~1labels/get: The links of 'labels.all' come from the header 'Link', which GET /labels does not declare
+  Error: --client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names; --client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names; --client-protocols['labels.all'].continuation.header: The links of 'labels.all' come from the header 'Link', which GET /labels does not declare

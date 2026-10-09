@@ -12,8 +12,6 @@ from urllib.parse import ParseResult
 
 from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
 from datamodel_code_generator.api_types import (
-    APIGenerationError,
-    Diagnostic,
     DocumentationAnnotationWarning,
     GeneratedArtifact,
     GeneratedProject,
@@ -42,8 +40,6 @@ def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, con
 
 
 __all__ = [
-    "APIGenerationError",
-    "Diagnostic",
     "DocumentationAnnotationWarning",
     "FastAPIConfig",
     "GeneratedArtifact",

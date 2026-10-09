@@ -1,17 +1,3 @@
 # protocols-pagination-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_CONFLICT config protocols['cursor.empty'].continuation.end[1]: protocols['cursor.empty'].continuation.end[1] ends at the empty string, which empty_string decides alone
-  E_CONFIG_VALUE config protocols['cursor.choice'].continuation.empty_string: protocols['cursor.choice'].continuation.empty_string must be 'value' or 'end'
-  E_CONFIG_CONFLICT config protocols['count.both'].continuation: protocols['count.both'].continuation needs has_more or total, not both
-  E_CONFIG_VALUE config protocols['count.neither'].continuation: protocols['count.neither'].continuation needs has_more or total
-  E_CONFIG_VALUE config protocols['first.negative'].continuation.first: protocols['first.negative'].continuation.first must be an integer of at least 0
-  E_CONFIG_VALUE config protocols['first.boolean'].continuation.first: protocols['first.boolean'].continuation.first must be an integer of at least 0
-  E_CONFIG_VALUE config protocols['step.both'].continuation.step: protocols['step.both'].continuation.step needs exactly one of 'literal' and 'page_items_count'
-  E_CONFIG_VALUE config protocols['step.none'].continuation.step: protocols['step.none'].continuation.step needs exactly one of 'literal' and 'page_items_count'
-  E_CONFIG_VALUE config protocols['step.zero'].continuation.step.literal: protocols['step.zero'].continuation.step.literal must be a positive integer
-  E_CONFIG_VALUE config protocols['step.false'].continuation.step.page_items_count: protocols['step.false'].continuation.step.page_items_count must be true
-  E_CONFIG_VALUE config protocols['continuation.kind'].continuation.kind: protocols['continuation.kind'].continuation.kind must be 'cursor', 'offset', 'page', 'next_url' or 'link'
-  E_CONFIG_VALUE config protocols['continuation.untagged'].continuation.kind: protocols['continuation.untagged'].continuation needs 'kind'
-  E_CONFIG_VALUE config protocols['continuation.type'].continuation: protocols['continuation.type'].continuation must be a continuation
-  E_CONFIG_VALUE config protocols['next.repeat'].continuation.repeat_request_body: protocols['next.repeat'].continuation.repeat_request_body must be a boolean
+  Error: --client-protocols['cursor.empty'].continuation.end[1] ends at the empty string, which empty_string decides alone; --client-protocols['cursor.choice'].continuation.empty_string must be 'value' or 'end'; --client-protocols['count.both'].continuation needs has_more or total, not both; --client-protocols['count.neither'].continuation needs has_more or total; --client-protocols['first.negative'].continuation.first must be an integer of at least 0; --client-protocols['first.boolean'].continuation.first must be an integer of at least 0; --client-protocols['step.both'].continuation.step needs exactly one of 'literal' and 'page_items_count'; --client-protocols['step.none'].continuation.step needs exactly one of 'literal' and 'page_items_count'; --client-protocols['step.zero'].continuation.step.literal must be a positive integer; --client-protocols['step.false'].continuation.step.page_items_count must be true; --client-protocols['continuation.kind'].continuation.kind must be 'cursor', 'offset', 'page', 'next_url' or 'link'; --client-protocols['continuation.untagged'].continuation needs 'kind'; --client-protocols['continuation.type'].continuation must be a continuation; --client-protocols['next.repeat'].continuation.repeat_request_body must be a boolean
