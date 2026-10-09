@@ -2767,17 +2767,15 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
         if not config.watch or watch_dependencies is None:
             return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
-        _, remote_lock_intent = _watch_remote_lock_setup(
-            config, pyproject_path, watch_dependencies, _bound_remote_lock_plan
-        )
+        # A batch job never watches (watch is an outer setting), so this run owns its lock plan and its intent.
+        _, remote_lock_intent = _watch_remote_lock_setup(config, pyproject_path, watch_dependencies, None)
         with watch_dependencies.generation() as generation:
             result = _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
             generation.failed = result is not Exit.OK
-        if remote_lock_intent is not None:
-            if result is Exit.OK:
-                watch_dependencies._commit_remote_lock_intent(remote_lock_intent)  # noqa: SLF001
-            else:
-                watch_dependencies._merge_remote_lock_intent(remote_lock_intent)  # noqa: SLF001
+        if result is Exit.OK:
+            watch_dependencies._commit_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
+        else:
+            watch_dependencies._merge_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
         if result is not Exit.OK or not start_watch:
             return result
         return _watch_and_regenerate(args, config, watch_dependencies)
