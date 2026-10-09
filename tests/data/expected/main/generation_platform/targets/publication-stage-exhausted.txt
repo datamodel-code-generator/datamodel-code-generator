@@ -1,4 +1,0 @@
-# publication-check
-generate
-  FileExistsError: could not reserve private staged file under <root>/.datamodel-codegen-reserved
-tree

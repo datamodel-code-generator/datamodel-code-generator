@@ -1,0 +1,23 @@
+[
+  "--input",
+  "api.yaml",
+  "--input-file-type",
+  "openapi",
+  "--output",
+  "app/server/models.py",
+  "--output-model-type",
+  "pydantic_v2.BaseModel",
+  "--preset",
+  "standard-py312-20260909",
+  "--openapi-scopes",
+  "schemas",
+  "api",
+  "--generate-server",
+  "fastapi",
+  "--server-output",
+  "app/server",
+  "--server-package",
+  "app.server",
+  "--server-model-package",
+  "app.server.models"
+]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import shutil
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -99,6 +100,33 @@ def test_client_cli_generate(
         expected_exit=Exit.DIFF,
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
+        assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize("job", [[], ["--job", "client"]], ids=["options", "job"])
+def test_client_cli_nested_models(
+    job: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep the models inside the client package, from options or a job: one tree to write and to check."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *(["pyproject-nested-jobs.toml"] if job else []))
+    arguments = job or [
+        *("--input", "options.yaml", "--input-file-type", "openapi", "--output", "client/models.py"),
+        *OPTIONS,
+        *CLIENT,
+        *("--client-model-package", "client.models"),
+    ]
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
+    assert_file_content(tmp_path / "client" / "models.py", "cli/options/models.py")
+    run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "client" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
+    (tmp_path / "client" / "models.py").unlink()
+    run_main_with_args(
+        [*arguments, "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check-nested.txt",
         assert_no_stderr=True,
     )
 
@@ -573,6 +601,31 @@ def test_client_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monk
         expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
         assert_no_stderr=True,
     )
+
+
+def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Report a client module beside a package of its name, on the run that writes it and on an unchanged one.
+
+    --check, which writes nothing, reports none.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    (package := tmp_path / SYNC.removesuffix(".py")).mkdir(parents=True)
+    (package / "__init__.py").touch()
+    lines = []
+    for run, options, expected_exit in (
+        ("first", [], Exit.OK),
+        ("unchanged", [], Exit.OK),
+        ("check", ["--check"], Exit.DIFF),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            run_main_with_args(["--input", "options.yaml", *DOC_OPTIONS, *options], expected_exit=expected_exit)
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
 
 
 def test_client_cli_shared_models_jobs(

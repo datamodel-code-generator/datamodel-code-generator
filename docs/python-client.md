@@ -48,6 +48,12 @@ Generation ends by printing to stderr the `uv add` command that adds the runtime
 project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
 emits the model generation and check payloads, as with `--generate-server`.
 
+As for models, every generation overwrites every generated file of the package, also one you edited, and never
+deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
+them as extra files; keep your own code outside the package, because `--check` treats every `.py` file under
+`--client-output` as generated. The models can live inside the package, such as `--output client/models.py` with
+`--client-model-package client.models`, as for the [server package](fastapi-server.md#the-generated-package).
+
 ## Client settings
 
 Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pyproject.toml`, and a field of
@@ -144,9 +150,8 @@ generate_client(
 `generate_client` publishes every change together and returns `None`, like model generation; `render_client` returns
 the `GeneratedProject` without writing it. The records `ClientGenerationConfig` takes, such as `ClientOperationConfig`,
 `ResourceName`, and `RuntimeOperationMetadata`, and the helper records of a `ProtocolConfiguration`, are imported
-from `datamodel_code_generator.client`. So are the warnings of the
-[server target](fastapi-server.md#errors-and-warnings), such as the `TargetEditWarning` for an owned file edited
-since the last generation.
+from `datamodel_code_generator.client`. So is `DocumentationAnnotationWarning`, the warning of the
+[server target](fastapi-server.md#errors-and-warnings).
 
 ## Requirements
 
@@ -3291,7 +3296,7 @@ one way, and nothing is buffered or spooled to make a one-shot input replayable.
 | Input | Calls | How it is read | Framing | Sent again |
 | --- | --- | --- | --- | --- |
 | `bytes` | sync, async | Sent as given. | `Content-Length` | Yes |
-| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
+| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there when it can seek, else until it returns no bytes. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
 | `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length`; chunked when its file cannot seek, such as a FIFO | Yes; no when its file cannot seek |
 | Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 | Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
@@ -3303,9 +3308,10 @@ before anything is sent; the underlying `OSError` or `ValueError` is the `cause`
 binary mode. An async file object is not inspected before it is read: one opened in text mode or already closed fails
 while the request is being sent, as `APIConnectionError` with that failure as `cause`.
 
-A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. The call sends
-the bytes between the position and the end it measured at call entry, also when the file grows afterwards. A path
-the call opened is closed when the call ends; if that close fails, the failure is attached to an error already
+A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. From a seekable
+file the call sends the bytes between the position and the end it measured at call entry, also when the file grows
+afterward; an async file or a file that cannot seek is read until it returns no bytes. A path the call opened is
+closed when the call ends; if that close fails, the failure is attached to an error already
 propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
 
 Sync calls do all file I/O on the calling thread. In async calls, where the file I/O runs depends on who opened the
@@ -3357,9 +3363,10 @@ injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itse
 303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
 the native client is its limit, past which `TooManyRedirects` raises `APIConnectionError`. A bytes body, a seekable
 file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
-`Authorization` and the `Cookie` header on a redirect to another origin, and keeps every other header. Every hop
+`Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
+same-host `http` to `https` upgrade, and keeps every other header. Every hop
 consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
-sent again.
+sent again, as is a failure an injected client's response event hook raises.
 
 A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
 never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
@@ -3367,6 +3374,8 @@ carry it, and every signed request. HTTPX2 would forward such a value to another
 response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
 anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
 request it sends, or read the `Location` and send a call of your own.
+The request event hooks of an injected client and an `httpx2.Auth` of your own are caller code that runs after the
+follow decision, so they can still add headers, such as an `X-API-Key`, to a request sent to another origin.
 
 ```python
 import httpx2
