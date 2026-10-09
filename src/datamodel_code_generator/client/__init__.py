@@ -22,8 +22,6 @@ from datamodel_code_generator._client.config import (
     RuntimeOperationMetadata,
 )
 from datamodel_code_generator.api_types import (
-    APIGenerationError,
-    Diagnostic,
     DocumentationAnnotationWarning,
     GeneratedArtifact,
     GeneratedProject,
@@ -117,11 +115,9 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [  # noqa: PLE0604
-    "APIGenerationError",
     "BodyFieldName",
     "ClientGenerationConfig",
     "ClientOperationConfig",
-    "Diagnostic",
     "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
