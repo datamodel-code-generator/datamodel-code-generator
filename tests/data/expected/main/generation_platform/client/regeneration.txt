@@ -1,6 +1,5 @@
 # generate v1
   file api.yaml
-  file pets/.dcg-target-manifest.json
   file pets/__init__.py
   file pets/_async_client.py
   file pets/_client.py
@@ -34,12 +33,7 @@
   runtime files 42
 # add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py
 # generate v2
-  APIGenerationError
-  E_OUTPUT_CONFLICT resources/orders/__init__.py: An unmanaged file occupies a path the target owns
-  pets/_client.py edited True
-# move pets/resources/orders/__init__.py away and generate v2
   file api.yaml
-  file pets/.dcg-target-manifest.json
   file pets/__init__.py
   file pets/_async_client.py
   file pets/_client.py
@@ -58,6 +52,9 @@
   file pets/protocols/__init__.py
   file pets/py.typed
   file pets/resources/__init__.py
+  file pets/resources/archive/__init__.py
+  file pets/resources/archive/_async.py
+  file pets/resources/archive/_sync.py
   file pets/resources/orders/__init__.py
   file pets/resources/orders/_async.py
   file pets/resources/orders/_sync.py
@@ -66,12 +63,15 @@
   file pets/resources/pets/_sync.py
   file pets/responses.py
   file pets/types/__init__.py
+  file pets/types/archive/__init__.py
+  file pets/types/archive/_operations.py
   file pets/types/orders/__init__.py
   file pets/types/orders/_operations.py
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
   runtime files 42
-  TargetEditWarning: <root>/pets/_client.py: The owned file changed since the last generation, and this generation discards the change
   pets/extensions.py unchanged True
-  pets/_client.py edited False
+  pets/_client.py still edited False
+  pets/resources/orders/__init__.py still foreign False
+  generated files written like text files True

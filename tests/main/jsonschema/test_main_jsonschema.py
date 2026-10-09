@@ -285,6 +285,7 @@ def _keep_model_order_field_references_expected_file(
 
 
 def _install_test_my_app(base_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make a `my_app` package importable for one test; the module cache gets its earlier entry back afterwards."""
     package_dir = base_dir / "my_app"
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text(
@@ -303,6 +304,8 @@ class B(BaseModel):
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(base_dir))
+    monkeypatch.setitem(sys.modules, "my_app", None)
+    monkeypatch.delitem(sys.modules, "my_app")
 
 
 def _run_jsonschema_dict(
@@ -2293,7 +2296,9 @@ def test_main_invalid_enum_name_snake_case_field(output_file: Path) -> None:
     option_description="""Use a Pydantic v2 alias generator in model_config.
 
 The `--alias-generator` option emits a per-model ConfigDict alias generator for
-Pydantic v2 BaseModel output and omits matching per-field aliases.""",
+Pydantic v2 BaseModel output and omits matching per-field aliases. With
+`--target-pydantic-version 2` every field alias is written out, so aliases do not
+depend on the generator of the installed Pydantic.""",
     input_schema="jsonschema/alias_generator.json",
     cli_args=["--snake-case-field", "--alias-generator", "to_camel", "--output-model-type", "pydantic_v2.BaseModel"],
     golden_output="jsonschema/alias_generator_pydantic_v2.py",
@@ -2335,8 +2340,80 @@ def test_main_alias_generator_keeps_camel_case_names(output_file: Path) -> None:
     )
 
 
-def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Reject --alias-generator for non-Pydantic v2 output models."""
+@pytest.mark.parametrize("target_pydantic_version", TARGET_PYDANTIC_VERSION_CASES)
+@pytest.mark.parametrize("alias_generator", ["to_camel", "to_pascal", "to_snake"])
+def test_main_alias_generator_target_pydantic_version(
+    output_file: Path, alias_generator: str, target_pydantic_version: str | None
+) -> None:
+    """Pin every model field alias for --target-pydantic-version 2, leaving RootModel roots without one."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_target_pydantic.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"alias_generator_target_pydantic/{alias_generator}_{target_pydantic_version or 'unset'}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            alias_generator,
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    payload = (JSON_DATA_PATH / "alias_generator_target_pydantic.json").read_text()
+    with _generated_model(output_file, "alias_generator_target_pydantic", "Account") as model:
+        assert_output(
+            model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_target_pydantic" / "round_trip.txt",
+        )
+
+
+def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Path) -> None:
+    """Keep an enum-only module unchanged for --target-pydantic-version 2: enum members take no alias or Field."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "oneof_const_enum.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="oneof_const_enum.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
+
+
+def test_main_alias_generator_template_data_dataclass_target_pydantic_version(output_file: Path) -> None:
+    """Leave dataclass fields unpinned for --target-pydantic-version 2 when template data names a generator."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_template_data_dataclass_target_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--snake-case-field",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])
+def test_main_alias_generator_requires_pydantic_v2(
+    output_file: Path, capsys: pytest.CaptureFixture[str], output_model_type: str
+) -> None:
+    """Reject --alias-generator for output models other than Pydantic v2 BaseModel."""
     run_main_with_args(
         [
             "--input",
@@ -2346,7 +2423,7 @@ def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: py
             "--input-file-type",
             "jsonschema",
             "--output-model-type",
-            "dataclasses.dataclass",
+            output_model_type,
             "--alias-generator",
             "to_camel",
         ],
@@ -2358,14 +2435,20 @@ def test_main_alias_generator_requires_pydantic_v2(output_file: Path, capsys: py
     )
 
 
-def test_main_alias_generator_no_alias(output_file: Path) -> None:
-    """Keep --no-alias behavior when --alias-generator is enabled."""
+@pytest.mark.parametrize(
+    ("target_pydantic_version", "expected_file"),
+    [(None, "alias_generator_no_alias.py"), ("2", "alias_generator_no_alias_target_2.py")],
+)
+def test_main_alias_generator_no_alias(
+    output_file: Path, target_pydantic_version: str | None, expected_file: str
+) -> None:
+    """Keep --no-alias behavior when --alias-generator is enabled, pinning the generated aliases for target 2."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="alias_generator_no_alias.py",
+        expected_file=expected_file,
         extra_args=[
             "--snake-case-field",
             "--alias-generator",
@@ -2373,6 +2456,7 @@ def test_main_alias_generator_no_alias(output_file: Path) -> None:
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--no-alias",
+            *target_pydantic_args(target_pydantic_version),
         ],
     )
 
@@ -13884,6 +13968,28 @@ def test_main_jsonschema_use_serialization_alias_alias_generator(
             model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
             EXPECTED_JSON_SCHEMA_PATH / "alias_generator_serialization_alias" / "round_trip.txt",
         )
+
+
+def test_main_jsonschema_use_serialization_alias_alias_generator_target_pydantic_version(output_file: Path) -> None:
+    """Pin the generated alias and keep the schema name on output for --target-pydantic-version 2."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_serialization_alias/to_camel_snake_case_field_target_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--use-serialization-alias",
+            "--snake-case-field",
+            "--target-pydantic-version",
+            "2",
+        ],
+        skip_code_validation=not installed_pydantic_runs_target("2"),
+    )
 
 
 def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_dataclass(output_file: Path) -> None:

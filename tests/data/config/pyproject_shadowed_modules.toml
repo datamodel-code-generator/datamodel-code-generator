@@ -1,0 +1,11 @@
+[tool.datamodel-codegen]
+disable-timestamp = true
+input-file-type = "openapi"
+
+[tool.datamodel-codegen.jobs.modules]
+input = "module.json"
+output = "model"
+
+[tool.datamodel-codegen.jobs.single]
+input = "single.json"
+output = "model.py"
