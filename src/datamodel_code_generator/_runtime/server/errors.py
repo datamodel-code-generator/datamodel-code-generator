@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from fastapi.exceptions import HTTPException, ResponseValidationError
+from fastapi.exceptions import HTTPException
 
 from ..model_codecs.errors import CodecResourceLimitError, WireValidationError
 from ..model_codecs.wire import pointer_tokens
@@ -74,8 +74,3 @@ def model_records(error: ValidationError, location: tuple[str, ...]) -> list[Rec
         {**item, "loc": (*location, *item["loc"])}
         for item in error.errors(include_url=False, include_context=False, include_input=False)
     ]
-
-
-def response_failure(message: str) -> ResponseValidationError:
-    """Return the error for a handler result that no declared response accepts."""
-    return ResponseValidationError([{"type": "value_error", "loc": ("response",), "msg": message}])

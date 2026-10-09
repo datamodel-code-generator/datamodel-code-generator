@@ -9,13 +9,13 @@
   file grown between attempts = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
     grown file size=20 reads=[14, 14]
-  file closed between attempts ! DecodeError: DecodeError(operation_id='postIdempotent', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError('I/O operation on closed file.')] body_not_replayable
+  file closed between attempts ! DecodeError: DecodeError(operation_id='postIdempotent', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), body_bytes=b'', truncated=False, cause=ValueError('I/O operation on closed file.')] body_not_replayable
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
   native path replay = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/hop-0', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  nonseekable file ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+  nonseekable file ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  native iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+  native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
   303 drops consumed body = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('GET', b'/hop-0', b'')] pending=0
@@ -25,8 +25,8 @@
     wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
   async path = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  async native iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+  async native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  async native async iterator ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
+  async native async iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
     async caller file open=True offset=14 reads=[7, 7]

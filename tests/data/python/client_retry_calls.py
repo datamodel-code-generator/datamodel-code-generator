@@ -125,15 +125,14 @@ def _fault(body: _Broken, status: int = 200) -> Callable[[httpx2.Request], httpx
 def _error(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
-        getattr(error, "retry_stop_reason", None),
+        getattr(error, "reason", None),
         getattr(error, "attempt_count", None),
-        getattr(error, "phase", None),
-        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
     )
 
 
 def _secondary(error: BaseException) -> list[str]:
-    return [type(item).__name__ for item in getattr(error, "secondary_errors", ())]
+    return list(getattr(error, "__notes__", ()))
 
 
 def _capture(call: Callable[[], object]) -> tuple[object, ...]:
@@ -288,7 +287,7 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
     bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
     for stage in ("call_start", "retry_scheduled"):
         failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
+            reason="phase_timeout"
         )
         file = _RewindFile(failure)
         exchange, events = Exchange([]), _Events()
@@ -427,7 +426,7 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
     bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
     for stage in ("call_start", "retry_scheduled"):
         failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
+            reason="phase_timeout"
         )
         file = _RewindFile(failure)
         exchange, events = Exchange([]), _Events()

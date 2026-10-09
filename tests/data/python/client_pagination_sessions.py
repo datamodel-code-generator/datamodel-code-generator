@@ -42,11 +42,6 @@ def _issued(value: str) -> bytes:
     }).encode()
 
 
-def _session(error: BaseException | None) -> str:
-    """Return whether a failure names a helper session, without its identifier."""
-    return f"session={getattr(error, 'parent_session_id', None) is not None}"
-
-
 def _failure(call: Any) -> BaseException | None:
     try:
         call()
@@ -186,7 +181,7 @@ def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     ):
         pager = helper.iterate(session_options=session)
         error = _failure(lambda pager=pager: next(pager))
-        lines.append(f"  {label} ! {describe(error)} {_session(error)} {progress(pager)}")
+        lines.append(f"  {label} ! {describe(error)} {progress(pager)}")
     pager = helper.iterate(session_options=options.SessionOptions(total_timeout=1.0))
     exchange.respond(users("1", cursor="a"))
     record(lines, "first item before the deadline", lambda pager=pager: next(pager).id)
@@ -368,9 +363,7 @@ def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         error = _failure(lambda: next(api.protocols.loose.all.iterate()))
         failed = events.sessions()
-        lines.append(
-            f"  failed page ! {describe(error)} same session={failed == {getattr(error, 'parent_session_id', None)}}"
-        )
+        lines.append(f"  failed page ! {describe(error)} one session={len(failed) == 1}")
     failing = _Events(call_end=_fail)
     with (
         exchange.client() as native,
@@ -379,10 +372,7 @@ def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         exchange.respond(users("1", cursor="a"))
         pager = api.protocols.users.all.iterate()
         error = _failure(lambda: next(pager))
-        completed = getattr(error, "completed_result", None)
-        lines.append(
-            f"  call end hook failure ! {describe(error)} completed={len(completed.data.data)} {_session(error)}"
-        )
+        lines.append(f"  call end hook failure ! {describe(error)}")
         record(lines, "after the hook failure", lambda: next(pager))
 
 

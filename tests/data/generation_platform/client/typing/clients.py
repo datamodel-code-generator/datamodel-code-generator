@@ -32,9 +32,7 @@ from pets.errors import (
     AuthReason,
     ConfigurationError,
     DecodeError,
-    DeliveryState,
     NotFoundError,
-    RetryStopReason,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, CallEvent, Limiter, LimiterContext, Permit
@@ -233,7 +231,6 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     try:
         client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
     except SDKError as error:
-        assert_type(error.completed_result, Response[object] | None)
         assert_type(error.reason, str | None)
 
 
@@ -344,26 +341,25 @@ def error_measurements(error: SDKError, event: CallEvent, info: ResponseInfo) ->
     assert_type(error.attempt_count, int)
     assert_type(error.elapsed, float)
     assert_type(error.request_id, str | None)
-    assert_type(error.delivery_state, DeliveryState)
+    assert_type(error.operation_id, str | None)
     assert_type(event.attempt_count, int)
     assert_type(info.attempt_count, int)
     assert_type(info.elapsed, float)
-    phase = APITimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
-    assert_type(phase.effective_timeout, float | None)
-    deadline = APITimeoutError(reason="deadline_exceeded", deadline_at=0, delivery_state=DeliveryState.NOT_SENT)
-    assert_type(deadline.deadline_at, float | None)
+    deadline = APITimeoutError(reason="deadline_exceeded")
     connection: APIConnectionError = deadline
-    assert_type(connection.retry_stop_reason, RetryStopReason | None)
+    assert_type(connection.reason, str | None)
+    assert_type(connection.cause, BaseException | None)
     auth = AuthError(reason="oauth_error", status_code=400, oauth_error="invalid_grant")
     assert_type(auth.reason, AuthReason)
     assert_type(auth.status_code, int | None)
     decoded = DecodeError(reason="unencodable", direction="request", location=("body", 0))
     assert_type(decoded.location, tuple[str | int, ...])
     redirect = ConfigurationError(field_path=("redirects",), reason="redirect_refused", info=info)
-    assert_type(redirect.delivery_state, DeliveryState)
+    assert_type(redirect.reason, str)
     assert_type(redirect.info, ResponseInfo | None)
     status = NotFoundError(info=info, body=b"", body_bytes=b"")
-    assert_type(status.retry_stop_reason, RetryStopReason | None)
+    assert_type(status.status_code, int)
+    assert_type(status.body, object)
 
 
 def retry_options(client: Client) -> None:

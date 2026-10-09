@@ -47,11 +47,6 @@ _CORE: Final = (
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
     "model_codecs/wire.py",
-    "protocols/errors.py",
-    "protocols/records.py",
-    "protocols/references.py",
-    "protocols/resume.py",
-    "protocols/sources.py",
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
@@ -62,15 +57,17 @@ _PROTOCOLS: Final = (
     "protocols/origins.py",
 )
 _OAUTH: Final = ("client/auth.py", "client/oauth.py")
-_PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_BASE: Final = ("protocols/errors.py", "protocols/records.py", "protocols/references.py")
+_PAGES: Final = (*_BASE, "protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_RESUMED: Final = (*_PAGES, "protocols/resume.py")
 _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": _PAGES,
-    "polling": (*_PAGES, "protocols/polling.py"),
-    "streams": (*_PAGES, "protocols/streams.py"),
-    "uploads": (*_PAGES, "protocols/uploads.py"),
-    "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
-    "websocket": ("protocols/websocket.py",),
-    "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
+    "polling": (*_RESUMED, "protocols/polling.py"),
+    "streams": (*_RESUMED, "protocols/streams.py"),
+    "uploads": (*_RESUMED, "protocols/sources.py", "protocols/uploads.py"),
+    "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py"),
+    "websocket": (*_BASE, "protocols/websocket.py"),
+    "webhooks": (*_BASE, "protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }
 _VERIFIED: Final = ("protocols/signatures.py", "protocols/verification.py", "protocols/webhook_keys.py")

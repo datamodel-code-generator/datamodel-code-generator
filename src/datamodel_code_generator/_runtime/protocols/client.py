@@ -26,12 +26,8 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.errors import (
-    APIConnectionError,
-    DeliveryState,
-    too_large,
-)
-from ..client.logical import LogicalCallContext
+from ..client.errors import APIConnectionError, too_large
+from ..client.logical import Delivery, LogicalCallContext
 from ..client.native import request_fields
 from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOptions, Settings
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
@@ -57,7 +53,6 @@ if TYPE_CHECKING:
 
 _NOT_MODIFIED = 304
 _SWITCHING = 101
-_UNAUTHORIZED = 401
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -233,18 +228,9 @@ class _SocketCall(_SessionCall):
         replayable: bool,
     ) -> RetryDelay | None:
         """Retry only a handshake proven unsent; a received refusal or an uncertain open stays terminal."""
-        if info is None and error is not None and error.delivery_state is DeliveryState.NOT_SENT:
+        if info is None and error is not None and self.furthest() is Delivery.NOT_SENT:
             return super().retry(info, error, replayable=replayable)
-        self.check("send")
-        self.stop_reason = (
-            "callback_failure"
-            if self.retry_blocked
-            else "auth_unrefreshable"
-            if info is not None and info.status_code == _UNAUTHORIZED
-            else "status_not_retryable"
-            if info is not None
-            else "transport_not_retryable"
-        )
+        self.check()
         return None
 
 
@@ -284,9 +270,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
     @staticmethod
     def reconnects_after(error: APIConnectionError) -> bool:
         """Allow reconnection after native read failures."""
-        return error.phase == "read" and isinstance(
-            error.cause, (httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError)
-        )
+        return isinstance(error.cause, (httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError))
 
     def waiting(
         self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
@@ -493,7 +477,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         options: RequestOptions | None,
         session: OperationSession,
         read_request: Callable[[str, HeadersView], None] | None = None,
-        failed: Callable[[BaseException, DeliveryState], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -518,10 +502,10 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             return Response(data=data, info=info), result
 
         try:
-            completed, result = self._run(call, body, prepare, receive)
+            _, result = self._run(call, body, prepare, receive)
 
             if events is not None:
-                events.finish(completed)
+                events.finish()
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
@@ -566,10 +550,10 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             )
 
         try:
-            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
+            _, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
 
             if events is not None:
-                events.finish(completed)
+                events.finish()
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
@@ -630,7 +614,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                 refused(result)
             accept(result.info)
             if events is not None:
-                events.finish(UNSET, handed_off=True)
+                events.finish(handed_off=True)
 
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
@@ -665,7 +649,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         options: RequestOptions | None,
         session: OperationSession,
         read_request: Callable[[str, HeadersView], None] | None = None,
-        failed: Callable[[BaseException, DeliveryState], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -690,10 +674,10 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             return Response(data=data, info=info), result
 
         try:
-            completed, result = await self._run(call, body, prepare, receive)
+            _, result = await self._run(call, body, prepare, receive)
 
             if events is not None:
-                await events.afinish(completed)
+                await events.afinish()
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
@@ -738,10 +722,10 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             )
 
         try:
-            completed, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
+            _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
 
             if events is not None:
-                await events.afinish(completed)
+                await events.afinish()
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
@@ -797,7 +781,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                 await arefused(result)
             accept(result.info)
             if events is not None:
-                await events.afinish(UNSET, handed_off=True)
+                await events.afinish(handed_off=True)
 
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]

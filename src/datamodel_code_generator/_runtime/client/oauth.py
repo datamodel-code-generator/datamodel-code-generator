@@ -20,8 +20,7 @@ import httpx2
 from typing_extensions import TypeIs
 
 from .auth import SchemeAuth, TokenSource
-from .errors import OAUTH_ERROR_CODES, AuthError, ConfigurationError, DeliveryState, OAuthErrorCode, SDKError
-from .native import delivery
+from .errors import OAUTH_ERROR_CODES, AuthError, ConfigurationError, OAuthErrorCode, SDKError
 from .security import SecurityScheme
 from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
@@ -116,7 +115,7 @@ def _failed(error: Exception) -> Exception:
     """Return the error of an application callable that failed: its own SDK error, or a provider failure."""
     if isinstance(error, SDKError):
         return error
-    return AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error)
+    return AuthError(reason="provider_failed", cause=error)
 
 
 def _secret(value: Secret | None) -> str | None:
@@ -143,7 +142,7 @@ def _expiry(fields: dict[str, object], received: float) -> float | None:
         return None
     seconds = fields["expires_in"]
     if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not 0 < seconds < float("inf"):
-        raise AuthError(reason="invalid_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise AuthError(reason="invalid_expiry")
     return received + seconds
 
 
@@ -170,8 +169,6 @@ def _answer(response: httpx2.Response, *, refreshing: bool) -> dict[str, object]
         reason=reason,
         status_code=status,
         oauth_error=code if _is_oauth_error(code) else None,
-        phase="validate" if status in _SUCCESS else "unknown",
-        delivery_state=DeliveryState.RESPONSE_STARTED,
     )
 
 
@@ -377,7 +374,6 @@ def _transport(error: httpx2.HTTPError) -> AuthError:
     """Return the error of a token request that failed in transport, keeping the native failure as its cause."""
     return AuthError(
         reason="timeout" if isinstance(error, httpx2.TimeoutException) else "oauth_error",
-        delivery_state=delivery(error, send_started=True),
         cause=error,
     )
 
@@ -480,7 +476,7 @@ class RefreshToken(_Provider):
 
     def _form(self) -> list[tuple[str, str]]:
         if (refresh_token := self._tokens.refresh_token) is None:
-            raise AuthError(reason="reauthorization_required", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="reauthorization_required")
         return [("grant_type", "refresh_token"), ("refresh_token", refresh_token)]
 
     def _adopt(self, fields: dict[str, object], received: float) -> TokenSet:

@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 _CONTENT: Final = b"0123456789"
 _PAST: Final = "Wed, 21 Oct 2015 07:28:00 GMT"
 _FUTURE: Final = "2999-01-01T00:00:00Z"
-_EXPIRED: Final = datetime(2015, 10, 21, 7, 28, tzinfo=timezone.utc)
 
 
 class _Server:
@@ -388,8 +387,8 @@ def _drained(exchange: Exchange, lines: list[str]) -> None:
 
 
 def _records(harness: _Uploads, lines: list[str]) -> None:
-    """Validate upload progress, and report the upload errors' fields and safe representations."""
-    protocols, errors = harness.protocols, harness.errors
+    """Validate upload progress."""
+    protocols = harness.protocols
     lines.extend(("upload records", f"  {protocols.UploadProgress(confirmed_bytes=4, total_bytes=10)!r}"))
     for label, create in (
         ("progress past the total", lambda: protocols.UploadProgress(confirmed_bytes=11, total_bytes=10)),
@@ -398,55 +397,6 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         ("progress of a numeric flag", lambda: protocols.UploadProgress(confirmed_bytes=0, total_bytes=0, complete=1)),
     ):
         record(lines, label, create)
-    lines.append("upload errors")
-    progress = protocols.UploadProgress(confirmed_bytes=4, total_bytes=10)
-    delivery = harness.package.errors.DeliveryState
-    for name, fields in (
-        ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "message_id": "m-1"}),
-        (
-            "UploadDeliveryUnknownError",
-            {"phase": "part", "progress": progress, "delivery_state": delivery.RESPONSE_STARTED},
-        ),
-        ("UploadSourceChangedError", {"expected_size": 10, "actual_size": 4}),
-        (
-            "UploadOffsetError",
-            {"confirmed_offset": 4, "expected_offset": 8, "remote_offset": 2, "size": 10},
-        ),
-        ("UploadExpiredError", {"expires_at": _EXPIRED}),
-        ("NonResumableSourceError", {"source_kind": "reader"}),
-    ):
-        error_type = getattr(errors, name)
-        error = error_type(**fields)
-        chain = [item.__name__ for item in error_type.__mro__ if issubclass(item, errors.SDKError)]
-        kept = all(getattr(error, key) is value or getattr(error, key) == value for key, value in fields.items())
-        lines.append(f"  {name}: chain={chain} reason={error.reason_code} kept={kept} {error!r}")
-    for label, create in (
-        ("delivery not sent", lambda: errors.DeliveryUnknownError(delivery_state=delivery.NOT_SENT)),
-        (
-            "delivery message number",
-            lambda: errors.DeliveryUnknownError(delivery_state=delivery.MAYBE_SENT, message_id=1),
-        ),
-        (
-            "upload phase",
-            lambda: errors.UploadDeliveryUnknownError(
-                phase="probe", progress=progress, delivery_state=delivery.MAYBE_SENT
-            ),
-        ),
-        (
-            "upload progress",
-            lambda: errors.UploadDeliveryUnknownError(phase="append", progress={}, delivery_state=delivery.MAYBE_SENT),
-        ),
-        ("changed size", lambda: errors.UploadSourceChangedError(expected_size=None, actual_size=0)),
-        ("changed negative size", lambda: errors.UploadSourceChangedError(expected_size=10, actual_size=-1)),
-        (
-            "offset negative",
-            lambda: errors.UploadOffsetError(confirmed_offset=-1, expected_offset=0, remote_offset=0, size=0),
-        ),
-        ("expired naive", lambda: errors.UploadExpiredError(expires_at=_EXPIRED.replace(tzinfo=None))),
-        ("expired condition", lambda: errors.UploadExpiredError(expires_at=_EXPIRED, condition="expired")),
-        ("source kind", lambda: errors.NonResumableSourceError(source_kind="bytes")),
-    ):
-        record(lines, f"refuse {label}", create)
 
 
 def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:

@@ -249,9 +249,9 @@ def _conversation(harness: _Harness, api: Any) -> None:
 
 def _decode_failure(label: str, failure: Any) -> str:
     """Report a message failure's public prefix and whether its SDK traceback still holds a larger payload."""
-    prefix = len(failure.raw_prefix)
+    prefix = len(failure.body_bytes)
     return (
-        f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={prefix} "
+        f"  {label} ! {_described(failure)} location={failure.location} prefix={prefix} "
         f"truncated={failure.truncated} cause={type(failure.cause).__name__} "
         f"retained={retained_body(failure, prefix)}"
     )
@@ -341,7 +341,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
         )
         try:
             session.receive()
-        except harness.errors.StreamDecodeError as failure:
+        except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(label, failure))
         record(lines, "after the decode failure", session.receive)
         session.close()
@@ -748,8 +748,7 @@ def _deadline_open(harness: _Harness, once: Any) -> None:
                 api.protocols.feed.text.connect(options=options)
             except harness.errors.APITimeoutError as error:
                 lines.append(
-                    f"  deadline during the open ! {type(error).__name__} reason={error.reason} phase={error.phase} "
-                    f"delivery_state={error.delivery_state} remaining={0 < (error.effective_timeout or 0) <= 1.0}"
+                    f"  deadline during the open ! {type(error).__name__} reason={error.reason}"
                 )
     finally:
         peer.stop()
@@ -892,7 +891,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
         try:
             async with chat.connect(room=harness.room()) as session:
                 await session.receive()
-        except harness.errors.StreamDecodeError as failure:
+        except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(f"{label} left the block", failure))
         lines.append(f"    {label} after the block {session!r}")
         await harness.areport(play)

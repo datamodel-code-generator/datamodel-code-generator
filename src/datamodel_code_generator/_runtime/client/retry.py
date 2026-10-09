@@ -6,10 +6,11 @@ import math
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.unset import Unset
-from .errors import ConfigurationError, DeliveryState, RetryStopReason
+from .errors import ConfigurationError
+from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -18,6 +19,17 @@ if TYPE_CHECKING:
     from .options import ResolvedRetryOptions
     from .responses import HeadersView
 
+_StopReason: TypeAlias = Literal[
+    "unknown_delivery",
+    "status_not_retryable",
+    "transport_not_retryable",
+    "operation_never",
+    "server_forbids_retry",
+    "disabled",
+    "max_retries_exhausted",
+    "body_not_replayable",
+    "unsafe_operation",
+]
 _ASCII_WHITESPACE: Final = " \t\r\n\f\v"
 _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
 _AUTH_STATUSES: Final = frozenset({401, 403, 407})
@@ -115,7 +127,7 @@ class RetryState:
     method: str
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
-    delivery_state: DeliveryState
+    delivery: Delivery
     delivered_before: bool
     attempt_count: int
     body_replayable: bool
@@ -140,7 +152,7 @@ def body_replay_safe(
     return retry_safety != "never" and replay_safe(method, retry_safety, idempotency)
 
 
-_NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
+_NOT_RETRYABLE: Final[dict[str, _StopReason]] = {
     "status": "status_not_retryable",
     "transport": "transport_not_retryable",
 }
@@ -149,7 +161,7 @@ _NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
 def _policy_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-) -> RetryStopReason | None:
+) -> _StopReason | None:
     if state.reason is None or (state.reason == "pool_timeout" and not retry.retry_on_pool_timeout):
         return _NOT_RETRYABLE[state.failure_kind]
     if state.retry_safety == "never":
@@ -164,9 +176,9 @@ def _policy_stop(
 def retry_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-) -> RetryStopReason | None:
-    """Return the first failed retry gate, after termination precedence has been checked."""
-    if state.failure_kind == "transport" and state.delivery_state is not DeliveryState.NOT_SENT:
+) -> _StopReason | None:
+    """Return the first failed retry gate, after termination precedence has been checked, or None to retry."""
+    if state.failure_kind == "transport" and state.delivery is not Delivery.NOT_SENT:
         return "unknown_delivery"
     if (stop := _policy_stop(state, retry)) is not None:
         return stop
@@ -175,17 +187,13 @@ def retry_stop(
     return _replay_stop(state)
 
 
-def _replay_stop(state: RetryState) -> RetryStopReason | None:
+def _replay_stop(state: RetryState) -> _StopReason | None:
     """Return why the request cannot be sent again: its body or its safety."""
     if not state.body_replayable:
         return "body_not_replayable"
     if not (
         replay_safe(state.method, state.retry_safety, state.idempotency)
-        or (
-            state.failure_kind == "transport"
-            and state.delivery_state is DeliveryState.NOT_SENT
-            and not state.delivered_before
-        )
+        or (state.failure_kind == "transport" and state.delivery is Delivery.NOT_SENT and not state.delivered_before)
     ):
         return "unsafe_operation"
     return None

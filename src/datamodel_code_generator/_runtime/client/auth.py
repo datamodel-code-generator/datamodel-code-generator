@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 
 import httpx2
 
-from .errors import AuthError, ConfigurationError, DeliveryState, SDKError
+from .errors import AuthError, ConfigurationError, SDKError
 from .security import Credentials
 from .urls import request_origin
 
@@ -86,7 +86,7 @@ def _called(value: object) -> object:
     except SDKError:
         raise
     except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error) from None
+        raise AuthError(reason="provider_failed", cause=error) from None
 
 
 def _pair(value: object) -> tuple[str, str] | None:

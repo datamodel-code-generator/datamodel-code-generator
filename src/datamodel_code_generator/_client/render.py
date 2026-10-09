@@ -257,125 +257,67 @@ _ERROR_NAMES: Final = (
     "ConfigurationError",
     "ConflictError",
     "DecodeError",
-    "DeliveryState",
     "InternalServerError",
-    "IOPhase",
     "NotFoundError",
     "PermissionDeniedError",
-    "ProtocolError",
-    "ProtocolSizeError",
-    "ProtocolStoreError",
     "RateLimitError",
-    "RetryStopReason",
     "SDKError",
     "UnprocessableEntityError",
-    "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
-    "CacheProtocolError",
-    "CacheStoreError",
-    "CacheValidatorConflictError",
-    "ConcurrentReceiveError",
-    "DeliveryUnknownError",
-    "IncompleteFrameError",
-    "NonResumableSourceError",
-    "OperationCancelledError",
-    "OperationFailedError",
-    "PaginationCycleError",
-    "PollWaitLimitError",
-    "PollingStateError",
     "ProtocolDataError",
-    "ProtocolStateError",
-    "ResumeStateError",
     "SessionLimitError",
-    "StreamDecodeError",
     "StreamInterruptedError",
-    "StreamRemoteError",
-    "StreamResumeExhaustedError",
-    "UploadDeliveryUnknownError",
-    "UploadExpiredError",
-    "UploadOffsetError",
-    "UploadSourceChangedError",
     "WebSocketClosedError",
-    "WebSocketHandshakeError",
 )
-_ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
-_SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
-    "pagination": ("PaginationCycleError", *_SESSION_ERRORS),
-    "polling": (
-        "OperationCancelledError",
-        "OperationFailedError",
-        "PollWaitLimitError",
-        "PollingStateError",
-        "ResumeStateError",
-        *_SESSION_ERRORS,
-    ),
-    "streams": (
-        "IncompleteFrameError",
-        "ResumeStateError",
-        "StreamDecodeError",
-        "StreamInterruptedError",
-        "StreamRemoteError",
-        "StreamResumeExhaustedError",
-        *_SESSION_ERRORS,
-    ),
-    "uploads": (
-        "DeliveryUnknownError",
-        "NonResumableSourceError",
-        "ResumeStateError",
-        "UploadDeliveryUnknownError",
-        "UploadExpiredError",
-        "UploadOffsetError",
-        "UploadSourceChangedError",
-        *_SESSION_ERRORS,
-    ),
-    "cache": ("CacheProtocolError", "CacheStoreError", "CacheValidatorConflictError"),
-    "websocket": (
-        "ConcurrentReceiveError",
-        "DeliveryUnknownError",
-        "StreamDecodeError",
-        "WebSocketClosedError",
-        "WebSocketHandshakeError",
-        *_SESSION_ERRORS,
-    ),
+    "pagination": ("ProtocolDataError", "SessionLimitError"),
+    "polling": ("ProtocolDataError", "SessionLimitError"),
+    "streams": ("ProtocolDataError", "SessionLimitError", "StreamInterruptedError"),
+    "uploads": ("ProtocolDataError",),
+    "cache": ("ProtocolDataError",),
+    "websocket": ("ProtocolDataError", "WebSocketClosedError"),
+    "webhooks": ("ProtocolDataError",),
 }
 
 
 def _errors(capabilities: Capabilities) -> str:
-    """Return the errors module: the client's errors and those of the declared OAuth flows and helpers.
-
-    `ProtocolDataError` is always there, since a malformed compressed response raises it.
-    """
-    declared = {*capabilities.helpers, *(("oauth",) if capabilities.oauth else ())}
-    errors = [name for name in _ERROR_NAMES if _ERROR_CAPABILITIES.get(name, "client") in {"client", *declared}]
+    """Return the errors module: the client's errors and those of the declared helpers, loaded on first use."""
     raised = {name for helper in capabilities.helpers for name in _PROTOCOL_ERRORS.get(helper, ())}
-    protocol = [name for name in _PROTOCOL_ERROR_NAMES if name == "ProtocolDataError" or name in raised]
-    return "".join((
+    protocol = [name for name in _PROTOCOL_ERROR_NAMES if name in raised]
+    parts = [
         '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n',
         "from __future__ import annotations\n\n",
-        "from typing import TYPE_CHECKING\n\n",
+        *(("from typing import TYPE_CHECKING\n\n",) if protocol else ()),
         "from ._runtime.client.errors import (\n",
-        *(f"    {name},\n" for name in errors),
-        ")\n\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n",
-        *(f"        {name},\n" for name in protocol),
-        "    )\n\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*errors, *protocol))),
-        "]\n_PROTOCOL_ERRORS = frozenset({\n",
-        *(f"    {name!r},\n" for name in protocol),
-        "})\n\n\n",
-        "def __getattr__(name: str) -> object:\n",
-        '    """Load the protocol helper exceptions only when one of their classes is requested."""\n',
-        "    if name in _PROTOCOL_ERRORS:\n",
-        "        from ._runtime.protocols import errors\n\n",
-        "        value = globals()[name] = getattr(errors, name)\n",
-        "        return value\n",
-        '    msg = f"module {__name__!r} has no attribute {name!r}"\n',
-        "    raise AttributeError(msg)\n\n\n",
-        "def __dir__() -> list[str]:\n",
-        '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n',
-        "    return sorted({*globals(), *__all__})\n",
-    ))
+        *(f"    {name},\n" for name in _ERROR_NAMES),
+        ")\n",
+    ]
+    if protocol:
+        parts.extend((
+            "\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n",
+            *(f"        {name},\n" for name in protocol),
+            "    )\n",
+        ))
+    parts.extend(("\n__all__ = [\n", *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *protocol))), "]\n"))
+    if protocol:
+        parts.extend((
+            "_PROTOCOL_ERRORS = frozenset({\n",
+            *(f"    {name!r},\n" for name in protocol),
+            "})\n\n\n",
+            "def __getattr__(name: str) -> object:\n",
+            '    """Load the protocol helper exceptions only when one of their classes is requested."""\n',
+            "    if name in _PROTOCOL_ERRORS:\n",
+            "        from ._runtime.protocols import errors\n\n",
+            "        value = globals()[name] = getattr(errors, name)\n",
+            "        return value\n",
+            '    msg = f"module {__name__!r} has no attribute {name!r}"\n',
+            "    raise AttributeError(msg)\n\n\n",
+            "def __dir__() -> list[str]:\n",
+            '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n',
+            "    return sorted({*globals(), *__all__})\n",
+        ))
+    return "".join(parts)
 
 
 _RESPONSES: Final = '''"""Typed results of this package's calls, the metadata of their responses, and raw responses."""
@@ -2002,8 +1944,9 @@ repeats the items already delivered from it. A resumed pager counts pages and it
 starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
 continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
 `initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
-kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or
-`PaginationCycleError` resumes from its `checkpoint()`; the errors carry no continuation.
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or a
+`ProtocolDataError` with the reason `pagination_cycle` resumes from its `checkpoint()`; the errors carry no
+continuation.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
@@ -2046,24 +1989,23 @@ _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None 
 _RESUMED: Final = """
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's
-expiry, never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that
-failed, ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing
-the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's expiry,
+never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that failed,
+ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing the
+cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
 reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
-caller. It refuses a state that is not JSON or does not fit with `ConfigurationError` and an expired one with
-`ResumeStateError` before sending, and a cursor written where a credential goes with `ConfigurationError` with the
-reason `wrong_capability`. No options, the client's, a view's, or the call's, may patch a header or query parameter a
-reopen writes or fix an idempotency key.
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. No options,
+the client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
-`StreamResumeExhaustedError`; a wait whose backoff cap or `retry` time is
-longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
-idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
-reopen are delivered again.
+`SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
+wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
+failures, the declared end, and closing never reconnect, and events the server sends again after a reopen are delivered
+again.
 """
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
@@ -3269,10 +3211,10 @@ SDK-created client follows none and an injected one keeps its own. HTTPX2 follow
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
 that carries a credential at a position a declared security scheme names other than `Authorization` is never
 redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
-cookie never reaches another origin. Response content codings are removed by HTTPX2: the native
-client's `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a
-body that does not decode raises `ProtocolDataError`. A streaming raw response's `iter_raw_bytes()` yields the body as
-it arrived; a buffered one keeps only its decoded body.
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
+does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
+yields the body as it arrived; a buffered one keeps only its decoded body.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
@@ -3295,19 +3237,20 @@ closes only the native client the SDK created. Request views share that root and
 
 ## Errors and cleanup
 
-Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
-`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
-(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
-a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
-`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
-bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
-values.
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
+(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
+subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
+decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
+start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
+key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release
-runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
-Native task cancellation propagates unchanged, and user callbacks are not shielded.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
+finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
+cancellation propagates unchanged, and user callbacks are not shielded.
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""
 
     def _compression_runtime(self) -> str:
@@ -3366,32 +3309,34 @@ handle, a declared immediate status a handle that already holds the result, and 
 `ConfigurationError` before the create request. Each poll waits until the interval after the last response, an
 error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
 after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
-shorter than what remains of the session, raises `PollWaitLimitError` without sending. A resumed handle polls at
-once, since a checkpoint keeps no server delay. A poll's state must equal a declared state value, JSON type included;
-any other value raises `PollingStateError`, and success is never inferred.
+shorter than what remains of the session, raises `SessionLimitError` with the reason `wait` or `deadline` and the
+server's delay as `required_wait` without sending. A resumed handle polls at once, since a checkpoint keeps no server
+delay. A poll's state must equal a declared state value, JSON type included; any other value raises
+`ProtocolDataError`, and success is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
-cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
-`wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
-the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
-succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
-`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
-options must not fix an idempotency key or patch a header or query parameter the helper writes.
+cancelled operation raises `ProtocolDataError` with the reason `operation_failed` or `operation_cancelled`, its last
+poll's decoded data as `data` and its response as `info`, on every later `wait` too. An error that settles nothing, such
+as a transport error, a deadline, a cancellation, or a limit, leaves the handle as it was: pending, so a later `status`
+or `wait` polls again without creating the operation again, or succeeded with its result fetch still due, which a later
+`wait` retries alone. `status` and `wait` at once raise `ConfigurationError` with the reason `invalid_state`, and so
+does every step after `close()` or `aclose()`, which stops only local polling. A call's options must not fix an
+idempotency key or patch a header or query parameter the helper writes.
 
 `checkpoint()` returns plain JSON without sending, also after closing and while another thread or task polls: an object
 whose `phase` is `pending`, with the values the next poll (`bound`) and a remote cancel (`cancel`) write and those the
 create response gave the result fetch (`seed`), or `fetch`, with the values a due result fetch writes, and the server's
 `expires_at`, never polls, results, model objects, the session, or the call's options; a settled operation has nothing
-left to continue, and its `checkpoint()` raises `ProtocolStateError`. The helper's `resume` is never awaited and returns
+left to continue, and its `checkpoint()` raises `ConfigurationError`. The helper's `resume` is never awaited and returns
 a handle in a session of its own that sends nothing until `status` or `wait`: a pending one polls again at once, and one
 whose fetch is due fetches the result; polls, the session's timeout, and deadline start afresh. Before returning, it
-refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with
-`ResumeStateError`, and a dot segment the next poll or remote cancel would write to a path parameter with
-`ProtocolDataError`; any other saved value is checked and encoded when its request is built, as a server's is. After
-`PollWaitLimitError` or a `SessionLimitError`, the handle's `checkpoint()` continues the operation; the errors carry no
-checkpoint. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with an offset or an
-HTTP date, from the accepted create response, and its checkpoints expire then; a create response without a valid one
-fails `start` with `ProtocolDataError`, though the remote operation was created.
+refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with the reason
+`expired`, and a dot segment the next poll or remote cancel would write to a path parameter with `ProtocolDataError`;
+any other saved value is checked and encoded when its request is built, as a server's is. After a `SessionLimitError`,
+the handle's `checkpoint()` continues the operation; the errors carry no checkpoint. A helper that declares `expires_at`
+reads the server's expiry, an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and
+its checkpoints expire then; a create response without a valid one fails `start` with `ProtocolDataError`, though the
+remote operation was created.
 
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
@@ -3423,9 +3368,10 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
 creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
-one buffer; content shorter or longer than the upload's size raises `UploadSourceChangedError` and the handle sends
-nothing more. The content is not hashed: keep it unchanged while it is uploaded. A one-shot stream, iterator, or a
-reader that cannot seek raises `NonResumableSourceError`; send it as an ordinary upload. Sources are borrowed and never
+one buffer; content shorter or longer than the upload's size raises `ConfigurationError` with the reason
+`source_changed` and the handle sends nothing more. The content is not hashed: keep it unchanged while it is uploaded.
+A one-shot stream, iterator, or a reader that cannot seek raises `ConfigurationError` with the reason
+`wrong_capability`; send it as an ordinary upload. Sources are borrowed and never
 closed.
 
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
@@ -3433,17 +3379,18 @@ confirmed offset, and `run` appends every remaining chunk and completes the uplo
 the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
 resent blindly: the server's offset is probed once instead, and an unchanged offset sends the range again, the chunk's
 end confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that
-regresses, passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and a probe that
-fails raises `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+regresses, passes the content, or commits part of a chunk that may not be raises `ProtocolDataError`, and a probe that
+fails raises `APIConnectionError` with the reason `delivery_unknown`; so does a completion whose outcome is unknown,
+which is never sent again.
 
 `checkpoint()` returns plain JSON, sending nothing: the content's `size`, the `chunk` size, the `confirmed` offset, the
-values later calls write (`bound`), a completion of unknown outcome (`phase` and `delivery`), and the server's
-`expires_at`; a complete upload has no checkpoint, and errors carry none. `resume` checks it and the source's size,
-then probes the server's offset once; it never creates the upload again, and a completion of unknown outcome raises
-again. A value that is not JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises
-`ConfigurationError`, and a checkpoint past the server's declared expiry `UploadExpiredError`. `advance` and `run`
-at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
-uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
+values later calls write (`bound`), a completion of unknown outcome (`phase`), and the server's `expires_at`; a complete
+upload has no checkpoint, and errors carry none. `resume` checks it and the source's size, then probes the server's
+offset once; it never creates the upload again, and a completion of unknown outcome raises again. A value that is not
+JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises `ConfigurationError`, with the reason
+`expired` for a checkpoint past the server's declared expiry. `advance` and `run` at once raise `ConfigurationError`
+with the reason `invalid_state`, and so does every step after `close()` or `aclose()`, which stops only local uploading.
+A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def pagination_runtime(self) -> str:
@@ -3462,8 +3409,9 @@ A page's items must be a JSON array; an empty array does not end the traversal. 
 binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
 `ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
 cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
-the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
-`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
+the session ends it with `ProtocolDataError` with the reason `pagination_cycle` after the repeating page. A limit
+reached while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A
+call's options must not patch a
 header or a query parameter the helper writes."""
             if cursors
             else """\
@@ -3520,10 +3468,10 @@ declared authenticated, and the client's own credentials or Auth, not a view's o
 `ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
 permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
-and a 304 without a usable entry raises `CacheProtocolError`. A response is stored only when its status is cacheable, it
+and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
-allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `CacheStoreError` and never
-resend a request.
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
+`store_failed` and never resend a request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
@@ -3545,7 +3493,8 @@ else raises `ProtocolDataError`. A request to another origin carries no credenti
 headers or query fields the package's security schemes name, and the client's credentials are placed only at the
 server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
-session, the first page's own included, ends it with `PaginationCycleError` after the repeating page.
+session, the first page's own included, ends it with `ProtocolDataError` with the reason `pagination_cycle` after the
+repeating page.
 """
 
     @cached_property
@@ -3560,10 +3509,10 @@ session, the first page's own included, ends it with `PaginationCycleError` afte
         lines = (
             """
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. Bytes after the last line end raise
-`IncompleteFrameError` unless the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record
-has the empty string as its event type and no event ID, and a declared error record raises `StreamRemoteError` with
-the event type None.
+blank line or one that is not UTF-8 or JSON raises `DecodeError`. Bytes after the last line end raise
+`StreamInterruptedError` with the reason `eof` unless the helper's `final_line` is `allow_eof`, which decodes them as
+the last record. A record has the empty string as its event type and no event ID, and a declared error record raises
+`ProtocolDataError` with the reason `error_event`.
 """
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""
@@ -3589,11 +3538,12 @@ from:
 {_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
-fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the native
-`SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator maps it to; data that does not
-decode raises `StreamDecodeError`, and a declared error event raises `StreamRemoteError`. The stream ends at its
-declared completion; an end before it raises `StreamInterruptedError`, and a broken connection
-`StreamInterruptedError` with its transport failure as the cause. A frame an SSE body ends in the middle of is
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
 discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
@@ -3629,17 +3579,18 @@ for the helper, then the default below. The session types are imported from:
 
 The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
-and a second one raises `ConcurrentReceiveError`; HTTPX2 writes sends one at a time beside it. Cancelling an asyncio
-`receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON coded by the helper's schema,
-UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode raises `StreamDecodeError` and
-closes the connection with 1002, and one over the size limit raises `ProtocolSizeError` after HTTPX2 closed the
-connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` and closes with 1001.
-A closure by the server raises `WebSocketClosedError` with its code and reason, is answered with the same code, and
-ends iteration when it was normal. A send or ping on a connection that is already closing raises `WebSocketClosedError`
-without a code; a send that may have reached the server raises `DeliveryUnknownError`, closes the session, and is never
-sent again. Sessions never reconnect. Received handshake refusals are terminal, including redirects and 401s;
-credentials are never refreshed or invalidated by a refused upgrade. Only a transport failure proven `NOT_SENT` before
-handover may use the call's existing retry policy. Closing a session sends the code and reason given, 1000 by default.
+and a second one raises `ConfigurationError` with the reason `invalid_state`; HTTPX2 writes sends one at a time beside
+it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON
+coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode
+raises `DecodeError` and closes the connection with 1002, and one over the size limit raises `ProtocolDataError` with
+the reason `too_large` after HTTPX2 closed the connection with 1009. A receive that waits longer than the idle timeout
+raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
+reason, is answered with the same code, and ends iteration when it was normal. A send or ping on a connection that is
+already closing raises `WebSocketClosedError` without a code; a send that may have reached the server raises
+`APIConnectionError` with the reason `delivery_unknown`, closes the session, and is never sent again. Sessions never
+reconnect. Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or
+invalidated by a refused upgrade. Only a transport failure proven unsent before handover may use the call's existing
+retry policy. Closing a session sends the code and reason given, 1000 by default.
 """
 
     @staticmethod

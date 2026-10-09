@@ -109,7 +109,7 @@ def _opening(paths: tuple[Path, ...], files: list[Any], make: Callable[[], objec
 
 
 def _closed(lines: list[str], label: str, error: Exception | None, files: list[_Unclosable]) -> None:
-    secondary = [type(item).__name__ for item in getattr(error, "secondary_errors", ())]
+    secondary = list(getattr(error, "__notes__", ()))
     lines.append(f"  {label} returned" if error is None else f"  {label} ! {describe(error)}")
     lines.append(f"    secondary={secondary} closed={[file.closed for file in files]}")
     files.clear()

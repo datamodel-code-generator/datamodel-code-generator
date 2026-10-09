@@ -15,7 +15,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 generate
   returned None
 tree
@@ -32,7 +32,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 write server/extensions.py
 write server/services.py
 remove server/routers/store.py
@@ -50,7 +50,7 @@ render
   write target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  11 runtime modules ['unchanged']
+  4 runtime modules ['unchanged']
 generate
   returned None
 tree
@@ -68,7 +68,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 show server/extensions.py
   | # User module.
 show server/.dcg-target-manifest.json
@@ -87,4 +87,4 @@ render
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  11 runtime modules ['unchanged']
+  4 runtime modules ['unchanged']

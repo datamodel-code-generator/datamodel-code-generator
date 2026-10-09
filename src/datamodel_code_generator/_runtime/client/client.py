@@ -30,28 +30,24 @@ from .bodies import EncodedAttempt, is_file_input
 from .body_sources import RequestCoding, bind_body, capture_body
 from .errors import (
     APIConnectionError,
-    APIStatusError,
     ConfigurationError,
     DecodeError,
-    DeliveryState,
-    ProtocolError,
-    RetryStopReason,
     SDKError,
     add_secondary,
-    is_http_error,
     is_transport,
     kept_primary,
     too_large,
 )
 from .events import CallEvents, call_events
 from .hooks import LimiterContext
-from .logical import LogicalCallContext
+from .logical import Delivery, LogicalCallContext
 from .media import normalized
 from .multipart import encode_parts, is_multipart
 from .native import (
     async_decoded_bytes,
     async_response_bytes,
     decoded_bytes,
+    delivery,
     native_async_client,
     native_client,
     native_error,
@@ -108,7 +104,6 @@ if TYPE_CHECKING:
         Iterator,
         Sequence,
     )
-    from typing import TypeGuard
 
     from ..model_codecs.media import JSONValue
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
@@ -424,7 +419,7 @@ class ReceivedBody:
         self.size = 0
         self.truncated = False
         self.overflow = False
-        self.problem: ProtocolError | None = None
+        self.problem: DecodeError | None = None
 
     def add(self, chunk: bytes) -> bool:
         """Keep a chunk within the limit and return whether reading continues.
@@ -495,7 +490,7 @@ def _checked_raw(method: object, url: object) -> tuple[str, str]:
     return method.upper(), target.url
 
 
-def delivery_state(call: Call) -> DeliveryState:
+def delivery_state(call: Call) -> Delivery:
     return call.furthest()
 
 
@@ -517,16 +512,11 @@ def decode_response(
         data = decoder.decode(info, body.content, truncated=truncated, problem=problem)
     except SDKError as error:
         error.operation_id = error.operation_id or operation_id
-        error.call_id = error.call_id or info.call_id
         raise
     return Response(data=data, info=info)
 
 
 RAW_DECODER: Final[ResponseDecoder[object]] = ResponseDecoder((), ())
-
-
-def _retry_error(error: BaseException) -> TypeGuard[APIStatusError | APIConnectionError]:
-    return is_http_error(error) or is_transport(error)
 
 
 def _compressed(
@@ -545,7 +535,7 @@ def _compressed(
     if request.headers.get_list("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), reason="managed")
     attempt = request_body(request)
-    body = None if attempt is None else coding.attempt(attempt, partial(call.check, "encode"))
+    body = None if attempt is None else coding.attempt(attempt, call.check)
     headers = HeadersView((
         *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
         ("Content-Encoding", coding.token),
@@ -571,9 +561,7 @@ def _close_failed(failures: list[OSError], call: Call, error: BaseException | No
     if error is not None:
         add_secondary(error, *failures)
         return
-    failure = SDKError(
-        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failures.pop(0)
-    )
+    failure = SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failures.pop(0))
     add_secondary(failure, *failures)
     raise failure
 
@@ -736,7 +724,6 @@ class Call(LogicalCallContext):
         "retry_headers",
         "retry_safety",
         "server_origin",
-        "stop_reason",
     )
 
     def __init__(self, settings: Settings, operation: OperationPlan[object] | None = None) -> None:
@@ -761,7 +748,6 @@ class Call(LogicalCallContext):
         self.server_origin: Origin | None = None
         self.attempt_index = 0
         self.previous_cap: float | None = None
-        self.stop_reason: RetryStopReason | None = None
         self.method = ""
         self.received_at = self.started
         self.received_wall_time = 0.0
@@ -821,13 +807,9 @@ class Call(LogicalCallContext):
         replayable: bool,
     ) -> RetryDelay | None:
         """Apply the ordered pure gates and retain one absolute delay before response disposal."""
-        if error is None:
-            self.check("send")
-        elif (expired := self.expired("send", cause=error.cause)) is not None:
-            expired.phase = error.phase
+        if (expired := self.expired(None if error is None else error.cause)) is not None:
             raise expired
         if self.retry_blocked:
-            self.stop_reason = "callback_failure"
             return None
         retry = self.settings.retry
         headers = None if info is None else info.headers
@@ -840,22 +822,22 @@ class Call(LogicalCallContext):
             else None
         )
         now = self.monotonic()
-        self.stop_reason = retry_stop(
+        stop = retry_stop(
             RetryState(
                 failure_kind="transport" if error is not None else "status",
                 reason=reason,
                 method=self.method,
                 retry_safety=self.retry_safety,
                 idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
-                delivery_state=self.delivery_state,
-                delivered_before=self.earlier is not DeliveryState.NOT_SENT,
+                delivery=self.delivery_state,
+                delivered_before=self.earlier is not Delivery.NOT_SENT,
                 attempt_count=self.attempt_count,
                 body_replayable=replayable,
                 server_hint=hint,
             ),
             retry,
         )
-        if self.stop_reason is not None:
+        if stop is not None:
             return None
         assert reason is not None
         server = (
@@ -877,32 +859,24 @@ class Call(LogicalCallContext):
             ),
         )
         if isinstance(planned, str):
-            self.stop_reason = planned
             return None
         self.previous_cap = planned.backoff_cap
         return planned
 
     def stopped(self, error: BaseException) -> BaseException:
-        """Attach the last policy decision without changing termination precedence."""
-        failure = self.failure(error)
-        if isinstance(failure, APIConnectionError) and self.delivery_state is not DeliveryState.NOT_SENT:
-            self.stop_reason = "unknown_delivery"
-        if _retry_error(failure):
-            failure.retry_stop_reason = self.stop_reason
-        return failure
+        """Return the call's final failure."""
+        return self.failure(error)
 
     def resending(self, error: BaseException) -> None:
         """Recheck termination before waiting or opening another body."""
-        self.check("sleep")
+        self.check()
         if self.retry_blocked:
-            self.stop_reason = "callback_failure"
             raise self.stopped(error)
 
     def restart(self, original: httpx2.Request) -> None:
         """Begin the next resource candidate from the once-encoded original request."""
         self.attempt_index += 1
         self.current_origin = self.initial_origin
-        self.stop_reason = None
         if self.events is not None:
             self.events.prepare(str(original.url), self.attempt_index)
 
@@ -1000,32 +974,20 @@ class Core(Generic[AdapterT, HandleT]):
         call.check()
 
     @staticmethod
-    def _failure(error: BaseException, call: LogicalCallContext, delivery: DeliveryState) -> BaseException:
+    def _failure(error: BaseException, call: LogicalCallContext) -> BaseException:
         """Preserve cancellation and classify an ordinary failure."""
-        return Core._classified(error, call, delivery) if isinstance(error, Exception) else error
+        return Core._classified(error, call) if isinstance(error, Exception) else error
 
     @staticmethod
-    def _classified(error: Exception, call: LogicalCallContext, delivery: DeliveryState) -> SDKError:
-        """Classify an ordinary failure by its public send boundary.
-
-        A phase timeout whose cap was the call's remaining time is the call's deadline expiring.
-        """
-        failure = (
-            error
-            if isinstance(error, SDKError)
-            else native_error(
-                error,
-                send_started=call.delivery_state is not DeliveryState.NOT_SENT,
-                response_started=delivery is DeliveryState.RESPONSE_STARTED,
-            )
-        )
-        return call.snapshot_error(failure)
+    def _classified(error: Exception, call: LogicalCallContext) -> SDKError:
+        """Classify an ordinary failure: an SDK error stays, a native one becomes a transport error."""
+        return call.snapshot_error(error if isinstance(error, SDKError) else native_error(error))
 
     @staticmethod
     def _response_info(
         response: httpx2.Response, request_id_header: str | None, call: LogicalCallContext
     ) -> ResponseInfo:
-        call.delivery_state = DeliveryState.RESPONSE_STARTED
+        call.delivery_state = Delivery.RESPONSE_STARTED
         return _info(response.status_code, HeadersView(response.headers.multi_items()), request_id_header, call)
 
     def _raw_prepared(
@@ -1418,7 +1380,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             result = self._run(call, body, prepare, receive)
 
             if events is not None:
-                events.finish(result)
+                events.finish()
 
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
@@ -1480,7 +1442,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
-                events.finish(UNSET, handed_off=stream)
+                events.finish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -1548,7 +1510,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             result = self._run(call, body, prepare, receive)
 
             if events is not None:
-                events.finish(UNSET, handed_off=stream)
+                events.finish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -1660,7 +1622,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
     def _exchange_failure(
         self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
     ) -> BaseException:
-        failure = self._failure(error, call, call.delivery_state)
+        failure = self._failure(error, call)
         if isinstance(failure, SDKError) and info is not None:
             failure.info = info
         if response is not None and not call.response_transferred:
@@ -1673,7 +1635,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         events = call.events
         call.last_failure = failure
         if events is not None:
-            events.finish(UNSET, error=failure, intermediate=True)
+            events.finish(error=failure, intermediate=True)
         call.resending(failure)
         if events is not None:
             events.emit(
@@ -1704,14 +1666,13 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             call.decoder,
             call.settings,
             call.operation_id,
-            lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
+            lambda error: self._classified(error, call),
             source=partial(decoded_bytes, response, info, call.operation_id),
             raw_source=partial(response_bytes, response),
             native=response,
             close=release,
             events=call.events if stream else None,
             call=call,
-            retry_stop_reason=call.stop_reason,
         )
         call.response_transferred = True
         if not stream:
@@ -1747,18 +1708,17 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                native_failure = native_error(
+                call.delivery_state = delivery(
                     error,
                     send_started=True,
                     response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
                 )
-                call.delivery_state = native_failure.delivery_state
-                raise native_failure from None
-            call.delivery_state = DeliveryState.RESPONSE_STARTED
+                raise native_error(error) from None
+            call.delivery_state = Delivery.RESPONSE_STARTED
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
-            failure = self._failure(error, call, call.delivery_state)
+            failure = self._failure(error, call)
             closes: list[Callable[[], None]] = []
             if permit is not None:
                 closes.append(partial(_release_permit, permit))
@@ -1797,9 +1757,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 released = (
-                    SDKError(
-                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
-                    )
+                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failure)
                     if isinstance(failure, Exception) and not isinstance(failure, SDKError)
                     else failure
                 )
@@ -1853,7 +1811,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             for chunk in chunks:
                 if not received.add(chunk):
                     break
-        except ProtocolError as error:
+        except DecodeError as error:
             received.problem = error
         return received
 
@@ -1966,7 +1924,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             result = await self._run(call, body, prepare, receive)
 
             if events is not None:
-                await events.afinish(result)
+                await events.afinish()
 
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
@@ -2028,7 +1986,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
-                await events.afinish(UNSET, handed_off=stream)
+                await events.afinish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -2096,7 +2054,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             result = await self._run(call, body, prepare, receive)
 
             if events is not None:
-                await events.afinish(UNSET, handed_off=stream)
+                await events.afinish(handed_off=stream)
 
             if stream:
                 call.handoff()
@@ -2208,7 +2166,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     async def _exchange_failure(
         self, error: BaseException, response: httpx2.Response | None, call: Call, info: ResponseInfo | None
     ) -> BaseException:
-        failure = self._failure(error, call, call.delivery_state)
+        failure = self._failure(error, call)
         if isinstance(failure, SDKError) and info is not None:
             failure.info = info
         if response is not None and not call.response_transferred:
@@ -2221,7 +2179,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         events = call.events
         call.last_failure = failure
         if events is not None:
-            await events.afinish(UNSET, error=failure, intermediate=True)
+            await events.afinish(error=failure, intermediate=True)
         call.resending(failure)
         if events is not None:
             await events.aemit(
@@ -2254,14 +2212,13 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.decoder,
             call.settings,
             call.operation_id,
-            lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
+            lambda error: self._classified(error, call),
             source=partial(async_decoded_bytes, response, info, call.operation_id),
             raw_source=partial(async_response_bytes, response),
             native=response,
             close=release,
             events=call.events if stream else None,
             call=call,
-            retry_stop_reason=call.stop_reason,
         )
         call.response_transferred = True
         if not stream:
@@ -2297,18 +2254,17 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                native_failure = native_error(
+                call.delivery_state = delivery(
                     error,
                     send_started=True,
                     response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
                 )
-                call.delivery_state = native_failure.delivery_state
-                raise native_failure from None
-            call.delivery_state = DeliveryState.RESPONSE_STARTED
+                raise native_error(error) from None
+            call.delivery_state = Delivery.RESPONSE_STARTED
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
-            failure = self._failure(error, call, call.delivery_state)
+            failure = self._failure(error, call)
             closes: list[Callable[[], Awaitable[None]]] = []
             if permit is not None:
                 closes.append(partial(_arelease_permit, permit))
@@ -2344,9 +2300,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 released = (
-                    SDKError(
-                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
-                    )
+                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, cause=failure)
                     if isinstance(failure, Exception) and not isinstance(failure, SDKError)
                     else failure
                 )
@@ -2402,7 +2356,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             async for chunk in chunks:
                 if not received.add(chunk):
                     break
-        except ProtocolError as error:
+        except DecodeError as error:
             received.problem = error
         return received
 

@@ -157,10 +157,7 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     (errors,) = _modules(package, "errors")
     record(lines, "error condition", lambda: errors.ConfigurationError(reason="invalid_value"))
     error = errors.SDKError()
-    lines.append(
-        f"  error bare {error} {error.reason_code} "
-        f"{errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT)}"
-    )
+    lines.append(f"  error bare {error} {error.reason} {errors.APIConnectionError()}")
 
 
 def _lifecycle(package: ModuleType, lines: list[str]) -> None:
@@ -209,6 +206,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         ("error syntax", raw_response(500, b"{", "application/json"), 3),
         ("error media", raw_response(503, b"down", "text/plain"), 3),
         ("error bare", raw_response(502, b"down"), 3),
+        ("error long", raw_response(500, b"y" * 600, "text/plain"), 3),
         ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com"), 1),
         ("success default", json_response(201, {"code": 1}), 1),
         ("success media", raw_response(200, b"[]"), 1),
@@ -231,7 +229,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             except errors.InternalServerError as failure:
                 lines.append(
                     f"  error info {failure.status_code} {failure.headers!r} {failure.request_id} "
-                    f"{failure.reason_code} {failure.body!r}"
+                    f"{failure.reason} {failure.body!r}"
                 )
                 record(
                     lines,

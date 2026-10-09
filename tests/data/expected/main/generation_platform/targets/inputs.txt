@@ -12,7 +12,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 render
   target=fastapi schema_version=1
   write model models.py
@@ -26,7 +26,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 render
   Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
 render

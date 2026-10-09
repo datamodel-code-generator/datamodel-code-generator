@@ -30,10 +30,10 @@
   surrogate key: DecodeError ValidationError  context=None cause=None traceback=True prefix=14 truncated=False retained=False
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
-  stream syntax: StreamDecodeError ValidationError  context=None cause=None traceback=False prefix=10 truncated=False retained=False
+  stream syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
-  stream large syntax: StreamDecodeError ValidationError  context=None cause=None traceback=False prefix=65536 truncated=True retained=False
+  stream large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=65536 truncated=True retained=False
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
@@ -65,7 +65,7 @@
   async surrogate key: DecodeError ValidationError  context=None cause=None traceback=True prefix=14 truncated=False retained=False
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
-  async stream syntax: StreamDecodeError ValidationError  context=None cause=None traceback=False prefix=10 truncated=False retained=False
+  async stream syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
-  async stream large syntax: StreamDecodeError ValidationError  context=None cause=None traceback=False prefix=65536 truncated=True retained=False
+  async stream large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=65536 truncated=True retained=False

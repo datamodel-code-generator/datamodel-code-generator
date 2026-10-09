@@ -11,5 +11,5 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 dependencies ['fastapi>=0.141.1', 'pydantic>=2.13.5', 'email-validator>=2.3', 'python-ulid>=3.2.1', 'pendulum>=3.2']

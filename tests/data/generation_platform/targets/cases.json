@@ -183,14 +183,14 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]},
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]},
       {"render": {}},
-      {"rewrite": ["\r\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]]},
+      {"rewrite": ["\r\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]]},
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]},
-      {"rewrite": ["\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]]},
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]},
+      {"rewrite": ["\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]]},
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/model_codecs/unset.py"]}
+      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]}
     ]
   },
   "mount-points": {
@@ -333,7 +333,7 @@
       {"show": "models.py"},
       {"show": "server/routers/pets.py"},
       {"show": "server/__init__.py"},
-      {"show": "server/_runtime/model_codecs/unset.py"}
+      {"show": "server/_runtime/server/__init__.py"}
     ]
   },
   "format-errors": {

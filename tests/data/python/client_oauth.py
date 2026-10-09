@@ -15,7 +15,7 @@ from tests.data.python.client_runtime import json_response
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_FIELDS: Final = ("reason", "delivery_state", "phase", "status_code", "oauth_error", "field_path")
+_FIELDS: Final = ("reason", "status_code", "oauth_error", "field_path")
 _SECRETS: Final = ("access-", "refresh-", "se:cr et", "upload-control")
 
 
