@@ -2714,7 +2714,7 @@ A JSON or form body takes fields when its schema is one object whose model its b
 object that may be null included: Pydantic models and dataclasses, stdlib dataclasses, TypedDicts, and msgspec
 Structs alike. Other bodies keep only `body`: unions of objects, arrays and scalars, bodies without a schema, binary
 bodies and form-data sent as parts, bodies whose model cannot hold a request, such as one with a required read-only
-member, and objects whose schema requires a key only their extra properties can hold. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
+member. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
 
 Each field argument is named by the snake case of its wire property, and a read-only member has none.
 `body_field_names` names one field of one media type instead, without changing the model or the wire property. Fields
@@ -2742,8 +2742,9 @@ E_CONFIG_VALUE config operations /paths/~1search/post: The body field name of th
 ### Signatures
 
 The body and each media type's fields are separate overloads. The body's takes every field as `Unset`; a field
-overload takes the body as `Unset`, its required fields without a default, and its optional fields with `UNSET`, and
-a field takes `None` only when its property is nullable. An optional body whose fields are all optional has one
+overload takes the body as `Unset`, the fields its model's constructor requires without a default, and its other
+fields with `UNSET`, and a field takes `None` only when its property is nullable. A field is required exactly when the
+generated model requires it, so `--force-optional` and defaults make it optional. An optional body whose fields are all optional has one
 overload for each field, which that overload requires, and one that takes nothing and sends nothing:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.overloads -->
