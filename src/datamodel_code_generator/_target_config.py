@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import keyword
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 
 def _diagnostic(code: str, option_path: str, message: str) -> Diagnostic:
@@ -41,8 +41,6 @@ class TargetConfig:
             raise APIGenerationError(diagnostics, option_prefix=self._option_prefix)
 
     def _problems(self) -> Iterator[Diagnostic]:
-        if not isinstance(self.output, Path):
-            yield _diagnostic("E_CONFIG_VALUE", "output", "output must be a Path")
         for name in ("package", "model_package"):
             if not _dotted(getattr(self, name)):
                 yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must be a dotted Python import path")

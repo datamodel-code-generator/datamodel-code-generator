@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.plan import schema_use, schema_uses
-from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.client.security import secret_names
@@ -296,9 +295,7 @@ class _Pages:
         None is a schema no model stands for.
         """
         location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
-        try:
-            self.request.lease.borrow(location)
-        except BindingCaptureError:
+        if not self.request.lease.exists(location):
             return "missing"
         return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
 
