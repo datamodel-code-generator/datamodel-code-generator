@@ -12,7 +12,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.documentation import Documentation
-from datamodel_code_generator._fastapi.plan import PlanError, Planner
+from datamodel_code_generator._fastapi.plan import PlanError, Planner, unresolved_links
 from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
@@ -82,7 +82,10 @@ class FastAPITarget:
 
 
 def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
-    """Return the documentation builder, planning the schemas of callbacks, which no route reads, apart."""
+    """Return the documentation builder, planning the schemas of callbacks, which no route reads, apart.
+
+    A link of a documented response whose reference reaches no loaded link is refused.
+    """
     index = CallbackIndex(request.batch)
     callbacks = list(
         {
@@ -91,6 +94,8 @@ def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documenta
             for node in flattened(index.nodes(spec.contract, spec.key))
         }.values()
     )
+    if links := unresolved_links((*(spec.contract for spec in plan.operations), *callbacks)):
+        raise APIGenerationError(tuple(replace(item, target_id=request.target_id) for item in links))
     wires: tuple[WirePlan, ...] = (wire,)
     if callbacks:
         wires = (

@@ -2960,7 +2960,8 @@ def read_with_budget(client: Client, url: str) -> bytes:
 ```
 
 Before an attempt or retry wait, the client checks the remaining budget. Each native I/O timeout is capped by that
-remaining duration. Native timeout failures retain their native phase and cause. An expired budget prevents another
+remaining duration. Native timeout failures retain their native phase and cause; a native failure that arrives once
+the budget has expired raises `deadline_exceeded` with that native phase and cause. An expired budget prevents another
 attempt; fully received responses remain available when decoding or cleanup finishes after expiry. A sequence of
 reads can take longer than the budget because native read timeouts apply to each I/O wait.
 

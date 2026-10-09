@@ -374,7 +374,7 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     runtime = Path(package.__file__).parent / "_runtime" / "protocols"
-    optional = ("client", "caches", "names", "options", "origins", "websocket_types")
+    optional = ("client", "client_options", "caches", "names", "options", "origins", "websocket_types")
     (options,) = _modules(package, "options")
     option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
     lines.extend((

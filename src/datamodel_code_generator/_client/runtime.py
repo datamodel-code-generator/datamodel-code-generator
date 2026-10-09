@@ -65,7 +65,9 @@ _CORE: Final = (
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
+    "protocols/client_options.py",
     "protocols/caches.py",
+    "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
     "protocols/websocket_types.py",
@@ -139,8 +141,12 @@ class Capabilities:
         if self.protocols:
             modules.update(_PROTOCOLS)
         if "webhooks" in self.helpers:
-            modules.add("protocols/options.py")
-            modules.update(("protocols/caches.py", "protocols/origins.py", "protocols/websocket_types.py"))
+            modules.update((
+                "protocols/caches.py",
+                "protocols/options.py",
+                "protocols/origins.py",
+                "protocols/websocket_types.py",
+            ))
         if self.oauth:
             modules.update(_OAUTH)
         if self.keywords:
