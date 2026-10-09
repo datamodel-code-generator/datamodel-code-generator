@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import re
 import shutil
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from datamodel_code_generator._api_generation import TargetRender, TargetRequest
-    from datamodel_code_generator._api_types import GeneratedProject
+    from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
@@ -58,6 +59,17 @@ _PUBLIC_NAMES_PROBE = (
 )
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
+
+
+def artifact_text(artifact: GeneratedArtifact, encoding: str = "utf-8") -> str:
+    """Decode a rendered file: a target file as reading its written text file does, a model file byte for byte.
+
+    The lines of a target file then end with LF on every platform, while model files keep the bytes that the
+    comparisons with ordinary model generation need.
+    """
+    if artifact.kind != "target":
+        return artifact.content.decode(encoding)
+    return io.TextIOWrapper(io.BytesIO(artifact.content), encoding=encoding).read()
 
 
 def _selector(value: object) -> object:
@@ -241,14 +253,14 @@ def _render(
         return [f"  Error: {error}"]
     lines: list[str] = []
     for artifact in project.artifacts:
-        path, content = (root / artifact.path).relative_to(root), artifact.content or b""
+        path = (root / artifact.path).relative_to(root)
         if documents is not None and path.suffix in {".md", ".toml"}:
-            documents[path.as_posix()] = content.decode("utf-8")
+            documents[path.as_posix()] = artifact_text(artifact)
         match path.suffix, path.parts:
             case _, parts if "_runtime" in parts:
                 continue
             case ".py", parts:
-                modules[parts] = content.decode(case.get("model", {}).get("encoding", "utf-8"))
+                modules[parts] = artifact_text(artifact, case.get("model", {}).get("encoding", "utf-8"))
             case _:
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
@@ -299,7 +311,7 @@ def render_client(
         lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
         return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
     modules: Modules = {
-        path.parts: (artifact.content or b"").decode()
+        path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
@@ -743,6 +755,12 @@ def _regenerate(source: Path, root: Path) -> list[str]:
     ]
 
 
+def _written_as_text(path: Path, scratch: Path) -> bool:
+    """Return whether a file holds what a text-mode write of its text leaves, with the line ending of the platform."""
+    scratch.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return scratch.read_bytes() == path.read_bytes()
+
+
 def client_regeneration_report(root: Path) -> str:
     """Regenerate a package from a changed API over user code, an edited generated file, and a foreign file.
 
@@ -770,4 +788,10 @@ def client_regeneration_report(root: Path) -> str:
         f"  pets/_client.py still edited {generated.read_text(encoding='utf-8') == edited}",
         f"  pets/resources/orders/__init__.py still foreign {foreign.read_text(encoding='utf-8') == written}",
     ))
+    scratch = root / "text-mode-copy"
+    files = [root / "pets_models.py", *(path for path in (root / "pets").rglob("*") if path.is_file())]
+    lines.append(
+        "  generated files written like text files "
+        f"{all(_written_as_text(path, scratch) for path in files if path != extensions)}"
+    )
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"

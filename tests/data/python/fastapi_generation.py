@@ -24,6 +24,7 @@ from datamodel_code_generator.fastapi import (
     render_fastapi,
 )
 from datamodel_code_generator.format import Formatter
+from tests.data.python.client_generation import artifact_text
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
@@ -128,15 +129,15 @@ def _render(
                 copied = content.replace(b"\r\n", b"\n").endswith(source.replace(b"\r\n", b"\n"))
                 line += f" ({'copied' if copied else 'changed'} runtime)"
                 if backend in case.get("runtime", ()):
-                    modules[parts] = content.decode(encoding)
+                    modules[parts] = artifact_text(artifact, encoding)
             case ".py", parts:
                 if parts[0] != PACKAGE or backend in case.get(
                     "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
                 ):
-                    modules[parts] = content.decode(encoding)
+                    modules[parts] = artifact_text(artifact, encoding)
             case _:
                 files.append(f"  file {path.as_posix()}")
-                shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
+                shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', artifact_text(artifact)))
                 files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
         lines.append(line)
     return [*lines, *files]

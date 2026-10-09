@@ -10,6 +10,7 @@ import unicodedata
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from io import BytesIO, TextIOWrapper
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Protocol, cast
 from urllib.parse import ParseResult
@@ -356,6 +357,17 @@ def _normalized(text: str) -> str:
     return f"{text}\n" if text else ""
 
 
+def _written(text: str, encoding: str) -> bytes:
+    """Return the bytes that writing the text to a file opened as text leaves in it, as model files are written.
+
+    The text passes the text layer of such a file, so its lines end as the platform ends them.
+    """
+    with TextIOWrapper(buffer := BytesIO(), encoding=encoding) as file:
+        file.write(text)
+        file.flush()
+        return buffer.getvalue()
+
+
 def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContract, ...]:
     """Return the operations of the root document's `paths`, in document order.
 
@@ -657,7 +669,7 @@ class _Finisher:
             raise APIGenerationError(problems)
 
     def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
-        """Format, head, and encode every Python file like a model file, from the model output settings."""
+        """Format, head, and encode every file like a model file, from the model output settings."""
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
             _build_module_content,  # pyright: ignore[reportPrivateUsage]
@@ -698,7 +710,7 @@ class _Finisher:
         texts = {path: _normalized(text) for path, text in texts.items()}
         self.check_sources(((file.path, texts[file.path]) for file in files if not file.verbatim), "format")
         return tuple(
-            PlannedFile(path=path, content=text.encode(effective.encoding if _is_python(path) else "utf-8"))
+            PlannedFile(path=path, content=_written(text, effective.encoding if _is_python(path) else "utf-8"))
             for path, text in texts.items()
         )
 

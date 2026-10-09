@@ -12,6 +12,7 @@
   "ignore-unrendered-text": {"write": {"server/notes.txt": "User notes\n"}},
   "ignore-bytecode-python": {"write": {"server/__pycache__/extra.py": "# cache\n"}},
   "crlf": {"crlf": ["models.py", "server/services.py", "server/README.md"]},
+  "lf": {"lf": ["models.py", "server/services.py", "server/README.md"]},
   "non-text-python": {"binary": ["server/services.py"], "error": "server: Output is not text in encoding 'utf-8'"},
   "non-text-readme": {"binary": ["server/README.md"], "error": "server/README.md: Output is not text in encoding 'utf-8'"},
   "latin-1": {"encoding": "latin-1", "append": {"server/services.py": "# Café\n"}, "templates": true},
