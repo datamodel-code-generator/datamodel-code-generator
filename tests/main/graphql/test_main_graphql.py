@@ -15,6 +15,7 @@ from tests.main.conftest import (
     LEGACY_BLACK_SKIP,
     assert_generated_model_json_validation,
     run_main_and_assert,
+    target_pydantic_args,
 )
 from tests.main.graphql.conftest import assert_file_content
 
@@ -1084,4 +1085,24 @@ def test_main_graphql_no_typename(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="no_typename.py",
         extra_args=["--graphql-no-typename"],
+    )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
+def test_main_graphql_alias_generator_union_members(output_file: Path, target_pydantic_version: str | None) -> None:
+    """Keep union members unpinned for --target-pydantic-version 2: they take no alias and no Field import."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "alias_generator_empty_union.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_empty_union.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--graphql-no-typename",
+            *target_pydantic_args(target_pydantic_version),
+        ],
     )

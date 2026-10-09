@@ -64,7 +64,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "spies": ("normal-path-mock:tests/main/test_generation_observation.py::test_generation_observation",),
     "abnormal-e2e": (
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._api_manifest",
-        "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._api_publication",
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
     ),
     "disguised-asserts": (
