@@ -43,12 +43,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.FieldPetsGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.FieldPetsGetResponse)},
     )
 
 
@@ -56,12 +51,7 @@ class ListCounts:
     """Plans of the list_counts operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.FieldCountsGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.FieldCountsGetResponse)},
     )
 
 
@@ -69,12 +59,7 @@ class GetCode:
     """Plans of the get_code operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.Code,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.Code)},
     )
 
 
@@ -90,44 +75,13 @@ class LiteralModel1:
         listed: List | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='modes',
-                plan=ParameterPlan(
-                    location='query',
-                    name='modes',
-                    style='form',
-                    shape='array',
-                    reserved_names=('listed', 'named'),
-                ),
-                adapter=TypeAdapter(list[Literal['a']]),
-            ),
-            ParameterArgument(
-                name='named',
-                plan=ParameterPlan(
-                    location='query',
-                    name='named',
-                    style='form',
-                    explode=True,
-                    reserved_names=('listed', 'modes'),
-                ),
-                adapter=TypeAdapter(Annotated),
-            ),
-            ParameterArgument(
-                name='listed',
-                plan=ParameterPlan(
-                    location='query',
-                    name='listed',
-                    style='form',
-                    explode=True,
-                    reserved_names=('modes', 'named'),
-                ),
-                adapter=TypeAdapter(List),
-            ),
-        ),
+        arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array', reserved_names=('listed', 'named')), adapter=TypeAdapter(list[Literal['a']])), ParameterArgument(name='named', plan=ParameterPlan(location='query', name='named', style='form', explode=True, reserved_names=('listed', 'modes')), adapter=TypeAdapter(Annotated)), ParameterArgument(name='listed', plan=ParameterPlan(location='query', name='listed', style='form', explode=True, reserved_names=('modes', 'named')), adapter=TypeAdapter(List))),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class LiteralModel:
@@ -140,33 +94,20 @@ class LiteralModel:
         modes: list[Literal['b']] | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='modes',
-                plan=ParameterPlan(
-                    location='query',
-                    name='modes',
-                    style='form',
-                    shape='array',
-                ),
-                adapter=TypeAdapter(list[Literal['b']]),
-            ),
-        ),
+        arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array'), adapter=TypeAdapter(list[Literal['b']])),),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class PostThing:
     """Plans of the post_thing operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0])},
     )
 
 
@@ -185,85 +126,11 @@ class GetPet:
         tag: spellings_basemodel_models.Tag | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='codes',
-                plan=ParameterPlan(
-                    location='query',
-                    name='codes',
-                    style='form',
-                    explode=True,
-                    shape='array',
-                    reserved_names=('code', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
-                ),
-                adapter=TypeAdapter(list[spellings_basemodel_models.Code]),
-            ),
-            ParameterArgument(
-                name='day',
-                plan=ParameterPlan(
-                    location='query',
-                    name='day',
-                    style='form',
-                    explode=True,
-                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
-                ),
-                adapter=TypeAdapter(date),
-            ),
-            ParameterArgument(
-                name='filter',
-                plan=ParameterPlan(
-                    location='query',
-                    name='filter',
-                    style='deepObject',
-                    explode=True,
-                    shape='object',
-                    fields=(FieldPlan('term', 'string'),),
-                    additional=FieldPlan('', 'string'),
-                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
-                ),
-                adapter=TypeAdapter(spellings_basemodel_models.Query),
-            ),
-            ParameterArgument(
-                name='pair',
-                plan=ParameterPlan(
-                    location='query',
-                    name='pair',
-                    style='form',
-                    shape='array',
-                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step', 'tag'),
-                ),
-                adapter=TypeAdapter(spellings_basemodel_models.Pair),
-            ),
-            ParameterArgument(
-                name='pet',
-                plan=ParameterPlan(
-                    location='query',
-                    name='pet',
-                    content_media_type='application/json',
-                ),
-                adapter=TypeAdapter(spellings_basemodel_models.Pet),
-            ),
-            ParameterArgument(
-                name='tag',
-                plan=ParameterPlan(
-                    location='query',
-                    name='tag',
-                    style='form',
-                    explode=True,
-                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
-                ),
-                adapter=TypeAdapter(spellings_basemodel_models.Tag),
-            ),
-        ),
+        arguments=(ParameterArgument(name='codes', plan=ParameterPlan(location='query', name='codes', style='form', explode=True, shape='array', reserved_names=('code', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(list[spellings_basemodel_models.Code])), ParameterArgument(name='day', plan=ParameterPlan(location='query', name='day', style='form', explode=True, reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(date)), ParameterArgument(name='filter', plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, shape='object', fields=(FieldPlan('term', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(spellings_basemodel_models.Query)), ParameterArgument(name='pair', plan=ParameterPlan(location='query', name='pair', style='form', shape='array', reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(spellings_basemodel_models.Pair)), ParameterArgument(name='pet', plan=ParameterPlan(location='query', name='pet', content_media_type='application/json'), adapter=TypeAdapter(spellings_basemodel_models.Pet)), ParameterArgument(name='tag', plan=ParameterPlan(location='query', name='tag', style='form', explode=True, reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step')), adapter=TypeAdapter(spellings_basemodel_models.Tag))),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.Pet,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.Pet)},
     )
 
 
@@ -271,12 +138,7 @@ class PostField:
     """Plans of the post_field operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.Response,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.Response)},
     )
 
 
@@ -284,10 +146,5 @@ class PostDay:
     """Plans of the post_day operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=spellings_basemodel_models.Day,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.Day)},
     )

@@ -5,7 +5,11 @@
 
 from fastapi.security import APIKeyHeader
 
-api_key = APIKeyHeader(name='X-API-Key', scheme_name='api_key', auto_error=False)
+api_key = APIKeyHeader(
+    name='X-API-Key',
+    scheme_name='api_key',
+    auto_error=False,
+)
 
 
 __all__ = [

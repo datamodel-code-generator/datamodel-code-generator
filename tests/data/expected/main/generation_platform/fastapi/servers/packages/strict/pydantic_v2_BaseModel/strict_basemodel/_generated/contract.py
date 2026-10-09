@@ -55,186 +55,35 @@ class GetValues:
         visits: StrictInt | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='id',
-                plan=ParameterPlan(
-                    location='path',
-                    name='id',
-                    style='simple',
-                    required=True,
-                    kind='integer',
-                ),
-                adapter=TypeAdapter(StrictInt),
-            ),
-            ParameterArgument(
-                name='count',
-                plan=ParameterPlan(
-                    location='query',
-                    name='count',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('blob', 'bounded', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(StrictInt),
-            ),
-            ParameterArgument(
-                name='bounded',
-                plan=ParameterPlan(
-                    location='query',
-                    name='bounded',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('blob', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(Annotated[int, Field(ge=0, strict=True)]),
-            ),
-            ParameterArgument(
-                name='score',
-                plan=ParameterPlan(
-                    location='query',
-                    name='score',
-                    style='form',
-                    explode=True,
-                    kind='number',
-                    reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'size'),
-                ),
-                adapter=TypeAdapter(StrictFloat),
-            ),
-            ParameterArgument(
-                name='flag',
-                plan=ParameterPlan(
-                    location='query',
-                    name='flag',
-                    style='form',
-                    explode=True,
-                    kind='boolean',
-                    reserved_names=('blob', 'bounded', 'count', 'counts', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(StrictBool),
-            ),
-            ParameterArgument(
-                name='counts',
-                plan=ParameterPlan(
-                    location='query',
-                    name='counts',
-                    style='form',
-                    explode=True,
-                    shape='array',
-                    kind='integer',
-                    reserved_names=('blob', 'bounded', 'count', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(list[StrictInt]),
-            ),
-            ParameterArgument(
-                name='page',
-                plan=ParameterPlan(
-                    location='query',
-                    name='page',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(StrictInt),
-                default=1,
-            ),
-            ParameterArgument(
-                name='size',
-                plan=ParameterPlan(
-                    location='query',
-                    name='size',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score'),
-                ),
-                adapter=TypeAdapter(Annotated[int, Field(ge=1, strict=True)]),
-                default=10,
-            ),
-            ParameterArgument(
-                name='maybe',
-                plan=ParameterPlan(
-                    location='query',
-                    name='maybe',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'name', 'names', 'page', 'score', 'size'),
-                ),
-                adapter=TypeAdapter(StrictInt | None),
-            ),
-            ParameterArgument(
-                name='x_trace',
-                plan=ParameterPlan(
-                    location='header',
-                    name='X-Trace',
-                    style='simple',
-                    kind='integer',
-                    reserved_names=('X-Tag',),
-                ),
-                adapter=TypeAdapter(StrictInt),
-            ),
-            ParameterArgument(
-                name='visits',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='visits',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                ),
-                adapter=TypeAdapter(StrictInt),
-            ),
-        ),
+        arguments=(ParameterArgument(name='id', plan=ParameterPlan(location='path', name='id', style='simple', required=True, kind='integer'), adapter=TypeAdapter(StrictInt)), ParameterArgument(name='count', plan=ParameterPlan(location='query', name='count', style='form', explode=True, kind='integer', reserved_names=('blob', 'bounded', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size')), adapter=TypeAdapter(StrictInt)), ParameterArgument(name='bounded', plan=ParameterPlan(location='query', name='bounded', style='form', explode=True, kind='integer', reserved_names=('blob', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size')), adapter=TypeAdapter(Annotated[int, Field(ge=0, strict=True)])), ParameterArgument(name='score', plan=ParameterPlan(location='query', name='score', style='form', explode=True, kind='number', reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'size')), adapter=TypeAdapter(StrictFloat)), ParameterArgument(name='flag', plan=ParameterPlan(location='query', name='flag', style='form', explode=True, kind='boolean', reserved_names=('blob', 'bounded', 'count', 'counts', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size')), adapter=TypeAdapter(StrictBool)), ParameterArgument(name='counts', plan=ParameterPlan(location='query', name='counts', style='form', explode=True, shape='array', kind='integer', reserved_names=('blob', 'bounded', 'count', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size')), adapter=TypeAdapter(list[StrictInt])), ParameterArgument(name='page', plan=ParameterPlan(location='query', name='page', style='form', explode=True, kind='integer', reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'score', 'size')), adapter=TypeAdapter(StrictInt), default=1), ParameterArgument(name='size', plan=ParameterPlan(location='query', name='size', style='form', explode=True, kind='integer', reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score')), adapter=TypeAdapter(Annotated[int, Field(ge=1, strict=True)]), default=10), ParameterArgument(name='maybe', plan=ParameterPlan(location='query', name='maybe', style='form', explode=True, kind='integer', reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'name', 'names', 'page', 'score', 'size')), adapter=TypeAdapter(StrictInt | None)), ParameterArgument(name='x_trace', plan=ParameterPlan(location='header', name='X-Trace', style='simple', kind='integer', reserved_names=('X-Tag',)), adapter=TypeAdapter(StrictInt)), ParameterArgument(name='visits', plan=ParameterPlan(location='cookie', name='visits', style='form', explode=True, kind='integer'), adapter=TypeAdapter(StrictInt))),
         record=Parameters,
         path=RawPath(template='/values/{id}', names=frozenset({'id'})),
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class PostForm:
     """Plans of the post_form operation."""
 
     BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/x-www-form-urlencoded',
-                kind='form',
-                adapter=TypeAdapter(strict_basemodel_models.Form),
-                fields=(
-                    FieldPlan('count', 'integer'),
-                    FieldPlan('score', 'number'),
-                    FieldPlan('flag', 'boolean'),
-                    FieldPlan('name', 'string'),
-                    FieldPlan('counts', 'integer', repeated=True),
-                ),
-            ),
-        ),
+        media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', adapter=TypeAdapter(strict_basemodel_models.Form), fields=(FieldPlan('count', 'integer'), FieldPlan('score', 'number'), FieldPlan('flag', 'boolean'), FieldPlan('name', 'string'), FieldPlan('counts', 'integer', repeated=True))),),
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class Upload:
     """Plans of the upload operation."""
 
     BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='multipart/form-data',
-                kind='multipart',
-                adapter=TypeAdapter(strict_basemodel_models.FieldUploadsPostRequest),
-                fields=(
-                    FieldPlan('file', 'string'),
-                    FieldPlan('count', 'integer'),
-                    FieldPlan('score', 'number'),
-                    FieldPlan('flag', 'boolean'),
-                    FieldPlan('note', 'string'),
-                    FieldPlan('counts', 'integer', repeated=True),
-                ),
-            ),
-        ),
+        media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(strict_basemodel_models.FieldUploadsPostRequest), fields=(FieldPlan('file', 'string'), FieldPlan('count', 'integer'), FieldPlan('score', 'number'), FieldPlan('flag', 'boolean'), FieldPlan('note', 'string'), FieldPlan('counts', 'integer', repeated=True))),),
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )

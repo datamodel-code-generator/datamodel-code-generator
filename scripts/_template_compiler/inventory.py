@@ -58,7 +58,16 @@ SUPPORTED_TESTS = frozenset({"defined", "equalto", "false", "none"})
 SUPPORTED_GLOBALS = frozenset({"namespace"})
 SUPPORTED_LOOP_ATTRIBUTES = frozenset({"last"})
 SUPPORTED_ASSIGNMENTS = frozenset({"Name", "NSRef"})
-SUPPORTED_CALLS = frozenset({"append", "get", "items", "get_type_annotation", "get_type_hint", "namespace"})
+SUPPORTED_CALLS = frozenset({
+    "append",
+    "build_signature",
+    "get",
+    "items",
+    "get_type_annotation",
+    "get_type_hint",
+    "namespace",
+    "signature",
+})
 _SELECTATTR_TEST_ARGUMENT_INDEX = 1
 _SELECTATTR_TEST_MINIMUM_ARGUMENTS = 2
 _SCOPED_ASSIGNMENT_SITES = frozenset({
@@ -86,17 +95,23 @@ _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({
     "_fields",
     "args",
     "argument",
+    "builder",
     "config",
     "config_items",
     "data_type",
+    "dependency",
     "field",
     "fields",
     "group",
+    "keyword",
     "loop",
     "media",
+    "method",
     "ns",
     "operation",
+    "parameter",
     "pattern_property",
+    "plan",
     "protocol",
     "resource",
     "route",
@@ -464,6 +479,8 @@ def inventory_templates(template_dir: Path, environment: Environment | None = No
                 _validate_for_target(relative_path, node)
             elif isinstance(node, nodes.Macro):
                 _inventory_macro(values["macros"], relative_path, node)
+                if not any(node is item for item in ast.body):
+                    raise _unsupported(relative_path, node, "nested macro", node.name)
             elif isinstance(node, nodes.Include):
                 if not isinstance(node.template, nodes.Const) or not isinstance(node.template.value, str):
                     raise _unsupported(relative_path, node, "include", "dynamic include")

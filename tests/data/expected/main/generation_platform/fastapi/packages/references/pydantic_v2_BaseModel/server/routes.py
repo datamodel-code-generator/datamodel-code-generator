@@ -25,7 +25,10 @@ from ._runtime.server.security import (
 from .services import Service
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     list_pets_handler = checked(
         service.list_pets,
@@ -48,14 +51,9 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     def list_pets(
         *,
         principal: Annotated[object, Depends(list_pets_principal)],
-        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(
-            alias='limit',
-        )] = None,
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
         page: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='page')] = None,
-        x_trace: Annotated[str | None, Header(
-            alias='X-Trace',
-            convert_underscores=False,
-        )] = None,
+        x_trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
@@ -81,7 +79,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     create_pet_handler = checked(
         service.create_pet,
@@ -104,14 +105,15 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     def create_pet(
         *,
         principal: Annotated[object, Depends(create_pet_principal)],
-        x_trace: Annotated[str | None, Header(
-            alias='X-Trace',
-            convert_underscores=False,
-        )] = None,
+        x_trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
-            create_pet_handler(principal=principal, x_trace=x_trace, body=body),
+            create_pet_handler(
+                principal=principal,
+                x_trace=x_trace,
+                body=body,
+            ),
             contract.CreatePet.RESPONSES,
         )
 
@@ -129,7 +131,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_owners(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     list_owners_handler = checked(
         service.list_owners,
@@ -152,12 +157,13 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
     def list_owners(
         *,
         principal: Annotated[object, Depends(list_owners_principal)],
-        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(
-            alias='limit',
-        )] = None,
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
     ) -> object:
         return dispatch(
-            list_owners_handler(principal=principal, limit=limit),
+            list_owners_handler(
+                principal=principal,
+                limit=limit,
+            ),
             contract.ListOwners.RESPONSES,
         )
 

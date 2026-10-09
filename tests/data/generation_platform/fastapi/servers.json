@@ -1452,6 +1452,41 @@
     ],
     "package_snapshots": []
   },
+  "security-templates": {
+    "input": "server-security.yaml",
+    "services": "security",
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1maybe/get": "async",
+        "/paths/~1custom/get": "async"
+      }
+    },
+    "model": {
+      "custom_template_dir": "templates/security"
+    },
+    "apps": [
+      {
+        "set": "default",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/maybe",
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          }
+        ]
+      }
+    ],
+    "package_snapshots": []
+  },
   "customized": {
     "input": "services.yaml",
     "services": "customized",

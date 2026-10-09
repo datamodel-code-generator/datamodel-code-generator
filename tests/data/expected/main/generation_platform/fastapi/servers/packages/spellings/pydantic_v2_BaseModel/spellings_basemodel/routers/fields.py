@@ -18,7 +18,10 @@ from .._runtime.server.responses import dispatch
 from ..services import FieldsService
 
 
-def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_thing(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     fields: FieldsService = wiring.services['fields']
     post_thing_handler = checked(
         fields.post_thing,
@@ -27,11 +30,14 @@ def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
 
     def post_thing(
         *,
-        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(
-            media_type='application/json',
-        )],
+        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(media_type='application/json')],
     ) -> object:
-        return dispatch(post_thing_handler(body=body), contract.PostThing.RESPONSES)
+        return dispatch(
+            post_thing_handler(
+                body=body,
+            ),
+            contract.PostThing.RESPONSES,
+        )
 
     router.add_api_route(
         '/things',
@@ -48,7 +54,10 @@ def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_field(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     fields: FieldsService = wiring.services['fields']
     post_field_handler = checked(
         fields.post_field,
@@ -57,11 +66,14 @@ def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
 
     def post_field(
         *,
-        body: Annotated[spellings_basemodel_models.FieldModel, Body(
-            media_type='application/json',
-        )],
+        body: Annotated[spellings_basemodel_models.FieldModel, Body(media_type='application/json')],
     ) -> object:
-        return dispatch(post_field_handler(body=body), contract.PostField.RESPONSES)
+        return dispatch(
+            post_field_handler(
+                body=body,
+            ),
+            contract.PostField.RESPONSES,
+        )
 
     router.add_api_route(
         '/fields',

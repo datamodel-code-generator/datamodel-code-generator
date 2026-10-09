@@ -19,7 +19,10 @@ from .._runtime.server.security import authenticate as authenticate_1
 from ..services import SecurityService
 
 
-def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
+def _add_authenticate(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     security_1: SecurityService[object] = wiring.services['security']
     authenticate_handler_1 = checked(
         security_1.authenticate,
@@ -43,9 +46,7 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
         *,
         principal: Annotated[object, Depends(authenticate_principal)],
         security: Annotated[str | None, Query(alias='security')] = None,
-        authenticate_handler: Annotated[str | None, Query(
-            alias='authenticate_handler',
-        )] = None,
+        authenticate_handler: Annotated[str | None, Query(alias='authenticate_handler')] = None,
     ) -> object:
         return dispatch(
             authenticate_handler_1(
@@ -70,7 +71,9 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('authenticate', _add_authenticate),)
+LITERAL_ROUTES: Final = (
+    ('authenticate', _add_authenticate),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

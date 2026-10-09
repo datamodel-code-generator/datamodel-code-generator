@@ -29,33 +29,30 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> (
-        spellings_basemodel_models.FieldPetsGetResponse
-        | HTTPResult[spellings_basemodel_models.FieldPetsGetResponse]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.FieldPetsGetResponse | HTTPResult[spellings_basemodel_models.FieldPetsGetResponse] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def list_counts(
         self,
         *,
         invalid: bool | None,
-    ) -> (
-        spellings_basemodel_models.FieldCountsGetResponse
-        | HTTPResult[spellings_basemodel_models.FieldCountsGetResponse]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.FieldCountsGetResponse | HTTPResult[spellings_basemodel_models.FieldCountsGetResponse] | Response:
+        """
+        Handle GET /counts.
+        """
 
     @abstractmethod
     def get_code(
         self,
         *,
         invalid: bool | None,
-    ) -> (
-        spellings_basemodel_models.Code
-        | HTTPResult[spellings_basemodel_models.Code]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.Code | HTTPResult[spellings_basemodel_models.Code] | Response:
+        """
+        Handle GET /code.
+        """
 
     @abstractmethod
     def literal(
@@ -64,14 +61,20 @@ class PetsService(Protocol):
         modes: list[Literal['a']] | None,
         named: Annotated | None,
         listed: List | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /literal.
+        """
 
     @abstractmethod
     def literal_model(
         self,
         *,
         modes: list[Literal['b']] | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /literal-model.
+        """
 
     @abstractmethod
     def get_pet(
@@ -89,11 +92,10 @@ class PetsService(Protocol):
         label: str | None,
         pet: spellings_basemodel_models.Pet | None,
         tag: spellings_basemodel_models.Tag | None,
-    ) -> (
-        spellings_basemodel_models.Pet
-        | HTTPResult[spellings_basemodel_models.Pet]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.Pet | HTTPResult[spellings_basemodel_models.Pet] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
 
 class FieldsService(Protocol):
@@ -104,22 +106,20 @@ class FieldsService(Protocol):
         self,
         *,
         body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-    ) -> (
-        tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]
-        | HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]]
-        | Response
-    ): ...
+    ) -> tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0] | HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]] | Response:
+        """
+        Handle POST /things.
+        """
 
     @abstractmethod
     def post_field(
         self,
         *,
         body: spellings_basemodel_models.FieldModel,
-    ) -> (
-        spellings_basemodel_models.Response
-        | HTTPResult[spellings_basemodel_models.Response]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.Response | HTTPResult[spellings_basemodel_models.Response] | Response:
+        """
+        Handle POST /fields.
+        """
 
 
 class DaysService(Protocol[PrincipalT_contra]):
@@ -131,8 +131,7 @@ class DaysService(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra | None,
         body: spellings_basemodel_models.Day,
-    ) -> (
-        spellings_basemodel_models.Day
-        | HTTPResult[spellings_basemodel_models.Day]
-        | Response
-    ): ...
+    ) -> spellings_basemodel_models.Day | HTTPResult[spellings_basemodel_models.Day] | Response:
+        """
+        Handle POST /days.
+        """

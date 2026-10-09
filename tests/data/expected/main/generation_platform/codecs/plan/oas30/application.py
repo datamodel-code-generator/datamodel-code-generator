@@ -14,7 +14,10 @@ from ._runtime.server.application import build, error_handlers, validation_error
 from .routers import untagged
 from .services import UntaggedService
 
-ROUTES: Final = (*untagged.LITERAL_ROUTES, *untagged.TEMPLATED_ROUTES)
+ROUTES: Final = (
+    *untagged.LITERAL_ROUTES,
+    *untagged.TEMPLATED_ROUTES,
+)
 INFO: Final[dict[str, Any]] = {'title': 'Legacy wire plan', 'version': '1'}
 
 

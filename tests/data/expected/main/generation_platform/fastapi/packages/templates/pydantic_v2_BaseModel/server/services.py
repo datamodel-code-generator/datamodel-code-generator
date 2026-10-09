@@ -16,7 +16,11 @@ from pydantic import AwareDatetime
 from ._runtime.server.responses import HTTPResult
 
 
-class PetsService(Protocol):
+class Owned(Protocol):
+    """A service the platform team owns."""
+
+
+class PetsService(Owned, Protocol):
     """Implement the pets operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
@@ -29,47 +33,57 @@ class PetsService(Protocol):
         x_request_id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> (
-        models.FieldPetsGetResponse
-        | HTTPResult[models.FieldPetsGetResponse | models.Error]
-        | Response
-    ): ...
+    ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse | models.Error] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: models.NewPet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def list_my_pets(
         self,
-    ) -> (
-        models.FieldPetsMineGetResponse
-        | HTTPResult[models.FieldPetsMineGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldPetsMineGetResponse | HTTPResult[models.FieldPetsMineGetResponse] | Response:
+        """
+        Handle GET /pets/mine.
+        """
 
     @abstractmethod
     def get_pet(
         self,
         *,
         pet_id: int,
-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
     @abstractmethod
-    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
+    def delete_pet(
+        self,
+        *,
+        pet_id: int,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle DELETE /pets/{petId}.
+        """
 
 
-class StoreService(Protocol):
+class StoreService(Owned, Protocol):
     """Implement the store operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
     def get_inventory(
         self,
-    ) -> (
-        models.FieldStoreInventoryGetResponse
-        | HTTPResult[models.FieldStoreInventoryGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+        """
+        Handle GET /store/inventory.
+        """

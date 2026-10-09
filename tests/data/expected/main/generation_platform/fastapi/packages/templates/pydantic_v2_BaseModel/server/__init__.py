@@ -12,7 +12,10 @@ from .application import (
     validation_error_handler,
 )
 
+OWNER = "the platform team"
+
 __all__ = [
+    "OWNER",
     "HTTPResult",
     "OperationDependencies",
     "build_router",

@@ -121,7 +121,10 @@ from .._runtime.server.responses import dispatch
 from ..services import AnimalsService
 
 
-def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_all(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     list_all_handler = checked(
         animals.list_all,
@@ -131,18 +134,10 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
     def list_all(
         *,
         request: Request,
-        page_size: Annotated[int, Field(ge=1, le=100), Query(
-            alias='limit',
-            description='Page size.',
-        )] = 20,
+        page_size: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
-            alias='kind',
-        )] = None,
-        trace: Annotated[UUID | None, Header(
-            alias='X-Request-Id',
-            convert_underscores=False,
-        )] = None,
+        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
+        trace: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
@@ -174,7 +169,10 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     create_pet_handler = checked(
         animals.create_pet,
@@ -188,7 +186,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         body: Annotated[models.NewPet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
-            await create_pet_handler(request=request, body=body),
+            await create_pet_handler(
+                request=request,
+                body=body,
+            ),
             contract.CreatePet.RESPONSES,
         )
 
@@ -207,7 +208,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_my_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     list_my_pets_handler = checked(
         animals.list_my_pets,
@@ -215,9 +219,14 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
         asynchronous=True,
     )
 
-    async def list_my_pets(*, request: Request) -> object:
+    async def list_my_pets(
+        *,
+        request: Request,
+    ) -> object:
         return dispatch(
-            await list_my_pets_handler(request=request),
+            await list_my_pets_handler(
+                request=request,
+            ),
             contract.ListMyPets.RESPONSES,
         )
 
@@ -236,7 +245,10 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     get_pet_handler = checked(
         animals.get_pet,
@@ -250,7 +262,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            await get_pet_handler(request=request, pet_id=pet_id),
+            await get_pet_handler(
+                request=request,
+                pet_id=pet_id,
+            ),
             contract.GetPet.RESPONSES,
         )
 
@@ -269,7 +284,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_delete_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     delete_pet_handler = checked(
         animals.delete_pet,
@@ -283,7 +301,10 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            await delete_pet_handler(request=request, pet_id=pet_id),
+            await delete_pet_handler(
+                request=request,
+                pet_id=pet_id,
+            ),
             contract.DeletePet.RESPONSES,
         )
 
@@ -306,7 +327,10 @@ LITERAL_ROUTES: Final = (
     ('create_pet', _add_create_pet),
     ('list_my_pets', _add_list_my_pets),
 )
-TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet), ('delete_pet', _add_delete_pet))
+TEMPLATED_ROUTES: Final = (
+    ('get_pet', _add_get_pet),
+    ('delete_pet', _add_delete_pet),
+)
 
 
 def build_router(
@@ -343,7 +367,10 @@ from .._runtime.server.responses import dispatch
 from ..services import StoreService
 
 
-def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_inventory(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     store: StoreService = wiring.services['store']
     get_inventory_handler = checked(
         store.get_inventory,
@@ -351,9 +378,14 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
         asynchronous=True,
     )
 
-    async def get_inventory(*, request: Request) -> object:
+    async def get_inventory(
+        *,
+        request: Request,
+    ) -> object:
         return dispatch(
-            await get_inventory_handler(request=request),
+            await get_inventory_handler(
+                request=request,
+            ),
             contract.GetInventory.RESPONSES,
         )
 
@@ -372,7 +404,9 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('get_inventory', _add_get_inventory),)
+LITERAL_ROUTES: Final = (
+    ('get_inventory', _add_get_inventory),
+)
 TEMPLATED_ROUTES: Final = ()
 
 
@@ -425,11 +459,10 @@ class AnimalsService(Protocol):
         trace: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> (
-        models.FieldPetsGetResponse
-        | HTTPResult[models.FieldPetsGetResponse | models.Error]
-        | Response
-    ): ...
+    ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse | models.Error] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     async def create_pet(
@@ -437,18 +470,20 @@ class AnimalsService(Protocol):
         *,
         request: Request,
         body: models.NewPet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     async def list_my_pets(
         self,
         *,
         request: Request,
-    ) -> (
-        models.FieldPetsMineGetResponse
-        | HTTPResult[models.FieldPetsMineGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldPetsMineGetResponse | HTTPResult[models.FieldPetsMineGetResponse] | Response:
+        """
+        Handle GET /pets/mine.
+        """
 
     @abstractmethod
     async def get_pet(
@@ -456,7 +491,10 @@ class AnimalsService(Protocol):
         *,
         request: Request,
         pet_id: int,
-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
     @abstractmethod
     async def delete_pet(
@@ -464,7 +502,10 @@ class AnimalsService(Protocol):
         *,
         request: Request,
         pet_id: int,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle DELETE /pets/{petId}.
+        """
 
 
 class StoreService(Protocol):
@@ -475,8 +516,7 @@ class StoreService(Protocol):
         self,
         *,
         request: Request,
-    ) -> (
-        models.FieldStoreInventoryGetResponse
-        | HTTPResult[models.FieldStoreInventoryGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+        """
+        Handle GET /store/inventory.
+        """

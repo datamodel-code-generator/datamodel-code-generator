@@ -24,4 +24,7 @@ class UntaggedService(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /keys.
+        """

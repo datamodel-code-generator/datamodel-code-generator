@@ -334,6 +334,16 @@
       ]
     }
   },
+  "docstrings": {
+    "input": "docstrings.yaml",
+    "config": {
+      "server_layout": "single"
+    },
+    "model": {
+      "use_schema_description": true,
+      "use_single_line_docstring": true
+    }
+  },
   "templates": {
     "input": "pets.yaml",
     "model": {

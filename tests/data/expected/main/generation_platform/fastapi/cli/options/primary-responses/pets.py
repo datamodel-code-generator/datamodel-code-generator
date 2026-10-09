@@ -17,15 +17,26 @@ from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_pets_handler = checked(
         pets.list_pets,
         'The pets.list_pets method of GET /pets',
     )
 
-    def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-        return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+    def list_pets(
+        *,
+        limit: Annotated[int, Query(alias='limit')] = 20,
+    ) -> object:
+        return dispatch(
+            list_pets_handler(
+                limit=limit,
+            ),
+            contract.ListPets.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets',
@@ -42,7 +53,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     create_pet_handler = checked(
         pets.create_pet,
@@ -53,7 +67,12 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
-        return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+        return dispatch(
+            create_pet_handler(
+                body=body,
+            ),
+            contract.CreatePet.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets',
@@ -70,7 +89,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_replace_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     replace_pet_handler = checked(
         pets.replace_pet,
@@ -83,7 +105,10 @@ def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
-            replace_pet_handler(name=name, body=body),
+            replace_pet_handler(
+                name=name,
+                body=body,
+            ),
             contract.ReplacePet.RESPONSES,
         )
 
@@ -105,7 +130,9 @@ LITERAL_ROUTES: Final = (
     ('list_pets', _add_list_pets),
     ('create_pet', _add_create_pet),
 )
-TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
+TEMPLATED_ROUTES: Final = (
+    ('replace_pet', _add_replace_pet),
+)
 
 
 def build_router(

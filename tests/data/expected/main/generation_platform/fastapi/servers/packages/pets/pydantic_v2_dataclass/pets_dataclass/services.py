@@ -29,41 +29,48 @@ class PetsService(Protocol):
         x_request_id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> (
-        pets_dataclass_models.FieldPetsGetResponse
-        | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.FieldPetsGetResponse | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: pets_dataclass_models.NewPet,
-    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet] | Response: ...
+    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def list_my_pets(
         self,
-    ) -> (
-        pets_dataclass_models.FieldPetsMineGetResponse
-        | HTTPResult[pets_dataclass_models.FieldPetsMineGetResponse]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.FieldPetsMineGetResponse | HTTPResult[pets_dataclass_models.FieldPetsMineGetResponse] | Response:
+        """
+        Handle GET /pets/mine.
+        """
 
     @abstractmethod
     def get_pet(
         self,
         *,
         pet_id: int,
-    ) -> (
-        pets_dataclass_models.Pet
-        | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
     @abstractmethod
-    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
+    def delete_pet(
+        self,
+        *,
+        pet_id: int,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle DELETE /pets/{petId}.
+        """
 
 
 class StoreService(Protocol):
@@ -72,8 +79,7 @@ class StoreService(Protocol):
     @abstractmethod
     def get_inventory(
         self,
-    ) -> (
-        pets_dataclass_models.FieldStoreInventoryGetResponse
-        | HTTPResult[pets_dataclass_models.FieldStoreInventoryGetResponse]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.FieldStoreInventoryGetResponse | HTTPResult[pets_dataclass_models.FieldStoreInventoryGetResponse] | Response:
+        """
+        Handle GET /store/inventory.
+        """

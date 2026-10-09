@@ -35,7 +35,10 @@ show server/routers/pets.py
   | from typing import Annotated, Final
   | 
   | 
-  | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+  | def _add_list_pets(
+  |     router: APIRouter,
+  |     wiring: Wiring,
+  | ) -> None:
   |     pets: PetsService = wiring.services['pets']
   |     list_pets_handler = checked(
   |         pets.list_pets,
@@ -43,7 +46,10 @@ show server/routers/pets.py
   |     )
   | 
   |     def list_pets() -> object:
-  |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
+  |         return dispatch(
+  |             list_pets_handler(),
+  |             contract.ListPets.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',
@@ -60,7 +66,10 @@ show server/routers/pets.py
   |     )
   | 
   | 
-  | def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+  | def _add_create_pet(
+  |     router: APIRouter,
+  |     wiring: Wiring,
+  | ) -> None:
   |     pets: PetsService = wiring.services['pets']
   |     create_pet_handler = checked(
   |         pets.create_pet,
@@ -71,7 +80,12 @@ show server/routers/pets.py
   |         *,
   |         body: Annotated[models.Pet | None, Body(media_type='application/json')] = None,
   |     ) -> object:
-  |         return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+  |         return dispatch(
+  |             create_pet_handler(
+  |                 body=body,
+  |             ),
+  |             contract.CreatePet.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',

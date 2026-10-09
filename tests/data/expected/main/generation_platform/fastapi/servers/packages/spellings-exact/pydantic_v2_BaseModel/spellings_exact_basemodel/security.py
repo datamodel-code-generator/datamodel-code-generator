@@ -5,10 +5,16 @@
 
 from fastapi.security import HTTPBasic, HTTPBearer
 
-bearer = HTTPBearer(scheme_name='bearer', auto_error=False)
+bearer = HTTPBearer(
+    scheme_name='bearer',
+    auto_error=False,
+)
 
 
-basic = HTTPBasic(scheme_name='basic', auto_error=False)
+basic = HTTPBasic(
+    scheme_name='basic',
+    auto_error=False,
+)
 
 
 __all__ = [

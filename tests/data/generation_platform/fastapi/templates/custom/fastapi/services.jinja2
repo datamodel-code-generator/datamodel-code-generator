@@ -7,14 +7,27 @@ from __future__ import annotations
 
 PrincipalT_contra = {{ typevar }}("PrincipalT_contra", contravariant=True)
 {%- endif %}
+
+
+class Owned({{ protocol_type }}):
+    """A service {{ team }} owns."""
 {%- for protocol in protocols %}
 
 
-class {{ protocol.name }}({{ protocol.base }}):
+class {{ protocol.name }}(Owned, {{ protocol.base }}):
     """{{ protocol.docstring }}"""
 {%- for method in protocol.methods %}
 
     @{{ abstract }}
-    {{ method }}
+    {% if method.asynchronous %}async {% endif %}def {{ method.name }}(
+        self,
+{%- if method.parameters %}
+        *,
+{%- for parameter in method.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+{%- endif %}
+    ) -> {{ method.returns }}:
+        {{ method.docstring }}
 {%- endfor %}
 {%- endfor %}

@@ -71,7 +71,10 @@ show server/routers/pets.py
   | from typing import Final
   | 
   | 
-  | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+  | def _add_list_pets(
+  |     router: APIRouter,
+  |     wiring: Wiring,
+  | ) -> None:
   |     pets: PetsService = wiring.services['pets']
   |     list_pets_handler = checked(
   |         pets.list_pets,
@@ -79,7 +82,10 @@ show server/routers/pets.py
   |     )
   | 
   |     def list_pets() -> object:
-  |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
+  |         return dispatch(
+  |             list_pets_handler(),
+  |             contract.ListPets.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',
@@ -96,7 +102,9 @@ show server/routers/pets.py
   |     )
   | 
   | 
-  | LITERAL_ROUTES: Final = (('list_pets', _add_list_pets),)
+  | LITERAL_ROUTES: Final = (
+  |     ('list_pets', _add_list_pets),
+  | )
   | TEMPLATED_ROUTES: Final = ()
   | 
   | 

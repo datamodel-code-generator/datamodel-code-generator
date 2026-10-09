@@ -30,41 +30,48 @@ class PetsService(Protocol):
         x_request_id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> (
-        models.FieldPetsGetResponse
-        | HTTPResult[models.FieldPetsGetResponse | models.Error]
-        | Response
-    ): ...
+    ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse | models.Error] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     async def create_pet(
         self,
         *,
         body: models.NewPet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     async def list_my_pets(
         self,
-    ) -> (
-        models.FieldPetsMineGetResponse
-        | HTTPResult[models.FieldPetsMineGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldPetsMineGetResponse | HTTPResult[models.FieldPetsMineGetResponse] | Response:
+        """
+        Handle GET /pets/mine.
+        """
 
     @abstractmethod
     async def get_pet(
         self,
         *,
         pet_id: int,
-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
     @abstractmethod
     async def delete_pet(
         self,
         *,
         pet_id: int,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle DELETE /pets/{petId}.
+        """
 
 
 class StoreService(Protocol):
@@ -73,8 +80,7 @@ class StoreService(Protocol):
     @abstractmethod
     async def get_inventory(
         self,
-    ) -> (
-        models.FieldStoreInventoryGetResponse
-        | HTTPResult[models.FieldStoreInventoryGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+        """
+        Handle GET /store/inventory.
+        """

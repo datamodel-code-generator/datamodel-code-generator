@@ -39,4 +39,7 @@ class UntaggedService(Protocol):
         colors: list[defaults_basemodel_models.Color],
         sized: int | None,
         x_colors: list[defaults_basemodel_models.Color],
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /values.
+        """

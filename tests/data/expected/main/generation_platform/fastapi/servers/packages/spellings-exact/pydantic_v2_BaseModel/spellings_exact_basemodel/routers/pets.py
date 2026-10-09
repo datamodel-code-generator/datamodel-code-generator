@@ -25,7 +25,10 @@ from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_pets_handler = checked(
         pets.list_pets,
@@ -37,7 +40,9 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
         return dispatch(
-            list_pets_handler(invalid=invalid),
+            list_pets_handler(
+                invalid=invalid,
+            ),
             contract.ListPets.RESPONSES,
         )
 
@@ -56,7 +61,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_counts(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_counts_handler = checked(
         pets.list_counts,
@@ -68,7 +76,9 @@ def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
         invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
         return dispatch(
-            list_counts_handler(invalid=invalid),
+            list_counts_handler(
+                invalid=invalid,
+            ),
             contract.ListCounts.RESPONSES,
         )
 
@@ -87,15 +97,26 @@ def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_code(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
-    get_code_handler = checked(pets.get_code, 'The pets.get_code method of GET /code')
+    get_code_handler = checked(
+        pets.get_code,
+        'The pets.get_code method of GET /code',
+    )
 
     def get_code(
         *,
         invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
-        return dispatch(get_code_handler(invalid=invalid), contract.GetCode.RESPONSES)
+        return dispatch(
+            get_code_handler(
+                invalid=invalid,
+            ),
+            contract.GetCode.RESPONSES,
+        )
 
     router.add_api_route(
         '/code',
@@ -112,9 +133,15 @@ def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_literal(router: APIRouter, wiring: Wiring) -> None:
+def _add_literal(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
-    literal_handler = checked(pets.literal, 'The pets.literal method of GET /literal')
+    literal_handler = checked(
+        pets.literal,
+        'The pets.literal method of GET /literal',
+    )
 
     def literal(
         *,
@@ -143,7 +170,10 @@ def _add_literal(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
+def _add_literal_model(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     literal_model_handler = checked(
         pets.literal_model,
@@ -155,7 +185,9 @@ def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
         parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
     ) -> object:
         return dispatch(
-            literal_model_handler(modes=parameters.modes),
+            literal_model_handler(
+                modes=parameters.modes,
+            ),
             contract.LiteralModel.RESPONSES,
         )
 
@@ -173,7 +205,10 @@ def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     get_pet_handler = checked(
         pets.get_pet,
@@ -184,19 +219,11 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         *,
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit')] = 10,
-        code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(
-            alias='code',
-        )] = None,
-        codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(
-            alias='codes',
-        )] = None,
-        step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(
-            alias='step',
-        )] = None,
+        code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(alias='code')] = None,
+        codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(alias='codes')] = None,
+        step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(alias='step')] = None,
         raw: Annotated[Optional[bytes], Query(alias='raw')] = None,
-        label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(
-            alias='label',
-        )] = None,
+        label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(alias='label')] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -239,7 +266,9 @@ LITERAL_ROUTES: Final = (
     ('literal', _add_literal),
     ('literal_model', _add_literal_model),
 )
-TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet),)
+TEMPLATED_ROUTES: Final = (
+    ('get_pet', _add_get_pet),
+)
 
 
 def build_router(

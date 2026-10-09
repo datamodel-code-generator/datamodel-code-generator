@@ -22,6 +22,11 @@ from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
+def _registered(endpoint):
+    """Return an endpoint unchanged: the decorator every endpoint of this template takes."""
+    return endpoint
+
+
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
     list_pets_handler = checked(
@@ -29,20 +34,13 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         'The pets.list_pets method of GET /pets',
     )
 
+    @_registered
     def list_pets(
         *,
-        limit: Annotated[int, Field(ge=1, le=100), Query(
-            alias='limit',
-            description='Page size.',
-        )] = 20,
+        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
-            alias='kind',
-        )] = None,
-        x_request_id: Annotated[UUID | None, Header(
-            alias='X-Request-Id',
-            convert_underscores=False,
-        )] = None,
+        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
+        x_request_id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
@@ -70,6 +68,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='The pets.',
         dependencies=wiring.dependencies.get('list_pets'),
+        name='list_pets',
     )
 
 
@@ -80,11 +79,17 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         'The pets.create_pet method of POST /pets',
     )
 
+    @_registered
     def create_pet(
         *,
         body: Annotated[models.NewPet, Body(media_type='application/json')],
     ) -> object:
-        return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+        return dispatch(
+            create_pet_handler(
+                body=body,
+            ),
+            contract.CreatePet.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets',
@@ -98,6 +103,7 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Created.',
         dependencies=wiring.dependencies.get('create_pet'),
+        name='create_pet',
     )
 
 
@@ -108,8 +114,12 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
         'The pets.list_my_pets method of GET /pets/mine',
     )
 
+    @_registered
     def list_my_pets() -> object:
-        return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
+        return dispatch(
+            list_my_pets_handler(),
+            contract.ListMyPets.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets/mine',
@@ -123,6 +133,7 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description="The caller's pets.",
         dependencies=wiring.dependencies.get('list_my_pets'),
+        name='list_my_pets',
     )
 
 
@@ -133,8 +144,17 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         'The pets.get_pet method of GET /pets/{petId}',
     )
 
-    def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
-        return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
+    @_registered
+    def get_pet(
+        *,
+        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+    ) -> object:
+        return dispatch(
+            get_pet_handler(
+                pet_id=pet_id,
+            ),
+            contract.GetPet.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets/{petId}',
@@ -148,6 +168,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='The pet.',
         dependencies=wiring.dependencies.get('get_pet'),
+        name='get_pet',
     )
 
 
@@ -158,12 +179,15 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         'The pets.delete_pet method of DELETE /pets/{petId}',
     )
 
+    @_registered
     def delete_pet(
         *,
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
-            delete_pet_handler(pet_id=pet_id),
+            delete_pet_handler(
+                pet_id=pet_id,
+            ),
             contract.DeletePet.RESPONSES,
         )
 
@@ -178,6 +202,7 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Deleted.',
         dependencies=wiring.dependencies.get('delete_pet'),
+        name='delete_pet',
     )
 
 
@@ -186,7 +211,10 @@ LITERAL_ROUTES: Final = (
     ('create_pet', _add_create_pet),
     ('list_my_pets', _add_list_my_pets),
 )
-TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet), ('delete_pet', _add_delete_pet))
+TEMPLATED_ROUTES: Final = (
+    ('get_pet', _add_get_pet),
+    ('delete_pet', _add_delete_pet),
+)
 
 
 def build_router(

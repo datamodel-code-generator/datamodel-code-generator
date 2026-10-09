@@ -43,6 +43,7 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
         "bodies",
         "results",
         "security",
+        "security-templates",
         "customized",
         "locals",
         "unauthorized",
