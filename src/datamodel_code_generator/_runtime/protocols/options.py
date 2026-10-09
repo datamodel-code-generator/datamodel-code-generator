@@ -7,14 +7,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from inspect import iscoroutinefunction
 from keyword import iskeyword
-from sys import float_info
 from types import MappingProxyType
 from typing import Final, cast
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import ConfigurationError, is_sequence
-from ..client.timing import SessionOptions
+from ..client.timing import SessionOptions, check_limits
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
 from .origins import Origin
@@ -46,14 +45,6 @@ _WS: Final = (
 )
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
 _CACHE_METHODS: Final = ("get", "set", "delete")
-WEBHOOK_LIMITS: Final = (
-    ("max_body_bytes", False, False, False),
-    ("max_header_bytes", False, False, False),
-    ("max_keys", False, False, False),
-    ("max_signatures", False, False, False),
-    ("past_tolerance", True, False, True),
-    ("future_tolerance", True, False, True),
-)
 
 
 def layered(layers: tuple[object, ...], name: str, default: V) -> V:
@@ -62,32 +53,6 @@ def layered(layers: tuple[object, ...], name: str, default: V) -> V:
         if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
             return cast("V", value)
     return default
-
-
-def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
-    """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
-    if type(value) is not int or value < (0 if allow_zero else 1):
-        raise ConfigurationError(field_path=(name,), reason="invalid_value")
-
-
-def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
-    """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
-            return
-        case _:
-            pass
-    raise ConfigurationError(field_path=(name,), reason="invalid_value")
-
-
-def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
-    """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
-    for name, duration, nullable, allow_zero in rules:
-        if isinstance(value := getattr(options, name), Unset) or (nullable and value is None):
-            continue
-        (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:

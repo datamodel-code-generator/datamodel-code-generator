@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Iterable, Mapping
-from dataclasses import dataclass
 from inspect import iscoroutinefunction
 from io import TextIOBase
 from os import SEEK_END, PathLike, fsdecode
@@ -12,45 +11,17 @@ from typing import IO, TYPE_CHECKING, Final, TypeAlias, cast
 
 from typing_extensions import TypeIs
 
+from .content import CHUNK
 from .errors import body_failure
 from .logical import in_thread
 
 if TYPE_CHECKING:
-    from abc import abstractmethod
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
-    from typing import Protocol
-
-    class SyncContent(Protocol):
-        @property
-        def content_length(self) -> int | None:
-            """Return the native stream's known length."""
-
-        @property
-        def content_type(self) -> str | None:
-            """Return an encoded media type if present."""
-
-        @abstractmethod
-        def iter_bytes(self) -> Iterator[bytes]:
-            """Yield bytes for one native request stream."""
-
-    class AsyncContent(Protocol):
-        @property
-        def content_length(self) -> int | None:
-            """Return the native stream's known length."""
-
-        @property
-        def content_type(self) -> str | None:
-            """Return an encoded media type if present."""
-
-        @abstractmethod
-        def aiter_bytes(self) -> AsyncIterator[bytes]:
-            """Yield bytes for one asynchronous request stream."""
 
 
 SyncBinaryBody: TypeAlias = bytes | IO[bytes] | PathLike[str] | Iterable[bytes]
 AsyncBinaryBody: TypeAlias = SyncBinaryBody | AsyncIterable[bytes]
 _NOT_BINARY: Final = (str, bytearray, memoryview, Mapping, TextIOBase)
-CHUNK: Final = 64 * 1024
 
 
 def _is_file(value: object) -> bool:
@@ -80,14 +51,6 @@ def is_binary_input(value: object) -> TypeIs[SyncBinaryBody]:
 def is_async_binary_input(value: object) -> TypeIs[AsyncBinaryBody]:
     """Accept synchronous inputs, async files with an awaitable read, and native async iterables."""
     return isinstance(value, AsyncIterable) or _async_read(value) is not None or is_binary_input(value)
-
-
-@dataclass(frozen=True, slots=True)
-class EncodedAttempt:
-    """Immutable bytes encoded once and reused across attempts, which HTTPX2 frames itself."""
-
-    content: bytes
-    content_type: str | None
 
 
 def next_chunk(chunks: Iterator[bytes]) -> bytes | None:

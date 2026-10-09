@@ -54,7 +54,7 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
-    from datamodel_code_generator._client.runtime import Helper
+    from datamodel_code_generator._client.runtime import Helper, RawBody
     from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
@@ -232,8 +232,6 @@ _ERROR_NAMES: Final = (
     "APIStatusError",
     "APITimeoutError",
     "AuthenticationError",
-    "AuthError",
-    "AuthReason",
     "BadRequestError",
     "ConfigurationError",
     "ConflictError",
@@ -245,6 +243,7 @@ _ERROR_NAMES: Final = (
     "SDKError",
     "UnprocessableEntityError",
 )
+_AUTH_ERROR_NAMES: Final = ("AuthError", "AuthReason")
 _PROTOCOL_ERROR_NAMES: Final = (
     "ProtocolDataError",
     "SessionLimitError",
@@ -263,13 +262,18 @@ _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
 
 
 def _errors(capabilities: Capabilities) -> str:
-    """Return the errors module: the client's errors and those of the declared helpers, loaded on first use."""
+    """Return the errors module: the client's errors, its credentials' errors, and those of the declared helpers.
+
+    The helpers' errors load on first use.
+    """
     raised = {name for helper in capabilities.helpers for name in _PROTOCOL_ERRORS.get(helper, ())}
     protocol = [name for name in _PROTOCOL_ERROR_NAMES if name in raised]
+    auth = _AUTH_ERROR_NAMES if capabilities.security else ()
     parts = [
         '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n',
         "from __future__ import annotations\n\n",
         *(("from typing import TYPE_CHECKING\n\n",) if protocol else ()),
+        *((_from("._runtime.client.auth", auth),) if auth else ()),
         "from ._runtime.client.errors import (\n",
         *(f"    {name},\n" for name in _ERROR_NAMES),
         ")\n",
@@ -280,7 +284,11 @@ def _errors(capabilities: Capabilities) -> str:
             *(f"        {name},\n" for name in protocol),
             "    )\n",
         ))
-    parts.extend(("\n__all__ = [\n", *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *protocol))), "]\n"))
+    parts.extend((
+        "\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *auth, *protocol))),
+        "]\n",
+    ))
     if protocol:
         parts.extend((
             "_PROTOCOL_ERRORS = frozenset({\n",
@@ -373,8 +381,8 @@ def _from(module: str, names: Iterable[str], *, indent: str = "", wrap: bool = T
     return f"{indent}from {module} import (\n" + "".join(f"{indent}    {name},\n" for name in names) + f"{indent})\n"
 
 
-def _protocols(capabilities: Capabilities) -> str:
-    """Return the public protocol module: the records, options, and types of the declared helpers.
+def _protocols(capabilities: Capabilities) -> str | None:
+    """Return the public protocol module: the records, options, and types of the declared helpers, or None without one.
 
     The modules of helper sessions, handles, and memory stores load when one of their names is first requested.
     """
@@ -387,7 +395,7 @@ def _protocols(capabilities: Capabilities) -> str:
     eager = sorted(module for module in groups if module not in lazy)
     text = ['"""Public protocol contracts: selectors, helper options, records, resume state, and webhooks."""\n\n']
     if not groups:
-        return "".join((*text, "__all__: list[str] = []\n"))
+        return None
     text.append("from __future__ import annotations\n\n")
     if lazy:
         text.append("from typing import TYPE_CHECKING\n\n")
@@ -429,18 +437,28 @@ _RESPONSE_PART_NAMES: Final = ("DecodedPart", "MultipartData")
 _PARTS: Final = "_runtime.client.multipart_responses"
 
 
-def _bodies(capabilities: Capabilities) -> str:
-    """Return the bodies module: request bodies, and the parts of multipart responses when one is declared."""
-    parts = _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()
+def _bodies(capabilities: Capabilities) -> str | None:
+    """Return the bodies module: the request bodies and media values the package declares, or None without one.
+
+    It exports the binary bodies, the multipart bodies, the parts of multipart responses, and the form data that no
+    schema describes, each only when the package's operations declare them.
+    """
+    groups = (
+        (
+            "._runtime.client.bodies",
+            _BODY_NAMES if capabilities.binary_bodies or capabilities.multipart_requests else (),
+        ),
+        ("._runtime.client.multipart", _MULTIPART_NAMES if capabilities.multipart_requests else ()),
+        (f".{_PARTS}", _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()),
+        ("._runtime.client.operations", ("FormData",) if capabilities.form_data else ()),
+    )
+    if not (names := sorted(name for _, group in groups for name in group)):
+        return None
     return "".join((
         '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n',
-        "from ._runtime.client.bodies import (\n",
-        *(f"    {name},\n" for name in _BODY_NAMES),
-        ")\nfrom ._runtime.client.multipart import (\n",
-        *(f"    {name},\n" for name in _MULTIPART_NAMES),
-        *((f"){chr(10)}from .{_PARTS} import {', '.join(parts)}{chr(10)}",) if parts else (")\n",)),
-        "from ._runtime.client.operations import FormData\n\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, *parts, "FormData"))),
+        *(_from(module, group) for module, group in groups if group),
+        "\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in names),
         "]\n",
     ))
 
@@ -971,6 +989,12 @@ class _Typing:
         return f"{module.local('_generated', 'model_bindings')}.{self.accessors[use.id].codec}"
 
 
+_BINDERS: Final[dict[str, tuple[str, str]]] = {
+    "binary": ("_runtime.client.body_sources", "BINARY_BODIES"),
+    "multipart": ("_runtime.client.multipart", "MULTIPART_BODIES"),
+}
+
+
 class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
@@ -985,13 +1009,15 @@ class _Resources(_Typing):
         sockets: tuple[SocketSpec, ...] = (),
         role: Role = builtin_role,
         types: TypeNames,
+        raw_body: RawBody = "multipart",
     ) -> None:
-        """Keep the typing context, unpacked methods' TypedDicts, and protocol helpers."""
+        """Keep the typing context, unpacked methods' TypedDicts, protocol helpers, and the bodies raw calls take."""
         super().__init__(plan, accessors, role, types=types)
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
         self.streams = streams
         self.sockets = sockets
+        self.raw_body: RawBody = raw_body
 
     def defaults(self, module: TargetModule) -> str:
         """Return the generated defaults of the clients."""
@@ -1003,6 +1029,8 @@ class _Resources(_Typing):
             entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
             entries.append(("request_coding=", module.local("_runtime.client.compression", "GZIP")))
+        if (binder := _BINDERS.get(self.raw_body)) is not None:
+            entries.append(("bodies=", module.local(*binder)))
         if len(entries) == bool(self.plan.security_schemes):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
@@ -1019,6 +1047,16 @@ class _Resources(_Typing):
             ("credentials=", _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))),
         )
         return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
+
+    def raw_annotation(self, module: TargetModule, prefix: str) -> str:
+        """Return the body type `request_raw` takes: the bodies of the package's request media, else bytes."""
+        match self.raw_body:
+            case "multipart":
+                return f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]"
+            case "binary":
+                return module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
+            case _:
+                return "bytes"
 
     @staticmethod
     def _credential_annotation(module: TargetModule, kind: str) -> str:
@@ -1066,7 +1104,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
-            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]",
+            "binary": self.raw_annotation(module, prefix),
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
@@ -1761,16 +1799,22 @@ class _Registry(_Typing):
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: TargetModule, media: MediaSpec) -> Group:
-        """Return the BodyMedia constructor of one request media type."""
+        """Return the BodyMedia constructor of one request media type, a form-data one with its form encoder."""
         kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, Doc]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
+        form: list[tuple[str, Doc]] = []
         if media.members is not None:
-            entries.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
+            form.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
-                entries.append(("additional_part=", self.sent_plan(module, media.extra)))
+                form.append(("additional=", self.sent_plan(module, media.extra)))
         elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
             entries.append(("codec=", self.codec(module, media.use)))
-            entries.extend(self.form(module, media))
+            if kind == "multipart":
+                form.extend((("members=", "True"), *self.multipart_members(module, media)))
+            else:
+                entries.extend(self.form(module, media))
+        if kind == "multipart":
+            entries.append(("form=", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
         return _call(module.local(_RUNTIME, "BodyMedia"), entries)
 
     def sent_plan(self, module: TargetModule, part: PartSpec) -> Group:
@@ -1789,7 +1833,7 @@ class _Registry(_Typing):
 
     @staticmethod
     def form(module: TargetModule, media: MediaSpec) -> list[tuple[str, Doc]]:
-        """Return the member plan keywords of a URL-encoded or form-data media type."""
+        """Return the member plan keywords of a URL-encoded media type."""
         entries: list[tuple[str, Doc]] = []
         if media.fields:
             entries.append(("fields=", _tuple(field_plan(module.local, item) for item in media.fields)))
@@ -1797,8 +1841,16 @@ class _Registry(_Typing):
             entries.append(("additional=", field_plan(module.local, media.additional)))
         if media.encoded:
             entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
+        return entries
+
+    @staticmethod
+    def multipart_members(module: TargetModule, media: MediaSpec) -> list[tuple[str, Doc]]:
+        """Return the keywords of a form-data media type whose members its codec writes: their media and styles."""
+        entries: list[tuple[str, Doc]] = []
         if media.content_types:
             entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
+        if media.encoded:
+            entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
 
     def decoder(self, module: TargetModule, spec: OperationSpec) -> Group:
@@ -3577,19 +3629,9 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
         config = self.config
-        resources = _Resources(
-            self.plan,
-            self.accessors,
-            unpacked=config.signature_style == "unpack",
-            helpers=self.helpers,
-            streams=self.streams,
-            sockets=self.sockets,
-            role=self.role,
-            types=self.types,
-        )
-        types = _Types(self.plan, self.accessors, self.role, types=self.types)
-        registry = _Registry(self.plan, self.accessors, self.role, types=self.types)
-        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
+        operations = self.plan.operations
+        sent = [media for spec in operations if spec.body is not None for media in spec.body.media]
+        received = [media for spec in operations for response in spec.responses for media in response.media]
         capabilities = Capabilities(
             security=declared_security(self.plan),
             helpers=declared_helpers(
@@ -3601,14 +3643,30 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             ),
             signatures=self.signatures,
             backends=declared_backends(self.codecs),
-            keywords=resources.records is not None,
-            multipart_responses=any(
-                media.kind == "multipart"
-                for spec in self.plan.operations
-                for response in spec.responses
-                for media in response.media
+            keywords=config.signature_style == "unpack",
+            schemes=bool(self.plan.security_schemes) or any(spec.security is not None for spec in operations),
+            binary_bodies=any(media.kind == "binary" for media in sent),
+            multipart_requests=any(media.kind == "multipart" for media in sent),
+            form_data=any(
+                media.kind == "form" and (media.use is None or media.use.type is None) for media in (*sent, *received)
             ),
+            response_headers=any(response.headers for spec in operations for response in spec.responses),
+            multipart_responses=any(media.kind == "multipart" for media in received),
         )
+        resources = _Resources(
+            self.plan,
+            self.accessors,
+            unpacked=config.signature_style == "unpack",
+            helpers=self.helpers,
+            streams=self.streams,
+            sockets=self.sockets,
+            role=self.role,
+            types=self.types,
+            raw_body=capabilities.raw_body,
+        )
+        types = _Types(self.plan, self.accessors, self.role, types=self.types)
+        registry = _Registry(self.plan, self.accessors, self.role, types=self.types)
+        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
@@ -3621,9 +3679,13 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
                 if (auth := _auth(self.plan.credentials)) is not None
                 else ()
             ),
-            self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
+            *((self.file(PurePosixPath("bodies.py"), "bodies", bodies),) if (bodies := _bodies(capabilities)) else ()),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
-            self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
+            *(
+                (self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols),)
+                if (protocols := _protocols(capabilities))
+                else ()
+            ),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]
         for resource in self.plan.resources:
@@ -3648,7 +3710,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         ))
         if (records := resources.records) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
-        if self.plan.security_schemes or any(spec.security is not None for spec in self.plan.operations):
+        if capabilities.schemes:
             files.append(
                 self.file(
                     PurePosixPath("_generated", "security.py"),

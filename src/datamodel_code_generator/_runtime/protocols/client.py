@@ -30,6 +30,7 @@ from ..client.errors import APIConnectionError, too_large
 from ..client.logical import Delivery, LogicalCallContext
 from ..client.native import request_fields
 from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOptions, Settings
+from ..client.positions import secret_names
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
@@ -43,9 +44,9 @@ if TYPE_CHECKING:
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
+    from ..client.positions import CredentialPosition
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
-    from ..client.security import SecuritySchemeEntry
     from ..client.timing import Budget
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
@@ -162,13 +163,11 @@ class _SessionCall(Call):
         return request
 
     @staticmethod
-    def followed_query(schemes: tuple[SecuritySchemeEntry, ...]) -> frozenset[str]:
+    def followed_query(schemes: tuple[CredentialPosition, ...]) -> frozenset[str]:
         """Return the query fields a followed URL is sent and saved without, whatever its origin.
 
         They are the positions of the package's declared security schemes, where the call's credentials go again.
         """
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level] - Only a followed URL needs the schemes.
-
         return secret_names(schemes)[1]
 
 
@@ -211,7 +210,7 @@ class _SocketCall(_SessionCall):
         cap = min(limits) if limits else None
         return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=cap)
 
-    def follow(self, outgoing: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool:  # noqa: ARG002, PLR6301
+    def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:  # noqa: ARG002, PLR6301
         """Never follow a redirect of the handshake: a refused upgrade is terminal."""
         return False
 
@@ -340,8 +339,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         )
         partition = None if (security := self._security_context()) is None else security.credential_partition
         url = absolute_target(str(request.url)).url
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level] - Only a cache fetch needs the schemes.
-
         names, queries = secret_names(self._shared.security_schemes)
         explicit = settings.auth
         placements = (
@@ -382,8 +379,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
     def _secret_positions(self) -> tuple[frozenset[str], frozenset[str]]:
         """Return the header and query positions of the package's declared security schemes and credential headers."""
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level]
-
         return secret_names(self._shared.security_schemes)
 
     def credential_argument(

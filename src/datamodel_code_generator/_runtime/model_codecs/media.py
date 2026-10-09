@@ -7,6 +7,7 @@ import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
+from math import isfinite
 from typing import Final, Literal, cast
 from urllib.parse import quote, unquote_to_bytes
 
@@ -31,6 +32,7 @@ _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
 _SCALARS: Final = frozenset({bool, int, float, str, type(None)})
+_NON_FINITE: Final = "A value must be a finite JSON number"
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +156,10 @@ def _lexical_text(value: object, kind: LexicalKind) -> str | None:
             return "true" if value else "false"
         case str():
             return value
+        case float() if not isfinite(value):
+            raise ParameterEncodingError(_NON_FINITE)
+        case Decimal() if not value.is_finite():
+            raise ParameterEncodingError(_NON_FINITE)
         case int() | float() | Decimal():
             return _numeral(value, kind) or _numeral(value, "number")
         case _:

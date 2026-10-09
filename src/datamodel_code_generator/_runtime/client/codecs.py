@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Generic, NoReturn, cast
 from typing_extensions import TypeVar
 
 from ..model_codecs.media import media_kind
-from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
+from ..model_codecs.parameter_reads import ParameterFragment, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET, Unset
 from .errors import response_failure
 from .operations import PARSE_ERRORS, status_key

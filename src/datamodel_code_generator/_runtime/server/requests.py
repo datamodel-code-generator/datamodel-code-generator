@@ -24,14 +24,15 @@ from ..model_codecs.media import (
     plain,
     typed,
 )
-from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
+from ..model_codecs.parameter_reads import RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import Unset
 from .errors import invalid, malformed_request, media_invalid, missing, model_records, unsupported_media
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from ..model_codecs.parameters import ParameterPlan, RawParameter
+    from ..model_codecs.parameter_reads import RawParameter
+    from ..model_codecs.parameters import ParameterPlan
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]

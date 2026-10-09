@@ -9,22 +9,49 @@ from __future__ import annotations
 import base64
 import re
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
 import httpx2
 
-from .errors import AuthError, ConfigurationError, SDKError
+from .errors import ConfigurationError, SDKError
 from .security import Credentials
 from .urls import request_origin
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Mapping
 
-    from .security import AsyncSend, Placement, SecurityScheme, Send
+    from .client import AsyncSend, Send
+    from .security import Placement, SecurityScheme
     from .urls import Origin
 
-__all__ = ("SchemeCredentials", "Secret", "TokenSource", "UserPassword")
+__all__ = (
+    "OAUTH_ERROR_CODES",
+    "AuthError",
+    "AuthReason",
+    "OAuthErrorCode",
+    "SchemeCredentials",
+    "Secret",
+    "TokenSource",
+    "UserPassword",
+)
 
+AuthReason: TypeAlias = Literal[
+    "provider_failed",
+    "invalid_expiry",
+    "oauth_error",
+    "timeout",
+    "reauthorization_required",
+]
+OAuthErrorCode: TypeAlias = Literal[
+    "invalid_request",
+    "invalid_client",
+    "invalid_grant",
+    "unauthorized_client",
+    "unsupported_grant_type",
+    "invalid_scope",
+]
+
+OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
 Secret: TypeAlias = str | Callable[[], str]
 UserPassword: TypeAlias = tuple[str, str] | Callable[[], tuple[str, str]]
 
@@ -32,6 +59,33 @@ _UNAUTHORIZED: Final = 401
 _INVALID_TOKEN: Final = re.compile(r"""error\s*=\s*"?invalid_token\b""", re.IGNORECASE)
 _HEADER_UNSAFE: Final = re.compile(r"[\x00-\x1f\x7f]")
 _COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
+
+
+class AuthError(SDKError):
+    """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
+
+    A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
+    OAuth rejection keeps the token endpoint's status and its standard error code.
+    """
+
+    reason: AuthReason
+
+    def __init__(
+        self,
+        *,
+        reason: AuthReason,
+        status_code: int | None = None,
+        oauth_error: OAuthErrorCode | None = None,
+        operation_id: str | None = None,
+        cause: BaseException | None = None,
+    ) -> None:
+        """Keep why credentials failed, never the provider's descriptions or secrets."""
+        super().__init__(reason=reason, operation_id=operation_id, cause=cause)
+        self.status_code = status_code
+        self.oauth_error: OAuthErrorCode | None = oauth_error
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))
 
 
 class TokenSource(httpx2.Auth):

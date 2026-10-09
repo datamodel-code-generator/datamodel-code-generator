@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 from typing_extensions import Self, TypeVar
 
 from ..model_codecs.media import json_value
-from .bodies import CHUNK
+from .content import CHUNK
 from .errors import (
     ConfigurationError,
     DecodeError,
