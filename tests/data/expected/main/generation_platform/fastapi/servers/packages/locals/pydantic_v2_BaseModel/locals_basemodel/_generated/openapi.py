@@ -183,6 +183,6 @@ def document() -> dict[str, Any]:
     return loaded
 
 
-def serve_source_openapi(app: FastAPI) -> None:
-    """Serve the source document instead of FastAPI's; it is read on its first request."""
-    serve_openapi(app, document)
+def serve_source_openapi(app: FastAPI, *, prefix: str = "") -> None:
+    """Serve the source document, paths under prefix, instead of FastAPI's; read on first request."""
+    serve_openapi(app, document, prefix=prefix)

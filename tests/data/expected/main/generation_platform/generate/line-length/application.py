@@ -70,7 +70,7 @@ def create_app(
         )
     )
     if source_openapi:
-        serve_source_openapi(app)
+        serve_source_openapi(app, prefix=prefix)
     return app
 
 

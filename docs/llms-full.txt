@@ -11682,8 +11682,10 @@ generated models are what the server validates with, and routes added to the app
 `create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the
 models they declare. It describes what FastAPI derives: a parameter, header, or body that only an adapter reads
 does not appear in it. An application of your own that includes `build_router(...)` serves FastAPI's document
-too, unless it calls `serve_source_openapi(app)`, imported from the generated package. Path placeholders that are
-not Python identifiers, or that repeat, appear in FastAPI's document under the route's own placeholder names.
+too, unless it calls `serve_source_openapi(app, prefix=...)`, imported from the generated package, with the
+prefix the router is included under. `create_app`'s `prefix` likewise leads every path of the served document, as
+in FastAPI's own. Path placeholders that are not Python identifiers, or that repeat, appear in FastAPI's document
+under the route's own placeholder names.
 
 ## Production settings
 

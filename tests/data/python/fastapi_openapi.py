@@ -149,6 +149,10 @@ def prefixes(packages: dict[str, Any]) -> list[str]:
     lines = [f"warning {warning.message}" for warning in caught]
     lines.extend(_summary(document))
     lines.append(f"create_app {list(_connected(items.create_app, prefix='/root').openapi()['paths'])}")
+    app = FastAPI()
+    app.include_router(_connected(items.build_router, prefix="/v3"))
+    items.serve_source_openapi(app, prefix="/v3")
+    lines.append(f"serve_source_openapi {list(app.openapi()['paths'])}")
     return lines
 
 

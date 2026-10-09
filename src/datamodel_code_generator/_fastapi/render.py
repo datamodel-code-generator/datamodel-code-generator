@@ -238,10 +238,10 @@ class Module:
         return "\n".join(self.namespace.imports())
 
 
-class ServerRenderer:  # noqa: PLR0904
+class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     """Render every module of one server package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         *,
         config: FastAPIConfig,
@@ -959,9 +959,9 @@ def _openapi_module(document: str) -> str:
         '    """Return a new copy of the source document."""\n'
         "    loaded: dict[str, Any] = json.loads(_TEXT)\n"
         "    return loaded\n\n\n"
-        "def serve_source_openapi(app: FastAPI) -> None:\n"
-        '    """Serve the source document instead of FastAPI\'s; it is read on its first request."""\n'
-        "    serve_openapi(app, document)\n"
+        'def serve_source_openapi(app: FastAPI, *, prefix: str = "") -> None:\n'
+        '    """Serve the source document, paths under prefix, instead of FastAPI\'s; read on first request."""\n'
+        "    serve_openapi(app, document, prefix=prefix)\n"
     )
 
 
@@ -1012,7 +1012,7 @@ def _services(services: list[str]) -> str:
     )
 
 
-def _builder(  # noqa: PLR0913
+def _builder(  # ruff: ignore[too-many-arguments]
     module: Module,
     name: str,
     returns: str,
