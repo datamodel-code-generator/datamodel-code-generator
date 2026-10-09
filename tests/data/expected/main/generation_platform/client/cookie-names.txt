@@ -1,4 +1,3 @@
 # cookie-names
 render pydantic_v2.BaseModel
-  APIGenerationError
-  MC_PARAMETER_ENCODING binding /paths/~1values/get/parameters/1: cookie parameter name 'a[b]' is not a token, which a cookie sent as it is needs
+  Error: /paths/~1values/get/parameters/1: cookie parameter name 'a[b]' is not a token, which a cookie sent as it is needs
