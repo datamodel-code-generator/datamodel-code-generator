@@ -14,6 +14,8 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
+from .media import plain
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
@@ -121,6 +123,10 @@ class StdlibCodec(Generic[T]):
     def convert(self, value: object) -> T:
         """Apply construction and leaf conversion without checking schema or field constraints."""
         return cast("T", self._load(value, self.shape))
+
+    def text(self, value: object) -> T:
+        """Construct from header, form, or part text; nothing validates later, so text that is no JSON literal fails."""
+        return cast("T", self._load(plain(value, strict=True), self.shape))
 
     def assemble(self, fields: Mapping[str, object]) -> object:
         """Construct a model from already-native field values addressed by their wire names."""

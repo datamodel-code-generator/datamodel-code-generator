@@ -142,6 +142,7 @@ from datamodel_code_generator._cli_config import (
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._project_config import (
+    _PYPROJECT_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
@@ -281,16 +282,23 @@ def _create_config(
     pyproject_config: Mapping[str, Any],
     cli_config_args: Mapping[str, _RawConfigValue],
 ) -> Config:
-    """Create the final CLI config while preserving pyproject/CLI validation order."""
+    """Create the final CLI config while preserving pyproject/CLI validation order.
+
+    The config keeps the text or path each JSON option was given as: a JSON file is the base of the paths it names.
+    """
     config_class = _get_config_class()
-    if not pyproject_config:
-        return config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    if pyproject_config:
+        from argparse import Namespace as ArgNamespace  # noqa: PLC0415
 
-    from argparse import Namespace as ArgNamespace  # noqa: PLC0415
-
-    config = config_class.model_validate(pyproject_config)
-    cli_namespace = ArgNamespace(**cli_config_args)
-    config.merge_args(cli_namespace)
+        config = config_class.model_validate(pyproject_config)
+        config.merge_args(ArgNamespace(**cli_config_args))
+    else:
+        config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    config._json_sources = {  # noqa: SLF001
+        name: value
+        for name in _PYPROJECT_JSON_CONFIG_FIELDS
+        if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
+    }
     return config
 
 
@@ -1250,17 +1258,22 @@ def _compare_generated_single_file(
     from datamodel_code_generator._structured_output import CheckDifferencePayload  # noqa: PLC0415
 
     path = comparison.single_file_display_path or actual_output.as_posix()
-    if not actual_output.exists():
-        missing_kind, _, single_file_missing_message_suffix, _, _ = _output_comparison_policy(
-            input_diff=comparison.input_diff
+    if (actual_exists := actual_output.exists()) != generated_output.exists():
+        missing_kind, _, single_file_missing_message_suffix, extra_kind, extra_message_suffix = (
+            _output_comparison_policy(input_diff=comparison.input_diff)
         )
-        message = f"{missing_kind.upper()}: {path} ({single_file_missing_message_suffix})"
+        kind, message_suffix = (
+            (extra_kind, extra_message_suffix) if actual_exists else (missing_kind, single_file_missing_message_suffix)
+        )
+        message = f"{kind.upper()}: {path} ({message_suffix})"
         return OutputComparison(
-            differences=[CheckDifferencePayload(kind=missing_kind, path=path, message=message)],
+            differences=[CheckDifferencePayload(kind=kind, path=path, message=message)],
             content=f"{message}\n" if comparison.input_diff else message,
         )
 
-    diff_found, diff_lines = _compare_single_file(generated_output, actual_output, encoding, comparison)
+    diff_found, diff_lines = (
+        _compare_single_file(generated_output, actual_output, encoding, comparison) if actual_exists else (False, [])
+    )
     if not diff_found:
         return OutputComparison(differences=[], content="")
 
@@ -1496,6 +1509,8 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
             shutil.copyfile(generated_file, target)
         return
 
+    if not generated_output.exists():
+        return
     actual_output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(generated_output, actual_output)
 
@@ -2969,16 +2984,20 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             if generate_output.is_file():
                 print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
                 return cleanup_and_return(Exit.ERROR)
-        elif config.check and is_directory_output and generate_output.is_file():
+        elif (
+            config.check
+            and is_directory_output
+            and (generate_output.is_file() or (config.output.is_file() and not generate_output.exists()))
+        ):
             is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
         _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
 
-    if generate_output is None and result is not None:
+    if generate_output is None and (result is not None or namespace.output_format == "json"):
         if (
             write_error := _write_generated_result(
-                result,
+                {} if result is None else result,
                 namespace.output_format,
                 fail_on_multi_module_stdout=namespace.fail_on_multi_module_stdout is True,
             )

@@ -114,7 +114,14 @@ def _validate_http_key_value_options(
 
 @lru_cache(maxsize=1)
 def _get_config_class() -> type[Config]:
-    from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator  # noqa: PLC0415
+    from pydantic import (  # noqa: PLC0415
+        ConfigDict,
+        Field,
+        PrivateAttr,
+        ValidationInfo,
+        field_validator,
+        model_validator,
+    )
     from typing_extensions import Self  # noqa: PLC0415
 
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
@@ -128,6 +135,8 @@ def _get_config_class() -> type[Config]:
             protected_namespaces=(),
             defer_build=True,
         )
+
+        _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
 
         def get(self, item: str) -> Any:  # pragma: no cover
             """Get attribute value by name."""

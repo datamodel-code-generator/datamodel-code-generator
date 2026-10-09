@@ -74,6 +74,21 @@ def document_identity(document: str, base: Path) -> str:
     return (base / document).resolve().as_uri()
 
 
+def named_document(written: str | None, identity: str | None) -> str:
+    """Say which document a reference names in a message: as written, then the file a relative path resolved to.
+
+    A reference that keeps only its resolved identity is named by that file. A URL stays as written, an absolute
+    path is named once, and the root document, which a reference names by leaving it out, adds nothing.
+    """
+    if written is None:
+        return ""
+    parts = urlsplit(identity or written)
+    if parts.scheme != "file":
+        return f" in {written!r}"
+    file = Path(url2pathname(parts.path)).as_posix()
+    return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
+
+
 @dataclass(frozen=True, slots=True)
 class RootInput:
     """Identify the root input for selectors and the directory its loader resolves relative references in."""
