@@ -27,7 +27,7 @@ poll one at a time
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait = Report(rows=4)
-  status after the block ! ProtocolStateError: ProtocolStateError(state='closed', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  status after the block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.closed') [field_path=('status', 'closed')] invalid_state
   close again = None
 sleep through a short interval
   > POST https://api.example.com/jobs
@@ -42,48 +42,48 @@ failed and cancelled operations
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  wait ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
-  wait again ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
+  wait ! ProtocolDataError: status=200 data=Job:j1 operation_failed
+  wait again ! ProtocolDataError: status=200 data=Job:j1 operation_failed
   status = PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status = PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1)
-  wait ! OperationCancelledError: PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1) operation_cancelled_error session=True
+  wait ! ProtocolDataError: status=200 data=Job:j1 operation_cancelled
 unknown and missing states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  unknown state ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='value') [operation_id='getJob', condition='value', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] polling_state_error session=True
+  unknown state ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='value') [operation_id='getJob', location=BodySelector(pointer='/status')] value
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  state of another type ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='type') [operation_id='getJob', condition='type', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] polling_state_error session=True
+  state of another type ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='type') [operation_id='getJob', location=BodySelector(pointer='/status')] type
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  missing state ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  missing state ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='missing') [operation_id='getJob', location=BodySelector(pointer='/status')] missing
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status after them = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
 create responses
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unaccepted success status ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=StatusSelector(), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  unaccepted success status ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=StatusSelector()] value
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  missing operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  missing operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='missing') [operation_id='createJob', location=BodySelector(pointer='/id')] missing
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  dot segment operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  dot segment operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/id')] value
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  create error ! InternalServerError: InternalServerError(status_code=500, operation_id='createJob', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='createJob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"message":"down"}', body_bytes=b'{"message":"down"}', truncated=False] internal_server_error session=True
+  create error ! InternalServerError: Error code: 500 - {"message":"down"} [operation_id='createJob', status_code=500, body=b'{"message":"down"}', body_bytes=b'{"message":"down"}', truncated=False]
 options
-  poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.x-trace') [field_path=('options', 'headers', 'x-trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  patched written query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.verbose') [field_path=('options', 'query', 'verbose'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',)] invalid_value
+  fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.x-trace') [field_path=('options', 'headers', 'x-trace')] invalid_value
+  patched written query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.verbose') [field_path=('options', 'query', 'verbose')] invalid_value
 inline results
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -96,7 +96,7 @@ inline results
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  wait without a result ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  wait without a result ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='missing') [operation_id='getJob', location=BodySelector(pointer='/result')] missing
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait again = Report(rows=8)
@@ -104,17 +104,17 @@ inline results
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  repeated state header ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='malformed') [operation_id='getJob', condition='malformed', location=HeaderSelector(name='X-State', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  repeated state header ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='malformed') [operation_id='getJob', location=HeaderSelector(name='X-State', occurrence='single')] malformed
 immediate results
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   start = LroHandle(phase='succeeded', polls=0)
   wait = Report(rows=1)
-  status ! ProtocolStateError: ProtocolStateError(state='succeeded', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  status ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.succeeded') [field_path=('status', 'succeeded')] invalid_state
   progress {'polls': 0}
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  immediate null result ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
+  immediate null result ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='null') [operation_id='createJob', location=BodySelector(pointer='/result')] null
 fetch with a body and poll with the previous status
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -137,7 +137,7 @@ querystring polls
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed export ! OperationFailedError: PollSnapshot(state=2, terminal=True, status=200, data=ExportState:None) operation_failed_error session=True
+  failed export ! ProtocolDataError: status=200 data=ExportState:None operation_failed
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   > GET https://api.example.com/exports/status
@@ -148,7 +148,7 @@ querystring polls
 server delays
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  status after a long create delay ! PollWaitLimitError kind='wait' required>limit=True limit=60.0 poll_wait_limit_error session=True
+  status after a long create delay ! SessionLimitError reason='wait' required>limit=True limit=60.0
   progress {'polls': 0}
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -157,7 +157,7 @@ server delays
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status after a retried poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  status after its delay ! PollWaitLimitError kind='wait' required>limit=True limit=60.0 poll_wait_limit_error session=True
+  status after its delay ! SessionLimitError reason='wait' required>limit=True limit=60.0
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
@@ -169,13 +169,13 @@ server delays
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   undeclared delay header = PollSnapshot(state='done', terminal=True, status=200, data=Job:j2)
 intervals and deadlines
-  interval past the session ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  interval past the session without a wait limit ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  interval past the wait limit ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
-  interval past the session deadline ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value session=False
+  interval past the session ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval')] invalid_value
+  interval past the session without a wait limit ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval')] invalid_value
+  interval past the wait limit ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval')] invalid_value
+  interval past the session deadline ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options.interval') [field_path=('poll_options', 'interval')] invalid_value
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  server delay past the session ! PollWaitLimitError kind='deadline' required>=limit=True poll_wait_limit_error session=True
+  server delay past the session ! SessionLimitError reason='deadline' required>=limit=True
   > POST https://api.example.com/jobs?lang=en
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-client: tests, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1?lang=en
@@ -187,20 +187,20 @@ session limits
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   first poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  poll past the limit ! SessionLimitError: SessionLimitError(kind='polls', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='polls', limit=1] session_limit_error session=True
-  wait past the limit ! SessionLimitError: SessionLimitError(kind='polls', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='polls', limit=1] session_limit_error session=True
+  poll past the limit ! SessionLimitError: SessionLimitError(reason='polls', limit=1) [limit=1] polls
+  wait past the limit ! SessionLimitError: SessionLimitError(reason='polls', limit=1) [limit=1] polls
 failures that settle nothing
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getJob', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error session=True
+  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob') [operation_id='getJob', cause=ConnectError('failed')]
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   poll again = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed fetch ! InternalServerError: InternalServerError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{}', body_bytes=b'{}', truncated=False] internal_server_error session=True
+  failed fetch ! InternalServerError: Error code: 500 - {} [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False]
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   fetch again = Report(rows=2)
@@ -212,29 +212,29 @@ server delay of a failed result fetch
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  fetch answered with a server delay ! InternalServerError: InternalServerError(status_code=503, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error session=True
-  fetch before the delay ! PollWaitLimitError kind='wait' required>limit=True limit=10.0 poll_wait_limit_error session=True
+  fetch answered with a server delay ! InternalServerError: Error code: 503 - {"message":"busy"} [operation_id='getReport', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False]
+  fetch before the delay ! SessionLimitError reason='wait' required>limit=True limit=10
 server delay of a failed poll
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  poll answered with a server delay ! InternalServerError: InternalServerError(status_code=503, operation_id='getJob', call_id='<call>', retry_stop_reason='disabled') [operation_id='getJob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error session=True
-  poll before the delay ! PollWaitLimitError kind='wait' required>limit=True limit=10.0 poll_wait_limit_error session=True
+  poll answered with a server delay ! InternalServerError: Error code: 503 - {"message":"busy"} [operation_id='getJob', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False]
+  poll before the delay ! SessionLimitError reason='wait' required>limit=True limit=10
   progress {'polls': 1}
 waits and limits on the client clock
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  server delay less the clock's move ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
+  server delay less the clock's move ! SessionLimitError reason='wait' required_wait=90.0 limit=60.0
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  date delay on the client's wall clock ! PollWaitLimitError kind='wait' required_wait=120.0 limit=60.0
+  date delay on the client's wall clock ! SessionLimitError reason='wait' required_wait=120.0 limit=60.0
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   poll once the clock passes the delay = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  delay past the session ! PollWaitLimitError kind='deadline' required_wait=30.0 limit=29.0
+  delay past the session ! SessionLimitError reason='deadline' required_wait=30.0 limit=29.0
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
@@ -245,7 +245,7 @@ waits and limits on the client clock
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   async poll once the clock passes the delay = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  async delay past the session ! PollWaitLimitError kind='deadline' required_wait=30.0 limit=29.0
+  async delay past the session ! SessionLimitError reason='deadline' required_wait=30.0 limit=29.0
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
@@ -278,16 +278,16 @@ async lifecycle
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   immediate wait = Report(rows=1)
-  wait after the block ! ProtocolStateError: ProtocolStateError(state='closed', action='wait') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  wait after the block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='wait.closed') [field_path=('wait', 'closed')] invalid_state
 async concurrent steps
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  status while waiting ! ProtocolStateError: ProtocolStateError(state='polling', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
-  close while waiting ! ProtocolStateError: ProtocolStateError(state='polling', action='aclose') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  status while waiting ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.polling') [field_path=('status', 'polling')] invalid_state
+  close while waiting ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.polling') [field_path=('aclose', 'polling')] invalid_state
   wait cancelled
   progress {'polls': 0}
   close = None
-  status after close ! ProtocolStateError: ProtocolStateError(state='closed', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  status after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.closed') [field_path=('status', 'closed')] invalid_state
 async block error while another step runs
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -295,7 +295,7 @@ async block error while another step runs
   wait cancelled
   progress {'polls': 0}
   close the handle the block left open = None
-  status after its close ! ProtocolStateError: ProtocolStateError(state='closed', action='status') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error session=True
+  status after its close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.closed') [field_path=('status', 'closed')] invalid_state
 async server delay of a failed result fetch
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -303,19 +303,19 @@ async server delay of a failed result fetch
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  fetch answered with a server delay ! InternalServerError: InternalServerError(status_code=503, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error session=True
-  fetch before the delay ! PollWaitLimitError kind='wait' required>limit=True limit=10.0 poll_wait_limit_error session=True
+  fetch answered with a server delay ! InternalServerError: Error code: 503 - {"message":"busy"} [operation_id='getReport', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False]
+  fetch before the delay ! SessionLimitError reason='wait' required>limit=True limit=10
 async server delay of a failed poll
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  poll answered with a server delay ! InternalServerError: InternalServerError(status_code=503, operation_id='getJob', call_id='<call>', retry_stop_reason='disabled') [operation_id='getJob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error session=True
-  poll before the delay ! PollWaitLimitError kind='wait' required>limit=True limit=10.0 poll_wait_limit_error session=True
+  poll answered with a server delay ! InternalServerError: Error code: 503 - {"message":"busy"} [operation_id='getJob', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False]
+  poll before the delay ! SessionLimitError reason='wait' required>limit=True limit=10
 async client closing during a wait
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   wait done after the client closed: False
   wait cancelled
-  status after the client closed ! ConfigurationError: ConfigurationError(operation_id='getJob', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='getJob', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed session=True
+  status after the client closed ! ConfigurationError: ConfigurationError(operation_id='getJob', reason='client_closed', field_path='client.closed') [operation_id='getJob', field_path=('client', 'closed')] client_closed
   progress {'polls': 0}

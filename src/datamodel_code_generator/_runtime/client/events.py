@@ -1,7 +1,7 @@
 """The events one call's hooks observe, and how a failing hook ends the call.
 
 Every event reaches every hook in order. A hook failure stops the call's further network actions: it raises as a
-SDKError with the reason `hook_failed`, unless the call already failed, when it joins that failure's secondary errors.
+SDKError with the reason `hook_failed`, unless the call already failed, when the failure's notes name it.
 """
 
 from __future__ import annotations
@@ -12,11 +12,9 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
-from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     APIConnectionError,
     ConfigurationError,
-    DeliveryState,
     SDKError,
     add_secondary,
     is_hook_failure,
@@ -24,6 +22,7 @@ from .errors import (
     kept_primary,
 )
 from .hooks import CallEvent
+from .native import io_phase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -31,7 +30,7 @@ if TYPE_CHECKING:
     from .hooks import AsyncHook, CallOutcome, EventName, Hook, JSONScalar, RetryReason
     from .logical import LogicalCallContext
     from .options import Settings
-    from .responses import Response, ResponseInfo
+    from .responses import ResponseInfo
 
 
 def _interrupted(primary: BaseException | None, interruption: BaseException) -> BaseException:
@@ -85,7 +84,6 @@ class CallEvents:
         self.start_issued = False
         self.sends = 0
         self.sent = False
-        self.delivery = DeliveryState.NOT_SENT
         self.info: ResponseInfo | None = None
         self.attempt: float | None = None
         self.handed: float | None = None
@@ -116,7 +114,7 @@ class CallEvents:
             parent_session_id=self.call.parent_session_id,
             attempt_index=None if self.attempts == 0 else self.attempts - 1,
             sent=sent,
-            phase=None if failure is None else failure.phase,
+            phase=None if failure is None else io_phase(failure),
             retry_reason=retry_reason,
             status=status,
             duration=duration,
@@ -220,20 +218,13 @@ class CallEvents:
                     add_secondary(interruption, error)
         return interruption
 
-    def failed(self, failures: list[Exception], completed: Response[object] | Unset = UNSET) -> SDKError:
-        """Return the error of the hooks that failed on an event, keeping a success the call completed."""
-        return self.call.snapshot_error(
-            SDKError(
-                reason="hook_failed",
-                delivery_state=self.delivery,
-                completed_result=None if isinstance(completed, Unset) else completed,
-                operation_id=self.operation_id,
-                call_id=self.call_id,
-                info=self.info,
-                cause=failures[0],
-                secondary_errors=tuple(failures[1:]),
-            )
+    def failed(self, failures: list[Exception]) -> SDKError:
+        """Return the error of the hooks that failed on an event, naming any later failures in its notes."""
+        error = self.call.snapshot_error(
+            SDKError(reason="hook_failed", operation_id=self.operation_id, info=self.info, cause=failures[0])
         )
+        add_secondary(error, *failures[1:])
+        return error
 
     def starting(self, settings: Settings) -> CallEvent:
         """Return the call's first event, with a summary of its effective settings that holds no secret."""
@@ -253,7 +244,6 @@ class CallEvents:
         parts = urlsplit(url)
         self.origin = f"{parts.scheme}://{parts.netloc}"
         self.info = None
-        self.delivery = DeliveryState.NOT_SENT
         self.attempts = index + 1
         self.attempt = self.monotonic()
         self.attempt_sent = False
@@ -267,12 +257,10 @@ class CallEvents:
         self.sends += 1
         self.sent = True
         self.attempt_sent = True
-        self.delivery = DeliveryState.MAYBE_SENT
 
     def responding(self, info: ResponseInfo) -> CallEvent:
         """Keep the response whose headers arrived and return its event."""
         self.info = info
-        self.delivery = DeliveryState.RESPONSE_STARTED
         return self.event("response_headers", sent=True, status=info.status_code)
 
     def _attempt_ending(self, error: BaseException | None) -> list[CallEvent]:
@@ -314,7 +302,7 @@ class CallEvents:
 
     def ended(self, error: BaseException) -> None:
         """End a failed call, keeping its hooks' failures beside the error it raises."""
-        self.finish(UNSET, error=error)
+        self.finish(error=error)
 
     async def aended(self, error: BaseException, *, starting: bool = False) -> None:
         """End a failed asynchronous call, keeping its hooks' failures beside the error it raises."""
@@ -322,13 +310,12 @@ class CallEvents:
 
     def finish(
         self,
-        completed: Response[object] | Unset,
         *,
         handed_off: bool = False,
         error: BaseException | None = None,
         intermediate: bool = False,
     ) -> None:
-        """End a call that succeeded, raising the first hook failure with the success it completed.
+        """End a call that succeeded, raising the first hook failure.
 
         A handle handed over this way is the caller's once no hook failed, and then reports its stream's end.
         """
@@ -344,7 +331,7 @@ class CallEvents:
         if failed is not None:
             self.call.retry_blocked = True
             if error is None:
-                raise self.failed(failed, completed)
+                raise self.failed(failed)
             for failure in failed:
                 add_secondary(error, failure)
         if handed_off:
@@ -373,24 +360,22 @@ class CallEvents:
 
     async def afinish(
         self,
-        completed: Response[object] | Unset,
         *,
         handed_off: bool = False,
         error: BaseException | None = None,
         intermediate: bool = False,
     ) -> None:
-        """End an asynchronous call that succeeded, raising the first hook failure with the success it completed.
+        """End an asynchronous call that succeeded, raising the first hook failure.
 
         A handle handed over this way is the caller's once no hook failed, and then reports its stream's end.
         """
-        await self._aterminal(error, completed, handed_off=handed_off, intermediate=intermediate)
+        await self._aterminal(error, handed_off=handed_off, intermediate=intermediate)
         if handed_off:
             self.handed = self.monotonic()
 
     async def _aterminal(
         self,
         error: BaseException | None,
-        completed: Response[object] | Unset = UNSET,
         *,
         handed_off: bool = False,
         starting: bool = False,
@@ -426,7 +411,7 @@ class CallEvents:
             if primary is not error and primary is not None:
                 raise primary
             if error is None and failed is not None:
-                raise self.failed(failed, completed)
+                raise self.failed(failed)
 
         await notify()
 
@@ -500,9 +485,7 @@ def call_events(
     if not (hooks := settings.hooks):
         return None
     if not asynchronous and settings.async_hooks:
-        raise ConfigurationError(
-            field_path=("hooks",), reason="async_hook", operation_id=call.operation_id, call_id=call.call_id
-        )
+        raise ConfigurationError(field_path=("hooks",), reason="async_hook", operation_id=call.operation_id)
     return CallEvents(hooks, settings, call=call, path=path)
 
 

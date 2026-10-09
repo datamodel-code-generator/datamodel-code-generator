@@ -667,10 +667,7 @@ def _records(cache: Caching, lines: list[str]) -> None:
     record(lines, "defaults", lambda: protocols.ProtocolDefaults(options=protocols.CacheOptions(max_ttl=1)))
     record(lines, "stores list", lambda: options.ProtocolClientOptions(cache_stores=[]))
     record(lines, "stores name", lambda: options.ProtocolClientOptions(cache_stores={"no name": 1}))
-    record(lines, "conflict", lambda: errors.CacheValidatorConflictError(header_name="If-None-Match"))
-    record(lines, "conflict header", lambda: errors.CacheValidatorConflictError(header_name="ETag"))
-    record(lines, "protocol error", lambda: errors.CacheProtocolError())
-    record(lines, "store error", lambda: errors.CacheStoreError(action="get"))
+    record(lines, "protocol error", lambda: errors.ProtocolDataError(reason="inconsistent"))
 
 
 def _memory(cache: Caching, lines: list[str]) -> None:
@@ -819,15 +816,12 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
             store.faults["delete"] = fault
             try:
                 helper.fetch(user_id=twenty)
-            except errors.CacheProtocolError as error:
-                lines.append(
-                    f"  refused 304 with {label} ! {describe(error)} "
-                    f"{[describe(item) for item in error.secondary_errors]}"
-                )
+            except errors.ProtocolDataError as error:
+                lines.append(f"  refused 304 with {label} ! {describe(error)}")
         for label, method, fault, responses in (
             ("lookup failure", "get", OSError("disk"), ()),
             ("lookup result", "get", "entry", ()),
-            ("lookup store error", "get", errors.CacheStoreError(action="get"), ()),
+            ("lookup store error", "get", errors.SDKError(reason="store_failed"), ()),
             (
                 "exchange failure",
                 "set",
@@ -978,7 +972,7 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async recorded error", lambda: helper.fetch(user_id=twenty))
         for label, method, fault, responses in (
             ("async lookup failure", "get", OSError("disk"), ()),
-            ("async lookup store error", "get", cache.errors.CacheStoreError(action="get"), ()),
+            ("async lookup store error", "get", cache.errors.SDKError(reason="store_failed"), ()),
             ("async exchange result", "set", "yes", (user(24, **{"cache-control": "max-age=60"}),)),
         ):
             store.faults[method] = fault
@@ -991,11 +985,8 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
             store.faults["delete"] = fault
             try:
                 await helper.fetch(user_id=twenty)
-            except cache.errors.CacheProtocolError as error:
-                lines.append(
-                    f"  async refused 304 with {label} ! {describe(error)} "
-                    f"{[describe(item) for item in error.secondary_errors]}"
-                )
+            except cache.errors.ProtocolDataError as error:
+                lines.append(f"  async refused 304 with {label} ! {describe(error)}")
         exchange.respond(user(24, etag='"b"', **{"cache-control": "max-age=0"}), user(24))
         await afetched(lines, "async deletable", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = 1

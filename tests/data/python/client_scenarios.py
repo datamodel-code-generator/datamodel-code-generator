@@ -160,10 +160,7 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     (errors,) = _modules(package, "errors")
     record(lines, "error condition", lambda: errors.ConfigurationError(reason="invalid_value"))
     error = errors.SDKError()
-    lines.append(
-        f"  error bare {error} {error.reason_code} "
-        f"{errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT)}"
-    )
+    lines.append(f"  error bare {error} {error.reason} {errors.APIConnectionError()}")
 
 
 def _lifecycle(package: ModuleType, lines: list[str]) -> None:
@@ -230,7 +227,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             except errors.InternalServerError as failure:
                 lines.append(
                     f"  error info {failure.status_code} {failure.headers!r} {failure.request_id} "
-                    f"{failure.reason_code} {failure.body!r}"
+                    f"{failure.reason} {failure.body!r}"
                 )
                 record(
                     lines,

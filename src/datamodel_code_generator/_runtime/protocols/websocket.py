@@ -32,12 +32,8 @@ from wsproto.utilities import LocalProtocolError
 from ..client.errors import (
     APIConnectionError,
     APITimeoutError,
-    AuthError,
     ConfigurationError,
     DecodeError,
-    DeliveryState,
-    ProtocolError,
-    ProtocolSizeError,
     SDKError,
     is_client_closed,
     is_phase_timeout,
@@ -47,16 +43,7 @@ from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.timing import SYSTEM_CLOCK, Budget, Clock, SessionOptions
 from ..model_codecs.unset import UNSET, Unset
-from .errors import (
-    MAX_CLOSE_REASON,
-    MAX_RAW_PREFIX,
-    ConcurrentReceiveError,
-    DeliveryUnknownError,
-    ProtocolStateError,
-    StreamDecodeError,
-    WebSocketClosedError,
-    WebSocketHandshakeError,
-)
+from .errors import HELPER_ERRORS, MAX_CLOSE_REASON, MAX_RAW_PREFIX, ProtocolDataError, WebSocketClosedError
 from .options import WSOptions
 
 if TYPE_CHECKING:
@@ -195,9 +182,7 @@ def _limits(
         ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
-            raise ConfigurationError(
-                field_path=(name,), reason="invalid_value", helper_id=plan.helper_id, operation=plan.operation
-            )
+            raise ConfigurationError(field_path=(name,), reason="invalid_value", helper_id=plan.helper_id)
     request = options if isinstance(options, RequestOptions) else None
     defaults = core.protocol_defaults(plan.helper_id)
     kinds = (ws_options, UNSET if defaults is None else defaults.options)
@@ -245,7 +230,7 @@ def _negotiated(offered: tuple[str, ...], info: ResponseInfo) -> None:
     """Refuse a 101 that selected no subprotocol the helper offered, or selected one it did not offer."""
     selected = info.headers.get("sec-websocket-protocol")
     if (selected is None and offered) or (selected is not None and selected not in offered):
-        raise WebSocketHandshakeError(condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise APIConnectionError(reason="negotiation_failed")
 
 
 def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> str | bytes:
@@ -352,36 +337,31 @@ class _Sockets(Generic[SendT, RecvT]):
         return MappingProxyType({"messages_sent": self._sent, "messages_received": self._received})
 
     def _stamped(self, error: ErrorT) -> ErrorT:
-        """Give a failure of the session the helper's context, the handshake call's identity, and its 101.
-
-        A failure keeps its own delivery evidence; one without any, NOT_SENT, takes how far the handshake call got,
-        unless it is a transport or auth failure, whose NOT_SENT is its proof.
-        """
-        if isinstance(error, ProtocolError):
+        """Give a failure of the session the helper's context, the handshake call's measurements, and its 101."""
+        if isinstance(error, HELPER_ERRORS):
             error.helper_id = self._plan.helper_id
             error.operation = self._plan.operation
-        state = error.delivery_state
         failure = self._call.snapshot_error(error)
-        if state is not DeliveryState.NOT_SENT or isinstance(error, (APIConnectionError, AuthError)):
-            failure.delivery_state = state
         failure.info = self._info
         return failure
 
     def _lost(self, error: BaseException) -> APIConnectionError:
         """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
-        return self._stamped(
-            APIConnectionError(phase="read", delivery_state=DeliveryState.RESPONSE_STARTED, cause=error)
-        )
+        return self._stamped(APIConnectionError(cause=error))
 
     def _halted(self) -> Exception | None:
         """Return the session deadline's failure once it passed, or None."""
-        return self._call.expired("stream", DeliveryState.RESPONSE_STARTED)
+        return self._call.expired()
 
     def _checked(self) -> None:
-        self._call.check("stream", DeliveryState.RESPONSE_STARTED)
+        self._call.check()
 
-    def _state_error(self, action: str) -> ProtocolStateError:
-        return self._stamped(ProtocolStateError(state=self._state.value, action=action))
+    def _state_error(self, action: str) -> ConfigurationError:
+        return self._stamped(
+            ConfigurationError(
+                field_path=(action, self._state.value), reason="invalid_state", helper_id=self._plan.helper_id
+            )
+        )
 
     def _close_error(self) -> WebSocketClosedError:
         code, reason, clean = self._closed
@@ -402,7 +382,11 @@ class _Sockets(Generic[SendT, RecvT]):
     def _enter_receive(self) -> None:
         """Take the session's one receive, refusing a concurrent one and an ended session."""
         if not self._receiving.acquire(blocking=False):
-            raise self._stamped(ConcurrentReceiveError())
+            raise self._stamped(
+                ConfigurationError(
+                    field_path=("receive", "receiving"), reason="invalid_state", helper_id=self._plan.helper_id
+                )
+            )
         try:
             self._usable("receive")
         except BaseException:
@@ -427,10 +411,7 @@ class _Sockets(Generic[SendT, RecvT]):
         HTTPX2 closes with 1009 itself before reporting a message over the limit, so the closure is this end's own then.
         """
         if connection is ConnectionState.LOCAL_CLOSING:
-            limit = self._limits.max_message_bytes
-            return self._stamped(
-                ProtocolSizeError(kind="message", limit=limit, observed=limit + 1, unit="bytes", cause=closed)
-            )
+            return self._stamped(ProtocolDataError(reason="too_large", cause=closed))
         code = int(closed.code)
         self._closed = (code, _reason(closed.reason), code in _CLEAN)
         return self._close_error()
@@ -446,7 +427,7 @@ class _Sockets(Generic[SendT, RecvT]):
             ) from None
 
     def _message(self, event: Event) -> Message[RecvT]:
-        """Return a received message decoded as declared, raising StreamDecodeError for one that is not."""
+        """Return a received message decoded as declared, raising DecodeError for one that is not."""
         self._received += 1
         plan = self._plan
         text = isinstance(event, TextMessage)
@@ -472,15 +453,15 @@ class _Sockets(Generic[SendT, RecvT]):
 
     def _decode_error(
         self, data: bytes, condition: Literal["type", "value", "malformed"], cause: BaseException | None = None
-    ) -> StreamDecodeError:
+    ) -> DecodeError:
         """Return the decode failure of a message, keeping at most the message limit or 64 KiB of its bytes."""
         limit = self._prefix
         return self._stamped(
-            StreamDecodeError(
-                sequence=self._received,
-                raw_prefix=data[:limit],
+            DecodeError(
+                reason=condition,
+                location=("message", self._received),
+                body_bytes=data[:limit],
                 truncated=len(data) > limit,
-                condition=condition,
                 cause=cause,
             )
         )
@@ -488,9 +469,9 @@ class _Sockets(Generic[SendT, RecvT]):
     @staticmethod
     def _close_code(error: BaseException) -> int:
         """Return the code a failure closes the connection with."""
-        if isinstance(error, StreamDecodeError):
+        if isinstance(error, DecodeError) and error.direction == "response":
             return _PROTOCOL_ERROR
-        if is_client_closed(error) or (is_phase_timeout(error) and error.phase == "read"):
+        if is_client_closed(error) or is_phase_timeout(error):
             return _GOING_AWAY
         return _INTERNAL_ERROR
 
@@ -502,24 +483,9 @@ class _Sockets(Generic[SendT, RecvT]):
         """
         if (halt := self._halted()) is not None:
             return halt
-        if timeout is None and (deadline := self._call.deadline) is not None:
-            return self._stamped(
-                APITimeoutError(
-                    reason="deadline_exceeded",
-                    deadline_at=deadline.at,
-                    phase="stream",
-                    delivery_state=DeliveryState.RESPONSE_STARTED,
-                )
-            )
-        return self._stamped(
-            APITimeoutError(
-                reason="phase_timeout",
-                effective_timeout=timeout,
-                phase="read",
-                delivery_state=DeliveryState.RESPONSE_STARTED,
-                retry_stop_reason="transport_not_retryable",
-            )
-        )
+        if timeout is None and self._call.deadline is not None:
+            return self._stamped(APITimeoutError(reason="deadline_exceeded"))
+        return self._stamped(APITimeoutError(reason="phase_timeout"))
 
     def _ended_as(self, error: Exception) -> tuple[_State, int, str, BaseException | None]:
         """Return how a failure or a received closure ends the session: its state, close code and reason, and error.
@@ -530,9 +496,9 @@ class _Sockets(Generic[SendT, RecvT]):
             return _State.ENDED, error.code or _NORMAL, error.reason, None if error.clean else error
         return _State.FAILED, self._close_code(error), "", error
 
-    def _undelivered(self, error: Exception) -> DeliveryUnknownError:
+    def _undelivered(self, error: Exception) -> APIConnectionError:
         """Return how a send in progress ended: a message that may have gone is undelivered and never sent again."""
-        return self._stamped(DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=error))
+        return self._stamped(APIConnectionError(reason="delivery_unknown", cause=error))
 
     def _wait(self, cap: float | None) -> float | None:
         """Return how long a native wait may block: the earlier of a cap and the session's deadline, never negative."""
@@ -605,7 +571,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
     The session owns its connection until it closes or fails; the connection belongs to the HTTP client's pool, which
     closes it with the client. One receive runs at a time, beside sends, which HTTPX2 writes one at a time. A closure by
     the server ends iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or
-    `close()` every step raises ProtocolStateError, and iteration after `close()` stops. Closing a client that created
+    `close()` every step raises ConfigurationError, and iteration after `close()` stops. Closing a client that created
     its HTTP client closes its open sessions first.
     """
 
@@ -687,7 +653,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             raise self._end(self._lost(error), "receive") from None
         try:
             return self._message(event)
-        except StreamDecodeError as error:
+        except DecodeError as error:
             del event
             raise self._end(error.with_traceback(None), "receive") from None
 
@@ -730,7 +696,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             if closed.clean:
                 raise StopIteration from None
             raise
-        except ProtocolStateError:
+        except ConfigurationError:
             if self._closed_here():
                 raise StopIteration from None
             raise
@@ -855,7 +821,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._end(self._lost(error), "receive") from None
         try:
             return self._message(event)
-        except StreamDecodeError as error:
+        except DecodeError as error:
             del event
             raise await self._end(error.with_traceback(None), "receive") from None
 
@@ -900,7 +866,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             if closed.clean:
                 raise StopAsyncIteration from None
             raise
-        except ProtocolStateError:
+        except ConfigurationError:
             if self._closed_here():
                 raise StopAsyncIteration from None
             raise

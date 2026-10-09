@@ -177,17 +177,11 @@ def _failing(  # noqa: PLR0913, PLR0917
 
 
 def _outcome(call: Callable[[], object], errors: ModuleType) -> str:
-    """Describe a hook failure's facts and the success it completed, if any."""
+    """Describe a hook failure's facts."""
     try:
         call()
     except errors.SDKError as error:
-        completed = error.completed_result
-        result = "completed nothing" if completed is None else f"completed {completed.data!r}"
-        causes = [type(item).__name__ for item in error.secondary_errors]
-        return (
-            f"{error} code={error.reason_code} delivery={error.delivery_state.value} "
-            f"cause={error.cause} secondary={causes} {result}"
-        )
+        return f"{error} reason={error.reason} cause={error.cause} notes={getattr(error, '__notes__', [])}"
     return "no error"
 
 
@@ -296,10 +290,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
             try:
                 await ended.pets.get_pet(pet_id=pet)
             except errors.SDKError as error:
-                causes = [type(item).__name__ for item in error.secondary_errors]
-                completed = error.completed_result
-                data = None if completed is None else completed.data
-                lines.append(f"  async success ending in {label}: {error} {causes} {data!r}")
+                lines.append(f"  async success ending in {label}: {error} {getattr(error, '__notes__', [])}")
         exchange.respond(json_response(200, _PET))
         kept = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "k", ("call_end",)),)))
         await arecord(lines, "async raw get whose hook fails", lambda: kept.pets.with_raw_response.get_pet(pet_id=pet))

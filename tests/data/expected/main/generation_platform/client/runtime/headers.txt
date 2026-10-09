@@ -11,12 +11,12 @@
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: application/json, content-length: 14] b'{"name":"fox"}'
   body media type repeated = Pet(id=1, name='fox', tag=None)
-  body relabeled ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='createPet', field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  body media type removed ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.content-type') [operation_id='createPet', field_path=('headers', 'content-type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  media type of no body ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='getPet', field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  narrowed Accept replaced ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_response_media
-  narrowed Accept removed ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_response_media
-  raw parts relabeled ! ConfigurationError: ConfigurationError(call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
+  body relabeled ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='createPet', field_path=('headers', 'Content-Type')] conflicts_with_body_media
+  body media type removed ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='conflicts_with_body_media', field_path='headers.content-type') [operation_id='createPet', field_path=('headers', 'content-type')] conflicts_with_body_media
+  media type of no body ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='getPet', field_path=('headers', 'Content-Type')] conflicts_with_body_media
+  narrowed Accept replaced ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept')] conflicts_with_response_media
+  narrowed Accept removed ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept')] conflicts_with_response_media
+  raw parts relabeled ! ConfigurationError: ConfigurationError(reason='conflicts_with_body_media', field_path='headers.Content-Type') [field_path=('headers', 'Content-Type')] conflicts_with_body_media
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: Application/JSON, user-agent: custom/1, x-client: c] b''
   no body without a media type, narrowed Accept repeated = Pet(id=3, name='fox', tag=None)
@@ -26,13 +26,13 @@
   > POST https://raw.example.com/items
     [host: raw.example.com, content-length: 0, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, x-raw: 1] b''
   raw parts with their media type repeated = b'ok'
-  reserved header ! ConfigurationError: ConfigurationError(reason='reserved', field_path='headers.Host') [field_path=('headers', 'Host'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] reserved
-  header name that is no token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Bad Name') [field_path=('headers', 'Bad Name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header value on two lines ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header set and removed ! ConfigurationError: ConfigurationError(reason='set_and_removed', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] set_and_removed
-  header that is no pair ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  header value that is no text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  headers that are no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  reserved header ! ConfigurationError: ConfigurationError(reason='reserved', field_path='headers.Host') [field_path=('headers', 'Host')] reserved
+  header name that is no token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Bad Name') [field_path=('headers', 'Bad Name')] invalid_value
+  header value on two lines ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  header set and removed ! ConfigurationError: ConfigurationError(reason='set_and_removed', field_path='headers') [field_path=('headers',)] set_and_removed
+  header that is no pair ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  header value that is no text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  headers that are no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   a coding left to the native client = RequestOptions(server=UNSET, base_url=UNSET, headers=(('Accept-Encoding', 'br'),), query=(), max_response_bytes=UNSET, max_error_body_bytes=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, follow_redirects=UNSET, idempotency_key=UNSET)
   headers listed = (('X-A', 'a'), ('X-B', None))
   > GET https://api.example.com/v1/pets/3

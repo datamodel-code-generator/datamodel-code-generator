@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
-from pets.errors import StreamRemoteError
+from pets.errors import ProtocolDataError
 from pets.options import RequestOptions, SessionOptions
 from pets.protocols import AsyncEventStream, EventStream, StreamEvent, StreamOptions, UnknownEvent
 from pets_models import Created, Deleted, Record, SearchQuery
@@ -36,16 +36,16 @@ def records(client: Client, query: SearchQuery) -> None:
     assert_type(client.protocols.search.all.open(body=query), EventStream[Record])
     try:
         next(client.protocols.records.tagged.open())
-    except StreamRemoteError as error:
+    except ProtocolDataError as error:
         remote(error)
     stream.close()
     del events
 
 
-def remote(error: StreamRemoteError) -> None:
-    """Read an error record's data as object, never Any, and its absent SSE type."""
+def remote(error: ProtocolDataError) -> None:
+    """Read an error record's data as object, never Any, and its reason."""
     assert_type(error.data, object)
-    assert_type(error.event_type, str | None)
+    assert_type(error.reason, str)
 
 
 async def async_records(client: AsyncClient, query: SearchQuery) -> None:

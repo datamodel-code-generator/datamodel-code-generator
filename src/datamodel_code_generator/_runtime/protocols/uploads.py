@@ -18,20 +18,20 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 from typing_extensions import Self, TypeVar
 
 from ..client.client import request_decode_error
-from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
+from ..client.errors import (
+    APIConnectionError,
+    APIStatusError,
+    ConfigurationError,
+    SDKError,
+    add_secondary,
+    is_transport,
+)
+from ..client.logical import Delivery
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.unset import UNSET
-from .errors import (
-    NonResumableSourceError,
-    ProtocolDataError,
-    ProtocolStateError,
-    UploadDeliveryUnknownError,
-    UploadExpiredError,
-    UploadOffsetError,
-    UploadSourceChangedError,
-)
+from .errors import ProtocolDataError
 from .options import UploadOptions, layered
 from .records import HeaderSelector, plain_copy
 from .resume import (
@@ -75,8 +75,7 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 _READ: Final = 65536
-_UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
-_STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "delivery", "bound", "expires_at"})
+_STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "bound", "expires_at"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _GATEWAY_STATUSES: Final = frozenset({502, 504})
@@ -198,9 +197,9 @@ _DEFAULTS: Final = _Limits()
 def _invalid(
     plan: UploadPlan[Any, Any],
     path: tuple[str, ...],
-    condition: Literal["invalid_value", "wrong_capability"] = "invalid_value",
+    condition: Literal["invalid_value", "wrong_capability", "source_changed", "expired"] = "invalid_value",
 ) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _limits(
@@ -324,9 +323,9 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
         if _discarded(empty, base, end) or type(empty) is not bytes or type(base) is not int or type(end) is not int:
             raise _invalid(plan, ("source",), "wrong_capability")
         return _Content(source, file, base, max(end - base, 0))
-    if (kind := _source_kind(source)) is None:
+    if _source_kind(source) is None:
         raise _invalid(plan, ("source",))
-    raise NonResumableSourceError(source_kind=kind, helper_id=plan.helper_id, operation=plan.operation)
+    raise _invalid(plan, ("source",), "wrong_capability")
 
 
 class _Upload(Generic[T]):
@@ -337,6 +336,7 @@ class _Upload(Generic[T]):
     """
 
     __slots__ = (
+        "_append_delivery",
         "_bound",
         "_changed",
         "_chunk",
@@ -344,7 +344,6 @@ class _Upload(Generic[T]):
         "_completion_delivery",
         "_confirmed",
         "_content",
-        "_delivery",
         "_expires_at",
         "_guard",
         "_high",
@@ -371,8 +370,7 @@ class _Upload(Generic[T]):
         self._lock = threading.Lock()
         self._guard = threading.Lock()
         self._phase = _Phase.UPLOADING
-        self._delivery: DeliveryState | None = None
-        self._completion_delivery = DeliveryState.NOT_SENT
+        self._append_delivery = self._completion_delivery = Delivery.NOT_SENT
         self._confirmed = 0
         self._verify = False
         self._high: int | None = 0
@@ -396,15 +394,8 @@ class _Upload(Generic[T]):
             complete=self._phase is _Phase.COMPLETE,
         )
 
-    def _state_error(self, action: str, state: str) -> ProtocolStateError:
-        plan = self._plan
-        return ProtocolStateError(
-            state=state,
-            action=action,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
-        )
+    def _state_error(self, action: str, state: str) -> ConfigurationError:
+        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
 
     def _enter(self, action: str) -> None:
         """Take the handle for one step, refusing a concurrent step, a closed handle, and a changed source."""
@@ -439,45 +430,30 @@ class _Upload(Generic[T]):
             if confirmed == self._size and self._plan.completion is None:
                 self._phase = _Phase.COMPLETE
 
-    def _unknown(
-        self,
-        *,
-        phase: Literal["append", "complete"],
-        delivery: DeliveryState,
-        error: BaseException | None = None,
-        failures: tuple[BaseException, ...] = (),
-    ) -> UploadDeliveryUnknownError:
-        plan = self._plan
-        return UploadDeliveryUnknownError(
-            phase=phase,
-            progress=self._progress(),
-            delivery_state=delivery,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
+    @staticmethod
+    def _unknown(error: BaseException | None = None, failures: tuple[BaseException, ...] = ()) -> APIConnectionError:
+        """Return the failure of an append or completion whose outcome stays unknown; the checkpoint continues it."""
+        unknown = APIConnectionError(
+            reason="delivery_unknown",
+            operation_id=error.operation_id if isinstance(error, SDKError) else None,
             cause=error,
-            secondary_errors=failures,
         )
+        add_secondary(unknown, *failures)
+        return unknown
 
     def _settled(self) -> T | None:
         """Return nothing while the upload is due, its result once complete, or raise its unknown completion again."""
-        if self._phase is _Phase.UPLOADING:
-            return None
-        if (delivery := self._delivery) is not None:
-            raise self._unknown(phase="complete", delivery=delivery)
+        if self._phase is _Phase.UNKNOWN:
+            raise self._unknown()
         return self._result
 
-    def _offset_error(self, expected: int, remote: int, info: ResponseInfo | None) -> UploadOffsetError:
+    def _offset_error(self, info: ResponseInfo | None) -> ProtocolDataError:
         plan = self._plan
-        return UploadOffsetError(
-            confirmed_offset=self._confirmed,
-            expected_offset=expected,
-            remote_offset=remote,
-            size=self._size,
+        return ProtocolDataError(
+            reason="inconsistent",
             location=plan.remote_offset,
             helper_id=plan.helper_id,
             operation=plan.probe_operation,
-            parent_session_id=self._session.session_id,
             info=info,
         )
 
@@ -489,7 +465,7 @@ class _Upload(Generic[T]):
     ) -> ProtocolDataError:
         plan = self._plan
         return ProtocolDataError(
-            condition=condition, location=at, helper_id=plan.helper_id, operation=plan.operation, info=info
+            reason=condition, location=at, helper_id=plan.helper_id, operation=plan.operation, info=info
         )
 
     def _read(self, read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue:
@@ -560,7 +536,7 @@ class _Upload(Generic[T]):
         limit = size if (high := self._high) is None else min(high, size)
         partial = remote % self._chunk and remote != size
         if remote < confirmed or remote > limit or (partial and not self._plan.partial_commit):
-            raise self._offset_error(confirmed, remote, info)
+            raise self._offset_error(info)
         self._settle(remote)
 
     def _reconciled(self, remote: int, end: int, info: ResponseInfo) -> bool:
@@ -578,7 +554,7 @@ class _Upload(Generic[T]):
         if confirmed < remote < end and self._plan.partial_commit:
             self._settle(remote)
             return False
-        raise self._offset_error(end, remote, info)
+        raise self._offset_error(info)
 
     def _buffer(self) -> tuple[bytes, int]:
         """Read the unconfirmed bytes of the chunk holding the confirmed offset, and return them with the chunk's end.
@@ -594,14 +570,7 @@ class _Upload(Generic[T]):
             return data, end
         with self._guard:
             self._changed = True
-        plan = self._plan
-        raise UploadSourceChangedError(
-            expected_size=size,
-            actual_size=content.measured(),
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
-        )
+        raise _invalid(self._plan, ("source",), "source_changed")
 
     def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan = self._plan
@@ -621,33 +590,32 @@ class _Upload(Generic[T]):
     ) -> T:
         """Keep the completion's result."""
         with self._guard:
-            self._result, self._phase, self._delivery = data, _Phase.COMPLETE, None
+            self._result, self._phase = data, _Phase.COMPLETE
         return data
 
     def _completing(self) -> None:
         """Keep a provisional unknown checkpoint while the completion child is active."""
         with self._guard:
-            self._phase, self._delivery = _Phase.UNKNOWN, DeliveryState.MAYBE_SENT
-            self._completion_delivery = DeliveryState.NOT_SENT
+            self._phase = _Phase.UNKNOWN
+            self._completion_delivery = Delivery.NOT_SENT
 
-    def _completion_observed(self, _error: BaseException, delivery: DeliveryState) -> None:
-        """Keep the completion child's resource evidence separately from OAuth traffic."""
+    def _completion_observed(self, _error: BaseException, delivery: Delivery) -> None:
+        """Keep how far the completion child got, separately from OAuth traffic."""
         self._completion_delivery = delivery
+
+    def _append_observed(self, _error: BaseException, delivery: Delivery) -> None:
+        """Keep how far a failed append got."""
+        self._append_delivery = delivery
 
     def _completion_failed(self, error: BaseException) -> None:
         """Restore uploading for an unapplied completion; keep actual resource uncertainty unknown."""
-        delivery = self._completion_delivery
-        with self._guard:
-            if _refused(error) or delivery is DeliveryState.NOT_SENT:
-                self._phase, self._delivery = _Phase.UPLOADING, None
-            elif self._phase is _Phase.UNKNOWN:
-                self._delivery = delivery
+        if _refused(error) or self._completion_delivery is Delivery.NOT_SENT:
+            with self._guard:
+                self._phase = _Phase.UPLOADING
 
     def _completion_error(self, error: Exception) -> Exception:
         """Return the error of a failed completion: its own once it may be sent again, or else an unknown outcome."""
-        if (delivery := self._delivery) is None or self._phase is not _Phase.UNKNOWN:
-            return error
-        return self._unknown(phase="complete", delivery=delivery, error=error)
+        return error if self._phase is not _Phase.UNKNOWN else self._unknown(error)
 
     def checkpoint(self) -> JSONValue:
         """Return the plain JSON a later `resume` continues from, sending nothing; a complete upload has none.
@@ -659,13 +627,11 @@ class _Upload(Generic[T]):
             if (phase := self._phase) is _Phase.COMPLETE:
                 action = "checkpoint"
                 raise self._state_error(action, phase.value)
-            delivery = self._delivery
             return plain_copy({
                 "size": self._size,
                 "chunk": self._chunk,
                 "confirmed": self._confirmed,
                 "phase": phase.value,
-                "delivery": None if delivery is None else delivery.value,
                 "bound": self._bound,
                 "expires_at": saved_expiry(self._expires_at),
             })
@@ -679,7 +645,7 @@ def _dotted(
 
     if (read := dotted_write(targeted, written)) is not None:
         raise ProtocolDataError(
-            condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
+            reason="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
         )
 
 
@@ -738,7 +704,7 @@ class UploadHandle(_Upload[T]):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
 
     `close` only stops local uploading; the remote upload stays. Uploading from two threads at once raises
-    ProtocolStateError.
+    ConfigurationError.
     """
 
     __slots__ = ("_core",)
@@ -799,23 +765,24 @@ class UploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
+                    failed=self._append_observed,
                 )
             except Exception as error:
-                if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
+                if not is_transport(error) or self._append_delivery is Delivery.NOT_SENT:
                     raise
-                if self._uncertain(error, delivery, end):
+                if self._uncertain(error, end):
                     return
                 continue
             self._settle(end)
 
-    def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
+    def _uncertain(self, error: APIConnectionError, end: int) -> bool:
         """Probe once after an append of unknown outcome and return whether its chunk is confirmed."""
         try:
             remote, info = self._probe()
         except Exception as failure:
             if not _probed_again(failure):
                 raise
-            raise self._unknown(phase="append", delivery=delivery, error=error, failures=(failure,)) from None
+            raise self._unknown(error, (failure,)) from None
         return self._reconciled(remote, end, info)
 
     def _complete(self) -> None:
@@ -880,7 +847,7 @@ class UploadHandle(_Upload[T]):
             self._lock.release()
 
     def close(self) -> None:
-        """Stop uploading locally; the remote upload stays, later steps raise ProtocolStateError."""
+        """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("close")
 
     def __enter__(self) -> Self:
@@ -899,7 +866,7 @@ class AsyncUploadHandle(_Upload[T]):
     """A resumable upload an asyncio helper created or resumed: `advance` appends one chunk, `run` uploads the rest.
 
     `aclose` only stops local uploading; the remote upload stays. Uploading from two tasks at once raises
-    ProtocolStateError.
+    ConfigurationError.
     """
 
     __slots__ = ("_core",)
@@ -960,23 +927,24 @@ class AsyncUploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
+                    failed=self._append_observed,
                 )
             except Exception as error:
-                if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
+                if not is_transport(error) or self._append_delivery is Delivery.NOT_SENT:
                     raise
-                if await self._uncertain(error, delivery, end):
+                if await self._uncertain(error, end):
                     return
                 continue
             self._settle(end)
 
-    async def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
+    async def _uncertain(self, error: APIConnectionError, end: int) -> bool:
         """Probe once after an append of unknown outcome and return whether its chunk is confirmed."""
         try:
             remote, info = await self._probe()
         except Exception as failure:
             if not _probed_again(failure):
                 raise
-            raise self._unknown(phase="append", delivery=delivery, error=error, failures=(failure,)) from None
+            raise self._unknown(error, (failure,)) from None
         return self._reconciled(remote, end, info)
 
     async def _complete(self) -> None:
@@ -1041,7 +1009,7 @@ class AsyncUploadHandle(_Upload[T]):
             self._lock.release()
 
     async def aclose(self) -> None:
-        """Stop uploading locally; the remote upload stays, later steps raise ProtocolStateError."""
+        """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("aclose")
 
     async def __aenter__(self) -> Self:
@@ -1123,7 +1091,6 @@ class _Saved:
     chunk: int
     confirmed: int
     phase: _Phase
-    delivery: DeliveryState | None
     bound: tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]]
     expires_at: datetime | None
 
@@ -1153,13 +1120,11 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
     require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, JSONValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
-    phase, delivery = (state_text(fields[name]) for name in ("phase", "delivery"))
+    phase = state_text(fields["phase"])
     require_state(0 < chunk <= plan.max_chunk_bytes and confirmed <= size and phase in _PHASES)
     resolved = _PHASES[cast("str", phase)]
     require_state(
         resolved is not _Phase.COMPLETE
-        and (delivery is None) == (resolved is _Phase.UPLOADING)
-        and (delivery is None or delivery in {state.value for state in _UNKNOWN})
         and (resolved is _Phase.UPLOADING or (confirmed == size and plan.completion is not None))
     )
     bound = cast(
@@ -1170,7 +1135,6 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
         chunk=chunk,
         confirmed=confirmed,
         phase=resolved,
-        delivery=None if delivery is None else DeliveryState(delivery),
         bound=bound,
         expires_at=state_expiry(fields["expires_at"]),
     )
@@ -1193,7 +1157,7 @@ def _resume_start(
     except (MalformedStateError, TypeError, ValueError):
         raise _invalid(plan, ("state",)) from None
     if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
+        raise _invalid(plan, ("state",), "expired")
     if saved.chunk > limits.chunk_bytes:
         raise _invalid(plan, ("upload_options", "chunk_bytes"))
     probe, append, completion = saved.bound
@@ -1203,9 +1167,7 @@ def _resume_start(
         _dotted(plan, completed, completion, None)
     content = _content(plan, source)
     if content.size != saved.size:
-        raise UploadSourceChangedError(
-            expected_size=saved.size, actual_size=content.size, helper_id=plan.helper_id, operation=plan.operation
-        )
+        raise _invalid(plan, ("source",), "source_changed")
     return saved, content
 
 
@@ -1216,7 +1178,7 @@ def _resumed(handle: _Upload[T], saved: _Saved) -> _Upload[T]:
     handle._verify = True  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._high = None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._expires_at = saved.expires_at  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._phase, handle._delivery = saved.phase, saved.delivery  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._phase = saved.phase  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 

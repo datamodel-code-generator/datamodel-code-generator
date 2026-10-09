@@ -87,7 +87,6 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         info = getattr(error, "info", None)
         return (
             type(error).__name__,
-            getattr(error, "retry_stop_reason", None),
             getattr(error, "attempt_count", None),
             getattr(error, "body_bytes", None),
             getattr(error, "body", None),
@@ -370,15 +369,12 @@ def _broken() -> Iterator[bytes]:
 
 
 def _delivered(result: object) -> tuple[object, ...]:
-    """Describe a delivery outcome: the error class and reason, delivery state, phase, stop reason, attempts, cause."""
+    """Describe a delivery outcome: the error class and reason, attempts, and cause."""
     if not isinstance(result, BaseException):
         return getattr(result, "data", None), getattr(getattr(result, "info", None), "attempt_count", None)
     return (
         type(result).__name__,
         getattr(result, "reason", None),
-        str(getattr(result, "delivery_state", None)),
-        getattr(result, "phase", None),
-        getattr(result, "retry_stop_reason", None),
         getattr(result, "attempt_count", None),
         type(getattr(result, "cause", None)).__name__,
     )

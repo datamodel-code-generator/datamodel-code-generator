@@ -22,9 +22,6 @@ from .bodies import CHUNK
 from .errors import (
     ConfigurationError,
     DecodeError,
-    DeliveryState,
-    ProtocolError,
-    RetryStopReason,
     SDKError,
     add_secondary,
     is_http_error,
@@ -206,10 +203,9 @@ class _Raw(Generic[SourceT, HandleT]):
         "_native",
         "_operation_id",
         "_raw_source",
-        "_retry_stop_reason",
         "_source",
         "_state",
-        "_status_secondary_errors",
+        "_status_failures",
     )
 
     def __init__(  # noqa: PLR0913
@@ -225,8 +221,7 @@ class _Raw(Generic[SourceT, HandleT]):
         native: httpx2.Response,
         events: CallEvents | None,
         call: LogicalCallContext,
-        retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
+        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep response metadata, status classification, limits, the decoded and raw body sources, and release.
 
@@ -234,8 +229,7 @@ class _Raw(Generic[SourceT, HandleT]):
         """
         self._events = events
         self._call = call
-        self._retry_stop_reason: RetryStopReason | None = retry_stop_reason
-        self._status_secondary_errors = status_secondary_errors
+        self._status_failures = status_failures
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -271,7 +265,6 @@ class _Raw(Generic[SourceT, HandleT]):
             field_path=("response", action, reported),
             reason="response_consumed",
             operation_id=self._operation_id,
-            call_id=self._info.call_id,
             info=self._info,
         )
 
@@ -282,9 +275,7 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _failure(self, error: Exception) -> BaseException:
         if is_http_error(error):
-            error.retry_stop_reason = self._retry_stop_reason
-            for secondary in self._status_secondary_errors:
-                add_secondary(error, secondary)
+            add_secondary(error, *self._status_failures)
         failure = self._classify(error)
         failure.info = self._info
         return failure
@@ -302,7 +293,7 @@ class _Raw(Generic[SourceT, HandleT]):
         if self._call.session is None:
             return
         try:
-            self._call.check("stream", DeliveryState.RESPONSE_STARTED)
+            self._call.check()
         except SDKError as error:
             error.info = self._info
             raise
@@ -329,9 +320,7 @@ class _Raw(Generic[SourceT, HandleT]):
         limit, body = self._limits.max_error_body_bytes, self._body
         error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
         if is_http_error(error):
-            error.retry_stop_reason = self._retry_stop_reason
-            for secondary in self._status_secondary_errors:
-                add_secondary(error, secondary)
+            add_secondary(error, *self._status_failures)
         return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
@@ -428,8 +417,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         close: Callable[[], None],
         call: LogicalCallContext,
         events: CallEvents | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
+        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -443,8 +431,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             native=native,
             events=events,
             call=call,
-            retry_stop_reason=retry_stop_reason,
-            status_secondary_errors=status_secondary_errors,
+            status_failures=status_failures,
         )
         self._close: Callable[[], None] | None = close
 
@@ -603,13 +590,13 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         self._state = "streaming"
         parts: list[bytes] = []
         size = 0
-        problem: ProtocolError | None = None
+        problem: DecodeError | None = None
         try:
             for chunk in self._chunks():
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break
-        except ProtocolError as error:
+        except DecodeError as error:
             problem = error
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
@@ -678,8 +665,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
         events: CallEvents | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
+        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -693,8 +679,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             native=native,
             events=events,
             call=call,
-            retry_stop_reason=retry_stop_reason,
-            status_secondary_errors=status_secondary_errors,
+            status_failures=status_failures,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
 
@@ -881,13 +866,13 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         self._state = "streaming"
         parts: list[bytes] = []
         size = 0
-        problem: ProtocolError | None = None
+        problem: DecodeError | None = None
         try:
             async for chunk in self._chunks():
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break
-        except ProtocolError as error:
+        except DecodeError as error:
             problem = error
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)

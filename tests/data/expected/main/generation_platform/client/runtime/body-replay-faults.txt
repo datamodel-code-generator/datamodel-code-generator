@@ -1,32 +1,32 @@
 # media pydantic_v2.BaseModel
   positionless file = b'ok'
     caller positionless file open=True
-  rewind failure before send ! DecodeError: DecodeError(call_id='<call>', reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
+  rewind failure before send ! DecodeError: DecodeError(reason='body_not_replayable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
     rewind failure caller file open=True
-  native file read failure ! APIConnectionError: APIConnectionError(call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=OSError('read failed')] api_connection_error
+  native file read failure ! APIConnectionError: APIConnectionError() [cause=OSError('read failed')]
     read failure caller file open=True
-  invalid raw binary input ! DecodeError: DecodeError(call_id='<call>', reason='unencodable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
-  close failure after a typed result ! SDKError: SDKError(operation_id='replaceFile', call_id='<call>', reason='cleanup_failed') [operation_id='replaceFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  invalid raw binary input ! DecodeError: DecodeError(reason='unencodable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
+  close failure after a typed result ! SDKError: SDKError(operation_id='replaceFile', reason='cleanup_failed') [operation_id='replaceFile', cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  close failure after a raw result ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  close failure after a raw result ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  close failure after a failed call ! InternalServerError: InternalServerError(status_code=500, operation_id='replaceFile', call_id='<call>', retry_stop_reason='disabled') [operation_id='replaceFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'down', body_bytes=b'down', truncated=False] internal_server_error
-    secondary=['OSError'] closed=[True]
-  close failures of two parts ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
-    secondary=['OSError'] closed=[True, True]
-  close failure entering a stream ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary cleanup failure: OSError'
+    secondary=['Secondary cleanup failure: OSError'] closed=[True]
+  close failures of two parts ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed note='Secondary cleanup failure: OSError'
+    secondary=['Secondary cleanup failure: OSError'] closed=[True, True]
+  close failure entering a stream ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
   async positionless file = b'ok'
-  async rewind failure ! DecodeError: DecodeError(call_id='<call>', reason='body_not_replayable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
+  async rewind failure ! DecodeError: DecodeError(reason='body_not_replayable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
     async failed caller file open=True
   async path whose file has no position = b'native payload'
-  async close failure after a typed result ! SDKError: SDKError(operation_id='replaceFile', call_id='<call>', reason='cleanup_failed') [operation_id='replaceFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  async close failure after a typed result ! SDKError: SDKError(operation_id='replaceFile', reason='cleanup_failed') [operation_id='replaceFile', cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  async close failure after a raw result ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  async close failure after a raw result ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  async close failure after a failed call ! InternalServerError: InternalServerError(status_code=500, operation_id='replaceFile', call_id='<call>', retry_stop_reason='disabled') [operation_id='replaceFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'down', body_bytes=b'down', truncated=False] internal_server_error
-    secondary=['OSError'] closed=[True]
-  async close failure entering a stream ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
+  async close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary cleanup failure: OSError'
+    secondary=['Secondary cleanup failure: OSError'] closed=[True]
+  async close failure entering a stream ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
   cancelled while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
   cancelled twice while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']

@@ -1,69 +1,69 @@
 # pagination pydantic_v2.BaseModel
-  iterate with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  page with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  iterate with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  page with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  iterate with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  page with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  iterate with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  page with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  next page of options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  iterate with a fixed key from scoped options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  page with a fixed key from client options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  iterate with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',)] invalid_value
+  page with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',)] invalid_value
+  iterate with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  page with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  iterate with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
+  page with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
+  iterate with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  page with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  next page of options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  iterate with a fixed key from scoped options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  page with a fixed key from client options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status error after retries ! InternalServerError: InternalServerError(status_code=500, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] internal_server_error body=Error(message='down')
-  after the status error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  session timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded session=True {'pages': 0, 'items': 0}
+  status error after retries ! InternalServerError: Error code: 500 - {"message":"down"} [operation_id='listUsers', status_code=500, body=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] body=Error(message='down')
+  after the status error ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+  session timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded {'pages': 0, 'items': 0}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   first item before the deadline = '1'
-  next page after the deadline ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+  next page after the deadline ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   no session timeout ['1']
-  page timeout [] ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+  page timeout [] ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page before an expired session = [1] continuation='a' status=200 attempts=1
-  next page in an expired session ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+  next page in an expired session ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   interrupted page: KeyboardInterrupt
-  item after the interruption ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  item after the interruption ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
     progress {'pages': 0, 'items': 0}
-  item while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  close while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='close') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.fetching') [field_path=('next', 'fetching')] invalid_state
+  close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   items after the concurrent steps ['1']
   limiter sessions 1 named=True
   default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001}
-  explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(kind='pages', limit=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=2] session_limit_error progress={'pages': 2, 'items': 2}
+  explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages progress={'pages': 2, 'items': 2}
   default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001}
-  explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(kind='items', limit=100000) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=100000] session_limit_error progress={'pages': 1, 'items': 100000}
+  explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(reason='items', limit=100000) [limit=100000] items progress={'pages': 1, 'items': 100000}
   default session clock first = '1'
   default session clock after former timeout = '2'
     progress {'pages': 2, 'items': 2}
   explicit session clock first = '1'
-  explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+  explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
     progress {'pages': 1, 'items': 1}
-  client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
-  async client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
-  client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone')] unknown_field
+  async client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone')] unknown_field
+  client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options')] invalid_value
+  async client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options')] invalid_value
   client with no defaults = None
   client with empty defaults = None
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  default item limit ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  default item limit ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  empty call options keep defaults ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  empty call options keep defaults ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   call item limit ['1', '2']
@@ -72,7 +72,7 @@
   helper without defaults ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  view keeps defaults ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  view keeps defaults ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -88,25 +88,25 @@
   limiter sessions 3 ordinary=None
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error same session=True
+  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing one session=True
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  call end hook failure ! SDKError: SDKError(operation_id='listUsers', call_id='<call>', reason='hook_failed') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('hook failed on call_end')] hook_failed completed=1 session=True
-  after the hook failure ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  call end hook failure ! SDKError: SDKError(operation_id='listUsers', reason='hook_failed') [operation_id='listUsers', cause=RuntimeError('hook failed on call_end')] hook_failed
+  after the hook failure ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   item before closing the client = '1'
-  item after closing the client ! ConfigurationError: ConfigurationError(operation_id='listUsers', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='listUsers', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
-  item after the closed client ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  item after closing the client ! ConfigurationError: ConfigurationError(operation_id='listUsers', reason='client_closed', field_path='client.closed') [operation_id='listUsers', field_path=('client', 'closed')] client_closed
+  item after the closed client ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
   async default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001}
-  async explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(kind='pages', limit=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=2] session_limit_error progress={'pages': 2, 'items': 2}
+  async explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages progress={'pages': 2, 'items': 2}
   async default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001}
-  async explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(kind='items', limit=100000) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=100000] session_limit_error progress={'pages': 1, 'items': 100000}
+  async explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(reason='items', limit=100000) [limit=100000] items progress={'pages': 1, 'items': 100000}
   async default session clock first = User(id='1', name=None)
   async default session clock after former timeout = User(id='2', name=None)
     progress {'pages': 2, 'items': 2}
   async explicit session clock first = User(id='1', name=None)
-  async explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+  async explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
     progress {'pages': 1, 'items': 1}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -116,11 +116,11 @@
   async sessions 1 named=True
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
-  async item while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='anext') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  async close while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='aclose') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
+  async item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.fetching') [field_path=('anext', 'fetching')] invalid_state
+  async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async items after the concurrent steps ['1']
   async cancelled page: CancelledError
-  async after the cancellation [] ! ProtocolStateError: ProtocolStateError(state='failed', action='aiter') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async after the cancellation [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.failed') [field_path=('aiter', 'failed')] invalid_state

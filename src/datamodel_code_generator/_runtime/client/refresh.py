@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from .auth import BearerCredential, CredentialContext, TokenSet, TokenVersion, checked_scopes
-from .errors import AuthError, ConfigurationError, DeliveryState
+from .errors import AuthError, ConfigurationError
 from .oauth import Session, receipt, token_material
 
 if TYPE_CHECKING:
@@ -89,29 +89,16 @@ def checked_token_set(value: object, audience: str | None) -> TokenSet:
 
 def exchange_error(exchanged: Exchanged, cause: BaseException | None = None) -> Exception:
     """Return the error of a token request that obtained no usable token, keeping only safe response facts."""
-    delivery = exchanged.delivery
     if exchanged.outcome in {"success", "rejected", "http_status", "malformed_response"}:
-        phase: Literal["validate", "unknown"] = (
-            "validate" if exchanged.outcome in {"success", "malformed_response"} else "unknown"
-        )
         return AuthError(
             reason="oauth_error",
             status_code=exchanged.status_code,
             oauth_error=exchanged.oauth_error,
-            delivery_state=delivery,
-            phase=phase,
             cause=exchanged.cause if cause is None else cause,
         )
     if exchanged.timeout_kind is not None:
-        assert exchanged.timeout is not None
-        return AuthError(
-            reason="timeout",
-            effective_timeout=exchanged.timeout,
-            delivery_state=delivery,
-            phase=exchanged.phase,
-            cause=exchanged.cause,
-        )
-    return AuthError(reason="oauth_error", delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause)
+        return AuthError(reason="timeout", cause=exchanged.cause)
+    return AuthError(reason="oauth_error", cause=exchanged.cause)
 
 
 class ClientCredentialsGrant:
@@ -165,7 +152,7 @@ class RefreshTokenGrant:
     def request(self) -> tuple[tuple[str, str], ...]:
         """Return the form refreshing the current token set, or refuse one without a refresh token."""
         if (refresh_token := self.token_set.refresh_token) is None:
-            raise AuthError(reason="reauthorization_required", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="reauthorization_required")
         return (("grant_type", "refresh_token"), ("refresh_token", refresh_token))
 
     def answered(self, exchanged: Exchanged) -> tuple[Published, TokenSet]:
@@ -179,7 +166,6 @@ class RefreshTokenGrant:
                 reason="reauthorization_required",
                 status_code=exchanged.status_code,
                 oauth_error="invalid_grant",
-                delivery_state=exchanged.delivery,
             )
         if exchanged.outcome != "success":
             raise exchange_error(exchanged)
@@ -229,7 +215,7 @@ class _Tokens:
         A forced caller uses only material that replaced the version it saw before waiting.
         """
         if closed:
-            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed")
         if (cache := self._cache) is None:
             return None
         if force:
@@ -293,7 +279,7 @@ class SyncTokens(_Tokens):
         checked, seen = self.seen(context)
         wait = -1.0 if (deadline := checked.deadline) is None else min(deadline.remaining(), threading.TIMEOUT_MAX)
         if not self._lock.acquire(timeout=wait):
-            raise AuthError(reason="timeout", effective_timeout=wait, delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="timeout")
         try:
             endpoint = self._endpoint
             if (material := self.current(closed=endpoint.closed, force=force, seen=seen)) is not None:

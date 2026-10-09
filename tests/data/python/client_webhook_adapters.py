@@ -161,18 +161,16 @@ class Contracts:
 
     def malformed(self) -> Exception:
         """Return the error of a signature header the verifier cannot read."""
-        return self.errors.WebhookVerificationError(condition="malformed_signature")
+        return self.errors.ProtocolDataError(reason="malformed_signature")
 
     def rejection(self, condition: str) -> Exception:
         """Return a verification error of the condition."""
-        return self.errors.WebhookVerificationError(condition=condition)
+        return self.errors.ProtocolDataError(reason=condition)
 
     def matched(self, signed: bytes, signatures: list[bytes], keys: Any, limits: Any) -> str:
         """Return the name of the first key, in key order, whose HMAC-SHA256 of the signed bytes is a signature."""
         if len(signatures) > limits.max_signatures:
-            raise self.errors.ProtocolSizeError(
-                kind="signatures", unit="items", limit=limits.max_signatures, observed=len(signatures)
-            )
+            raise self.errors.ProtocolDataError(reason="too_large")
         if not keys.keys:
             raise self.rejection("missing_key")
         for key in keys.keys:
@@ -637,7 +635,7 @@ def _verifier_errors(hooks: Adapters) -> None:
     helper, keys = hooks.helper("adapted.message"), hooks.key_set(("scripted", b"secret"))
     body, headers = STANDARD_ADAPTED.body, list(STANDARD_ADAPTED.headers)
     for label, error in (
-        ("verification error", hooks.errors.WebhookVerificationError(condition="invalid_signature")),
+        ("verification error", hooks.errors.ProtocolDataError(reason="invalid_signature")),
         ("programmer error", RuntimeError("adapter bug")),
         ("cancellation", asyncio.CancelledError()),
     ):

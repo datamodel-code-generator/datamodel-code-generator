@@ -247,15 +247,16 @@ Webhook exceptions have keyword-only constructors and the following additional f
 | Exception | Direct base | Fields |
 |---|---|---|
 | `ConfigurationError` | `SDKError` | `field_path: tuple[str \| int, ...] = ()`, `reason: str = 'invalid_value'` |
-| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window']` |
+| `ProtocolDataError` | `SDKError` | `reason: str = 'value'` |
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.error-fields -->
 
 All fields without a displayed default are required. They also accept the shared context fields
-`helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`,
-`cause: BaseException | None = None`, and `secondary_errors: tuple[BaseException, ...] = ()`, together with inherited
-SDK error fields. `reason_code` is the error's `reason`, or the concrete class name in snake case without one. Error
-strings and representations exclude delivery IDs, namespaces, operation references, entry IDs, and causes; callers may
-read those attributes explicitly.
+`helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`, and
+`cause: BaseException | None = None`, together with inherited SDK error fields. A failed webhook verification raises
+`ProtocolDataError` with the verification failure as its `reason`: `malformed_signature`, `invalid_signature`,
+`missing_key`, or `timestamp_window`; a body, header, key, or signature count over its limit raises it with the reason
+`too_large`. Error strings and representations exclude delivery IDs, namespaces, operation references, entry IDs, and
+causes; callers may read those attributes explicitly.
 
 ## Protocol contracts
 
@@ -390,44 +391,37 @@ call options take precedence over these defaults, which take precedence over the
 
 ### Protocol exceptions
 
-Every constructor is keyword-only. Besides the fields below, each accepts `helper_id`, `operation`,
-`operation_id`, `call_id`, `parent_session_id`, `info`, `cause`, `secondary_errors`, `attempt_count`, and `elapsed`.
-Invalid field values raise `ValueError`.
+Four classes cover what a helper reports beyond the core errors. Each derives from `SDKError`, comes from `pkg.errors`
+only when the package declares a helper that raises it, and has a keyword-only constructor that does not validate field
+values. Besides the fields below, each accepts `helper_id`, `operation`, `operation_id`, `info`, and `cause`.
 
-| Exception | Direct base | Fields |
-|---|---|---|
-| `ProtocolDataError` | `ProtocolError` | `condition: Literal['missing', 'null', 'type', 'value', 'malformed', 'inconsistent'] = 'value'`, `location: Selector \| RequestTarget \| None = None` |
-| `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
-| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress` |
-| `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is always `reconnects` |
-| `ResumeStateError` | `ProtocolError` | `condition: Literal['expired']` |
-| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`; `condition` is always `inconsistent` |
-| `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
-| `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float` |
-| `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
-| `OperationCancelledError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
-| `StreamDecodeError` | `ProtocolDataError` | `sequence: int`, `raw_prefix: bytes` of at most 65536 bytes, `truncated: bool`; `condition` defaults to `malformed` |
-| `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int` |
-| `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`, of an NDJSON line without a line end; `condition` is always `eof` |
-| `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
-| `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
-| `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
-| `CacheValidatorConflictError` | `ConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `reason` is always `binding_mismatch` |
-| `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
-| `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
-| `WebSocketHandshakeError` | `APIConnectionError` | `condition: Literal['negotiation']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
-| `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `message_id: str \| None = None` |
-| `NonResumableSourceError` | `ConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `reason` `wrong_capability` |
-| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
-| `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
-| `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`; `condition` is always `inconsistent` |
-| `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
+| Exception | Fields |
+|---|---|
+| `ProtocolDataError` | `reason: str = 'value'`, `location: Selector \| RequestTarget \| None = None`, `data: object = None` |
+| `SessionLimitError` | `reason: Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'wait', 'deadline']`, `limit: float`, `progress: ProtocolProgress`, `required_wait: float \| None = None` |
+| `StreamInterruptedError` | `reason: Literal['eof', 'transport']`, `sequence: int`, the last record delivered |
+| `WebSocketClosedError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
 
-A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is copied into
-a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots, raw bytes, event
-types, event data, and tags; read those attributes explicitly. The payload type parameters are covariant and default to
-`object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload explicitly before
-using it as a model.
+`ProtocolDataError` has the `reason` `missing`, `null`, `type`, `value`, `malformed`, `inconsistent`, or `too_large` for
+data that breaks the helper's rules, `pagination_cycle` for a continuation already seen, `operation_failed` or
+`operation_cancelled` for a polled operation that reached that declared state, `error_event` for a declared error event
+of a stream, and `malformed_signature`, `invalid_signature`, `missing_key`, or `timestamp_window` for a webhook that
+failed verification. `data` is the value the server sent with it, decoded as declared: the final poll's data or the
+error event's. `SessionLimitError` names the cap in `reason`; `wait` and `deadline` mean that a server's delay, kept in
+`required_wait`, is longer than the allowed wait or the remaining deadline. `progress` is copied into a read-only
+mapping, and the handle's `checkpoint()` continues the operation.
+
+Other refusals use the core errors. A call or checkpoint a helper refuses, such as a step while another runs, a step
+after a failure or `close()`, an expired or non-resumable checkpoint, a source whose size changed, or a validator header
+that conflicts with the cache entry, is a `ConfigurationError` with a `field_path` and a `reason` such as
+`invalid_state`, `expired`, `wrong_capability`, `source_changed`, or `binding_mismatch`. A failed WebSocket handshake
+negotiation, and a send or upload request that may have reached the server, is an `APIConnectionError` with the reason
+`negotiation_failed` or `delivery_unknown`. A stream event, NDJSON record, or WebSocket message that does not decode is
+a `DecodeError` with its `location`. A cache store that fails is an `SDKError` with the reason `store_failed` and the
+store's exception as `cause`.
+
+Messages and representations exclude locations, progress, resume state, raw bytes, event data, and tags; read those
+attributes explicitly.
 
 ## Protocol helper configuration
 
@@ -767,7 +761,7 @@ helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case co
 `ProtocolDataError` as a failure of the page's call. The error names the first such read value whose encoded text is
 non-empty, or else the first one. A page is read within the call's `max_response_bytes` like any response. A
 continuation returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
-`PaginationCycleError` after the repeating page.
+`ProtocolDataError` with the reason `pagination_cycle` after the repeating page.
 
 ### Offsets and page numbers
 
@@ -776,7 +770,7 @@ gives it. The traversal starts at the position the caller passes for the `write`
 after its usual encoding: the parameter's value, or the member at the pointer of the querystring or JSON body. An
 integral number such as `40.0` on a `number` target starts at its integer. Without one it starts at `first`, the offset
 or page number the server gives a request without one. A starting value that is not an integer fails like any invalid
-argument, with a request `DecodeError` when its codec refuses it, and otherwise with `ProtocolDataError` (condition
+argument, with a request `DecodeError` when its codec refuses it, and otherwise with `ProtocolDataError` (reason
 `type`, location the target) before anything is sent. Each request after a page writes the page's position advanced by
 the `literal` step, or for an offset by the page's item count with `page_items_count`; a page number always advances by
 a literal step, and generation refuses `page_items_count` for it. The position is written to `write` like a cursor, so
@@ -807,10 +801,10 @@ number gives, and a page without items ends it too, since no later page can brin
 at the first page, and a position past the total ends too. `has_more` must read a JSON boolean and `total` a JSON
 integer of at least 0; a header spells `true` or `false`, or decimal digits with an optional `-`, and generation checks
 the types its declared schema gives. A missing, null, or mistyped value raises `ProtocolDataError`, and a negative
-total, from the body or a header, raises it with the condition `value`. Otherwise an empty page does not end the
+total, from the body or a header, raises it with the reason `value`. Otherwise an empty page does not end the
 traversal, but one that continues while `page_items_count` counts items would ask for the same position again, so it
-raises `ProtocolDataError` with the condition `inconsistent`. Positions only grow, so these helpers never raise
-`PaginationCycleError`.
+raises `ProtocolDataError` with the reason `inconsistent`. Positions only grow, so these helpers never raise
+`ProtocolDataError` with the reason `pagination_cycle`.
 
 ### Next URLs and Link headers
 
@@ -843,25 +837,26 @@ parameters, a token or a quoted string with backslash escapes, so a comma or sem
 empty list elements and the whitespace around separators are skipped. Parameter names and relation types match
 without regard to ASCII case, a `rel` lists several relation types separated by spaces, and only a link's first `rel`
 counts. A link with an `anchor` parameter describes another resource and is skipped. Any other syntax raises
-`ProtocolDataError` with the condition `malformed`, and two links of the relation raise it with `inconsistent`.
+`ProtocolDataError` with the reason `malformed`, and two links of the relation raise it with `inconsistent`.
 
 A URL, from either continuation, resolves against the URL of the request that returned the page, after any redirect, as
 RFC 3986 resolves a reference. A reference with characters outside RFC 3986, or with brackets anywhere but around an
 IPv6 host, raises `ProtocolDataError` with `malformed`, and one with a fragment, user information, even empty, a scheme
-other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL excludes the query fields
-the client's authentication places itself. The URL must name the origin of the server the operation is sent to, its
-scheme, host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; any other origin raises
+other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL excludes the query fields the
+client's authentication places itself. The URL must name the origin of the server the operation is sent to, its scheme,
+host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; any other origin raises
 `ProtocolDataError` with `value` before anything is sent to it, and so does a `next_page` whose options select a server
-whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
-`Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
-package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
-put them there; its other headers, the call's and the operation's, are sent as usual. The client's authentication sends
-credentials and signatures there only when its `AuthConfig.allowed_origins` lists that origin too; otherwise the page
-fails with `ConfigurationError(reason="origin_denied")` before sending. A query credential the URL repeats is
-removed before the client places its own. `Page.continuation` is the resolved server URL, and a URL an earlier
-page of the session gave, or the URL of the first page itself, ends the traversal with `PaginationCycleError` after the
-repeating page; URLs compare once resolved and without the authentication's query fields, with the host's case, the
-default port, and dot segments normalized, but not their percent-encoding.
+whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like
+a redirect to another origin, carries no `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none
+of the headers or query fields the package's security schemes name, whether the authentication, a header patch, a
+parameter, a binding, or the server's URL put them there; its other headers, the call's and the operation's, are sent as
+usual. The client's authentication sends credentials and signatures there only when its `AuthConfig.allowed_origins`
+lists that origin too; otherwise the page fails with `ConfigurationError(reason="origin_denied")` before sending. A
+query credential the URL repeats is removed before the client places its own. `Page.continuation` is the resolved server
+URL, and a URL an earlier page of the session gave, or the URL of the first page itself, ends the traversal with
+`ProtocolDataError` with the reason `pagination_cycle` after the repeating page; URLs compare once resolved and without
+the authentication's query fields, with the host's case, the default port, and dot segments normalized, but not their
+percent-encoding.
 
 ### Bindings and request targets
 
@@ -895,16 +890,15 @@ session's. Each limit comes from the call's options, then the helper's `Protocol
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally even
 exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
-crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises `SessionLimitError(kind="items",
+crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises `SessionLimitError(reason="items",
 limit=0)` without sending. Defaults naming a helper the package lacks, or giving it another kind's options, fail the
 client's construction with `ConfigurationError`, and so do options of another type, and an idempotency key fixed by the
 client's options, `with_options`, or the call, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
-mixing items with pages raise `ProtocolStateError`. After a failure, cancellation included, and after `close()`,
-every step raises `ProtocolStateError`, and nothing is fetched again. Hooks and limiters see each page's call with the
-session's `parent_session_id`, which its errors carry too; an error `next_page` raises before its session starts, such
-as for a page it did not return, has `parent_session_id=None`.
+mixing items with pages raise `ConfigurationError` with the reason `invalid_state`. After a failure, cancellation
+included, and after `close()`, every step raises it, and nothing is fetched again. Hooks and limiters see each page's
+call with the session's `parent_session_id`.
 
 ### Checkpoints and resume
 
@@ -936,10 +930,11 @@ it names the helper, so the caller keeps it beside the arguments of the call it 
 A pager iterated by items that stops in the middle of a page gives the continuation before that page, so a resumed
 pager fetches the page again and repeats the items already delivered from it; iterate with `iter_pages()` to checkpoint
 between pages. `resume(None, ...)` starts at the caller's own first request, as `iterate` does. A checkpoint remains
-available after a pager fails or is closed, and a pager fetching a page raises `ProtocolStateError`.
+available after a pager fails or is closed, and a pager fetching a page raises `ConfigurationError` with the reason
+`invalid_state`.
 
-A pager stopped by `SessionLimitError` or `PaginationCycleError` is resumed from its `checkpoint()` like any other;
-the errors themselves carry no continuation. A page fetched with
+A pager stopped by `SessionLimitError` or by `ProtocolDataError` with the reason `pagination_cycle` is resumed from its
+`checkpoint()` like any other; the errors themselves carry no continuation. A page fetched with
 `page` or `next_page` continues from its own `continuation`. An item limit that stops inside a page leaves the
 continuation before that page, None inside the first one, so resuming with a `max_items` below the page size delivers
 the same items again; raise the limit, or limit pages instead.
@@ -1096,14 +1091,14 @@ none refused before sending.
 `start` sends the create request once, resent only as shared retries allow. A status in `accepted_statuses` returns a
 pending handle. A status in `immediate_result.statuses` returns a handle that already holds the result, read from the
 create response at the immediate result's selector; its `wait` returns the result without sending, and its `status`
-raises `ProtocolStateError` with `state='succeeded'`, since it has no poll. Any other success status raises
+raises `ConfigurationError` with the reason `invalid_state`, since it has no poll. Any other success status raises
 `ProtocolDataError` with a `StatusSelector` location, and an error status raises the operation's HTTP error.
 
-A poll's `state` selector must read a value equal to one of the `pending`, `succeeded`, `failed`, or `cancelled`
-values, JSON type included; a missing state raises `ProtocolDataError`, and any other value raises
-`PollingStateError` with the condition `type` when no declared state has its JSON type and `value` otherwise. Success
-is never inferred. A failed or cancelled operation makes `wait` raise `OperationFailedError` or
-`OperationCancelledError`, whose `snapshot` is the last poll, and every later `wait` raises it again without sending;
+A poll's `state` selector must read a value equal to one of the `pending`, `succeeded`, `failed`, or `cancelled` values,
+JSON type included; a missing state raises `ProtocolDataError`, and any other value raises it with the reason `type`
+when no declared state has its JSON type and `value` otherwise. Success is never inferred. A failed or cancelled
+operation makes `wait` raise `ProtocolDataError` with the reason `operation_failed` or `operation_cancelled`, the last
+poll's decoded data as `data` and its response as `info`, and every later `wait` raises it again without sending;
 `status` returns that poll. After a success, `wait` returns the result: the value an `inline` result's selector reads
 from the final poll, the response of the result `operation`, fetched once with its bindings, whose `previous` source is
 the final poll, or None for `kind: none`. Later `status` and `wait` calls send nothing. A missing or null result in the
@@ -1115,8 +1110,8 @@ An error that settles nothing, such as a transport error, an HTTP error, a deadl
 create request, and a failed result fetch is retried alone. A spent limit stays spent for the handle's session, though:
 once `max_polls` is reached, every later poll raises `SessionLimitError` again before sending. `close()` or `aclose()`,
 or leaving a `with` or `async with` block, stops only local polling; the remote operation goes on, and every later step
-raises `ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step
-runs raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves
+raises `ConfigurationError` with the reason `invalid_state`. Calling `status`, `wait`, `close`, or `aclose` while
+another step runs raises it too; a block that ends with an error while another step runs leaves
 the handle open and lets its own error propagate. `checkpoint()` and `cancel_remote()` are not steps: they run while
 another thread or task is in `status` or `wait`, such as one sleeping until its next poll.
 
@@ -1132,11 +1127,11 @@ An interval longer than `PollOptions.max_wait`, or not shorter than the session'
 waited out, so `start` raises `ConfigurationError` with the
 `field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
 than `max_wait`, or not shorter than the remaining budget derived from the session and call `total_timeout`, raises
-`PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
+`SessionLimitError` with the reason `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays as it was. Async waits propagate native task cancellation unchanged. Once the client is
 closed, every later `status` or `wait` that needs a poll or a result fetch raises `ConfigurationError` with the reason
-`client_closed`. The handle's [checkpoint](#checkpoints-and-resume-of-operations) continues it after
-`PollWaitLimitError`.
+`client_closed`. The handle's [checkpoint](#checkpoints-and-resume-of-operations) continues it after that
+`SessionLimitError`.
 
 ### Limits and sessions
 
@@ -1152,7 +1147,7 @@ earlier of its own and the session's. Each limit comes from the call's options, 
 | `PollOptions.max_wait` | 60 seconds | Removes the limit |
 | `SessionOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
 
-A poll past a limit raises `SessionLimitError` with the kind `polls` and the progress so far, before sending; the
+A poll past a limit raises `SessionLimitError` with the reason `polls` and the progress so far, before sending; the
 handle's `checkpoint()` continues the operation. The options of `start` apply to
 every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
 must not patch a header or a query parameter a binding writes; `start` raises `ConfigurationError` before
@@ -1164,18 +1159,19 @@ sending, as it does for options of another type.
 `close`: the server's values the next request writes, never an SDK envelope. While another thread or task runs
 `status` or `wait`, it returns the handle as the last poll that settled left it, never waiting for a step. A settled
 operation, one that failed, was cancelled, or holds its result, including one that completed at once, has nothing left
-to continue: its `checkpoint()` raises `ProtocolStateError` with the phase as `state`. The helper's
+to continue: its `checkpoint()` raises `ConfigurationError`. The helper's
 `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`, and
 returns the handle type `start` returns, in a session of its own, without sending: it never creates the operation
 again. A pending handle's `status` or `wait` sends its first poll at once; a handle whose result fetch is due fetches it
-once in `wait`, and its `status` raises `ProtocolStateError`, since it holds no poll. A checkpoint does not keep a
-server's delay, so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
+once in `wait`, and its `status` raises `ConfigurationError`, since it holds no poll. A checkpoint does not keep a
+server's delay, so a caller resuming after a `SessionLimitError` with the reason `wait` or `deadline` waits out its
+`required_wait` itself before polling.
 
 ```python
 import json
 import time
 
-from pkg.errors import PollWaitLimitError
+from pkg.errors import SessionLimitError
 
 with Client() as client:
     helper = client.protocols.jobs.run
@@ -1185,8 +1181,9 @@ with Client() as client:
     handle = helper.start(body=job)
     try:
         handle.wait()
-    except PollWaitLimitError as error:
-        time.sleep(error.required_wait)
+    except SessionLimitError as error:
+        if error.reason == "wait":
+            time.sleep(error.required_wait)
         later = helper.resume(handle.checkpoint())
 ```
 
@@ -1209,7 +1206,7 @@ saved one.
 | Rejected state | Exception |
 |---|---|
 | A value that is not JSON, or one that does not fit the helper: an unknown or missing member, an unknown phase, a due fetch of a helper without one, values of another count than the bindings, or an expiry `datetime.isoformat()` would spell differently | `ConfigurationError(field_path=("state",), reason="invalid_value")` |
-| An expiry that has passed | `ResumeStateError(condition="expired")` |
+| An expiry that has passed | `ConfigurationError(field_path=("state",), reason="expired")` |
 | A dot segment (`.` or `..`) a saved value of the next poll or remote cancel would write to a path parameter | `ProtocolDataError`, as for a server's value |
 
 Any other saved value, a result fetch's included, is checked and encoded when the request that writes it is built, as a server's value is, so a value that
@@ -1249,7 +1246,7 @@ settle the operation: the handle keeps its phase, its last poll, and the time of
 was. It runs while another thread or
 task is in `status` or `wait`, so a waiting operation can be cancelled from elsewhere: it reads the values to send when
 it starts, and the `wait` goes on until a poll tells it the operation settled. A settled operation raises
-`ProtocolStateError` with its phase as the `state`, and a closed handle with `state='closed'`, both without sending.
+`ConfigurationError` with the reason `invalid_state`, and so does a closed handle, both without sending.
 `close()` never sends the cancel request.
 
 The concrete handle classes are not exported from `pkg.protocols`: use the type `start` and `resume` return, or
@@ -1258,10 +1255,10 @@ annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they sub
 `expires_at` is a selector of the server's expiry of the operation, read once from the accepted create response: a
 string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
 before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
-response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The expiry, in UTC,
-becomes the expiry of every checkpoint of the handle, so `resume` refuses them afterwards with
-`ResumeStateError(condition="expired")`; it does not stop a live handle from polling. Without `expires_at`, checkpoints
-never expire, and no expiry is assumed. An immediate result has none.
+response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The
+expiry, in UTC, becomes the expiry of every checkpoint of the handle, so `resume` refuses them afterwards with
+`ConfigurationError` with the reason `expired`; it does not stop a live handle from polling. Without `expires_at`,
+checkpoints never expire, and no expiry is assumed. An immediate result has none.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
 <!-- fmt: off -->
@@ -1452,8 +1449,8 @@ completes the upload once the server holds every byte, and returns an `UploadPro
 remaining chunk, completes the upload, and returns its result. Both are coroutines on `AsyncUploadHandle`. Once
 complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns plain JSON
 at any time before the upload completes, even while another thread or task steps the handle, and sends
-nothing; a complete upload has nothing to resume, so its `checkpoint()` raises `ProtocolStateError` with
-`state='complete'`.
+nothing; a complete upload has nothing to resume, so its `checkpoint()` raises `ConfigurationError` with the reason
+`invalid_state`.
 
 ### Sources
 
@@ -1461,17 +1458,17 @@ A source is `bytes`, a `bytearray`, a `memoryview`, or a seekable binary file, s
 or an `io.BytesIO`; `UploadSource` names that union. `Client` and `AsyncClient` take the same sources. A file's content
 runs from its position when `start` or `resume` is called to its end, and the call measures its size by seeking to
 the end, without reading it. A file that cannot seek, an iterable, an iterator, or an asyncio stream raises
-`NonResumableSourceError` with its `source_kind` before anything is sent; send it as an ordinary upload. A file whose
-`read`, `seek`, or `tell` gives anything but bytes and integers, such as a text file or an asyncio file, raises
-`ConfigurationError` with `reason='wrong_capability'`. Sources are borrowed and never closed by the client,
+`ConfigurationError` with `field_path=("source",)` and the reason `wrong_capability` before anything is sent; send it
+as an ordinary upload. A file whose `read`, `seek`, or `tell` gives anything but bytes and integers, such as a text
+file or an asyncio file, raises it too. Sources are borrowed and never closed by the client,
 and nothing is ever spooled to disk.
 
 Each append seeks to the confirmed offset and reads the rest of its chunk into one buffer, synchronously on both
 clients; the last chunk is read with one byte more. Content shorter or longer than the size measured at `start` raises
-`UploadSourceChangedError` with both sizes, and the handle sends nothing more: every later step raises
-`ProtocolStateError` with `state='source_changed'`, though `checkpoint()` still works. The content is not hashed, so a
-change that keeps its size is not found: keep it unchanged while it is uploaded. The body is sent from that buffer in
-64 KiB slices, so an upload holds one chunk at a time besides fixed read buffers.
+`ConfigurationError` with `field_path=("source",)` and the reason `source_changed`, and the handle sends nothing more:
+every later step raises `ConfigurationError` with the reason `invalid_state`, though `checkpoint()` still works. The
+content is not hashed, so a change that keeps its size is not found: keep it unchanged while it is uploaded. The body is
+sent from that buffer in 64 KiB slices, so an upload holds one chunk at a time besides fixed read buffers.
 
 ### Chunks, offsets, and recovery
 
@@ -1491,50 +1488,50 @@ again by shared retries once it may have reached the server, even for an operati
 |---|---|
 | A success response | The chunk is confirmed |
 | A transport error after it may have been sent | One probe, retried only as shared retries allow: an unchanged offset sends the range again as a new call, the chunk's end confirms it, and an offset inside it confirms its bytes before it only with `partial_commit: allowed`, the rest being sent next |
-| A probe that fails with a transport error or an error status | `UploadDeliveryUnknownError(phase='append')` with the delivery state and the progress; the handle's `checkpoint()` resumes it |
+| A probe that fails with a transport error or an error status | `APIConnectionError` with the reason `delivery_unknown` and the probe's failure named in its notes; the handle's `checkpoint()` resumes it |
 | Any other failure, a cancellation included | Raised; the next step probes the server's offset before it appends |
 
 A probe's offset is a JSON integer, or a header of ASCII digits; a missing one raises `ProtocolDataError` with the
-condition `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset
+reason `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset
 below the confirmed one, past the content, past the chunk sent, or inside a chunk with `partial_commit: forbidden`
-raises `UploadOffsetError` with the confirmed, expected, and remote offsets and the size. A handle
+raises `ProtocolDataError` with the reason `inconsistent` and the remote offset's selector as `location`. A handle
 `start` returned also refuses an offset past every byte it has sent; a handle `resume` returned cannot know what an
 earlier session sent, so it accepts any offset up to the size.
 
 An upload completed by `length` completes when the server holds every byte. A completion `operation` is sent once with
 its bindings; its response is the result. A completion whose outcome is unknown is never sent again: it raises
-`UploadDeliveryUnknownError(phase='complete')`, and so does every later step and every resume of its checkpoint,
-without sending. That includes a completion answered with 502 or 504, which a gateway gives even when the server behind
-it may have applied the completion. A completion answered with any other error status, such as a 503 with
+`APIConnectionError` with the reason `delivery_unknown`, and so does every later step and every resume of its
+checkpoint, without sending. That includes a completion answered with 502 or 504, which a gateway gives even when the
+server behind it may have applied the completion. A completion answered with any other error status, such as a 503 with
 `Retry-After`, did not apply, so the next step may send it again.
 
 `close()` or `aclose()`, or leaving a `with` or `async with` block, stops only local uploading; the remote upload
-stays, and every later step raises `ProtocolStateError` with `state='closed'`. Calling `advance`, `run`, `close`, or
-`aclose` while another step runs raises `ProtocolStateError` with `state='uploading'`.
+stays, and every later step raises `ConfigurationError` with the reason `invalid_state`. Calling `advance`, `run`,
+`close`, or `aclose` while another step runs raises it too.
 
 ### Checkpoints and resume
 
 `checkpoint()` returns plain JSON: an object with the content's `size`, the `chunk` size, the `confirmed` offset, the
 values the probe, the append, and the completion write (`bound`, three arrays), a completion of unknown outcome
-(`phase` `unknown` with its `delivery` state, otherwise `uploading` and null), and the server's `expires_at`. It holds
+(`phase` `unknown`, otherwise `uploading`), and the server's `expires_at`. It holds
 no content, digest, result, credential, or security binding: a resumed upload sends with the resuming client's own
 auth, as pagination checkpoints do. Errors carry no checkpoint; call the handle's `checkpoint()`.
 
 `resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
 checkpoint: a value that is not JSON or does not fit the helper raises `ConfigurationError(field_path=("state",))`, and
-one past the server's expiry `UploadExpiredError`. A checkpoint keeps its chunk size, which must not exceed the call's
-`UploadOptions.chunk_bytes`, since an append holds one chunk in memory; it raises `ConfigurationError` with the
-option's `field_path`. Then the saved values each call writes: a value that makes a path segment `.` or `..` raises
+one past the server's expiry the reason `expired`. A checkpoint keeps its chunk size, which must not exceed the call's
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory; it raises `ConfigurationError` with the option's
+`field_path`. Then the saved values each call writes: a value that makes a path segment `.` or `..` raises
 `ProtocolDataError`, as if a server gave it; any other saved value is encoded when its request is built. Then the
-source: a one-shot input raises `NonResumableSourceError`, and a size other than the checkpoint's raises
-`UploadSourceChangedError`; the source is not read. A completion of unknown outcome raises `UploadDeliveryUnknownError`
-again without sending. Otherwise it probes the server's offset once, which must not be below the saved one, and returns
-the handle.
+source: a one-shot input raises `ConfigurationError` with the reason `wrong_capability`, and a size other than the
+checkpoint's the reason `source_changed`; the source is not read. A completion of unknown outcome raises
+`APIConnectionError` with the reason `delivery_unknown` again without sending. Otherwise it probes the server's offset
+once, which must not be below the saved one, and returns the handle.
 
 A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
 an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
-once it has passed: `resume` raises `UploadExpiredError`, a subclass of `ResumeStateError` with the condition
-`expired`, with the expiry; uploading goes on until the server refuses.
+once it has passed: `resume` raises `ConfigurationError` with the reason `expired`; uploading goes on until the server
+refuses.
 
 ### Limits and sessions
 
@@ -1662,15 +1659,15 @@ and `raw_data`, the event's data text. `data()` iterates over the data of the sa
 the asyncio `data()` is not awaited. Representations name no data, event ID, or raw data. `StreamEvent`,
 `UnknownEvent`, `EventStream`, and `AsyncEventStream` are imported from `pkg.protocols`, in every package.
 
-The response's status and `Content-Type` are checked before `open` returns: an error status raises the
-`APIStatusError` subclass of its status, an undeclared status `APIStatusError` with the reason `unexpected_status`, and
-a body of another media type, or none, `DecodeError` with the reason `unexpected_media_type`. Its acquisition retries
-like any call. A stream then reads only the bytes its next event
-needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
-`aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
-while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
-every step stops. Streams own their native response until it ends or the caller closes it. Close each stream
-explicitly before closing an owning root; a borrowed native client retains its caller's lifetime.
+The response's status and `Content-Type` are checked before `open` returns: an error status raises the `APIStatusError`
+subclass of its status, an undeclared status `APIStatusError` with the reason `unexpected_status`, and a body of another
+media type, or none, `DecodeError` with the reason `unexpected_media_type`. Its acquisition retries like any call. A
+stream then reads only the bytes its next event needs and owns the response until it ends, fails, or closes: close it
+with `with`, `async with`, `close()`, or `aclose()`, since leaving a loop early releases nothing. One consumer reads a
+stream at a time: a step, or a close, while another step runs raises `ConfigurationError` with the reason
+`invalid_state`, and so does every step after a failure or `close()`; after its end every step stops. Streams own their
+native response until it ends or the caller closes it. Close each stream explicitly before closing an owning root; a
+borrowed native client retains its caller's lifetime.
 
 ### Framing and events
 
@@ -1679,22 +1676,24 @@ including a CRLF split between reads, lines starting with `:` are comments, `dat
 the type, an `id` containing NUL is ignored, and a blank line dispatches an event. The body is decoded as UTF-8 without
 a leading byte order mark, whatever charset it declares, and invalid UTF-8 decodes to replacement characters. An event
 without data is not delivered, though its `id` and `retry` still count; a `retry` that is negative or of more than 18
-digits is ignored. An event over HTTPX2's event size limit, 1 MiB, raises `ProtocolDataError` with the condition
-`malformed` and HTTPX2's `SSEError` as its `cause`. Each event's data is JSON converted to its schema's type through its
-converter; data that is not JSON, or that the type refuses, raises `StreamDecodeError` with at most 64 KiB of the data as
-`raw_prefix`.
+digits is ignored. An event over HTTPX2's event size limit, 1 MiB, raises `ProtocolDataError` with the reason
+`too_large` and HTTPX2's `SSEError` as its `cause`. Each event's data is JSON converted to its schema's type through its
+converter; data that is not JSON, or that the type refuses, raises `DecodeError` with the `location`
+`("event", sequence)`, or `("event", sequence, pointer)` where a member is at fault, and at most 64 KiB of the data as
+`body_bytes`.
 
 An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
 body pointer reads from the JSON data with `{from: body, pointer}`; a missing, null, or non-string body discriminator,
-and an unmapped one without `unknown: raw`, raise `StreamDecodeError`. An `error_events` key raises
-`StreamRemoteError` with the error schema's decoded `data` instead of yielding the event.
+and an unmapped one without `unknown: raw`, raise `DecodeError`. An `error_events` key raises `ProtocolDataError` with
+the reason `error_event` and the error schema's decoded `data` instead of yielding the event.
 
 The stream ends as its `completion` declares: at the end of the body for `eof`, or at the event whose raw data equals a
 `sentinel` value or whose SSE type is the `event_type` value; neither terminal event is decoded or yielded, and the
 response is released. A body that ends before a sentinel or terminal type raises `StreamInterruptedError` with the
-condition `eof`; an event the body ends in the middle of is discarded, as the event-stream interpretation discards it,
-so under `eof` the stream simply ends and `incomplete_eof` cannot trigger a reconnect there. A connection that breaks while the body is read raises `StreamInterruptedError`
-with the condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
+reason `eof`; an event the body ends in the middle of is discarded, as the event-stream interpretation discards it,
+so under `eof` the stream simply ends and `incomplete_eof` cannot trigger a reconnect there. A connection that breaks
+while the body is read raises `StreamInterruptedError` with the reason `transport` and the transport failure as its
+`cause`. `sequence` is the last event delivered.
 
 ### Stream limits and sessions
 
@@ -1829,17 +1828,17 @@ with Client() as client, client.protocols.events.live.resume(json.loads(load()))
 
 The cursor is that of the last event the stream returned, never of a terminal, error, refused, or cut event: an SSE
 event without an `id` keeps the ID before, an empty `id` clears it, and a body cursor follows its `missing` and `null`
-settings, raising `StreamDecodeError` with the condition `missing` or `null` before the event under `error`. An
+settings, raising `DecodeError` with the reason `missing` or `null` before the event under `error`. An
 unknown event kept raw gives its body cursor from its data when the data is JSON. A cursor is never limited apart from
 its event.
 
 `checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
-that, and while another step runs, it raises `ProtocolStateError`, and on a stream of a helper without resume metadata
-`ConfigurationError` with the reason `missing_metadata`. It returns plain JSON, an object with the `cursor`, the
-`bound` values of the bindings, and the server's `expires_at` as ISO 8601 text or null, never the caller's arguments,
-events, counts, `retry` times, responses, the session, the call's options, or what its auth adds. Like pagination and
-polling checkpoints, it holds no credential and binds to no auth; store it as the call's own data. Errors carry no
-checkpoint: call the stream's `checkpoint()`.
+that, and while another step runs, it raises `ConfigurationError` with the reason `invalid_state`, and on a stream of a
+helper without resume metadata `ConfigurationError` with the reason `missing_metadata`. It returns plain JSON, an object
+with the `cursor`, the `bound` values of the bindings, and the server's `expires_at` as ISO 8601 text or null, never the
+caller's arguments, events, counts, `retry` times, responses, the session, the call's options, or what its auth adds.
+Like pagination and polling checkpoints, it holds no credential and binds to no auth; store it as the call's own data.
+Errors carry no checkpoint: call the stream's `checkpoint()`.
 
 `resume` creates a session of its own and sends the reopen at once: the helper's own operation sends the arguments and
 body the caller gives `resume`, another one sends only what is written, each binding's value first and then the cursor,
@@ -1847,12 +1846,12 @@ whose parameter is omitted once the cursor is cleared, so a cleared SSE cursor s
 then returns once its response is a declared success, as `open` does; sequences, reconnections, and the session's
 deadline start afresh, and the reopen counts as no reconnection. Before sending it refuses a checkpoint that is not JSON
 or does not fit the helper, such as a missing or extra member, an empty event ID, or an expiry of another form, with
-`ConfigurationError(field_path=("state",))`, and an expired one with `ResumeStateError(condition="expired")`. The cursor
-and the bindings' values are written as a server's are: a saved dot segment for a path parameter raises
-`ProtocolDataError`, a value the reopen would send as a credential header or a security scheme's query field,
-including a property of an exploded form or deepObject query parameter, raises `ConfigurationError` with the reason
-`wrong_capability`, and one the request cannot encode, such as an event ID ending in a space, raises the request's
-`DecodeError`.
+`ConfigurationError(field_path=("state",))`, and an expired one with `ConfigurationError(field_path=("state",),
+reason="expired")`. The cursor and the bindings' values are written as a server's are: a saved dot segment for a path
+parameter raises `ProtocolDataError`, a value the reopen would send as a credential header or a security scheme's query
+field, including a property of an exploded form or deepObject query parameter, raises `ConfigurationError` with the
+reason `wrong_capability`, and one the request cannot encode, such as an event ID ending in a space, raises the
+request's `DecodeError`.
 
 With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
 read-phase transport failure the shared retry classification retries, or a read timeout the call's own
@@ -1862,8 +1861,8 @@ Each reopen is one more child call of the stream's session: its own retries, Ret
 retry options. Before a reopen the stream waits the retry backoff, and at least the last `retry` time the server sent,
 in the session's deadline. When the backoff's cap or that `retry` time is longer than `max_reconnect_wait`, whatever the
 jitter draws below the cap, or the wait is not shorter than the session's remaining time, the wait is not begun and the
-interruption is raised. Running out of reconnections raises `StreamResumeExhaustedError` with the kind `reconnects`,
-never a normal end. A cursor a reconnection cannot encode raises `ProtocolDataError` with the condition `value` and the
+interruption is raised. Running out of reconnections raises `SessionLimitError` with the reason `reconnects`,
+never a normal end. A cursor a reconnection cannot encode raises `ProtocolDataError` with the reason `value` and the
 cursor's selector, or for an event ID the target it is written to, as `location`, with the interruption as its context,
 and a value it would send as a credential raises `ConfigurationError` with the reason `wrong_capability`. A decode,
 size, remote, idle, or deadline failure, the declared end, a reopen answered with an error, and closing never reconnect.
@@ -1986,17 +1985,17 @@ with Client() as client, client.protocols.records.all.open() as stream:
 LF ends a line, and so does CRLF, whose CR is not part of the record; a CR alone does not end one. Each line is one
 record, strict UTF-8 JSON decoded by the helper's schema, or by the schema a `{from: body, pointer}` discriminator maps
 it to, the only discriminator NDJSON has. Every line is a record, so a blank or whitespace-only line, one that is not
-UTF-8, a leading byte order mark, and anything else that is not JSON raise `StreamDecodeError` with the condition
-`malformed`; none is skipped. The error keeps at most the event limit or 64 KiB of the line as `raw_prefix`, which no
-message shows, and a line that is not UTF-8 has no `cause`.
+UTF-8, a leading byte order mark, and anything else that is not JSON raise `DecodeError` with the reason
+`malformed` and the `location` `("event", sequence)`; none is skipped. The error keeps at most the event limit or 64 KiB
+of the line as `body_bytes`, which no message shows, and a line that is not UTF-8 has no `cause`.
 
 A record yields a `StreamEvent` whose `event_type` is the empty string and whose `event_id` and `retry_ms` are None; an
-`error_events` record raises `StreamRemoteError` with the `event_type` None. A `sentinel` completion ends at the line
+`error_events` record raises `ProtocolDataError` with the reason `error_event`. A `sentinel` completion ends at the line
 equal to its value, which is compared before JSON decoding and never yielded, so the value need not be JSON; a value
 containing LF could never match, so it fails generation with `E_CONFIG_VALUE`.
 
 `final_line` says how the body may end. With `require_newline`, every record ends with a line end, and bytes after the
-last one raise `IncompleteFrameError` with their count as `buffered_bytes`. With `allow_eof`, those bytes are decoded as
+last one raise `StreamInterruptedError` with the reason `eof`. With `allow_eof`, those bytes are decoded as
 the last record, a sentinel included; a body that ends with a line end ends the same way under both.
 
 A line split over many reads is joined once its line end arrives, so it costs time linear in its length.
@@ -2103,12 +2102,12 @@ of it, as its own WebSocket client does. Any other response is read up to `max_e
 `APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an undeclared
 status, so 101 need not be declared. Received refusals are terminal, including redirects, which a handshake never
 follows, and 401s; a refused upgrade never invalidates or refreshes credentials. Only an initial transport failure
-proven `NOT_SENT` before session handover may use the call's existing retry policy. A handshake that may have reached
+proven unsent before session handover may use the call's existing retry policy. A handshake that may have reached
 the server is never sent again.
 
 The handshake's limiter permit is held for the whole session and released when it closes or fails. When the helper
-offers subprotocols, the server must select one of them, or `connect` raises `WebSocketHandshakeError` with the
-condition `negotiation`; `session.subprotocol` is the selected one and `session.response` the 101 response.
+offers subprotocols, the server must select one of them, or `connect` raises `APIConnectionError` with the
+reason `negotiation_failed`; `session.subprotocol` is the selected one and `session.response` the 101 response.
 Credentials are sent as the operation's security declares, only to the server's origin or the security context's
 allowed origins. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
 request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent. The
@@ -2129,22 +2128,23 @@ handshake's hooks end with the call outcome `handed_off`, and the session's end 
 An HTTPX2 `WebSocketSession` or `AsyncWebSocketSession` carries the connection: it reads in the background, answers
 pings, and sends keepalive pings. The session owns it until it closes or fails, but the connection belongs to the HTTP
 client's pool. Closing a `Client` that created its HTTP client closes its open sessions first, as their `close()` does,
-after which every step raises `ProtocolStateError`; close sessions before closing a borrowed HTTP client, since closing
-a socket does not wake the session's reader on every platform. Closing an `AsyncClient` closes the connections of its
-open sessions, whose next step then fails. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while
-sends, which HTTPX2 writes one at a time, may run beside it. Cancelling the task of an asyncio `receive`, as
-`asyncio.wait_for` does, leaves the session usable, since HTTPX2 queues whole messages; a cancelled `send` or `ping`
-fails the session, since a message may be half written. An `AsyncWebSocketSession` runs the HTTPX2 session in the task
-that entered its `connect` block, as HTTPX2's task group must end in the task that started it, and closes it when the
-block ends; tasks the block starts may use and close it meanwhile. A failure the block raises, even an exit such as
-`SystemExit`, leaves it unwrapped; a failure of HTTPX2's background tasks cancels the block and leaves it as
-`APIConnectionError` with the phase `read`. A received message of another frame kind, or one that does not decode,
-raises `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's
-closure raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for 1000 and 1001, the
-closures that alone end iteration; the session answers it with the same code and reason, and after it `receive`, `send`,
-and `ping` raise it again. A `send` or `ping` on a connection that is already closing, before `receive` reported why,
-raises `WebSocketClosedError` without a code. After any other failure, every step raises `ProtocolStateError`, as it
-does after `close()`. Representations never show messages, URLs, headers, or close reasons.
+after which every step raises `ConfigurationError` with the reason `invalid_state`; close sessions before closing a
+borrowed HTTP client, since closing a socket does not wake the session's reader on every platform. Closing an
+`AsyncClient` closes the connections of its open sessions, whose next step then fails. One `receive` waits at a time:
+another raises `ConfigurationError` with the reason `invalid_state`, while sends, which HTTPX2 writes one at a time, may
+run beside it. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves the session usable, since
+HTTPX2 queues whole messages; a cancelled `send` or `ping` fails the session, since a message may be half written. An
+`AsyncWebSocketSession` runs the HTTPX2 session in the task that entered its `connect` block, as HTTPX2's task group
+must end in the task that started it, and closes it when the block ends; tasks the block starts may use and close it
+meanwhile. A failure the block raises, even an exit such as `SystemExit`, leaves it unwrapped; a failure of HTTPX2's
+background tasks cancels the block and leaves it as `APIConnectionError`. A received message of another frame kind, or
+one that does not decode, raises `DecodeError` with the `location` `("message", sequence)` and at most 64 KiB of it as
+`body_bytes` and closes the connection with 1002. A server's closure raises `WebSocketClosedError` with its `code`,
+`reason`, and `clean`, which is true for 1000 and 1001, the closures that alone end iteration; the session answers it
+with the same code and reason, and after it `receive`, `send`, and `ping` raise it again. A `send` or `ping` on a
+connection that is already closing, before `receive` reported why, raises `WebSocketClosedError` without a code. After
+any other failure, every step raises `ConfigurationError` with the reason `invalid_state`, as it does after `close()`.
+Representations never show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 
@@ -2160,14 +2160,14 @@ remaining duration as their timeout:
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each, HTTPX2's keepalive settings; `pong_timeout` also bounds `ping()` | No keepalive pings |
 | `SessionOptions.total_timeout` | None | No session budget |
 
-A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after HTTPX2 closed the
+A message over `max_message_bytes` raises `ProtocolDataError` with the reason `too_large` after HTTPX2 closed the
 connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
-`phase_timeout` and the phase `read` and closes with 1001, as does a ping whose pong does not arrive within the pong
-timeout; another failure closes with 1011. A missed keepalive pong makes HTTPX2 close with 1011, and the next `receive` raises
-`APIConnectionError` with the phase `read`. The session deadline bounds every wait and raises `APITimeoutError` with
+`phase_timeout` and closes with 1001, as does a ping whose pong does not arrive within the pong timeout; another
+failure closes with 1011. A missed keepalive pong makes HTTPX2 close with 1011, and the next `receive` raises
+`APIConnectionError`. The session deadline bounds every wait and raises `APITimeoutError` with
 the reason `deadline_exceeded`. Messages are written whole by HTTPX2, without a timeout of their own; a send that may
-have reached the server raises `DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is
-never sent again. Received messages wait in HTTPX2's queue until they are read. Sessions never reconnect. Options of
+have reached the server raises `APIConnectionError` with the reason `delivery_unknown`, closes the session, and is never
+sent again. Received messages wait in HTTPX2's queue until they are read. Sessions never reconnect. Options of
 another type raise `ConfigurationError`.
 
 ### WebSocket generation checks
@@ -2299,10 +2299,11 @@ and a `Range`, `If-Range`, `If-Match`, or `If-Unmodified-Since` header, raises `
 anything is looked up.
 
 A stale entry is revalidated with its validator as `validator` declares; a fetch that gives `If-None-Match` or
-`If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry
-has another validator or the header is given more than once. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`,
-and hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
-`Last-Modified` other than the entry's raises `CacheProtocolError`; no request is sent again.
+`If-Modified-Since` itself sends it once, and raises `ConfigurationError` with the reason `binding_mismatch` and the
+header's name as `field_path` before sending when a usable entry has another validator or the header is given more than
+once. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`, and hop-by-hop
+fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or `Last-Modified` other
+than the entry's raises `ProtocolDataError` with the reason `inconsistent`; no request is sent again.
 
 ### Storing and keys
 
@@ -2322,9 +2323,10 @@ and the client's own auth, not a view's or a call's; anything else raises `Confi
 `Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
 cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
+`ProtocolDataError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+removes the entry it supersedes. Store failures raise `SDKError` with the reason `store_failed` and never resend a
+request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
@@ -2346,8 +2348,8 @@ Concurrent custom-store writes use last-completing replacement.
 `CacheStore` and `AsyncCacheStore` provide `get(key) -> CacheEntry | None`, `set(key, entry) -> None`, and
 `delete(key) -> None`, using byte keys. Each key holds one representation. A Vary mismatch is a miss, and a successful
 cacheable response replaces the representation. Concurrent custom-store writes use last-completing replacement.
-A store exception or a result of another type raises `CacheStoreError` with the method as `action` and the exception
-as `cause`; the request is never sent again for it.
+A store exception or a result of another type raises `SDKError` with the reason `store_failed` and the exception as
+`cause`; the request is never sent again for it.
 
 `CacheEntry` has `vary`, `vary_values`, `status_code`, `headers`, `body`, `request_time`, `response_time`, `stored_at`,
 `freshness_seconds`, `initial_age_seconds`, and `schema_fingerprint`. Plain Vary values preserve each named header's
@@ -2778,13 +2780,13 @@ fields missing a required one ! TypeError: create_pet() missing required field a
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
   hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
-fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing
+fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] missing
   hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
   hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=True context={}
-update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='updatePet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
+update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', reason='without_body', field_path='media_type') [operation_id='updatePet', field_path=('media_type',)] without_body
 ```
 
 <!-- fmt: on -->
@@ -2902,10 +2904,11 @@ def read_with_budget(client: Client, url: str) -> bytes:
 ```
 
 Before an attempt or retry wait, the client checks the remaining budget. Each native I/O timeout is capped by that
-remaining duration. Native timeout failures retain their native phase and cause; a native failure that arrives once
-the budget has expired raises `deadline_exceeded` with that native phase and cause. An expired budget prevents another
-attempt; fully received responses remain available when decoding or cleanup finishes after expiry. A sequence of
-reads can take longer than the budget because native read timeouts apply to each I/O wait.
+remaining duration. Native timeout failures raise `APITimeoutError` with the reason `phase_timeout` and the native
+failure as `cause`; a native failure that arrives once the budget has expired raises it with the reason
+`deadline_exceeded` and that cause. An expired budget prevents another attempt; fully received responses remain
+available when decoding or cleanup finishes after expiry. A sequence of reads can take longer than the budget because
+native read timeouts apply to each I/O wait.
 
 Connect and pool timeouts may qualify for a retry under the safety and replay rules below; pool timeouts require
 `retry_on_pool_timeout=True`. Read and write failures may have reached the server and are never resent.
@@ -3064,7 +3067,7 @@ callback returns after cancellation. The SDK releases permits but does not own t
 
 Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. Acquisition failure raises
 `SDKError` with the reason `limiter_failed` and the callback exception as `cause`. Release failure is recorded as the
-original release exception when no earlier error exists, or a secondary error on the error already propagating.
+original release exception when no earlier error exists, or named in the notes of the error already propagating.
 
 ### Counters and cleanup
 
@@ -3077,45 +3080,53 @@ Closing a root refuses new calls from the root and its views. It closes its crea
 a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
 and callers close their streaming responses with `with` or `async with`.
 
-Responses, files opened from paths and limiter permits are released in `finally`. A later release failure is attached
-to the primary error; with no primary error, the release failure propagates.
+Responses, files opened from paths and limiter permits are released in `finally`. A later release failure is named in
+the notes of the primary error (`Secondary cleanup failure: <ClassName>`); with no primary error, the release failure
+propagates.
 
 ## Errors
 
-Every exception a client raises derives from `SDKError`, and all of them are imported from `pkg.errors`. Each carries
-`reason`, a stable snake_case symbol or `None`, `reason_code`, `delivery_state`, `operation_id`, `call_id`,
-`parent_session_id`, `info`, the response metadata when one arrived, `cause`, `secondary_errors`, and the measurements
-`attempt_count`, `elapsed`, and `request_id`. Messages name only safe call metadata, never payloads or credentials.
+Every exception a client raises derives from `SDKError`, and all of them are imported from `pkg.errors`. Each
+constructor is keyword-only and does not validate field values. Each carries `reason`, a stable snake_case symbol or
+`None`, `operation_id`, `info`, the response metadata when one arrived, `cause`, and the measurements `attempt_count`,
+`elapsed`, and `request_id`. Messages name only safe call metadata (the class, `operation_id`, `reason`, and a few
+class-specific details), never payloads, headers, or credentials. A secondary failure beside the primary error, such as
+a cleanup, hook, or invalidation failure, is named in the primary error's `__notes__`, never in an attribute or in its
+place.
 
 | Exception | Raised for | Fields beside the shared ones |
 |---|---|---|
-| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed` and `response_consumed` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id`, `operation` |
-| `APIConnectionError` | A classified I/O failure of the transport | `phase`, `retry_stop_reason`; `delivery_state` tells how far the request got |
-| `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's deadline, with the reason `deadline_exceeded` | `effective_timeout` of a phase timeout, or `deadline_at`, the absolute monotonic deadline |
-| `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated`, `retry_stop_reason` |
-| `DecodeError` | A request argument its wire form cannot carry, or a response that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
-| `AuthError` | Credential acquisition, a token exchange, or request signing failed | `phase`, `status_code`, `oauth_error`, `expires_at`, `effective_timeout` |
+| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed`, `response_consumed`, and `invalid_state` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id` |
+| `APIConnectionError` | A classified I/O failure of the transport, with the native failure as `cause`; the reason is `None` for a transport failure, `delivery_unknown` when a WebSocket send or an upload append or completion may have reached the server and is never sent again, and `negotiation_failed` for a WebSocket 101 that selected no offered subprotocol | None |
+| `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's total timeout, with the reason `deadline_exceeded` | None |
+| `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated` |
+| `DecodeError` | A request argument its wire form cannot carry, or a response, stream event, record, or message that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
+| `AuthError` | Credential acquisition, a token exchange, or request signing failed | `reason`, `status_code`, `oauth_error`, `expires_at` |
 
 `APIStatusError` has a subclass for each common status: `BadRequestError` (400), `AuthenticationError` (401),
 `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422),
 `RateLimitError` (429), and `InternalServerError` (500 and above); any other error status raises `APIStatusError`
-itself. Its `body` is the payload decoded with the operation's declared error schema for that status, or the raw bytes,
-bounded by `max_error_body_bytes`, when none is declared; a body that does not decode stays raw, and the decode failure
-is the `cause`. A final status declared neither as a success nor as an error, such as an undeclared 3xx or 2xx, raises
-`APIStatusError` with the reason `unexpected_status`.
+itself. Its message is `Error code: <status> - <start of the body>`, with at most 500 characters of the body and `...`
+when it is cut. Its `body` is the payload decoded with the operation's declared error schema for that status, or the raw
+bytes, bounded by `max_error_body_bytes`, when none is declared; a body that does not decode stays raw, and the decode
+failure is the `cause`. A final status declared neither as a success nor as an error, such as an undeclared 3xx or 2xx,
+raises `APIStatusError` with the reason `unexpected_status`.
 
 A request `DecodeError` has the reason `unencodable`, with the argument's path as `location` and never its value, or
-`body_not_replayable` at the `location` `("body",)`. A response
-`DecodeError` has the reason `invalid_syntax`, `invalid_value` when the model or schema refuses the value,
-`unexpected_media_type` with the response's `media_type`, `forbidden_body`, `missing_body`, `invalid_framing`,
-`invalid_header` with the `location` `("header", name)`, or `response_too_large` with its `limit` and `observed` size.
-`AuthError` has the reason `provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`,
-`timeout`, `reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
+`body_not_replayable` at the `location` `("body",)`. A response `DecodeError` has the reason `invalid_syntax`,
+`invalid_value` when the model or schema refuses the value, `unexpected_media_type` with the response's `media_type`,
+`forbidden_body`, `missing_body`, `invalid_framing`, `invalid_header` with the `location` `("header", name)`,
+`malformed_coding` for a body whose content coding does not decode, or `response_too_large` with its `limit` and
+`observed` size. A stream event, NDJSON record, or WebSocket message that does not decode has the reason `missing`,
+`null`, `type`, `value`, or `malformed`, the `location` `("event", sequence)` or `("message", sequence)` with a pointer
+where a member is at fault, and at most 64 KiB of it as `body_bytes`. `AuthError` has the reason `provider_failed`,
+`provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`, `timeout`, `reauthorization_required`, or
+`signing_failed`, and keeps no credential material or provider description.
 
-A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed`
-and the callback's exception as `cause`. A hook that fails after the call completed keeps that success as the error's
-`completed_result`, which is `None` otherwise. Helpers raise `ProtocolError` and the subclasses described with each
-helper.
+A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed` and the callback's
+exception as `cause`. Helpers raise `ProtocolDataError`, `SessionLimitError`, `StreamInterruptedError`, and
+`WebSocketClosedError`, described with each helper, and `SDKError` with the reason `store_failed` for a cache store that
+fails.
 
 ## Retries and operation contracts
 
@@ -3137,9 +3148,10 @@ cancellation, and logical deadlines never restart a request.
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
 `retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError` (TLS and DNS failures
-included), `ConnectTimeout`, or `PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods,
+included), `ConnectTimeout`, or `PoolTimeout` proves the request unsent and can permit otherwise unsafe methods,
 unless an earlier attempt of the call, or a response HTTPX2 followed a redirect from, reached the server; every other
-failure after the send started is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
+failure after the send started may have been sent and is never sent again. `retry_safety="never"` prohibits every
+resend, including an unsent request.
 Configuration errors and unclassified failures are not candidates.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
@@ -3163,8 +3175,8 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
 
 Buffered and streaming raw APIs return the final HTTP response when status retries end, including non-2xx statuses.
 Transport, policy, deadline, and cancellation failures still raise. A hook failure, or a response release failure,
-stops a planned retry after its response was discarded: the call then raises that response's `APIStatusError` with
-`retry_stop_reason="callback_failure"` and the failure among its secondary errors.
+stops a planned retry after its response was discarded: the call then raises that response's `APIStatusError` with the
+failure named in its notes.
 Typed operations retain final response metadata in their `APIStatusError`. A streaming response can retry during
 acquisition; after handoff, body failures terminate that stream and never issue another request.
 
@@ -3328,7 +3340,7 @@ file is read in 64 KiB chunks even though iterating it would yield lines.
 A retry, or a 307 or 308 redirect HTTPX2 follows, sends bytes again as they are and seeks a seekable file back to its
 entry position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
 sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
-call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
+call is not retried: the failure that would have been retried is raised as it is. Multipart can replay when every file
 part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
 `cause`.
 
@@ -3375,7 +3387,7 @@ the native client is its limit, past which `TooManyRedirects` raises `APIConnect
 file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
 `Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
 same-host `http` to `https` upgrade, and keeps every other header. Every hop
-consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
+consumes the same call deadline, and a failure after a redirect was answered may have been sent, so it is never
 sent again, as is a failure an injected client's response event hook raises.
 
 A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
@@ -3681,8 +3693,7 @@ cancelling an asyncio caller cancels its token request. A failed request leaves 
 acquires again. When an early renewal fails, the call keeps using the current token until it expires; a failure raises
 once the token expired, or when a resource's rejection forced the request. A rejection, an unexpected status, an
 unusable response, or a transport failure raises `AuthError` with the reason `oauth_error`, a rejection keeping its
-`status_code` and standard `oauth_error` code, or with the reason `timeout` when a time limit ran out, with the
-`delivery_state` the request reached.
+`status_code` and standard `oauth_error` code, or with the reason `timeout` when a time limit ran out.
 
 `get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
 replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that
@@ -3701,7 +3712,7 @@ Its settings must verify certificates and host names. Token requests never follo
 provider, or leaving its `with` block, closes only a client it created. `refresh_timeout` (30 seconds by default)
 bounds each token request, the client secret lookup included; `phase_timeout` caps connecting, reading, writing, and
 pool waits at 5, 15, 15, and 5 seconds unless overridden. Responses are read up to 64 KiB and must be UTF-8 JSON
-objects. A failed token request is `NOT_SENT` only for a native connect or pool failure. Errors keep
+objects. A failed token request is proven unsent only for a native connect or pool failure. Errors keep
 no response body or error description, but a transport failure's cause is the native exception, which can hold the
 token request and its client authentication, so apply your own policy before logging causes.
 
@@ -3937,7 +3948,7 @@ and NDJSON helpers do, with a body discriminator only. The helper's event type i
 each mapped schema must be a JSON request body of a webhook or callback operation. After verification, the body is
 parsed once, the member the RFC 6901 `pointer` names selects the event's model, and the event decodes with it. The
 member must be a string equal to a mapped name, compared exactly; otherwise decoding raises `ProtocolDataError` with
-`location=BodySelector(pointer=...)` and `condition` `missing` for an absent member, `null`, `type` for another JSON
+`location=BodySelector(pointer=...)` and the reason `missing` for an absent member, `null`, `type` for another JSON
 type, or `value` for an unknown name. There is no `unknown` setting for webhooks.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-json -->
@@ -4004,29 +4015,29 @@ class StripeVerifier:
         now: datetime,
         limits: ResolvedWebhookOptions,
     ) -> VerifiedSignature:
-        """Return the signed timestamp and the matched key, or raise WebhookVerificationError."""
+        """Return the signed timestamp and the matched key, or raise ProtocolDataError."""
         del now
         values = [value for name, value in ordered_headers if name.lower() == "stripe-signature"]
         items = [item.partition("=") for item in (values[0].split(",") if len(values) == 1 else ())]
         stamps = [value for scheme, _, value in items if scheme == "t"]
         encoded = [value for scheme, _, value in items if scheme == "v1"]
         if len(stamps) != 1 or not (stamps[0].isascii() and stamps[0].isdigit()) or not encoded:
-            raise WebhookVerificationError(condition="malformed_signature")
+            raise ProtocolDataError(reason="malformed_signature")
         if (count := len(encoded)) > limits.max_signatures:
-            raise ProtocolSizeError(kind="signatures", unit="items", limit=limits.max_signatures, observed=count)
+            raise ProtocolDataError(reason="too_large")
         try:
             signatures = [bytes.fromhex(value) for value in encoded if value.isascii()]
         except ValueError:
             signatures = []
         if len(signatures) != count:
-            raise WebhookVerificationError(condition="malformed_signature")
+            raise ProtocolDataError(reason="malformed_signature")
         signed = stamps[0].encode() + b"." + raw_body
         for key in keys.keys:
             expected = hmac.new(key.secret, signed, "sha256").digest()
             if any(hmac.compare_digest(expected, signature) for signature in signatures):
                 moment = datetime.fromtimestamp(int(stamps[0]), timezone.utc)
                 return VerifiedSignature(delivery_id=None, timestamp=moment, matched_key_id=key.name)
-        raise WebhookVerificationError(condition="invalid_signature")
+        raise ProtocolDataError(reason="invalid_signature")
 
 
 def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes) -> Invoice | Customer:
@@ -4039,35 +4050,34 @@ def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: byte
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
 
-`verify_async` calls the same synchronous verifier, once. After the helper checks its
-arguments, including that `verifier` has a callable `verify` (or `ConfigurationError` with
-`field_path=("verifier",)`), and the body, header, and key-count limits, it passes the exact body, the headers as a
-tuple of pairs in received order, the key set, `now`, and the resolved limits; it never reads the keys. The verifier
-must authenticate the whole body and every fact it returns, honor `max_signatures`, and raise `WebhookVerificationError`
-when verification fails; every error it raises, including cancellation, propagates unchanged. Before decoding, the helper
-raises `ConfigurationError` with `field_path=("verifier",)`, reason `invalid_result`, and `delivery_state=NOT_SENT`,
-without decoding, when the result is not a
-`VerifiedSignature` (an awaitable result is closed unawaited), its `matched_key_id` is not a nonempty string, a
-`required` fact is missing, not a nonempty string delivery id, or not an aware datetime, or a `none` fact is not
-`None`. A returned timestamp is then checked against the timestamp window, as for builtin signatures.
+`verify_async` calls the same synchronous verifier, once. After the helper checks its arguments, including that
+`verifier` has a callable `verify` (or `ConfigurationError` with `field_path=("verifier",)`), and the body, header, and
+key-count limits, it passes the exact body, the headers as a tuple of pairs in received order, the key set, `now`, and
+the resolved limits; it never reads the keys. The verifier must authenticate the whole body and every fact it returns,
+honor `max_signatures`, and raise `ProtocolDataError` with the reason `malformed_signature`, `invalid_signature`,
+`missing_key`, or `timestamp_window` when verification fails; every error it raises, including cancellation, propagates
+unchanged. Before decoding, the helper raises `ConfigurationError` with `field_path=("verifier",)` and the reason
+`invalid_result`, without decoding, when the result is not a `VerifiedSignature` (an awaitable result is closed
+unawaited), its `matched_key_id` is not a nonempty string, a `required` fact is missing, not a nonempty string delivery
+id, or not an aware datetime, or a `none` fact is not `None`. A returned timestamp is then checked against the timestamp
+window, as for builtin signatures.
 
 ### Unsigned webhooks
 
-A signature `{kind: none}` declares that the API does not sign its deliveries; a helper without `signature` is
-refused, so omitting it never means unsigned. The module has only
-`decode_unverified(raw_body, *, options=None) -> Event`, which refuses a body that is not `bytes`
-(`ConfigurationError`) or is over `max_body_bytes` (`ProtocolSizeError`), the only option it reads, and decodes
-the event. Nothing authenticates who sent the delivery or whether it was changed or replayed, and the result is the
-event alone, with no facts: treat it as untrusted input.
+A signature `{kind: none}` declares that the API does not sign its deliveries; a helper without `signature` is refused,
+so omitting it never means unsigned. The module has only `decode_unverified(raw_body, *, options=None) -> Event`, which
+refuses a body that is not `bytes` (`ConfigurationError`) or is over `max_body_bytes` (`ProtocolDataError` with the
+reason `too_large`), the only option it reads, and decodes the event. Nothing authenticates who sent the delivery or
+whether it was changed or replayed, and the result is the event alone, with no facts: treat it as untrusted input.
 
 ### Verification order and limits
 
-A call checks `raw_body`, `headers`, `keys`, `now`, and `options`, then each builtin key's type and unique id.
-Invalid arguments raise `ConfigurationError` with their field path. Body, header, key, and signature counts
-are bounded by `ProtocolSizeError`. The helper checks signature syntax, timestamp tolerance when present, and
-cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks
-that `verifier.verify` is callable, then sizes, its returned facts, and the timestamp tolerance before decoding.
-Errors keep no key, signature, header value, or body.
+A call checks `raw_body`, `headers`, `keys`, `now`, and `options`, then each builtin key's type and unique id. Invalid
+arguments raise `ConfigurationError` with their field path. Body, header, key, and signature counts are bounded by
+`ProtocolDataError` with the reason `too_large`. The helper checks signature syntax, timestamp tolerance when present,
+and cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks
+that `verifier.verify` is callable, then sizes, its returned facts, and the timestamp tolerance before decoding. Errors
+keep no key, signature, header value, or body.
 
 | Limit (`WebhookOptions`) | Default |
 |---|---|
@@ -4075,6 +4085,8 @@ Errors keep no key, signature, header value, or body.
 | `max_header_bytes`, counting each name and value | 16 KiB |
 | `max_keys`, `max_signatures` | 8 |
 | `past_tolerance`, `future_tolerance` | 300 and 30 seconds; 0 is allowed |
+
+A failed verification raises `ProtocolDataError` with one of these reasons:
 
 - `malformed_signature`: a missing, empty, misencoded, or wrong-size signature, an incorrect prefix, or a missing,
   repeated, or invalid required timestamp or delivery id. A malformed candidate fails even if another would verify.

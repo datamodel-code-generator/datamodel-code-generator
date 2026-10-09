@@ -10,13 +10,13 @@
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
   header x-rate = FieldPetsGetResponse200XRateHeader(root=10)
-  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for FieldPetsGetResponse200XRateHeader
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=1 validation error for FieldPetsGetResponse200XRateHeader
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/v1/pets
@@ -25,41 +25,41 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] internal_server_error
+  list error ! InternalServerError: Error code: 500 - {"code":7,"message":"boom"} [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  error info 500 HeadersView(<2 headers>) None internal_server_error Error(code=7, message=None)
-  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  error info 500 HeadersView(<2 headers>) None None Error(code=7, message=None)
+  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=1 validation error for Error
+  list error syntax ! InternalServerError: Error code: 500 - { [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=1 validation error for Error
   Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] internal_server_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error media ! InternalServerError: InternalServerError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()] internal_server_error
+  list error media ! InternalServerError: Error code: 503 - down [operation_id='listPets', status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error bare ! InternalServerError: InternalServerError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()] internal_server_error
+  list error bare ! InternalServerError: Error code: 502 - down [operation_id='listPets', status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  list redirect ! APIStatusError: Error code: 302 [operation_id='listPets', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   redirect info 302 HeadersView(<2 headers>)
@@ -68,15 +68,15 @@
   list success default = Error(code=1, message=None)
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success media ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='unexpected_media_type') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'[]', truncated=False] unexpected_media_type
+  list success media ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='unexpected_media_type') [operation_id='listPets', body_bytes=b'[]', truncated=False] unexpected_media_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_syntax') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'[', truncated=False, cause=1 validation error for FieldPetsGetResponse
+  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_syntax') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=1 validation error for FieldPetsGetResponse
   Invalid JSON: EOF while parsing a list at line 1 column 1 [type=json_invalid, input_value=b'[', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_value') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'[{"id":"one"}]', truncated=False, cause=2 validation errors for FieldPetsGetResponse
+  list success value ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=2 validation errors for FieldPetsGetResponse
 0.id
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='one', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
@@ -85,17 +85,17 @@
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', call_id='<call>', reason='missing_body') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] missing_body
+  list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
-  list missing ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] unencodable
-  list invalid ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  list truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
+  list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
+  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',)] invalid_type
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = Pet(id=2, name='dog', tag=None)
@@ -105,14 +105,14 @@
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: text/plain, content-length: 4] b'bird'
   create text = Pet(id=2, name='dog', tag=None)
-  create missing media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing
-  create without body ! DecodeError: DecodeError(operation_id='createPet', call_id='<call>', reason='unencodable', location='body') [operation_id='createPet', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] unencodable
-  create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  create invalid body ! DecodeError: DecodeError(operation_id='createPet', call_id='<call>', reason='unencodable', location='body') [operation_id='createPet', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
+  create missing media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] missing
+  create without body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False] unencodable
+  create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
+  create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
+  create invalid body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
-  create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=422, body=Error(code=22, message=None), body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error
+  create rejected ! UnprocessableEntityError: Error code: 422 - {"code":22} [operation_id='createPet', status_code=422, body=Error(code=22, message=None), body_bytes=b'{"code":22}', truncated=False]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   get = Pet(id=3, name='fox', tag=None)
@@ -127,27 +127,27 @@
   get flowed = FieldPetsPetIdGetResponse(root='fox')
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  get text mismatch ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='unexpected_media_type') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":3,"name":"fox"}', truncated=False, media_type='application/json'] unexpected_media_type
+  get text mismatch ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='unexpected_media_type') [operation_id='getPet', body_bytes=b'{"id":3,"name":"fox"}', truncated=False, media_type='application/json'] unexpected_media_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body_bytes=b'', truncated=False] not_found_error
+  get missing ! NotFoundError: Error code: 404 [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing body ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=DecodeError()] not_found_error
+  get missing body ! NotFoundError: Error code: 404 - gone [operation_id='getPet', status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get created ! APIStatusError: APIStatusError(status_code=201, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
-  get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  get created ! APIStatusError: Error code: 201 - {"id":3,"name":"fox"} [operation_id='getPet', status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
+  get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',)] undeclared
+  get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',)] undeclared
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   delete = None
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete body ! DecodeError: DecodeError(status_code=204, call_id='<call>', reason='forbidden_body') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'x', truncated=False] forbidden_body
+  delete body ! DecodeError: DecodeError(status_code=204, reason='forbidden_body') [body_bytes=b'x', truncated=False] forbidden_body
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete ok ! APIStatusError: APIStatusError(status_code=200, call_id='<call>', reason='unexpected_status') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  delete ok ! APIStatusError: Error code: 200 [status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   head = Response(None, 200, None, None, [('etag', '"v1"')])
@@ -157,9 +157,9 @@
   upload = b'\x89PNG'
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
-  upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
-  upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
+  upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', reason='unexpected_media_type') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
+  upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',)] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload PetsPhotosResource = b'jpeg'
@@ -172,10 +172,10 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload streaming = b'jpeg'
-  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='response_too_large') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
+  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   unlimited = 200
@@ -185,59 +185,59 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
+  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=WriteError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
+  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('failed')] api_connection_error
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
   > DELETE https://override.example.com/root/pets/3
     [host: override.example.com, accept-encoding: gzip, deflate] b''
   base_url = None
   > DELETE https://eu.example.com/v1/pets/3
     [host: eu.example.com, accept-encoding: gzip, deflate] b''
   server eu = None
-  server moon ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_allowed', field_path='server.variables.region') [field_path=('server', 'variables', 'region'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_allowed
-  server zone ! ConfigurationError: ConfigurationError(call_id='<call>', reason='undeclared', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  server index ! ConfigurationError: ConfigurationError(call_id='<call>', reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_server
-  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
-  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  server moon ! ConfigurationError: ConfigurationError(reason='not_allowed', field_path='server.variables.region') [field_path=('server', 'variables', 'region')] not_allowed
+  server zone ! ConfigurationError: ConfigurationError(reason='undeclared', field_path='server.variables') [field_path=('server', 'variables')] undeclared
+  server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
+  options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
+  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',)] invalid_type
+  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',)] invalid_type
+  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
+  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
+  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
+  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
+  options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables')] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
   options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, follow_redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
@@ -245,11 +245,11 @@
   headers contains True False False
   headers equal True False
   headers hash True
-  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  error bare SDKError() sdk_error APIConnectionError(delivery_state='NOT_SENT', phase='unknown')
+  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [] invalid_value
+  error bare SDKError() None APIConnectionError()
   lifecycle borrowed closed False
-  client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
+  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
@@ -260,23 +260,23 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='response_too_large') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
+  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
+  async truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   async borrowed closed False
   async borrowed second closed False
-  async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   async range upload AsyncPetsPhotosResource = b'jpeg'
@@ -289,7 +289,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   async range upload streaming = b'jpeg'
-  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
 # pets typing.TypedDict
   helper modules copied=[]
   helper options field=False
@@ -302,52 +302,52 @@
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
   header x-rate = 10
-  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body={'code': 7, 'message': 'boom'}, body_bytes=b'{"code":7,"message":"boom"}', truncated=False] internal_server_error
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  error info 500 HeadersView(<2 headers>) None internal_server_error {'code': 7}
-  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  list error ! InternalServerError: Error code: 500 - {"code":7,"message":"boom"} [operation_id='listPets', status_code=500, body={'code': 7, 'message': 'boom'}, body_bytes=b'{"code":7,"message":"boom"}', truncated=False]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] internal_server_error
+  error info 500 HeadersView(<2 headers>) None None {'code': 7}
+  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error media ! InternalServerError: InternalServerError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()] internal_server_error
+  list error syntax ! InternalServerError: Error code: 500 - { [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error bare ! InternalServerError: InternalServerError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()] internal_server_error
+  list error media ! InternalServerError: Error code: 503 - down [operation_id='listPets', status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  list error bare ! InternalServerError: Error code: 502 - down [operation_id='listPets', status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=DecodeError()]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  list redirect ! APIStatusError: Error code: 302 [operation_id='listPets', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   redirect info 302 HeadersView(<2 headers>)
@@ -356,26 +356,26 @@
   list success default = {'code': 1}
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success media ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='unexpected_media_type') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'[]', truncated=False] unexpected_media_type
+  list success media ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='unexpected_media_type') [operation_id='listPets', body_bytes=b'[]', truncated=False] unexpected_media_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_syntax') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'[', truncated=False, cause=JSONDecodeError('Expecting value: line 1 column 2 (char 1)')] invalid_syntax
+  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_syntax') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=JSONDecodeError('Expecting value: line 1 column 2 (char 1)')] invalid_syntax
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success value = [{'id': 'one'}]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', call_id='<call>', reason='missing_body') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] missing_body
+  list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
-  list missing ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] unencodable
-  list invalid ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  list truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
+  list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
+  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',)] invalid_type
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = {'id': 2, 'name': 'dog'}
@@ -385,14 +385,14 @@
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: text/plain, content-length: 4] b'bird'
   create text = {'id': 2, 'name': 'dog'}
-  create missing media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing
-  create without body ! DecodeError: DecodeError(operation_id='createPet', call_id='<call>', reason='unencodable', location='body') [operation_id='createPet', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] unencodable
-  create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  create invalid body ! DecodeError: DecodeError(operation_id='createPet', call_id='<call>', reason='unencodable', location='body') [operation_id='createPet', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('Object of type object is not JSON serializable')] unencodable
+  create missing media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] missing
+  create without body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False] unencodable
+  create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
+  create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
+  create invalid body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('Object of type object is not JSON serializable')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
-  create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=422, body={'code': 22}, body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error
+  create rejected ! UnprocessableEntityError: Error code: 422 - {"code":22} [operation_id='createPet', status_code=422, body={'code': 22}, body_bytes=b'{"code":22}', truncated=False]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   get = {'id': 3, 'name': 'fox'}
@@ -407,27 +407,27 @@
   get flowed = 'fox'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  get text mismatch ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='unexpected_media_type') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":3,"name":"fox"}', truncated=False, media_type='application/json'] unexpected_media_type
+  get text mismatch ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='unexpected_media_type') [operation_id='getPet', body_bytes=b'{"id":3,"name":"fox"}', truncated=False, media_type='application/json'] unexpected_media_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body_bytes=b'', truncated=False] not_found_error
+  get missing ! NotFoundError: Error code: 404 [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing body ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=DecodeError()] not_found_error
+  get missing body ! NotFoundError: Error code: 404 - gone [operation_id='getPet', status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get created ! APIStatusError: APIStatusError(status_code=201, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
-  get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  get created ! APIStatusError: Error code: 201 - {"id":3,"name":"fox"} [operation_id='getPet', status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
+  get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',)] undeclared
+  get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='undeclared', field_path='response_media_type') [operation_id='getPet', field_path=('response_media_type',)] undeclared
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   delete = None
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete body ! DecodeError: DecodeError(status_code=204, call_id='<call>', reason='forbidden_body') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'x', truncated=False] forbidden_body
+  delete body ! DecodeError: DecodeError(status_code=204, reason='forbidden_body') [body_bytes=b'x', truncated=False] forbidden_body
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete ok ! APIStatusError: APIStatusError(status_code=200, call_id='<call>', reason='unexpected_status') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  delete ok ! APIStatusError: Error code: 200 [status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   head = Response(None, 200, None, None, [('etag', '"v1"')])
@@ -437,9 +437,9 @@
   upload = b'\x89PNG'
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
-  upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
-  upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
+  upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', reason='unexpected_media_type') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
+  upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',)] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload PetsPhotosResource = b'jpeg'
@@ -452,10 +452,10 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload streaming = b'jpeg'
-  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='response_too_large') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
+  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   unlimited = 200
@@ -465,59 +465,59 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
+  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=WriteError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
+  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('failed')] api_connection_error
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
   > DELETE https://override.example.com/root/pets/3
     [host: override.example.com, accept-encoding: gzip, deflate] b''
   base_url = None
   > DELETE https://eu.example.com/v1/pets/3
     [host: eu.example.com, accept-encoding: gzip, deflate] b''
   server eu = None
-  server moon ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_allowed', field_path='server.variables.region') [field_path=('server', 'variables', 'region'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_allowed
-  server zone ! ConfigurationError: ConfigurationError(call_id='<call>', reason='undeclared', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
-  server index ! ConfigurationError: ConfigurationError(call_id='<call>', reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_server
-  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
-  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  server moon ! ConfigurationError: ConfigurationError(reason='not_allowed', field_path='server.variables.region') [field_path=('server', 'variables', 'region')] not_allowed
+  server zone ! ConfigurationError: ConfigurationError(reason='undeclared', field_path='server.variables') [field_path=('server', 'variables')] undeclared
+  server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
+  options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
+  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',)] invalid_type
+  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',)] invalid_type
+  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
+  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
+  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
+  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
+  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
+  options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables')] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
   options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, follow_redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
@@ -525,11 +525,11 @@
   headers contains True False False
   headers equal True False
   headers hash True
-  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  error bare SDKError() sdk_error APIConnectionError(delivery_state='NOT_SENT', phase='unknown')
+  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [] invalid_value
+  error bare SDKError() None APIConnectionError()
   lifecycle borrowed closed False
-  client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
+  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async list = [{'id': 1, 'name': 'cat'}]
@@ -540,23 +540,23 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='response_too_large') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
+  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
+  async truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   async borrowed closed False
   async borrowed second closed False
-  async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   async range upload AsyncPetsPhotosResource = b'jpeg'
@@ -569,4 +569,4 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   async range upload streaming = b'jpeg'
-  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
+  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared

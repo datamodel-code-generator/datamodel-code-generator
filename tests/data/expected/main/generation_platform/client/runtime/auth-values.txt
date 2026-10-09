@@ -16,57 +16,57 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',)] invalid_type
+  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',)] invalid_type
+  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',)] invalid_type
+  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',)] invalid_type
+  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
+  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',)] invalid_type
+  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',)] invalid_type
+  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',)] invalid_type
+  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',)] invalid_type
+  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
+  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
   capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
-  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   signature empty fields = SignatureFields()
-  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
+  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
   rejected iterator untouched='read'
   accepted canonical scopes=()
   accepted canonical scopes=('read', 'read,write')
@@ -77,33 +77,33 @@
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable AuthConfig.credentials unchanged=True
-  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous')] invalid_type
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
   auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
-  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   RequestOptions auth omitted=True identity=True clear=True
-  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   static ApiKeyCredential identity=True
   static BasicCredential identity=True
   static BearerCredential identity=True
-  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',)] invalid_type
+  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
   static token identity=True token=True version=True scopes=None refresh=False
   static token identity=True token=True version=True scopes=() refresh=False
   static token identity=True token=True version=True scopes=('read',) refresh=False
@@ -113,24 +113,24 @@
   async static token identity=True token=True version=True scopes=None refresh=False
   async static token identity=True token=True version=True scopes=() refresh=False
   async static token identity=True token=True version=True scopes=('read',) refresh=False
-  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
   missing environment construction succeeded
-  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   environment current=('', '') grants=None expiry=None version=TokenVersion
-  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
@@ -260,57 +260,57 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',)] invalid_type
+  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',)] invalid_type
+  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',)] invalid_type
+  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',)] invalid_type
+  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
+  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',)] invalid_type
+  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',)] invalid_type
+  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',)] invalid_type
+  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',)] invalid_type
+  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
+  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
   capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
-  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   signature empty fields = SignatureFields()
-  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
+  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
   rejected iterator untouched='read'
   accepted canonical scopes=()
   accepted canonical scopes=('read', 'read,write')
@@ -321,33 +321,33 @@
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable AuthConfig.credentials unchanged=True
-  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous')] invalid_type
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
   auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
-  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   RequestOptions auth omitted=True identity=True clear=True
-  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   static ApiKeyCredential identity=True
   static BasicCredential identity=True
   static BearerCredential identity=True
-  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',)] invalid_type
+  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
   static token identity=True token=True version=True scopes=None refresh=False
   static token identity=True token=True version=True scopes=() refresh=False
   static token identity=True token=True version=True scopes=('read',) refresh=False
@@ -357,24 +357,24 @@
   async static token identity=True token=True version=True scopes=None refresh=False
   async static token identity=True token=True version=True scopes=() refresh=False
   async static token identity=True token=True version=True scopes=('read',) refresh=False
-  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
   missing environment construction succeeded
-  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   environment current=('', '') grants=None expiry=None version=TokenVersion
-  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
@@ -504,57 +504,57 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',)] invalid_type
+  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',)] invalid_type
+  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',)] invalid_type
+  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',)] invalid_type
+  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
+  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',)] invalid_type
+  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',)] invalid_type
+  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',)] invalid_type
+  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',)] invalid_type
+  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
+  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
   capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
-  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   signature empty fields = SignatureFields()
-  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
+  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
   rejected iterator untouched='read'
   accepted canonical scopes=()
   accepted canonical scopes=('read', 'read,write')
@@ -565,33 +565,33 @@
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable AuthConfig.credentials unchanged=True
-  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous')] invalid_type
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
   auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
-  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   RequestOptions auth omitted=True identity=True clear=True
-  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   static ApiKeyCredential identity=True
   static BasicCredential identity=True
   static BearerCredential identity=True
-  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',)] invalid_type
+  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
   static token identity=True token=True version=True scopes=None refresh=False
   static token identity=True token=True version=True scopes=() refresh=False
   static token identity=True token=True version=True scopes=('read',) refresh=False
@@ -601,24 +601,24 @@
   async static token identity=True token=True version=True scopes=None refresh=False
   async static token identity=True token=True version=True scopes=() refresh=False
   async static token identity=True token=True version=True scopes=('read',) refresh=False
-  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
   missing environment construction succeeded
-  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   environment current=('', '') grants=None expiry=None version=TokenVersion
-  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
@@ -748,57 +748,57 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',)] invalid_type
+  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',)] invalid_type
+  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',)] invalid_type
+  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',)] invalid_type
+  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
+  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',)] invalid_type
+  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',)] invalid_type
+  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',)] invalid_type
+  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',)] invalid_type
+  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
+  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
   capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
-  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   signature empty fields = SignatureFields()
-  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
+  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
   rejected iterator untouched='read'
   accepted canonical scopes=()
   accepted canonical scopes=('read', 'read,write')
@@ -809,33 +809,33 @@
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable AuthConfig.credentials unchanged=True
-  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous')] invalid_type
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
   auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
-  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   RequestOptions auth omitted=True identity=True clear=True
-  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   static ApiKeyCredential identity=True
   static BasicCredential identity=True
   static BearerCredential identity=True
-  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',)] invalid_type
+  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
   static token identity=True token=True version=True scopes=None refresh=False
   static token identity=True token=True version=True scopes=() refresh=False
   static token identity=True token=True version=True scopes=('read',) refresh=False
@@ -845,24 +845,24 @@
   async static token identity=True token=True version=True scopes=None refresh=False
   async static token identity=True token=True version=True scopes=() refresh=False
   async static token identity=True token=True version=True scopes=('read',) refresh=False
-  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
   missing environment construction succeeded
-  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   environment current=('', '') grants=None expiry=None version=TokenVersion
-  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
@@ -992,57 +992,57 @@
   immutable CredentialContext.required_scopes unchanged=True
   immutable SigningInput.query unchanged=True
   immutable SignatureFields.headers unchanged=True
-  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  token invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  token invalid token_type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token_type') [field_path=('token_type',)] invalid_type
+  token invalid expires_at ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='expires_at') [field_path=('expires_at',)] invalid_type
+  token invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  API key invalid value ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='value') [field_path=('value',)] invalid_type
+  Basic invalid username ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='username') [field_path=('username',)] invalid_type
+  Basic invalid password ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='password') [field_path=('password',)] invalid_type
+  bearer invalid token ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
+  bearer invalid version ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='version') [field_path=('version',)] invalid_type
+  context invalid scheme ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='scheme') [field_path=('scheme',)] invalid_type
+  context invalid audience ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='audience') [field_path=('audience',)] invalid_type
+  context invalid origin ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='origin') [field_path=('origin',)] invalid_type
+  context invalid deadline ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='deadline') [field_path=('deadline',)] invalid_type
+  capabilities invalid allowed_origins 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid allowed_origins [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_type
+  capabilities invalid managed_headers 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_headers [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_headers') [field_path=('managed_headers',)] invalid_type
+  capabilities invalid managed_query 'name' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
+  capabilities invalid managed_query [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='managed_query') [field_path=('managed_query',)] invalid_type
   capabilities invalid digest flag ! TypeError: SignerCapabilities.__init__() takes 4 positional arguments but 5 were given []
-  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  signature invalid pairs None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs 'header' ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [1] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
+  signature invalid pairs [['name']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 'value', 'extra']] ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  signature invalid pairs [['name', 1]] ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',)] invalid_type
   signature empty fields = SignatureFields()
-  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
-  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_scope
+  token scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid 'read' ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid {'read'} ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [1] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [None] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid [''] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read"write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\\write'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\twrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['read\x7fwrite'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  token scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
+  required scopes invalid ['réad'] ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  known requirements reject None ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='required_scopes') [field_path=('required_scopes',)] invalid_scope
+  scopes reject iterator ! ConfigurationError: ConfigurationError(reason='invalid_scope', field_path='scopes') [field_path=('scopes',)] invalid_scope
   rejected iterator untouched='read'
   accepted canonical scopes=()
   accepted canonical scopes=('read', 'read,write')
@@ -1053,33 +1053,33 @@
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable AuthConfig.credentials unchanged=True
-  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  auth invalid credentials NoneType ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials list ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid credentials dict ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.credentials') [field_path=('auth', 'credentials')] invalid_type
+  auth invalid allowed_origins text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid allowed_origins member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.allowed_origins') [field_path=('auth', 'allowed_origins')] invalid_type
+  auth invalid anonymous_schemes text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid anonymous_schemes member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.anonymous_schemes') [field_path=('auth', 'anonymous_schemes')] invalid_type
+  auth invalid signers text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid signers member ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.signers') [field_path=('auth', 'signers')] invalid_type
+  auth invalid selection None ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection True ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection -1 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection 0.5 ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid selection '1' ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='auth.selection') [field_path=('auth', 'selection')] out_of_range
+  auth invalid anonymous bool ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth.send_on_anonymous') [field_path=('auth', 'send_on_anonymous')] invalid_type
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
   auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
-  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  ClientOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   RequestOptions auth omitted=True identity=True clear=True
-  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  RequestOptions invalid auth ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   static ApiKeyCredential identity=True
   static BasicCredential identity=True
   static BearerCredential identity=True
-  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  static invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='material') [field_path=('material',)] invalid_type
+  static token invalid material ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='token') [field_path=('token',)] invalid_type
   static token identity=True token=True version=True scopes=None refresh=False
   static token identity=True token=True version=True scopes=() refresh=False
   static token identity=True token=True version=True scopes=('read',) refresh=False
@@ -1089,24 +1089,24 @@
   async static token identity=True token=True version=True scopes=None refresh=False
   async static token identity=True token=True version=True scopes=() refresh=False
   async static token identity=True token=True version=True scopes=('read',) refresh=False
-  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  EnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  EnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  EnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  EnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable None ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='variable_name') [field_path=('variable_name',)] invalid_type
+  AsyncEnvironmentCredentialProvider invalid variable '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='variable_name') [field_path=('variable_name',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
+  AsyncEnvironmentCredentialProvider invalid kind None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='kind') [field_path=('kind',)] invalid_value
   missing environment construction succeeded
-  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   environment current=('', '') grants=None expiry=None version=TokenVersion
-  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_value
+  missing async environment get ! ConfigurationError: ConfigurationError(reason='missing_value', field_path='variable_name') [field_path=('variable_name',)] missing_value
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion

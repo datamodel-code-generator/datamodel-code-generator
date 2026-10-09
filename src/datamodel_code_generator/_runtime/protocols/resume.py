@@ -1,20 +1,15 @@
-"""Checkpoints: the plain JSON state a helper continues from, the checks of its form, and its expiry error."""
+"""Checkpoints: the plain JSON state a helper continues from and the checks of its form."""
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal, cast
-
-from ..client.errors import ProtocolError, error_choice
-from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from ..model_codecs.media import JSONValue
 
 __all__ = (
     "MalformedStateError",
-    "ResumeStateError",
     "require_state",
     "saved_expiry",
     "state_array",
@@ -22,42 +17,6 @@ __all__ = (
     "state_expiry",
     "state_text",
 )
-
-
-class ResumeStateError(ProtocolError):
-    """A checkpoint past the expiry its server declared, rejected before any send; its condition is always expired."""
-
-    condition: Literal["expired"]
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: Literal["expired"],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep only the rejection category, never the state's contents."""
-        error_choice(condition, ("expired",), "condition")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.condition = condition
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
 
 
 class MalformedStateError(Exception):

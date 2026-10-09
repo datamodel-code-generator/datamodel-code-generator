@@ -234,13 +234,15 @@ def render_webhook_error_fields() -> str:
 
     from datamodel_code_generator._runtime.client.errors import (  # ruff: ignore[import-outside-top-level, import-private-name]
         ConfigurationError,
-        WebhookVerificationError,
+    )
+    from datamodel_code_generator._runtime.protocols.errors import (  # ruff: ignore[import-outside-top-level, import-private-name]
+        ProtocolDataError,
     )
 
     rows = ["", "| Exception | Direct base | Fields |", "|---|---|---|"]
     for error, field_names in (
         (ConfigurationError, ("field_path", "reason")),
-        (WebhookVerificationError, ("condition",)),
+        (ProtocolDataError, ("reason",)),
     ):
         hints, parameters = get_type_hints(error.__init__), signature(error.__init__).parameters
         fields = []
