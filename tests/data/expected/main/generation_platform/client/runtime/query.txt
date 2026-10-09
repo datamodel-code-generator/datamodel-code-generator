@@ -11,9 +11,9 @@
   > GET https://raw.example.com/items?api-version=1&limit=2&trace%20id=new
     [host: raw.example.com, accept-encoding: gzip, deflate] b''
   raw query = b'ok'
-  query name that is empty ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='query') [field_path=('query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query name set and removed ! ConfigurationError: ConfigurationError(reason='set_and_removed', field_path='query') [field_path=('query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] set_and_removed
-  query that is no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='query') [field_path=('query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  query name that is empty ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='query') [field_path=('query',)] invalid_value
+  query name set and removed ! ConfigurationError: ConfigurationError(reason='set_and_removed', field_path='query') [field_path=('query',)] set_and_removed
+  query that is no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='query') [field_path=('query',)] invalid_type
   query names by case = (('a', '1'), ('A', None))
   > GET https://api.example.com/v1/pets?api-version=1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''

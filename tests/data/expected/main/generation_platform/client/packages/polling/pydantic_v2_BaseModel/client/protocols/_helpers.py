@@ -8,8 +8,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import JobRequest as _dcg_type_0
-from models import Report as _dcg_type_1
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -97,7 +96,7 @@ class JobsRunPolling:
     def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -144,12 +143,12 @@ class JobsInlinePolling:
     def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> LroHandle[_dcg_type_1, GetJobResponse]:
+    ) -> LroHandle[models.Report, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
             self._core,
@@ -169,7 +168,7 @@ class JobsInlinePolling:
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> LroHandle[_dcg_type_1, GetJobResponse]:
+    ) -> LroHandle[models.Report, GetJobResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
             self._core,
@@ -191,7 +190,7 @@ class JobsReportPolling:
     def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -336,7 +335,7 @@ class JobsTrackedPolling:
     def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -375,7 +374,7 @@ class JobsTrackedPolling:
         )
 
 
-class JobsTrackedHandle(LroHandle[_dcg_type_1, GetJobResponse]):
+class JobsTrackedHandle(LroHandle[models.Report, GetJobResponse]):
     """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
 
     __slots__ = ()

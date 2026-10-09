@@ -68,7 +68,7 @@ def _failure(error: Any) -> str:
     """Report the decode cause's classification, retained exception links, and body prefix."""
     cause = error.cause
     codes = ",".join(issue.code for issue in getattr(cause, "issues", ()))
-    prefix = error.raw_prefix if hasattr(error, "raw_prefix") else error.body_bytes
+    prefix = error.body_bytes
     return (
         f"{type(error).__name__} {type(cause).__name__} {codes} "
         f"context={cause.__context__!r} cause={cause.__cause__!r} traceback={cause.__traceback__ is not None} "
@@ -121,7 +121,7 @@ def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
                 with helper.open() as stream:
                     try:
                         next(stream)
-                    except errors.StreamDecodeError as error:
+                    except errors.DecodeError as error:
                         lines.append(f"  stream {label}: {_failure(error)}")
     run(lambda: _async_json_decode_errors(package, exchange, lines))
 
@@ -143,5 +143,5 @@ async def _async_json_decode_errors(package: ModuleType, exchange: Exchange, lin
                 async with await helper.open() as stream:
                     try:
                         await anext(stream)
-                    except errors.StreamDecodeError as error:
+                    except errors.DecodeError as error:
                         lines.append(f"  async stream {label}: {_failure(error)}")

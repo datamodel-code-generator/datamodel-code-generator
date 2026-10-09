@@ -14,6 +14,7 @@ import httpx2
 from typing_extensions import Self
 
 from ._generated import security
+from ._runtime.client.auth import SchemeCredentials, Secret, TokenSource, UserPassword
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET, Unset
@@ -73,11 +74,35 @@ class Client(ClientView):
     def __init__(
         self,
         *,
+        bearer: Secret | TokenSource | None = None,
+        header_key: Secret | None = None,
+        basic: UserPassword | None = None,
+        query_key: Secret | None = None,
+        cookie_key: Secret | None = None,
+        bearer_alias: Secret | TokenSource | None = None,
+        oauth: Secret | TokenSource | None = None,
+        openid: Secret | TokenSource | None = None,
         options: ClientOptions | None = None,
         http_client: httpx2.Client | Unset | None = UNSET,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = ClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = ClientCore.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            credentials=SchemeCredentials(
+                {
+                    "bearer": bearer,
+                    "header_key": header_key,
+                    "basic": basic,
+                    "query_key": query_key,
+                    "cookie_key": cookie_key,
+                    "bearer_alias": bearer_alias,
+                    "oauth": oauth,
+                    "openid": openid,
+                },
+            ),
+        )
 
     def close(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""

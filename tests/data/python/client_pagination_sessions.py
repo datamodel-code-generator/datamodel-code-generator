@@ -1,4 +1,4 @@
-"""Bound pagination sessions: options, send budgets, deadlines, cancellation, hooks, limiters, and OAuth sends."""
+"""Bound pagination sessions: options, send budgets, deadlines, cancellation, HTTP client hooks, and OAuth sends."""
 
 from __future__ import annotations
 
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
     import httpx2
 
-_TOKEN: Final = "https://auth.example.com/token"
 
 
 def _foreign(package: ModuleType) -> ModuleType:
@@ -43,11 +42,6 @@ def _issued(value: str) -> bytes:
     }).encode()
 
 
-def _session(error: BaseException | None) -> str:
-    """Return whether a failure names a helper session, without its identifier."""
-    return f"session={getattr(error, 'parent_session_id', None) is not None}"
-
-
 def _failure(call: Any) -> BaseException | None:
     try:
         call()
@@ -56,69 +50,39 @@ def _failure(call: Any) -> BaseException | None:
     return None
 
 
-class _Events:
-    """A hook keeping each event's name and helper session, with an action run on some events."""
+class _Sends:
+    """A native request hook reporting each request and running a pending action just before it is sent."""
 
-    def __init__(self, **actions: Any) -> None:
-        self.events: list[tuple[str, str | None]] = []
-        self.actions = actions
-
-    def on_event(self, event: Any) -> None:
-        self.events.append((event.name, event.parent_session_id))
-        if (action := self.actions.get(event.name)) is not None:
-            action(event)
-
-    def sessions(self) -> set[str | None]:
-        """Return the distinct helper sessions of the events kept so far, then forget them."""
-        sessions = {session for _, session in self.events}
-        self.events.clear()
-        return sessions
-
-
-class _AsyncEvents(_Events):
-    async def on_event(self, event: Any) -> None:  # ty: ignore[invalid-method-override]
-        super().on_event(event)
-        if event.name == "attempt_start" and self.actions.pop("cancel", None) and (task := asyncio.current_task()):
-            task.cancel()
-            await asyncio.sleep(0)
-
-
-class _Permit:
-    def release(self) -> None:
-        pass
-
-
-class _AsyncPermit:
-    async def release(self) -> None:
-        pass
-
-
-class _Limiter:
-    """A limiter that keeps each context's helper session and runs an action while a page holds the pager."""
-
-    def __init__(self) -> None:
-        self.sessions: list[str | None] = []
+    def __init__(self, lines: list[str]) -> None:
+        self.lines = lines
         self.action: Any = None
 
-    def acquire(self, context: Any) -> _Permit:
-        self.sessions.append(context.parent_session_id)
+    def __call__(self, request: httpx2.Request) -> None:
+        self.lines.append(f"    request hook {request.method} {request.url}")
         if (action := self.action) is not None:
             self.action = None
             action()
-        return _Permit()
 
 
-class _AsyncLimiter(_Limiter):
-    async def acquire(self, context: Any) -> _AsyncPermit:  # ty: ignore[invalid-method-override]
-        self.sessions.append(context.parent_session_id)
+class _AsyncSends(_Sends):
+    async def __call__(self, request: httpx2.Request) -> None:  # ty: ignore[invalid-method-override]
+        self.lines.append(f"    async request hook {request.method} {request.url}")
         if (action := self.action) is not None:
             self.action = None
             await action()
-        return _AsyncPermit()
 
 
-def _fail(event: Any) -> None:
-    msg = f"hook failed on {event.name}"
+def _received(lines: list[str]) -> Any:
+    """Return a native response hook reporting each response's status."""
+
+    def received(response: httpx2.Response) -> None:
+        lines.append(f"    response hook {response.status_code}")
+
+    return received
+
+
+def _fail(response: httpx2.Response) -> None:
+    msg = f"response hook failed on {response.status_code}"
     raise RuntimeError(msg)
 
 
@@ -136,7 +100,7 @@ def pagination_sessions(package: ModuleType, lines: list[str]) -> None:
         _status_errors(harness, api, exchange, lines)
         _deadlines(harness, api, exchange, lines)
         _failures(harness, api, exchange, lines)
-        _concurrency(harness, api, exchange, lines)
+    _concurrency(harness, exchange, lines)
     _defaults(harness, exchange, lines)
     _hooks(harness, exchange, lines)
     _closing(harness, exchange, lines)
@@ -187,7 +151,7 @@ def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     ):
         pager = helper.iterate(session_options=session)
         error = _failure(lambda pager=pager: next(pager))
-        lines.append(f"  {label} ! {describe(error)} {_session(error)} {progress(pager)}")
+        lines.append(f"  {label} ! {describe(error)} {progress(pager)}")
     pager = helper.iterate(session_options=options.SessionOptions(total_timeout=1.0))
     exchange.respond(users("1", cursor="a"))
     record(lines, "first item before the deadline", lambda pager=pager: next(pager).id)
@@ -218,20 +182,22 @@ def _failures(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     lines.append(f"    progress {progress(pager)}")
 
 
-def _concurrency(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse consuming or closing a pager while one of its pages is being fetched."""
-    options = harness.options
-    limiter = _Limiter()
-    pager = api.protocols.users.all.iterate(options=options.RequestOptions(limiter=limiter))
+def _concurrency(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
+    """Refuse consuming or closing a pager while one of its pages is being sent."""
+    sends = _Sends(lines)
+    with (
+        exchange.client(event_hooks={"request": [sends]}) as native,
+        harness.package.Client(http_client=native, options=harness.client_options()) as api,
+    ):
+        pager = api.protocols.users.all.iterate()
 
-    def concurrent() -> None:
-        record(lines, "item while fetching", lambda: next(pager))
-        record(lines, "close while fetching", pager.close)
+        def concurrent() -> None:
+            record(lines, "item while fetching", lambda: next(pager))
+            record(lines, "close while fetching", pager.close)
 
-    limiter.action = concurrent
-    exchange.respond(users("1"))
-    drained(lines, "items after the concurrent steps", pager)
-    lines.append(f"  limiter sessions {len(set(limiter.sessions))} named={None not in limiter.sessions}")
+        sends.action = concurrent
+        exchange.respond(users("1"))
+        drained(lines, "items after the concurrent steps", pager)
 
 
 def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
@@ -344,46 +310,23 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
 
 
 def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
-    """Name a pager's session on every event and error of its pages, none on ordinary calls, a new one per pager."""
-    package, options = harness.package, harness.options
-    events = _Events()
-    limiter = _Limiter()
-    settings = harness.client_options(hooks=(events,), limiter=limiter)
-    with exchange.client() as native, package.Client(http_client=native, options=settings) as api:
+    """Run the HTTP client's own hooks for every page of a pager, failing the pager where a response hook fails."""
+    package, settings = harness.package, harness.client_options()
+    hooks = {"request": [_Sends(lines)], "response": [_received(lines)]}
+    with exchange.client(event_hooks=hooks) as native, package.Client(http_client=native, options=settings) as api:
         exchange.respond(users("1", cursor="a"), users("2"))
         drained(lines, "hooked items", api.protocols.users.all.iterate())
-        first = events.sessions()
-        exchange.respond(users("1"))
-        drained(lines, "another pager", api.protocols.users.all.iterate())
-        second = events.sessions()
-        exchange.respond(users("1"))
-        record(lines, "ordinary call", lambda: len(api.users.list_users().data))
-        ordinary = events.sessions()
-        lines.extend((
-            (
-                f"  one session per pager={len(first) == len(second) == 1 and first != second} "
-                f"named={None not in first | second} ordinary={ordinary}"
-            ),
-            f"  limiter sessions {len(set(limiter.sessions))} ordinary={limiter.sessions[-1]}",
-        ))
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         error = _failure(lambda: next(api.protocols.loose.all.iterate()))
-        failed = events.sessions()
-        lines.append(
-            f"  failed page ! {describe(error)} same session={failed == {getattr(error, 'parent_session_id', None)}}"
-        )
-    failing = _Events(call_end=_fail)
+        lines.append(f"  failed page ! {describe(error)}")
     with (
-        exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(hooks=(failing,))) as api,
+        exchange.client(event_hooks={"response": [_fail]}) as native,
+        package.Client(http_client=native, options=settings) as api,
     ):
         exchange.respond(users("1", cursor="a"))
         pager = api.protocols.users.all.iterate()
         error = _failure(lambda: next(pager))
-        completed = getattr(error, "completed_result", None)
-        lines.append(
-            f"  call end hook failure ! {describe(error)} completed={len(completed.data.data)} {_session(error)}"
-        )
+        lines.append(f"  response hook failure ! {describe(error)}")
         record(lines, "after the hook failure", lambda: next(pager))
 
 
@@ -468,14 +411,14 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
             lines.append(f"    progress {progress(pager)}")
             await pager.aclose()
     exchange = Exchange(lines)
-    events = _AsyncEvents()
-    limiter = _AsyncLimiter()
-    settings = harness.client_options(hooks=(events,), limiter=limiter)
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=settings) as api:
+    sends = _AsyncSends(lines)
+    async with (
+        exchange.async_client(event_hooks={"request": [sends]}) as native,
+        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+    ):
         helper = api.protocols.users.all
         exchange.respond(users("1", cursor="a"), users("2"))
         await adrained(lines, "async hooked items", helper.iterate())
-        lines.append(f"  async sessions {len(events.sessions())} named={None not in limiter.sessions}")
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         await adrained(lines, "async failed page", api.protocols.loose.all.iterate())
         pager = helper.iterate()
@@ -484,10 +427,16 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
             await arecord(lines, "async item while fetching", lambda pager=pager: anext(pager))
             await arecord(lines, "async close while fetching", pager.aclose)
 
-        limiter.action = concurrent
+        sends.action = concurrent
         exchange.respond(users("1"))
         await adrained(lines, "async items after the concurrent steps", pager)
-        events.actions["cancel"] = True
+
+        async def cancel() -> None:
+            if task := asyncio.current_task():
+                task.cancel()
+                await asyncio.sleep(0)
+
+        sends.action = cancel
         cancelled = helper.iterate()
         try:
             await anext(cancelled)
@@ -512,14 +461,9 @@ def pagination_auth(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
         script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
-        provider = auth.ClientCredentialsProvider(
-            _TOKEN,
-            client_id="c",
-            client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("s")),
-            http_client=script.client(),
-        )
-        settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
-        with provider, exchange.client() as native, package.Client(http_client=native, options=settings) as api:
+        provider = auth.OauthClientCredentials(client_id="c", client_secret="s", http_client=script.client())
+        settings = harness.client_options()
+        with exchange.client() as native, package.Client(http_client=native, options=settings, oauth=provider) as api:
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             drained(lines, label, pager)
@@ -531,17 +475,11 @@ async def _async_auth(harness: Harness, auth: ModuleType, lines: list[str]) -> N
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
         script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
-        provider = auth.AsyncClientCredentialsProvider(
-            _TOKEN,
-            client_id="c",
-            client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-            http_client=script.async_client(),
-        )
-        settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
+        provider = auth.OauthClientCredentials(client_id="c", client_secret="s", http_client=script.async_client())
+        settings = harness.client_options()
         async with (
-            provider,
             exchange.async_client() as native,
-            harness.package.AsyncClient(http_client=native, options=settings) as api,
+            harness.package.AsyncClient(http_client=native, options=settings, oauth=provider) as api,
         ):
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())

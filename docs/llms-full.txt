@@ -11348,6 +11348,7 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
 `datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
 options take mappings keyed by the same operation references:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
 from pathlib import Path
 
@@ -11364,9 +11365,9 @@ generate(
     server_output=Path("server"),
     server_package="server",
     server_model_package="models",
-    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
 )
 ```
+<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
 returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
@@ -11375,31 +11376,6 @@ update; see [Generating a Server or Client Package](using_as_module.md#generatin
 `load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
 against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
 the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
-
-The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
-```python
-from pathlib import Path
-
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
-
-generate_fastapi(
-    Path("openapi.yaml"),
-    model_config=GenerateConfig(
-        output=Path("models.py"),
-        input_file_type=InputFileType.OpenAPI,
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        preset="standard-py312-20260909",
-    ),
-    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
-)
-```
-<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
-
-`render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 
 ## Server options
 
@@ -11635,10 +11611,10 @@ percent-encoding.
 
 An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
 spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
-`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
-or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
-query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
-parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
+`--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
+FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
@@ -41159,7 +41135,7 @@ overrides it for that operation.
     from functools import cached_property
     from typing import Literal, overload
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -41210,7 +41186,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             name: Unset = UNSET,
             tag: Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41231,7 +41207,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
+            body: models.NewPet | Unset = UNSET,
             name: str | Unset = UNSET,
             tag: str | Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41277,7 +41253,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             name: Unset = UNSET,
             tag: Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41298,7 +41274,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
+            body: models.NewPet | Unset = UNSET,
             name: str | Unset = UNSET,
             tag: str | Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41344,7 +41320,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             name: Unset = UNSET,
             tag: Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41365,7 +41341,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
+            body: models.NewPet | Unset = UNSET,
             name: str | Unset = UNSET,
             tag: str | Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41411,7 +41387,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             name: Unset = UNSET,
             tag: Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41432,7 +41408,7 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
+            body: models.NewPet | Unset = UNSET,
             name: str | Unset = UNSET,
             tag: str | Unset = UNSET,
             media_type: Literal['application/json'] | None = None,
@@ -41737,7 +41713,7 @@ generates.
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -41787,7 +41763,7 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41829,7 +41805,7 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41871,7 +41847,7 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41913,7 +41889,7 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42047,7 +42023,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -42097,7 +42073,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42139,7 +42115,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42181,7 +42157,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42223,7 +42199,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42349,7 +42325,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -42399,7 +42375,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42441,7 +42417,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42483,7 +42459,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42525,7 +42501,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42650,7 +42626,7 @@ generation prints name the package by it; the package imports its own modules re
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -42700,7 +42676,7 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42742,7 +42718,7 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42784,7 +42760,7 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42826,7 +42802,7 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -42952,7 +42928,7 @@ references name resolve against the directory of the JSON file that holds them, 
 
     from functools import cached_property
 
-    from models import Pet as _dcg_type_0
+    import models
 
     from .._runtime.client.client import ClientCore as ClientCore_1
     from .._runtime.model_codecs.media import JSONValue
@@ -43011,7 +42987,7 @@ references name resolve against the directory of the JSON file that holds them, 
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
             session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse]:
+        ) -> Page[models.Pet, ListPetsResponse]:
             """Fetch the first page of GET /pets."""
             return first_page(
                 self._core,
@@ -43030,7 +43006,7 @@ references name resolve against the directory of the JSON file that holds them, 
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
             session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
             return iterate_pages(
                 self._core,
@@ -43043,12 +43019,12 @@ references name resolve against the directory of the JSON file that holds them, 
 
         def next_page(
             self,
-            page: Page[_dcg_type_0, ListPetsResponse],
+            page: Page[models.Pet, ListPetsResponse],
             *,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
             session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse] | None:
+        ) -> Page[models.Pet, ListPetsResponse] | None:
             """Fetch the page after a page of this helper, or return None after the last page."""
             return following_page(
                 self._core,
@@ -43068,7 +43044,7 @@ references name resolve against the directory of the JSON file that holds them, 
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
             session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
             return resume_pages(
                 self._core,
@@ -43191,7 +43167,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -43241,7 +43217,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -43283,7 +43259,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -43325,7 +43301,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -43367,7 +43343,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -43950,7 +43926,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
@@ -44000,7 +43976,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -44042,7 +44018,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -44084,7 +44060,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -44126,7 +44102,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -48474,8 +48450,6 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
-| `python-api.client` | python-api | `datamodel_code_generator.client and datamodel_code_generator.api_types` | 0.84.0 | - |
-| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -48648,26 +48622,6 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
-
-### `python-api.client`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.client and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.
-
-generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.
-
-### `python-api.fastapi-server`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
-
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.
 
 ---
 

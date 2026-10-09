@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import json
 from typing import TYPE_CHECKING, Any
 
-from tests.data.python.client_caching import _Signer
 from tests.data.python.client_pagination import (
     Harness,
     adrained,
@@ -152,13 +150,8 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     lines.append(f"  supplied URL checkpoint={state!r} key kept={'api_key' in state}")
     exchange.respond(user_page("3", next=f"{_SERVER}/users?cursor=a&api_key=server-secret"))
     drained(lines, "supplied URL removes echoed key", supplied)
-    auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signer = _Signer(auth)
-    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
-    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
-    for label, client in (("without the signer", api), ("under its signer", signed)):
-        state = client.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&sig=stale").checkpoint()
-        lines.append(f"  supplied URL {label} checkpoint={state!r} sig kept={'sig' in state}")
+    state = api.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&sig=stale").checkpoint()
+    lines.append(f"  supplied URL checkpoint={state!r} sig kept={'sig' in state}")
 
 
 def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

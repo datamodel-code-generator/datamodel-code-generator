@@ -1462,6 +1462,123 @@
       ]
     ]
   },
+  "type-spellings-exact": {
+    "input": "type-spellings-exact.yaml",
+    "references": [
+      "protocols/type-spellings-exact.json"
+    ],
+    "cwd": true,
+    "model": {
+      "output": "models",
+      "use_exact_imports": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-exact.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-legacy": {
+    "input": "type-spellings-legacy.yaml",
+    "references": [
+      "protocols/type-spellings-legacy.json"
+    ],
+    "model": {
+      "use_union_operator": false,
+      "use_standard_collections": false
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-legacy.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-reuse": {
+    "input": "type-spellings-reuse.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-cycle": {
+    "input": "type-spellings-cycle.yaml",
+    "cwd": true,
+    "model": {
+      "output": "models"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
   "retries": {
     "input": "retries.yaml",
     "modules": [
@@ -1977,6 +2094,9 @@
   },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
+  },
+  "credential-name-errors": {
+    "input": "credential-name-errors.yaml"
   },
   "auth-context": {
     "input": "auth-context.yaml",
@@ -4953,6 +5073,12 @@
     "cwd": true,
     "model": {
       "custom_template_dir": "templates/not-found"
+    }
+  },
+  "output-required": {
+    "input": "pets.yaml",
+    "model": {
+      "output": null
     }
   },
   "api-scope-required": {

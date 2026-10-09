@@ -1,0 +1,31 @@
+mypy pets and auth.py: clean
+pyright pets and auth.py: clean
+ty pets and auth.py: clean
+auth_negative.py 8 marked lines
+mypy auth_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  12 arg-type
+  13 arg-type
+  14 arg-type
+  15 call-arg
+  16 arg-type
+  17 arg-type
+  18 call-arg
+  19 arg-type
+pyright auth_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  12 reportArgumentType
+  13 reportArgumentType
+  14 reportArgumentType
+  15 reportCallIssue
+  16 reportArgumentType
+  17 reportArgumentType
+  18 reportCallIssue
+  19 reportArgumentType
+ty auth_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  12 invalid-argument-type
+  13 invalid-argument-type
+  14 invalid-argument-type
+  15 unknown-argument
+  16 invalid-argument-type
+  17 invalid-argument-type
+  18 missing-argument
+  19 invalid-argument-type

@@ -5,11 +5,31 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field, RootModel, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
+)
 
 
 class Size(RootModel[StrictInt]):
     root: Annotated[StrictInt, Field(ge=1)] = 10
+
+
+class Form(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    name: StrictStr | None = None
+    counts: list[StrictInt] | None = None
 
 
 type FieldValuesIdGetPathIdParameter = StrictInt
@@ -55,3 +75,15 @@ type FieldValuesIdGetQueryBlobParameter = bytes
 
 
 type FieldValuesIdGetCookieVisitsParameter = StrictInt
+
+
+class FieldUploadsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    file: bytes
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    note: StrictStr | None = None
+    counts: list[StrictInt] | None = None

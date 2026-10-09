@@ -1,27 +1,26 @@
 # input-aliases
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/_generated/openapi.py
-  write target server/services.py
-  write target server/README.md
-  write target server/py.typed
-  5 runtime modules ['write']
-  DocumentationAnnotationWarning: server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
-  DocumentationAnnotationWarning: server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/_generated/openapi.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  5 runtime modules ['new']
+  DocumentationAnnotationWarning: example/server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: example/server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
 generate
   returned None
 tree

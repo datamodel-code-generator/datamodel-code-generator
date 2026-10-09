@@ -23,7 +23,7 @@ from datamodel_code_generator._client.naming import (
     pascal,
     snake,
 )
-from datamodel_code_generator._client.security import SecurityPlanner
+from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._codec_type_source import static_scalar
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
@@ -61,12 +61,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
         Direction,
-        FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
         SourceDocumentId,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
 
@@ -144,7 +144,7 @@ class ParameterSpec:
     required: bool
     use: TypeUseBinding | None
     plan: ParameterPlan
-    argument: FinalPythonType | None = None
+    argument: TypeView | None = None
     default: LiteralScalar | None = None
     converts: bool = False
 
@@ -195,7 +195,7 @@ class FieldArgument:
     python_name: str
     wire_name: str
     required: bool
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -281,6 +281,7 @@ class ClientPlan:
     operations: tuple[OperationSpec, ...]
     resources: tuple[ResourceSpec, ...]
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
+    credentials: tuple[CredentialSpec, ...] = ()
 
     @property
     def roots(self) -> tuple[ResourceSpec, ...]:
@@ -393,7 +394,7 @@ class Planner:
             reference = OperationRef(pointer=item.ref) if isinstance(item.ref, str) else item.ref
             option = f"operations[{index}].ref"
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The operation setting {reference.pointer!r}{named} {self.request.unresolved}"
@@ -409,8 +410,11 @@ class Planner:
         specs = tuple(starmap(self.operation, enumerate(self.request.operations)))
         self.raise_problems()
         resources = self.resources(specs)
+        credentials = self.security.credentials(spec.security for spec in specs)
         self.raise_problems()
-        return ClientPlan(operations=specs, resources=resources, security_schemes=self.security.root)
+        return ClientPlan(
+            operations=specs, resources=resources, security_schemes=self.security.root, credentials=credentials
+        )
 
     def operation(self, index: int, operation: OperationContract) -> OperationSpec:
         """Plan one operation's names, arguments, media, responses, and servers."""
@@ -1002,7 +1006,7 @@ class Planner:
         )
 
 
-def _default(use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
+def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
     if argument is None or use is None:
         return None

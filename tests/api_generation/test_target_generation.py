@@ -5,20 +5,18 @@ from __future__ import annotations
 import errno
 import os
 import shutil
-import sys
 from itertools import count
 from pathlib import Path
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import _api_manifest, _publication
+from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
-from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
+from tests.data.python.target_generation import SOURCE, target_render_report
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
@@ -68,12 +66,6 @@ def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
-def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reject syntax the running Python accepts but the configured target Python does not."""
-    assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
-
-
 @pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
 def test_target_render_python_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Refuse to render a target on a Python older than every target supports."""
@@ -114,18 +106,6 @@ def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(RemoteReferenceLock, "stage", fail)
     assert_output(target_render_report("lock-failure", tmp_path, monkeypatch), EXPECTED / "lock-failure.txt")
-
-
-@pytest.mark.abnormal_path("os.path.relpath fails only across Windows drives")
-def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reject layouts whose persistent paths cannot be relative to the target root, such as other drives."""
-
-    def fail(*_args: object) -> str:
-        msg = "path is on mount 'C:', start on mount 'D:'"
-        raise ValueError(msg)
-
-    monkeypatch.setattr(_api_manifest, "os", SimpleNamespace(path=SimpleNamespace(relpath=fail)))
-    assert_output(target_render_report("relative-failure", tmp_path, monkeypatch), EXPECTED / "relative-failure.txt")
 
 
 def _failing(original: Callable[..., None], failures: dict[int, OSError], destination: str) -> Callable[..., None]:
@@ -239,18 +219,6 @@ def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         )
     finally:
         os.umask(mask)
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        "defaults",
-        "invalid-values",
-    ],
-)
-def test_target_config(case: str) -> None:
-    """Validate the shared target settings of the public configuration, reporting every problem in field order."""
-    assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
 
 
 @pytest.mark.filterwarnings("ignore::datamodel_code_generator.DocumentationAnnotationWarning")

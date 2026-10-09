@@ -1,10 +1,4 @@
 ordinary run without a target: generate str, exit 0, target modules []
-primitive generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-primitive render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-empty generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-empty render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-unselected generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-unselected render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 primitive check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 empty check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 unselected check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'

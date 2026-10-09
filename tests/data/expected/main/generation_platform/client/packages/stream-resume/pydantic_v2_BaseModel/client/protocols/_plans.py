@@ -7,11 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Created as _dcg_type_2
-from models import Mark as _dcg_type_4
-from models import Message as _dcg_type_1
-from models import Record as _dcg_type_3
-from models import Tick as _dcg_type_0
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -31,7 +27,7 @@ from .._runtime.protocols.streams import (
     unknown_event,
 )
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Tick]] = EventPlan(
     helper_id='searches.ticks',
     operation=OperationRef(pointer='/paths/~1search-feed/post'),
     call=_operations.OPERATION_0,
@@ -50,7 +46,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
 )
 
 
-STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_1: Final[EventPlan[models.Tick]] = EventPlan(
     helper_id='feed.live',
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_6,
@@ -66,7 +62,7 @@ STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
 )
 
 
-STREAM_2: Final[EventPlan[_dcg_type_1]] = EventPlan(
+STREAM_2: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.live',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
@@ -82,7 +78,7 @@ STREAM_2: Final[EventPlan[_dcg_type_1]] = EventPlan(
 )
 
 
-STREAM_3: Final[EventPlan[_dcg_type_1]] = EventPlan(
+STREAM_3: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.plain',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
@@ -91,7 +87,7 @@ STREAM_3: Final[EventPlan[_dcg_type_1]] = EventPlan(
 )
 
 
-STREAM_4: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
+STREAM_4: Final[EventPlan[models.Created | UnknownEvent]] = EventPlan(
     helper_id='events.tracked',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
@@ -128,7 +124,7 @@ STREAM_4: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
 )
 
 
-STREAM_5: Final[EventPlan[_dcg_type_1]] = EventPlan(
+STREAM_5: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='rooms.live',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
     call=_operations.OPERATION_3,
@@ -151,7 +147,7 @@ STREAM_5: Final[EventPlan[_dcg_type_1]] = EventPlan(
 )
 
 
-STREAM_6: Final[EventPlan[_dcg_type_3]] = EventPlan(
+STREAM_6: Final[EventPlan[models.Record]] = EventPlan(
     helper_id='records.all',
     operation=OperationRef(pointer='/paths/~1records/get'),
     call=_operations.OPERATION_5,
@@ -169,7 +165,7 @@ STREAM_6: Final[EventPlan[_dcg_type_3]] = EventPlan(
 )
 
 
-STREAM_7: Final[EventPlan[_dcg_type_0 | UnknownEvent]] = EventPlan(
+STREAM_7: Final[EventPlan[models.Tick | UnknownEvent]] = EventPlan(
     helper_id='feed.ticks',
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_6,
@@ -192,7 +188,7 @@ STREAM_7: Final[EventPlan[_dcg_type_0 | UnknownEvent]] = EventPlan(
 )
 
 
-STREAM_8: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
+STREAM_8: Final[EventPlan[models.Created | UnknownEvent]] = EventPlan(
     helper_id='topics.marks',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
@@ -210,7 +206,7 @@ STREAM_8: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
 )
 
 
-STREAM_9: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_9: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.scoped',
     operation=OperationRef(pointer='/paths/~1marks/get'),
     call=_operations.OPERATION_7,
@@ -227,7 +223,7 @@ STREAM_9: Final[EventPlan[_dcg_type_4]] = EventPlan(
 )
 
 
-STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_10: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.named',
     operation=OperationRef(pointer='/paths/~1named-marks/get'),
     call=_operations.OPERATION_8,
@@ -244,7 +240,7 @@ STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
 )
 
 
-STREAM_11: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_11: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.deep',
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
     call=_operations.OPERATION_9,
@@ -261,7 +257,7 @@ STREAM_11: Final[EventPlan[_dcg_type_4]] = EventPlan(
 )
 
 
-STREAM_12: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_12: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.bound',
     operation=OperationRef(pointer='/paths/~1marks/get'),
     call=_operations.OPERATION_7,
@@ -283,7 +279,7 @@ STREAM_12: Final[EventPlan[_dcg_type_4]] = EventPlan(
 )
 
 
-STREAM_13: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_13: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.deepbound',
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
     call=_operations.OPERATION_9,
@@ -305,7 +301,7 @@ STREAM_13: Final[EventPlan[_dcg_type_4]] = EventPlan(
 )
 
 
-STREAM_14: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_14: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='searches.keyed',
     operation=OperationRef(pointer='/paths/~1search-feed/post'),
     call=_operations.OPERATION_0,

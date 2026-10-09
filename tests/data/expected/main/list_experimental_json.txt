@@ -151,23 +151,5 @@
     "since_version": "0.59.0",
     "target": "--input-file-type xmlschema",
     "tracking_issue": null
-  },
-  {
-    "id": "python-api.client",
-    "kind": "python-api",
-    "message": "The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.",
-    "note": "generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.",
-    "since_version": "0.84.0",
-    "target": "datamodel_code_generator.client and datamodel_code_generator.api_types",
-    "tracking_issue": null
-  },
-  {
-    "id": "python-api.fastapi-server",
-    "kind": "python-api",
-    "message": "The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.",
-    "note": "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.",
-    "since_version": "0.84.0",
-    "target": "datamodel_code_generator.fastapi and datamodel_code_generator.api_types",
-    "tracking_issue": null
   }
 ]

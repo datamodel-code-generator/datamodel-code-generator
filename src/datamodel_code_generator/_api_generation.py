@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 import os
 import sys
 import tempfile
@@ -15,15 +14,6 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Protocol, cast
 from urllib.parse import ParseResult
 
-from datamodel_code_generator._api_manifest import (
-    ROOT_URN,
-    DocumentTable,
-    RootInput,
-    config_error,
-    document_identity,
-    shown,
-    target_identity,
-)
 from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
@@ -31,12 +21,20 @@ from datamodel_code_generator._api_types import (
     GeneratedProject,
     OperationRef,
 )
+from datamodel_code_generator._target_documents import (
+    ROOT_URN,
+    DocumentTable,
+    RootInput,
+    config_error,
+    document_identity,
+    shown,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._api_types import ArtifactKind, DiagnosticStage, TargetKind
+    from datamodel_code_generator._api_types import ArtifactKind, TargetKind
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
     from datamodel_code_generator._publication import PublicationAnchor, StagedFile
     from datamodel_code_generator._target_config import TargetConfig
@@ -59,7 +57,7 @@ class RenderedFile:
     """One text file a target rendered; the coordinator formats, heads, and encodes it.
 
     A verbatim file copies one of this package's own sources, such as a runtime module, that is valid for every
-    supported target Python, so the coordinator heads and encodes it without formatting or checking it again.
+    supported target Python, so the coordinator heads and encodes it without formatting it.
     """
 
     path: PurePosixPath
@@ -78,18 +76,22 @@ class PlannedFile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
-    """Everything a target renders from: settings, the accepted model contracts, the root operations, and the cwd."""
+    """Everything a target renders from: settings, the accepted models, the root operations, and the cwd.
+
+    `model_imports` holds every module and module member that the import statements of the models name.
+    """
 
     config: TargetConfig
     model_config: GenerateConfig
-    target_id: str
     batch: GeneratedTypeContractBatch
     lease: SourceLease
     models: tuple[ModelArtifact, ...]
+    model_imports: frozenset[str]
     operations: tuple[OperationContract, ...]
     documents: DocumentTable
     resolve: Callable[[OperationRef], OperationContract | None]
     cwd: Path
+    shown_root: Path
 
     @property
     def unresolved(self) -> str:
@@ -319,7 +321,7 @@ def _generate_models(
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._api_manifest import named_document, persistent_uri  # noqa: PLC0415
+            from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
             identity = document_identity(error.document, source.base)
             named = "" if identity == source.identity else named_document(identity, identity)
@@ -329,7 +331,6 @@ def _generate_models(
                     severity="error",
                     stage="input",
                     message=f"{error}{named}",
-                    source_uri=persistent_uri(identity, (cwd / target.output.expanduser()).resolve(), "input"),
                     source_pointer=error.pointer,
                 ),
             )) from error
@@ -395,7 +396,7 @@ def _collision_key(path: Path) -> str:
 
 
 class _Planner:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         models: _Models,
         effective: GenerateConfig,
@@ -403,6 +404,7 @@ class _Planner:
         generator: TargetGenerator,
         *,
         models_module: bool = False,
+        shown_root: Path | None = None,
     ) -> None:
         self.models = models
         self.models_module = models_module
@@ -410,9 +412,9 @@ class _Planner:
         self.config = config
         self.generator = generator
         self.cwd = models.cwd
+        self.shown_root = self.cwd if shown_root is None else shown_root
         self.root = (self.cwd / config.output.expanduser()).resolve()
-        self.target_id = target_identity(generator.kind, config.package)
-        self.documents = DocumentTable(models.product.batch, models.source, self.root)
+        self.documents = DocumentTable(models.product.batch, models.source)
         self.operations: dict[str, OperationContract] = {}
 
     def operation(self, reference: OperationRef) -> OperationContract | None:
@@ -483,7 +485,6 @@ class _Planner:
                         stage="ownership",
                         message=message,
                         artifact_path=shown(artifact.path, self.cwd).as_posix(),
-                        target_id=self.target_id if artifact.kind == "target" else None,
                     )
                 )
             seen.add(key)
@@ -498,14 +499,15 @@ class _Planner:
             TargetRequest(
                 config=config,
                 model_config=self.effective,
-                target_id=self.target_id,
                 batch=models.product.batch,
                 lease=models.product.source_lease,
                 models=models.artifacts,
+                model_imports=models.product.model_imports,
                 operations=operations,
                 documents=self.documents,
                 resolve=self.operation,
                 cwd=self.cwd,
+                shown_root=self.shown_root,
             )
         )
         finished = _Finisher(self).finish(rendered)
@@ -668,25 +670,8 @@ class _Finisher:
         self.config = planner.config
         self.effective = planner.effective
         self.cwd = planner.cwd
-        self.target_id = planner.target_id
         self.models = planner.models
         self.root = planner.root
-
-    def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
-        version = self.effective.target_python_version.version_key
-        if problems := tuple(
-            Diagnostic(
-                code="E_TARGET_SOURCE",
-                severity="error",
-                stage=stage,
-                message=f"The generated Python source is invalid: {error}",
-                artifact_path=path.as_posix(),
-                target_id=self.target_id,
-            )
-            for path, text in files
-            if _is_python(path) and (error := _syntax_error(path.as_posix(), text, version)) is not None
-        ):
-            raise APIGenerationError(problems)
 
     def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
         """Format, head, and encode every file like a model file, from the model output settings."""
@@ -699,7 +684,6 @@ class _Finisher:
 
         effective, models = self.effective, self.models
         files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
-        self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         formatter = TargetCodeFormatter(
             effective.target_python_version,
             models.settings_path,
@@ -728,7 +712,6 @@ class _Finisher:
             )
         self.defer(formatter, texts, formatted)
         texts = {path: _normalized(text) for path, text in texts.items()}
-        self.check_sources(((file.path, texts[file.path]) for file in files if not file.verbatim), "format")
         return tuple(
             PlannedFile(path=path, content=_written(text, effective.encoding if _is_python(path) else "utf-8"))
             for path, text in texts.items()
@@ -753,22 +736,6 @@ class _Finisher:
             texts.update((path, staged.joinpath(*path.parts).read_text(encoding=encoding)) for path in paths)
 
 
-def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:
-    """Return why a source is invalid for the target grammar, reading PEP 695 aliases older hosts cannot parse."""
-    try:
-        compile(ast.parse(text, filename, feature_version=version), filename, "exec", dont_inherit=True)
-    except SyntaxError as error:
-        if version >= (3, 12) > sys.version_info[:2]:
-            from datamodel_code_generator._builtin_formatter import (  # noqa: PLC0415
-                _replace_pep695_type_aliases_with_placeholders,
-            )
-
-            if (replaced := _replace_pep695_type_aliases_with_placeholders(text)) != text:
-                return _syntax_error(filename, replaced, version)
-        return error.msg
-    return None
-
-
 def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:
     from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
@@ -790,11 +757,13 @@ def _plan(  # noqa: PLR0913
     publish: bool,
     timestamp: str | None = None,
     models_module: bool = False,
+    shown_root: Path | None = None,
 ) -> PlannedTarget:
     """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
 
     The files carry `timestamp` as their generation timestamp, or the current time without one. With
     `models_module`, models generated as one file are planned as the module that the suffixless output names.
+    Warnings name target paths relative to `shown_root`, or to the working directory without one.
     """
     effective = prepare_target(input_, model_config, generator)
     if publish and effective.remote_lock_resolved and getattr(effective.remote_lock, "update", False):
@@ -810,7 +779,9 @@ def _plan(  # noqa: PLR0913
         )
     models = _run_models(input_, effective, config)
     try:
-        return _Planner(models, effective, config, generator, models_module=models_module).planned()
+        return _Planner(
+            models, effective, config, generator, models_module=models_module, shown_root=shown_root
+        ).planned()
     finally:
         models.product.close()
 
@@ -831,15 +802,24 @@ def plan_target(  # noqa: PLR0913
     publish: bool = False,
     timestamp: str | None = None,
     models_module: bool = False,
+    shown_root: Path | None = None,
 ) -> PlannedTarget:
     """Render one target like `render_target` for a caller that publishes it later, alone or with other files.
 
     A caller that publishes it with other files owns the remote lock the models record into, so the target leaves
     the lock out. Targets published together pass on the `timestamp` of the first, so the models they share carry
-    one generation timestamp. `models_module` plans models generated as one file as the module `<output>.py`.
+    one generation timestamp. `models_module` plans models generated as one file as the module `<output>.py`, and
+    warnings name target paths relative to `shown_root`, or to the working directory without one.
     """
     return _plan(
-        input_, model_config, config, generator, publish=publish, timestamp=timestamp, models_module=models_module
+        input_,
+        model_config,
+        config,
+        generator,
+        publish=publish,
+        timestamp=timestamp,
+        models_module=models_module,
+        shown_root=shown_root,
     )
 
 

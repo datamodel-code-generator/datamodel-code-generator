@@ -1,69 +1,69 @@
 # retries pydantic_v2.BaseModel
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  not followed by the call = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 301, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, None), ('attempt_end', 0, 301, 'https://api.example.com', 1, None), ('call_end', 0, 301, 'https://api.example.com', 1, 'error')]
+  not followed by the call = ('APIStatusError', 'unexpected_status', 301, 1, 'NoneType')
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 301]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   301 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 301, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   302 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   303 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 303, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   307 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 307, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   308 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 308, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://other.example.com:9443/done
     [host: other.example.com:9443, accept-encoding: gzip, deflate, accept: text/plain] b''
   another origin = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://other.example.com:9443/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  unsupported 305 = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 305, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 305, 'https://api.example.com', 1, None), ('attempt_end', 0, 305, 'https://api.example.com', 1, None), ('call_end', 0, 305, 'https://api.example.com', 1, 'error')]
+  unsupported 305 = ('APIStatusError', 'unexpected_status', 305, 1, 'NoneType')
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 305]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  missing Location = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 302, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
+  missing Location = ('APIStatusError', 'unexpected_status', 302, 1, 'NoneType')
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 302]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/next%2Fpart?q=a%2Fb
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   relative encoded = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://api.example.com/next%2Fpart?q=a%2Fb#omitted'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  invalid port = ('APIConnectionError', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, None, None, 1, 'RemoteProtocolError')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('transport_failure', 0, None, 'https://api.example.com', 1, None), ('attempt_end', 0, None, 'https://api.example.com', 1, None), ('call_end', 0, None, 'https://api.example.com', 1, 'error')]
+  invalid port = ('APIConnectionError', None, None, 1, 'RemoteProtocolError')
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 302]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/hop0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/hop1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  past the native limit = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'TooManyRedirects')
+  past the native limit = ('APIConnectionError', None, None, 1, 'TooManyRedirects')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
@@ -114,7 +114,7 @@
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  307 one-shot body = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'StreamConsumed')
+  307 one-shot body = ('APIConnectionError', None, None, 1, 'StreamConsumed')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
@@ -130,22 +130,22 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream] b''
-  refused redirect after an answered unsafe POST = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+  refused redirect after an answered unsafe POST = ('APIConnectionError', None, None, 1, 'ConnectError')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream] b''
-  refused redirect after an answered idempotent POST = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+  refused redirect after an answered idempotent POST = ('APIConnectionError', None, None, 1, 'ConnectError')
     unused=1
-  native request hook failure = ('APIConnectionError', <DeliveryState.NOT_SENT: 'NOT_SENT'>, None, None, 1, 'ConnectError')
+  native request hook failure = ('APIConnectionError', None, None, 1, 'ConnectError')
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
-  native response hook failure without a request = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+  native response hook failure without a request = ('APIConnectionError', None, None, 1, 'ConnectError')
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
-  native response hook failure of the answered request = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+  native response hook failure of the answered request = ('APIConnectionError', None, None, 1, 'ConnectError')
     unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1, x-client: kept] b''
@@ -156,7 +156,7 @@
   origin chain returns to initial = (FieldSafeGetResponse(root='server payload'), 200, 1)
   downgrade followed = (FieldSafeGetResponse(root='ready'), 200, 1)
     secure=[(b'GET', b'/safe', b'')] plain=[(b'GET', b'/done', b'')]
-  downgrade kept by the call = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 302, 1, 'NoneType')
+  downgrade kept by the call = ('APIStatusError', 'unexpected_status', 302, 1, 'NoneType')
     secure=[(b'GET', b'/safe', b'')] plain=[]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
@@ -174,7 +174,7 @@
     counts=(1, None) unused=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='postUnsafe', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
+  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe', cause='StreamConsumed') [operation_id='postUnsafe', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 13] b'seekable body'
@@ -184,9 +184,9 @@
     unused=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
-  async native response hook failure without a request ! APIConnectionError DeliveryState.RESPONSE_STARTED
+  async native response hook failure without a request ! APIConnectionError
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
-  async native response hook failure of the answered request ! APIConnectionError DeliveryState.RESPONSE_STARTED
+  async native response hook failure of the answered request ! APIConnectionError
     unused=1

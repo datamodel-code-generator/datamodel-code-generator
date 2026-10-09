@@ -13,4 +13,4 @@ render pydantic_v2.BaseModel default
   class Record(BaseModel):
       when: Optional[AwareDatetime] = None
   model_bindings.py
-  codec_0 custom_dates.AwareDatetime
+  codec_0 AwareDatetime

@@ -6,17 +6,14 @@ from collections.abc import AsyncIterator, Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
-from pets.auth import OAuthProviderOptions
 from pets.errors import (
     APIStatusError,
     APITimeoutError,
     AuthError,
     ConfigurationError,
     DecodeError,
-    DeliveryState,
     SDKError,
 )
-from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
 from pets.options import (
     ClientOptions,
     Clock,
@@ -120,12 +117,7 @@ def misuse_multipart_data(data: object) -> None:
     del narrowed, data
 
 
-def misuse_hooks() -> None:
-    RequestOptions(hooks=("trace",))  # error
-    RequestOptions(context={"tags": ["a"]})  # error
-
-
-def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
+def misuse_timing(phase: TimeoutOptions) -> None:
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
@@ -135,23 +127,11 @@ def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
     Clock(monotonic=0.0)  # error
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
-    OAuthProviderOptions(clock=object())  # error
     phase.read = 1  # error
-    context.remaining_timeout = 0  # error
-
-
-def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, async_permit: AsyncPermit) -> None:
-    wrong_sync: Limiter = asynchronous  # error
-    wrong_async: AsyncLimiter = sync  # error
-    wrong_permit: Permit = async_permit  # error
-    wrong_async_permit: AsyncPermit = permit  # error
-    RequestOptions(limiter="queue")  # error
-    del wrong_sync, wrong_async, wrong_permit, wrong_async_permit
 
 
 def misuse_deadline_errors(error: SDKError) -> None:
-    state = DeliveryState.NOT_SENT
-    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
+    APITimeoutError(reason=1)  # error
     AuthError(reason="expired")  # error
     DecodeError(direction="request")  # error
     APIStatusError(body=b"")  # error
@@ -178,11 +158,10 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Configu
     ResponseInfo(
         status_code=200,
         headers=info.headers,
-        call_id=info.call_id,
         elapsed=0,
         content_type=None,
         attempt_count="one",  # error
     )
     info.attempt_count = 1  # error
     ConfigurationError(field_path=("redirects",), reason="redirect_refused", body_available=False)  # error
-    error.delivery_state = "NOT_SENT"  # error
+    error.field_path = "redirects"  # error

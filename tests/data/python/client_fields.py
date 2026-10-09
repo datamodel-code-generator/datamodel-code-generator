@@ -6,7 +6,6 @@ import datetime
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from tests.data.python.client_hooks import Recorder
 from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
@@ -73,7 +72,7 @@ def fields(package: ModuleType, lines: list[str]) -> None:
     http = exchange.client()
     with package.Client(http_client=http) as api:
         _sent(context, api.default, exchange, lines)
-        _refused(context, api.with_options(context.options.RequestOptions(hooks=(Recorder(lines, "hook"),))), exchange, lines)
+        _refused(context, api, exchange, lines)
         _optional(context, api.default, exchange, lines)
         _views(context, api.default, exchange, lines)
         _constructed(context, api.default, exchange, lines)
@@ -129,7 +128,7 @@ def _sent(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> 
 
 
 def _refused(context: _Fields, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse bindings before any hook or request: TypeError as Python binds, or the media's own errors."""
+    """Refuse bindings before any request: TypeError as Python binds, or the media's own errors."""
     pets = api.default
     kind = context.kind()
     body = context.models.NewPet(name="Mimi", kind=kind)
@@ -154,7 +153,7 @@ def _refused(context: _Fields, api: Any, exchange: Exchange, lines: list[str]) -
     _exchanged(
         exchange,
         lines,
-        "fields the hooks observe",
+        "fields sent after the refusals",
         lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_JSON),
         json_response(201, _CREATED),
     )

@@ -12,64 +12,64 @@
   printf '1614265330.{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   printf '1614265330.{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_retired_secret, then printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  printf '1614265330.{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac whsec_adapter_secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  printf '1614265330.{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac whsec_adapter_secret = ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/type')] value
   Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   printf '{"test": 5}' | openssl dgst -sha256 -hmac "It's a Secret to Everybody" = Message Message(test=5) delivery_id=None timestamp=None matched_key_id='active'
-  GitHub 'Validating webhook deliveries', the test values for verifying an implementation, not JSON = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  GitHub 'Validating webhook deliveries', the test values for verifying an implementation, not JSON = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
   printf '{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac mapped-secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=None matched_key_id='mapped'
   printf '{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac mapped-secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=None matched_key_id='mapped'
-  printf '{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac mapped-secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  changed timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  no signature header = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  printf '{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac mapped-secret = ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/type')] value
+  one changed body byte = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  changed timestamp = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  no signature header = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  empty key set = ProtocolDataError: ProtocolDataError(reason='missing_key') [] missing_key
   rotation tries the retired key first = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2025'
   rotation with the active key only = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  retired key only = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Standard Webhooks changed delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  retired key only = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  Standard Webhooks changed delivery id = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
   300 seconds past = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  past bound exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   30 seconds future = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  future bound exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
+  zero past tolerance exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
-  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
-  mapping result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  None result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  missing timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  missing delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  integer delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  bytes delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  text timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  date timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  naive timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  integer matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  coroutine result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  undeclared timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  undeclared delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
-  result subclass changing between reads = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  result spoofing its class = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  str subclass delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty str subclass claiming to be nonempty = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  matched key id whose truth test raises = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
+  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed warnings []
+  mapping result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  None result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  missing timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  missing delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  empty delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  integer delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  bytes delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  text timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  date timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  naive timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  empty matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  integer matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  coroutine result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  undeclared timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  undeclared delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed warnings []
+  result subclass changing between reads = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  result spoofing its class = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  str subclass delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  empty str subclass claiming to be nonempty = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
+  matched key id whose truth test raises = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result warnings []
   +09:00 timestamp = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   +09:00 timestamp async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   offset changing from +09:00 to UTC = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to UTC async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to naive = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to naive async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
-  naive offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  naive offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset raising = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset raising async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset beyond a day = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset beyond a day async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  datetime subclass overriding its offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
-  datetime subclass overriding its offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
+  naive offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  naive offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  offset raising = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  offset raising async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  offset beyond a day = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  offset beyond a day async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None offset reads=1
+  datetime subclass overriding its offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None
+  datetime subclass overriding its offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None
   verification error propagated=True calls=1 cause=None
   verification error async propagated=True calls=1 cause=None
   programmer error propagated=True calls=1 cause=None
@@ -82,33 +82,33 @@
   limits async=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
   opaque keys = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   opaque key reads=[] keys passed are given=True
-  body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=53, observed=54) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='body', unit='bytes', limit=53, observed=54] protocol_size_error
+  body over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
     verifier calls in both modes=0
-  headers over limit = ProtocolSizeError: ProtocolSizeError(kind='headers', limit=123, observed=124) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='headers', unit='bytes', limit=123, observed=124] protocol_size_error
+  headers over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
     verifier calls in both modes=0
-  nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='keys', unit='items', limit=8, observed=9] protocol_size_error
+  nine keys = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
     verifier calls in both modes=0
   nine keys allowed = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'
     verifier calls in both modes=2
-  two signatures over the adapter's limit = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=1, observed=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='signatures', unit='items', limit=1, observed=2] protocol_size_error
+  two signatures over the adapter's limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
     verifier calls in both modes=2
-  text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
     verifier calls in both modes=0
-  header mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
     verifier calls in both modes=0
-  key tuple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys') [field_path=('keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  key tuple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys') [field_path=('keys',)] invalid_value
     verifier calls in both modes=0
-  naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',)] invalid_value
     verifier calls in both modes=0
-  options mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
     verifier calls in both modes=0
-  text body and no verifier = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  text body and no verifier = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
     verifier calls in both modes=0
-  no verify ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  verify not callable ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
-  marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
-  marker result ! ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
-  marker window ! WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error context=None
-  marker unsigned ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
+  no verify ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',)] wrong_capability
+  verify not callable ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',)] wrong_capability
+  marker event ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/type')] value context=None
+  marker JSON ! ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed context=None
+  marker result ! ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',)] invalid_result context=None
+  marker window ! ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window context=None
+  marker unsigned ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value context=None
   markers shown=[]

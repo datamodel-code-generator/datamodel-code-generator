@@ -1,9 +1,10 @@
 """Bind target operations to the emitted models through recorded model replacements.
 
 Only target generation imports this module. A target parser records the two reference redirects of the generation
-store, the API schema acquisitions with their engine keys, the operations and reference objects its walk resolves, and
-each emitted module's final models. After parsing, `bind_operations` reads the final model graph and these records
-once, before disposal, and returns an immutable contract batch.
+store, the API schema acquisitions with their engine keys, the operations and reference objects its walk resolves,
+where each schema it walks declares its members, and each emitted module's final models. After parsing,
+`bind_operations` reads the final model graph and these records once, before disposal, and returns an immutable contract
+batch; it reads no schema of the loaded documents.
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedTypeContractBatch,
     GenericType,
     GraphObjectId,
+    HintText,
     IgnoredDeclaration,
     ImportedExpression,
     ImportedType,
@@ -54,6 +56,7 @@ from datamodel_code_generator._target_contract import (
     MetadataCall,
     ModelArtifactAddress,
     ModelFieldFacts,
+    ModelHint,
     NoneType,
     OpaqueBackendValue,
     OperationContract,
@@ -76,7 +79,8 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     WireDeclaration,
 )
-from datamodel_code_generator.imports import IMPORT_ANY, Import
+from datamodel_code_generator._target_module import TypeComposer
+from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model.base import UNDEFINED, DataModel, DataModelFieldBase
@@ -85,6 +89,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
+from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
@@ -208,6 +213,26 @@ _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
 }
 _SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
 _PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
+_SLOT: Final = "\x00"
+_CONTAINERS: Final = {
+    "frozen_set": "is_frozen_set",
+    "set": "is_set",
+    "sequence": "is_sequence",
+    "list": "is_list",
+    "mapping": "is_mapping",
+    "dict": "is_dict",
+}
+_STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
+_WRAPPED: Final = frozenset({"alias", "root"})
+_ALONE: Final[dict[str, object]] = {
+    **dict.fromkeys(_CONTAINERS.values(), False),
+    "is_optional": False,
+    "dict_key": None,
+    "data_types": [],
+    "reference": None,
+    "parent": None,
+    "children": [],
+}
 
 
 class _UnsupportedError(Exception):
@@ -319,19 +344,23 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
+        self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
         self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
         self.schema_records: dict[_Declaration, _SchemaRecord] = {}
+        self.schema_locations: dict[_Declaration, _SchemaNode] = {}
+        self.free_schemas: dict[_Declaration, JsonSchemaObject] = {}
         self.nullable_fields: set[int] = set()
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._callback_origin: _Declaration | None = None
+        self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(self._api_documents, versions=[])
+        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[])
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
         """Record the declaration a reference object resolves to."""
@@ -418,6 +447,45 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         super()._walk_callback(raw, path, prefix, use_site)
         self._callback_origin = previous
 
+    def _traverse_schema_objects(
+        self,
+        obj: JsonSchemaObject,
+        path: list[str],
+        callback: Callable[[JsonSchemaObject, list[str]], None],
+        *,
+        include_one_of: bool = True,
+    ) -> None:
+        """Record where each schema the reference walk visits declares its members, at its place in its document.
+
+        A visited schema below another sits at its parent's declaration and the raw keys the walk descends by; the
+        model-free type of a typed additional property needs its schema too.
+        """
+        if callback != self._resolve_ref_callback:
+            super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            return
+        walked = self._walked_schemas
+        if walked and (parent := walked[-1]) is not None:
+            tokens = path[parent[0] :]
+            declaration, value = _child(parent[1], *tokens), _descend(parent[2], tokens)
+        else:
+            declaration = _declaration(self._declaration_id(path))
+            value = self._reader.borrow(declaration)
+        if self._reader.node(declaration, value) is not None and path[-1] == "additionalProperties":
+            self.free_schemas.setdefault(declaration, obj)
+        walked.append((len(path), declaration, value))
+        try:
+            super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
+        finally:
+            walked.pop()
+
+    def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
+        """Resolve a visited schema's references; a document they load is walked from its own roots."""
+        self._walked_schemas.append(None)
+        try:
+            super()._resolve_ref_callback(obj, path)
+        finally:
+            self._walked_schemas.pop()
+
     def parse_combined_schema(
         self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
     ) -> list[DataType]:
@@ -491,11 +559,22 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
         documents spell them, since its model types do not say them.
         """
-        declaration = _declaration(self._declaration_id(path))
+        declaration = _declaration(declared := self._declaration_id(path))
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
         super()._acquire_schema(name, raw, path, role=role)
+        self._reader.node(declaration, raw)
         if declaration not in self.schema_records:
             self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
+        if declared not in self._declaration_types:
+            self._free(declaration, "value", raw, path)
+
+    def _free(self, declaration: _Declaration, projection: Projection, raw: YamlValue, path: list[str]) -> None:
+        """Record the schema of a declaration that binds as the parser's model-free type, when no model holds it."""
+        if (
+            declaration not in self.free_schemas
+            and self.model_resolver.references.get(self.acquisitions[declaration, projection]) is None
+        ):
+            self.free_schemas[declaration] = self._validate_schema_object(raw, path)
 
     def _locate(self, declaration: _Declaration) -> SourceLocation:
         """Return a declaration's location, its document identified in the order the records first name them."""
@@ -514,6 +593,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.model_resolver.join_path(tuple(self._media_schema_path(path, from_item_schema=True))),
         )
         super()._acquire_item_schema(name, item, path, projected, role=role)
+        self._free(declaration, "item_stream_array", item, item_path)
 
     def _generate_module_output(  # noqa: PLR0913, PLR0917
         self,
@@ -524,12 +604,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         require_update_action_models: list[str],
         future_imports_str: str,
     ) -> Result | None:
-        """Record the module's final models once its output exists."""
+        """Record the module's final models and the imports the parser finalized for it once its output exists."""
         result = super()._generate_module_output(
             ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
         )
         if result is not None:
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
+            self.model_imports.update(_imported_names(self.imports), _imported_names(ctx.imports))
         return result
 
     def referenced_document(self, document: str, ref: str) -> str | None:
@@ -560,18 +641,33 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
         self.acquisitions.clear()
         self.module_outputs.clear()
+        self.model_imports.clear()
         self.operations.clear()
         self.resolutions.clear()
         self.unions.clear()
         self.copies.clear()
         self.schema_records.clear()
+        self.schema_locations.clear()
+        self.free_schemas.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
         self.record_documents.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
+        self._walked_schemas.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+def _imported_names(imports: Imports) -> Iterator[str]:
+    """Yield every module and module member that the import statements of a collection name."""
+    for module, names in imports.items():
+        members = (name.partition(" as ")[0] for name in names)
+        if module is None:
+            yield from members
+        else:
+            yield module
+            yield from (f"{module}.{member}" for member in members)
 
 
 def _escape(tokens: tuple[str, ...]) -> str:
@@ -835,19 +931,28 @@ def _python_literal(text: str) -> object:
         raise ValueError(text) from error
 
 
-def _ordered_union(members: tuple[FinalPythonType, ...], *, preserve_order: bool) -> FinalPythonType:
+def _ordered_union(
+    members: tuple[TypeView, ...],
+    *,
+    preserve_order: bool,
+    hint: Callable[[tuple[TypeView, ...]], ModelHint],
+    discriminator: UnionDiscriminator | None = None,
+) -> TypeView:
+    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself."""
     flattened = tuple(
         member for value in members for member in (value.members if isinstance(value, UnionType) else (value,))
     )
     unique = tuple(dict.fromkeys(flattened))
-    discriminator = next(
+    discriminator = discriminator or next(
         (value.discriminator for value in members if isinstance(value, UnionType) and value.discriminator is not None),
         None,
     )
-    return unique[0] if len(unique) == 1 else UnionType(unique, preserve_order, discriminator)
+    if len(unique) == 1:
+        return unique[0]
+    return UnionType(unique, preserve_order, discriminator, hint(unique))
 
 
-def _has_null(value: FinalPythonType) -> bool:
+def _has_null(value: TypeView) -> bool:
     members = value.members if isinstance(value, UnionType) else (value,)
     return any(isinstance(member, NoneType) for member in members)
 
@@ -916,6 +1021,8 @@ class _Binder:
         manager = parser.data_type_manager
         self.serialize_as_any = bool(manager.use_serialize_as_any) and issubclass(manager.data_type, PydanticV2DataType)
         self.overrides = parser.config.import_overrides or {}
+        self.hints = _Hints(manager.data_type)
+        self.projectors: dict[tuple[Direction, bool], _Projector] = {}
         self.finals: dict[tuple[int, Direction], Reference | None] = {}
         self.declaration_types = {
             _declaration(key): value
@@ -1002,8 +1109,21 @@ class _Binder:
             return model.fields[0].data_type
         return None
 
-    def projector(self, direction: Direction) -> _Projector:
-        return _Projector(self, direction)
+    def root(self, model: DataModel) -> DataType | None:
+        """Return the type an alias or root model stands for: its field's, or that of the model its reuse inherits."""
+        while (
+            not model.fields
+            and len(model.base_classes) == 1
+            and (base := model.base_classes[0].reference) is not None
+            and (final := self.final(base)) is not None
+        ):
+            model = _source(final)
+        return model.fields[0].data_type if len(model.fields) == 1 else None
+
+    def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
+        if (projector := self.projectors.get((direction, inline))) is None:
+            projector = self.projectors[direction, inline] = _Projector(self, direction, inline=inline)
+        return projector
 
     def resolve_import(self, import_: Import) -> Import:
         if import_.from_ == "__future__" or (module := self.overrides.get(import_.import_)) is None:
@@ -1011,12 +1131,178 @@ class _Binder:
         return replace(import_, from_=module)
 
 
-class _Projector:
-    """Project final DataTypes of one direction into contract type values."""
+def _identity(import_: Import) -> tuple[str | None, str]:
+    return import_.from_, import_.import_
 
-    def __init__(self, binder: _Binder, direction: Direction) -> None:
+
+def _differs(value: TypeView) -> bool:
+    """Return whether a type's static spelling differs from its annotation."""
+    hint = getattr(value, "hint", None)
+    return hint is not None and hint.static is not hint.annotation
+
+
+class _Hints:
+    """Spell projected types with the model generator's own type rendering, leaving model and import names open.
+
+    A leaf renders a copy of its DataType, and a composite renders the configured type class over the spellings of its
+    parts, as the model's type hint composes them. A generated symbol or an imported name is a slot that a target
+    module names; the names the rendering writes as they are, such as typing constructs, are the hint's imports.
+    """
+
+    def __init__(self, hint_type: type[DataType]) -> None:
+        self.hint_type = hint_type
+        self.composer = TypeComposer(hint_type)
+        self.texts: dict[tuple[str, tuple[tuple[str | None, str], ...]], HintText] = {}
+        self.slots: dict[object, str] = {}
+        self.values: list[SymbolId | Import] = []
+        self.fixed: dict[Import, None] = {}
+
+    def slot(self, value: SymbolId | Import) -> str:
+        key = value if isinstance(value, int) else _identity(value)
+        if (slot := self.slots.get(key)) is None:
+            slot = self.slots[key] = f"{_SLOT}{len(self.values)}{_SLOT}"
+            self.values.append(value if isinstance(value, int) else Import(import_=value.import_, from_=value.from_))
+        return slot
+
+    def text(self, encoded: str, imports: Iterable[Import]) -> HintText:
+        """Return the hint text of a rendering, one record for each distinct text and its fixed names."""
+        fixed = tuple(dict.fromkeys(_identity(item) for item in imports))
+        if (found := self.texts.get(key := (encoded, fixed))) is None:
+            names = tuple(Import(import_=name, from_=module) for module, name in fixed)
+            self.fixed.update(dict.fromkeys(names))
+            pieces = encoded.split(_SLOT)
+            found = self.texts[key] = HintText(
+                tuple(self.values[int(piece)] if index % 2 else piece for index, piece in enumerate(pieces) if piece),
+                names,
+            )
+        return found
+
+    def hint(
+        self, annotation: tuple[str, Iterable[Import]], static: tuple[str, Iterable[Import]] | None = None
+    ) -> ModelHint:
+        spelled = self.text(*annotation)
+        return ModelHint(spelled, spelled if static is None else self.text(*static))
+
+    def of(self, value: TypeView) -> ModelHint:
+        """Return the hint of a projected type, deriving that of a generated symbol, an import or a builtin."""
+        if isinstance(value, GeneratedSymbolType | ImportedType | BuiltinType | NoneType):
+            return self.hint(self.spelled(value, static=True))
+        assert value.hint is not None
+        return value.hint
+
+    def spelled(self, value: TypeView, *, static: bool) -> tuple[str, tuple[Import, ...]]:
+        """Return a projected type's spelling as rendering text, with the names it writes as they are."""
+        match value:
+            case GeneratedSymbolType():
+                return self.slot(value.symbol), ()
+            case ImportedType():
+                return self.slot(value.import_) + "".join(f".{part}" for part in value.qualified_suffix), ()
+            case BuiltinType():
+                return value.name, ()
+            case NoneType():
+                return "None", ()
+            case _:
+                pass
+        hint = cast("ModelHint", value.hint)
+        text = hint.static if static else hint.annotation
+        return "".join(part if isinstance(part, str) else self.slot(part) for part in text.parts), text.imports
+
+    def compose(
+        self,
+        style: DataType,
+        *,
+        base: str = "",
+        members: tuple[str, ...] = (),
+        key: str | None = None,
+        **flags: object,
+    ) -> tuple[str, tuple[Import, ...]]:
+        """Render the configured type class over spelled parts, in the style of the DataType they stand for."""
+        values = tuple((name, getattr(style, name)) for name in _STYLE)
+        return self.composer.compose(values, base=base, members=members, key=key, **flags)
+
+    def composed(
+        self,
+        style: DataType,
+        *,
+        base: TypeView | None = None,
+        members: tuple[TypeView, ...] = (),
+        key: TypeView | None = None,
+        container: str | None = None,
+        **flags: object,
+    ) -> ModelHint:
+        """Return the hint a composite renders to, statically and as an annotation, from its parts' hints."""
+        if container is not None:
+            flags[container] = True
+        parts = tuple(part for part in (base, key, *members) if part is not None)
+        variants: list[tuple[str, tuple[Import, ...]]] = []
+        for static in (False, True) if any(_differs(part) for part in parts) else (False,):
+            spelled = [self.spelled(part, static=static) for part in parts]
+            texts = iter(text for text, _ in spelled)
+            text, imports = self.compose(
+                style,
+                base="" if base is None else next(texts),
+                key=None if key is None else next(texts),
+                members=tuple(texts),
+                **flags,
+            )
+            variants.append((text, (*imports, *(item for _, found in spelled for item in found))))
+        annotation, static = variants if len(variants) > 1 else (variants[0], None)
+        return self.hint(annotation, None if static == annotation else static)
+
+    def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
+        """Render one DataType without its containers and optionality, as the model's own type hint spells it.
+
+        Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
+        type and a constrained string is str.
+        """
+        update: dict[str, object] = {**_ALONE, "data_types": [], "children": []}
+        slotted: set[tuple[str | None, str]] = set()
+        if (import_ := data_type.import_) is not None and import_.from_ is not None:
+            update["alias"] = self.slot(import_)
+            slotted.add(_identity(import_))
+        if data_type.enum_member_literals or data_type.literals:
+            update.update(type=None, alias=None)
+            if enum is not None:
+                update["enum_member_literals"] = [(self.slot(enum), name) for _, name in data_type.enum_member_literals]
+        if (kwargs := data_type.kwargs) and any(
+            isinstance(value, PythonRuntimeExpression) for value in kwargs.values()
+        ):
+            update["kwargs"] = {name: self.expression(value, slotted) for name, value in kwargs.items()}
+        copy = data_type.model_copy(update=update)
+        if runtime := data_type.runtime_expression_imports:
+            slotted.update(map(_identity, runtime))
+            copy._set_runtime_expression_imports(tuple(replace(item, alias=self.slot(item)) for item in runtime))  # noqa: SLF001
+        annotation = copy.type_hint, [item for item in copy.imports if _identity(item) not in slotted]
+        static = None
+        if import_ is not None and data_type.is_func and kwargs:
+            base = (
+                "str"
+                if getattr(data_type, "annotated_string", False)
+                else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+            )
+            static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
+        return self.hint(annotation, static)
+
+    def expression(self, value: object, slotted: set[tuple[str | None, str]]) -> object:
+        if not isinstance(value, PythonRuntimeExpression):
+            return value
+        slotted.add(key := _identity(value.import_))
+        return value.with_import_aliases({key: replace(value.import_, alias=self.slot(value.import_))})
+
+
+class _Projector:
+    """Project final DataTypes of one direction into type views, each spelled as the model spells it.
+
+    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it.
+    """
+
+    def __init__(self, binder: _Binder, direction: Direction, *, inline: bool = False) -> None:
         self.binder = binder
         self.direction = direction
+        self.hints = binder.hints
+        self.inline = inline
+        self.inlined: set[SymbolId] = set()
+        self.projected: dict[int, tuple[DataType, TypeView]] = {}
 
     def project(self, data_type: DataType) -> TypeProjection:
         try:
@@ -1034,7 +1320,9 @@ class _Projector:
         except _NotEmittedError:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def _project(self, data_type: DataType) -> FinalPythonType:
+    def _project(self, data_type: DataType) -> TypeView:
+        if not self.inline and (known := self.projected.get(id(data_type))) is not None:
+            return known[1]
         projected, inferred_optional = self._base(data_type)
         projected = self._container(data_type, projected)
         binding = (
@@ -1042,12 +1330,19 @@ class _Projector:
         )
         nullable_reference = binding is not None and binding.nullable and not binding.is_alias
         if (data_type.is_optional or inferred_optional or nullable_reference) and projected != ImportedType(IMPORT_ANY):
-            return _ordered_union((projected, NoneType()), preserve_order=data_type.preserve_union_member_order)
+            base = projected
+            projected = _ordered_union(
+                (projected, NoneType()),
+                preserve_order=data_type.preserve_union_member_order,
+                hint=lambda _: self.hints.composed(data_type, base=base, is_optional=True),
+            )
+        if not self.inline:
+            self.projected[id(data_type)] = data_type, projected
         return projected
 
-    def _base(self, data_type: DataType) -> tuple[FinalPythonType | None, bool]:
+    def _base(self, data_type: DataType) -> tuple[TypeView | None, bool]:
         if data_type.python_type is not None:
-            return BoundType(data_type.python_type), False
+            return BoundType(data_type.python_type, self.hints.leaf(data_type)), False
         if data_type.type is not None:
             return self._atomic(data_type), False
         if data_type.data_types or data_type.is_tuple:
@@ -1060,29 +1355,45 @@ class _Projector:
             ), False
         return self._atomic(data_type), False
 
-    def _reference_value(self, reference: Reference, *, serialize_as_any: bool) -> FinalPythonType:
-        if (binding := self.binder.reference(reference, self.direction)) is None:
-            if (root := self.binder.unwrapped(reference)) is not None:
+    def _reference_value(self, reference: Reference, *, serialize_as_any: bool) -> TypeView:
+        binder = self.binder
+        if (binding := binder.reference(reference, self.direction)) is None:
+            if (root := binder.unwrapped(reference)) is not None:
                 return self._project(root)
             raise _NotEmittedError
-        result: FinalPythonType = GeneratedSymbolType(binding.symbol)
+        symbol = binding.symbol
+        if (
+            self.inline
+            and symbol not in self.inlined
+            and binder.policies[id(model := binder.models[symbol])].kind in _WRAPPED
+            and (root := binder.root(model)) is not None
+        ):
+            self.inlined.add(symbol)
+            try:
+                return self._project(root)
+            finally:
+                self.inlined.discard(symbol)
+        result: TypeView = GeneratedSymbolType(symbol)
         if serialize_as_any and binding.serialize_as_any:
-            result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,))
+            spelled = f"{self.hints.slot(_SERIALIZE_AS_ANY)}[{self.hints.slot(symbol)}]", ()
+            result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,), hint=self.hints.hint(spelled))
         return result
 
-    def _atomic(self, data_type: DataType) -> FinalPythonType | None:
+    def _atomic(self, data_type: DataType) -> TypeView | None:
         if data_type.enum_member_literals:
-            return LiteralType(self._enum_members(data_type))
+            symbol, members = self._enum_members(data_type)
+            return LiteralType(members, self.hints.leaf(data_type, symbol))
         if data_type.literals:
-            return LiteralType(tuple(self._literal(value) for value in data_type.literals))
+            return LiteralType(tuple(self._literal(value) for value in data_type.literals), self.hints.leaf(data_type))
         if (import_ := data_type.import_) is not None:
             imported = ImportedType(import_)
             if data_type.is_func and data_type.kwargs:
                 keywords = tuple((name, _freeze_argument(value)) for name, value in data_type.kwargs.items())
+                hint = self.hints.leaf(data_type)
                 return (
-                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),))
+                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),), hint)
                     if getattr(data_type, "annotated_string", False)
-                    else ConstructorType(imported, keywords)
+                    else ConstructorType(imported, keywords, hint)
                 )
             return imported
         if data_type.type is None:
@@ -1099,22 +1410,31 @@ class _Projector:
             case _:
                 return LiteralScalar("str", str(value))
 
-    def _enum_members(self, data_type: DataType) -> tuple[GeneratedEnumMember, ...]:
+    def _enum_members(self, data_type: DataType) -> tuple[SymbolId, tuple[GeneratedEnumMember, ...]]:
         reference = data_type._enum_member_literal_reference or data_type.reference  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         model = _source(cast("Reference", self.binder.final(cast("Reference", reference))))
         fields = {field.name: field for field in model.fields}
         symbol = self.binder.symbols[id(model)]
-        return tuple(
+        return symbol, tuple(
             GeneratedEnumMember(symbol, self.binder.identity(fields[name]), name)
             for _, name in data_type.enum_member_literals
         )
 
-    def _structural(self, data_type: DataType) -> tuple[FinalPythonType, bool]:
+    def _structural(self, data_type: DataType) -> tuple[TypeView, bool]:
+        hints = self.hints
         if data_type.is_tuple:
             arguments = tuple(self._project(child) for child in data_type.data_types)
-            if (count := data_type.tuple_item_count) is not None:
+            count = data_type.tuple_item_count
+            hint = hints.composed(
+                data_type,
+                base=None,
+                members=arguments[:1] if count is not None else arguments,
+                is_tuple=True,
+                tuple_item_count=count,
+            )
+            if count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * count
-            return GenericType(BuiltinType("tuple"), arguments, "fixed"), False
+            return GenericType(BuiltinType("tuple"), arguments, "fixed", hint), False
         if len(data_type.data_types) == 1:
             return self._project(data_type.data_types[0]), False
         preserve_order = data_type.preserve_union_member_order
@@ -1126,13 +1446,33 @@ class _Projector:
             projected if preserve_order else tuple(member for member in flattened if not isinstance(member, NoneType))
         )
         inferred_optional = not preserve_order and len(members) != len(flattened)
-        union = _ordered_union(members, preserve_order=preserve_order) if members else ImportedType(IMPORT_ANY)
-        if isinstance(union, UnionType) and (selector := self.selector(data_type)) is not None:
-            union = replace(union, discriminator=selector)
+        union = (
+            _ordered_union(
+                members,
+                preserve_order=preserve_order,
+                hint=lambda parts: hints.composed(data_type, members=parts, preserve_union_member_order=preserve_order),
+                discriminator=self.selector(data_type) if len(dict.fromkeys(flattened)) > 1 else None,
+            )
+            if members
+            else ImportedType(IMPORT_ANY)
+        )
+        parts = union.members if isinstance(union, UnionType) else (union,)
         if (discriminator := data_type.discriminator) is not None:
+            wrapped = hints.composed(
+                data_type,
+                base=None,
+                members=parts,
+                preserve_union_member_order=preserve_order,
+                discriminator=discriminator,
+            )
+            annotation = wrapped.annotation
+            hint = ModelHint(HintText(annotation.parts, (*annotation.imports, _PYDANTIC_FIELD)), hints.of(union).static)
+            hints.fixed[_PYDANTIC_FIELD] = None
             return (
                 AnnotatedType(
-                    union, (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),)
+                    union,
+                    (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),),
+                    hint,
                 ),
                 inferred_optional,
             )
@@ -1198,22 +1538,15 @@ class _Projector:
             else None
         )
 
-    def _container(self, data_type: DataType, value: FinalPythonType | None) -> FinalPythonType:
+    def _container(self, data_type: DataType, value: TypeView | None) -> TypeView:
         generic = data_type.use_generic_container
         module = "collections.abc" if data_type.use_standard_collections else "typing"
-        for modifier, enabled in (
-            ("frozen_set", data_type.is_frozen_set),
-            ("set", data_type.is_set),
-            ("sequence", data_type.is_sequence),
-            ("list", data_type.is_list),
-            ("mapping", data_type.is_mapping),
-            ("dict", data_type.is_dict),
-        ):
-            if not enabled:
+        for modifier, flag in _CONTAINERS.items():
+            if not getattr(data_type, flag):
                 continue
             match modifier:
                 case "frozen_set":
-                    base: FinalPythonType = BuiltinType("frozenset")
+                    base: TypeView = BuiltinType("frozenset")
                 case "set":
                     base = BuiltinType("frozenset" if generic else "set")
                 case "sequence" | "list" if modifier == "sequence" or generic:
@@ -1225,14 +1558,17 @@ class _Projector:
                 case _:
                     base = BuiltinType("dict")
             if modifier in {"mapping", "dict"} and (data_type.dict_key is not None or value is not None):
-                key = self._project(data_type.dict_key) if data_type.dict_key is not None else BuiltinType("str")
-                return GenericType(base, (key, value if value is not None else ImportedType(IMPORT_ANY)))
-            return GenericType(base, (value,) if value is not None else ())
+                key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
+                value = value if value is not None else ImportedType(IMPORT_ANY)
+                hint = self.hints.composed(data_type, base=value, key=key, container=flag)
+                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint)
+            hint = self.hints.composed(data_type, base=value, container=flag)
+            return GenericType(base, (value,) if value is not None else (), hint=hint)
         if value is None:
             raise _UnsupportedError
         return value
 
-    def _imports(self, value: FinalPythonType) -> FinalPythonType:  # noqa: PLR0911
+    def _imports(self, value: TypeView) -> TypeView:  # noqa: PLR0911
         if not self.binder.overrides:
             return value
         resolve = self.binder.resolve_import
@@ -1240,22 +1576,26 @@ class _Projector:
             case ImportedType():
                 return ImportedType(resolve(value.import_), value.qualified_suffix)
             case BoundType():
-                return BoundType(_bound(value.binding, resolve))
+                return replace(value, binding=_bound(value.binding, resolve))
             case GenericType():
-                return GenericType(
-                    self._imports(value.base), tuple(self._imports(item) for item in value.arguments), value.tuple_form
+                return replace(
+                    value,
+                    base=self._imports(value.base),
+                    arguments=tuple(self._imports(item) for item in value.arguments),
                 )
             case UnionType():
                 return replace(value, members=tuple(self._imports(item) for item in value.members))
             case ConstructorType():
-                return ConstructorType(
-                    ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
-                    tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
+                return replace(
+                    value,
+                    callable=ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
+                    keywords=tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
                 )
             case AnnotatedType():
-                return AnnotatedType(
-                    self._imports(value.base),
-                    tuple(
+                return replace(
+                    value,
+                    base=self._imports(value.base),
+                    metadata=tuple(
                         MetadataCall(
                             resolve(call.import_),
                             tuple((name, _argument_import(item, resolve)) for name, item in call.keywords),
@@ -1459,7 +1799,7 @@ class _FieldContext:
 
 def _field_facts(
     field: DataModelFieldBase,
-    type_value: FinalPythonType,
+    type_value: TypeView,
     backend: BackendName,
     model_facts: BackendModelFacts | None,
     context: _FieldContext | None,
@@ -1501,7 +1841,7 @@ def _field_facts(
     )
 
 
-def _annotation_null(field: DataModelFieldBase, type_value: FinalPythonType) -> bool:
+def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
     if _has_null(type_value):
         return True
@@ -1520,7 +1860,7 @@ def _source_member(value: dict[str, YamlValue], key: str) -> YamlValue:
 
 
 def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
-    raw: dict[str, YamlValue], data_type: DataType
+    node: _SchemaNode, data_type: DataType
 ) -> list[tuple[tuple[str, ...], DataType]]:
     """Pair a type's member types with the subschemas they were generated from."""
     inner = data_type
@@ -1532,28 +1872,28 @@ def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
     ):
         inner = inner.data_types[0]
     if inner.is_tuple:
-        for keyword in ("prefixItems", "items"):
-            if isinstance(prefix := raw.get(keyword), list) and len(prefix) == len(inner.data_types):
+        for keyword, count in (("prefixItems", node.prefix_items), ("items", node.item_list)):
+            if count == len(inner.data_types):
                 return [((keyword, str(index)), child) for index, child in enumerate(inner.data_types)]
     if len(inner.data_types) == 1:
         child = inner.data_types[0]
         if inner.is_list or inner.is_sequence or inner.is_set or inner.is_frozen_set:
-            if isinstance(raw.get("items"), dict):
+            if node.item_schema:
                 return [(("items",), child)]
-            if isinstance(prefix := raw.get("prefixItems"), list) and len(prefix) == 1:
+            if node.prefix_items == 1:
                 return [(("prefixItems", "0"), child)]
             return []
-        if (inner.is_dict or inner.is_mapping) and isinstance(raw.get("additionalProperties"), dict):
+        if (inner.is_dict or inner.is_mapping) and node.additional == "schema":
             return [(("additionalProperties",), child)]
-        if (inner.is_dict or inner.is_mapping) and len(patterns := _mapping(raw.get("patternProperties"))) == 1:
-            return [(("patternProperties", next(iter(patterns))), child)]
+        if (inner.is_dict or inner.is_mapping) and len(node.patterns) == 1:
+            return [(("patternProperties", node.patterns[0]), child)]
         return []
-    for keyword in ("anyOf", "oneOf"):
-        if not isinstance(branches := raw.get(keyword), list):
+    for keyword, branches in (("anyOf", node.any_of), ("oneOf", node.one_of)):
+        if branches is None:
             continue
         if len(branches) == len(inner.data_types):
             return [((keyword, str(index)), child) for index, child in enumerate(inner.data_types)]
-        schemas = [index for index, branch in enumerate(branches) if isinstance(branch, dict)]
+        schemas = [index for index, schema in enumerate(branches) if schema]
         if len(schemas) == len(inner.data_types):
             return [((keyword, str(index)), child) for index, child in zip(schemas, inner.data_types, strict=True)]
     return []
@@ -1622,35 +1962,108 @@ class _ShapeError(Exception):
         self.declaration = declaration
 
 
-class _Reader:
-    """Read the loaded API documents by declaration, following references as the documents spell them.
+_Branch: TypeAlias = Literal["reference", "schema", "other"]
 
-    The target parser reads with it while it walks, to record what the model types do not say; the binder reads with
-    it to locate the declarations its records point at.
+
+@dataclass(frozen=True, slots=True)
+class _SchemaNode:
+    """Where a schema declares its members, as the walk read it: its reference, properties, branches and items.
+
+    Each tuple of branches says, item by item, whether it is a schema; None says the keyword holds no list.
     """
 
-    def __init__(self, documents: dict[str, dict[str, YamlValue]], *, versions: list[str]) -> None:
+    ref: str | None = None
+    has_ref: bool = False
+    has_properties: bool = False
+    properties: tuple[str, ...] = ()
+    all_of: tuple[_Branch, ...] = ()
+    required: tuple[str, ...] = ()
+    additional: Literal["absent", "false", "schema", "other"] = "absent"
+    read_only: bool = False
+    write_only: bool = False
+    item_schema: bool = False
+    item_list: int | None = None
+    prefix_items: int | None = None
+    patterns: tuple[str, ...] = ()
+    any_of: tuple[bool, ...] | None = None
+    one_of: tuple[bool, ...] | None = None
+
+    @classmethod
+    def of(cls, value: YamlValue) -> _SchemaNode:
+        """Read a loaded schema's member locations; any value but a mapping declares none."""
+        if not isinstance(value, dict) or not value:
+            return _LEAF
+        properties = value.get("properties")
+        branches = value.get("allOf")
+        required = value.get("required")
+        additional = value.get("additionalProperties", _MISSING)
+        items = value.get("items")
+        prefix = value.get("prefixItems")
+        node = cls(
+            ref if isinstance(ref := value.get("$ref"), str) else None,
+            "$ref" in value,
+            "properties" in value,
+            tuple(properties) if isinstance(properties, dict) else (),
+            tuple(
+                ("reference" if "$ref" in branch else "schema") if isinstance(branch, dict) else "other"
+                for branch in (branches if isinstance(branches, list) else ())
+            ),
+            tuple(name for name in required if isinstance(name, str)) if isinstance(required, list) else (),
+            "absent"
+            if additional is _MISSING
+            else "false"
+            if additional is False
+            else "schema"
+            if isinstance(additional, dict)
+            else "other",
+            value.get("readOnly") is True,
+            value.get("writeOnly") is True,
+            isinstance(items, dict),
+            len(items) if isinstance(items, list) else None,
+            len(prefix) if isinstance(prefix, list) else None,
+            tuple(_mapping(value.get("patternProperties"))),
+            _schema_branches(value.get("anyOf")),
+            _schema_branches(value.get("oneOf")),
+        )
+        return _LEAF if node == _LEAF else node
+
+
+def _schema_branches(value: YamlValue) -> tuple[bool, ...] | None:
+    return tuple(isinstance(branch, dict) for branch in value) if isinstance(value, list) else None
+
+
+_LEAF: Final = _SchemaNode()
+
+
+def _descend(value: YamlValue, tokens: Iterable[str], missing: YamlValue = None) -> YamlValue:
+    """Read the node raw pointer tokens name below a loaded value, or `missing` when the value lacks it."""
+    try:
+        for token in tokens:
+            value = (
+                _source_member(value, token) if isinstance(value, dict) else cast("list[YamlValue]", value)[int(token)]
+            )
+    except (KeyError, IndexError, TypeError, ValueError):
+        return missing
+    return value
+
+
+class _SchemaLocations:
+    """Locate schema members through the schema locations the walk recorded, following references as spelled.
+
+    A declaration the walk recorded no location of declares nothing; references resolve into the loaded documents.
+    """
+
+    def __init__(self, nodes: dict[_Declaration, _SchemaNode], documents: Container[str]) -> None:
+        self.nodes = nodes
         self.documents = documents
-        self.versions = versions
 
-    @property
-    def legacy(self) -> bool:
-        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
-        return next(iter(self.versions), "").startswith("3.0")
+    def node(self, declaration: _Declaration) -> _SchemaNode | None:
+        """Return where a schema declares its members, None when the walk found no schema there."""
+        return self.nodes.get(declaration)
 
-    def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
-        """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        value: YamlValue = self.documents.get(declaration.document)
-        try:
-            for token in declaration.tokens:
-                value = (
-                    _source_member(value, token)
-                    if isinstance(value, dict)
-                    else cast("list[YamlValue]", value)[int(token)]
-                )
-        except (KeyError, IndexError, TypeError, ValueError):
-            return missing
-        return value
+    def at(self, declaration: _Declaration) -> _SchemaNode:
+        """Return where a schema declares its members, nothing when the walk found no schema there."""
+        return self.node(declaration) or _LEAF
 
     def target(self, declaration: _Declaration, ref: str) -> _Declaration | None:
         """Return the declaration a reference names, or None when no loaded document has it."""
@@ -1661,78 +2074,128 @@ class _Reader:
             return None
         return _Declaration(document, tokens)
 
-    def resolve(self, declaration: _Declaration, raw: YamlValue) -> tuple[_Declaration, dict[str, YamlValue]]:
-        """Follow an object's reference chain through the loaded documents."""
-        value = _mapping(raw)
+    def resolve(self, declaration: _Declaration) -> tuple[_Declaration, _SchemaNode]:
+        """Follow a schema's reference chain, whatever keywords sit beside them, to the schema it leads to."""
+        node = self.at(declaration)
         seen = {declaration}
         while (
-            isinstance(ref := value.get("$ref"), str)
+            (ref := node.ref) is not None
             and (target := self.target(declaration, ref)) is not None
             and target not in seen
         ):
             seen.add(target)
-            declaration, value = target, _mapping(self.borrow(target))
-        return declaration, value
+            declaration, node = target, self.at(target)
+        return declaration, node
 
     def property_location(self, schema: _Declaration, name: str, active: set[_Declaration]) -> _Declaration | None:
         """Find the property declaration a field was generated from, through allOf branches and references."""
         if schema in active:
             return None
         active.add(schema)
-        raw = _mapping(self.borrow(schema))
-        if isinstance(properties := raw.get("properties"), dict) and name in properties:
+        node = self.at(schema)
+        if name in node.properties:
             return _child(schema, "properties", name)
-        branches = raw.get("allOf")
-        for index, branch in reversed(list(enumerate(branches if isinstance(branches, list) else ()))):
-            if isinstance(branch, dict) and (
+        for index, branch in reversed(list(enumerate(node.all_of))):
+            if branch != "other" and (
                 found := self.property_location(_child(schema, "allOf", str(index)), name, active)
             ):
                 return found
         if (
             len(schema.tokens) > 1
             and schema.tokens[-2] in {"anyOf", "oneOf"}
-            and name
-            in _mapping(
-                _mapping(self.borrow(parent := _Declaration(schema.document, schema.tokens[:-2]))).get("properties")
-            )
+            and name in self.at(parent := _Declaration(schema.document, schema.tokens[:-2])).properties
         ):
             return _child(parent, "properties", name)
-        if isinstance(ref := raw.get("$ref"), str) and (target := self.target(schema, ref)) is not None:
+        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
             return self.property_location(target, name, active)
         return None
 
     def own_property(self, schema: _Declaration, name: str) -> bool:
         """Return whether a schema declares a property itself or in an inline allOf branch."""
-        raw = _mapping(self.borrow(schema))
-        if isinstance(properties := raw.get("properties"), dict) and name in properties:
-            return True
-        branches = raw.get("allOf")
-        return any(
-            isinstance(branch, dict)
-            and "$ref" not in branch
-            and self.own_property(_child(schema, "allOf", str(index)), name)
-            for index, branch in enumerate(branches if isinstance(branches, list) else ())
+        node = self.at(schema)
+        return name in node.properties or any(
+            branch == "schema" and self.own_property(_child(schema, "allOf", str(index)), name)
+            for index, branch in enumerate(node.all_of)
         )
 
     def required(self, schema: _Declaration, name: str, *, inherited: bool) -> bool:
         """Return whether a schema requires a name itself, in an inline allOf branch, or through a reference."""
-        raw = _mapping(self.borrow(schema))
-        if isinstance(required := raw.get("required"), list) and name in required:
-            return True
-        branches = raw.get("allOf")
-        if any(
-            isinstance(branch, dict)
-            and (inherited or "$ref" not in branch)
+        node = self.at(schema)
+        if name in node.required or any(
+            (branch == "schema" or (inherited and branch == "reference"))
             and self.required(_child(schema, "allOf", str(index)), name, inherited=inherited)
-            for index, branch in enumerate(branches if isinstance(branches, list) else ())
+            for index, branch in enumerate(node.all_of)
         ):
             return True
         return (
             inherited
-            and isinstance(ref := raw.get("$ref"), str)
-            and (target := self.target(schema, ref)) is not None
+            and node.ref is not None
+            and (target := self.target(schema, node.ref)) is not None
             and self.required(target, name, inherited=inherited)
         )
+
+    def properties(self, schema: _Declaration, active: set[_Declaration] | None = None) -> dict[str, _Declaration]:
+        """Return a schema's properties in declaration order, allOf branches and references included.
+
+        A schema that its own branches or references lead back to adds its properties once.
+        """
+        active = set() if active is None else active
+        if schema in active:
+            return {}
+        active.add(schema)
+        node = self.at(schema)
+        found: dict[str, _Declaration] = {}
+        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
+            found.update(self.properties(target, active))
+        for index in range(len(node.all_of)):
+            found.update(self.properties(_child(schema, "allOf", str(index)), active))
+        found.update((name, _child(schema, "properties", name)) for name in node.properties)
+        return found
+
+    def members(self, schema: _Declaration) -> dict[str, _Declaration]:
+        """Return the property declaration of each name a schema declares, as its model's fields are located."""
+        return {
+            name: found
+            for name in self.properties(schema)
+            if (found := self.property_location(schema, name, set())) is not None
+        }
+
+
+class _Reader(_SchemaLocations):
+    """Read the loaded API documents by declaration while the walk reads them, recording each schema's locations.
+
+    The target parser reads with it while it walks, to record what the model types do not say and where each schema
+    it visits declares its members; the binder locates members through those records alone.
+    """
+
+    def __init__(
+        self,
+        documents: dict[str, dict[str, YamlValue]],
+        nodes: dict[_Declaration, _SchemaNode],
+        *,
+        versions: list[str],
+    ) -> None:
+        super().__init__(nodes, documents)
+        self.loaded = documents
+        self.versions = versions
+
+    @property
+    def legacy(self) -> bool:
+        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
+        return next(iter(self.versions), "").startswith("3.0")
+
+    def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
+        """Read a declaration from its loaded document, or `missing` when the document lacks it."""
+        return _descend(self.loaded.get(declaration.document), declaration.tokens, missing)
+
+    def node(self, declaration: _Declaration, raw: YamlValue = _MISSING) -> _SchemaNode | None:
+        """Record and return where a loaded schema declares its members, None when its document lacks it."""
+        if (node := self.nodes.get(declaration)) is not None:
+            return node
+        if (value := self.borrow(declaration) if raw is _MISSING else raw) is None:
+            return None
+        node = self.nodes[declaration] = _SchemaNode.of(value)
+        return node
 
     def whole(self, declaration: _Declaration) -> tuple[_Declaration, dict[str, YamlValue]]:
         """Follow a schema that is nothing but a reference to the schema it names, through such schemas.
@@ -1750,26 +2213,6 @@ class _Reader:
             seen.add(target)
             declaration, raw = target, _mapping(self.borrow(target))
         return declaration, raw
-
-    def properties(self, schema: _Declaration) -> dict[str, _Declaration]:
-        """Return a schema's properties in declaration order, allOf branches and references included."""
-        raw = _mapping(self.borrow(schema))
-        found: dict[str, _Declaration] = {}
-        if isinstance(ref := raw.get("$ref"), str) and (target := self.target(schema, ref)) is not None:
-            found.update(self.properties(target))
-        branches = raw.get("allOf")
-        for index in range(len(branches) if isinstance(branches, list) else 0):
-            found.update(self.properties(_child(schema, "allOf", str(index))))
-        found.update((name, _child(schema, "properties", name)) for name in _mapping(raw.get("properties")))
-        return found
-
-    def members(self, schema: _Declaration) -> dict[str, _Declaration]:
-        """Return the property declaration of each name a schema declares, as its model's fields are located."""
-        return {
-            name: found
-            for name in self.properties(schema)
-            if (found := self.property_location(schema, name, set())) is not None
-        }
 
     def record(self, declaration: _Declaration, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
@@ -1846,8 +2289,8 @@ class _Reader:
 
     def resolved(self, declaration: _Declaration) -> tuple[dict[str, YamlValue], _Declaration]:
         """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
-        location, value = self.resolve(declaration, self.borrow(declaration))
-        return value, location
+        location = self.resolve(declaration)[0]
+        return _mapping(self.borrow(location)), location
 
     def kinds(self, declaration: _Declaration) -> frozenset[str] | None:
         """Return the JSON types a schema's values have, by its types, enum, const, and combined branches."""
@@ -1943,22 +2386,28 @@ class _Reader:
         return MemberShape(name, KindSite(source, leaves), repeated=repeated)
 
 
-class _Schemas(_Reader):
-    """The documents an attempt loaded, by identity: the walked roots first, then the documents they reference."""
+class _Documents:
+    """The documents an attempt loaded, by identity: the walked roots first, then the documents they reference.
+
+    The binder holds them for the source lease and reads only the link, callback and security scheme objects in them,
+    which the walk does not follow.
+    """
 
     def __init__(self, parser: TargetApiOpenAPIParser) -> None:
         loaded = parser._api_documents  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        documents: dict[str, dict[str, YamlValue]] = {}
+        self.documents: dict[str, dict[str, YamlValue]] = {}
         self.ids: dict[str, SourceDocumentId] = {}
         self.unloadable: set[str] = set()
         for document in (*roots, *loaded):
             if document not in self.ids:
                 self.ids[document] = SourceDocumentId(len(self.ids))
-                documents[document] = loaded[document]
-        self.walked = tuple(documents)
-        entry = next(iter(documents.values()), {})
-        super().__init__(documents, versions=[str(entry.get("openapi", ""))])
+                self.documents[document] = loaded[document]
+        self.walked = tuple(self.documents)
+
+    def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
+        """Read a declaration from its loaded document, or `missing` when the document lacks it."""
+        return _descend(self.documents.get(declaration.document), declaration.tokens, missing)
 
     def location(self, declaration: _Declaration, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -1978,7 +2427,8 @@ class _Models:
         model_package: str,
     ) -> None:
         self.binder = binder = _Binder(parser, results)
-        self.schemas = _Schemas(parser)
+        self.documents = _Documents(parser)
+        self.schemas = _SchemaLocations(parser.schema_locations, self.documents.ids)
         self.parser = parser
         self.attempt = attempt
         self.output = output
@@ -2008,12 +2458,11 @@ class _Models:
         item = special.startswith("itemSchema-")
         tokens = (*(_pointer_tokens(source.rstrip("/")) or ()), *(("itemSchema",) if item else ()))
         location = _Declaration(source.partition("#")[0], tokens)
-        return None if (marker and not item) or self.schemas.borrow(location) is None else location
+        return None if (marker and not item) or self.schemas.node(location) is None else location
 
     def place(self, declaration: _Declaration, data_type: DataType, *, root: bool = False) -> list[SymbolId]:
         """Locate the unlocated inline models a schema's type refers to, through items, values and branches."""
-        raw = _mapping(self.schemas.borrow(declaration))
-        if "$ref" in raw:
+        if (node := self.schemas.at(declaration)).has_ref:
             return []
         placed: list[SymbolId] = []
         if not root and (reference := data_type.reference) is not None:
@@ -2023,7 +2472,7 @@ class _Models:
                 self.locations[symbol] = declaration
                 placed.append(symbol)
             return placed
-        for keyword, child in _children(raw, data_type):
+        for keyword, child in _children(node, data_type):
             placed.extend(self.place(_child(declaration, *keyword), child))
         return placed
 
@@ -2038,21 +2487,20 @@ class _Models:
             tuple(other for other, value in results.items() if value is result and other != key),
         )
 
-    def lightweight(self, declaration: _Declaration, direction: Direction = "neutral") -> TypeProjection:
+    def lightweight(
+        self, declaration: _Declaration, direction: Direction = "neutral", *, inline: bool = False
+    ) -> TypeProjection:
         """Project a subschema that no model field holds: a referenced model, or the parser's model-free type."""
         parser = self.parser
-        raw = cast("dict[str, YamlValue] | bool", self.schemas.borrow(declaration))
-        resolved, _ = self.schemas.resolve(declaration, raw)
+        projector = self.binder.projector(direction, inline=inline)
+        resolved, _ = self.schemas.resolve(declaration)
         key = parser.model_resolver.join_path((resolved.document, "#", *resolved.tokens))
         if resolved != declaration and (reference := parser.model_resolver.references.get(key)) is not None:
-            return self.projectors[direction].declaration(reference)
-        path = [declaration.document, "#", *declaration.tokens]
+            return projector.declaration(reference)
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
-            data_type = parser._build_lightweight_type(parser._validate_schema_object(raw, path))  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            data_type = parser._build_lightweight_type(parser.free_schemas[declaration])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         projected = (
-            self.projectors[direction].project(data_type)
-            if data_type is not None
-            else TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+            projector.project(data_type) if data_type is not None else TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
         )
         for item in data_type.all_data_types if data_type is not None else ():
             item.unregister_reference()
@@ -2163,8 +2611,8 @@ class _Models:
             kind, wire_name, schema = "root_value", None, location
             if (
                 location is not None
-                and "properties" not in (raw := _mapping(self.schemas.borrow(location)))
-                and raw.get("additionalProperties", False) is not False
+                and not (node := self.schemas.at(location)).has_properties
+                and node.additional not in {"absent", "false"}
                 and (field.data_type.is_dict or any(child.is_dict for child in field.data_type.data_types))
             ):
                 schema = _child(location, "additionalProperties")
@@ -2250,7 +2698,7 @@ class _Models:
         direct = field.nullable is True or (field.nullable is None and field.required and bool(field.type_has_null))
         unknown = value is None
         references: list[SymbolId] = []
-        pending: list[FinalPythonType] = [] if value is None else [value]
+        pending: list[TypeView] = [] if value is None else [value]
         while pending:
             item = pending.pop()
             match item:
@@ -2327,7 +2775,7 @@ class _Models:
         slot = self.slots[id(field)]
         facts = self.facts.get(slot)
         kind, schema, wire_name, _ = self.context(owner, field)
-        source = None if schema is None else self.schemas.location(schema, "schema")
+        source = None if schema is None else self.documents.location(schema, "schema")
         return FieldUseBinding(
             kind,
             wire_name,
@@ -2347,17 +2795,14 @@ class _Models:
             location := self.locations.get(symbol.id)
         ) is None:
             return members
-        keyword = "readOnly" if direction == "request" else "writeOnly"
         properties = self.schemas.properties(location)
         kept = {member.wire_name for member in members}
         excluded: list[FieldUseBinding] = []
         for name, declaration in properties.items():
-            if (
-                name in kept
-                or self.schemas.resolve(declaration, self.schemas.borrow(declaration))[1].get(keyword) is not True
-            ):
+            node = self.schemas.resolve(declaration)[1]
+            if name in kept or not (node.read_only if direction == "request" else node.write_only):
                 continue
-            schema = self.schemas.location(declaration, "schema")
+            schema = self.documents.location(declaration, "schema")
             excluded.append(
                 FieldUseBinding(
                     "property",
@@ -2379,11 +2824,14 @@ class _Models:
 class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
-    def projection(self, declaration: _Declaration, projection: Projection, direction: Direction) -> TypeProjection:
+    def projection(
+        self, declaration: _Declaration, projection: Projection, direction: Direction, *, inline: bool = False
+    ) -> TypeProjection:
         """Bind an acquired declaration: its emitted model wins over a direct reference type.
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
-        the model-free type of its schema, which is the referenced model.
+        the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
+        root model as the type it stands for.
         """
         binder = self.binder
         parser = self.parser
@@ -2392,7 +2840,7 @@ class _SchemaUses(_Models):
             engine = parser.model_resolver.join_path((declaration.document, "#", *declaration.tokens))
         reference = parser.model_resolver.references.get(engine) if engine is not None else None
         data_type = binder.declaration_types.get(declaration) if projection == "value" else None
-        projector = binder.projector(direction)
+        projector = binder.projector(direction, inline=inline)
         if reference is not None and (
             data_type is None
             or binder.final(reference, direction) is not None
@@ -2401,12 +2849,12 @@ class _SchemaUses(_Models):
             return projector.declaration(reference)
         if data_type is not None:
             return projector.project(data_type)
-        return self.lightweight(declaration, direction)
+        return self.lightweight(declaration, direction, inline=inline)
 
     def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""
         members: list[FieldUseBinding] = []
-        resolved = self.schemas.resolve(schema, self.schemas.borrow(schema))[0]
+        resolved = self.schemas.resolve(schema)[0]
         for member in self.members.get(symbol, ()):
             match member.member_kind:
                 case "property" if member.wire_name is not None and member.exclusion != "tag":
@@ -2421,7 +2869,7 @@ class _SchemaUses(_Models):
                     found = _child(resolved, "additionalProperties")
                 case _:
                     found = None
-            if found is not None and (location := self.schemas.location(found, "schema")) != member.schema:
+            if found is not None and (location := self.documents.location(found, "schema")) != member.schema:
                 member = replace(  # noqa: PLW2901
                     member,
                     schema=location,
@@ -2448,7 +2896,7 @@ class _SchemaUses(_Models):
         direction = direction or (
             "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
         )
-        locate = self.schemas.location
+        locate = self.documents.location
         use = TypeUseId(
             owner,
             role,
@@ -2468,6 +2916,11 @@ class _SchemaUses(_Models):
             if isinstance(projected.value, GeneratedSymbolType)
             else ()
         )
+        argument = (
+            self.projection(schema, projection, direction, inline=True).value
+            if role == "parameter" and projected.value is not None
+            else None
+        )
         self.uses[use] = TypeUseBinding(
             use,
             "bound" if projected.value is not None else "invalid",
@@ -2475,6 +2928,7 @@ class _SchemaUses(_Models):
             projected.reason,
             members,
             locate(schema, "schema"),
+            argument=None if argument is None else self.binder.hints.of(argument),
         )
         return use
 
@@ -2483,18 +2937,18 @@ class _SchemaUses(_Models):
         declarations: dict[tuple[_Declaration, Projection], bool] = dict.fromkeys(self.parser.acquisitions, True)
         for key in self.parser.model_resolver.references:
             document, separator, _ = key.partition("#")
-            if not separator or SPECIAL_PATH_MARKER in key or document not in self.schemas.documents:
+            if not separator or SPECIAL_PATH_MARKER in key or document not in self.documents.ids:
                 continue
             declarations.setdefault((_Declaration(document, _pointer_tokens(key) or ()), "value"), False)
         for (declaration, projection), acquired in declarations.items():
-            source = self.schemas.location(declaration, "schema")
+            source = self.documents.location(declaration, "schema")
             neutral = self.use(
                 source, "schema", declaration, declaration, declaration, declaration, projection=projection
             )
             if (
                 acquired
                 and isinstance(value := self.uses[neutral].type, GeneratedSymbolType)
-                and "$ref" not in _mapping(self.schemas.borrow(declaration))
+                and not self.schemas.at(declaration).has_ref
             ):
                 self.relocate(declaration, value.symbol)
             directional = [
@@ -2546,12 +3000,10 @@ class _SchemaUses(_Models):
     def extras(self) -> None:
         """Bind each model's typed additional properties that no field holds."""
         for symbol, location in self.locations.items():
-            if location is None or not isinstance(
-                _mapping(self.schemas.borrow(location)).get("additionalProperties"), dict
-            ):
+            if location is None or self.schemas.at(location).additional != "schema":
                 continue
             declaration = _child(location, "additionalProperties")
-            use = _schema_use(self.schemas.location(declaration, "schema"))
+            use = _schema_use(self.documents.location(declaration, "schema"))
             if (
                 use in self.uses
                 or (
@@ -2577,9 +3029,9 @@ class _SchemaUses(_Models):
 
     def nested(self, declaration: _Declaration, data_type: DataType, *, own: bool = True) -> None:
         """Collect the type a field holds at a schema below a model, items, values and branches included."""
-        raw = _mapping(self.schemas.borrow(declaration))
-        if "$ref" not in raw:
-            for keyword, child in _children(raw, data_type):
+        node = self.schemas.at(declaration)
+        if not node.has_ref:
+            for keyword, child in _children(node, data_type):
                 self.nested(_child(declaration, *keyword), child)
         if not own:
             return
@@ -2588,7 +3040,7 @@ class _SchemaUses(_Models):
         if projected in candidates:
             return
         candidates.append(projected)
-        if isinstance(value := projected.value, GeneratedSymbolType) and "$ref" not in raw:
+        if isinstance(value := projected.value, GeneratedSymbolType) and not node.has_ref:
             self.relocate(declaration, value.symbol)
 
     def relocate(self, declaration: _Declaration, symbol: SymbolId) -> None:
@@ -2608,7 +3060,7 @@ class _SchemaUses(_Models):
     def helper_uses(self) -> None:
         """Bind each collected schema to its one type, or refuse it when fields hold it as different types."""
         for declaration, candidates in self.helpers.items():
-            use = _schema_use(location := self.schemas.location(declaration, "schema"))
+            use = _schema_use(location := self.documents.location(declaration, "schema"))
             self.uses.setdefault(
                 use,
                 TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=location)
@@ -2625,19 +3077,19 @@ class _Contracts(_SchemaUses):
 
         A document that fails to load is tried once.
         """
-        if document in self.schemas.documents:
+        if document in self.documents.ids:
             return True
-        if document in self.schemas.unloadable or (raw := self.parser.load_document(document)) is None:
-            self.schemas.unloadable.add(document)
+        if document in self.documents.unloadable or (raw := self.parser.load_document(document)) is None:
+            self.documents.unloadable.add(document)
             return False
-        self.schemas.ids[document] = SourceDocumentId(len(self.schemas.ids))
-        self.schemas.documents[document] = raw
+        self.documents.ids[document] = SourceDocumentId(len(self.documents.ids))
+        self.documents.documents[document] = raw
         return True
 
     @cached_property
     def relocations(self) -> dict[SourceDocumentId, SourceDocumentId]:
         """Map the document identities the walk's records use to the attempt's."""
-        return {provisional: self.schemas.ids[uri] for uri, provisional in self.parser.record_documents.items()}
+        return {provisional: self.documents.ids[uri] for uri, provisional in self.parser.record_documents.items()}
 
     def record(self, schema: _Declaration) -> _SchemaRecord:
         """Return what the walk recorded of an acquired schema, located in the attempt's documents."""
@@ -2673,7 +3125,7 @@ class _Contracts(_SchemaUses):
         value = _mapping(raw)
         seen = {declaration}
         references: list[SourceReference] = []
-        locate = self.schemas.location
+        locate = self.documents.location
         while isinstance(ref := value.get("$ref"), str):
             source = locate(declaration, "declaration")
             document = (
@@ -2694,7 +3146,7 @@ class _Contracts(_SchemaUses):
             if target in seen:
                 references.append(SourceReference(source, ref, location, "cycle"))
                 break
-            if (borrowed := self.schemas.borrow(target, _MISSING)) is _MISSING:
+            if (borrowed := self.documents.borrow(target, _MISSING)) is _MISSING:
                 references.append(SourceReference(source, ref, location, "pointer_missing"))
                 break
             if not isinstance(borrowed, dict):
@@ -2752,7 +3204,7 @@ class _Contracts(_SchemaUses):
         parameter_name: str | None = None,
         parameter_location: str | None = None,
     ) -> tuple[WireDeclaration, ...]:
-        locate = self.schemas.location
+        locate = self.documents.location
         values: list[WireDeclaration] = []
         for name, value in _mapping(raw).items():
             medium = _mapping(value)
@@ -2878,7 +3330,7 @@ class _Contracts(_SchemaUses):
             parameter_name=wire_name,
             parameter_location=location,
         )
-        locate = self.schemas.location
+        locate = self.documents.location
         return WireDeclaration(
             "parameter" if role == "parameter" else "header",
             wire_name,
@@ -2931,7 +3383,7 @@ class _Contracts(_SchemaUses):
             self.metadata("link", name, _child(declared, "links", name), _child(use_site, "links", name), link)
             for name, link in _mapping(value.get("links")).items()
         )
-        locate = self.schemas.location
+        locate = self.documents.location
         return WireDeclaration(
             "response",
             status,
@@ -2952,7 +3404,7 @@ class _Contracts(_SchemaUses):
     def operation(  # ruff: ignore[too-many-locals]
         self, walked: _WalkedOperation, order: int, parent: OperationId | None
     ) -> OperationContract:
-        locate = self.schemas.location
+        locate = self.documents.location
         raw, declaration, use_site, item = walked.raw, walked.declaration, walked.use_site, walked.item
         kind: Literal["path", "webhook", "callback"] = (
             "callback" if parent is not None else "webhook" if use_site.tokens[0] == "webhooks" else "path"
@@ -3014,7 +3466,7 @@ class _Contracts(_SchemaUses):
                 *(
                     _facts(item.raw, ("servers",), item.declaration)
                     if "servers" in item.raw
-                    else _facts(self.schemas.documents[use_site.document], ("servers",), root)
+                    else _facts(self.documents.documents[use_site.document], ("servers",), root)
                 ),
             )
         return OperationContract(
@@ -3047,8 +3499,8 @@ class _Contracts(_SchemaUses):
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
         declarations: list[WireDeclaration] = []
-        for document in self.schemas.walked:
-            raw = self.schemas.documents[document]
+        for document in self.documents.walked:
+            raw = self.documents.documents[document]
             for name, scheme in _mapping(_mapping(_mapping(raw).get("components")).get("securitySchemes")).items():
                 use = _Declaration(document, ("components", "securitySchemes", name))
                 declarations.append(self.metadata("security_scheme", name, use, use, scheme))
@@ -3082,12 +3534,12 @@ def bind_operations(
     builder.helper_uses()
     builder.extras()
     security_schemes = builder.security_schemes()
-    schemas = builder.schemas
+    documents = builder.documents
     return BoundAttempt(
         GeneratedTypeContractBatch(
             attempt,
             root_selector_document,
-            tuple(SourceDocument(identity, uri) for uri, identity in schemas.ids.items()),
+            tuple(SourceDocument(identity, uri) for uri, identity in documents.ids.items()),
             operations,
             tuple(builder.uses.values()),
             symbols,
@@ -3095,9 +3547,11 @@ def bind_operations(
             fields,
             security_schemes,
             api_scope=True,
-            document_facts=parser.document_facts.get(next(iter(schemas.ids), ""), ()),
+            document_facts=parser.document_facts.get(next(iter(documents.ids), ""), ()),
+            hint_type=builder.binder.hints.hint_type,
+            hint_imports=tuple(builder.binder.hints.fixed),
         ),
-        _pristine(parser, schemas.documents),
+        _pristine(parser, documents.documents),
     )
 
 
@@ -3117,7 +3571,7 @@ def _pristine(
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
     from pathlib import Path
     from urllib.parse import ParseResult
 
@@ -3128,13 +3582,14 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         BackendValue,
         DefaultKind,
-        FinalPythonType,
         FrozenLiteral,
         LeafStep,
         TypeArgument,
         TypeUseRole,
+        TypeView,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
 
     class _DeclarationLike(Protocol):

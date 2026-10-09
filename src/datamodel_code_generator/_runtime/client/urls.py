@@ -62,11 +62,6 @@ def origin_text(origin: Origin) -> str:
     return str(httpx2.URL(scheme=scheme, host=host, port=port))
 
 
-def signing_query(url: str) -> bytes:
-    """Read the finalized native URL's raw query without decoding or rebuilding its fields."""
-    return httpx2.URL(url).query
-
-
 def redirect_target(current_url: str, location: str) -> URLTarget:
     """Resolve a Location once, preserving encoded path/query and removing non-request fragments."""
     url = httpx2.URL(current_url).join(location)

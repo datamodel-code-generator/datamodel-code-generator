@@ -744,9 +744,7 @@ class ResponseDecoder(Generic[T_co]):
                 if error.reason not in _SELECTION_FAILURES:
                     raise
                 problem = error
-        return status_error(info.status_code)(
-            info=info, body=data, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
-        )
+        return status_error(info.status_code)(info=info, body=data, body_bytes=body, truncated=truncated, cause=problem)
 
 
 _SELECTION_FAILURES: Final = frozenset({"forbidden_body", "missing_body", "unexpected_media_type"})
@@ -762,7 +760,6 @@ def _unexpected(
         body_bytes=body,
         truncated=truncated,
         reason="unexpected_status",
-        call_id=info.call_id,
         cause=problem,
     )
 

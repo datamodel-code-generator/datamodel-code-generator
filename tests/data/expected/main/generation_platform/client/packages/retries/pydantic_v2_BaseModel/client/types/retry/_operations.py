@@ -7,38 +7,30 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import FieldIdempotentPostResponse as _dcg_type_2
-from models import FieldKeyedPostResponse as _dcg_type_3
-from models import FieldKeyedSafeGetResponse as _dcg_type_8
-from models import FieldKeyOnlyPostResponse as _dcg_type_4
-from models import FieldNeverGetResponse as _dcg_type_5
-from models import FieldNeverPostResponse as _dcg_type_6
-from models import FieldSafeGetResponse as _dcg_type_0
-from models import FieldUnsafePostResponse as _dcg_type_1
-from models import FieldVendorGetResponse as _dcg_type_7
+import models
 
-GetSafeResponse: TypeAlias = _dcg_type_0
+GetSafeResponse: TypeAlias = models.FieldSafeGetResponse
 
 
-PostUnsafeResponse: TypeAlias = _dcg_type_1
+PostUnsafeResponse: TypeAlias = models.FieldUnsafePostResponse
 
 
-PostIdempotentResponse: TypeAlias = _dcg_type_2
+PostIdempotentResponse: TypeAlias = models.FieldIdempotentPostResponse
 
 
-PostKeyedResponse: TypeAlias = _dcg_type_3
+PostKeyedResponse: TypeAlias = models.FieldKeyedPostResponse
 
 
-PostKeyOnlyResponse: TypeAlias = _dcg_type_4
+PostKeyOnlyResponse: TypeAlias = models.FieldKeyOnlyPostResponse
 
 
-GetNeverResponse: TypeAlias = _dcg_type_5
+GetNeverResponse: TypeAlias = models.FieldNeverGetResponse
 
 
-PostNeverResponse: TypeAlias = _dcg_type_6
+PostNeverResponse: TypeAlias = models.FieldNeverPostResponse
 
 
-GetVendorResponse: TypeAlias = _dcg_type_7
+GetVendorResponse: TypeAlias = models.FieldVendorGetResponse
 
 
-GetKeyedSafeResponse: TypeAlias = _dcg_type_8
+GetKeyedSafeResponse: TypeAlias = models.FieldKeyedSafeGetResponse

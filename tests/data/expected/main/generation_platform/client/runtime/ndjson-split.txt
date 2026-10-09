@@ -7,7 +7,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  split error record None FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}
+  split error record 'error_event' FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}
 # ndjson-split typing.TypedDict
   > GET https://api.example.com/records accept=application/x-ndjson
   split records
@@ -17,7 +17,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  split error record None dict{'type': 'failed', 'message': 'nope', 'trace': 't'}
+  split error record 'error_event' dict{'type': 'failed', 'message': 'nope', 'trace': 't'}
 # ndjson-split msgspec.Struct
   > GET https://api.example.com/records accept=application/x-ndjson
   split records
@@ -27,4 +27,4 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  split error record None FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}
+  split error record 'error_event' FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}

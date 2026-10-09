@@ -16,7 +16,7 @@ from tests.data.python.client_runtime import Exchange, arecord, argument, json_r
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Generator, Iterator
     from types import ModuleType
 
 
@@ -139,35 +139,23 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         record(lines, "client disabled", lambda: api.items.put_blob(body=b"disabled"))
 
 
-class _HeaderSigner:
-    """Add a signature header without pre-reading the binary input."""
+class _HeaderSigner(httpx2.Auth):
+    """A caller's native Auth adding a signature header without pre-reading the binary input."""
 
-    def __init__(self, auth: ModuleType) -> None:
-        self.auth = auth
-        self.capabilities = auth.SignerCapabilities(
-            allowed_origins=("https://api.example.com",),
-            managed_headers=("x-signed",),
-            managed_query=(),
-        )
-
-    def sign(self, request: Any) -> Any:
-        return self.auth.SignatureFields(headers=(("x-signed", "yes"),), query=())
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        request.headers["x-signed"] = "yes"
+        yield request
 
 
 def _signed(harness: _Harness, lines: list[str]) -> None:
     exchange = harness.exchange
-    auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signer = _HeaderSigner(auth)
 
     def digested(request: httpx2.Request) -> httpx2.Response:
         lengths = request.headers.get_list("content-length")
         lines.append(f"    signed framing correct {lengths == [str(len(request.content))]}")
         return httpx2.Response(204)
 
-    config = auth.AuthConfig(
-        {}, send_on_anonymous=True, allowed_origins=("https://api.example.com",), signers=(signer,)
-    )
-    with harness.client("gzip", auth=config) as api:
+    with harness.client("gzip", auth=_HeaderSigner()) as api:
         exchange.respond(digested)
         record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", content_length=harness.length(6)))
         file = io.BytesIO(b"file")

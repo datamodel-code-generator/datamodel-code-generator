@@ -9,7 +9,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -228,7 +228,7 @@ class AuthResource:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -620,7 +620,7 @@ class AuthWithResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -1012,7 +1012,7 @@ class AuthWithRawResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1404,7 +1404,7 @@ class AuthWithStreamingResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

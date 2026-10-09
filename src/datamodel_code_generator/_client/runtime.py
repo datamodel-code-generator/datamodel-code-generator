@@ -10,15 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._runtime.client.security import SecurityScheme
-from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch
 
 Security: TypeAlias = Literal["api_key", "basic", "bearer", "client_credentials", "refresh_token"]
 Helper: TypeAlias = Literal[
@@ -26,16 +22,11 @@ Helper: TypeAlias = Literal[
 ]
 
 _CORE: Final = (
-    "client/auth.py",
-    "client/auth_challenges.py",
-    "client/auth_policy.py",
     "client/bodies.py",
     "client/body_sources.py",
     "client/client.py",
     "client/codecs.py",
     "client/errors.py",
-    "client/events.py",
-    "client/hooks.py",
     "client/logical.py",
     "client/media.py",
     "client/multipart.py",
@@ -46,7 +37,6 @@ _CORE: Final = (
     "client/raw.py",
     "client/responses.py",
     "client/retry.py",
-    "client/scopes.py",
     "client/security.py",
     "client/timing.py",
     "client/urls.py",
@@ -55,11 +45,6 @@ _CORE: Final = (
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
     "model_codecs/wire.py",
-    "protocols/errors.py",
-    "protocols/records.py",
-    "protocols/references.py",
-    "protocols/resume.py",
-    "protocols/sources.py",
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
@@ -69,16 +54,18 @@ _PROTOCOLS: Final = (
     "protocols/options.py",
     "protocols/origins.py",
 )
-_OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
-_PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_OAUTH: Final = ("client/auth.py", "client/oauth.py")
+_BASE: Final = ("protocols/errors.py", "protocols/records.py", "protocols/references.py")
+_PAGES: Final = (*_BASE, "protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_RESUMED: Final = (*_PAGES, "protocols/resume.py")
 _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": _PAGES,
-    "polling": (*_PAGES, "protocols/polling.py"),
-    "streams": (*_PAGES, "protocols/streams.py"),
-    "uploads": (*_PAGES, "protocols/uploads.py"),
-    "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
-    "websocket": ("protocols/websocket.py",),
-    "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
+    "polling": (*_RESUMED, "protocols/polling.py"),
+    "streams": (*_RESUMED, "protocols/streams.py"),
+    "uploads": (*_RESUMED, "protocols/sources.py", "protocols/uploads.py"),
+    "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py"),
+    "websocket": (*_BASE, "protocols/websocket.py"),
+    "webhooks": (*_BASE, "protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }
 _VERIFIED: Final = ("protocols/signatures.py", "protocols/verification.py", "protocols/webhook_keys.py")
@@ -140,6 +127,8 @@ class Capabilities:
             modules.update(_PROTOCOLS)
         if "webhooks" in self.helpers:
             modules.update(("protocols/caches.py", "protocols/options.py", "protocols/origins.py"))
+        if self.security:
+            modules.add("client/auth.py")
         if self.oauth:
             modules.update(_OAUTH)
         if self.keywords:
@@ -149,39 +138,12 @@ class Capabilities:
         return tuple(sorted(modules))
 
 
-def _flows(facts: dict[str, object]) -> Iterable[Security]:
-    """Return the OAuth capabilities of one OAuth 2 or OpenID Connect declaration."""
-    flows = facts.get("flows")
-    names = (
-        {key.value for key, _ in flows.entries if isinstance(key, LiteralScalar)}
-        if isinstance(flows, LiteralMapping)
-        else set()
-    )
-    if "clientCredentials" in names:
-        yield "client_credentials"
-    if facts.get("type") == "openIdConnect" or names - {"clientCredentials"}:
-        yield "refresh_token"
-
-
-def declared_security(plan: ClientPlan, batch: GeneratedTypeContractBatch) -> frozenset[Security]:
-    """Return the credential kinds of the usable schemes that the package's root or its operations name.
-
-    A bearer scheme declared as OAuth 2 also declares each of its flows' token providers.
-    """
-    schemes = {scheme for scheme in plan.security_schemes if isinstance(scheme, SecurityScheme)}
-    schemes.update(
-        item.scheme
-        for spec in plan.operations
-        if spec.security is not None
-        for alternative in spec.security.alternatives
-        for item in alternative
-    )
-    kinds: set[Security] = {scheme.kind for scheme in schemes}
-    bearer = {scheme.name for scheme in schemes if scheme.kind == "bearer"}
-    for declaration in batch.security_schemes:
-        if declaration.name in bearer:
-            kinds.update(_flows({name: getattr(value, "value", value) for name, value in declaration.facts}))
-    return frozenset(kinds)
+def declared_security(plan: ClientPlan) -> frozenset[Security]:
+    """Return the credential kinds of the schemes the package's operations require, and their OAuth flows."""
+    return frozenset((
+        *(credential.scheme.kind for credential in plan.credentials),
+        *(flow for credential in plan.credentials for flow, _ in credential.flows),
+    ))
 
 
 def declared_helpers(kinds: Iterable[str], plan: ClientPlan) -> frozenset[Helper]:

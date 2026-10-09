@@ -78,6 +78,7 @@ class TargetGenerationSession:
         self._root_selector_document = root_selector_document
         self._next_attempt = 0
         self._candidate: BoundAttempt | None = None
+        self._model_imports: frozenset[str] = frozenset()
 
     @property
     def parser_factory(self) -> OpenAPIParserFactory:
@@ -106,6 +107,7 @@ class TargetGenerationSession:
                 model_package=self._model_package,
                 root_selector_document=self._root_selector_document,
             )
+            self._model_imports = frozenset(target.model_imports)
         except MetadataCycleError as error:
             if error.document in target._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                 error.document = self._root_selector_document
@@ -138,7 +140,7 @@ class TargetGenerationSession:
         for location, document in bound.documents:
             lease.register(document, location)
         self.close()
-        return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease)
+        return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease, self._model_imports)
 
     def close(self) -> None:
         """Release the bound candidate."""
@@ -147,12 +149,13 @@ class TargetGenerationSession:
 
 @dataclass(slots=True)
 class ModelGenerationProduct:
-    """Own completed ordinary artifacts and an accepted source lease during planning."""
+    """Own completed ordinary artifacts, the names their imports name, and an accepted source lease during planning."""
 
     artifacts: tuple[ModelArtifact, ...]
     allow_empty_api: bool
     batch: GeneratedTypeContractBatch
     source_lease: SourceLease
+    model_imports: frozenset[str]
 
     def close(self) -> None:
         """Release borrowed source mappings without invalidating frozen values or bytes."""

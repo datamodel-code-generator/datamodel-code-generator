@@ -1,0 +1,57 @@
+{
+  "jobs.run": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [
+      202
+    ],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {
+          "in": "path",
+          "name": "jobId"
+        },
+        "value": {
+          "source": "initial",
+          "selector": {
+            "from": "body",
+            "pointer": "/id"
+          }
+        }
+      }
+    ],
+    "state": {
+      "from": "body",
+      "pointer": "/status"
+    },
+    "pending": [
+      "running"
+    ],
+    "succeeded": [
+      "done"
+    ],
+    "result": {
+      "kind": "inline",
+      "selector": {
+        "from": "body",
+        "pointer": "/result"
+      },
+      "schema": {
+        "pointer": "/components/schemas/Job/properties/result"
+      }
+    },
+    "immediate_result": {
+      "statuses": [
+        200
+      ],
+      "selector": {
+        "from": "body",
+        "pointer": "/result"
+      },
+      "schema": {
+        "pointer": "/components/schemas/Job/properties/result"
+      }
+    }
+  }
+}
