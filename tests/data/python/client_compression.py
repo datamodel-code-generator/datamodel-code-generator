@@ -285,7 +285,7 @@ def _stream_resume(harness: _Harness, lines: list[str]) -> None:
                 lines.append(f"  {name} first {next(stream).data}")
                 state = stream.checkpoint()
             exchange.respond(event)
-            with helper.resume(state) as stream:
+            with helper.resume(state, **({"body": harness.query()} if name == "resumable" else {})) as stream:
                 lines.append(f"  {name} resume {next(stream).data}")
         helper = api.protocols.events.push
         exchange.respond(event)
@@ -347,7 +347,9 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
                 lines.append(f"  async {name} first {(await anext(stream)).data}")
                 state = stream.checkpoint()
             exchange.respond(event)
-            async with await helper.resume(state) as stream:
+            async with await helper.resume(
+                state, **({"body": harness.query()} if name == "resumable" else {})
+            ) as stream:
                 lines.append(f"  async {name} resume {(await anext(stream)).data}")
         exchange.respond(event)
         async with await api.protocols.events.push.open() as stream:

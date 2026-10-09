@@ -19,8 +19,8 @@ from models import Record as _dcg_type_4
 from models import Tick as _dcg_type_1
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import AsyncClientCore
-from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.streams import (
     AsyncEventStream,
     UnknownEvent,
@@ -231,8 +231,11 @@ class AsyncSearchesTicksSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -242,6 +245,9 @@ class AsyncSearchesTicksSse:
             self._core,
             _plans.STREAM_0,
             state,
+            (criteria,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -279,8 +285,11 @@ class AsyncFeedLiveSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        last_event_id: str | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -290,6 +299,9 @@ class AsyncFeedLiveSse:
             self._core,
             _plans.STREAM_1,
             state,
+            (last_event_id,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -325,8 +337,11 @@ class AsyncEventsLiveSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -336,6 +351,7 @@ class AsyncEventsLiveSse:
             self._core,
             _plans.STREAM_2,
             state,
+            (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -399,7 +415,7 @@ class AsyncEventsTrackedSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
@@ -445,8 +461,11 @@ class AsyncRoomsLiveSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        room: str,
+        shard: str,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -456,6 +475,7 @@ class AsyncRoomsLiveSse:
             self._core,
             _plans.STREAM_5,
             state,
+            (room, shard, last_event_id),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -489,8 +509,9 @@ class AsyncRecordsAllNdjson:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        after: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -500,6 +521,7 @@ class AsyncRecordsAllNdjson:
             self._core,
             _plans.STREAM_6,
             state,
+            (after,),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -537,8 +559,11 @@ class AsyncFeedTicksSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        last_event_id: str | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -548,6 +573,9 @@ class AsyncFeedTicksSse:
             self._core,
             _plans.STREAM_7,
             state,
+            (last_event_id,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -583,8 +611,11 @@ class AsyncTopicsMarksSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -594,6 +625,7 @@ class AsyncTopicsMarksSse:
             self._core,
             _plans.STREAM_8,
             state,
+            (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -629,8 +661,11 @@ class AsyncMarksScopedSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -640,6 +675,7 @@ class AsyncMarksScopedSse:
             self._core,
             _plans.STREAM_9,
             state,
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -675,8 +711,11 @@ class AsyncMarksNamedSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: _dcg_type_7 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -686,6 +725,7 @@ class AsyncMarksNamedSse:
             self._core,
             _plans.STREAM_10,
             state,
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -721,8 +761,11 @@ class AsyncMarksDeepSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -732,6 +775,7 @@ class AsyncMarksDeepSse:
             self._core,
             _plans.STREAM_11,
             state,
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -767,8 +811,11 @@ class AsyncMarksBoundSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -778,6 +825,7 @@ class AsyncMarksBoundSse:
             self._core,
             _plans.STREAM_12,
             state,
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -813,8 +861,11 @@ class AsyncMarksDeepboundSse:
 
     async def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -824,6 +875,7 @@ class AsyncMarksDeepboundSse:
             self._core,
             _plans.STREAM_13,
             state,
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,

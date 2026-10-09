@@ -394,10 +394,9 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         record(lines, label, create)
     lines.append("upload errors")
     progress = protocols.UploadProgress(confirmed_bytes=4, total_bytes=10)
-    state = protocols.ResumeState(helper="h", state={})
     delivery = harness.package.errors.DeliveryState
     for name, fields in (
-        ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "resume_state": state, "message_id": "m-1"}),
+        ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "message_id": "m-1"}),
         (
             "UploadDeliveryUnknownError",
             {"phase": "part", "progress": progress, "delivery_state": delivery.RESPONSE_STARTED},

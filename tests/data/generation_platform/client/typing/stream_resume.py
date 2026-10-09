@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 
 from pets.errors import StreamInterruptedError, StreamResumeExhaustedError
 from pets.options import RequestOptions, SessionOptions
-from pets.protocols import AsyncEventStream, EventStream, ResumeState, StreamOptions, UnknownEvent, import_state
+from pets.model_codecs import JSONValue
+from pets.protocols import AsyncEventStream, EventStream, StreamOptions, UnknownEvent
 from pets_models import Created, Mark, Message, Record
 from typing_extensions import assert_type
 
@@ -15,12 +16,13 @@ if TYPE_CHECKING:
 
 
 def resumed(client: Client) -> None:
-    """Checkpoint a stream, export and import its state, and resume it with the open method's options."""
+    """Checkpoint a stream as plain JSON and resume it with the open method's arguments and options."""
     stream = client.protocols.events.live.open(stream_options=StreamOptions(reconnect=True, max_reconnects=None))
     state = stream.checkpoint()
-    assert_type(state, ResumeState)
+    assert_type(state, JSONValue)
     again = client.protocols.events.live.resume(
-        import_state(state.export()),
+        state,
+        topic="news",
         stream_options=StreamOptions(reconnect=True, max_reconnect_wait=5),
         options=RequestOptions(),
         session_options=SessionOptions(total_timeout=30),
@@ -35,18 +37,16 @@ def resumed(client: Client) -> None:
     try:
         next(again)
     except StreamResumeExhaustedError as error:
-        exhausted: ResumeState | None = error.resume_state
-        del exhausted
+        assert_type(error.limit, int)
     except StreamInterruptedError as error:
-        interrupted: ResumeState | None = error.resume_state
-        del interrupted
+        assert_type(error.sequence, int)
 
 
 async def async_resumed(client: AsyncClient) -> None:
     """Resume an asyncio stream with one await and checkpoint it without awaiting."""
     stream = await client.protocols.events.live.open()
     state = stream.checkpoint()
-    assert_type(state, ResumeState)
+    assert_type(state, JSONValue)
     again = await client.protocols.events.live.resume(state)
     assert_type(again, AsyncEventStream[Message])
     assert_type(await client.protocols.marks.scoped.resume(state), AsyncEventStream[Mark])

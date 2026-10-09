@@ -30,7 +30,6 @@ from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
 from ..client.errors import (
     APIConnectionError,
-    ConfigurationError,
     DeliveryState,
     too_large,
 )
@@ -48,7 +47,6 @@ from .client_options import ClientOptions
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Sequence
-    from typing import Protocol
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
@@ -59,27 +57,10 @@ if TYPE_CHECKING:
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
-    from .references import OperationRef
 
 _NOT_MODIFIED = 304
 _SWITCHING = 101
 _UNAUTHORIZED = 401
-
-
-if TYPE_CHECKING:
-
-    class _PagePlan(Protocol):
-        """The identity of a protocol helper and of the operation its pages call."""
-
-        @property
-        def helper_id(self) -> str:
-            """The helper's dotted name."""
-            raise NotImplementedError
-
-        @property
-        def operation(self) -> OperationRef:
-            """The reference of the operation the helper calls."""
-            raise NotImplementedError
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -114,12 +95,6 @@ def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], quer
         case _:
             pass
     return secret
-
-
-def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(
-        field_path=path, reason="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
-    )
 
 
 def _page(
@@ -472,38 +447,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             None,
         )
 
-    def saved_request(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
-        self,
-        plan: _PagePlan,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        body: object,
-        media_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[tuple[JSONValue | Unset, ...], tuple[JSONValue, str, str | None] | None]:
-        """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
-
-        They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
-        other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
-        call giving one cannot be checkpointed.
-        """
-        self._call_settings(options, operation.operation_id)
-        saved = tuple(
-            value if isinstance(value, Unset) else encode_parameter_value(operation, spec, partial(spec.dump, value))
-            for spec, value in zip(operation.parameters, arguments, strict=True)
-        )
-        if (unsaved := self.unsaved_argument(operation, saved)) is not None:
-            raise _unsaved(plan, ("arguments", *unsaved))
-        request = operation.body
-        if request is None or isinstance(body, Unset):
-            return saved, None
-        media, sent = request.selected(operation.operation_id, media_type)
-        try:
-            wire = media.dump(body)
-        except request_errors(media.codec) as error:
-            raise request_decode_error(operation, ("body",), error) from None
-        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
-
     @staticmethod
     def restored_request(
         operation: OperationPlan[object],
@@ -532,32 +475,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             return restored, media.restored(wire), media_type
         except request_errors(media.codec) as error:
             raise request_decode_error(operation, ("body",), error) from None
-
-    def checked_page(
-        self,
-        operation: OperationPlan[object],
-        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        media_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[str, HeadersView]:
-        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises.
-
-        The URL and headers it would send are returned, every patch applied.
-        """
-        arguments, body, url = request()
-        settings = self._call_settings(options, operation.operation_id)
-        prepared = self._prepare(
-            operation,
-            arguments,
-            settings,
-            body=body,
-            media_type=media_type,
-            options=options,
-            accept=None,
-            narrowed=False,
-            url=url,
-        )[0]
-        return str(prepared.url), HeadersView(request_fields(prepared))
 
     def _page_request(
         self,
