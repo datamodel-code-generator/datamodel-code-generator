@@ -1179,6 +1179,7 @@ def test_fastapi_cli_model_and_form_dependencies(
         input_file_type="openapi",
         extra_args=_server("--use-pendulum"),
         copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
+        skip_code_validation=True,
     )
     assert_output(capsys.readouterr().err, EXPECTED / "cli" / "model-dependencies.txt")
 
