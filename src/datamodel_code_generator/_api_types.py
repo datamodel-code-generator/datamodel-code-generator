@@ -64,12 +64,10 @@ class Diagnostic:
     severity: DiagnosticSeverity
     stage: DiagnosticStage
     message: str
-    source_uri: str | None = None
     source_pointer: str | None = None
     operation: OperationRef | None = None
     option_path: str | None = None
     artifact_path: str | None = None
-    target_id: str | None = None
 
 
 class APIGenerationError(Error):

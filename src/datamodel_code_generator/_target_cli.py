@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_manifest import shown
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
     from argparse import Namespace

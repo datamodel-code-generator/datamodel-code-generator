@@ -506,7 +506,7 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
@@ -696,7 +696,6 @@ class Planner:  # noqa: PLR0904
                     severity="error",
                     stage="binding",
                     message="The use has no generated native type",
-                    source_uri=self.request.documents.root_uri,
                     source_pointer=use.id.use_site.pointer,
                 )
             )
