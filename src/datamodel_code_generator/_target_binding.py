@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from decimal import Decimal
+from functools import cached_property
 from keyword import iskeyword
 from math import isfinite
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
@@ -54,6 +55,8 @@ from datamodel_code_generator._target_contract import (
     OpaqueBackendValue,
     OperationContract,
     OperationId,
+    PartFacts,
+    PartSchema,
     RuntimeBackendValue,
     SourceDocument,
     SourceDocumentId,
@@ -119,6 +122,18 @@ _BUILTINS: Final = {
     "frozenset": BuiltinType("frozenset"),
     "dict": BuiltinType("dict"),
     "tuple": BuiltinType("tuple"),
+}
+_NULL: Final = frozenset({"null"})
+_ARRAY: Final = frozenset({"array"})
+_STRING: Final = frozenset({"string"})
+_OBJECT: Final = frozenset({"object"})
+_NESTED: Final = _ARRAY | _OBJECT
+_IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
+_DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
+    bool: "bool",
+    int: "int",
+    float: "float",
+    str: "str",
 }
 _PARAMETER_FACTS: Final = (
     "name",
@@ -569,6 +584,33 @@ def _child(declaration: _Declaration, *tokens: str) -> _Declaration:
 
 def _mapping(value: object) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
+
+
+def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
+    """Return the JSON types a schema declares, none when it declares none."""
+    match declared := schema.get("type"):
+        case str():
+            return frozenset({declared})
+        case list():
+            return frozenset(str(item) for item in declared)
+        case _:
+            pass
+    return frozenset()
+
+
+def _json_type(value: object) -> str:
+    """Return the JSON type of an enum member's value."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float | Decimal):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    return "object" if isinstance(value, dict) else "array"
 
 
 def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
@@ -1691,6 +1733,77 @@ class _Schemas:
             and self.required(target, name, inherited=inherited)
         )
 
+    def declaration(self, location: SourceLocation) -> _Declaration:
+        """Return the declaration at a location of a loaded document."""
+        document = next(uri for uri, identity in self.ids.items() if identity == location.document)
+        tokens = location.pointer[1:].split("/") if location.pointer else ()
+        return _Declaration(document, tuple(token.replace("~1", "/").replace("~0", "~") for token in tokens))
+
+    @cached_property
+    def legacy(self) -> bool:
+        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
+        entry = next(iter(self.documents.values()), {})
+        return str(entry.get("openapi", "")).startswith("3.0")
+
+    def whole(self, declaration: _Declaration) -> tuple[_Declaration, dict[str, YamlValue]]:
+        """Follow a schema that is nothing but a reference to the schema it names, through such schemas.
+
+        Identification keywords beside a reference say nothing of its values, and in OpenAPI 3.0 no sibling does.
+        """
+        raw = _mapping(self.borrow(declaration))
+        seen = {declaration}
+        while (
+            (self.legacy or raw.keys() - _IDENTIFIERS == {"$ref"})
+            and isinstance(ref := raw.get("$ref"), str)
+            and (target := self.target(declaration, ref)) is not None
+            and target not in seen
+        ):
+            seen.add(target)
+            declaration, raw = target, _mapping(self.borrow(target))
+        return declaration, raw
+
+    def default(self, declaration: _Declaration) -> LiteralScalar | None:
+        """Return the default a schema declares when it is a JSON boolean, number, or string."""
+        value = self.whole(declaration)[1].get("default")
+        kind = _DEFAULT_KINDS.get(type(value))
+        return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
+
+    def part(self, declaration: _Declaration) -> PartSchema:
+        """Return how a multipart member's schema encodes its parts, reading an array's items at its own `items`.
+
+        A string is binary by its binary format, or by a content media type without a content encoding.
+        """
+        raw = self.whole(declaration)[1]
+        if repeated := _json_types(raw) - _NULL == _ARRAY:
+            raw = self.whole(_child(declaration, "items"))[1]
+        types = _json_types(raw) - _NULL
+        binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
+        return PartSchema(
+            file=types == _STRING and binary,
+            repeated=repeated,
+            text=bool(types) and not types & _NESTED,
+            structured=bool(types & _NESTED),
+        )
+
+    def parts(self, schema: _Declaration, members: tuple[FieldUseBinding, ...]) -> PartFacts:
+        """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
+        location, raw = self.whole(schema)
+        declared = raw.get("additionalProperties", True)
+        extra: PartSchema | Literal["closed"] | None = None
+        if declared is False:
+            extra = "closed"
+        elif isinstance(declared, dict) and declared:
+            extra = self.part(_child(location, "additionalProperties"))
+        return PartFacts(
+            _json_types(raw) - _NULL <= _OBJECT,
+            tuple(
+                (member.wire_name, self.part(self.declaration(member.schema)))
+                for member in members
+                if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+            ),
+            extra,
+        )
+
     def properties(self, schema: _Declaration) -> dict[str, _Declaration]:
         """Return a schema's properties in declaration order, allOf branches and references included."""
         raw = _mapping(self.borrow(schema))
@@ -1867,6 +1980,9 @@ class _Models:
                         else (),
                         binder.source(model.reference),
                         self.reused_discriminator(model),
+                        tuple(_json_type(get_raw_enum_member_value(field.default)) for field in model.fields)
+                        if policy.kind == "enum"
+                        else (),
                     )
                 )
         return tuple(symbols), tuple(artifacts)
@@ -2483,6 +2599,21 @@ class _Contracts(_SchemaUses):
             references=tuple(references),
         )
 
+    def media_facts(
+        self, uses: tuple[TypeUseId, ...], schema: _Declaration, role: TypeUseRole, media: str
+    ) -> tuple[TypeUseId, ...]:
+        """Record the parts and the parameter default that the media's own schema keyword declares on its uses."""
+        multipart = media.strip().lower().startswith("multipart/")
+        default = self.schemas.default(schema) if role == "parameter" else None
+        for use in uses:
+            binding = self.uses[use]
+            if multipart:
+                binding = replace(binding, parts=self.schemas.parts(schema, binding.members))
+            if default is not None:
+                binding = replace(binding, default=default)
+            self.uses[use] = binding
+        return uses
+
     def media(  # noqa: PLR0913
         self,
         raw: YamlValue,
@@ -2511,20 +2642,27 @@ class _Contracts(_SchemaUses):
                     else ("value",)
                 )
                 uses.extend(
-                    self.use(
-                        owner,
-                        role,
-                        declaration,
-                        use_site,
+                    self.media_facts(
+                        tuple(
+                            self.use(
+                                owner,
+                                role,
+                                declaration,
+                                use_site,
+                                schema,
+                                _child(media_use, keyword),
+                                projection=projection,
+                                name=parameter_name,
+                                location=parameter_location,
+                                status=status,
+                                media=name,
+                            )
+                            for projection in projections
+                        ),
                         schema,
-                        _child(media_use, keyword),
-                        projection=projection,
-                        name=parameter_name,
-                        location=parameter_location,
-                        status=status,
-                        media=name,
+                        role,
+                        name,
                     )
-                    for projection in projections
                 )
             encodings: list[WireDeclaration] = []
             encoding_declaration = _child(media_declaration, "encoding")
@@ -2581,24 +2719,24 @@ class _Contracts(_SchemaUses):
     ) -> WireDeclaration:
         wire_name = name if name is not None else str(value.get("name", ""))
         location = str(value["in"]) if "in" in value else None
-        schemas = (
-            (
-                self.use(
-                    owner,
-                    role,
-                    declared,
-                    use_site,
-                    _child(declared, "schema"),
-                    _child(use_site, "schema"),
-                    location=location,
-                    name=wire_name,
-                    status=status,
-                    media=media,
-                ),
+        schemas: tuple[TypeUseId, ...] = ()
+        if "schema" in value:
+            schema = _child(declared, "schema")
+            use = self.use(
+                owner,
+                role,
+                declared,
+                use_site,
+                schema,
+                _child(use_site, "schema"),
+                location=location,
+                name=wire_name,
+                status=status,
+                media=media,
             )
-            if "schema" in value
-            else ()
-        )
+            if role == "parameter" and (default := self.schemas.default(schema)) is not None:
+                self.uses[use] = replace(self.uses[use], default=default)
+            schemas = (use,)
         children = self.media(
             value.get("content"),
             declared,

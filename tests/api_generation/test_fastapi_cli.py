@@ -1027,8 +1027,8 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
-        (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
-        (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
+        (["--watch", "--output-format", "json"], "Error: --output-format json cannot be used with --watch\n"),
+        (["--diff-against", "pets.yaml", "--check"], "Error: --diff-against and --check cannot be used together\n"),
         (
             ["--update-lock", "--lockfile", "server/api.lock"],
             "Remote lock for 'command' ({lock}) overlaps server output for 'command': {server}\n",
@@ -1043,7 +1043,7 @@ def test_fastapi_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor, and a remote lock inside the server output, before writing anything."""
+    """Refuse the model mode conflicts, and a remote lock inside the server output, before writing anything."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path.resolve()
     run_main_and_assert(
@@ -1060,6 +1060,42 @@ def test_fastapi_cli_conflicts(
     assert_output(
         (tmp_path / "pyproject.toml").read_text(encoding="utf-8"),
         EXPECTED / "cli" / "kept" / "pyproject-target.toml.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "baseline", "expected_exit"),
+    [("unchanged", "pets.yaml", Exit.OK), ("changed", "pets-baseline.yaml", Exit.DIFF)],
+    ids=["unchanged", "changed"],
+)
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_input_diff(
+    case: str,
+    baseline: str,
+    expected_exit: Exit,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compare the models and the server two inputs render through the model input diff, writing nothing.
+
+    The baseline changes a model, a parameter description, and the operation tags, so files change, and a router
+    is generated only from each input.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    shutil.copy2(CLI / "pets-baseline.yaml", tmp_path / "pets-baseline.yaml")
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--diff-against", baseline, *(["--output-format", "json"] if structured else [])),
+        expected_exit=expected_exit,
+        capsys=capsys,
+        assert_no_stderr=True,
+        expected_stdout_path=EXPECTED / "cli" / "input-diff" / f"{case}.{'json' if structured else 'txt'}",
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
 
@@ -1338,7 +1374,11 @@ def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], "Error: --generate-server cannot be used with --watch\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--watch", "--check"],
+            "Error: --watch and --check cannot be used together\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],

@@ -25,12 +25,10 @@ from pets.protocols import (
     ProtocolDefaults,
     ProtocolSecurityContext,
     RequestTarget,
-    ResumeState,
     Selector,
     StatusSelector,
     StreamOptions,
     WebhookOptions,
-    import_state,
 )
 from pets_models import Pet
 
@@ -62,24 +60,16 @@ def wrong_options(security: ProtocolSecurityContext) -> None:
     RequestOptions(protocols=ProtocolClientOptions())  # error
 
 
-def wrong_resume(state: ResumeState) -> None:
-    """Keep resume state opaque bytes on export and bytes on import."""
-    exported: str = state.export()  # error
-    import_state("state")  # error
-    ResumeState(helper="helper", state=object())  # error
-    del exported
-
-
-def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet], state: ResumeState) -> None:
+def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet]) -> None:
     """Reject undeclared literals, fixed fields, mutation, and payloads narrowed without a decision."""
     SessionLimitError(kind="bytes", limit=1, progress={})  # error
     SessionLimitError(kind="pages", limit=1, progress={"bytes": 1})  # error
     StreamResumeExhaustedError(kind="pages", limit=1, progress={})  # error
     PaginationCycleError(page_index=1, first_seen_page_index=0, condition="inconsistent")  # error
-    PaginationCycleError(page_index=1, first_seen_page_index=0, resume_state=state)  # error
+    PaginationCycleError(page_index=1, first_seen_page_index=0, continuation=1)  # error
     IncompleteFrameError(buffered_bytes=1, sequence=0, condition="eof")  # error
     PollWaitLimitError(kind="interval", required_wait=1, limit=0)  # error
-    StreamInterruptedError(condition="closed", sequence=0, resume_state=state)  # error
+    StreamInterruptedError(condition="closed", sequence=0)  # error
     StreamDecodeError(sequence=0, raw_prefix="text", truncated=False)  # error
     ProtocolDataError(location="/cursor")  # error
     wrong: OperationFailedError[int] = failure  # error

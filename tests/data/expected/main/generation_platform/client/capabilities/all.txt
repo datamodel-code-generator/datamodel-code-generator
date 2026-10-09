@@ -1,9 +1,8 @@
 # all
 backend pydantic_v2.BaseModel
 dependencies
-  httpx2>=2.13.0
+  httpx2[ws]>=2.13.0
   typing-extensions>=4.16
-  websockets>=17.1
   pydantic>=2.13.5
   cryptography>=50.0.0
 copied runtime
@@ -12,24 +11,25 @@ copied runtime
   client/auth.py: 485
   client/auth_challenges.py: 99
   client/auth_policy.py: 660
-  client/bodies.py: 225
-  client/body_sources.py: 146
-  client/client.py: 2883
+  client/bodies.py: 226
+  client/body_sources.py: 156
+  client/client.py: 2866
   client/codecs.py: 95
   client/compression.py: 104
-  client/errors.py: 725
+  client/errors.py: 723
   client/events.py: 515
   client/grants.py: 282
   client/hooks.py: 148
   client/logical.py: 231
   client/media.py: 77
-  client/multipart.py: 946
+  client/multipart.py: 546
+  client/multipart_responses.py: 416
   client/native.py: 224
   client/oauth.py: 764
-  client/operations.py: 930
+  client/operations.py: 838
   client/options.py: 628
   client/paths.py: 40
-  client/raw.py: 926
+  client/raw.py: 940
   client/refresh.py: 366
   client/responses.py: 88
   client/retry.py: 335
@@ -48,34 +48,31 @@ copied runtime
   protocols/cache.py: 638
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 930
+  protocols/client.py: 836
   protocols/client_options.py: 34
-  protocols/errors.py: 1224
+  protocols/errors.py: 1097
   protocols/links.py: 75
   protocols/names.py: 29
-  protocols/options.py: 469
+  protocols/options.py: 339
   protocols/origins.py: 45
-  protocols/pagination.py: 1562
+  protocols/pagination.py: 1509
   protocols/polling.py: 1279
   protocols/public_keys.py: 142
-  protocols/records.py: 251
+  protocols/records.py: 243
   protocols/references.py: 16
-  protocols/resume.py: 176
+  protocols/resume.py: 110
   protocols/signatures.py: 99
   protocols/sources.py: 43
-  protocols/streams.py: 1797
-  protocols/uploads.py: 1266
+  protocols/streams.py: 1533
+  protocols/uploads.py: 1268
   protocols/values.py: 158
   protocols/verification.py: 203
   protocols/webhook_events.py: 293
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-  protocols/websocket.py: 1196
-  protocols/websocket_connectors.py: 30
-  protocols/websocket_native.py: 507
-  protocols/websocket_types.py: 220
+  protocols/websocket.py: 965
   protocols/writes.py: 288
-total 68 modules, 27102 lines
+total 66 modules, 25304 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

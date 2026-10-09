@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import collections.abc
-import copy
 import importlib
 import inspect
 import json
-import pickle
 import subprocess
 import sys
 from dataclasses import fields
@@ -50,8 +48,6 @@ print('pagination optional imports=' + repr([name for name in optional if name i
 print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
 runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
 print('option identities=' + repr((options.ProtocolClientOptions is runtime.ProtocolClientOptions, module.ProtocolDefaults is runtime.ProtocolDefaults)))
-state = module.ResumeState(helper='helper', state={'page': 1})
-print('resume round trip=' + repr(module.import_state(state.export()).export() == state.export()))
 print('construction threads unchanged=' + repr(threading.active_count() == before))
 """
 _CLIENT_PROBE: Final = """
@@ -108,13 +104,10 @@ _OPTION_FIELDS: Final = (
     ("PollOptions", "interval", _DURATIONS),
     ("PollOptions", "max_wait", _DURATIONS),
     ("StreamOptions", "idle_timeout", _DURATIONS),
-    ("StreamOptions", "max_line_bytes", _COUNTS),
-    ("StreamOptions", "max_event_bytes", _COUNTS),
     ("StreamOptions", "reconnect", (("True", True), ("False", False), ("None", None), ("1", 1), ("'yes'", "yes"))),
     ("StreamOptions", "max_reconnects", _COUNTS),
     ("StreamOptions", "max_reconnect_wait", _DURATIONS),
 )
-_VALID: Final = {"helper": "helper-secret", "state": {"cursor": "state-secret", "page": 2}, "version": 1}
 
 
 def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
@@ -129,8 +122,6 @@ def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
     _origins(protocols, lines)
     _canonical_values(protocols, records, lines)
     _snapshots(protocols, responses, lines)
-    _resume_states(protocols, lines)
-    _imported_states(protocols, lines)
     _option_matrix(protocols, options, lines)
     _security(protocols, lines)
     _client_options(package, protocols, options, lines)
@@ -162,13 +153,6 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
             f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
             f" hints={tuple(get_type_hints(record_type))}",
         ))
-    opaque = protocols.ResumeState
-    parameters = inspect.signature(opaque).parameters.values()
-    lines.append(
-        f"  ResumeState parameters={tuple(item.name for item in parameters)} "
-        f"keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)} "
-        f"hints={tuple(get_type_hints(opaque.__init__))} final={getattr(opaque, '__final__', False)}"
-    )
     literals = (
         ("HeaderSelector.occurrence", get_type_hints(protocols.HeaderSelector)["occurrence"]),
         ("ParameterTarget.location", get_type_hints(protocols.ParameterTarget)["location"]),
@@ -360,7 +344,7 @@ def _canonical_values(protocols: ModuleType, records: ModuleType, lines: list[st
         ("cyclic", cycle),
         ("integral decimal over conversion limit", Decimal("1" + "0" * 5000)),
     ):
-        record(lines, f"canonical {label}", lambda value=value: _canonical(protocols, records, value))
+        record(lines, f"canonical {label}", lambda value=value: _canonical(records, value))
 
 
 def _deep() -> list[object]:
@@ -373,11 +357,10 @@ def _deep() -> list[object]:
     return root
 
 
-def _canonical(protocols: ModuleType, records: ModuleType, value: object) -> tuple[bytes, bool, bool]:
-    """Return a value's canonical JSON, whether it survives a decode, and whether resume state exports it."""
+def _canonical(records: ModuleType, value: object) -> tuple[bytes, bool]:
+    """Return a value's canonical JSON and whether it survives a decode."""
     encoded = records.canonical_json(value)
-    state = protocols.ResumeState(helper="", state=value).export()
-    return encoded, records.canonical_json(json.loads(encoded)) == encoded, b'"state":' + encoded + b"," in state
+    return encoded, records.canonical_json(json.loads(encoded)) == encoded
 
 
 def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -> None:
@@ -421,80 +404,6 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     )
 
 
-def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
-    """Keep a resume token opaque, validate its fields, and export the documented JSON."""
-    state = protocols.ResumeState(helper="helper-secret", state={"z": [1, 2.5, None, True], "a": "é", "n": 1e100})
-    exported = state.export()
-    lines.extend((
-        f"  resume repr={state!r} str={state} secret={'secret' in repr(state) + str(state)}",
-        f"  resume export={exported.decode()}",
-        f"  resume export stable={state.export() == exported}",
-        f"  resume identity equality={state == state}/{state == protocols.import_state(exported)}",
-        f"  resume dict={hasattr(state, '__dict__')} public={[name for name in dir(state) if not name.startswith('_')]}",
-    ))
-    imported = protocols.import_state(exported)
-    lines.append(
-        f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}"
-    )
-    minimal = protocols.ResumeState(helper="", state=None)
-    record(lines, "resume minimal export", lambda: minimal.export())
-    record(lines, "resume set state", lambda: setattr(state, "_state_json", b"{}"))
-    record(lines, "resume set new", lambda: setattr(state, "version", 2))
-    record(lines, "resume delete state", lambda: delattr(state, "_state_json"))
-    lines.append(f"  resume copies={copy.copy(state) is state}/{copy.deepcopy(state) is state}")
-    record(lines, "resume pickle", lambda: pickle.dumps(state))
-    valid = {"helper": "h", "state": {"page": 1}}
-    for label, changes in (
-        ("helper None", {"helper": None}),
-        ("helper surrogate", {"helper": "\ud800"}),
-        ("state integer over conversion limit", {"state": {"page": 10**5000}}),
-        ("state object", {"state": object()}),
-        ("state set", {"state": {1, 2}}),
-        ("state deeply nested", {"state": _deep()}),
-    ):
-        record(lines, f"resume {label}", lambda changes=changes: protocols.ResumeState(**{**valid, **changes}))
-    record(lines, "resume missing state", lambda: protocols.ResumeState(helper="h"))
-    record(lines, "resume positional", lambda: protocols.ResumeState("h", {}))
-
-
-def _token(changes: dict[str, Any], *, drop: str | None = None) -> bytes:
-    """Build a token by the documented form, independently of the generated runtime."""
-    body = {name: value for name, value in {**_VALID, **changes}.items() if name != drop}
-    return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-
-
-def _imported_states(protocols: ModuleType, lines: list[str]) -> None:
-    """Reject form, version, and members in that order, never revealing the state."""
-    valid = _token({})
-    outcomes: list[str] = []
-    for label, data in (
-        ("valid", valid),
-        ("not JSON", b"{"),
-        ("array", b"[]"),
-        ("invalid UTF-8", b"\xff"),
-        ("duplicate member", valid[:-1] + b',"version":1}'),
-        ("NaN", valid.replace(b'"page":2', b'"page":NaN')),
-        ("string input", valid.decode()),
-        ("bytearray input", bytearray(valid)),
-        ("extra field", _token({"extra": 1})),
-        ("missing field", _token({}, drop="state")),
-        ("version string", _token({"version": "1"})),
-        ("version bool", _token({"version": True})),
-        ("version float", _token({"version": 1.0})),
-        ("helper type", _token({"helper": 1})),
-        ("deeply nested state", valid.replace(b'{"cursor":"state-secret","page":2}', b"[" * 100_000 + b"]" * 100_000)),
-        ("version 2", _token({"version": 2})),
-        ("version 0", _token({"version": 0})),
-        ("version 2 extra field", _token({"version": 2, "extra": 1})),
-        ("version 2 missing field", _token({"version": 2}, drop="state")),
-        ("version missing", _token({}, drop="version")),
-    ):
-        record(outcomes, f"import {label}", lambda data=data: protocols.import_state(data))
-    lines.extend(outcomes)
-    lines.append(f"  import secret={any('secret' in line for line in outcomes)}")
-    lines.append(f"  import exported independent token={protocols.import_state(valid).export() == valid}")
-
-
 def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Accept only the declared None, zero, and positive values of each kind's options."""
     for type_name, name, values in _OPTION_FIELDS:
@@ -522,8 +431,6 @@ def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str])
             "all limits",
             lambda: protocols.StreamOptions(
                 idle_timeout=None,
-                max_line_bytes=1,
-                max_event_bytes=1,
                 reconnect=True,
                 max_reconnects=None,
                 max_reconnect_wait=0.25,

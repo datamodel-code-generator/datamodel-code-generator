@@ -1,4 +1,4 @@
-"""Preserve protocol records, options, resume state, and error payload types through the public contracts."""
+"""Preserve protocol records, options, and error payload types through the public contracts."""
 
 from __future__ import annotations
 
@@ -36,13 +36,11 @@ from pets.protocols import (
     ProtocolSecurityContext,
     QuerystringTarget,
     RequestTarget,
-    ResumeState,
     Selector,
     StatusSelector,
     StreamOptions,
     UploadOptions,
     WSOptions,
-    import_state,
 )
 from pets.responses import ResponseInfo
 from pets_models import Pet
@@ -105,16 +103,7 @@ def options(origin: Origin) -> ClientOptions:
     return ClientOptions(protocols=None)
 
 
-def resume(state: ResumeState) -> ResumeState:
-    """Export opaque state as bytes and import it back as the same opaque type."""
-    exported = state.export()
-    assert_type(exported, bytes)
-    restored = import_state(exported)
-    assert_type(restored, ResumeState)
-    return ResumeState(helper="helper", state={"page": [1, 2]})
-
-
-def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
+def errors(snapshot: PollSnapshot[Pet]) -> None:
     """Keep typed references, but widen bare catches to object without Any."""
     failure = OperationFailedError[Pet](snapshot=snapshot)
     assert_type(failure.snapshot.data, Pet)
@@ -124,9 +113,8 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     assert_type(text_failure.snapshot, PollSnapshot[str])
     remote = StreamRemoteError[Pet](event_type="error", data=snapshot.data, sequence=1)
     assert_type(remote.data, Pet)
-    limit = SessionLimitError(kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
+    limit = SessionLimitError(kind="pages", limit=10, progress={"pages": 10})
     assert_type(limit.progress, Mapping[ProgressKey, int])
-    assert_type(limit.resume_state, ResumeState | None)
     exhausted = StreamResumeExhaustedError(kind="reconnects", limit=5, progress={"reconnects": 5})
     assert_type(exhausted.kind, Literal["pages", "items", "polls", "reconnects", "parts"])
     cycle = PaginationCycleError(page_index=2, first_seen_page_index=0, location=BodySelector(pointer="/next"))
@@ -146,10 +134,7 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     except ProtocolDataError as data_error:
         assert_type(data_error.location, Selector | RequestTarget | None)
     except ResumeStateError as resume_error:
-        assert_type(
-            resume_error.condition,
-            Literal["version", "fingerprint", "expired", "malformed"],
-        )
+        assert_type(resume_error.condition, Literal["expired"])
 
 
 def failed(error: OperationFailedError, cancelled: OperationCancelledError | None = None) -> None:

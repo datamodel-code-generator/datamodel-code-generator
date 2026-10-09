@@ -104,6 +104,58 @@
       "has_more": {"from": "header", "name": "X-Total-Count"}
     }
   },
+  "write.nullable_integer": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "num"},
+      "end": [{"kind": "missing"}],
+      "empty_string": "end"
+    }
+  },
+  "has_more.nullable_alias": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/more_alias"}
+    }
+  },
+  "has_more.uri": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/more_uri"}
+    }
+  },
+  "has_more.nullable_header": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "header", "name": "X-More"}
+    }
+  },
   "total.boolean": {
     "kind": "pagination",
     "operation": "/paths/~1users/get",
@@ -167,6 +219,71 @@
       "first": 0,
       "step": {"literal": 10},
       "total": {"from": "status"}
+    }
+  },
+  "has_more.nullable_model": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/cursor_model"}
+    }
+  },
+  "has_more.positive": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/positive"}
+    }
+  },
+  "has_more.floor": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/floor"}
+    }
+  },
+  "items.alias": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/UserRef"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  },
+  "items.foreign_alias": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/CursorRef"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/has_more"}
     }
   }
 }

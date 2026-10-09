@@ -264,9 +264,7 @@ def _progress(value: object) -> str:
             )
             if getattr(value, name, None) is not None
         )
-        state = getattr(value, "resume_state", None)
-        kept = "" if not hasattr(value, "resume_state") else f" resume_state={state is not None}"
-        return f"{describe(value)}{f' [{fields}]' if fields else ''}{kept}"
+        return f"{describe(value)}{f' [{fields}]' if fields else ''}"
     return describe(value)
 
 
@@ -394,10 +392,9 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         record(lines, label, create)
     lines.append("upload errors")
     progress = protocols.UploadProgress(confirmed_bytes=4, total_bytes=10)
-    state = protocols.ResumeState(helper="h", state={})
     delivery = harness.package.errors.DeliveryState
     for name, fields in (
-        ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "resume_state": state, "message_id": "m-1"}),
+        ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "message_id": "m-1"}),
         (
             "UploadDeliveryUnknownError",
             {"phase": "part", "progress": progress, "delivery_state": delivery.RESPONSE_STARTED},
@@ -436,12 +433,6 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         (
             "offset negative",
             lambda: errors.UploadOffsetError(confirmed_offset=-1, expected_offset=0, remote_offset=0, size=0),
-        ),
-        (
-            "offset state",
-            lambda: errors.UploadOffsetError(
-                confirmed_offset=0, expected_offset=0, remote_offset=0, size=0, resume_state=None
-            ),
         ),
         ("expired naive", lambda: errors.UploadExpiredError(expires_at=_EXPIRED.replace(tzinfo=None))),
         ("expired condition", lambda: errors.UploadExpiredError(expires_at=_EXPIRED, condition="expired")),
@@ -834,6 +825,8 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
 def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
     """Refuse options before reading or sending, and stop at a session's send limit with a checkpoint."""
     helper, options = api.protocols.files.upload, harness.options
+    lines.append("refused size")
+    step(lines, "start", lambda: helper.start(harness.source(bytes(11)), tus_resumable=harness.tus))
     lines.append("refused options")
     for label, call in (
         (

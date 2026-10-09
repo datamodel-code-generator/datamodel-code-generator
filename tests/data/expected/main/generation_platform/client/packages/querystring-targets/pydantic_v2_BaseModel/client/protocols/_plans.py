@@ -151,7 +151,6 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='3e605feffc1b8dd48a19fc648c316c61fa820da3fd21dce949569ea239ae5cb2',
     event=model_bindings.codec_23,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1events/get'),
