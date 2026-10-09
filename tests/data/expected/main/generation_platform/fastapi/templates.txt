@@ -8,11 +8,13 @@ render pydantic_v2.BaseModel
   server/routers/store.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/services.py
   server/README.md
   server/_runtime/__init__.py (copied runtime)
   server/_runtime/server/__init__.py (copied runtime)
   server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/openapi.py (copied runtime)
   server/_runtime/server/responses.py (copied runtime)
   server/py.typed
   file server/README.md

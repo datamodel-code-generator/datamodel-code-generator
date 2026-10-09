@@ -35,6 +35,7 @@ def _models(case: dict[str, Any], package: str) -> str:
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     for name in case.get("files", ()):
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SOURCE / name, root / name)
     model = case.get("model", {})
     if isinstance(directory := model.get("custom_template_dir"), str):

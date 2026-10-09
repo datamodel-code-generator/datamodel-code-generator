@@ -7,22 +7,21 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from models import FieldPetsPostRequest as _dcg_type_1
-from models import NewPet as _dcg_type_0
+import models
 from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncBinaryBody, AsyncMultipartBody, MultipartBody, SyncBinaryBody
-from ..options import RequestOptions, Unset
+from ..options import UNSET, RequestOptions
 
 
 class Operation0Arguments(TypedDict):
     """The keyword arguments of one signature of list_pets."""
 
-    limit: NotRequired[int | Unset]
-    labels: NotRequired[list[str] | Unset]
+    limit: NotRequired[int | UNSET]
+    labels: NotRequired[list[str] | UNSET]
     x_trace: str
-    session: NotRequired[str | Unset]
+    session: NotRequired[str | UNSET]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -30,7 +29,7 @@ class Operation0Arguments(TypedDict):
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_0
+    body: models.NewPet
     media_type: Literal['application/json']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -39,7 +38,7 @@ class Operation1Arguments(TypedDict):
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_1
+    body: models.FieldPetsPostRequest
     media_type: Literal['text/plain']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -48,7 +47,7 @@ class Operation1Arguments1(TypedDict):
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_0 | _dcg_type_1
+    body: models.NewPet | models.FieldPetsPostRequest
     media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -104,7 +103,7 @@ class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of upload."""
 
     pet_id: int
-    body: NotRequired[SyncBinaryBody | Unset]
+    body: NotRequired[SyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]
@@ -114,7 +113,7 @@ class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of upload."""
 
     pet_id: int
-    body: NotRequired[AsyncBinaryBody | Unset]
+    body: NotRequired[AsyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]

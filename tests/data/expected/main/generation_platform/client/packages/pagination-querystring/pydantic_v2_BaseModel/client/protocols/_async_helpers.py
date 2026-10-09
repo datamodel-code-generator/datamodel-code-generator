@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
-from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -90,7 +89,7 @@ class AsyncSearchAllPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -106,7 +105,7 @@ class AsyncSearchAllPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -139,7 +138,7 @@ class AsyncSearchAllPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -164,7 +163,7 @@ class AsyncSearchFixedPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -180,7 +179,7 @@ class AsyncSearchFixedPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -213,7 +212,7 @@ class AsyncSearchFixedPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -238,7 +237,7 @@ class AsyncSearchNextPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -254,7 +253,7 @@ class AsyncSearchNextPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -287,7 +286,7 @@ class AsyncSearchNextPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
@@ -312,7 +311,7 @@ class AsyncLookupAllPagination:
     async def page(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, LookupResponse]:
@@ -328,7 +327,7 @@ class AsyncLookupAllPagination:
     def iterate(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, LookupResponse]:
@@ -361,7 +360,7 @@ class AsyncLookupAllPagination:
         self,
         state: JSONValue,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncPager[str, LookupResponse]:

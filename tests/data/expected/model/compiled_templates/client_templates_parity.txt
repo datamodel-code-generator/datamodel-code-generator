@@ -24,7 +24,7 @@ class ClientView:
         self,
         *,
         base_url: str | None = None,
-        timeout: float | Unset | None = UNSET,
+        timeout: float | UNSET | None = UNSET,
     ) -> ClientView:
         """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
         core = self._core.view(base_url=base_url, timeout=timeout)
@@ -35,7 +35,7 @@ class ClientView:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -70,7 +70,7 @@ class Client(ClientView):
         api_key: Secret | None = None,
         oauth: Secret | TokenSource | None = None,
         base_url: str | None = None,
-        timeout: float | Unset | None = UNSET,
+        timeout: float | UNSET | None = UNSET,
         http_client: HTTPClient | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
@@ -98,7 +98,7 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""
@@ -139,7 +139,7 @@ class ClientView:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -178,7 +178,7 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""
@@ -210,7 +210,7 @@ class AsyncClientView:
         self,
         *,
         base_url: str | None = None,
-        timeout: float | Unset | None = UNSET,
+        timeout: float | UNSET | None = UNSET,
     ) -> AsyncClientView:
         """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
         core = self._core.view(base_url=base_url, timeout=timeout)
@@ -221,7 +221,7 @@ class AsyncClientView:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -262,7 +262,7 @@ class AsyncClient(AsyncClientView):
         *,
         token: Secret | TokenSource | None = None,
         base_url: str | None = None,
-        timeout: float | Unset | None = UNSET,
+        timeout: float | UNSET | None = UNSET,
         http_client: HTTPClient | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
@@ -284,7 +284,7 @@ class AsyncClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

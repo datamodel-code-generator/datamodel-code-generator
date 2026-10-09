@@ -51,7 +51,9 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
         principal: Annotated[object, Depends(get_keys_principal)],
     ) -> object:
         return dispatch(
-            get_keys_handler(principal=principal),
+            get_keys_handler(
+                principal=principal,
+            ),
             contract.GetKeys.RESPONSES,
         )
 
@@ -64,12 +66,13 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getKeys',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('get_keys'),
     )
 
 
-LITERAL_ROUTES: Final = (('get_keys', _add_get_keys),)
+LITERAL_ROUTES: Final = (
+    ('get_keys', _add_get_keys),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

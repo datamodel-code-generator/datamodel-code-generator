@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
 
 from tests.data.python.fastapi_server import _generate, _import
 from tests.data.python.generated_packages import forget_generated
@@ -27,6 +28,20 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "calls": {"input": "callbacks.yaml"},
     "methods": {"input": "methods.yaml"},
     "names": {"input": "names.yaml"},
+    "references": {
+        "input": "references.yaml",
+        "files": ["references-library.yaml", "references-metadata.yaml"],
+        "config": {"server_layout": "single"},
+    },
+    "selected": {"input": "pets.yaml", "model": {"openapi_include_paths": ["/pets/{petId}"]}},
+    "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
+    "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
+    "resources": {"input": "served-resources.yaml"},
+    "legacy": {
+        "input": "served-legacy.yaml",
+        "files": ["served-event.yaml"],
+        "model": {"openapi_include_paths": ["/pets", "/uses"]},
+    },
 }
 Scenario: TypeAlias = Callable[[dict[str, Any]], list[str]]
 SCENARIOS: dict[str, tuple[tuple[str, ...], Scenario]] = {}
@@ -142,6 +157,10 @@ def prefixes(packages: dict[str, Any]) -> list[str]:
     lines = [f"warning {warning.message}" for warning in caught]
     lines.extend(_summary(document))
     lines.append(f"create_app {list(_connected(items.create_app, prefix='/root').openapi()['paths'])}")
+    app = FastAPI()
+    app.include_router(_connected(items.build_router, prefix="/v3"))
+    items.serve_source_openapi(app, prefix="/v3")
+    lines.append(f"serve_source_openapi {list(app.openapi()['paths'])}")
     return lines
 
 
@@ -151,6 +170,78 @@ def later_routes(packages: dict[str, Any]) -> list[str]:
     app = _connected(packages["pets"].create_app)
     app.add_api_route("/health", lambda: None, methods=["GET"])
     return [f"paths {list(app.openapi()['paths'])}"]
+
+
+@_scenario("references")
+def document_references(packages: dict[str, Any]) -> list[str]:
+    """Serve a document whose references into other documents the package bundles into its components."""
+    return [json.dumps(_connected(packages["references"].create_app).openapi(), indent=2)]
+
+
+@_scenario("selected")
+def document_selection(packages: dict[str, Any]) -> list[str]:
+    """Serve only the selected operations' paths, with only the components they reference."""
+    return [json.dumps(_connected(packages["selected"].create_app).openapi(), indent=2)]
+
+
+@_scenario("hooks")
+def document_webhooks(packages: dict[str, Any]) -> list[str]:
+    """Bundle the path items, discriminator mapping, and schemas that webhooks and callbacks name elsewhere."""
+    return [json.dumps(_connected(packages["hooks"].create_app).openapi(), indent=2)]
+
+
+@_scenario("streams")
+def document_streams(packages: dict[str, Any]) -> list[str]:
+    """Bundle an OpenAPI 3.2 item schema and media type, resolving a schema's references against its $id."""
+    return [json.dumps(_connected(packages["streams"].create_app).openapi(), indent=2)]
+
+
+@_scenario("legacy")
+def document_legacy(packages: dict[str, Any]) -> list[str]:
+    """Serve an OpenAPI 3.0 subset: discriminator subtypes kept, references into left-out paths bundled."""
+    return [json.dumps(_connected(packages["legacy"].create_app).openapi(), indent=2)]
+
+
+@_scenario("resources")
+def document_resources(packages: dict[str, Any]) -> list[str]:
+    """Serve schema resources by `$id`, `$anchor`, and `$dynamicAnchor`, and references into paths under a prefix."""
+    resources = packages["resources"]
+    unset = _connected(resources.create_app, summary=None, contact=None, servers=None, openapi_tags=None).openapi()
+    return [
+        json.dumps(_connected(resources.create_app, prefix="/api").openapi(), indent=2),
+        f"unset {sorted(unset)} {sorted(unset['info'])}",
+    ]
+
+
+@_scenario("bodies")
+def fastapi_document(packages: dict[str, Any]) -> list[str]:
+    """Serve FastAPI's own document instead of the source document."""
+    return [json.dumps(_connected(packages["bodies"].create_app, source_openapi=False).openapi(), indent=2)]
+
+
+@_scenario("items")
+def own_applications(packages: dict[str, Any]) -> list[str]:
+    """Serve FastAPI's document in an application of your own, then the source document behind a root path."""
+    items = packages["items"]
+    app = FastAPI()
+    app.include_router(_connected(items.build_router))
+    lines = [f"fastapi {app.openapi()['openapi']} {list(app.openapi()['paths'])}"]
+    app = FastAPI(root_path="/api")
+    app.include_router(_connected(items.build_router))
+    app.openapi()
+    items.serve_source_openapi(app)
+    served = TestClient(app).get("/openapi.json").json()
+    first = app.openapi()
+    lines.extend((
+        f"source {served['openapi']} {list(served['paths'])}",
+        f"servers {served.get('servers')}",
+        f"kept {app.openapi() is first}",
+    ))
+    described = _connected(
+        items.create_app, title="Mine", version="2", servers=[{"url": "https://prod.example.com"}]
+    ).openapi()
+    lines.append(f"metadata {described['info']} {described['servers']}")
+    return lines
 
 
 def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:

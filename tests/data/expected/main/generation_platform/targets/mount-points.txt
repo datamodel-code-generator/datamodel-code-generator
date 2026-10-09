@@ -12,12 +12,13 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/store.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 leftovers []
 write server/services.py
 write models/pets.py
@@ -32,12 +33,13 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/store.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 leftovers []
 render
   unchanged models/__init__.py
@@ -49,7 +51,8 @@ render
   unchanged server/routers/store.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   unchanged server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']

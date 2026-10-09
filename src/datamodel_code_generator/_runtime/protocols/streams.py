@@ -37,12 +37,12 @@ from ..client.raw import afinished, aheld, checked, finished, held, native_reque
 from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from .options import StreamOptions, layered
 from .records import plain_copy
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, server_expiry, written
+from .values import MISSING, Patch, RepeatedValueError, resolve, selected, server_expiry, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
@@ -269,7 +269,7 @@ class _Lines:
 class _Limits:
     """The effective limits of one stream, each from the first layer that sets it; None removes a limit."""
 
-    idle_timeout: float | Unset | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
     reconnect: bool = False
     max_reconnects: int | None = 5
     max_reconnect_wait: float | None = 60.0
@@ -314,7 +314,8 @@ def _limits(
             raise _invalid(plan, ("stream_options", "reconnect"), "missing_metadata")
     else:
         _unpatched(core, plan, resume, request)
-    if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
+    idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
+    if idle is not UNSET:
         phases = core.call_settings(request, plan.call).timeout
         timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
         request = replace(request or RequestOptions(), timeout=timeout)
@@ -458,7 +459,7 @@ def _bound(  # noqa: PLR0913, PLR0917
     return bound
 
 
-def _json(frame: _Frame) -> JSONValue | Missing:
+def _json(frame: _Frame) -> JSONValue | MISSING:
     """Return an event's data parsed as JSON, or MISSING when it is not JSON.
 
     `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
@@ -469,7 +470,7 @@ def _json(frame: _Frame) -> JSONValue | Missing:
         return MISSING
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -546,9 +547,9 @@ def _wire(value: object) -> JSONValue:
     return value.applied(plain_copy) if isinstance(value, Patch) else cast("JSONValue", value)
 
 
-def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | Unset, ...]:
+def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | UNSET, ...]:
     """Return arguments written by wire value with their writes applied."""
-    return cast("tuple[JSONValue | Unset, ...]", tuple(map(_wire, arguments)))
+    return cast("tuple[JSONValue | UNSET, ...]", tuple(map(_wire, arguments)))
 
 
 class _State(Enum):

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from typing_extensions import TypeVar
 
 from ..client.errors import ConfigurationError
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -62,7 +62,7 @@ WEBHOOK_LIMITS: Final = (
 def layered(layers: tuple[object, ...], name: str, default: V) -> V:
     """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
     for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+        if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
 
@@ -88,13 +88,13 @@ def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> No
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
     """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
     for name, duration, nullable, allow_zero in rules:
-        if isinstance(value := getattr(options, name), Unset) or (nullable and value is None):
+        if (value := getattr(options, name)) is UNSET or (nullable and value is None):
             continue
         (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
-    if not isinstance(value, kinds):
+    if value is not UNSET and not isinstance(value, kinds):
         raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
@@ -105,9 +105,9 @@ class PaginationOptions:
     `total_timeout` bounds the whole session in seconds, counted from its start.
     """
 
-    max_pages: int | Unset | None = UNSET
-    max_items: int | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
+    max_pages: int | UNSET | None = UNSET
+    max_items: int | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -121,10 +121,10 @@ class PollOptions:
     `total_timeout`, which also takes 0, bounds the whole session in seconds, counted from its start.
     """
 
-    max_polls: int | Unset | None = UNSET
-    interval: float | Unset = UNSET
-    max_wait: float | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
+    max_polls: int | UNSET | None = UNSET
+    interval: float | UNSET = UNSET
+    max_wait: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, zero, and nonfinite durations."""
@@ -138,16 +138,16 @@ class StreamOptions:
     `total_timeout` bounds the whole session, reconnections included, in seconds counted from its start.
     """
 
-    idle_timeout: float | Unset | None = UNSET
-    reconnect: bool | Unset = UNSET
-    max_reconnects: int | Unset | None = UNSET
-    max_reconnect_wait: float | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
+    reconnect: bool | UNSET = UNSET
+    max_reconnects: int | UNSET | None = UNSET
+    max_reconnect_wait: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, a nonboolean reconnect switch, and every forbidden None or zero."""
         check_limits(self, _STREAM)
-        _instance(self.reconnect, (bool, Unset), "reconnect")
+        _instance(self.reconnect, (bool,), "reconnect")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -157,8 +157,8 @@ class UploadOptions:
     `total_timeout` bounds the whole session in seconds, counted from its start; None removes it.
     """
 
-    chunk_bytes: int | Unset = UNSET
-    total_timeout: float | Unset | None = UNSET
+    chunk_bytes: int | UNSET = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -173,12 +173,12 @@ class WSOptions:
     also takes 0, bounds the whole session in seconds, counted from its start.
     """
 
-    open_timeout: float | Unset | None = UNSET
-    idle_timeout: float | Unset | None = UNSET
-    max_message_bytes: int | Unset = UNSET
-    ping_interval: float | Unset | None = UNSET
-    pong_timeout: float | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
+    open_timeout: float | UNSET | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
+    max_message_bytes: int | UNSET = UNSET
+    ping_interval: float | UNSET | None = UNSET
+    pong_timeout: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, and forbidden None or zero."""
@@ -189,8 +189,8 @@ class WSOptions:
 class CacheOptions:
     """Cache limits of one fetch: the largest body it stores and the cap on any entry's freshness."""
 
-    max_entry_bytes: int | Unset = UNSET
-    max_ttl: float | Unset = UNSET
+    max_entry_bytes: int | UNSET = UNSET
+    max_ttl: float | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, zero, and nonfinite durations."""

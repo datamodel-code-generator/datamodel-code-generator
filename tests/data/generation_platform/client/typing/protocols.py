@@ -8,7 +8,7 @@ from typing import Literal
 from pets import AsyncClient, Client
 from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.model_codecs import JSONValue
-from pets.options import UNSET, Unset
+from pets.options import UNSET
 from pets.protocols import (
     AsyncMemoryCacheStore,
     BodySelector,
@@ -67,17 +67,17 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
 def options() -> Client:
     """Expose each option field type and construct clients with helper defaults and lent stores."""
     pagination = PaginationOptions(max_pages=None, max_items=0, total_timeout=30)
-    assert_type(pagination.max_items, int | Unset | None)
-    assert_type(pagination.max_pages, int | Unset | None)
-    assert_type(pagination.total_timeout, float | Unset | None)
+    assert_type(pagination.max_items, int | UNSET | None)
+    assert_type(pagination.max_pages, int | UNSET | None)
+    assert_type(pagination.total_timeout, float | UNSET | None)
     polling = PollOptions(interval=0.5, max_wait=None, total_timeout=None)
-    assert_type(polling.interval, float | Unset)
-    assert_type(polling.max_wait, float | Unset | None)
+    assert_type(polling.interval, float | UNSET)
+    assert_type(polling.max_wait, float | UNSET | None)
     stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET, total_timeout=0)
-    assert_type(stream.reconnect, bool | Unset)
-    assert_type(stream.max_reconnect_wait, float | Unset | None)
-    assert_type(UploadOptions(total_timeout=30).total_timeout, float | Unset | None)
-    assert_type(WSOptions(total_timeout=30).total_timeout, float | Unset | None)
+    assert_type(stream.reconnect, bool | UNSET)
+    assert_type(stream.max_reconnect_wait, float | UNSET | None)
+    assert_type(UploadOptions(total_timeout=30).total_timeout, float | UNSET | None)
+    assert_type(WSOptions(total_timeout=30).total_timeout, float | UNSET | None)
     defaults: Mapping[str, PaginationOptions | PollOptions | StreamOptions | CacheOptions] = {
         "pages.all": pagination,
         "jobs.run": polling,

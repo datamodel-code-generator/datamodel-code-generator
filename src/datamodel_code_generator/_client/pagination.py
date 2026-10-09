@@ -35,6 +35,8 @@ from datamodel_code_generator._target_contract import (
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator
 
+    from typing_extensions import TypeIs
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
     from datamodel_code_generator._client.model_facts import ModelFacts, StepKind
@@ -45,9 +47,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         Direction,
         FieldUseBinding,
-        FinalPythonType,
         TypeUseBinding,
         TypeUseId,
+        TypeView,
     )
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
@@ -68,7 +70,7 @@ class PaginationSpec:
     helper: Helper
     operation: OperationSpec
     page: TypeUseBinding
-    item: FinalPythonType
+    item: TypeView
     item_schema: Mapping[str, str]
     steps: tuple[ItemStep, ...]
 
@@ -94,7 +96,7 @@ class _Reached:
 
     steps: tuple[ItemStep, ...]
     member: FieldUseBinding | None
-    value: FinalPythonType
+    value: TypeView
 
 
 def _label(spec: OperationSpec) -> str:
@@ -193,14 +195,14 @@ def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
     return accepted is None or kind in accepted or (kind == "integer" and "number" in accepted)
 
 
-def _branches(value: FinalPythonType) -> bool:
+def _branches(value: TypeView) -> bool:
     """Return whether a type is a union of several types or a mapping, which no accessor reads through."""
     return isinstance(value, UnionType) or (
         isinstance(value, GenericType) and value.tuple_form != "fixed" and len(value.arguments) == 2  # noqa: PLR2004
     )
 
 
-def _sequence(value: FinalPythonType) -> bool:
+def _sequence(value: TypeView) -> TypeIs[GenericType]:
     """Return whether a type is a list or a tuple of one item type, as a JSON array decodes to."""
     return (
         isinstance(value, GenericType)
@@ -233,7 +235,7 @@ class _Pages:
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
         self.schemas = schema_uses(request.batch.type_uses)
 
-    def walk(self, value: FinalPythonType, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
+    def walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
         """Follow a pointer through the fields of a page's models, or say why it names no field.
 
         A root model and a nullable single model are stepped through; a union of several members or a map is not.
@@ -262,20 +264,7 @@ class _Pages:
         value = facts.unwrapped(value, steps)
         return _Reached(tuple(steps), member, value)
 
-    def element(self, value: FinalPythonType | None) -> FinalPythonType:
-        """Return the element type of a list or tuple type an array node binds, through None and generated roots."""
-        assert value is not None
-        while not isinstance(value, GenericType):
-            if isinstance(value, UnionType):
-                value = next(member for member in value.members if not isinstance(member, NoneType))
-            else:
-                assert isinstance(value, GeneratedSymbolType)
-                root = self.facts.root(value.symbol)
-                assert root is not None
-                value = root
-        return value.arguments[0]
-
-    def declared(self, value: FinalPythonType | None, pointer: str) -> _Types | Literal["absent"]:
+    def declared(self, value: TypeView | None, pointer: str) -> _Types | Literal["absent"]:
         """Return the JSON types of the property a pointer names through the fields of a value's models.
 
         An empty pointer names the value itself; a pointer through no field of a model is absent.
@@ -289,7 +278,7 @@ class _Pages:
             else self.facts.field_types(member.model_facts)
         )
 
-    def item_type(self, reference: SchemaRef, direction: Direction) -> FinalPythonType | Literal["missing"] | None:
+    def item_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
         """Return the type a helper's item schema is read as in a direction, or say its document has no such pointer.
 
         None is a schema no model stands for.
@@ -299,11 +288,11 @@ class _Pages:
             return "missing"
         return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
 
-    def same(self, value: FinalPythonType | None, expected: FinalPythonType | None) -> bool:
+    def same(self, value: TypeView | None, expected: TypeView | None) -> bool:
         """Return whether a type is the type an item schema is read as, through None and aliases."""
         return value is not None and expected is not None and self.present(value) in self.read_as(expected)
 
-    def read_as(self, expected: FinalPythonType) -> tuple[FinalPythonType, ...]:
+    def read_as(self, expected: TypeView) -> tuple[TypeView, ...]:
         """Return the types an item schema's type is read as, without None and through aliases.
 
         A root model also reads as its root, as the model of a schema that only refers to another one does.
@@ -317,7 +306,7 @@ class _Pages:
             return read, self.present(root)
         return (read,)
 
-    def present(self, value: FinalPythonType) -> FinalPythonType:
+    def present(self, value: TypeView) -> TypeView:
         """Return a type without None, through its aliases."""
         value = self.facts.plain(value)
         if (
@@ -366,10 +355,10 @@ class _Pages:
         self,
         helper: Helper,
         spec: OperationSpec,
-        body: FinalPythonType,
+        body: TypeView,
         page: TypeUseBinding,
         problems: list[Diagnostic],
-    ) -> tuple[tuple[ItemStep, ...], FinalPythonType] | None:
+    ) -> tuple[tuple[ItemStep, ...], TypeView] | None:
         """Check that the items pointer selects an array of the page whose items the item schema describes."""
         at, name, label = helper.at, helper.name, _label(spec)
         pointer = helper.tree["items"]["pointer"]
@@ -388,8 +377,7 @@ class _Pages:
             message = f"The items pointer {pointer!r} of {name!r} selects no JSON array of the {label} response"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
-        member = reached.member
-        item = self.element(page.type if member is None or member.model_facts is None else member.model_facts.type)
+        item = reached.value.arguments[0]
         reference = helper.tree["item_schema"]
         if (expected := self.item_type(reference, page.id.direction)) == "missing":
             message = f"The item_schema {reference.pointer!r} of {name!r} does not exist in its document"
@@ -408,7 +396,7 @@ class _Pages:
         self,
         helper: Helper,
         spec: OperationSpec,
-        body: FinalPythonType,
+        body: TypeView,
         headers: tuple[HeaderSpec, ...],
         read: Mapping[str, Any],
         at: str,
@@ -486,7 +474,7 @@ class _Pages:
         return schemas, f"the property {pointer!r} of {place}" if pointer else place, carries
 
     def cursor(
-        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
         at = f"{helper.at}.continuation"
@@ -512,7 +500,7 @@ class _Pages:
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
 
     def next_url(
-        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the next URL reads strings, that its ends are typed, and that a repeated body may be sent again.
 
@@ -543,7 +531,7 @@ class _Pages:
 
     @staticmethod
     def link(
-        helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
+        helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the page response declares the Link header and that the relation is one RFC 8288 relation type."""
         del body
@@ -559,7 +547,7 @@ class _Pages:
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.rel", message, spec)
 
     def count(
-        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that an offset or page number is an integer its target accepts and that its end evidence is typed.
 
@@ -620,7 +608,7 @@ class _Pages:
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def values(
-        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, and that no two writes overlap.
 

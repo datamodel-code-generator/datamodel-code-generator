@@ -12,6 +12,7 @@ from .application import (
     RequirementSets,
     build_router,
     create_app,
+    serve_source_openapi,
     validation_error_handler,
 )
 
@@ -24,5 +25,6 @@ __all__ = [
     "RequirementSets",
     "build_router",
     "create_app",
+    "serve_source_openapi",
     "validation_error_handler",
 ]

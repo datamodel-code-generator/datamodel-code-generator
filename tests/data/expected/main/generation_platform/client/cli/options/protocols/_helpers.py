@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import Pet as _dcg_type_0
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -20,7 +20,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.pets import ListPetsResponse
 from . import PaginationOptions, _plans
 
@@ -61,11 +61,12 @@ class PetsAllPagination:
     def page(
         self,
         *,
-        limit: int | Unset = UNSET,
-        cursor: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> Page[_dcg_type_0, ListPetsResponse]:
+        session_options: SessionOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse]:
         """Fetch the first page of GET /pets."""
         return first_page(
             self._core,
@@ -73,16 +74,18 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
+            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        limit: int | Unset = UNSET,
-        cursor: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        session_options: SessionOptions | None = None,
+    ) -> Pager[models.Pet, ListPetsResponse]:
         """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
         return iterate_pages(
             self._core,
@@ -90,15 +93,17 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
+            session_options=session_options,
         )
 
     def next_page(
         self,
-        page: Page[_dcg_type_0, ListPetsResponse],
+        page: Page[models.Pet, ListPetsResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> Page[_dcg_type_0, ListPetsResponse] | None:
+        session_options: SessionOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
             self._core,
@@ -106,17 +111,19 @@ class PetsAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
+            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        limit: int | Unset = UNSET,
-        cursor: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        session_options: SessionOptions | None = None,
+    ) -> Pager[models.Pet, ListPetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
             self._core,
@@ -125,4 +132,5 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
+            session_options=session_options,
         )

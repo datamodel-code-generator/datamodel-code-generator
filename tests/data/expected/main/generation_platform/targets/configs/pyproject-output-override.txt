@@ -1,9 +1,10 @@
 Add the runtime dependencies of example.server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5"
+  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
 elsewhere/README.md
 elsewhere/__init__.py
 elsewhere/_generated/__init__.py
 elsewhere/_generated/contract.py
+elsewhere/_generated/openapi.py
 elsewhere/application.py
 elsewhere/py.typed
 elsewhere/routers/__init__.py

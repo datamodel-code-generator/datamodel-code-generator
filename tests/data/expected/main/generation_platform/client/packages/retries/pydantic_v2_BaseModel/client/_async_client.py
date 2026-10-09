@@ -16,7 +16,7 @@ from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
-from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.model_codecs.unset import UNSET
 from .bodies import AsyncBodyInput
 from .model_codecs import JSONValue
 from .options import Clock, RequestOptions, RetryOptions, ServerSelection
@@ -44,14 +44,14 @@ class AsyncClientView:
         *,
         base_url: str | None = None,
         server: ServerSelection | None = None,
-        timeout: float | httpx2.Timeout | Unset | None = UNSET,
-        total_timeout: float | Unset | None = UNSET,
+        timeout: float | httpx2.Timeout | UNSET | None = UNSET,
+        total_timeout: float | UNSET | None = UNSET,
         max_retries: int | None = None,
         retry: RetryOptions | None = None,
         default_headers: Mapping[str, str | None] | None = None,
         default_query: Mapping[str, str | None] | None = None,
         follow_redirects: bool | None = None,
-        auth: httpx2.Auth | Unset | None = UNSET,
+        auth: httpx2.Auth | UNSET | None = UNSET,
     ) -> AsyncClientView:
         """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
         core = self._core.view(
@@ -73,7 +73,7 @@ class AsyncClientView:
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -100,14 +100,14 @@ class AsyncClient(AsyncClientView):
         *,
         base_url: str | None = None,
         server: ServerSelection | None = None,
-        timeout: float | httpx2.Timeout | Unset | None = UNSET,
+        timeout: float | httpx2.Timeout | UNSET | None = UNSET,
         total_timeout: float | None = None,
         max_retries: int = 2,
         retry: RetryOptions | None = None,
         default_headers: Mapping[str, str | None] | None = None,
         default_query: Mapping[str, str | None] | None = None,
         follow_redirects: bool | None = None,
-        auth: httpx2.Auth | Unset | None = UNSET,
+        auth: httpx2.Auth | UNSET | None = UNSET,
         clock: Clock | None = None,
         http_client: httpx2.AsyncClient | None = None,
     ) -> None:
@@ -163,7 +163,7 @@ class AsyncClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

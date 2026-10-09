@@ -15,13 +15,13 @@ from math import isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
-from datamodel_code_generator._api_manifest import canonical_bytes
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._target_documents import canonical_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -162,7 +162,7 @@ class EndCondition:
     """End a sequence when a selected value is missing, JSON null, or equals the given JSON value."""
 
     kind: Literal["missing", "null", "value"]
-    value: JSONValue | Unset = UNSET
+    value: JSONValue | UNSET = UNSET
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

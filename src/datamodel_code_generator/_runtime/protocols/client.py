@@ -33,7 +33,7 @@ from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -416,7 +416,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         return secret_names(self._shared.security_schemes)
 
     def credential_argument(
-        self, operation: OperationPlan[object], written: Sequence[JSONValue | Unset]
+        self, operation: OperationPlan[object], written: Sequence[JSONValue | UNSET]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first written argument that carries credentials, or None.
 
@@ -429,7 +429,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             (
                 (spec.plan.location, spec.plan.name)
                 for spec, value in zip(operation.parameters, written, strict=True)
-                if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
+                if value is not UNSET and _secret(spec, value, headers, queries)
             ),
             None,
         )
@@ -546,7 +546,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         auth = call.native_auth(
             self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
         )
-        if (auth := client.auth if isinstance(auth, Unset) else auth) is not None:
+        if (auth := client.auth if auth is UNSET else auth) is not None:
             flow = auth.sync_auth_flow(request)
             try:
                 request = next(flow)
@@ -722,7 +722,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         auth = call.native_auth(
             self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
         )
-        if (auth := client.auth if isinstance(auth, Unset) else auth) is not None:
+        if (auth := client.auth if auth is UNSET else auth) is not None:
             flow = auth.async_auth_flow(request)
             try:
                 request = await anext(flow)

@@ -28,7 +28,10 @@ class Service(Protocol[PrincipalT_contra]):
         limit: int | None,
         page: int | None,
         x_trace: str | None,
-    ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response: ...
+    ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
@@ -37,7 +40,10 @@ class Service(Protocol[PrincipalT_contra]):
         principal: PrincipalT_contra,
         x_trace: str | None,
         body: models.Pet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def list_owners(
@@ -45,8 +51,7 @@ class Service(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra,
         limit: int | None,
-    ) -> (
-        models.FieldOwnersGetResponse
-        | HTTPResult[models.FieldOwnersGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldOwnersGetResponse | HTTPResult[models.FieldOwnersGetResponse] | Response:
+        """
+        Handle GET /owners.
+        """

@@ -1,2 +1,2 @@
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "email-validator>=2.3" "python-ulid>=3.2.1"
+  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16" "email-validator>=2.3" "python-ulid>=3.2.1"

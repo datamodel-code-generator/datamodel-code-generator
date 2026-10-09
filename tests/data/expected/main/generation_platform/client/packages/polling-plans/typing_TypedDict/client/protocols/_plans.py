@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Report as _dcg_type_0
+import models
 
 from .. import _operations
 from .._runtime.protocols.pagination import PageBinding
@@ -72,17 +72,17 @@ PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]]
 )
 
 
-def _result_1(data: GetJobResponse) -> _dcg_type_0 | None:
+def _result_1(data: GetJobResponse) -> models.Report | None:
     """Return the result of jobs.inline in its final poll."""
     return data.get('result')
 
 
-def _immediate_1(data: CreateJobResponse) -> _dcg_type_0 | None:
+def _immediate_1(data: CreateJobResponse) -> models.Report | None:
     """Return the result of jobs.inline in an immediate create response."""
     return data.get('result')
 
 
-PLAN_1: Final[PollingPlan[_dcg_type_0, GetJobResponse, CreateJobResponse]] = PollingPlan(
+PLAN_1: Final[PollingPlan[models.Report, GetJobResponse, CreateJobResponse]] = PollingPlan(
     helper_id='jobs.inline',
     operation=OperationRef(pointer='/paths/~1jobs/post'),
     create=_operations.OPERATION_0,
@@ -192,7 +192,7 @@ PLAN_4: Final[PollingPlan[LatestReportResponse, ExportStatusResponse, StartExpor
 )
 
 
-def _result_5(data: GetJobResponse) -> _dcg_type_0 | None:
+def _result_5(data: GetJobResponse) -> models.Report | None:
     """Return the result of jobs.tracked in its final poll."""
     return data.get('result')
 
@@ -214,7 +214,7 @@ CANCEL_5: Final[CancelPlan[CancelJobResponse]] = CancelPlan(
 )
 
 
-PLAN_5: Final[PollingPlan[_dcg_type_0, GetJobResponse, CreateJobResponse]] = PollingPlan(
+PLAN_5: Final[PollingPlan[models.Report, GetJobResponse, CreateJobResponse]] = PollingPlan(
     helper_id='jobs.tracked',
     operation=OperationRef(pointer='/paths/~1jobs/post'),
     create=_operations.OPERATION_0,

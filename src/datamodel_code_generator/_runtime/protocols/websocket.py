@@ -42,7 +42,7 @@ from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.timing import SYSTEM_CLOCK, Budget, Clock
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import HELPER_ERRORS, MAX_CLOSE_REASON, MAX_RAW_PREFIX, ProtocolDataError, WebSocketClosedError
 from .options import WSOptions
 
@@ -160,7 +160,7 @@ class _Limits:
 def _first(layers: tuple[object, ...], name: str, default: V) -> V:
     """Return a limit from the first options layer that sets it, or its default."""
     for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+        if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
 

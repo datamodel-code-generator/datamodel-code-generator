@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.loose import ListLooseResponse
 
@@ -41,7 +41,7 @@ class AsyncLooseResource:
     async def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLooseResponse:
@@ -64,7 +64,7 @@ class AsyncLooseWithResponse:
     async def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLooseResponse]:
@@ -87,7 +87,7 @@ class AsyncLooseWithRawResponse:
     async def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -110,7 +110,7 @@ class AsyncLooseWithStreamingResponse:
     def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

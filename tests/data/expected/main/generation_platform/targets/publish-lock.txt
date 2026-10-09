@@ -8,6 +8,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -15,7 +16,9 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 tree
   locks/remote.lock
   models.py
@@ -23,6 +26,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -30,7 +34,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -40,6 +44,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -47,4 +52,6 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded

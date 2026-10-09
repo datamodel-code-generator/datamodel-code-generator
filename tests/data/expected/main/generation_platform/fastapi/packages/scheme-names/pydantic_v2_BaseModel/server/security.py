@@ -5,13 +5,24 @@
 
 from fastapi.security import APIKeyHeader, APIKeyQuery, HTTPBasic
 
-api_key = APIKeyHeader(name='X-Key', scheme_name='api-key', auto_error=False)
+api_key = APIKeyHeader(
+    name='X-Key',
+    scheme_name='api-key',
+    auto_error=False,
+)
 
 
-api_key_1 = APIKeyQuery(name='key', scheme_name='api_key', auto_error=False)
+api_key_1 = APIKeyQuery(
+    name='key',
+    scheme_name='api_key',
+    auto_error=False,
+)
 
 
-wiring = HTTPBasic(scheme_name='wiring', auto_error=False)
+wiring = HTTPBasic(
+    scheme_name='wiring',
+    auto_error=False,
+)
 
 
 __all__ = [

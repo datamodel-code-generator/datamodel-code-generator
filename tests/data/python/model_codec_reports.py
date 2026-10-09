@@ -36,7 +36,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     path_text,
     raw_parameter,
 )
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, thaw_wire
 
 if TYPE_CHECKING:
@@ -324,7 +324,7 @@ def media_report(path: Path) -> str:
         f"error-empty: {WireValidationError(())}",
         f"error-pointer: {WireValidationError((issue, root_issue))}",
         f"error-root: {WireValidationError((root_issue,))}",
-        f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}",
+        f"unset: {UNSET!r} {bool(UNSET)}",
     ))
     return "\n".join(lines) + "\n"
 

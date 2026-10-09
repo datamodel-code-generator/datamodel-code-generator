@@ -8,15 +8,12 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import Created as _dcg_type_1
-from models import Deleted as _dcg_type_2
-from models import Record as _dcg_type_0
-from models import SearchQuery as _dcg_type_3
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..options import UNSET, RequestOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from . import StreamOptions, _plans
 
 
@@ -84,10 +81,11 @@ class RecordsAllNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -95,6 +93,7 @@ class RecordsAllNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
+            session_options=session_options,
         )
 
 
@@ -108,10 +107,11 @@ class RecordsLenientNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -119,6 +119,7 @@ class RecordsLenientNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
+            session_options=session_options,
         )
 
 
@@ -132,10 +133,11 @@ class RecordsTaggedNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[_dcg_type_1 | _dcg_type_2 | UnknownEvent]:
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -143,6 +145,7 @@ class RecordsTaggedNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
+            session_options=session_options,
         )
 
 
@@ -156,11 +159,12 @@ class SearchAllNdjson:
     def open(
         self,
         *,
-        body: _dcg_type_3,
+        body: models.SearchQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[models.Record]:
         """Open the NDJSON stream of POST /search, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -170,4 +174,5 @@ class SearchAllNdjson:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
+            session_options=session_options,
         )

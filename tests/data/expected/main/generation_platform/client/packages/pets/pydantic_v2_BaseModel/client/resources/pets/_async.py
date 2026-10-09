@@ -9,15 +9,12 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import FieldPetsPetIdGetResponse as _dcg_type_3
-from models import FieldPetsPostRequest as _dcg_type_1
-from models import NewPet as _dcg_type_0
-from models import Pet as _dcg_type_2
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.pets import (
     AttachFilesResponse,
@@ -61,10 +58,10 @@ class AsyncPetsResource:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -80,7 +77,7 @@ class AsyncPetsResource:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -89,7 +86,7 @@ class AsyncPetsResource:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -97,7 +94,7 @@ class AsyncPetsResource:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -119,7 +116,7 @@ class AsyncPetsResource:
         pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+    ) -> models.Pet: ...
     @overload
     async def get_pet(
         self,
@@ -127,7 +124,7 @@ class AsyncPetsResource:
         pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+    ) -> models.Pet: ...
     @overload
     async def get_pet(
         self,
@@ -135,7 +132,7 @@ class AsyncPetsResource:
         pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_3: ...
+    ) -> models.FieldPetsPetIdGetResponse: ...
     async def get_pet(
         self,
         *,
@@ -220,10 +217,10 @@ class AsyncPetsWithResponse:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -239,7 +236,7 @@ class AsyncPetsWithResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -248,7 +245,7 @@ class AsyncPetsWithResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -256,7 +253,7 @@ class AsyncPetsWithResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -278,7 +275,7 @@ class AsyncPetsWithResponse:
         pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_2]: ...
+    ) -> Response[models.Pet]: ...
     @overload
     async def get_pet(
         self,
@@ -286,7 +283,7 @@ class AsyncPetsWithResponse:
         pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_2]: ...
+    ) -> Response[models.Pet]: ...
     @overload
     async def get_pet(
         self,
@@ -294,7 +291,7 @@ class AsyncPetsWithResponse:
         pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_3]: ...
+    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
     async def get_pet(
         self,
         *,
@@ -379,10 +376,10 @@ class AsyncPetsWithRawResponse:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -398,7 +395,7 @@ class AsyncPetsWithRawResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -407,7 +404,7 @@ class AsyncPetsWithRawResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -415,7 +412,7 @@ class AsyncPetsWithRawResponse:
     async def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -514,10 +511,10 @@ class AsyncPetsWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -533,7 +530,7 @@ class AsyncPetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -542,7 +539,7 @@ class AsyncPetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -550,7 +547,7 @@ class AsyncPetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

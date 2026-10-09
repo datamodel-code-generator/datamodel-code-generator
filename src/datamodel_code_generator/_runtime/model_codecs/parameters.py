@@ -25,7 +25,7 @@ from .media import (
     split_form,
     typed,
 )
-from .unset import UNSET, Unset
+from .unset import UNSET
 
 if TYPE_CHECKING:
     from .wire import WireValue
@@ -383,19 +383,16 @@ def _pairs(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
 
 
 def encode_parameters(
-    plans: Sequence[ParameterPlan], values: Mapping[tuple[ParameterLocation, str], WireValue | Unset]
+    plans: Sequence[ParameterPlan], values: Mapping[tuple[ParameterLocation, str], WireValue | UNSET]
 ) -> tuple[EncodedParameterContribution, ...]:
     """Encode every present parameter in plan order, requiring each required value."""
     contributions: list[EncodedParameterContribution] = []
     for plan in plans:
-        match values.get((plan.location, plan.name), UNSET):
-            case Unset() if plan.required:
-                msg = f"The required {plan.location} parameter {plan.name!r} has no value"
-                raise ParameterEncodingError(msg)
-            case Unset():
-                continue
-            case value:
-                contributions.append(encode_parameter(plan, value))
+        if (value := values.get((plan.location, plan.name), UNSET)) is not UNSET:
+            contributions.append(encode_parameter(plan, value))
+        elif plan.required:
+            msg = f"The required {plan.location} parameter {plan.name!r} has no value"
+            raise ParameterEncodingError(msg)
     return tuple(contributions)
 
 
@@ -470,12 +467,12 @@ def _decode_matrix(plan: ParameterPlan, parts: list[bytes]) -> WireValue:
     return _collection(plan, _split(members[-1][1], _COMMA, plus=False), exploded_pairs=False)
 
 
-def _last(values: list[bytes]) -> bytes | Unset:
+def _last(values: list[bytes]) -> bytes | UNSET:
     """Return the last of a repeated single value, as FastAPI reads query parameters, or UNSET when absent."""
     return values[-1] if values else UNSET
 
 
-def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireValue | Unset:
+def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireValue | UNSET:
     declared = {item.name for item in plan.fields}
     members = [
         (name, text)
@@ -485,7 +482,7 @@ def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireV
     return _object(plan, members) if members else UNSET
 
 
-def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireValue | Unset:
+def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireValue | UNSET:
     match plan.style, plan.shape, plan.explode:
         case "form", "array", True:
             return (
@@ -512,9 +509,10 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireVa
     return _collection(plan, _split(value, delimiter, plus=True), exploded_pairs=False)
 
 
-def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | Unset:
+def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | UNSET:
+    """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
     try:
-        texts = [value.decode().strip(_OWS) for value in values]
+        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     except UnicodeDecodeError:
         raise issue(code="parameter.encoding", message="A header value must be UTF-8") from None
     if not texts:
@@ -526,7 +524,7 @@ def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | Unse
     return _collection(plan, [part.strip(_OWS) for part in combined.split(",")], exploded_pairs=plan.explode)
 
 
-def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireValue | Unset:
+def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireValue | UNSET:
     if plan.shape == "object":
         return _exploded_object(plan, pairs)
     matching = [text for name, text in pairs if name == plan.name]
@@ -546,7 +544,7 @@ def _decode_content(plan: ParameterPlan, text: str) -> WireValue:
     return decode_json(text.encode()) if media_kind(plan.content_media_type or "") == "json" else text
 
 
-def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> WireValue | Unset:
+def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> WireValue | UNSET:
     if not raw:
         return UNSET
     if media_kind(plan.content_media_type or "") == "form":
@@ -554,7 +552,7 @@ def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> WireValue | U
     return _decode_content(plan, percent_decode(raw, plus=False))
 
 
-def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
+def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | UNSET:
     if not fragments:
         return UNSET
     if plan.content_media_type is not None:
@@ -562,7 +560,7 @@ def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, 
     return _decode_path(plan, fragments[0].value)
 
 
-def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
+def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | UNSET:
     pairs = [(percent_decode(item.name or b"", plus=True), item.value) for item in fragments]
     if plan.content_media_type is None:
         return _decode_query(plan, pairs)
@@ -571,7 +569,7 @@ def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment,
     return _decode_content(plan, percent_decode(value, plus=True))
 
 
-def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
+def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | UNSET:
     key = plan.name.lower().encode("latin-1")
     values = [item.value for item in fragments if (item.name or b"").lower() == key]
     if plan.content_media_type is None:
@@ -581,7 +579,7 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
     return _decode_content(plan, _utf8(values[0]).strip(_OWS))
 
 
-def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
+def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | UNSET:
     if plan.style == "form" and plan.shape != "scalar":
         pairs = [
             (percent_decode(item.name or b"", plus=False), percent_decode(item.value, plus=False)) for item in fragments
@@ -591,7 +589,7 @@ def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
     return _decode_cookie(plan, pairs)
 
 
-def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> WireValue | Unset:
+def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> WireValue | UNSET:
     """Decode one parameter from its location's ordered raw occurrences, or UNSET when absent."""
     match plan.location:
         case "querystring":
@@ -639,9 +637,9 @@ def raw_parameter(plan: ParameterPlan, raw: RawParameters) -> RawParameter:
 
 def decode_parameters(
     plans: Sequence[ParameterPlan], raw: RawParameters
-) -> dict[tuple[ParameterLocation, str], WireValue | Unset]:
+) -> dict[tuple[ParameterLocation, str], WireValue | UNSET]:
     """Decode every declared parameter, reporting all missing and malformed values together."""
-    values: dict[tuple[ParameterLocation, str], WireValue | Unset] = {}
+    values: dict[tuple[ParameterLocation, str], WireValue | UNSET] = {}
     issues: list[WireIssue] = []
     views: dict[ParameterLocation, RawParameter] = {}
     for plan in plans:

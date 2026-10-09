@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import typing
-from typing import Final
+from typing import Any, Final
 
 import models
 
@@ -198,7 +197,7 @@ codec_36: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
 codec_37: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
 """Codec of /paths/~1covers/post request_body (request meta multipart/form-data)."""
 
-codec_38: Final[StdlibCodec[typing.Any]] = StdlibCodec(None, MODELS)
+codec_38: Final[StdlibCodec[Any]] = StdlibCodec(None, MODELS)
 """Codec of /paths/~1covers/post request_body (request extra multipart/form-data)."""
 
 codec_39: Final[StdlibCodec[models.Bounds]] = StdlibCodec(models.Bounds, MODELS)

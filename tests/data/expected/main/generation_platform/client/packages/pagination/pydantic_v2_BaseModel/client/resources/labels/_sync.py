@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.labels import ListLabelSetsResponse, ListLabelsResponse
 
@@ -41,7 +41,7 @@ class LabelsResource:
     def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
@@ -56,7 +56,7 @@ class LabelsResource:
     def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelSetsResponse:
@@ -79,7 +79,7 @@ class LabelsWithResponse:
     def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
@@ -94,7 +94,7 @@ class LabelsWithResponse:
     def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelSetsResponse]:
@@ -117,7 +117,7 @@ class LabelsWithRawResponse:
     def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -132,7 +132,7 @@ class LabelsWithRawResponse:
     def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -155,7 +155,7 @@ class LabelsWithStreamingResponse:
     def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -170,7 +170,7 @@ class LabelsWithStreamingResponse:
     def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

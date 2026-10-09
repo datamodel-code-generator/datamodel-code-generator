@@ -27,8 +27,8 @@
      },
      total=False,
  )
-@@ -79,14 +79,14 @@
-     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+@@ -68,9 +68,9 @@
+     )
  
  
 -class ListOwners:
@@ -37,19 +37,68 @@
 +    """Plans of the get_inventory operation."""
  
      RESPONSES: Final = OperationResponses(
-         responses={
-             '200': Declared(
-                 media_type='application/json',
--                model=models.FieldOwnersGetResponse,
-+                model=models.FieldStoreInventoryGetResponse,
-             ),
-         },
+-        responses={'200': Declared(media_type='application/json', model=models.FieldOwnersGetResponse)},
++        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
      )
+--- server/_generated/openapi.py (baseline input)
++++ server/_generated/openapi.py (current input)
+@@ -33,7 +33,7 @@
+     '     {\n'
+     '      "name": "limit",\n'
+     '      "in": "query",\n'
+-    '      "description": "Page size of a listing.",\n'
++    '      "description": "Page size.",\n'
+     '      "schema": {\n'
+     '       "type": "integer",\n'
+     '       "format": "int32",\n'
+@@ -230,21 +230,21 @@
+     '    }\n'
+     '   }\n'
+     '  },\n'
+-    '  "/owners": {\n'
++    '  "/store/inventory": {\n'
+     '   "get": {\n'
+-    '    "operationId": "listOwners",\n'
+-    '    "tags": [\n'
+-    '     "owners"\n'
++    '    "operationId": "getInventory",\n'
++    '    "tags": [\n'
++    '     "store"\n'
+     '    ],\n'
+     '    "responses": {\n'
+     '     "200": {\n'
+-    '      "description": "The owners.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "type": "array",\n'
+-    '         "items": {\n'
+-    '          "type": "string"\n'
++    '      "description": "Counts by status.",\n'
++    '      "content": {\n'
++    '       "application/json": {\n'
++    '        "schema": {\n'
++    '         "type": "object",\n'
++    '         "additionalProperties": {\n'
++    '          "type": "integer"\n'
+     '         }\n'
+     '        }\n'
+     '       }\n'
+@@ -275,9 +275,6 @@
+     '       "string",\n'
+     '       "null"\n'
+     '      ]\n'
+-    '     },\n'
+-    '     "age": {\n'
+-    '      "type": "integer"\n'
+     '     }\n'
+     '    }\n'
+     '   },\n'
 --- server/application.py (baseline input)
 +++ server/application.py (current input)
-@@ -10,14 +10,14 @@
- 
+@@ -11,14 +11,14 @@
  from ._generated.contract import OperationDependencies
+ from ._generated.openapi import serve_source_openapi
  from ._runtime.server.application import build, error_handlers, validation_error_handler
 -from .routers import owners, pets
 -from .services import OwnersService, PetsService
@@ -66,7 +115,7 @@
  )
  INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
  
-@@ -25,7 +25,7 @@
+@@ -26,7 +26,7 @@
  def build_router(
      *,
      pets: PetsService,
@@ -75,7 +124,7 @@
      dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-@@ -33,7 +33,7 @@
+@@ -34,7 +34,7 @@
      """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
@@ -84,7 +133,7 @@
          dependencies=dependencies,
          operation_dependencies=operation_dependencies,
          prefix=prefix,
-@@ -43,7 +43,7 @@
+@@ -44,7 +44,7 @@
  def create_app(
      *,
      pets: PetsService,
@@ -92,8 +141,8 @@
 +    store: StoreService,
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-     **fastapi_kwargs: Any,
-@@ -57,7 +57,7 @@
+     source_openapi: bool = True,
+@@ -60,7 +60,7 @@
      app.include_router(
          build_router(
              pets=pets,
@@ -104,19 +153,19 @@
          )
 --- server/routers/pets.py (baseline input)
 +++ server/routers/pets.py (current input)
-@@ -31,7 +31,7 @@
+@@ -28,7 +28,7 @@
+ 
+     def list_pets(
          *,
-         limit: Annotated[int, Field(ge=1, le=100), Query(
-             alias='limit',
--            description='Page size of a listing.',
-+            description='Page size.',
-         )] = 20,
+-        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size of a listing.')] = 20,
++        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
          tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-         kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
+         kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
+         x_request_id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
 --- server/services.py (baseline input)
 +++ server/services.py (current input)
-@@ -62,14 +62,14 @@
-     def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
+@@ -73,13 +73,13 @@
+         """
  
  
 -class OwnersService(Protocol):
@@ -128,13 +177,12 @@
 -    def list_owners(
 +    def get_inventory(
          self,
-     ) -> (
--        models.FieldOwnersGetResponse
--        | HTTPResult[models.FieldOwnersGetResponse]
-+        models.FieldStoreInventoryGetResponse
-+        | HTTPResult[models.FieldStoreInventoryGetResponse]
-         | Response
-     ): ...
+-    ) -> models.FieldOwnersGetResponse | HTTPResult[models.FieldOwnersGetResponse] | Response:
++    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+         """
+-        Handle GET /owners.
++        Handle GET /store/inventory.
+         """
 ADDED: server/routers/store.py (generated only from current input)
 REMOVED: server/routers/owners.py (generated only from baseline input)
 --- server/README.md (baseline input)

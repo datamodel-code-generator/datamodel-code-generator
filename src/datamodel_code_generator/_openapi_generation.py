@@ -24,18 +24,24 @@ def _member(value: YamlValue, key: str) -> YamlValue:
 class SourceLease:
     """Hold the documents the model engine obtained until planning finishes, to check the pointers settings name.
 
-    Consumers learn only whether a pointer names a node, never the node: what a target reads of a schema comes from
-    the contract batch. This object never loads, validates, copies, or resolves a document, and it is deliberately
-    excluded from immutable contract batches.
+    Consumers learn whether a pointer names a node, never the node: what a target reads of a schema comes from the
+    contract batch. The one exception is a document a target serves as documentation, such as the source document a
+    generated server serves, which it copies from `document`. This object never loads, validates, copies, or resolves a
+    document, and it is deliberately excluded from immutable contract batches.
     """
 
     def __init__(self) -> None:
         """Create an empty lease without retaining an input or parser."""
         self._raw: list[dict[str, YamlValue]] = []
+        self._locations: list[str] = []
 
-    def register(self, document: dict[str, YamlValue]) -> None:
-        """Borrow a loaded document; its registration order is its document identity."""
+    def register(self, document: dict[str, YamlValue], location: str = "") -> None:
+        """Borrow a loaded document and where it was read from; its registration order is its document identity.
+
+        The contract batch's documents come first; the others the models' references loaded follow them.
+        """
         self._raw.append(document)
+        self._locations.append(location)
 
     def exists(self, location: SourceLocation) -> bool:
         """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
@@ -47,9 +53,17 @@ class SourceLease:
             return False
         return True
 
+    def documents(self) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
+        """Return every held document and where it was read from, for a target that copies them into documentation.
+
+        Never modify them.
+        """
+        return tuple(zip(self._locations, self._raw, strict=True))
+
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""
         self._raw.clear()
+        self._locations.clear()
 
 
 class TargetGenerationSession:
@@ -123,8 +137,8 @@ class TargetGenerationSession:
         batch = self.take_accepted_batch()
         bound = cast("BoundAttempt", self._candidate)
         lease = SourceLease()
-        for _, document in bound.documents:
-            lease.register(document)
+        for location, document in bound.documents:
+            lease.register(document, location)
         self.close()
         return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease, self._model_imports)
 
@@ -155,7 +169,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import OpenAPIParserFactory
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_binding import BoundAttempt, TargetApiOpenAPIParser
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, ModelArtifact, SourceLocation
+    from datamodel_code_generator._target_contract import (
+        GeneratedTypeContractBatch,
+        ModelArtifact,
+        SourceLocation,
+    )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser

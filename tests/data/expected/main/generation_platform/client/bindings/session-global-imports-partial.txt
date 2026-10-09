@@ -25,7 +25,7 @@ render pydantic_v2.BaseModel plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 uuid.UUID
+  codec_0 UUID
 render pydantic_v2.BaseModel remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -52,7 +52,7 @@ render pydantic_v2.BaseModel remapped
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 custom_uuid.UUID
+  codec_0 UUID
 render pydantic_v2.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -84,7 +84,7 @@ render pydantic_v2.dataclass plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 uuid.UUID
+  codec_0 UUID
 render pydantic_v2.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -116,7 +116,7 @@ render pydantic_v2.dataclass remapped
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 custom_uuid.UUID
+  codec_0 UUID
 render dataclasses.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -146,7 +146,7 @@ render dataclasses.dataclass plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 uuid.UUID
+  codec_0 UUID
 render dataclasses.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic Error: /paths/~1native/post/requestBody/content/application~1json/schema: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
@@ -176,7 +176,7 @@ render typing.TypedDict plain
       list: NotRequired[int]
       values: NotRequired[List[int]]
   model_bindings.py
-  codec_0 uuid.UUID
+  codec_0 UUID
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic Error: /paths/~1native/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
@@ -207,7 +207,7 @@ render msgspec.Struct plain
       list: Union[int, UnsetType] = UNSET
       values: Union[List[int], UnsetType] = UNSET
   model_bindings.py
-  codec_0 uuid.UUID
+  codec_0 UUID
 render msgspec.Struct remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -235,4 +235,4 @@ render msgspec.Struct remapped
       list: Union[int, UnsetType] = UNSET
       values: Union[List[int], UnsetType] = UNSET
   model_bindings.py
-  codec_0 custom_uuid.UUID
+  codec_0 UUID

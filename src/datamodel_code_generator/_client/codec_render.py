@@ -6,14 +6,15 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
-from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._python_layout import Group, layout
-from datamodel_code_generator._target_contract import GeneratedSymbolType, OperationId
+from datamodel_code_generator._target_contract import OperationId
+from datamodel_code_generator._target_module import TargetModule
 
 if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecKind, Shape
     from datamodel_code_generator._python_layout import Doc
     from datamodel_code_generator._target_contract import TypeUseId
+    from datamodel_code_generator._target_module import TypeNames
 
 _WIDTH: Final = 120
 _CODECS: Final[dict[CodecKind, str]] = {
@@ -31,7 +32,6 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
-    "Final",
     *_CODECS.values(),
 )
 
@@ -59,10 +59,9 @@ def _description(use: TypeUseId) -> str:
 
 
 class _Renderer:
-    def __init__(self, plan: ClientCodecs) -> None:
+    def __init__(self, plan: ClientCodecs, types: TypeNames) -> None:
         self.plan = plan
-        self.namespace = Namespace((*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))))
-        self.source = TypeSource(self.namespace, dict(plan.imports))
+        self.module = TargetModule(types, (*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))), level=1)
         self.stdlib: set[str] = set()
 
     def call(self, name: str, *values: Doc, **keywords: Doc) -> Group:
@@ -73,7 +72,7 @@ class _Renderer:
 
     def shape(self, shape: Shape) -> Doc:
         if isinstance(shape, Class):
-            return self.source.runtime(shape.type)
+            return self.module.hint(shape.type, static=False)
         if isinstance(shape, Items):
             return self.call("Items", self.shape(shape.item), *((repr(shape.kind),) if shape.kind != "list" else ()))
         if isinstance(shape, Fixed):
@@ -90,7 +89,7 @@ class _Renderer:
             tags = Group(
                 "(",
                 tuple(
-                    ("", Group("(", (("", repr(tag)), ("", self.source.runtime(GeneratedSymbolType(symbol)))), ")"))
+                    ("", Group("(", (("", repr(tag)), ("", self.module.symbol(symbol))), ")"))
                     for tag, symbol in shape.tags
                 ),
                 ")",
@@ -108,7 +107,7 @@ class _Renderer:
             self.stdlib.add("Model")
             entries = []
             for model in self.plan.models:
-                name = self.source.runtime(GeneratedSymbolType(model.symbol))
+                name = self.module.symbol(model.symbol)
                 fields = Group(
                     "(",
                     tuple(
@@ -128,19 +127,19 @@ class _Renderer:
                     ",",
                 )
                 entries.append((f"{name}: ", self.call("Model", fields, *(("True",) if model.keyed else ()))))
-            prefix = "MODELS: Final[dict[type, Model]] = "
+            prefix = f"MODELS: {self.module.name('typing', 'Final')}[dict[type, Model]] = "
             sections.append(prefix + layout(Group("{", tuple(entries), "}"), 0, len(prefix), _WIDTH))
         accessors = []
         for index, use in enumerate(self.plan.uses):
             codec = _CODECS[use.kind]
-            static = self.source.static(use.type)
+            static = self.module.hint(use.type)
             arguments: tuple[tuple[str, Doc], ...] = (
                 (("", self.shape(use.shape)), ("", "MODELS"))
                 if use.kind == "stdlib"
-                else (("", self.source.runtime(use.type)),)
+                else (("", self.module.hint(use.type, static=False)),)
             )
             call = Group(f"{codec}(", arguments, ")")
-            prefix = f"codec_{index}: Final[{codec}[{static}]] = "
+            prefix = f"codec_{index}: {self.module.name('typing', 'Final')}[{codec}[{static}]] = "
             sections.append(prefix + layout(call, 0, len(prefix), _WIDTH) + f'\n"""{_description(use.use)}"""')
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
         imports = []
@@ -152,18 +151,16 @@ class _Renderer:
             "",
             "from __future__ import annotations",
             "",
-            *(("from typing import Final",) if self.plan.uses else ()),
-            "",
-            *self.namespace.imports(),
+            self.module.imports(),
             "",
             *imports,
         ]
         return RenderedBindings("\n".join(header) + "\n\n\n" + "\n\n".join(sections) + "\n", tuple(accessors))
 
 
-def render_model_bindings(plan: ClientCodecs) -> RenderedBindings:
+def render_model_bindings(plan: ClientCodecs, types: TypeNames) -> RenderedBindings:
     """Render one native codec per selected use and the stdlib models its conversions reach."""
-    return _Renderer(plan).render()
+    return _Renderer(plan, types).render()
 
 
 def render_model_codecs() -> str:
@@ -171,7 +168,7 @@ def render_model_codecs() -> str:
     return '''"""JSON values and omitted arguments used by the generated client."""
 
 from ._runtime.model_codecs.media import JSONValue
-from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.model_codecs.unset import UNSET
 
-__all__ = ["JSONValue", "UNSET", "Unset"]
+__all__ = ["JSONValue", "UNSET"]
 '''

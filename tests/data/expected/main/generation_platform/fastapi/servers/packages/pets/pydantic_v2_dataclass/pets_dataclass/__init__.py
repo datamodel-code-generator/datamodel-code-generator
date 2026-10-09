@@ -8,6 +8,7 @@ from .application import (
     OperationDependencies,
     build_router,
     create_app,
+    serve_source_openapi,
     validation_error_handler,
 )
 
@@ -16,5 +17,6 @@ __all__ = [
     "OperationDependencies",
     "build_router",
     "create_app",
+    "serve_source_openapi",
     "validation_error_handler",
 ]
