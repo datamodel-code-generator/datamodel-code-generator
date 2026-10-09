@@ -10,18 +10,15 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import RESERVED_ARGUMENTS, identifier, snake
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
-from datamodel_code_generator._target_contract import SourceLocation
 
 if TYPE_CHECKING:
     from collections.abc import Container, Mapping
 
     from datamodel_code_generator._client.model_facts import ModelFacts, ModelField
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseId
 
 _KINDS: Final = frozenset({"json", "form"})
-_MEMBERS: Final = ("allOf", "anyOf", "oneOf")
 
 
 def _problem(code: str, message: str, operation: OperationSpec, option_path: str | None = None) -> Diagnostic:
@@ -39,41 +36,16 @@ def _label(operation: OperationSpec) -> str:
     return f"{operation.contract.method.upper()} {operation.contract.path}"
 
 
-def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -> set[str]:
-    """Return the names an object schema requires, following references and its members.
-
-    A body bound to one model requires what its allOf members require, and what its object alternative to null does;
-    a schema its own members reach again adds nothing more.
-    """
-    location, schema = wire.schema(site)
-    if location in seen:
-        return set()
-    seen.add(location)
-    required = schema.get("required")
-    names: set[str] = {name for name in required if isinstance(name, str)} if isinstance(required, tuple) else set()
-    for keyword in _MEMBERS:
-        members = schema.get(keyword)
-        for index in range(len(members) if isinstance(members, tuple) else 0):
-            member = SourceLocation(location.document, f"{location.pointer}/{keyword}/{index}", "schema")
-            names |= _required(wire, member, seen)
-    return names
-
-
 class _Fields:
     """Plan the field branches of every operation whose body arguments are 'both'."""
 
-    def __init__(self, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan) -> None:
+    def __init__(self, facts: ModelFacts, codecs: Container[TypeUseId]) -> None:
         self.facts = facts
         self.codecs = codecs
-        self.wire = wire
         self.problems: list[Diagnostic] = []
 
-    def model(self, media: MediaSpec) -> tuple[tuple[ModelField, ...], set[str]] | str:
-        """Return the fields of the object model a media's body with a codec stands for, and the names it requires.
-
-        Any other body returns why it has no field arguments, as does one whose schema requires a name that only extra
-        properties could hold.
-        """
+    def model(self, media: MediaSpec) -> tuple[ModelField, ...] | str:
+        """Return the fields of the object model a body with a codec stands for, or why it has no field arguments."""
         use = media.use
         if media.kind not in _KINDS or media.members is not None:
             return "only JSON and URL-encoded form bodies have field arguments"
@@ -82,29 +54,23 @@ class _Fields:
             or (value := use.type) is None
             or use.id not in self.codecs
             or (model := self.facts.model(value)) is None
-            or use.schema is None
         ):
             return "its schema is not an object model"
-        fields = self.facts.fields(model.id)
-        if not (required := _required(self.wire, use.schema, set())) <= {field.wire_name for field in fields}:
-            return "its schema requires a property that no field of the model holds"
-        return fields, required
+        return self.facts.fields(model.id)
 
     def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | str:
         """Return the field branch of one media type, or why its body cannot be given as fields.
 
-        A native projection constructs every field its direction does not exclude, and no required field is excluded,
-        so a call gives every field but the read-only ones, those the body's schema requires first of all, whatever
-        requiredness the model gives them.
+        A native projection constructs every field its direction does not exclude, so a call gives every field but the
+        read-only ones, and must give those the model's constructor requires.
         """
-        if isinstance(found := self.model(media), str):
-            return found
-        declared, required = found
+        if isinstance(declared := self.model(media), str):
+            return declared
         fields = [
             FieldArgument(
                 python_name=names.get(item.wire_name) or snake(item.wire_name),
                 wire_name=item.wire_name,
-                required=item.wire_name in required,
+                required=item.required,
                 type=item.type,
             )
             for item in declared
@@ -171,10 +137,10 @@ def _taken(spec: OperationSpec, branch: FieldBranch) -> list[str]:
 
 
 def plan_fields(
-    plan: ClientPlan, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan
+    plan: ClientPlan, facts: ModelFacts, codecs: Container[TypeUseId]
 ) -> tuple[ClientPlan, tuple[Diagnostic, ...]]:
     """Return the plan with each operation's field branches, and the problems of naming them."""
-    fields = _Fields(facts, codecs, wire)
+    fields = _Fields(facts, codecs)
     operations = tuple(fields.operation(spec) for spec in plan.operations)
     resources = tuple(
         replace(resource, operations=tuple(operations[spec.index] for spec in resource.operations))
