@@ -786,7 +786,6 @@ class UploadHandle(_Upload[T]):
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
         self._bound, self._expires_at = core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -794,7 +793,6 @@ class UploadHandle(_Upload[T]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(0)
 
@@ -802,7 +800,6 @@ class UploadHandle(_Upload[T]):
         """Probe the server's offset once."""
         plan = self._plan
         return self._core.execute_page(
-            plan,
             plan.probed.call,
             self._probe_request,
             self._offered,
@@ -810,7 +807,6 @@ class UploadHandle(_Upload[T]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     def _append(self) -> None:
@@ -822,7 +818,6 @@ class UploadHandle(_Upload[T]):
             self._sending(end)
             try:
                 self._core.execute_page(
-                    self._plan,
                     self._plan.appended.call,
                     self._append_request(payload),
                     _ignored,
@@ -830,7 +825,6 @@ class UploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
-                    max_page_bytes=None,
                 )
             except Exception as error:
                 if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
@@ -863,7 +857,6 @@ class UploadHandle(_Upload[T]):
         try:
             try:
                 self._core.execute_page(
-                    plan,
                     completed.call,
                     self._completion_request,
                     self._completed,
@@ -871,7 +864,6 @@ class UploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
-                    max_page_bytes=None,
                     failed=self._completion_observed,
                 )
             except BaseException as error:
@@ -959,7 +951,6 @@ class AsyncUploadHandle(_Upload[T]):
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
         self._bound, self._expires_at = await core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -967,7 +958,6 @@ class AsyncUploadHandle(_Upload[T]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(0)
 
@@ -975,7 +965,6 @@ class AsyncUploadHandle(_Upload[T]):
         """Probe the server's offset once."""
         plan = self._plan
         return await self._core.execute_page(
-            plan,
             plan.probed.call,
             self._probe_request,
             self._offered,
@@ -983,7 +972,6 @@ class AsyncUploadHandle(_Upload[T]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     async def _append(self) -> None:
@@ -995,7 +983,6 @@ class AsyncUploadHandle(_Upload[T]):
             self._sending(end)
             try:
                 await self._core.execute_page(
-                    self._plan,
                     self._plan.appended.call,
                     self._append_request(payload),
                     _ignored,
@@ -1003,7 +990,6 @@ class AsyncUploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
-                    max_page_bytes=None,
                 )
             except Exception as error:
                 if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
@@ -1036,7 +1022,6 @@ class AsyncUploadHandle(_Upload[T]):
         try:
             try:
                 await self._core.execute_page(
-                    plan,
                     completed.call,
                     self._completion_request,
                     self._completed,
@@ -1044,7 +1029,6 @@ class AsyncUploadHandle(_Upload[T]):
                     media_type=None,
                     options=self._limits.options,
                     session=self._session,
-                    max_page_bytes=None,
                     failed=self._completion_observed,
                 )
             except BaseException as error:

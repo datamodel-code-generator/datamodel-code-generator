@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
 import itertools
 from contextlib import asynccontextmanager, contextmanager
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_caching import _Signer
 from tests.data.python.client_runtime import arecord, argument, describe, record, run
 from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Feed, _Harness
 
@@ -617,8 +619,26 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))
     ticks = api.protocols.feed.ticks.open(body=query)
     next(ticks)
+    query.topic = object()
+    record(lines, "checkpoint of changed invalid body", ticks.checkpoint)
+    query.topic = "t"
     tick = ticks.checkpoint()
     ticks.close()
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer = _Signer(auth)
+    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
+    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
+    for label, client, criteria in (
+        ("ordinary querystring", api, {"term": "news"}),
+        ("credential querystring", api, {"api_key": "secret"}),
+        ("ordinary querystring with a signer", signed, {"term": "news"}),
+        ("signer querystring field", signed, {"sig": "echoed"}),
+    ):
+        resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))
+        value = resumes.argument("querystring", "criteria", criteria, "searchFeed")
+        with client.protocols.searches.ticks.open(body=query, criteria=value) as searched:
+            next(searched)
+            record(lines, f"checkpoint of {label}", lambda: type(searched.checkpoint()).__name__)
     record(
         lines,
         "ticks cleared cursor",
@@ -629,6 +649,49 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
         "ticks cursor replaced by an object",
         lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor={"$gt": 0}))),
     )
+    for label, body in (
+        ("invalid saved body", [{"topic": []}, "application/json", None]),
+        ("invalid saved media", [{"topic": "t"}, "application/json", "application/xml"]),
+        ("mismatched saved media", [{"topic": "t"}, "application/other+json", "application/json"]),
+    ):
+        record(
+            lines,
+            label,
+            lambda body=body: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, body=body))),
+        )
+
+
+def stream_checkpoint_bodies(package: ModuleType, lines: list[str]) -> None:
+    """Refuse a checkpoint of a body its backend sends but cannot save, as an encoding failure of the body."""
+    resumes = _Resumes(package, lines)
+    with resumes.client(resumes.client_options()) as api:
+        for label, query in _payloads(resumes.harness):
+            resumes.reply(*_events('id: 1\ndata: {"seq": 1}\n\n'))
+            with api.protocols.feed.live.open(body=query) as stream:
+                next(stream)
+                record(lines, f"checkpoint with a {label}", lambda: type(stream.checkpoint()).__name__)
+    run(lambda: _async_checkpoint_bodies(package, lines))
+
+
+def _payloads(harness: _Harness) -> tuple[tuple[str, object], ...]:
+    """Return a body of builtins, and one whose free-form member only its backend's JSON encoder accepts."""
+    import msgspec  # noqa: PLC0415 - Only the msgspec scenario builds a raw member.
+
+    return tuple(
+        (label, harness.models.FeedQuery(topic="t", payload=payload))
+        for label, payload in (("plain payload", {"x": 1}), ("raw payload", msgspec.Raw(b'{"x":1}')))
+    )
+
+
+async def _async_checkpoint_bodies(package: ModuleType, lines: list[str]) -> None:
+    resumes = _Resumes(package, lines)
+    lines.append("asyncio")
+    async with resumes.async_client(resumes.client_options()) as api:
+        for label, query in _payloads(resumes.harness):
+            resumes.reply(*_events('id: 1\ndata: {"seq": 1}\n\n'))
+            async with await api.protocols.feed.live.open(body=query) as stream:
+                await anext(stream)
+                record(lines, f"async checkpoint with a {label}", lambda: type(stream.checkpoint()).__name__)
 
 
 async def _async_resume(package: ModuleType, lines: list[str]) -> None:

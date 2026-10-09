@@ -40,24 +40,24 @@
   items of closed pages ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  next page = [2] continuation='b' status=200 attempts=1
   > GET https://api.example.com/users?cursor=b
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   last page = [3] continuation=None status=200 attempts=1
   after the last page = None
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  same page again = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  same page again = [1] continuation='a' status=200 attempts=1
   page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
   page a caller made ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
   not a page ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
   page repr = 'Page(items=0'
   page items ! TypeError: items must be a tuple []
   page response ! TypeError: response must be a ResponseInfo []
-  page continuation ! TypeError: continuation must be a Continuation or None []
+  page continuation = "[] continuation='a' status=200 attempts=1"
   page frozen ! FrozenInstanceError: Page is immutable []
   page equality = (True, False, True)
   > GET https://api.example.com/users
@@ -132,22 +132,10 @@ data.0.id
   nested items ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cursor over its limit [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=4, observed=5) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='cursor', unit='bytes', limit=4, observed=5] protocol_size_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  multibyte cursor [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=4, observed=6) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='cursor', unit='bytes', limit=4, observed=6] protocol_size_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page over its limit [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='page', limit=10, observed=21) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='page', unit='bytes', limit=10, observed=21] protocol_size_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='response_too_large') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response limit removed [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='page', limit=10, observed=21) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='page', unit='bytes', limit=10, observed=21] protocol_size_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  equal limits [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='page', limit=10, observed=21) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='page', unit='bytes', limit=10, observed=21] protocol_size_error
+  response limit removed ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   broken coding [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=error('Error -3 while decompressing data: unknown compression method')] protocol_data_error
@@ -162,10 +150,10 @@ data.0.id
   after the cycle ! ProtocolStateError: ProtocolStateError(state='failed', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cycle page = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  cycle page = [1] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  repeating page = [2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  repeating page = [2] continuation='a' status=200 attempts=1
   after the repeating page ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -223,7 +211,7 @@ data.0.id
   zero items page ! SessionLimitError: SessionLimitError(kind='items', limit=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=0] session_limit_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page for limits = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page for limits = [1] continuation='a' status=200 attempts=1
   next page past its page limit ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   next page past its item limit ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
   > GET https://api.example.com/archive/a1
@@ -286,7 +274,7 @@ data.0.id
   async zero items []
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async page = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  async page = [1] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async next page = [2] continuation=None status=200 attempts=1

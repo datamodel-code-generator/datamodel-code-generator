@@ -13,6 +13,7 @@ from models import User as _dcg_type_0
 from models import UserQuery as _dcg_type_1
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.pagination import (
     AsyncPager,
@@ -22,7 +23,6 @@ from .._runtime.protocols.pagination import (
     aiterate_pages,
     aresume_pages,
 )
-from .._runtime.protocols.resume import ResumeState
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
@@ -255,8 +255,11 @@ class AsyncUsersAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -266,6 +269,7 @@ class AsyncUsersAllPagination:
             self._core,
             _plans.PLAN_0,
             state,
+            (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -339,8 +343,11 @@ class AsyncUsersByHeaderPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -350,6 +357,7 @@ class AsyncUsersByHeaderPagination:
             self._core,
             _plans.PLAN_1,
             state,
+            (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -427,8 +435,11 @@ class AsyncUsersSearchPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_1,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -438,6 +449,9 @@ class AsyncUsersSearchPagination:
             self._core,
             _plans.PLAN_2,
             state,
+            (cursor,),
+            body=body,
+            media_type=media_type,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -507,8 +521,9 @@ class AsyncLooseAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -518,6 +533,7 @@ class AsyncLooseAllPagination:
             self._core,
             _plans.PLAN_3,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -587,8 +603,9 @@ class AsyncLooseTokensPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -598,6 +615,7 @@ class AsyncLooseTokensPagination:
             self._core,
             _plans.PLAN_4,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -667,8 +685,9 @@ class AsyncNestedAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -678,6 +697,7 @@ class AsyncNestedAllPagination:
             self._core,
             _plans.PLAN_5,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -747,8 +767,9 @@ class AsyncLabelsAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -758,6 +779,7 @@ class AsyncLabelsAllPagination:
             self._core,
             _plans.PLAN_6,
             state,
+            (after,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -827,8 +849,9 @@ class AsyncLabelsSetsPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -838,6 +861,7 @@ class AsyncLabelsSetsPagination:
             self._core,
             _plans.PLAN_7,
             state,
+            (after,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -907,8 +931,9 @@ class AsyncArchiveAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -918,6 +943,7 @@ class AsyncArchiveAllPagination:
             self._core,
             _plans.PLAN_8,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -987,8 +1013,9 @@ class AsyncStatusesAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -998,6 +1025,7 @@ class AsyncStatusesAllPagination:
             self._core,
             _plans.PLAN_9,
             state,
+            (code,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -1067,8 +1095,9 @@ class AsyncSecureUsersPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1078,6 +1107,7 @@ class AsyncSecureUsersPagination:
             self._core,
             _plans.PLAN_10,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

@@ -31,8 +31,8 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  PaginationOptions fields=('max_pages', 'max_items')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -43,11 +43,9 @@
   ProtocolDefaults keyword-only=True hints=('session', 'options')
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
-  Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
   Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
   RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
@@ -159,11 +157,6 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  continuation cursor = Continuation(kind='cursor')
-  continuation offset = Continuation(kind='offset')
-  continuation page = Continuation(kind='page')
-  continuation next_url = Continuation(kind='next_url')
-  continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
@@ -183,32 +176,12 @@
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  continuation kind token ! ValueError: kind must be one of its declared values []
-  continuation kind None ! TypeError: kind must be a string []
-  continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
-  continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: Object of type object is not JSON serializable []
-  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
-  continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
-  continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
-  continuation cyclic value ! ValueError: A wire value must not contain cycles []
-  continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
-  continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
-  continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
-  continuation identity equality=True/False/True distinct hashes=2 same bytes=True
-  continuation dict=False public=['kind']
-  continuation set kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set _json ! FrozenInstanceError: Continuation is immutable []
-  continuation set _kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set value ! FrozenInstanceError: Continuation is immutable []
-  continuation delete kind ! FrozenInstanceError: Continuation is immutable []
-  continuation copies=True/True
-  continuation pickle ! TypeError: Continuation cannot be pickled []
-  continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
+  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: Circular reference detected []
+  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -280,22 +253,6 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1 = 1
-  PaginationOptions.max_page_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_page_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1 = 1
-  PaginationOptions.max_cursor_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_cursor_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls 1 = 1
@@ -377,7 +334,7 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
@@ -411,7 +368,7 @@
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
@@ -498,8 +455,8 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  PaginationOptions fields=('max_pages', 'max_items')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -510,11 +467,9 @@
   ProtocolDefaults keyword-only=True hints=('session', 'options')
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
-  Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
   Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
   RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
@@ -626,11 +581,6 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  continuation cursor = Continuation(kind='cursor')
-  continuation offset = Continuation(kind='offset')
-  continuation page = Continuation(kind='page')
-  continuation next_url = Continuation(kind='next_url')
-  continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
@@ -650,32 +600,12 @@
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  continuation kind token ! ValueError: kind must be one of its declared values []
-  continuation kind None ! TypeError: kind must be a string []
-  continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
-  continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: Object of type object is not JSON serializable []
-  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
-  continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
-  continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
-  continuation cyclic value ! ValueError: A wire value must not contain cycles []
-  continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
-  continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
-  continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
-  continuation identity equality=True/False/True distinct hashes=2 same bytes=True
-  continuation dict=False public=['kind']
-  continuation set kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set _json ! FrozenInstanceError: Continuation is immutable []
-  continuation set _kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set value ! FrozenInstanceError: Continuation is immutable []
-  continuation delete kind ! FrozenInstanceError: Continuation is immutable []
-  continuation copies=True/True
-  continuation pickle ! TypeError: Continuation cannot be pickled []
-  continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
+  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: Circular reference detected []
+  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -747,22 +677,6 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1 = 1
-  PaginationOptions.max_page_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_page_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1 = 1
-  PaginationOptions.max_cursor_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_cursor_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls 1 = 1
@@ -844,7 +758,7 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
@@ -878,7 +792,7 @@
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
@@ -965,8 +879,8 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  PaginationOptions fields=('max_pages', 'max_items')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -977,11 +891,9 @@
   ProtocolDefaults keyword-only=True hints=('session', 'options')
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
-  Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
   Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
   RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
@@ -1093,11 +1005,6 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  continuation cursor = Continuation(kind='cursor')
-  continuation offset = Continuation(kind='offset')
-  continuation page = Continuation(kind='page')
-  continuation next_url = Continuation(kind='next_url')
-  continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
@@ -1117,32 +1024,12 @@
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  continuation kind token ! ValueError: kind must be one of its declared values []
-  continuation kind None ! TypeError: kind must be a string []
-  continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
-  continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: Object of type object is not JSON serializable []
-  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
-  continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
-  continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
-  continuation cyclic value ! ValueError: A wire value must not contain cycles []
-  continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
-  continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
-  continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
-  continuation identity equality=True/False/True distinct hashes=2 same bytes=True
-  continuation dict=False public=['kind']
-  continuation set kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set _json ! FrozenInstanceError: Continuation is immutable []
-  continuation set _kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set value ! FrozenInstanceError: Continuation is immutable []
-  continuation delete kind ! FrozenInstanceError: Continuation is immutable []
-  continuation copies=True/True
-  continuation pickle ! TypeError: Continuation cannot be pickled []
-  continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
+  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: Circular reference detected []
+  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -1214,22 +1101,6 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1 = 1
-  PaginationOptions.max_page_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_page_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1 = 1
-  PaginationOptions.max_cursor_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_cursor_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls 1 = 1
@@ -1311,7 +1182,7 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
@@ -1345,7 +1216,7 @@
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
@@ -1432,8 +1303,8 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  PaginationOptions fields=('max_pages', 'max_items')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -1444,11 +1315,9 @@
   ProtocolDefaults keyword-only=True hints=('session', 'options')
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
-  Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
   Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
   RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
@@ -1560,11 +1429,6 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  continuation cursor = Continuation(kind='cursor')
-  continuation offset = Continuation(kind='offset')
-  continuation page = Continuation(kind='page')
-  continuation next_url = Continuation(kind='next_url')
-  continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
@@ -1584,32 +1448,12 @@
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  continuation kind token ! ValueError: kind must be one of its declared values []
-  continuation kind None ! TypeError: kind must be a string []
-  continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
-  continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: Object of type object is not JSON serializable []
-  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
-  continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
-  continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
-  continuation cyclic value ! ValueError: A wire value must not contain cycles []
-  continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
-  continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
-  continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
-  continuation identity equality=True/False/True distinct hashes=2 same bytes=True
-  continuation dict=False public=['kind']
-  continuation set kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set _json ! FrozenInstanceError: Continuation is immutable []
-  continuation set _kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set value ! FrozenInstanceError: Continuation is immutable []
-  continuation delete kind ! FrozenInstanceError: Continuation is immutable []
-  continuation copies=True/True
-  continuation pickle ! TypeError: Continuation cannot be pickled []
-  continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
+  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: Circular reference detected []
+  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -1681,22 +1525,6 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1 = 1
-  PaginationOptions.max_page_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_page_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1 = 1
-  PaginationOptions.max_cursor_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_cursor_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls 1 = 1
@@ -1778,7 +1606,7 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
@@ -1812,7 +1640,7 @@
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
@@ -1899,8 +1727,8 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  PaginationOptions fields=('max_pages', 'max_items')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -1911,11 +1739,9 @@
   ProtocolDefaults keyword-only=True hints=('session', 'options')
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
-  Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
   Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
   RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
@@ -2027,11 +1853,6 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  continuation cursor = Continuation(kind='cursor')
-  continuation offset = Continuation(kind='offset')
-  continuation page = Continuation(kind='page')
-  continuation next_url = Continuation(kind='next_url')
-  continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
@@ -2051,32 +1872,12 @@
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  continuation kind token ! ValueError: kind must be one of its declared values []
-  continuation kind None ! TypeError: kind must be a string []
-  continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
-  continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: Object of type object is not JSON serializable []
-  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
-  continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
-  continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
-  continuation cyclic value ! ValueError: A wire value must not contain cycles []
-  continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
-  continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
-  continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
-  continuation identity equality=True/False/True distinct hashes=2 same bytes=True
-  continuation dict=False public=['kind']
-  continuation set kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set _json ! FrozenInstanceError: Continuation is immutable []
-  continuation set _kind ! FrozenInstanceError: Continuation is immutable []
-  continuation set value ! FrozenInstanceError: Continuation is immutable []
-  continuation delete kind ! FrozenInstanceError: Continuation is immutable []
-  continuation copies=True/True
-  continuation pickle ! TypeError: Continuation cannot be pickled []
-  continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
+  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: Circular reference detected []
+  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -2148,22 +1949,6 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1 = 1
-  PaginationOptions.max_page_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_page_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_page_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_page_bytes') [field_path=('max_page_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1 = 1
-  PaginationOptions.max_cursor_bytes 2**63 = 9223372036854775808
-  PaginationOptions.max_cursor_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions.max_cursor_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_cursor_bytes') [field_path=('max_cursor_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PollOptions.max_polls 1 = 1
@@ -2245,7 +2030,7 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
@@ -2279,7 +2064,7 @@
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)

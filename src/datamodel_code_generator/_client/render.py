@@ -430,7 +430,6 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
         "records": (
             "BodySelector",
             "BodyTarget",
-            "Continuation",
             "HeaderSelector",
             "ParameterTarget",
             "ProgressKey",
@@ -2008,23 +2007,17 @@ class _Registry(_Typing):
 
 
 _RESUME_RUNTIME: Final = """
-A pager's `checkpoint()` returns a `ResumeState` without sending, a small token the caller saves, and the helper's
-`resume(state)` returns a pager in a session of its own that sends nothing until it is iterated. A checkpoint saves the
-wire values of the call's arguments and of the JSON body later pages send, and where the pager continues: the position,
-continuation, and binding values of the last page, or of the page before it while the last page has items left, with
-how many of that page's items were delivered, which a resumed pager fetches again and skips. It never saves pages, the
-cycle history, the call's options, its session, or anything its auth adds; a call giving a cookie, a credential header,
-or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
-`ConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
-cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
-while its timeout starts afresh. `resume` builds the saved arguments and body as their codecs build a
-caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
-resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
-state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
-a request, and an offset or page number other than the one the pages reach included, while a refusal of the resumed
-call's options is raised as the call raises it, and checks the saved continuation as a server's. `SessionLimitError` and
-`PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
-`ResumeState.export()` gives the token's JSON, and `import_state` reads it back.
+A pager's `checkpoint()` returns the continuation it fetches its next page with, the server's cursor, the next offset
+or page number, or the resolved next URL, without sending; it is None before the first page and after the last. The
+helper's `resume(state, ...)` takes that value with the operation's arguments and any body again and returns a pager
+in a session of its own that sends nothing until it is iterated. A continuation holds no call arguments, credentials,
+body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
+repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
+starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or
+`PaginationCycleError` resumes from its `checkpoint()`; the errors carry no continuation.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
@@ -2608,9 +2601,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                         "    def resume(",
                         items((
                             "self",
-                            f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}",
+                            f"state: {module.local('_runtime.model_codecs.media', 'JSONValue')}",
                             "*",
-                            *keywords,
+                            *signature,
                         )),
                         f") -> {pager}:",
                     ),
@@ -2619,8 +2612,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     WIDTH,
                 ),
                 '        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""',
-                "        return "
-                + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
+                "        return " + layout(_call(resume, (*passed[:2], ("", "state"), *passed[2:])), 8, 7, WIDTH),
             )),
         ]
 
@@ -3518,14 +3510,12 @@ uploading. A call's options must not fix an idempotency key or patch a header or
         """Describe pagination sessions and their limits, or nothing for a package without pagination helpers.
 
         Cursors are described only for a package with a cursor helper, counted positions only for one with an offset or
-        page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
-        applies to cursors and followed URLs.
+        page-number helper, and followed URLs only for one with a next-URL or Link helper.
         """
         if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
-        size = "| cursor size | 64 KiB |\n" if cursors or kinds & {"next_url", "link"} else ""
         rules = (
             """\
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
@@ -3550,16 +3540,14 @@ total timeout, and idempotency key; the session bounds all of them. Each limit c
 `ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
 another kind's options, fail construction. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, `AsyncPager`, `ResumeState`, and
-  `import_state`
+- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| decoded body per page | 8 MiB |
-{size}| session total timeout | None (no limit) |
+| session total timeout | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
@@ -3612,12 +3600,11 @@ gave: a GET without a body, or the operation's method and the caller's body when
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
 and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
-else raises `ProtocolDataError`, and a resolved URL over 8 KiB, or the cursor size when smaller, `ProtocolSizeError`. A
-request to another origin carries no credential or cookie header and none of the headers or query fields the package's
-security schemes name, and authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values
-must parse as RFC 8288 links within the cursor size and give the relation at most once; a page without the relation is
-the last, and an empty page with a URL continues. A URL seen earlier in the session, the first page's own included, ends
-it with `PaginationCycleError` after the repeating page.
+else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+headers or query fields the package's security schemes name, and authenticates only at an origin
+`AuthConfig.allowed_origins` lists. A Link header's values must parse as RFC 8288 links and give the relation at most
+once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
+session, the first page's own included, ends it with `PaginationCycleError` after the repeating page.
 """
 
     @cached_property
