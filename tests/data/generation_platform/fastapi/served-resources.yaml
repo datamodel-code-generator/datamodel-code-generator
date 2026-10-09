@@ -20,9 +20,10 @@ paths:
       parameters:
         - name: q
           in: query
-          schema: {type: string}
+          schema: {type: string, examples: ["#/paths/~1pets~1{id}/get"], default: {$ref: "#/paths/~1pets~1{id}/get"}}
           examples:
             gone: {$ref: "served-missing.yaml#/components/examples/Gone"}
+            literal: {value: {$ref: "#/paths/~1pets~1{id}/get"}}
       responses:
         "200":
           description: The owner.

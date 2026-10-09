@@ -22,6 +22,7 @@ _INFO: Final = {
     "license_info": "license",
 }
 _PATHS: Final = "#/paths/"
+_LITERALS: Final = frozenset({"value", "example", "default", "enum", "const"})
 _ROOT: Final = {"servers": "servers", "openapi_tags": "tags", "openapi_external_docs": "externalDocs"}
 
 
@@ -59,13 +60,27 @@ def serve_openapi(
 
 
 def _prefixed(value: object, prefix: str) -> object:
-    """Return a document value whose references and operationRefs into the document's paths name prefixed paths."""
+    """Return a document value whose references and operationRefs into the document's paths name prefixed paths.
+
+    Literal data, such as examples, defaults, and extensions, stays as it is.
+    """
     if isinstance(value, list):
         return [_prefixed(item, prefix) for item in cast("list[object]", value)]
     if not isinstance(value, dict):
         return value
-    prefixed = {key: _prefixed(item, prefix) for key, item in cast("dict[str, object]", value).items()}
+    prefixed = {
+        key: item if _literal(key, item) else _prefixed(item, prefix)
+        for key, item in cast("dict[str, object]", value).items()
+    }
     for key in ("$ref", "operationRef"):
         if isinstance(ref := prefixed.get(key), str) and ref.startswith(_PATHS):
             prefixed[key] = _PATHS + prefix.replace("~", "~0").replace("/", "~1") + ref[len(_PATHS) :]
     return prefixed
+
+
+def _literal(key: str, value: object) -> bool:
+    """Return whether a member holds literal data: an example value, a default, an enum, a const, or an extension.
+
+    A map of examples holds Example Objects, whose `value` is literal; a list of examples is a schema's.
+    """
+    return key in _LITERALS or key.startswith("x-") or (key == "examples" and isinstance(value, list))

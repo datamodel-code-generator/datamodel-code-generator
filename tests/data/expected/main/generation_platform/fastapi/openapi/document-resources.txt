@@ -48,11 +48,22 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
             "name": "q",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "examples": [
+                "#/paths/~1pets~1{id}/get"
+              ],
+              "default": {
+                "$ref": "#/paths/~1pets~1{id}/get"
+              }
             },
             "examples": {
               "gone": {
                 "$ref": "served-missing.yaml#/components/examples/Gone"
+              },
+              "literal": {
+                "value": {
+                  "$ref": "#/paths/~1pets~1{id}/get"
+                }
               }
             }
           }
