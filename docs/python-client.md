@@ -1829,9 +1829,10 @@ with Client() as client, client.protocols.events.live.resume(json.loads(load()))
 
 The cursor is that of the last event the stream returned, never of a terminal, error, refused, or cut event: an SSE
 event without an `id` keeps the ID before, an empty `id` clears it, and a body cursor follows its `missing` and `null`
-settings, raising `StreamDecodeError` with the condition `missing` or `null` before the event under `error`. An
-unknown event kept raw gives its body cursor from its data when the data is JSON. A cursor is never limited apart from
-its event.
+settings, raising `StreamDecodeError` with the condition `missing` or `null` before the event under `error`. HTTPX2
+reports an empty `id` and no `id` alike until a response sets one, so a reopened response's events keep the ID it
+reopened after until the response sends a nonempty one. An unknown event kept raw gives its body cursor from its data
+when the data is JSON. A cursor is never limited apart from its event.
 
 `checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
 that, and while another step runs, it raises `ProtocolStateError`, and on a stream of a helper without resume metadata
