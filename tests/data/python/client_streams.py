@@ -361,9 +361,9 @@ def _routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     lines.append(f"  before the error {_event(next(stream))}")
     try:
         next(stream)
-    except harness.errors.StreamRemoteError as failure:
+    except harness.errors.ProtocolDataError as failure:
         lines.append(
-            f"  error event {failure.event_type} {_data(failure.data)!r} {failure.sequence} {describe(failure)}"
+            f"  error event {failure.reason} {_data(failure.data)!r} {describe(failure)}"
         )
     record(lines, "after the error", lambda: next(stream))
     tagged = protocols.events.tagged
@@ -371,8 +371,8 @@ def _routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     stream = tagged.open()
     try:
         next(stream)
-    except harness.errors.StreamRemoteError as failure:
-        lines.append(f"  body error event {failure.event_type} {_data(failure.data)!r} {failure.sequence}")
+    except harness.errors.ProtocolDataError as failure:
+        lines.append(f"  body error event {failure.reason} {_data(failure.data)!r}")
     for label in ("missing discriminator", "null discriminator", "number discriminator", "unknown discriminator"):
         _drained(lines, label, tagged.open())
     _drained(lines, "mapped event failing its type", tagged.open())
@@ -395,12 +395,12 @@ def _decoding(harness: _Harness, api: Any, feed: _Feed) -> None:
         _drained(lines, label, helper.open())
     try:
         next(helper.open())
-    except harness.errors.StreamDecodeError as failure:
-        lines.append(f"  large event raw prefix {len(failure.raw_prefix)} truncated={failure.truncated}")
+    except harness.errors.DecodeError as failure:
+        lines.append(f"  large event raw prefix {len(failure.body_bytes)} truncated={failure.truncated}")
     try:
         next(api.protocols.events.tagged.open())
-    except harness.errors.StreamDecodeError as failure:
-        lines.append(f"  invalid mapped event cause {type(failure.cause).__name__} prefix {failure.raw_prefix!r}")
+    except harness.errors.DecodeError as failure:
+        lines.append(f"  invalid mapped event cause {type(failure.cause).__name__} prefix {failure.body_bytes!r}")
 
 
 def _limits(harness: _Harness, api: Any, feed: _Feed) -> None:
@@ -655,8 +655,8 @@ def stream_backends(package: ModuleType, lines: list[str]) -> None:
         _drained(lines, "tagged", protocols.events.tagged.open())
         try:
             next(protocols.events.typed.open())
-        except harness.errors.StreamRemoteError as failure:
-            lines.append(f"  error event {failure.event_type} {_data(failure.data)!r}")
+        except harness.errors.ProtocolDataError as failure:
+            lines.append(f"  error event {failure.reason} {_data(failure.data)!r}")
 
 
 _NDJSON: Final = "application/x-ndjson"
@@ -684,7 +684,7 @@ def _decode_failure(lines: list[str], label: str, stream: Any) -> None:
     except Exception as error:  # noqa: BLE001
         lines.append(f"    ! {describe(error)}")
         lines.append(
-            f"    raw prefix {error.raw_prefix!r} cause {type(error.cause).__name__} "
+            f"    raw prefix {error.body_bytes!r} cause {type(error.cause).__name__} "
             f"context {type(error.__context__).__name__}"
         )
 
@@ -782,8 +782,8 @@ def _ndjson_routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     lines.append(f"  before the error {_event(next(stream))}")
     try:
         next(stream)
-    except harness.errors.StreamRemoteError as failure:
-        lines.append(f"  error record {failure.event_type!r} {_data(failure.data)!r} {failure.sequence}")
+    except harness.errors.ProtocolDataError as failure:
+        lines.append(f"  error record {failure.reason!r} {_data(failure.data)!r}")
     record(lines, "after the error", lambda: next(stream))
     _drained(lines, "missing discriminator", helper.open())
     _drained(lines, "mapped record failing its type", helper.open())
@@ -873,8 +873,8 @@ def ndjson_backends(package: ModuleType, lines: list[str]) -> None:
         _drained(lines, "tagged", protocols.records.tagged.open())
         try:
             next(protocols.records.tagged.open())
-        except harness.errors.StreamRemoteError as failure:
-            lines.append(f"  error record {failure.event_type!r} {_data(failure.data)!r}")
+        except harness.errors.ProtocolDataError as failure:
+            lines.append(f"  error record {failure.reason!r} {_data(failure.data)!r}")
         _drained(lines, "search", protocols.search.all.open(body=harness.models.SearchQuery(text="a")))
 
 
@@ -890,6 +890,6 @@ def ndjson_split(package: ModuleType, lines: list[str]) -> None:
         _drained(lines, "split records", api.protocols.records.all.open())
         try:
             next(api.protocols.records.all.open())
-        except harness.errors.StreamRemoteError as failure:
+        except harness.errors.ProtocolDataError as failure:
             data = failure.data
-            lines.append(f"  split error record {failure.event_type!r} {type(data).__name__}{_data(data)!r}")
+            lines.append(f"  split error record {failure.reason!r} {type(data).__name__}{_data(data)!r}")

@@ -11,8 +11,6 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias
 
-from .errors import DeadlinePhase, IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
-
 __all__ = (
     "AsyncHook",
     "AsyncLimiter",
@@ -21,12 +19,14 @@ __all__ = (
     "CallOutcome",
     "EventName",
     "Hook",
+    "IOPhase",
     "Limiter",
     "LimiterContext",
     "Permit",
     "RetryReason",
 )
 
+IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
 EventName: TypeAlias = Literal[
     "call_start",
     "auth_start",
@@ -75,7 +75,7 @@ class CallEvent:
     parent_session_id: str | None = None
     attempt_index: int | None = None
     sent: bool = False
-    phase: IOPhase | DeadlinePhase | None = None
+    phase: IOPhase | None = None
     status: int | None = None
     duration: float | None = None
     retry_reason: RetryReason | None = None

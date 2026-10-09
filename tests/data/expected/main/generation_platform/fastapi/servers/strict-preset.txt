@@ -1,6 +1,6 @@
 # strict-preset
 serve pydantic_v2.BaseModel
-service UntaggedService: get_values
+service UntaggedService: get_values, post_form, upload
 service UntaggedService without its methods: TypeError
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
@@ -41,4 +41,27 @@ service UntaggedService without its methods: TypeError
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["cookie", "visits"]}]
 > GET /values/5
-< 400 application/json {"detail":"Invalid request"}
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=2)
+< 204 - b''
+> GET /values/5?count=1&count=2
+  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
+< 204 - b''
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=1, x_tag=None, blob=None, visits=None)
+< 204 - b''
+> POST /forms
+  post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))
+< 204 - b''
+> POST /forms
+  post_form(Form(count=3, score=None, flag=None, name=None, counts=None))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}, {"type": "int_type", "loc": ["body", "counts", 1]}]
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
+< 204 - b''
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]

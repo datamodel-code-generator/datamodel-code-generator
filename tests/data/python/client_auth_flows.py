@@ -42,11 +42,9 @@ def _failure(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
         getattr(error, "reason", None),
-        getattr(error, "retry_stop_reason", None),
         type(getattr(error, "cause", None)).__name__,
-        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
         getattr(error, "attempt_count", None),
-        getattr(getattr(error, "delivery_state", None), "value", None),
         len(getattr(error, "body_bytes", b"") or b""),
     )
 

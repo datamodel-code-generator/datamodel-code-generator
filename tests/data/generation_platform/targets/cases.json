@@ -4,7 +4,7 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
-      {"publish": null},
+      {"generate": {}},
       {"render": {}},
       {"relocate": "elsewhere"}
     ]
@@ -41,20 +41,20 @@
     "model": {"openapi_scopes": ["api"], "openapi_include_paths": ["/pets"]},
     "steps": [
       {"render": {}},
-      {"publish": null},
+      {"generate": {}},
       {"show": "models.py"},
-      {"render": {"config": {"operation_names": [["/paths/~1store~1orders/get", "orders"]]}}},
-      {"render": {"config": {"operation_names": [["/paths/~1pets/get", "pets"]]}}},
+      {"render": {"config": {"server_operation_names": {"/paths/~1store~1orders/get": "orders"}}}},
+      {"render": {"config": {"server_operation_names": {"/paths/~1pets/get": "pets"}}}},
       {"remember": "shorthand"},
-      {"render": {"config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}, "pets"]]}}},
+      {"render": {"config": {"server_operation_names": {"spec/api.yaml#/paths/~1pets/get": "pets"}}}},
       {"compare": "shorthand"},
       {
         "render": {
-          "config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}, "pets"]]}
+          "config": {"server_operation_names": {"{root}/spec/api.yaml#/paths/~1pets/get": "pets"}}
         }
       },
       {"compare": "shorthand"},
-      {"render": {"config": {"operation_names": [[{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, "pets"]]}}}
+      {"render": {"config": {"server_operation_names": {"spec/other.yaml#/paths/~1pets/get": "pets"}}}}
     ]
   },
   "path-items": {
@@ -74,14 +74,14 @@
     "steps": [
       {
         "render": {
-          "config": {"operation_names": [[{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}, "items"]]}
+          "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}
         }
       },
       {"render": {"input": {"mapping": "inline.yaml"}, "model": {"input_file_type": "openapi"}}},
       {
         "render": {
           "input": {"path": "inline.yaml"},
-          "config": {"operation_names": [[{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}, "items"]]}
+          "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}
         }
       },
       {"render": {"input": {"list": ["inline.yaml"]}}},
@@ -93,7 +93,6 @@
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"model": {"output": null}}},
       {"render": {"model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
       {"render": {"model": {"output_model_type": "pydantic_v2.dataclass"}}}
     ]
@@ -111,7 +110,7 @@
     "model": {"openapi_scopes": ["api"], "output": "models"},
     "steps": [
       {"render": {}},
-      {"publish": null},
+      {"generate": {}},
       {"render": {}}
     ]
   },
@@ -119,17 +118,15 @@
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"primary_responses": [[{"pointer": "/paths/~1nope/get"}, {"status_code": 200}]]}}},
+      {"render": {"config": {"server_primary_responses": {"#/paths/~1nope/get": {"status_code": 200}}}}},
       {
         "render": {
           "config": {
-            "primary_responses": [
-              [{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, {"status_code": 200}]
-            ]
+            "server_primary_responses": {"spec/other.yaml#/paths/~1pets/get": {"status_code": 200}}
           }
         }
       },
-      {"render": {"config": {"operation_names": [["/paths/~1pets/get", "create_pet"]]}}}
+      {"render": {"config": {"server_operation_names": {"/paths/~1pets/get": "create_pet"}}}}
     ]
   },
   "locks": {
@@ -231,19 +228,19 @@
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
-      {"render": {"model": {"output": "server/__init__.py"}}},
-      {"render": {"model": {"output": "server/routers"}}},
-      {"render": {"model": {"output": "server/services.py/models.py"}}},
-      {"render": {"model": {"output": "server/routers.py"}}},
-      {"render": {"model": {"output": "server/services/models.py"}}},
-      {"render": {"model": {"output": "server.py"}}}
+      {"generate": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
+      {"generate": {"model": {"output": "server/__init__.py"}}},
+      {"generate": {"model": {"output": "server/routers"}}},
+      {"generate": {"model": {"output": "server/services.py/models.py"}}},
+      {"generate": {"model": {"output": "server/routers.py"}}},
+      {"generate": {"model": {"output": "server/services/models.py"}}},
+      {"generate": {"model": {"output": "server.py"}}}
     ]
   },
   "nested-models": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "server/models.py"},
-    "config": {"model_package": "example.server.models"},
+    "config": {"server_model_package": "example.server.models"},
     "steps": [
       {"render": {}},
       {"generate": {}},
@@ -255,7 +252,7 @@
   "nested-models-symlink": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "alias/models.py"},
-    "config": {"model_package": "example.server.models"},
+    "config": {"server_model_package": "example.server.models"},
     "steps": [
       {"mkdir": "server"},
       {"symlink": ["alias", "server"]},
@@ -268,7 +265,7 @@
   "nested-package": {
     "input": {"path": "modular.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "models"},
-    "config": {"output": "models/server", "package": "example.models.server", "model_package": "example.models"},
+    "config": {"server_output": "models/server", "server_package": "example.models.server", "server_model_package": "example.models"},
     "steps": [
       {"generate": {}},
       {"render": {}}
@@ -313,8 +310,7 @@
     "input": {"path": "contacts.yaml"},
     "model": {"openapi_scopes": ["schemas", "api"], "use_pendulum": true},
     "steps": [
-      {"render": {}},
-      {"dependencies": null}
+      {"render": {}}
     ]
   },
   "format": {
@@ -356,13 +352,6 @@
   "python-runtime": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.11"}}}
-    ]
-  },
-  "target-grammar": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
     "steps": [
       {"render": {"model": {"target_python_version": "3.11"}}}
     ]

@@ -404,8 +404,6 @@ def _object(plan: ParameterPlan, members: list[tuple[str, str]]) -> WireValue:
     result: dict[str, JSONValue] = {}
     for name, text in members:
         field = declared.get(name, plan.additional)
-        if name in declared and name in result:
-            raise issue(code="parameter.duplicate", message="An object parameter repeats a member")
         result[name] = typed(text, "string" if field is None else field.kind)
     return result
 
@@ -467,21 +465,14 @@ def _decode_matrix(plan: ParameterPlan, parts: list[bytes]) -> WireValue:
         raise issue(code="parameter.syntax", message="A matrix path member has an unexpected name")
     if plan.shape == "array" and plan.explode:
         return tuple(typed(percent_decode(value, plus=False), plan.kind) for _, value in members)
-    if len(members) != 1:
-        raise issue(code="parameter.duplicate", message="A matrix path value repeats a single-valued member")
     if plan.shape == "scalar":
-        return typed(percent_decode(members[0][1], plus=False), plan.kind)
-    return _collection(plan, _split(members[0][1], _COMMA, plus=False), exploded_pairs=False)
+        return typed(percent_decode(members[-1][1], plus=False), plan.kind)
+    return _collection(plan, _split(members[-1][1], _COMMA, plus=False), exploded_pairs=False)
 
 
-def _single(values: list[bytes]) -> bytes | Unset:
-    match values:
-        case []:
-            return UNSET
-        case [value]:
-            return value
-        case _:
-            raise issue(code="parameter.duplicate", message="A single-valued parameter occurs more than once")
+def _last(values: list[bytes]) -> bytes | Unset:
+    """Return the last of a repeated single value, as FastAPI reads query parameters, or UNSET when absent."""
+    return values[-1] if values else UNSET
 
 
 def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireValue | Unset:
@@ -513,7 +504,7 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireVa
             return _object(plan, members) if members else UNSET
         case _:
             pass
-    if (value := _single([value for name, value in pairs if name == plan.name])) is UNSET:
+    if (value := _last([value for name, value in pairs if name == plan.name])) is UNSET:
         return UNSET
     if plan.shape == "scalar":
         return typed(percent_decode(value, plus=True), plan.kind)
@@ -522,15 +513,14 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireVa
 
 
 def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | Unset:
+    """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
     try:
-        texts = [value.decode().strip(_OWS) for value in values]
+        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     except UnicodeDecodeError:
         raise issue(code="parameter.encoding", message="A header value must be UTF-8") from None
     if not texts:
         return UNSET
     if plan.shape == "scalar":
-        if len(texts) > 1:
-            raise issue(code="parameter.duplicate", message="A single-valued header occurs more than once")
         return typed(texts[0], plan.kind)
     if not (combined := ",".join(texts)):
         raise issue(code="parameter.empty", message="An empty header value cannot represent a container")
@@ -543,9 +533,7 @@ def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> WireVal
     matching = [text for name, text in pairs if name == plan.name]
     if plan.shape == "array":
         return tuple(typed(text, plan.kind) for text in matching) or UNSET
-    if len(matching) > 1:
-        raise issue(code="parameter.duplicate", message="A single-valued cookie occurs more than once")
-    return typed(matching[0], plan.kind) if matching else UNSET
+    return typed(matching[-1], plan.kind) if matching else UNSET
 
 
 def _utf8(raw: bytes) -> str:
@@ -579,7 +567,7 @@ def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment,
     pairs = [(percent_decode(item.name or b"", plus=True), item.value) for item in fragments]
     if plan.content_media_type is None:
         return _decode_query(plan, pairs)
-    if (value := _single([value for name, value in pairs if name == plan.name])) is UNSET:
+    if (value := _last([value for name, value in pairs if name == plan.name])) is UNSET:
         return UNSET
     return _decode_content(plan, percent_decode(value, plus=True))
 
@@ -589,9 +577,9 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
     values = [item.value for item in fragments if (item.name or b"").lower() == key]
     if plan.content_media_type is None:
         return _decode_header(plan, values)
-    if (value := _single(values)) is UNSET:
+    if not values:
         return UNSET
-    return _decode_content(plan, _utf8(value).strip(_OWS))
+    return _decode_content(plan, _utf8(values[0]).strip(_OWS))
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:

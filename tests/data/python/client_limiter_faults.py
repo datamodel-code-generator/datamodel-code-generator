@@ -203,7 +203,7 @@ def _close_failure(error: Exception | None, failure: BaseException | None) -> tu
     return (
         type(error).__name__,
         type(cause).__name__,
-        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
         not hasattr(cause, "add_note") or bool(getattr(cause, "__notes__", ())) == (failure is not None),
     )
 

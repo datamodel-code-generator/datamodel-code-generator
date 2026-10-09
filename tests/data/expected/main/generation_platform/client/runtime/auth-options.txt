@@ -4,12 +4,12 @@
   inherited request = b'ready'
   replacement resets selection and signer = b'ready'
   request replaces credentials = b'ready'
-  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials')] missing_credentials
   request clears on anonymous = b'ready'
-  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',)] missing_credentials
   view clear selects anonymity = b'ready'
   cleared view inherits None = b'ready'
-  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',)] missing_credentials
   sync h1 before root close=(0, 0, 0, 0, 0, 0)
   sync h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
   sync h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
@@ -26,12 +26,12 @@
   inherited request = b'ready'
   replacement resets selection and signer = b'ready'
   request replaces credentials = b'ready'
-  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials')] missing_credentials
   request clears on anonymous = b'ready'
-  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',)] missing_credentials
   view clear selects anonymity = b'ready'
   cleared view inherits None = b'ready'
-  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',)] missing_credentials
   sync h2 before root close=(0, 0, 0, 0, 0, 0)
   sync h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
   sync h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
@@ -48,12 +48,12 @@
   inherited request = b'ready'
   replacement resets selection and signer = b'ready'
   request replaces credentials = b'ready'
-  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials')] missing_credentials
   request clears on anonymous = b'ready'
-  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',)] missing_credentials
   view clear selects anonymity = b'ready'
   cleared view inherits None = b'ready'
-  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',)] missing_credentials
   async h1 before root close=(0, 0, 0, 0, 0, 0)
   async h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
   async h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
@@ -70,12 +70,12 @@
   inherited request = b'ready'
   replacement resets selection and signer = b'ready'
   request replaces credentials = b'ready'
-  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request does not merge credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth.credentials') [operation_id='bearer', field_path=('auth', 'credentials')] missing_credentials
   request clears on anonymous = b'ready'
-  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  request clear rejects required ! ConfigurationError: ConfigurationError(operation_id='or_auth', reason='missing_credentials', field_path='auth') [operation_id='or_auth', field_path=('auth',)] missing_credentials
   view clear selects anonymity = b'ready'
   cleared view inherits None = b'ready'
-  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  cleared view rejects required ! ConfigurationError: ConfigurationError(operation_id='inherited_auth', reason='missing_credentials', field_path='auth') [operation_id='inherited_auth', field_path=('auth',)] missing_credentials
   async h2 before root close=(0, 0, 0, 0, 0, 0)
   async h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
   async h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))

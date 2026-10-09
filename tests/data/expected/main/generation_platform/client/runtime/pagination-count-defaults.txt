@@ -29,8 +29,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -43,12 +43,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
-  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -79,8 +79,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -93,12 +93,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
-  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -134,8 +134,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -148,12 +148,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
-  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -184,8 +184,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -198,12 +198,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
-  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -240,8 +240,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -254,12 +254,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
-  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -290,8 +290,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -304,12 +304,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
-  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -345,8 +345,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -359,12 +359,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
-  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -395,8 +395,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -409,12 +409,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
-  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -451,8 +451,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -465,12 +465,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
-  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -501,8 +501,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -515,12 +515,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
-  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -556,8 +556,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -570,12 +570,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
-  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -606,8 +606,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -620,12 +620,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
-  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -662,8 +662,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -676,12 +676,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
-  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -712,8 +712,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -726,12 +726,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
-  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -767,8 +767,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -781,12 +781,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
-  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -817,8 +817,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -831,12 +831,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
-  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -873,8 +873,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -887,12 +887,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
-  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -923,8 +923,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -937,12 +937,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
-  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -978,8 +978,8 @@
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
-  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async query rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default = [1,2] continuation=2 status=200 attempts=1
@@ -992,12 +992,12 @@
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
-  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async query invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -1028,8 +1028,8 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
-  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header rejected call over typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
+  async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page')] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async header view removes default = [1,2] continuation=1 status=200 attempts=1
@@ -1042,12 +1042,12 @@
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
-  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='header', name='X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async header invalid forty ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2

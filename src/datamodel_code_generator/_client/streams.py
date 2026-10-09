@@ -24,7 +24,6 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
 )
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
@@ -147,11 +146,7 @@ class _Streams:
     def location(self, reference: SchemaRef) -> SourceLocation | None:
         """Return the location of a schema reference, or None when its document has no such pointer."""
         location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
-        try:
-            self.request.lease.borrow(location)
-        except BindingCaptureError:
-            return None
-        return location
+        return location if self.request.lease.exists(location) else None
 
     def helper(
         self, helper: Helper, spec: OperationSpec, reopen: OperationSpec | None

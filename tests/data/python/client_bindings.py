@@ -179,7 +179,6 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
             name: str,
             extra: dict[str, Any] | None = None,
             *,
-            binding_diagnostics: bool = False,
             backend: str = backend,
             model: dict = model,
         ) -> list[str]:
@@ -193,7 +192,6 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
                         {**model, **(extra or {})},
                         config,
                         models=models,
-                        binding_diagnostics=binding_diagnostics,
                     )
                 except Exception as error:
                     if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
@@ -251,10 +249,7 @@ def _rewritten_stage(old: str, new: str) -> Iterator[None]:
 
 
 def client_binding_rewrite_report(case_name: str, root: Path) -> str:
-    """Render each rewritten render of a fixture again, with its staged models rewritten after generation.
-
-    Both renders also report the diagnostics of the model binding batch, because packages drop them (#4299).
-    """
+    """Render each rewritten render of a fixture again, with its staged models rewritten after generation."""
     case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
     rewrites = _edits(case, "rewrites")
     lines: list[str] = []
@@ -262,9 +257,9 @@ def client_binding_rewrite_report(case_name: str, root: Path) -> str:
         count, label = key.split(" ", 1)
         if not (selected := rewrites.pop(label, ())):
             continue
-        shipped = render(count, binding_diagnostics=True)
+        shipped = render(count)
         for rewrite in selected:
             with _rewritten_stage(rewrite["old"], rewrite["new"]):
-                edited = render(rewrite["id"], binding_diagnostics=True)
+                edited = render(rewrite["id"])
             lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, rewrites, root)

@@ -27,8 +27,7 @@ def _details(value: object) -> str:
     if isinstance(value, BaseException):
         info = getattr(value, "info", None)
         return (
-            f"{type(value).__name__} delivery={getattr(value, 'delivery_state', None)} "
-            f"phase={getattr(value, 'phase', None)} stop={getattr(value, 'retry_stop_reason', None)} "
+            f"{type(value).__name__} "
             f"attempts={getattr(value, 'attempt_count', None)} reason={getattr(value, 'reason', None)} "
             f"status={None if info is None else info.status_code} cause={type(getattr(value, 'cause', None)).__name__}"
         )
@@ -295,16 +294,12 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
     mode = "async" if asynchronous else "sync"
     errors = importlib.import_module(f"{package.__name__}.errors")
     error_details: Callable[[Exception], str] = lambda error: (
-        "APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect "
-        "retry_outcome=permitted status=None cause=ConnectError"
+        "APIConnectionError retry_outcome=permitted status=None cause=ConnectError"
         if (
             type(error) is errors.APIConnectionError
-            and getattr(error, "delivery_state", None) is errors.DeliveryState.NOT_SENT
-            and getattr(error, "phase", None) == "connect"
             and getattr(error, "info", None) is None
             and type(getattr(error, "cause", None)) is httpx2.ConnectError
-            and (getattr(error, "retry_stop_reason", None), getattr(error, "attempt_count", None))
-            in (("transport_not_retryable", 1), ("max_retries_exhausted", 3))
+            and getattr(error, "attempt_count", None) in (1, 3)
         )
         else _details(error)
     )
@@ -554,7 +549,7 @@ def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], 
                                 await operation()
                             except BaseException as failure:
                                 lines.append(
-                                    f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                    f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                                 )
                             else:
                                 lines.append(f"  {label}: unexpectedly returned")
@@ -567,7 +562,7 @@ def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], 
                             operation()
                         except BaseException as failure:
                             lines.append(
-                                f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                             )
                         else:
                             lines.append(f"  {label}: unexpectedly returned")

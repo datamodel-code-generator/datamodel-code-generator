@@ -1,66 +1,23 @@
 # pets-protocols pydantic_v2.BaseModel
-  family AuthError bases=('SDKError',) code=provider_failed
+  family AuthError bases=('SDKError',)
   signature AuthError keyword-only=True required=('reason',)
-  hints AuthError ('reason', 'phase', 'status_code', 'oauth_error', 'expires_at', 'effective_timeout', 'metadata', 'return')
-  defaults AuthError fields=(('reason', 'provider_failed'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None), ('expires_at', None), ('effective_timeout', None)) common=(None, None, None, None, None, (), 0, 0.0, None)
-  metadata AuthError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True measurements=(2, 0.25, None)
-  supplied AuthError (('reason', 'provider_failed'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', 400), ('oauth_error', None), ('expires_at', None), ('effective_timeout', None))
-  safe AuthError True text="AuthError(operation_id='auth_operation', call_id='auth-call', reason='provider_failed', delivery_state='NOT_SENT', phase='validate', status_code=400)"
-  undeclared AuthError.message TypeError secondary []
-  undeclared AuthError.condition TypeError secondary []
-  undeclared AuthError.retry_stop_reason TypeError secondary []
-  positional AuthError TypeError secondary []
-  family ConfigurationError bases=('SDKError',) code=invalid_value
+  hints AuthError ('reason', 'status_code', 'oauth_error', 'expires_at', 'operation_id', 'cause', 'return')
+  defaults AuthError fields=(('reason', 'provider_failed'), ('status_code', None), ('oauth_error', None), ('expires_at', None)) common=(None, None, None, 0, 0.0, None)
+  metadata AuthError operation=auth_operation info=None cause=True measurements=(0, 0.0, None)
+  supplied AuthError (('reason', 'provider_failed'), ('status_code', 400), ('oauth_error', None), ('expires_at', None))
+  safe AuthError True text="AuthError(operation_id='auth_operation', reason='provider_failed', status_code=400)"
+  positional AuthError TypeError notes []
+  family ConfigurationError bases=('SDKError',)
   signature ConfigurationError keyword-only=True required=()
-  hints ConfigurationError ('field_path', 'reason', 'source_uri', 'source_pointer', 'helper_id', 'operation', 'metadata', 'return')
-  defaults ConfigurationError fields=(('reason', 'invalid_value'), ('field_path', ()), ('source_uri', None), ('source_pointer', None), ('helper_id', None), ('operation', None)) common=(None, None, None, None, None, (), 0, 0.0, None)
-  metadata ConfigurationError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True measurements=(2, 0.25, None)
-  supplied ConfigurationError (('reason', 'invalid_scope'), ('field_path', ('private-secret',)), ('source_uri', 'https://private-secret.example/schema'), ('source_pointer', '/private-secret'), ('helper_id', None), ('operation', None))
-  safe ConfigurationError False text="ConfigurationError(operation_id='auth_operation', call_id='auth-call', reason='invalid_scope', field_path='private-secret')"
-  undeclared ConfigurationError.message TypeError secondary []
-  undeclared ConfigurationError.condition TypeError secondary []
-  undeclared ConfigurationError.retry_stop_reason TypeError secondary []
-  positional ConfigurationError TypeError secondary []
-  missing required AuthError TypeError secondary []
-  oauth values {'reason': 'oauth_error', 'status_code': 400, 'oauth_error': 'invalid_client'} returned "AuthError(reason='oauth_error', delivery_state='MAYBE_SENT', phase='unknown', status_code=400, oauth_error='invalid_client')"
-  oauth values {'reason': 'oauth_error', 'status_code': 600} ValueError secondary []
-  oauth values {'reason': 'oauth_error', 'status_code': True} ValueError secondary []
-  oauth values {'reason': 'oauth_error', 'oauth_error': 'slow_down'} ValueError secondary []
-  oauth values {'reason': 'timeout', 'effective_timeout': -1.0} ValueError secondary []
-  oauth values {'reason': 'timeout', 'effective_timeout': 1.0} returned "AuthError(reason='timeout', delivery_state='MAYBE_SENT', phase='unknown')"
-  oauth values {'reason': 'reauthorization_required', 'oauth_error': 'invalid_grant'} returned "AuthError(reason='reauthorization_required', delivery_state='MAYBE_SENT', phase='unknown', oauth_error='invalid_grant')"
-  auth reason provider_failed = 'provider_failed'
-  auth reason provider_closed = 'provider_closed'
-  auth reason token_expired = 'token_expired'
-  auth reason invalid_expiry = 'invalid_expiry'
-  auth reason oauth_error = 'oauth_error'
-  auth reason timeout = 'timeout'
-  auth reason reauthorization_required = 'reauthorization_required'
-  auth reason signing_failed = 'signing_failed'
-  auth reason expired ! ValueError: reason must be one of its declared values []
-  auth reason private-secret ! ValueError: reason must be one of its declared values []
-  auth phase connect = 'connect'
-  auth phase read = 'read'
-  auth phase write = 'write'
-  auth phase pool = 'pool'
-  auth phase validate = 'validate'
-  auth phase unknown = 'unknown'
-  auth phase store ! ValueError: phase must be one of its declared values []
-  auth delivery NOT_SENT = 'NOT_SENT'
-  auth delivery MAYBE_SENT = 'MAYBE_SENT'
-  auth delivery RESPONSE_STARTED = 'RESPONSE_STARTED'
-  invalid auth phase unknown ! ValueError: phase must be one of its declared values []
-  invalid auth phase none ! ValueError: phase must be one of its declared values []
-  invalid auth phase bool ! ValueError: phase must be one of its declared values []
-  invalid auth phase list ! ValueError: phase must be one of its declared values []
-  invalid auth delivery_state unknown ! ValueError: delivery_state must be a DeliveryState []
-  invalid auth delivery_state none = AuthError: AuthError(reason='provider_failed', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] provider_failed
-  invalid auth delivery_state bool ! ValueError: delivery_state must be a DeliveryState []
-  invalid auth delivery_state list ! ValueError: delivery_state must be a DeliveryState []
-  invalid ConfigurationError reason symbol ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  invalid ConfigurationError reason empty ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  invalid ConfigurationError reason none ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  invalid ConfigurationError reason list ! ValueError: A reason must be an SDK-defined lowercase symbol []
+  hints ConfigurationError ('field_path', 'reason', 'source_uri', 'source_pointer', 'helper_id', 'operation_id', 'info', 'cause', 'return')
+  defaults ConfigurationError fields=(('reason', 'invalid_value'), ('field_path', ()), ('source_uri', None), ('source_pointer', None), ('helper_id', None)) common=(None, None, None, 0, 0.0, None)
+  metadata ConfigurationError operation=auth_operation info=True cause=True measurements=(2, 0.25, None)
+  supplied ConfigurationError (('reason', 'invalid_scope'), ('field_path', ('private-secret',)), ('source_uri', 'https://private-secret.example/schema'), ('source_pointer', '/private-secret'), ('helper_id', None))
+  safe ConfigurationError False text="ConfigurationError(operation_id='auth_operation', reason='invalid_scope', field_path='private-secret')"
+  positional ConfigurationError TypeError notes []
+  missing required AuthError TypeError notes []
+  oauth values {'reason': 'oauth_error', 'status_code': 400, 'oauth_error': 'invalid_client'} returned "AuthError(reason='oauth_error', status_code=400, oauth_error='invalid_client')"
+  oauth values {'reason': 'reauthorization_required', 'oauth_error': 'invalid_grant'} returned "AuthError(reason='reauthorization_required', oauth_error='invalid_grant')"
+  reasons ('provider_failed', 'provider_closed', 'token_expired', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required', 'signing_failed')
   expiry token_expired None same=True
   expiry token_expired datetime.datetime(2020, 1, 2, 0, 0, tzinfo=datetime.timezone.utc) same=True
-  expiry token_expired datetime.datetime(2020, 1, 2, 0, 0) same=True

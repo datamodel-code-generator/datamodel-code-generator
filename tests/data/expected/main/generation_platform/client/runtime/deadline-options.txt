@@ -1,42 +1,42 @@
 # pets pydantic_v2.BaseModel
-  phase connect bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase connect overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase read overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase write overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  phase pool overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option total_timeout overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
-  option timeout type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='timeout') [field_path=('timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  option limiter type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='limiter') [field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  option clock type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock') [field_path=('clock',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  phase connect bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  phase connect overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  phase read overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
+  phase write overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
+  phase pool overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option total_timeout overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  option timeout type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='timeout') [field_path=('timeout',)] invalid_type
+  option limiter type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='limiter') [field_path=('limiter',)] invalid_type
+  option clock type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock') [field_path=('clock',)] invalid_type
   timeout unset = TimeoutOptions(connect=UNSET, read=UNSET, write=UNSET, pool=UNSET)
   timeout zero = TimeoutOptions(connect=0.0, read=0.0, write=0.0, pool=0.0)
   timeout mixed = TimeoutOptions(connect=None, read=1.0, write=2.5, pool=UNSET)
@@ -45,38 +45,24 @@
   removed option stream_idle_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_idle_timeout' []
   removed option stream_total_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_total_timeout' []
   seconds 0.0
-  limiter context fields=('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout') readonly=FrozenInstanceError secondary []
+  limiter context fields=('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout') readonly=FrozenInstanceError notes []
   slotted (False, False, False)
-  error SDKError() code=sdk_error attempts=1 elapsed=2.0 request=None
+  error SDKError() reason=None attempts=1 elapsed=2 request=None
   with response SDKError() safe=True
-  error APITimeoutError(reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=1.0) code=phase_timeout attempts=0 elapsed=0.0 request=None
-  with response APITimeoutError(reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=1.0) safe=True
-  error APITimeoutError(reason='deadline_exceeded', delivery_state='NOT_SENT', phase='encode') code=deadline_exceeded attempts=0 elapsed=0.0 request=None
-  with response APITimeoutError(reason='deadline_exceeded', delivery_state='NOT_SENT', phase='encode') safe=True
+  error APITimeoutError(reason='phase_timeout') reason=phase_timeout attempts=0 elapsed=0.0 request=None
+  with response APITimeoutError(reason='phase_timeout', cause='RuntimeError') safe=True
+  error APITimeoutError(reason='deadline_exceeded') reason=deadline_exceeded attempts=0 elapsed=0.0 request=None
+  with response APITimeoutError(reason='deadline_exceeded', cause='RuntimeError') safe=True
   response measurements attempts=3 elapsed=0.5
-  hierarchy phase=True deadline=True effective=0.0 absolute=-1.0
-  phase read cap=2.5
-  phase write cap=2.5
-  invalid error attempt count ! ValueError: attempt_count must be a nonnegative integer []
-  invalid error attempt bool ! ValueError: attempt_count must be a nonnegative integer []
-  invalid error deadline without its expiry ! ValueError: A deadline_exceeded timeout needs its deadline_at []
-  invalid effective timeout bool ! ValueError: timeout must be a finite number in its permitted range []
-  invalid effective timeout negative ! ValueError: timeout must be a finite number in its permitted range []
-  invalid effective timeout nan ! ValueError: timeout must be a finite number in its permitted range []
-  invalid effective timeout infinity ! ValueError: timeout must be a finite number in its permitted range []
-  invalid effective timeout text ! ValueError: timeout must be a finite number in its permitted range []
-  invalid effective timeout overflow ! ValueError: timeout must be a finite number in its permitted range []
-  invalid deadline ! ValueError: deadline_at must be a finite number in its permitted range []
-  invalid elapsed negative ! ValueError: elapsed must be a finite number in its permitted range []
-  invalid elapsed infinity ! ValueError: elapsed must be a finite number in its permitted range []
+  hierarchy timeout=True
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
   hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
   hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'return')
   hints Clock ('monotonic', 'time', 'random', 'return')
   hints LimiterContext ('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout', 'return')
-  hints SDKError ('reason', 'delivery_state', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'attempt_count', 'elapsed', 'completed_result', 'return')
-  hints APIConnectionError ('phase', 'reason', 'retry_stop_reason', 'metadata', 'return')
-  hints APITimeoutError ('phase', 'effective_timeout', 'deadline_at', 'reason', 'retry_stop_reason', 'metadata', 'return')
+  hints SDKError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
+  hints APIConnectionError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
+  hints APITimeoutError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
   hints Limiter.acquire ('context', 'return')
   hints AsyncLimiter.acquire ('context', 'return')
   hints Permit.release ('return',)
@@ -93,11 +79,11 @@
   > GET https://example.com/cleared
     [host: example.com, accept-encoding: gzip, deflate] b''
   nested timeout clear = b'cleared'
-  refused attempts ! APIConnectionError: APIConnectionError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('refused')] api_connection_error
+  refused attempts ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   attempts=2 phases share the remaining time=True within the deadline=True shrinking=True
-  clock monotonic type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.monotonic') [field_path=('clock', 'monotonic'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  clock time type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.time') [field_path=('clock', 'time'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  clock random type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.random') [field_path=('clock', 'random'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  clock monotonic type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.monotonic') [field_path=('clock', 'monotonic')] invalid_type
+  clock time type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.time') [field_path=('clock', 'time')] invalid_type
+  clock random type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.random') [field_path=('clock', 'random')] invalid_type
   hashing ignores sources clock=True
-  budget on the client clock ! APIConnectionError: APIConnectionError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('refused')] api_connection_error
+  budget on the client clock ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   native phases [{'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}]

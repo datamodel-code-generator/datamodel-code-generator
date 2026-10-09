@@ -10,69 +10,69 @@ copied runtime
   client/__init__.py: 4
   client/auth.py: 485
   client/auth_challenges.py: 99
-  client/auth_policy.py: 660
+  client/auth_policy.py: 647
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2869
-  client/codecs.py: 95
+  client/client.py: 2827
+  client/codecs.py: 101
   client/compression.py: 104
-  client/errors.py: 723
-  client/events.py: 515
+  client/errors.py: 387
+  client/events.py: 498
   client/grants.py: 282
   client/hooks.py: 148
-  client/logical.py: 231
+  client/logical.py: 199
   client/media.py: 77
   client/multipart.py: 546
   client/multipart_responses.py: 416
-  client/native.py: 224
-  client/oauth.py: 764
-  client/operations.py: 838
+  client/native.py: 205
+  client/oauth.py: 760
+  client/operations.py: 835
   client/options.py: 628
   client/paths.py: 40
-  client/raw.py: 940
-  client/refresh.py: 366
+  client/raw.py: 925
+  client/refresh.py: 352
   client/responses.py: 88
-  client/retry.py: 335
+  client/retry.py: 345
   client/scopes.py: 29
   client/security.py: 82
   client/timing.py: 121
   client/urls.py: 85
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 55
-  model_codecs/media.py: 406
+  model_codecs/media.py: 402
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 686
+  model_codecs/parameters.py: 674
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
   protocols/__init__.py: 4
-  protocols/cache.py: 638
+  protocols/cache.py: 622
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 836
+  protocols/client.py: 820
   protocols/client_options.py: 34
-  protocols/errors.py: 1097
+  protocols/errors.py: 163
   protocols/links.py: 75
   protocols/names.py: 29
   protocols/options.py: 339
   protocols/origins.py: 45
-  protocols/pagination.py: 1509
-  protocols/polling.py: 1279
+  protocols/pagination.py: 1487
+  protocols/polling.py: 1254
   protocols/public_keys.py: 142
   protocols/records.py: 243
   protocols/references.py: 16
-  protocols/resume.py: 110
+  protocols/resume.py: 69
   protocols/signatures.py: 99
   protocols/sources.py: 43
-  protocols/streams.py: 1533
-  protocols/uploads.py: 1268
+  protocols/streams.py: 1504
+  protocols/uploads.py: 1223
   protocols/values.py: 158
   protocols/verification.py: 203
-  protocols/webhook_events.py: 293
+  protocols/webhook_events.py: 290
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-  protocols/websocket.py: 976
+  protocols/websocket.py: 942
   protocols/writes.py: 288
-total 66 modules, 25318 lines
+total 66 modules, 23658 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

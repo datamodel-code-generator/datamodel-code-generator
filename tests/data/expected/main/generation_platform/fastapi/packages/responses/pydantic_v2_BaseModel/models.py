@@ -35,6 +35,10 @@ class FieldCreatedPostResponse201XRateHeader(RootModel[conint(ge=0)]):
     root: conint(ge=0)
 
 
+class FieldCreatedPostResponse201XNoteHeader(RootModel[str]):
+    root: str
+
+
 class FieldRangesGetResponse(RootModel[str]):
     root: str
 

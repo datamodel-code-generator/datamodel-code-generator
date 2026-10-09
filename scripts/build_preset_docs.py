@@ -359,19 +359,19 @@ def _render_fastapi_python_api(preset_name: str) -> str:
     return f"""```python
 from pathlib import Path
 
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
+from datamodel_code_generator import DataModelType, InputFileType, OpenAPIScope, ServerType, generate
 
-generate_fastapi(
+generate(
     Path("openapi.yaml"),
-    model_config=GenerateConfig(
-        output=Path("models.py"),
-        input_file_type=InputFileType.OpenAPI,
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        preset="{preset_name}",
-    ),
-    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="{preset_name}",
+    output=Path("models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("server"),
+    server_package="server",
+    server_model_package="models",
 )
 ```
 """

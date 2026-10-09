@@ -7,7 +7,7 @@
   inherited pet d = {'pet': {'kind': 'd'}, 'pets_by_name': {'b': {'kind': 'c', 'mane': False}}}
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', reason='invalid_value') [operation_id='getChild', body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   held Fish = {'pet': {'kind': 'Fish', 'fins': 2}}
@@ -39,7 +39,7 @@
   inherited pet d = Child(pet=Wolf(kind='d'), pets_by_name={'b': Lion(kind='c', mane=False)}, note=None)
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', reason='invalid_value') [operation_id='getChild', body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   held Fish = Holder(pet=Fish(kind='Fish', fins=2))
@@ -67,7 +67,7 @@
   inherited pet d = Child(pet=Wolf(kind='d'), pets_by_name={'b': Lion(kind='c', mane=False)}, note=None)
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=1 validation error for Child
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', reason='invalid_value') [operation_id='getChild', body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=1 validation error for Child
 pet
   Input tag 'Lion' found using 'kind' does not match any of the expected tags: 'c', 'd' [type=union_tag_invalid, input_value={'kind': 'Lion'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value

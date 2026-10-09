@@ -25,14 +25,21 @@ from .errors import (
     OAUTH_ERROR_CODES,
     AuthError,
     ConfigurationError,
-    DeliveryState,
-    IOPhase,
     OAuthErrorCode,
     is_auth_classified,
     is_phase_timeout,
     is_transport,
 )
-from .native import async_response_bytes, native_async_client, native_client, native_error, response_bytes
+from .logical import Delivery
+from .native import (
+    async_response_bytes,
+    delivery,
+    io_phase,
+    native_async_client,
+    native_client,
+    native_error,
+    response_bytes,
+)
 from .responses import HeadersView
 from .scopes import scope_tuple
 from .timing import Budget, finite_number
@@ -41,6 +48,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
 
     from .auth import AsyncCredentialProvider, CredentialProvider
+    from .hooks import IOPhase
     from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
     from .timing import Clock
 
@@ -192,7 +200,7 @@ def _provider_failure(error: Exception) -> Exception:
     """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
     if is_auth_classified(error):
         return error
-    return AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error)
+    return AuthError(reason="provider_failed", cause=error)
 
 
 def token_request(  # noqa: PLR0913
@@ -276,7 +284,7 @@ class Exchanged:
     """What one token request established: the endpoint's answer, or how far the request provably got."""
 
     outcome: Outcome
-    delivery: DeliveryState
+    delivery: Delivery
     status_code: int | None = None
     fields: Mapping[str, object] | None = field(default=None, repr=False)
     oauth_error: OAuthErrorCode | None = None
@@ -369,7 +377,7 @@ def _answered(status: int, headers: HeadersView, body: bytes | None, received: d
 
     A well-formed error object is a rejection whatever its code; each grant decides which codes it accepts.
     """
-    delivery = DeliveryState.RESPONSE_STARTED
+    delivery = Delivery.RESPONSE_STARTED
     if status not in _SUCCESS and status not in {_BAD_REQUEST, _UNAUTHORIZED}:
         return Exchanged("http_status", delivery, status)
     defect: Outcome = "http_status" if status == _UNAUTHORIZED else "malformed_response"
@@ -396,20 +404,16 @@ def _timed_out(error: BaseException) -> bool:
     return is_transport(error) and isinstance(error.cause, httpx2.TimeoutException)
 
 
-def _is_io_phase(value: str) -> TypeIs[IOPhase]:
-    return value in _PHASES
-
-
 def _failed(
     error: BaseException,
-    delivery: DeliveryState,
+    delivery: Delivery,
     session_caps: tuple[bool, ...],
     session: Session,
     status: int | None = None,
 ) -> Exchanged:
     """Classify a failure by its delivery and whether the session, or one phase's cap, ran out of time."""
-    phase: IOPhase = error.phase if is_transport(error) and _is_io_phase(error.phase) else "unknown"
-    outcome: Outcome = "unsent" if delivery is DeliveryState.NOT_SENT else "lost"
+    phase: IOPhase = io_phase(error) if is_transport(error) else "unknown"
+    outcome: Outcome = "unsent" if delivery is Delivery.NOT_SENT else "lost"
     if not _timed_out(error) or (phase == "unknown" and session.deadline.remaining() > 0):
         return Exchanged(outcome, delivery, status, cause=error, phase=phase)
     index = None if phase == "unknown" else _PHASES.index(phase)
@@ -423,10 +427,10 @@ def _failed(
 
 
 def expired(
-    session: Session, delivery: DeliveryState, status: int | None = None, cause: BaseException | None = None
+    session: Session, delivery: Delivery, status: int | None = None, cause: BaseException | None = None
 ) -> Exchanged:
     """Classify the session deadline expiring by how far the exchange provably got."""
-    outcome: Outcome = "unsent" if delivery is DeliveryState.NOT_SENT else "lost"
+    outcome: Outcome = "unsent" if delivery is Delivery.NOT_SENT else "lost"
     return Exchanged(outcome, delivery, status, cause=cause, timeout=session.total, timeout_kind="provider")
 
 
@@ -490,7 +494,7 @@ class TokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed")
 
     def prepare(self) -> None:
         """Create the SDK-owned client once, before any exchange consumes its credential, unless already closed."""
@@ -521,23 +525,21 @@ class TokenEndpoint:
         with self._lock:
             self._open()
             if session.deadline.remaining() <= 0:
-                return expired(session, DeliveryState.NOT_SENT)
+                return expired(session, Delivery.NOT_SENT)
             client = self._client
         assert client is not None
         try:
             response = client.send(request, stream=True, auth=None, follow_redirects=False)
         except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
-            failure = native_error(error, send_started=True)
-            return _failed(failure, failure.delivery_state, caps, session)
+            return _failed(native_error(error), delivery(error, send_started=True), caps, session)
         status = response.status_code
         try:
             body = _read(response_bytes(response), session.deadline)
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
-            return expired(session, DeliveryState.RESPONSE_STARTED, status)
+            return expired(session, Delivery.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            failure = native_error(error, send_started=True, response_started=True)
-            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
+            return _failed(native_error(error), Delivery.RESPONSE_STARTED, caps, session, status)
         finally:
             with suppress(Exception):
                 response.close()
@@ -562,11 +564,11 @@ class Progress:
     answered: bool = False
 
     @property
-    def delivery(self) -> DeliveryState:
+    def delivery(self) -> Delivery:
         """Return the delivery the exchange reached."""
         if self.answered:
-            return DeliveryState.RESPONSE_STARTED
-        return DeliveryState.MAYBE_SENT if self.sent else DeliveryState.NOT_SENT
+            return Delivery.RESPONSE_STARTED
+        return Delivery.MAYBE_SENT if self.sent else Delivery.NOT_SENT
 
 
 async def within(operation: Coroutine[object, object, T], seconds: float) -> T:
@@ -612,7 +614,7 @@ class AsyncTokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed")
 
     def bind(self) -> None:
         """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
@@ -621,15 +623,11 @@ class AsyncTokenEndpoint:
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError as error:
-            raise AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error) from None
+            raise AuthError(reason="provider_failed", cause=error) from None
         if self._loop is None:
             self._loop = loop
         elif self._loop is not loop:
-            raise AuthError(
-                reason="provider_failed",
-                delivery_state=DeliveryState.NOT_SENT,
-                cause=RuntimeError("The provider belongs to another event loop"),
-            )
+            raise AuthError(reason="provider_failed", cause=RuntimeError("The provider belongs to another event loop"))
 
     def prepare(self) -> None:
         """Refuse other loops, then create the SDK-owned client once unless already closed."""
@@ -662,25 +660,23 @@ class AsyncTokenEndpoint:
         )
         self._open()
         if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
+            return expired(session, Delivery.NOT_SENT)
         client = self._client
         assert client is not None
         progress.sent = True
         try:
             response = await client.send(request, stream=True, auth=None, follow_redirects=False)
         except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
-            failure = native_error(error, send_started=True)
-            return _failed(failure, failure.delivery_state, caps, session)
+            return _failed(native_error(error), delivery(error, send_started=True), caps, session)
         progress.answered = True
         status = response.status_code
         try:
             body = await _aread(async_response_bytes(response), session.deadline)
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
-            return expired(session, DeliveryState.RESPONSE_STARTED, status)
+            return expired(session, Delivery.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            failure = native_error(error, send_started=True, response_started=True)
-            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
+            return _failed(native_error(error), Delivery.RESPONSE_STARTED, caps, session, status)
         finally:
             with suppress(Exception):
                 await response.aclose()
@@ -716,7 +712,7 @@ def response_scopes(value: object) -> tuple[str, ...]:
 
 
 def _invalid_expiry() -> AuthError:
-    return AuthError(reason="invalid_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
+    return AuthError(reason="invalid_expiry")
 
 
 def _expiry(value: object, received: datetime) -> datetime:

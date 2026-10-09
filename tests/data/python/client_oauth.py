@@ -21,11 +21,8 @@ if TYPE_CHECKING:
 
 _FIELDS: Final = (
     "reason",
-    "delivery_state",
-    "phase",
     "status_code",
     "oauth_error",
-    "effective_timeout",
     "field_path",
     "loop_mismatch",
     "source",

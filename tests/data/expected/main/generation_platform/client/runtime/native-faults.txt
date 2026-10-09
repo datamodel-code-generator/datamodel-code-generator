@@ -1,183 +1,183 @@
 # retries pydantic_v2.BaseModel
-  sync native ConnectError get_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  sync native ConnectError get_safe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  sync native ConnectError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  sync native ConnectError get_keyed_safe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  sync native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  sync native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  sync native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  sync native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  sync native ConnectError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  sync native ConnectError post_unsafe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  sync native ConnectTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  sync native ConnectTimeout get_safe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  sync native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  sync native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  sync native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  sync native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  sync native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  sync native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  sync native ConnectTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  sync native ConnectTimeout post_unsafe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  sync native PoolTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  sync native PoolTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  sync native PoolTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  sync native PoolTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  sync native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  sync native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  sync native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  sync native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  sync native PoolTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  sync native PoolTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  sync native ReadError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  sync native ReadError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  sync native ReadError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  sync native ReadError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  sync native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  sync native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  sync native ReadError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  sync native ReadError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  sync native ReadError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  sync native ReadError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  sync native ReadTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  sync native ReadTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  sync native ReadTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  sync native ReadTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  sync native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  sync native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  sync native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  sync native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  sync native ReadTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  sync native ReadTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  sync native WriteError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  sync native WriteError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  sync native WriteError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  sync native WriteError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  sync native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  sync native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  sync native WriteError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  sync native WriteError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  sync native WriteError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  sync native WriteError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  sync native WriteTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  sync native WriteTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  sync native WriteTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  sync native WriteTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  sync native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  sync native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  sync native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  sync native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  sync native WriteTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  sync native WriteTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  sync native RemoteProtocolError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  sync native RemoteProtocolError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  sync native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  sync native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  sync native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  sync native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  sync native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  sync native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  sync native RemoteProtocolError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  sync native RemoteProtocolError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  sync native RuntimeError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  sync native RuntimeError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  sync native RuntimeError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  sync native RuntimeError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  sync native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  sync native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  sync native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  sync native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  sync native RuntimeError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  sync native RuntimeError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  async native ConnectError get_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  async native ConnectError get_safe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  async native ConnectError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  async native ConnectError get_keyed_safe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  async native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  async native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  async native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  async native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  async native ConnectError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  async native ConnectError post_unsafe key=None = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   native send invocations=3 required=3
-  async native ConnectTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  async native ConnectTimeout get_safe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  async native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  async native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  async native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  async native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  async native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  async native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  async native ConnectTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  async native ConnectTimeout post_unsafe key=None = 'APITimeoutError attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
   native send invocations=3 required=3
-  async native PoolTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  async native PoolTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  async native PoolTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  async native PoolTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  async native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  async native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  async native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  async native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  async native PoolTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  async native PoolTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
   native send invocations=1 required=1
-  async native ReadError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  async native ReadError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  async native ReadError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  async native ReadError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  async native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  async native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  async native ReadError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  async native ReadError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  async native ReadError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  async native ReadError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=ReadError'
   native send invocations=1 required=1
-  async native ReadTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  async native ReadTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  async native ReadTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  async native ReadTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  async native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  async native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  async native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  async native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  async native ReadTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  async native ReadTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
   native send invocations=1 required=1
-  async native WriteError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  async native WriteError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  async native WriteError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  async native WriteError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  async native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  async native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  async native WriteError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  async native WriteError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  async native WriteError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  async native WriteError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=WriteError'
   native send invocations=1 required=1
-  async native WriteTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  async native WriteTimeout get_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  async native WriteTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  async native WriteTimeout get_keyed_safe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  async native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  async native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  async native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  async native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  async native WriteTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  async native WriteTimeout post_unsafe key=None = 'APITimeoutError attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
   native send invocations=1 required=1
-  async native RemoteProtocolError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  async native RemoteProtocolError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  async native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  async native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  async native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  async native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  async native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  async native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  async native RemoteProtocolError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  async native RemoteProtocolError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
   native send invocations=1 required=1
-  async native RuntimeError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  async native RuntimeError get_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  async native RuntimeError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  async native RuntimeError get_keyed_safe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  async native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  async native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  async native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  async native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
-  async native RuntimeError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  async native RuntimeError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
   native task cancellation propagated count=1
   call after native cancellation = FieldSafeGetResponse(root='ready')

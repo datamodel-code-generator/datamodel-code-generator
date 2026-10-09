@@ -214,6 +214,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
                 config=target,
                 generator=generator,
                 models_module=True,
+                shown_root=root,
             )
         except APIGenerationError as error:
             if (staged := _staged(error, root.relative_to(cwd).as_posix())) is error:

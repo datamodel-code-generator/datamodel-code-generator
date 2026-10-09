@@ -23,8 +23,6 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
-| `python-api.client` | python-api | `datamodel_code_generator.client and datamodel_code_generator.api_types` | 0.84.0 | - |
-| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -197,23 +195,3 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
-
-### `python-api.client`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.client and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.
-
-generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.
-
-### `python-api.fastapi-server`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
-
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.
