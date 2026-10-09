@@ -121,7 +121,10 @@ from .._runtime.server.responses import dispatch
 from ..services import AnimalsService
 
 
-def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_all(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     list_all_handler = checked(
         animals.list_all,
@@ -166,7 +169,10 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     create_pet_handler = checked(
         animals.create_pet,
@@ -202,7 +208,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_my_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     list_my_pets_handler = checked(
         animals.list_my_pets,
@@ -236,7 +245,10 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     get_pet_handler = checked(
         animals.get_pet,
@@ -272,7 +284,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_delete_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     animals: AnimalsService = wiring.services['animals']
     delete_pet_handler = checked(
         animals.delete_pet,
@@ -352,7 +367,10 @@ from .._runtime.server.responses import dispatch
 from ..services import StoreService
 
 
-def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_inventory(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     store: StoreService = wiring.services['store']
     get_inventory_handler = checked(
         store.get_inventory,

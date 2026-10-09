@@ -35,6 +35,9 @@ _TEXT = (
     '     },\n'
     '     {\n'
     '      "wiring": []\n'
+    '     },\n'
+    '     {\n'
+    '      "h\\"\\"\\"o\\\\N": []\n'
     '     }\n'
     '    ],\n'
     '    "responses": {\n'
@@ -61,6 +64,10 @@ _TEXT = (
     '    "type": "http",\n'
     '    "scheme": "basic",\n'
     '    "bearerFormat": "JWT"\n'
+    '   },\n'
+    '   "h\\"\\"\\"o\\\\N": {\n'
+    '    "type": "http",\n'
+    '    "scheme": "hoba"\n'
     '   }\n'
     '  }\n'
     ' }\n'
@@ -75,7 +82,10 @@ def document() -> dict[str, Any]:
 
 
 def serve_source_openapi(
-    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None
+    app: FastAPI,
+    *,
+    prefix: str = "",
+    metadata: Mapping[str, Any] | None = None,
 ) -> None:
     """Serve the source document instead of FastAPI's, read on its first request.
 

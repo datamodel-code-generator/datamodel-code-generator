@@ -21,7 +21,10 @@ from .._runtime.server.responses import dispatch
 from ..services import StoreService
 
 
-def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_inventory(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     store: StoreService = wiring.services["store"]
     get_inventory_handler = checked(
         store.get_inventory,
