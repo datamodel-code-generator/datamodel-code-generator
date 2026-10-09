@@ -2,16 +2,15 @@
 render
   target=fastapi schema_version=1
   write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/pets.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/pets.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
 publish
 show models.py
@@ -35,47 +34,44 @@ render
 render
   target=fastapi schema_version=1
   unchanged model models.py
-  unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
-  unchanged target server/routers/__init__.py (target)
-  write target server/routers/pets.py (target)
-  unchanged target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  unchanged target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  write target server/routers/pets.py
+  unchanged target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  unchanged target server/py.typed
   11 runtime modules ['unchanged']
 render
   target=fastapi schema_version=1
   unchanged model models.py
-  unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
-  unchanged target server/routers/__init__.py (target)
-  write target server/routers/pets.py (target)
-  unchanged target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  unchanged target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  write target server/routers/pets.py
+  unchanged target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  unchanged target server/py.typed
   11 runtime modules ['unchanged']
-manifest identical to shorthand: True
+files identical to shorthand: True
 render
   target=fastapi schema_version=1
   unchanged model models.py
-  unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
-  unchanged target server/routers/__init__.py (target)
-  write target server/routers/pets.py (target)
-  unchanged target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  unchanged target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  write target server/routers/pets.py
+  unchanged target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  unchanged target server/py.typed
   11 runtime modules ['unchanged']
-manifest identical to shorthand: True
+files identical to shorthand: True
 render
-  Error: The --server-operation-names entry '/paths/~1pets/get' selects no root path operation that --openapi-include-paths keeps
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' selects no root path operation that --openapi-include-paths keeps
+  Error: The --server-operation-names entry '/paths/~1pets/get' in 'spec/other.yaml' selects no root path operation that --openapi-include-paths keeps
+  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' in 'spec/other.yaml' selects no root path operation that --openapi-include-paths keeps

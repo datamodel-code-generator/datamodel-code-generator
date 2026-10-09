@@ -35,6 +35,10 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
         "defaults",
         "defaults-annotated",
         pytest.param("defaults-preset", marks=PRESET),
+        "kinds",
+        "kinds-annotated",
+        "kinds-decimal",
+        "kinds-literal",
         "errors",
         "bodies",
         "results",
@@ -48,6 +52,8 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
         "variants-reuse",
         "forms",
         "responses",
+        "nested-models",
+        "stale",
     ],
 )
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

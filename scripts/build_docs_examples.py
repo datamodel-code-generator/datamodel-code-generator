@@ -25,6 +25,7 @@ INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
 EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
 BINDING_LINES = ("plain", "async plain", "async list with")
+FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
 OPENAPI_DATA = TEST_DATA / "openapi"
 
@@ -72,6 +73,17 @@ def read_python_output(path: Path) -> str:
 def fenced(language: str, content: str) -> str:
     """Render a fixture verbatim, including its original formatting."""
     return f"\n<!-- fmt: off -->\n\n```{language}\n{content.rstrip()}\n```\n\n<!-- fmt: on -->\n"
+
+
+def command(arguments: Iterable[str]) -> str:
+    """Render the datamodel-codegen command of tested arguments, one option with its values a line."""
+    lines: list[str] = []
+    for argument in arguments:
+        if argument.startswith("--"):
+            lines.append(argument)
+        else:
+            lines[-1] += f" {argument}"
+    return " \\\n  ".join(("datamodel-codegen", *lines))
 
 
 def details(summary: str, language: str, content: str) -> str:
@@ -247,6 +259,13 @@ def docs_examples() -> tuple[DocsExample, ...]:
     """Return all generated docs example sections."""
     return (
         DocsExample(
+            example_id="fastapi-server.nested-models.command",
+            path=DOCS / "fastapi-server.md",
+            render=lambda: fenced(
+                "bash", command(json.loads(read_text(FASTAPI_CLI_DATA / "nested-models-example.json")))
+            ),
+        ),
+        DocsExample(
             example_id="openapi.quick-start.schema",
             path=DOCS / "openapi.md",
             render=lambda: details("api.yaml", "yaml", read_text(OPENAPI_DATA / "api.yaml")),
@@ -373,11 +392,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.protocols.toml",
+            example_id="python-client.protocols.pyproject",
             path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-protocols"]["toml"]
-            ),
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-protocols.toml")),
         ),
         DocsExample(
             example_id="python-client.protocols.json",
@@ -788,11 +805,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.body-fields.toml",
+            example_id="python-client.body-fields.pyproject",
             path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-body-fields"]["toml"]
-            ),
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-fields.toml")),
         ),
         DocsExample(
             example_id="python-client.body-fields.diagnostics",

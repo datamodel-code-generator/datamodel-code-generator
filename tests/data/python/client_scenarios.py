@@ -53,6 +53,7 @@ from tests.data.python.client_pagination_targets import (
     pagination_targets,
     path_arguments,
 )
+from tests.data.python.client_parameter_kinds import parameter_kinds
 from tests.data.python.client_polling import polling
 from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -451,6 +452,8 @@ def media(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "form", lambda: api.forms.submit_form(body=form))
         record(lines, "form invalid", lambda: api.forms.submit_form(body=form))
+        exchange.respond(raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded"))
+        record(lines, "form repeated undeclared member", lambda: api.forms.submit_form(body=form))
         exchange.respond(
             raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
             raw_response(200, b"a=%zz", "application/x-www-form-urlencoded"),
@@ -874,6 +877,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "parameter-kinds": ("parameter-kinds", BACKENDS, parameter_kinds),
+    "parameter-kinds-decimal": ("parameter-kinds-decimal", BACKENDS, parameter_kinds),
+    "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
+    "parameter-kinds-strict": ("parameter-kinds-strict", BACKENDS, parameter_kinds),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
@@ -916,7 +923,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "socket-connector-outcomes": ("sockets", ("pydantic_v2.BaseModel",), socket_connector_outcomes),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
-    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
     "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),

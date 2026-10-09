@@ -402,9 +402,271 @@
       {
         "method": "GET",
         "url": "/items/1?levels=1&levels=2"
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[unknown]=extra",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=05",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=%2B1",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter[name]=n&filter[id]=1.0",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=%EF%BC%92.%EF%BC%92"
+      },
+      {
+        "method": "GET",
+        "url": "/items/%D9%A1"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?levels=%EF%BC%91"
+      },
+      {
+        "method": "GET",
+        "url": "/notes/%D9%A7"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=1e999"
       }
     ],
     "package_snapshots": []
+  },
+  "kinds": {
+    "input": "server-kinds.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?amount=12345678901234567890.123&step=0.25&ratio=0.5&level=2&mixed=5"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=1.50&step=12345678901234567890.12&level=1&mixed=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=12345678901234567890.123,1.50&steps=12345678901234567890.12,0.25&mixeds=5,abc&codes=AB,C&counts=1,2",
+        "headers": {
+          "X-Amounts": "12345678901234567890.123, 1.50"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=12345678901234567890.123&filter%5Bcount%5D=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=1.50,abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=3.3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=AB,c&counts=1,-2"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "kinds-annotated": {
+    "input": "server-kinds.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?amount=12345678901234567890.123&step=0.25&ratio=0.5&level=2&mixed=5"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=1.50&step=12345678901234567890.12&level=1&mixed=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=12345678901234567890.123,1.50&steps=12345678901234567890.12,0.25&mixeds=5,abc&codes=AB,C&counts=1,2",
+        "headers": {
+          "X-Amounts": "12345678901234567890.123, 1.50"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=12345678901234567890.123&filter%5Bcount%5D=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=1.50,abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=3.3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=AB,c&counts=1,-2"
+      }
+    ],
+    "package_snapshots": [],
+    "model": {
+      "field_constraints": true,
+      "use_annotated": true
+    }
+  },
+  "kinds-decimal": {
+    "input": "server-kinds.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?amount=12345678901234567890.123&step=0.25&ratio=0.5&level=2&mixed=5"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=1.50&step=12345678901234567890.12&level=1&mixed=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=12345678901234567890.123,1.50&steps=12345678901234567890.12,0.25&mixeds=5,abc&codes=AB,C&counts=1,2",
+        "headers": {
+          "X-Amounts": "12345678901234567890.123, 1.50"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=12345678901234567890.123&filter%5Bcount%5D=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=1.50,abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=3.3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=AB,c&counts=1,-2"
+      }
+    ],
+    "package_snapshots": [],
+    "model": {
+      "use_decimal_for_multiple_of": true
+    }
+  },
+  "kinds-literal": {
+    "input": "server-kinds.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?amount=12345678901234567890.123&step=0.25&ratio=0.5&level=2&mixed=5"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=1.50&step=12345678901234567890.12&level=1&mixed=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=12345678901234567890.123,1.50&steps=12345678901234567890.12,0.25&mixeds=5,abc&codes=AB,C&counts=1,2",
+        "headers": {
+          "X-Amounts": "12345678901234567890.123, 1.50"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=12345678901234567890.123&filter%5Bcount%5D=3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=2.2"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amount=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?amounts=1.50,abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?ratio=3.3"
+      },
+      {
+        "method": "GET",
+        "url": "/values?filter%5Bprice%5D=abc"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=AB,c&counts=1,-2"
+      }
+    ],
+    "package_snapshots": [],
+    "model": {
+      "enum_field_as_literal": "all"
+    }
   },
   "bodies": {
     "input": "server-bodies.yaml",
@@ -2522,6 +2784,46 @@
           }
         ]
       }
+    ],
+    "package_snapshots": []
+  },
+  "nested-models": {
+    "input": "unbound.yaml",
+    "services": "unbound",
+    "nested": true,
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/values/invalid"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "stale": {
+    "input": "unbound.yaml",
+    "previous": "pets.yaml",
+    "services": "unbound",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/store/inventory"
+      }
+    ],
+    "stale": [
+      "routers/pets.py",
+      "routers/store.py"
     ],
     "package_snapshots": []
   }

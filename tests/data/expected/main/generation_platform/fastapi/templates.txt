@@ -22,7 +22,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
-  write server/.dcg-target-manifest.json
   file server/README.md
     | # Pets
     |
