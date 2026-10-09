@@ -1,4 +1,4 @@
-"""Exercise generated raw and streaming clients under acquisition and stream limits and task cancellation."""
+"""Exercise generated raw and streaming clients under deadlines, stream limits, close failures and cancellation."""
 
 from __future__ import annotations
 
@@ -77,9 +77,9 @@ class _WaitingBody(httpx2.AsyncByteStream):
 
 
 class _StoppedBody(httpx2.SyncByteStream, httpx2.AsyncByteStream):
-    """Interrupt a body after its first chunk, then fail its close with another interruption once released."""
+    """Interrupt a body after its first chunk unless it has no original failure, then fail its close once released."""
 
-    def __init__(self, original: BaseException, cleanup: BaseException | None, *, gated: bool = False) -> None:
+    def __init__(self, original: BaseException | None, cleanup: BaseException | None, *, gated: bool = False) -> None:
         self.original, self.cleanup = original, cleanup
         self.gated = gated
         self.entered = asyncio.Event() if gated else None
@@ -88,7 +88,8 @@ class _StoppedBody(httpx2.SyncByteStream, httpx2.AsyncByteStream):
 
     def __iter__(self) -> Iterator[bytes]:
         yield b"partial"
-        raise self.original
+        if self.original is not None:
+            raise self.original
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         for chunk in self:
@@ -110,32 +111,6 @@ def _answer(
     stream: httpx2.SyncByteStream | httpx2.AsyncByteStream, status: int = 200
 ) -> Callable[[httpx2.Request], httpx2.Response]:
     return injected(lambda _: httpx2.Response(status, headers={"content-type": "text/plain"}, stream=stream))
-
-
-class _FailingLimiter:
-    """Return a permit that fails when released, recording that cleanup never retries it."""
-
-    released = 0
-
-    def acquire(self, context: object) -> _FailingLimiter:
-        return self
-
-    def release(self) -> None:
-        self.released += 1
-        raise RuntimeError("permit release failed")
-
-
-class _AsyncFailingLimiter:
-    """Return an asynchronous permit that fails when released."""
-
-    released = 0
-
-    async def acquire(self, context: object) -> _AsyncFailingLimiter:
-        return self
-
-    async def release(self) -> None:
-        self.released += 1
-        raise RuntimeError("permit release failed")
 
 
 def deadline_streams(package: ModuleType, lines: list[str]) -> None:
@@ -183,16 +158,16 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(raw_response(200, b'{"ready":true}', "application/json"))
         saved = api.request_raw("GET", "https://example.com/saved")
         for primary in (False, True):
-            limiter = _FailingLimiter()
-            exchange.respond(raw_response(200, b"ready", "text/plain"))
+            body = _StoppedBody(None, RuntimeError("close failed"))
+            exchange.respond(_answer(body))
             with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/release",
-                options=options.RequestOptions(limiter=limiter, max_stream_bytes=0 if primary else None),
+                options=options.RequestOptions(max_stream_bytes=0 if primary else None),
             ) as response:
                 read_body = (lambda: list(response.iter_bytes())) if primary else response.read
-                lines.append(f"  stream permit failure primary={primary} {outcome(read_body)}")
-            lines.append(f"  stream permit release count {limiter.released}")
+                lines.append(f"  stream close failure primary={primary} {outcome(read_body)}")
+            lines.append(f"  stream close count {body.closes}")
     lines.append(f"  buffered survives close {saved.read()!r} {saved.json()!r} {list(saved.iter_bytes())!r}")
     _interruptions(package, lines)
     _http2(package, lines)
@@ -314,16 +289,16 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_answer(body, 503 if action == "raise_for_status" else 200))
             await _cancelled_read(api, options, body, action, lines)
         for primary in (False, True):
-            limiter = _AsyncFailingLimiter()
-            exchange.respond(raw_response(200, b"ready", "text/plain"))
+            body = _StoppedBody(None, RuntimeError("close failed"))
+            exchange.respond(_answer(body))
             async with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/release",
-                options=options.RequestOptions(limiter=limiter, max_stream_bytes=0 if primary else None),
+                options=options.RequestOptions(max_stream_bytes=0 if primary else None),
             ) as response:
                 read_body = (lambda: anext(response.iter_bytes())) if primary else response.read
-                lines.append(f"  async stream permit failure primary={primary} {await aoutcome(read_body)}")
-            lines.append(f"  async stream permit release count {limiter.released}")
+                lines.append(f"  async stream close failure primary={primary} {await aoutcome(read_body)}")
+            lines.append(f"  async stream close count {body.closes}")
     lines.append(
         f"  async buffered survives close {await saved.read()!r} {await saved.json()!r} {[part async for part in saved.iter_bytes()]!r}"
     )

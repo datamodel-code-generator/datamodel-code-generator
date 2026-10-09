@@ -137,10 +137,6 @@
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
   request_raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  hook fails on the invalidation span = ('SDKError', 'hook_failed', 'RuntimeError', (), 1, 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-sig: signed] b''
   signed anonymous rejected = ('AuthenticationError', None, 'NoneType', (), 1, 8)
@@ -237,34 +233,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
   async token expired in flight = ('returned', 200)
     callbacks=['get', 'invalidate', 'get', 'refresh']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  token expires while waiting for a permit = ('returned', 200)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
-  static token expires while waiting for a permit = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   signer outlives the token = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
-  every token expires while waiting for a permit = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  async token expires while waiting for a permit = ('returned', 200)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
-  async static token expires while waiting for a permit = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   async signer outlives the token = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
-  async every token expires while waiting for a permit = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
-  provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary cleanup failure: SDKError',), 0, 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  auth_start hook fails = ('SDKError', 'hook_failed', 'RuntimeError', (), 0, 0)
-    callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary cleanup failure: SDKError',), 0, 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async auth_start hook fails = ('SDKError', 'hook_failed', 'RuntimeError', (), 0, 0)
-    callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   root call = ('returned', 200)

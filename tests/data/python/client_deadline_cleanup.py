@@ -1,28 +1,37 @@
-"""Report how generated clients release responses and borrowed clients when hooks fail or a task is cancelled."""
+"""Report how generated clients release responses and borrowed clients when closes fail or a task is cancelled."""
 
 from __future__ import annotations
 
 import asyncio
 import importlib
 from contextlib import suppress
-from typing import TYPE_CHECKING, Protocol, TypeAlias
+from typing import TYPE_CHECKING
 
 import httpx2
 
 from tests.data.python.client_runtime import arecord, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator, Mapping
+    from collections.abc import AsyncIterator, Iterator
     from types import ModuleType
-
-_EventLog: TypeAlias = list[tuple[str, str, str | None, int]]
 
 
 class _Body(httpx2.SyncByteStream, httpx2.AsyncByteStream):
-    """A response body that counts its closes and, when gated, stalls after its first chunk until released."""
+    """A response body that counts its closes and, when gated, stalls after its first chunk until released.
 
-    def __init__(self, gate: asyncio.Event | None = None) -> None:
+    Its asyncio read may instead fail after the first chunk, and its close may fail once counted.
+    """
+
+    def __init__(
+        self,
+        gate: asyncio.Event | None = None,
+        *,
+        failure: BaseException | None = None,
+        close_failure: BaseException | None = None,
+    ) -> None:
         self.gate = gate
+        self.failure = failure
+        self.close_failure = close_failure
         self.waiting = asyncio.Event()
         self.closed = 0
 
@@ -31,87 +40,36 @@ class _Body(httpx2.SyncByteStream, httpx2.AsyncByteStream):
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         yield b"response"
+        if (failure := self.failure) is not None:
+            raise failure
         if (gate := self.gate) is not None:
             self.waiting.set()
             await gate.wait()
 
     def close(self) -> None:
         self.closed += 1
+        if (failure := self.close_failure) is not None:
+            raise failure
 
     async def aclose(self) -> None:
-        self.closed += 1
+        self.close()
 
 
 class _Transport(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
     """Answer every request with the same counted body."""
 
-    def __init__(self, gate: asyncio.Event | None = None) -> None:
-        self.body = _Body(gate)
+    def __init__(self, body: _Body | None = None, status: int = 200) -> None:
+        self.body = _Body() if body is None else body
+        self.status = status
         self.sends = 0
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         del request
         self.sends += 1
-        return httpx2.Response(200, headers={"content-type": "application/octet-stream"}, stream=self.body)
+        return httpx2.Response(self.status, headers={"content-type": "application/octet-stream"}, stream=self.body)
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         return self.handle_request(request)
-
-
-class _Event(Protocol):
-    @property
-    def name(self) -> str: ...
-
-    @property
-    def outcome(self) -> str | None: ...
-
-    @property
-    def attempt_count(self) -> int: ...
-
-
-class _FaultHook:
-    def __init__(self, name: str, events: _EventLog, *, failures: Mapping[str, BaseException] | None = None) -> None:
-        self.name = name
-        self.events = events
-        self.failures = {} if failures is None else failures
-
-    async def on_event(self, event: _Event) -> None:
-        name = event.name
-        self.events.append((self.name, name, event.outcome, event.attempt_count))
-        if (failure := self.failures.get(name)) is not None:
-            raise failure
-
-
-class _StreamHook:
-    def on_event(self, event: _Event) -> None:
-        if event.name == "stream_end":
-            msg = "stream end hook failed"
-            raise RuntimeError(msg)
-
-
-class _AsyncStreamHook:
-    async def on_event(self, event: _Event) -> None:
-        if event.name == "stream_end":
-            msg = "stream end hook failed"
-            raise RuntimeError(msg)
-
-
-class _TerminalHook:
-    def __init__(self, *, failure: bool = False) -> None:
-        self.events: list[tuple[str, str | None, int]] = []
-        self.started = asyncio.Event()
-        self.proceed = asyncio.Event()
-        self.failure = failure
-
-    async def on_event(self, event: _Event) -> None:
-        name = event.name
-        self.events.append((name, event.outcome, event.attempt_count))
-        if name == "attempt_end":
-            self.started.set()
-            await self.proceed.wait()
-        if name == "call_end" and self.failure:
-            msg = "late terminal hook failure"
-            raise RuntimeError(msg)
 
 
 def _measurements(error: BaseException) -> tuple[object, ...]:
@@ -122,30 +80,30 @@ def _measurements(error: BaseException) -> tuple[object, ...]:
     )
 
 
-def _stream_error(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    transport = _Transport()
+def _stream_error(package: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    transport = _Transport(_Body(close_failure=RuntimeError("stream close failed")))
     with httpx2.Client(transport=transport) as native:
-        api = package.Client(http_client=native, options=options.ClientOptions(hooks=(_StreamHook(),)))
+        api = package.Client(http_client=native)
         try:
             with api.with_streaming_response.request_raw("GET", "https://close.example/"):
                 pass
         except errors.SDKError as error:
-            record(lines, "stream end error measurements", lambda error=error: _measurements(error))
+            record(lines, "stream close error measurements", lambda error=error: _measurements(error))
         api.close()
-        record(lines, "stream end resources", lambda: (transport.sends, transport.body.closed))
+        record(lines, "stream close resources", lambda: (transport.sends, transport.body.closed))
 
 
-async def _async_stream_error(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    transport = _Transport()
+async def _async_stream_error(package: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    transport = _Transport(_Body(close_failure=RuntimeError("stream close failed")))
     async with httpx2.AsyncClient(transport=transport) as native:
-        api = package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(_AsyncStreamHook(),)))
+        api = package.AsyncClient(http_client=native)
         try:
             async with api.with_streaming_response.request_raw("GET", "https://close.example/"):
                 pass
         except errors.SDKError as error:
-            record(lines, "async stream end error measurements", lambda error=error: _measurements(error))
+            record(lines, "async stream close error measurements", lambda error=error: _measurements(error))
         await api.aclose()
-        record(lines, "async stream end resources", lambda: (transport.sends, transport.body.closed))
+        record(lines, "async stream close resources", lambda: (transport.sends, transport.body.closed))
 
 
 async def _borrowed(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -163,15 +121,14 @@ async def _borrowed(package: ModuleType, options: ModuleType, lines: list[str]) 
         await arecord(lines, "closed view refuses calls", lambda: view.request_raw("GET", "https://close.example/"))
 
 
-async def _terminal_cancel(
-    package: ModuleType, options: ModuleType, lines: list[str], *, failure: bool = False
-) -> None:
-    """Cancel the caller's task while a terminal hook runs: the cancellation propagates and the response closes."""
-    transport, hook = _Transport(), _TerminalHook(failure=failure)
-    label = "terminal late failure" if failure else "terminal"
+async def _buffered_cancel(package: ModuleType, lines: list[str], *, failure: bool = False) -> None:
+    """Cancel the caller's task while the call reads its body: the cancellation propagates and the response closes."""
+    body = _Body(asyncio.Event(), close_failure=RuntimeError("late response close failed") if failure else None)
+    transport = _Transport(body)
+    label = "buffered read close failure" if failure else "buffered read"
     errors: list[BaseException] = []
     async with httpx2.AsyncClient(transport=transport) as native:
-        api = package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(hook,)))
+        api = package.AsyncClient(http_client=native)
 
         async def request() -> None:
             try:
@@ -182,66 +139,45 @@ async def _terminal_cancel(
                 raise
 
         caller = asyncio.create_task(request())
-        await hook.started.wait()
-        caller.cancel("terminal hook caller cancelled")
-        hook.proceed.set()
+        await body.waiting.wait()
+        caller.cancel("buffered read caller cancelled")
         with suppress(asyncio.CancelledError):
             await caller
         await api.aclose()
-    record(lines, f"{label} events after cancellation", lambda: tuple(hook.events))
-    record(lines, f"{label} cancellation closes response", lambda: transport.body.closed)
+    record(lines, f"{label} cancellation closes response", lambda: (transport.sends, body.closed))
     record(lines, f"{label} cleanup notes", lambda: tuple(getattr(errors[0], "__notes__", ())))
 
 
-async def _terminal_native(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+async def _interrupted(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    """Interrupt a call's response read or close, keeping one interruption primary and the rest as notes."""
     primary = asyncio.CancelledError("original native")
     primary.__dict__["__notes__"] = ["original native note"]
     reused = asyncio.CancelledError("reused native")
-    for label, before, caused in (
-        ("terminal native", None, False),
-        ("SDK failure then native", RuntimeError("response hook failed"), False),
-        ("SDK failure then caused native", RuntimeError("response hook failed"), True),
-        ("native already primary", primary, False),
-        ("same native reused", reused, False),
+    caused = asyncio.CancelledError("caused native close")
+    caused.__cause__ = KeyError("native cause")
+    for label, status, body in (
+        ("interrupted close", 200, _Body(close_failure=asyncio.CancelledError("native close"))),
+        ("status failure then interrupted close", 503, _Body(close_failure=asyncio.CancelledError("native close"))),
+        ("status failure then caused interrupted close", 503, _Body(close_failure=caused)),
+        ("status failure then failed close", 503, _Body(close_failure=RuntimeError("close failed"))),
+        ("interruption already primary", 200, _Body(failure=primary, close_failure=RuntimeError("close failed"))),
+        ("same interruption reused", 200, _Body(failure=reused, close_failure=reused)),
     ):
-        transport = _Transport()
-        events: _EventLog = []
-        native = reused if before is reused else asyncio.CancelledError("first terminal native")
-        if caused:
-            native.__cause__ = KeyError("native cause")
-        failures: dict[str, BaseException] = {"attempt_end": native}
-        if before is not None:
-            failures["response_headers"] = before
-        hooks = (
-            _FaultHook("first", events, failures=failures),
-            _FaultHook(
-                "second",
-                events,
-                failures={
-                    "attempt_end": reused if before is reused else asyncio.CancelledError("second terminal native")
-                },
-            ),
-            _FaultHook(
-                "last",
-                events,
-                failures={"attempt_end": ValueError("attempt hook failed"), "call_end": LookupError("end hook failed")},
-            ),
-        )
+        transport = _Transport(body, status)
         async with httpx2.AsyncClient(transport=transport) as client:
-            api = package.AsyncClient(http_client=client, options=options.ClientOptions(hooks=hooks))
-            expected = before if isinstance(before, asyncio.CancelledError) else native
+            api = package.AsyncClient(
+                http_client=client, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+            )
             try:
                 await api.request_raw("GET", "https://close.example/")
             except (asyncio.CancelledError, errors.SDKError) as error:
                 record(
                     lines,
                     f"{label} result",
-                    lambda error=error, expected=expected, before=before: (
+                    lambda error=error, body=body: (
                         type(error).__name__,
                         error.args,
-                        getattr(error, "cause", None) is before
-                        if isinstance(before, RuntimeError)
-                        else error is expected,
+                        error is (body.close_failure if body.failure is None else body.failure),
                         getattr(error, "attempt_count", None),
                         tuple(getattr(error, "__notes__", ())),
                         getattr(error.__cause__, "reason", type(error.__cause__).__name__),
@@ -250,20 +186,14 @@ async def _terminal_native(package: ModuleType, options: ModuleType, errors: Mod
             else:
                 record(lines, f"{label} unexpected success", lambda: True)
             await api.aclose()
-        record(lines, f"{label} hook order", lambda events=events: tuple(events))
         record(lines, f"{label} resources", lambda transport=transport: (transport.sends, transport.body.closed))
 
 
 async def _expired(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    """Stop a call whose deadline expired at its first boundary, still ending the hooks that saw it start."""
+    """Stop a call whose deadline expired at its first boundary before anything is sent."""
     transport = _Transport()
-    events: _EventLog = []
-    hooks = (
-        _FaultHook("first", events, failures={"call_start": RuntimeError("start hook failed")}),
-        _FaultHook("last", events),
-    )
     async with httpx2.AsyncClient(transport=transport) as native:
-        api = package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=hooks, total_timeout=0.0))
+        api = package.AsyncClient(http_client=native, options=options.ClientOptions(total_timeout=0.0))
         try:
             await api.request_raw("GET", "https://close.example/")
         except errors.SDKError as error:
@@ -278,20 +208,14 @@ async def _expired(package: ModuleType, options: ModuleType, errors: ModuleType,
                 ),
             )
         await api.aclose()
-    record(lines, "expired deadline hook order", lambda: tuple(events))
     record(lines, "expired deadline resources", lambda: (transport.sends, transport.body.closed))
 
 
-async def _stream_cancel(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _stream_cancel(package: ModuleType, lines: list[str]) -> None:
     """Cancel a task reading a streamed body: the cancellation propagates unchanged and the response closes."""
-    transport = _Transport(asyncio.Event())
-    events: _EventLog = []
-    hooks = (
-        _FaultHook("first", events, failures={"stream_end": ValueError("stream hook failed")}),
-        _FaultHook("last", events),
-    )
+    transport = _Transport(_Body(asyncio.Event()))
     async with httpx2.AsyncClient(transport=transport) as native:
-        api = package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=hooks))
+        api = package.AsyncClient(http_client=native)
 
         async def read() -> None:
             async with api.with_streaming_response.request_raw("GET", "https://close.example/") as raw:
@@ -309,22 +233,21 @@ async def _stream_cancel(package: ModuleType, options: ModuleType, lines: list[s
                 lambda error=error: (type(error).__name__, error.args, tuple(getattr(error, "__notes__", ()))),
             )
         await api.aclose()
-    record(lines, "stream cancellation hook order", lambda: tuple(events))
     record(lines, "stream cancellation resources", lambda: (transport.sends, transport.body.closed))
 
 
 async def _async(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     await _borrowed(package, options, lines)
-    await _terminal_cancel(package, options, lines)
-    await _terminal_cancel(package, options, lines, failure=True)
-    await _async_stream_error(package, options, errors, lines)
-    await _terminal_native(package, options, errors, lines)
+    await _buffered_cancel(package, lines)
+    await _buffered_cancel(package, lines, failure=True)
+    await _async_stream_error(package, errors, lines)
+    await _interrupted(package, options, errors, lines)
     await _expired(package, options, errors, lines)
-    await _stream_cancel(package, options, lines)
+    await _stream_cancel(package, lines)
 
 
 def deadline_cleanup(package: ModuleType, lines: list[str]) -> None:
-    """Exercise public generated close, hook, and cancellation paths over borrowed HTTPX2 clients."""
+    """Exercise public generated close, cleanup failure, and cancellation paths over borrowed HTTPX2 clients."""
     options, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors"))
-    _stream_error(package, options, errors, lines)
+    _stream_error(package, errors, lines)
     run(lambda: _async(package, options, errors, lines))

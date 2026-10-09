@@ -1,4 +1,4 @@
-"""Send authenticated calls through generated clients: placement, tokens, 401 recovery, permits, hooks and ownership."""
+"""Send authenticated calls through generated clients: placement, tokens, 401 recovery, expiry and ownership."""
 
 from __future__ import annotations
 
@@ -117,11 +117,6 @@ class _Renewing(_Provider):
         return material
 
 
-class _AsyncRenewing(_AsyncProvider):
-    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
-        return _Renewing.get(self, context)  # ty: ignore[invalid-argument-type]
-
-
 async def _later(value: object) -> object:
     return value
 
@@ -178,94 +173,6 @@ class _AsyncLate(_Late):
     async def sign(self, request: object) -> object:  # ty: ignore[invalid-method-override]
         await asyncio.sleep(max(0.0, self.until - monotonic()))
         return _Signer.sign(self, request)
-
-
-class _Permit:
-    def __init__(self, log: list[str]) -> None:
-        self.log = log
-
-    def release(self) -> None:
-        self.log.append("release")
-
-
-class _AsyncPermit(_Permit):
-    async def release(self) -> None:  # ty: ignore[invalid-method-override]
-        _Permit.release(self)
-
-
-class _Limiter:
-    """Grant permits, holding the first one back until the given monotonic time."""
-
-    def __init__(self, until: float) -> None:
-        self.until = until
-        self.log: list[str] = []
-
-    def _wait(self) -> float:
-        self.log.append("acquire")
-        return max(0.0, self.until - monotonic()) if self.log.count("acquire") == 1 else 0.0
-
-    def acquire(self, context: object) -> object:
-        del context
-        time.sleep(self._wait())
-        return _Permit(self.log)
-
-
-class _AsyncLimiter(_Limiter):
-    async def acquire(self, context: object) -> object:  # ty: ignore[invalid-method-override]
-        del context
-        await asyncio.sleep(self._wait())
-        return _AsyncPermit(self.log)
-
-
-class _Lagging(_Limiter):
-    """Grant every permit only after a token minted when it was requested has expired."""
-
-    def _wait(self) -> float:
-        self.log.append("acquire")
-        return _LIFETIME + 0.05
-
-
-class _AsyncLagging(_AsyncLimiter):
-    _wait = _Lagging._wait
-
-
-class _Minting:
-    """A provider whose every token expires before the next permit arrives."""
-
-    def __init__(self, auth: ModuleType) -> None:
-        self.auth = auth
-        self.calls: list[str] = []
-
-    def get(self, context: object) -> object:
-        del context
-        self.calls.append("get")
-        token, _ = _soon(self.auth)
-        return self.auth.BearerCredential(token, self.auth.TokenVersion())
-
-
-class _AsyncMinting(_Minting):
-    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
-        return _Minting.get(self, context)
-
-
-class _Hook:
-    """Record the names of a call's events, failing on the named one once it has passed it `spared` times."""
-
-    def __init__(self, failing: str | None = None, *, spared: int = 0) -> None:
-        self.failing = failing
-        self.spared = spared
-        self.names: list[str] = []
-
-    def on_event(self, event: Any) -> None:
-        self.names.append(event.name)
-        if event.name == self.failing and self.names.count(event.name) > self.spared:
-            msg = f"{event.name} hook failed"
-            raise RuntimeError(msg)
-
-
-class _AsyncHook(_Hook):
-    async def on_event(self, event: Any) -> None:  # ty: ignore[invalid-method-override]
-        _Hook.on_event(self, event)
 
 
 class _Offset(tzinfo):
@@ -729,22 +636,6 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
                 lambda: api.request_raw("GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing))
             ),
         )
-    exchange = Exchange(lines)
-    exchange.respond(_rejected())
-    refreshable, hook = _Provider(_bearer(auth)), _Hook("auth_start", spared=1)
-    with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(
-                auth=auth.AuthConfig({"bearer": refreshable}),
-                retry=options.RetryOptions(initial_delay=0),
-                hooks=(hook,),
-            ),
-        ) as api,
-    ):
-        record(lines, "hook fails on the invalidation span", lambda: _outcome(api.auth.with_raw_response.bearer))
-    lines.append(f"    callbacks={refreshable.calls} events={hook.names}")
     signer = _Signer(auth)
     exchange = Exchange(lines)
     exchange.respond(_rejected())
@@ -966,118 +857,32 @@ def _soon(auth: ModuleType) -> tuple[object, float]:
     return auth.AccessToken("soon", expires_at=datetime.now(timezone.utc) + timedelta(seconds=_LIFETIME)), until
 
 
-def _expiring(
-    auth: ModuleType, static: type, renewing: type[_Provider], limiter: type[_Limiter], late: type[_Late]
-) -> tuple[tuple[str, Callable[[], tuple[Any, _Limiter, tuple[object, ...]]]], ...]:
-    def renewed() -> tuple[Any, _Limiter, tuple[object, ...]]:
+def _outlived(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Refuse a token that expired while its request was signed, sending nothing."""
+    exchange = Exchange(lines)
+    exchange.respond(_ok())
+    with exchange.client() as native, package.Client(http_client=native) as api:
         token, until = _soon(auth)
-        provider = renewing(auth.BearerCredential(token, auth.TokenVersion()), refreshed=_bearer(auth, "lasting"))
-        return provider, limiter(until), ()
+        expiring = options.RequestOptions(
+            auth=auth.AuthConfig({"bearer": auth.StaticTokenProvider(token)}, signers=(_Late(auth, until),))
+        )
+        record(
+            lines,
+            "signer outlives the token",
+            lambda: _outcome(lambda: api.auth.with_response.bearer(options=expiring)),
+        )
 
-    def expired() -> tuple[Any, _Limiter, tuple[object, ...]]:
+
+async def _aoutlived(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    exchange.respond(_ok())
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
         token, until = _soon(auth)
-        return static(token), limiter(until), ()
-
-    def outlived() -> tuple[Any, _Limiter, tuple[object, ...]]:
-        token, until = _soon(auth)
-        return static(token), limiter(0.0), (late(auth, until),)
-
-    def minting() -> tuple[Any, _Limiter, tuple[object, ...]]:
-        lagging = _Lagging if limiter is _Limiter else _AsyncLagging
-        return (_Minting if limiter is _Limiter else _AsyncMinting)(auth), lagging(0.0), ()
-
-    return (
-        ("token expires while waiting for a permit", renewed),
-        ("static token expires while waiting for a permit", expired),
-        ("signer outlives the token", outlived),
-        ("every token expires while waiting for a permit", minting),
-    )
-
-
-def _permits(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for label, setup in _expiring(auth, auth.StaticTokenProvider, _Renewing, _Limiter, _Late):
-        exchange = Exchange(lines)
-        exchange.respond(_ok())
-        hook = _Hook()
-        with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
-        ):
-            credentials, limiter, signers = setup()
-            expiring = options.RequestOptions(
-                auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
-            )
-            record(
-                lines,
-                label,
-                lambda api=api, expiring=expiring: _outcome(lambda: api.auth.with_response.bearer(options=expiring)),
-            )
-        lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
-
-
-async def _apermits(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for label, setup in _expiring(auth, auth.AsyncStaticTokenProvider, _AsyncRenewing, _AsyncLimiter, _AsyncLate):
-        exchange = Exchange(lines)
-        exchange.respond(_ok())
-        hook = _AsyncHook()
-        async with (
-            exchange.async_client() as native,
-            package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
-        ):
-            credentials, limiter, signers = setup()
-            expiring = options.RequestOptions(
-                auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
-            )
-            outcome = await _aoutcome(
-                lambda api=api, expiring=expiring: api.auth.with_response.bearer(options=expiring)
-            )
-        lines.append(f"  async {label} = {outcome}")
-        lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
-
-
-def _hooks(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for label, credentials, hook in (
-        (
-            "provider and auth_end hook fail",
-            _Provider(None, failures={"get": ValueError("get failed")}),
-            _Hook("auth_end"),
-        ),
-        ("auth_start hook fails", _Provider(_bearer(auth)), _Hook("auth_start")),
-    ):
-        exchange = Exchange(lines)
-        exchange.respond(_ok())
-        with (
-            exchange.client() as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(auth=auth.AuthConfig({"bearer": credentials}), hooks=(hook,)),
-            ) as api,
-        ):
-            record(lines, label, lambda api=api: _outcome(api.auth.with_response.bearer))
-        lines.append(f"    callbacks={credentials.calls} events={hook.names}")
-
-
-async def _ahooks(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for label, credentials, hook in (
-        (
-            "provider and auth_end hook fail",
-            _AsyncProvider(None, failures={"get": ValueError("get failed")}),
-            _AsyncHook("auth_end"),
-        ),
-        ("auth_start hook fails", _AsyncProvider(_bearer(auth)), _AsyncHook("auth_start")),
-    ):
-        exchange = Exchange(lines)
-        exchange.respond(_ok())
-        async with (
-            exchange.async_client() as native,
-            package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(auth=auth.AuthConfig({"bearer": credentials}), hooks=(hook,)),
-            ) as api,
-        ):
-            outcome = await _aoutcome(api.auth.with_response.bearer)
-        lines.append(f"  async {label} = {outcome}")
-        lines.append(f"    callbacks={credentials.calls} events={hook.names}")
+        expiring = options.RequestOptions(
+            auth=auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(token)}, signers=(_AsyncLate(auth, until),))
+        )
+        outcome = await _aoutcome(lambda: api.auth.with_response.bearer(options=expiring))
+    lines.append(f"  async signer outlives the token = {outcome}")
 
 
 class _Lifetime:
@@ -1398,10 +1203,8 @@ def auth_flows(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _agates(package, auth, options, lines))
     _in_flight(package, auth, options, lines)
     run(lambda: _ain_flight(package, auth, options, lines))
-    _permits(package, auth, options, lines)
-    run(lambda: _apermits(package, auth, options, lines))
-    _hooks(package, auth, options, lines)
-    run(lambda: _ahooks(package, auth, options, lines))
+    _outlived(package, auth, options, lines)
+    run(lambda: _aoutlived(package, auth, options, lines))
     _ownership(package, auth, options, lines)
     run(lambda: _aownership(package, auth, options, lines))
     _redirects(package, auth, options, lines)

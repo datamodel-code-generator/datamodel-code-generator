@@ -1044,6 +1044,16 @@ class _Recorded(httpx2.ByteStream):
         self.closed = True
 
 
+class _CancellingClose(_Recorded):
+    """A completion body whose close, after the response was decoded, cancels the task closing it."""
+
+    async def aclose(self) -> None:
+        await super().aclose()
+        if task := asyncio.current_task():
+            task.cancel()
+        await asyncio.sleep(0)
+
+
 class _CompletionTransport(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
     """Count actual token and resource sends separately, holding token traffic before resource admission."""
 
@@ -1054,6 +1064,7 @@ class _CompletionTransport(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
         self.methods: list[str] = []
         self.streams: list[_Recorded] = []
         self.server = _Server()
+        self.cancel_completion = False
 
     def _sent(self, request: httpx2.Request) -> None:
         self.methods.append(f"{request.method} {str(request.url).split('example.com')[-1]}")
@@ -1066,7 +1077,8 @@ class _CompletionTransport(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
         else:
             wire = self.server(httpx2.Request(request.method, request.url, content=b""))
             status, content = wire.status_code, wire.read()
-        self.streams.append(stream := _Recorded(content))
+        cancelling = self.cancel_completion and request.url.path.endswith("/complete")
+        self.streams.append(stream := (_CancellingClose if cancelling else _Recorded)(content))
         return httpx2.Response(status, headers={"content-type": "application/json"}, stream=stream)
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
@@ -1190,24 +1202,15 @@ async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
     await native.aclose()
 
 
-class _CancelCompletionEnd:
-    """Cancel the calling task once the completion response has been decoded."""
-
-    async def on_event(self, event: Any) -> None:
-        if event.name == "call_end" and event.operation_id == "completeFile" and (task := asyncio.current_task()):
-            task.cancel()
-            await asyncio.sleep(0)
-
-
 async def _async_completion_end_control(harness: _Uploads, api: Any, resource: Any, lines: list[str]) -> None:
-    handle = await api.protocols.files.finish.start(
-        b"", tus_resumable=harness.tus, options=harness.options.RequestOptions(hooks=(_CancelCompletionEnd(),))
-    )
+    handle = await api.protocols.files.finish.start(b"", tus_resumable=harness.tus)
+    resource.cancel_completion = True
     try:
         await handle.run()
     except asyncio.CancelledError:
         if task := asyncio.current_task():
             task.uncancel()
+        resource.cancel_completion = False
         result = await handle.run()
         lines.append(f"  cancelled after decoded completion: retained={result.size} resource={resource.methods}")
     await handle.aclose()
