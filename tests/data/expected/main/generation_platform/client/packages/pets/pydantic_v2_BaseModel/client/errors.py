@@ -18,7 +18,6 @@ from ._runtime.client.errors import (
     ConfigurationError,
     ConflictError,
     DecodeError,
-    DecompressionLimitError,
     DeliveryState,
     InternalServerError,
     IOPhase,
@@ -31,7 +30,6 @@ from ._runtime.client.errors import (
     RetryStopReason,
     SDKError,
     UnprocessableEntityError,
-    UnsupportedContentCodingError,
 )
 
 if TYPE_CHECKING:
@@ -48,7 +46,6 @@ __all__ = [
     'ConfigurationError',
     'ConflictError',
     'DecodeError',
-    'DecompressionLimitError',
     'DeliveryState',
     'IOPhase',
     'InternalServerError',
@@ -62,7 +59,6 @@ __all__ = [
     'RetryStopReason',
     'SDKError',
     'UnprocessableEntityError',
-    'UnsupportedContentCodingError',
 ]
 _PROTOCOL_ERRORS = frozenset({
     'ProtocolDataError',

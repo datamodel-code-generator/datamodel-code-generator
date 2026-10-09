@@ -26,7 +26,6 @@ PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=4,
     partial_commit=True,
-    fingerprint='0a32bf7a99d76237adb5039234749d9505eb4cd12b627bc793d84e49f6dc2ffb',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=HeaderSelector(name='Upload-Expires'),
     probe_bindings=(
@@ -71,7 +70,6 @@ PLAN_1: Final[UploadPlan[CompleteFileResponse, CreateFileResponse]] = UploadPlan
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=8,
     partial_commit=False,
-    fingerprint='c87700e1a50afd44a538a5a171e7894d4357e1196ec1ec4146a4f8c5ccd9e3fb',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=BodySelector(pointer='/expires'),
     probe_bindings=(
@@ -116,7 +114,6 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='query', name='offset'),
     max_chunk_bytes=4,
     partial_commit=False,
-    fingerprint='7ff1a3d8c11c5429b2566ba4cc78604a346c51857b2f7c6ceb4b84e8cc681dcf',
     probe_bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='fileId'),

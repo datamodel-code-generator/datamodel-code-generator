@@ -218,7 +218,6 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
     }
     patched = (("X-Api-Key", "k"), ("Authorization", "Basic c2VjcmV0"))
     secure = f"<{_OTHER}/secure/users?page=2>; rel=next"
-    redirects = options.RedirectOptions(enabled=True, allowed_origins=(_OTHER,))
     return (
         (
             "allowed origin and back",
@@ -283,7 +282,7 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
         ),
         (
             "relative URL after a redirect",
-            options.ClientOptions(redirects=options.RedirectOptions(enabled=True)),
+            options.ClientOptions(follow_redirects=True),
             (
                 lambda _: httpx2.Response(302, headers={"Location": "/v2/people"}),
                 user_page("1", next="?cursor=2"),
@@ -292,8 +291,8 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             lambda api: api.protocols.users.follow.iterate(),
         ),
         (
-            "redirect to another origin without scheme credentials",
-            options.ClientOptions(headers=patched, redirects=redirects),
+            "a scheme key header is never redirected",
+            options.ClientOptions(headers=patched, follow_redirects=True),
             (
                 lambda _: httpx2.Response(302, headers={"Location": f"{_OTHER}/v1/users?api_key=k&page=1"}),
                 user_page("1"),
