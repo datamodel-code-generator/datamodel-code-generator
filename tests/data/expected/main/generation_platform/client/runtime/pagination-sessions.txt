@@ -19,8 +19,6 @@
   status error after retries ! InternalServerError: InternalServerError(status_code=500, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] internal_server_error body=Error(message='down')
   after the status error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   session timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded session=True {'pages': 0, 'items': 0}
-  earlier session timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded session=True {'pages': 0, 'items': 0}
-  earlier session deadline ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded session=True {'pages': 0, 'items': 0}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   first item before the deadline = '1'
@@ -31,7 +29,7 @@
   page timeout [] ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page before an expired session = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page before an expired session = [1] continuation='a' status=200 attempts=1
   next page in an expired session ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

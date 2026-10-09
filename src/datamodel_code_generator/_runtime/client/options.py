@@ -18,14 +18,12 @@ from typing_extensions import TypeIs
 
 from ..model_codecs.media import json_bytes
 from ..model_codecs.unset import UNSET, Unset
-from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
 from .errors import ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
     Clock,
-    Deadline,
     ResolvedTimeoutOptions,
     SessionOptions,
     checked_count,
@@ -41,7 +39,6 @@ __all__ = (
     "UNSET",
     "ClientOptions",
     "Clock",
-    "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
@@ -235,7 +232,7 @@ class ServerSelection:
         object.__setattr__(self, "variables", MappingProxyType(variables))
 
 
-DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=30.0, write=30.0, pool=5.0)
+DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=600.0, pool=600.0)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -571,10 +568,7 @@ class _Options:
     context: Mapping[str, JSONScalar] | Unset = UNSET
     timeout: TimeoutOptions | Unset | None = UNSET
     total_timeout: float | Unset | None = UNSET
-    deadline: Deadline | Unset | None = UNSET
     limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
-    stream_idle_timeout: float | Unset | None = UNSET
-    stream_total_timeout: float | Unset | None = UNSET
     retry: RetryOptions | Unset = UNSET
     redirects: RedirectOptions | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
@@ -582,12 +576,10 @@ class _Options:
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
-        checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
-        for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
-            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
-                object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
+        if (value := self.total_timeout) is not None and not isinstance(value, Unset):
+            object.__setattr__(self, "total_timeout", seconds(value, ("total_timeout",)))  # noqa: PLC2801
 
     def __post_init__(self) -> None:
         self._check_timing()
@@ -629,17 +621,17 @@ class ClientOptions(_Options):
 
     compression: Literal["gzip"] | None = "gzip"
     transport: TransportOptions | Unset = UNSET
-    protocols: protocol_names.ProtocolClientOptions | Unset | None = UNSET
     clock: Clock | Unset = UNSET
 
     def __post_init__(self) -> None:
-        """Validate ordinary options and the client-only construction settings, loading protocol types only if set."""
+        """Validate ordinary options and the client-only construction settings."""
         _Options.__post_init__(self)
         object.__setattr__(self, "compression", _compression(self.compression))
         checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
         checked_instance(self.clock, (Clock, Unset), ("clock",))
-        if self.protocols is not None and not isinstance(self.protocols, Unset):
-            checked_instance(self.protocols, (protocol_names.ProtocolClientOptions,), ("protocols",))
+
+    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+        """Check settings supplied by a declared helper client."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -667,12 +659,8 @@ class Settings:
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
     async_hooks: bool = False
     timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
-    stream_read_timeout: float | None = None
-    total_timeout: float | None = 60.0
-    deadline: Deadline | None = None
+    total_timeout: float | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
-    stream_idle_timeout: float | None = 60.0
-    stream_total_timeout: float | None = None
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
     idempotency_key: IdempotencyKey | Unset | None = UNSET

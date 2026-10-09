@@ -17,7 +17,7 @@
   TLS context of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='ssl_context') [field_path=('ssl_context',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   compression of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   zero message size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_message_bytes') [field_path=('max_message_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-    open wss://api.example.com/rooms/r1/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=('chat.v2', 'chat.v1') WebSocketOpenRequest(subprotocols=('chat.v2', 'chat.v1')) deadline=True ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=None, ping_interval=20.0, pong_timeout=None, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    open wss://api.example.com/rooms/r1/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=('chat.v2', 'chat.v1') WebSocketOpenRequest(subprotocols=('chat.v2', 'chat.v1')) deadline=False ResolvedWSOptions(open_timeout=5.0, idle_timeout=600.0, max_message_bytes=1048576, max_queue=16, send_timeout=None, ping_interval=20.0, pong_timeout=None, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
   session WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') headers [('x-socket', '1')]
     received 1
     connection send text=True b'{"text":"hi"}' deadline=False
@@ -27,10 +27,10 @@
   feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, truncated=False, cause=1 validation error for ServerMessage
   Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'plain', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
-    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=True ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=False ResolvedWSOptions(open_timeout=5.0, idle_timeout=600.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
     connection send text=True b'text' deadline=True
     connection close 1001 '' timeout=5.0
-    open wss://api.example.com/secure/socket [('Accept-Encoding', 'gzip, deflate'), ('Authorization', 'Bearer static-material')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=True ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    open wss://api.example.com/secure/socket [('Accept-Encoding', 'gzip, deflate'), ('Authorization', 'Bearer static-material')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=False ResolvedWSOptions(open_timeout=5.0, idle_timeout=600.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
     connection send text=False b'bytes' deadline=True
     connection send text=False b'array' deadline=True
     text 'café'
@@ -117,10 +117,10 @@
   connection left open by the client's close: True
     connection close 1000 '' timeout=5.0
   receive the session's close ended after the client's close: ProtocolStateError closed
-    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=True ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) deadline=False ResolvedWSOptions(open_timeout=5.0, idle_timeout=600.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
     connection close 1000 '' timeout=5.0
     connection abort
-  server closed after the session's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
+  server closed after the session's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
     WebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   borrowed connector left open
   async session AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') received 1
@@ -170,7 +170,7 @@
     connection abort
   async failing close ! SDKError: SDKError(operation_id='feedSocket', call_id='<call>', reason='cleanup_failed') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
     connection close 1001 '' timeout=5.0
-  async receive at the connection's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
+  async receive at the connection's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=600.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
     connection close 1001 '' timeout=5.0
   async server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection abort
@@ -192,7 +192,8 @@
   async send cut by the session deadline ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=APITimeoutError()] delivery_unknown_error
     AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
     connection send text=True b'first' deadline=True
+    connection send text=True b'second' deadline=True
   async send holding the turn past its cap = None
-  async send given the turn past its cap ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=10.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
+  async send given the turn past its cap = None
     connection send text=True b'third' deadline=True
   async send after the stopped turn = None

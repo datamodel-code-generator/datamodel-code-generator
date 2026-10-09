@@ -73,7 +73,7 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         f"  scopes unknown={unknown.scopes!r} empty={empty.scopes!r} canonical={token.scopes!r}"
         f" equal={token == equivalent} unknown differs={unknown != empty}"
     )
-    deadline = options.Deadline.after(30)
+    deadline = None
     context = auth.CredentialContext(
         scheme="oauth",
         required_scopes=["write", "read", "read"],
@@ -93,7 +93,6 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         "https://example.com",
         b"q=secret",
         headers,
-        b"digest-secret",
         1,
         2,
     )
@@ -107,12 +106,12 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
     signed_query.clear()
     lines.append(f"  signature copied={signature.headers!r} query={signature.query!r}")
     origins, names, query = ["https://example.com"], ["X-Signature"], ["signature"]
-    capabilities = auth.SignerCapabilities(origins, names, query, True)
+    capabilities = auth.SignerCapabilities(origins, names, query)
     origins.clear()
     names.clear()
     query.clear()
     lines.append(
-        f"  capabilities copied={(capabilities.allowed_origins, capabilities.managed_headers, capabilities.managed_query)} digest={capabilities.requires_body_digest}"
+        f"  capabilities copied={(capabilities.allowed_origins, capabilities.managed_headers, capabilities.managed_query)}"
     )
     values = (
         version,
@@ -134,7 +133,6 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         (context, "required_scopes", ()),
         (signing, "query", b"changed"),
         (signature, "headers", ()),
-        (capabilities, "requires_body_digest", False),
     ):
         previous = getattr(value, name)
         try:
@@ -176,7 +174,6 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
                     "allowed_origins": (),
                     "managed_headers": (),
                     "managed_query": (),
-                    "requires_body_digest": False,
                     name: value,
                 }),
             )
@@ -226,7 +223,7 @@ def _scope_values(auth: ModuleType, lines: list[str]) -> None:
 
 def _configuration(auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     provider = _Provider(auth.ApiKeyCredential("secret"))
-    signer = _Signer(auth.SignerCapabilities((), ("X-Signature",), (), False), auth.SignatureFields((), ()))
+    signer = _Signer(auth.SignerCapabilities((), ("X-Signature",), ()), auth.SignatureFields((), ()))
     credentials = {"first": provider, "same-provider": provider, "borrowed": provider}
     signers, origins, schemes = [signer], ["https://example.com"], ["first"]
     config = auth.AuthConfig(credentials, allowed_origins=origins, anonymous_schemes=schemes, signers=signers)

@@ -555,7 +555,7 @@ class AsyncEvents(Events):
 
 class _Signer:
     def __init__(self, auth: ModuleType) -> None:
-        self.capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False)
+        self.capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), ())
         self.fields = auth.SignatureFields((("X-Signature", "signed"),), ())
 
     def sign(self, request: object) -> object:

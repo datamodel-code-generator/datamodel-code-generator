@@ -10,7 +10,9 @@ from functools import cached_property
 from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
 from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.pagination import (
     AsyncPager,
     Page,
@@ -19,7 +21,6 @@ from .._runtime.protocols.pagination import (
     aiterate_pages,
     aresume_pages,
 )
-from .._runtime.protocols.resume import ResumeState
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
@@ -28,9 +29,9 @@ from . import PaginationOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def search(self) -> AsyncSearchProtocols:
@@ -142,8 +143,9 @@ class AsyncSearchAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -153,6 +155,7 @@ class AsyncSearchAllPagination:
             self._core,
             _plans.PLAN_0,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -222,8 +225,9 @@ class AsyncSearchFixedPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -233,6 +237,7 @@ class AsyncSearchFixedPagination:
             self._core,
             _plans.PLAN_1,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -302,8 +307,9 @@ class AsyncSearchNextPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -313,6 +319,7 @@ class AsyncSearchNextPagination:
             self._core,
             _plans.PLAN_2,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -382,8 +389,9 @@ class AsyncLookupAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        filter: _dcg_type_1 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -393,6 +401,7 @@ class AsyncLookupAllPagination:
             self._core,
             _plans.PLAN_3,
             state,
+            (filter,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

@@ -16,10 +16,11 @@ from typing_extensions import Self
 from ._generated import security
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
+from ._runtime.client.options import ClientOptions
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
 from .model_codecs import JSONValue
-from .options import ClientOptions, RequestOptions
+from .options import RequestOptions
 from .responses import RawResponse
 
 if TYPE_CHECKING:

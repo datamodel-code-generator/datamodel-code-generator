@@ -154,7 +154,6 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
 
 def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
         exchange.client() as native,
@@ -217,7 +216,7 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         for status in (301, 303, 307):
             exchange.responders.clear()
             exchange.respond(_response(status, (("Location", "/done"),)), _response(200))
-            body = bodies.StreamBody(iter((b"one", b"two")))
+            body = iter((b"one", b"two"))
             request = options.RequestOptions(
                 redirects=options.RedirectOptions(allow_303_to_get=True),
                 headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
@@ -236,7 +235,7 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
             _response(302, (("Location", "/done"),)),
             _response(200),
         )
-        body = bodies.StreamBody(iter((b"one", b"two")))
+        body = iter((b"one", b"two"))
         request = options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True))
         record(
             lines,
@@ -376,7 +375,6 @@ def _downgrade(package: ModuleType, options: ModuleType, lines: list[str]) -> No
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     async with (
         exchange.async_client() as native,
         package.AsyncClient(
@@ -398,7 +396,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             _response(302, (("Location", "/done"),)),
             _response(200),
         )
-        body = bodies.AsyncStreamBody(_chunks())
+        body = _chunks()
         request = options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True))
         response = await arecord(
             lines,

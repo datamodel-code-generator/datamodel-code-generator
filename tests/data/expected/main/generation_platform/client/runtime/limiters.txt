@@ -45,11 +45,11 @@
   events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[1, 1, 1, 1, 1, 1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  waiting behind stream=True factory=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
+  waiting behind stream=True payload=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
   > PUT https://api.example.com/v1/pets/1/photo
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'\x89PNG'
   waiting upload = b'\x89PNG'
-  waiting upload joined=True factory=[1]/[1]
+  waiting upload joined=True payload=[1]
   semaphore concurrency entered=2 granted=2 released=2 release_calls=2 active=0 peak=1
   acquire failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('acquire failed')] limiter_failed
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
@@ -101,8 +101,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   stream close release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
-  failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=RuntimeError('Upload payload failed')] api_connection_error
+  failed payload [1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native acquire interruption=KeyboardInterrupt identity=True
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   native acquire interruption=SystemExit identity=True
@@ -146,9 +146,9 @@
   async limiter in sync request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] async_limiter
   opposite sync mode entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
   zero timeout ! APITimeoutError: APITimeoutError(operation_id='uploadPhoto', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 payload=[] events=call_start:0 call_end:0 ends=[0] queued=1
   closed client admission ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='uploadPhoto', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 payload=[] events=call_start:0 call_end:0 ends=[0] queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async limited typed = Response(Pet(id=3, name='fox', tag=None), 200, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')])
@@ -195,11 +195,11 @@
   events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[1, 1, 1, 1, 1, 1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async waiting behind stream=True factory=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
+  async waiting behind stream=True payload=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
   > PUT https://api.example.com/v1/pets/1/photo
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'\x89PNG'
   async waiting upload = b'\x89PNG'
-  async waiting upload factory=[1]/[1]
+  async waiting upload payload=[1]
   async semaphore concurrency entered=2 granted=2 released=2 release_calls=2 active=0 peak=1
   async acquire failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('acquire failed')] limiter_failed
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
@@ -251,8 +251,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async stream close release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
-  async failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  async payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=RuntimeError('Upload payload failed')] api_connection_error
+  async failed payload [1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native async acquire interruption=CancelledError
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
@@ -294,6 +294,6 @@
   sync limiter in async request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] sync_limiter
   opposite async mode entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
   async zero timeout ! APITimeoutError: APITimeoutError(operation_id='uploadPhoto', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 payload=[] events=call_start:0 call_end:0 ends=[0] queued=1
   async closed client admission ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='uploadPhoto', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 payload=[] events=call_start:0 call_end:0 ends=[0] queued=1
