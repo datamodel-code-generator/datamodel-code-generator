@@ -94,10 +94,9 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         b"q=secret",
         headers,
         1,
-        2,
     )
     lines.append(
-        f"  signing bytes={signing.query!r} headers identity={signing.headers is headers} indexes={(signing.attempt_index, signing.hop_index)}"
+        f"  signing bytes={signing.query!r} headers identity={signing.headers is headers} attempt={signing.attempt_index}"
     )
     signed_headers = [["X-Signature", "signature-secret"], ["X-Signature", "second-secret"]]
     signed_query = [["signature", "query-secret"]]

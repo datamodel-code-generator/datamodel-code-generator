@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Iterable, Mapping
+from dataclasses import dataclass
 from inspect import iscoroutinefunction
 from io import TextIOBase
 from os import SEEK_END, PathLike, fsdecode
@@ -11,7 +12,6 @@ from typing import IO, TYPE_CHECKING, Final, TypeAlias, cast
 
 from typing_extensions import TypeIs
 
-from .coding import CHUNK
 from .errors import body_failure
 from .logical import in_thread
 
@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 SyncBinaryBody: TypeAlias = bytes | IO[bytes] | PathLike[str] | Iterable[bytes]
 AsyncBinaryBody: TypeAlias = SyncBinaryBody | AsyncIterable[bytes]
 _NOT_BINARY: Final = (str, bytearray, memoryview, Mapping, TextIOBase)
+CHUNK: Final = 64 * 1024
 
 
 def _is_file(value: object) -> bool:
@@ -81,27 +82,12 @@ def is_async_binary_input(value: object) -> TypeIs[AsyncBinaryBody]:
     return isinstance(value, AsyncIterable) or _async_read(value) is not None or is_binary_input(value)
 
 
+@dataclass(frozen=True, slots=True)
 class EncodedAttempt:
-    """Immutable bytes encoded once and reused across attempts."""
+    """Immutable bytes encoded once and reused across attempts, which HTTPX2 frames itself."""
 
-    __slots__ = ("content", "content_type")
-
-    def __init__(self, content: bytes, content_type: str | None) -> None:
-        self.content = content
-        self.content_type = content_type
-
-    @property
-    def content_length(self) -> int:
-        """Return the encoded length."""
-        return len(self.content)
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        """Yield the retained bytes."""
-        yield self.content
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the retained bytes."""
-        yield self.content
+    content: bytes
+    content_type: str | None
 
 
 def _step(chunks: Iterator[bytes]) -> bytes | None:

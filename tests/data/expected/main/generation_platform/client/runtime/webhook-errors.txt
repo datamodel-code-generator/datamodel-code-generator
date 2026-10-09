@@ -24,16 +24,6 @@
     context=True/True/True/True/True call=webhook/call-1/session-1
     hints=True/True/False retained=True
     str=WebhookVerificationError(operation_id='webhook', call_id='call-1', condition='invalid_signature') repr=WebhookVerificationError() secret=False
-  UnsupportedContentCodingError: base=ProtocolError sdk=True reason=unsupported_content_coding_error
-    fields=attempt_count,call_id,cause,coding,completed_result,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=UnsupportedContentCodingError(operation_id='webhook', call_id='call-1') repr=UnsupportedContentCodingError() secret=False
-  DecompressionLimitError: base=ProtocolSizeError sdk=True reason=decompression_limit_error
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,encoded_bytes,helper_id,info,kind,layer,limit,max_ratio,observed,operation,operation_id,parent_session_id,reason,secondary_errors,unit
-    context=True/True/True/True/True call=webhook/call-1/session-1
-    hints=True/True/False retained=True
-    str=DecompressionLimitError(operation_id='webhook', call_id='call-1', kind='expanded_content', limit=1048576, observed=1048577) repr=DecompressionLimitError() secret=False
   protocol defaults: (None, None, None, None, None, None, None, ()) ProtocolError()
   configuration defaults: (None, None, None, None, None, None, None, ()) ConfigurationError(reason='invalid_value')
   verification defaults: (None, None, None, None, None, None, None, ()) WebhookVerificationError(condition='missing_key')

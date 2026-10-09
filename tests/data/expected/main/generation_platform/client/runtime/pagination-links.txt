@@ -274,9 +274,7 @@
   relative URL after a redirect ['1', '2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
-  > GET https://other.example.com/v1/users?page=1
-    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  redirect to another origin without scheme credentials = 200
+  a scheme key header is never redirected ! APIStatusError: APIStatusError(status_code=302, operation_id='listUsers', call_id='<call>', reason='unexpected_status') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=2
@@ -349,6 +347,4 @@
   async relative URL after a redirect ['1', '2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
-  > GET https://other.example.com/v1/users?page=1
-    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async redirect to another origin without scheme credentials = 200
+  async a scheme key header is never redirected ! APIStatusError: APIStatusError(status_code=302, operation_id='listUsers', call_id='<call>', reason='unexpected_status') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status

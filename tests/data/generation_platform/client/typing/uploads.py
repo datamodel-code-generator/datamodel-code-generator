@@ -8,12 +8,12 @@ from pets import AsyncClient, Client
 from pets.options import RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncUploadHandle,
-    ResumeState,
     UploadHandle,
     UploadOptions,
     UploadProgress,
     UploadSource,
 )
+from pets.model_codecs import JSONValue
 from pets.types.files import CompleteFileResponse
 from pets_models import FieldFilesPostHeaderTusResumableParameter
 from typing_extensions import assert_type
@@ -25,7 +25,7 @@ def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, 
     handle = client.protocols.files.upload.start(
         source,
         tus_resumable=version,
-        upload_options=UploadOptions(chunk_bytes=4, max_parts=None),
+        upload_options=UploadOptions(chunk_bytes=4),
         options=RequestOptions(),
         session_options=SessionOptions(total_timeout=30),
     )
@@ -36,7 +36,7 @@ def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, 
     assert_type(progress.complete, bool)
     assert_type(handle.run(), None)
     state = handle.checkpoint()
-    assert_type(state, ResumeState)
+    assert_type(state, JSONValue)
     handle.close()
     with path.open("rb") as file, client.protocols.files.finish.start(file, tus_resumable=version) as finished:
         assert_type(finished.run(), CompleteFileResponse)

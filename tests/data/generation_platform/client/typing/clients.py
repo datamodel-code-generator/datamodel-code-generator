@@ -44,7 +44,6 @@ from pets.options import (
     ClientOptions,
     Clock,
     IdempotencyKey,
-    RedirectOptions,
     RequestOptions,
     RetryOptions,
     TimeoutOptions,
@@ -385,20 +384,16 @@ def retry_options(client: Client) -> None:
     assert_type(retry.statuses, Set[int] | Unset)
     assert_type(retry.jitter, Literal["full", "none"] | Unset)
     assert_type(retry.max_retry_after, float | Unset | None)
-    client.with_options(RequestOptions(retry=retry, redirects=RedirectOptions(enabled=True, max_redirects=2)))
-    Client(options=ClientOptions(retry=RetryOptions(max_retries=0), redirects=RedirectOptions()))
-    redirects = RedirectOptions(
-        allow_303_to_get=True,
-        allowed_origins=("https://download.example.com",),
-        allow_https_downgrade=False,
-    )
-    assert_type(redirects.allowed_origins, tuple[str, ...] | Unset)
+    client.with_options(RequestOptions(retry=retry, follow_redirects=True))
+    follows = ClientOptions(retry=RetryOptions(max_retries=0), follow_redirects=False)
+    Client(options=follows)
+    assert_type(follows.follow_redirects, bool | Unset)
 
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
         retry=RetryOptions(max_retries=2, max_retry_after=20),
-        redirects=RedirectOptions(enabled=True, max_redirects=2),
+        follow_redirects=True,
         total_timeout=30,
     )
     return client.request_raw("GET", url, options=options).read()

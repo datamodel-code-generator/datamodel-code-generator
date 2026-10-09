@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import io
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import httpx2
 
@@ -14,6 +14,8 @@ from tests.data.python.fixture_native import NativeFixture
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
+
+_CODINGS: Final = (("Accept-Encoding", "gzip, deflate"),)
 
 
 class _Signatures:
@@ -42,7 +44,6 @@ class _Signatures:
             request.query,
             tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in request.headers),
             request.attempt_index,
-            request.hop_index,
             tuple(self.events),
         ))
         return self.auth.SignatureFields(
@@ -129,7 +130,7 @@ def _framing(package: ModuleType, auth: ModuleType, options: ModuleType, bodies:
             settings = options.ClientOptions(
                 base_url=server.url,
                 transport=options.TransportOptions(ssl_context=server.verify, http2=protocol != "h1"),
-                headers=(("X-Duplicate", "first"), ("x-duplicate", "second")),
+                headers=(*_CODINGS, ("X-Duplicate", "first"), ("x-duplicate", "second")),
                 auth=auth.AuthConfig({}, signers=(signer,), allowed_origins=(server.url,), send_on_anonymous=True),
             )
             try:
@@ -188,6 +189,7 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
 
             settings = options.ClientOptions(
                 base_url=server.url,
+                headers=_CODINGS,
                 auth=auth.AuthConfig(
                     {
                         "header_key": (
@@ -264,6 +266,7 @@ def _proxies(package: ModuleType, auth: ModuleType, options: ModuleType, bodies:
                 settings = options.ClientOptions(
                     base_url=origin,
                     transport=options.TransportOptions(ssl_context=server.verify, proxy=server.proxy_url),
+                    headers=_CODINGS,
                     auth=auth.AuthConfig({}, signers=(signer,), allowed_origins=(origin,), send_on_anonymous=True),
                 )
                 try:

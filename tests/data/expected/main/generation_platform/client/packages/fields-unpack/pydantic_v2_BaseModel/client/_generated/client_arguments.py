@@ -248,6 +248,27 @@ class Operation5Arguments(TypedDict):
 
     pet_id: int
     body: _dcg_type_8
+    size: NotRequired[Unset]
+    media_type: NotRequired[Literal['application/json'] | None]
+    options: NotRequired[RequestOptions | None]
+
+
+class Operation5Arguments1(TypedDict):
+    """The keyword arguments of one signature of put_labels."""
+
+    pet_id: int
+    body: NotRequired[Unset]
+    size: NotRequired[str | Unset]
+    media_type: NotRequired[Literal['application/json'] | None]
+    options: NotRequired[RequestOptions | None]
+
+
+class Operation5Arguments2(TypedDict):
+    """The keyword arguments of one signature of put_labels."""
+
+    pet_id: int
+    body: NotRequired[_dcg_type_8 | Unset]
+    size: NotRequired[str | Unset]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -352,8 +373,8 @@ KEYWORDS_4: Final = Keywords(
 
 KEYWORDS_5: Final = Keywords(
     'put_labels',
-    ('pet_id', 'body', 'media_type', 'options'),
-    ('pet_id', 'body'),
+    ('pet_id', 'body', 'size', 'media_type', 'options'),
+    ('pet_id',),
 )
 
 

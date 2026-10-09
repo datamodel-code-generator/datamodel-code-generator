@@ -88,7 +88,7 @@ def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelF
     backend = facts.backend
     match consumer.backend:
         case "pydantic" | "pydantic_dataclass":
-            required = facts.required and not facts.has_default and not facts.explicit_default_factory
+            required = facts.required and backend.emitted.emitted_default_kind == "absent"
         case "typeddict":
             qualifiers = backend.emitted.qualifiers
             required = "Required" in qualifiers or (not _partial(owner) and "NotRequired" not in qualifiers)
