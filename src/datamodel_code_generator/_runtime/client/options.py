@@ -193,7 +193,8 @@ def phases(value: float | NativeTimeout | Unset | None, current: ResolvedTimeout
         case int() | float():
             return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)
         case _:
-            return ResolvedTimeoutOptions(connect=value.connect, read=value.read, write=value.write, pool=value.pool)
+            pass
+    return ResolvedTimeoutOptions(connect=value.connect, read=value.read, write=value.write, pool=value.pool)
 
 
 def _frozen(value: Mapping[str, str | None] | None) -> Mapping[str, str | None] | None:
