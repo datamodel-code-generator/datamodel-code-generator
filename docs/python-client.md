@@ -3201,8 +3201,9 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 ## Body replay and resource ownership
 
-A package accepts the request bodies its operations declare. Without a binary or multipart request body it copies no
-body runtime, and `request_raw` takes `bytes`; with a binary body `request_raw` also takes the binary inputs below, and
+A package accepts the request bodies its operations declare. A schema-less form body exposes `FormData` in `bodies.py`
+and uses the core operation runtime, without the binary or multipart body runtime. Without a binary or multipart
+request body, `request_raw` takes `bytes`; with a binary body `request_raw` also takes the binary inputs below, and
 with a `multipart/form-data` body a `MultipartBody` (`AsyncMultipartBody` for an asyncio client) as well. Encoded
 bytes, JSON included, are kept once per logical call and resent unchanged; a multipart body keeps its boundary.
 
@@ -3333,7 +3334,8 @@ into SDK requests; its `Accept-Encoding` is.
 
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
-whose operations require none takes no credentials, copies no credential runtime, and exports no `AuthError`. A
+whose operations have no credentialed security alternative takes no credentials, copies no credential runtime, and
+exports no `AuthError`. A
 scheme whose argument would be empty, `options`, `http_client`, `self`, or another scheme's, or whose OAuth
 provider classes would take another scheme's PascalCase prefix, fails generation with `E_RESERVED_NAME`.
 
