@@ -158,11 +158,9 @@ class CallEvents:
         """Stop an ordinary event at a native interruption, but drain terminal hooks and return the interruption."""
         interruption: BaseException | None = None
         for hook in self.hooks:
-            if not terminal:
-                self.call.check()
             try:
                 hook.on_event(event)
-            except Exception as error:  # noqa: BLE001 - Every hook sees the event, even after one fails.
+            except Exception as error:  # noqa: BLE001, PERF203 - Every hook sees the event, even after one fails.
                 failures.append(error)
             except BaseException as error:
                 if not terminal:
@@ -171,8 +169,6 @@ class CallEvents:
                     interruption = error
                 else:
                     add_secondary(interruption, error)
-            if not terminal:
-                self.call.check()
         return interruption
 
     async def anotify(
@@ -200,7 +196,7 @@ class CallEvents:
                 return failures
         else:
             try:
-                await self.call.bounded(lambda: self._anotified(event, failures, terminal=False))
+                await self._anotified(event, failures, terminal=False)
             except BaseException as interrupted:
                 for failure in failures:
                     add_secondary(interrupted, failure)
@@ -211,11 +207,9 @@ class CallEvents:
         """Deliver an event in its owner's task, preserving ordinary callback failures in order."""
         interruption: BaseException | None = None
         for hook in self.hooks:
-            if not terminal:
-                self.call.check()
             try:
                 await _async_hook(hook, event)
-            except Exception as error:  # noqa: BLE001 - Every hook sees the event, even after one fails.
+            except Exception as error:  # noqa: BLE001, PERF203 - Every hook sees the event, even after one fails.
                 failures.append(error)
             except BaseException as error:
                 if not terminal:
@@ -224,8 +218,6 @@ class CallEvents:
                     interruption = error
                 else:
                     add_secondary(interruption, error)
-            if not terminal:
-                self.call.check()
         return interruption
 
     def failed(self, failures: list[Exception], completed: Response[object] | Unset = UNSET) -> SDKError:
@@ -253,8 +245,6 @@ class CallEvents:
                 "max_error_body_bytes": settings.max_error_body_bytes,
                 "max_stream_bytes": settings.max_stream_bytes,
                 "total_timeout": settings.total_timeout,
-                "stream_idle_timeout": settings.stream_idle_timeout,
-                "stream_total_timeout": settings.stream_total_timeout,
             }),
         )
 
@@ -443,10 +433,6 @@ class CallEvents:
 
     def _observed_end(self, event: CallEvent, primary: BaseException | None) -> tuple[CallEvent, BaseException | None]:
         """Report termination observed while earlier terminal hooks were running."""
-        try:
-            self.call.check()
-        except BaseException as stopped:  # noqa: BLE001
-            primary = stopped if primary is None else self.call.failure(primary)
         outcome = event.outcome
         if primary is not None:
             outcome = "cancel" if not isinstance(primary, Exception) else "error"

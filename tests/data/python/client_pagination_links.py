@@ -65,7 +65,6 @@ _URL_REFUSALS: Final[tuple[tuple[str, object], ...]] = (
     ("other host", f"{_OTHER}/v1/users"),
     ("plain HTTP", "http://api.example.com/v1/users"),
     ("other port", "https://api.example.com:8443/v1/users"),
-    ("oversized", f"/v1/users?q={'a' * 8200}"),
 )
 
 
@@ -130,11 +129,6 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     for label, value in _URL_REFUSALS:
         exchange.respond(user_page("1", next=value))
         drained(lines, label, helper.iterate())
-    limits = harness.protocols.PaginationOptions(max_cursor_bytes=40)
-    exchange.respond(user_page("1", next="users?cursor=0123456789"))
-    drained(lines, "resolved URL over the cursor size", helper.iterate(pagination_options=limits))
-    exchange.respond(*(user_page(str(index), next=f"{'a' * 2000}/") for index in range(5)))
-    drained(lines, "relative path growing past 8 KiB", helper.iterate())
 
 
 def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -146,9 +140,6 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
         exchange.responders.clear()
     exchange.respond(_links('<?page=2>; rel="HTTPS://EXAMPLE.COM/REL/MORE"'), user_page("2"))
     drained(lines, "extension relation", users.related.iterate())
-    limits = harness.protocols.PaginationOptions(max_cursor_bytes=48)
-    exchange.respond(_links("<?page=2>; rel=next", "<?page=9>; rel=last; title=long"))
-    drained(lines, "Link fields over the cursor size", users.linked.iterate(pagination_options=limits))
     trace = harness.argument("listUsers", "header", "X-Trace", "mine")
     exchange.respond(
         headed_page("1", headers=(("Link", "<?page=2>; rel=next"), ("X-Snapshot", "s1"))),
@@ -171,6 +162,8 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         user_page("1", next="?page=2", token="t1"), user_page("2", next="?page=3", token="t2"), user_page("3")
     )
     drained(lines, "repeated body", searches.repeated.iterate(body=body))
+    exchange.respond(user_page("2", next="?page=3", token="t2"), user_page("3"))
+    drained(lines, "resumed with a body binding", searches.repeated.resume(f"{_SERVER}/searches?page=2", body=body))
     exchange.respond(user_page("1", next="?page=2"), user_page("2"))
     drained(lines, "fetched without the body", searches.fetched.iterate(body=body))
 

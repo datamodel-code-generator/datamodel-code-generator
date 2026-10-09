@@ -31,6 +31,38 @@
       }
     ]
   },
+  "users.since": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    },
+    "bindings": [
+      {
+        "target": {"in": "query", "name": "since"},
+        "value": {"source": "previous", "selector": {"from": "body", "pointer": "/since"}}
+      }
+    ]
+  },
+  "users.pages": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "total": {"from": "body", "pointer": "/total"}
+    }
+  },
   "users.offsets": {
     "kind": "pagination",
     "operation": "/paths/~1users/get",

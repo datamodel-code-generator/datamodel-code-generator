@@ -120,7 +120,6 @@ __all__ = [
 _OPTION_NAMES: Final = (
     "ClientOptions",
     "Clock",
-    "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
@@ -170,8 +169,9 @@ def _options(capabilities: Capabilities) -> str:
         "from __future__ import annotations\n\n",
         "from typing import TYPE_CHECKING\n\n" if protocols else "",
         "from ._runtime.client.options import (\n",
-        *(f"    {name},\n" for name in sorted(names)),
+        *(f"    {name},\n" for name in sorted(names) if not protocols or name != "ClientOptions"),
         ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
+        "from ._runtime.protocols.client_options import ClientOptions\n" if protocols else "",
         _PROTOCOL_OPTIONS if protocols else "",
         "\n__all__ = [\n",
         *(f'    "{name}",\n' for name in exported),
@@ -430,7 +430,6 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
         "records": (
             "BodySelector",
             "BodyTarget",
-            "Continuation",
             "HeaderSelector",
             "ParameterTarget",
             "ProgressKey",
@@ -545,21 +544,7 @@ def _protocols(capabilities: Capabilities) -> str:
     return "".join(text)
 
 
-_BODY_NAMES: Final = (
-    "AsyncBinaryBody",
-    "AsyncBodyAttempt",
-    "AsyncBodyAttemptFactory",
-    "AsyncBodyFactory",
-    "AsyncFileBody",
-    "AsyncStreamBody",
-    "BodyAttempt",
-    "BodyAttemptContext",
-    "BodyAttemptFactory",
-    "BodyFactory",
-    "FileBody",
-    "StreamBody",
-    "SyncBinaryBody",
-)
+_BODY_NAMES: Final = ("AsyncBinaryBody", "SyncBinaryBody")
 _MULTIPART_NAMES: Final = (
     "AsyncBodyInput",
     "AsyncMultipartBody",
@@ -1195,7 +1180,7 @@ class _Resources(_Typing):
             lazy.append((protocols, helpers_module))
         values = {
             "defaults": self.defaults(module),
-            "options": module.local("options", "ClientOptions"),
+            "options": module.local("_runtime.client.options" if protocols else "options", "ClientOptions"),
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
@@ -1295,7 +1280,7 @@ class _Resources(_Typing):
     ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
-        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A body declared in a
+        A binary body takes the bytes, file, path, and iterable inputs of the client's mode. A body declared in a
         media range such as image/* takes the concrete media type a call sends within it as any string, and a body
         without declared media takes nothing.
         """
@@ -2022,23 +2007,17 @@ class _Registry(_Typing):
 
 
 _RESUME_RUNTIME: Final = """
-A pager's `checkpoint()` returns a `ResumeState` without sending, a small token the caller saves, and the helper's
-`resume(state)` returns a pager in a session of its own that sends nothing until it is iterated. A checkpoint saves the
-wire values of the call's arguments and of the JSON body later pages send, and where the pager continues: the position,
-continuation, and binding values of the last page, or of the page before it while the last page has items left, with
-how many of that page's items were delivered, which a resumed pager fetches again and skips. It never saves pages, the
-cycle history, the call's options, its session, or anything its auth adds; a call giving a cookie, a credential header,
-or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
-`ConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
-cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
-while its timeout starts afresh. `resume` builds the saved arguments and body as their codecs build a
-caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
-resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
-state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
-a request, and an offset or page number other than the one the pages reach included, while a refusal of the resumed
-call's options is raised as the call raises it, and checks the saved continuation as a server's. `SessionLimitError` and
-`PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
-`ResumeState.export()` gives the token's JSON, and `import_state` reads it back.
+A pager's `checkpoint()` returns the continuation it fetches its next page with, the server's cursor, the next offset
+or page number, or the resolved next URL, without sending; it is None before the first page and after the last. The
+helper's `resume(state, ...)` takes that value with the operation's arguments and any body again and returns a pager
+in a session of its own that sends nothing until it is iterated. A continuation holds no call arguments, credentials,
+body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
+repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
+starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or
+`PaginationCycleError` resumes from its `checkpoint()`; the errors carry no continuation.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
@@ -2457,7 +2436,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *handles.values(),
         }
         module = Module(names, self.resources.symbols, level=2)
-        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
+        core = module.local("_runtime.protocols.client", f"{prefix}ClientCore")
+        base_core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         cached = module.name("functools", "cached_property")
         sections: list[str] = []
         for parts, children in nodes.items():
@@ -2469,7 +2449,14 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 for attribute, (child, dotted) in children.items()
             ]
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
-            sections.append(self.node(name, what, core, members))
+            sections.append(
+                self.node(
+                    name,
+                    what,
+                    core if parts else (base_core, f"{core}.from_client(core)"),
+                    members,
+                )
+            )
         for index, (name, spec) in enumerate(leaves.items()):
             sections.extend(
                 self.leaf(module, index, name, spec, core, handle=handles.get(name), asynchronous=asynchronous)
@@ -2538,13 +2525,14 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return [self.node(name, what, core, members, leaf=True)]
 
     @staticmethod
-    def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
+    def node(name: str, what: str, core: str | tuple[str, str], members: list[str], *, leaf: bool = False) -> str:
         """Return a namespace or helper class holding the client core its members send through."""
+        kind, binding = (core, "core") if isinstance(core, str) else core
         head = (
             f'class {name}:\n    """{what[0].upper()}{what[1:]}."""\n\n'
-            f"    def __init__(self, core: {core}) -> None:\n"
+            f"    def __init__(self, core: {kind}) -> None:\n"
             f'        """Keep the client core {"the helper sends" if leaf else "its helpers send"} through."""\n'
-            "        self._core = core"
+            f"        self._core = {binding}"
         )
         return "\n\n".join((head, *members))
 
@@ -2613,9 +2601,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                         "    def resume(",
                         items((
                             "self",
-                            f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}",
+                            f"state: {module.local('_runtime.model_codecs.media', 'JSONValue')}",
                             "*",
-                            *keywords,
+                            *signature,
                         )),
                         f") -> {pager}:",
                     ),
@@ -2624,8 +2612,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     WIDTH,
                 ),
                 '        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""',
-                "        return "
-                + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
+                "        return " + layout(_call(resume, (*passed[:2], ("", "state"), *passed[2:])), 8, 7, WIDTH),
             )),
         ]
 
@@ -3223,7 +3210,7 @@ def {signature} -> RequestOptions:
     def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
         oauth = capabilities.oauth
-        clock = "`OAuthProviderOptions(clock=...)` does so for a provider, and " if oauth else ""
+        clock = "A provider uses `OAuthProviderOptions(clock=...)` for its own time sources." if oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3234,29 +3221,30 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
+removes the optional budget across attempts.
+The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
 |---|---|
-| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
-| total timeout | 60 seconds from logical-call entry |
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
 | retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
-phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
-Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-{clock}`Deadline.after(seconds, clock=...)` creates a deadline
-on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
+retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
+cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
+Native cancellation remains the original exception.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+{clock}
 
 ## Retry decisions and delays
 
@@ -3275,8 +3263,8 @@ an options value cannot invent that declaration, and explicit None disables an i
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
 still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
-phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
@@ -3288,16 +3276,19 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
-their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
-check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
-One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
-
-`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
-The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
-ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
-changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
-resources remain caller-owned; close explicitly created async file adapters to release their worker.
+A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
+`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
+`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
+files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
+async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
+Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
+The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
+async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
+all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
+read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
+loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+call running in a thread before it closes the file.
 
 ## Redirects and transport construction
 
@@ -3350,14 +3341,10 @@ Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration
 retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
-final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
-hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
-reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
-signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
-seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
-implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
+sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
+`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
@@ -3398,10 +3385,9 @@ No operation of this package declares request compression, so every request is s
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
-accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3524,14 +3510,12 @@ uploading. A call's options must not fix an idempotency key or patch a header or
         """Describe pagination sessions and their limits, or nothing for a package without pagination helpers.
 
         Cursors are described only for a package with a cursor helper, counted positions only for one with an offset or
-        page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
-        applies to cursors and followed URLs.
+        page-number helper, and followed URLs only for one with a next-URL or Link helper.
         """
         if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
-        size = "| cursor size | 64 KiB |\n" if cursors or kinds & {"next_url", "link"} else ""
         rules = (
             """\
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
@@ -3556,16 +3540,14 @@ total timeout, and idempotency key; the session bounds all of them. Each limit c
 `ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
 another kind's options, fail construction. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, `AsyncPager`, `ResumeState`, and
-  `import_state`
+- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| decoded body per page | 8 MiB |
-{size}| session total timeout | None (no limit) |
+| session total timeout | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
@@ -3618,12 +3600,11 @@ gave: a GET without a body, or the operation's method and the caller's body when
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
 and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
-else raises `ProtocolDataError`, and a resolved URL over 8 KiB, or the cursor size when smaller, `ProtocolSizeError`. A
-request to another origin carries no credential or cookie header and none of the headers or query fields the package's
-security schemes name, and authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values
-must parse as RFC 8288 links within the cursor size and give the relation at most once; a page without the relation is
-the last, and an empty page with a URL continues. A URL seen earlier in the session, the first page's own included, ends
-it with `PaginationCycleError` after the repeating page.
+else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+headers or query fields the package's security schemes name, and authenticates only at an origin
+`AuthConfig.allowed_origins` lists. A Link header's values must parse as RFC 8288 links and give the relation at most
+once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
+session, the first page's own included, ends it with `PaginationCycleError` after the repeating page.
 """
 
     @cached_property
@@ -3651,8 +3632,8 @@ event type and no event ID, and a declared error record raises `StreamRemoteErro
 ## {self.stream_label} streams
 
 An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
-acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
-timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
 options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
 from:
 
@@ -3662,7 +3643,7 @@ from:
 
 | Limit | Effective default |
 |---|---|
-| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| idle timeout | the native read timeout; None removes it |
 | line size | 256 KiB |
 | event data size | 1 MiB |
 | session total timeout | None |
@@ -3698,7 +3679,7 @@ the operation's `APIStatusError`. Each limit comes from the call's options, then
 | Limit | Effective default |
 |---|---|
 | open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
-| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB, decompressed |
 | received frames buffered before reading pauses | 16 |
 | send timeout | 30 seconds, waiting for earlier sends included; None removes it |

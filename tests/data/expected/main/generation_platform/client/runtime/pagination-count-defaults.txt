@@ -1,31 +1,31 @@
 # pagination-counts pydantic_v2.BaseModel
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -33,13 +33,13 @@
   query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -51,31 +51,31 @@
   query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -83,13 +83,13 @@
   header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -106,31 +106,31 @@
   client default offset items ['41', '42', '43', '44']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -138,13 +138,13 @@
   async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -156,31 +156,31 @@
   async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  async header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  async header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   async header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  async header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  async header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   async header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -188,13 +188,13 @@
   async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   async header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -212,31 +212,31 @@
 # pagination-counts pydantic_v2.dataclass
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -244,13 +244,13 @@
   query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -262,31 +262,31 @@
   query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -294,13 +294,13 @@
   header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -317,31 +317,31 @@
   client default offset items ['41', '42', '43', '44']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -349,13 +349,13 @@
   async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -367,31 +367,31 @@
   async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  async header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  async header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   async header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  async header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  async header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   async header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -399,13 +399,13 @@
   async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   async header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -423,31 +423,31 @@
 # pagination-counts dataclasses.dataclass
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -455,13 +455,13 @@
   query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -473,31 +473,31 @@
   query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -505,13 +505,13 @@
   header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -528,31 +528,31 @@
   client default offset items ['41', '42', '43', '44']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -560,13 +560,13 @@
   async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -578,31 +578,31 @@
   async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  async header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  async header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   async header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  async header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  async header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   async header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -610,13 +610,13 @@
   async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   async header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -634,31 +634,31 @@
 # pagination-counts typing.TypedDict
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -666,13 +666,13 @@
   query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -684,31 +684,31 @@
   query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -716,13 +716,13 @@
   header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -739,31 +739,31 @@
   client default offset items ['41', '42', '43', '44']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -771,13 +771,13 @@
   async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -789,31 +789,31 @@
   async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  async header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  async header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   async header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  async header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  async header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   async header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -821,13 +821,13 @@
   async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   async header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -845,31 +845,31 @@
 # pagination-counts msgspec.Struct
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -877,13 +877,13 @@
   query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -895,31 +895,31 @@
   query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -927,13 +927,13 @@
   header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   header empty call options next = [7,8] continuation=None status=200 attempts=1
@@ -950,31 +950,31 @@
   client default offset items ['41', '42', '43', '44']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query client = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query client = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query client next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view next = [53,54] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=60
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query nested view = [61,62] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query nested view = [61,62] continuation=62 status=200 attempts=1
   > GET https://api.example.com/users?offset=62&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query nested view next = [63,64] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=70
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query typed over views = [71,72] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query typed over views = [71,72] continuation=72 status=200 attempts=1
   > GET https://api.example.com/users?offset=72&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query typed over views next = [73,74] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query UNSET over view = [51,52] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query UNSET over view = [51,52] continuation=52 status=200 attempts=1
   > GET https://api.example.com/users?offset=52&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query UNSET over view next = [53,54] continuation=None status=200 attempts=1
@@ -982,13 +982,13 @@
   async query rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query view removes default = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query view removes default = [1,2] continuation=2 status=200 attempts=1
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query view removes default next = [3,4] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async query empty call options = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
+  async query empty call options = [41,42] continuation=42 status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async query empty call options next = [43,44] continuation=None status=200 attempts=1
@@ -1000,31 +1000,31 @@
   async query duplicate ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header client = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header client = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header client next = [7,8] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header view next = [17,18] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 25] b''
-  async header nested view = [26,27] continuation=Continuation(kind='page') status=200 attempts=1
+  async header nested view = [26,27] continuation=26 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 26] b''
   async header nested view next = [27,28] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 35] b''
-  async header typed over views = [36,37] continuation=Continuation(kind='page') status=200 attempts=1
+  async header typed over views = [36,37] continuation=36 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 36] b''
   async header typed over views next = [37,38] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 15] b''
-  async header UNSET over view = [16,17] continuation=Continuation(kind='page') status=200 attempts=1
+  async header UNSET over view = [16,17] continuation=16 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 16] b''
   async header UNSET over view next = [17,18] continuation=None status=200 attempts=1
@@ -1032,13 +1032,13 @@
   async header rejected call removes typed ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Page') [field_path=('options', 'headers', 'X-Page'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async header view removes default = [1,2] continuation=Continuation(kind='page') status=200 attempts=1
+  async header view removes default = [1,2] continuation=1 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 1] b''
   async header view removes default next = [2,3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
-  async header empty call options = [6,7] continuation=Continuation(kind='page') status=200 attempts=1
+  async header empty call options = [6,7] continuation=6 status=200 attempts=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 6] b''
   async header empty call options next = [7,8] continuation=None status=200 attempts=1

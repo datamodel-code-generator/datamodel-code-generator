@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.uploads import UploadHandle, resume_upload, start_upload
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
@@ -18,9 +19,9 @@ from . import UploadOptions, UploadSource, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def files(self) -> FilesProtocols:

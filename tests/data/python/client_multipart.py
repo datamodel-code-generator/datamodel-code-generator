@@ -7,14 +7,10 @@ import io
 import re
 from typing import TYPE_CHECKING, Any, Final
 
-
-from tests.data.python.client_bodies import Chunks, async_attempt_factory, attempt_factory
 from tests.data.python.client_runtime import (
     Exchange,
-    aoutcome,
     arecord,
     form_part,
-    outcome,
     raw_response,
     record,
     request_body,
@@ -259,8 +255,8 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         field("skipped", unset),
         field("summary", "# Hi", content_type="text/markdown", headers=(("X-Trace", "t"),)),
         file("image", b"\x00\x01", filename='a"b\r\n.png', content_type="image/png"),
-        file("doc", bodies.FileBody(io.BytesIO(b"doc")), filename="doc.txt"),
-        file("stream", bodies.StreamBody([b"s1", b"s2"])),
+        file("doc", io.BytesIO(b"doc"), filename="doc.txt"),
+        file("stream", [b"s1", b"s2"]),
     ))
     sized = body((field("a", "1"), file("f", b"x")))
     for label, value in (("streamed parts", streamed), ("sized parts", sized), ("no parts", body(()))):
@@ -274,22 +270,11 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         ("file part header that is no token", body((file("f", b"x", headers=(("Bad Header", "v"),)),))),
         ("part that is no part", body(("text",))),
         ("field of an object", body((field("a", object()),))),
-        ("file of the other mode", body((file("f", bodies.AsyncFileBody(io.BytesIO(b"x"))),))),
+        ("file with invalid native input", body((file("f", object()),))),
         ("body of the other mode", bodies.AsyncMultipartBody((field("a", "1"),))),
         ("body that is no multipart body", b"a=1"),
     ):
         record(lines, label, lambda value=value: api.forms.submit_parts(body=value))
-    spent = bodies.StreamBody([b"once"])
-    spent(bodies.BodyAttemptContext(call_id="spent", attempt_index=0, hop_index=0, remaining_timeout=None))
-    begun = body((file("first", bodies.BodyFactory(attempt_factory(lines, b"x"))), file("second", spent)))
-    record(lines, "file part refused after another began", lambda: api.forms.submit_parts(body=begun))
-    failing = bodies.BodyFactory(attempt_factory(lines, b"x", close_error=True))
-    closing = body((
-        file("first", failing),
-        file("second", bodies.BodyFactory(attempt_factory(lines, b"y", close_error=True))),
-    ))
-    exchange.respond(raw_response(204))
-    lines.append(f"  file parts failing to close: {outcome(lambda: api.forms.submit_parts(body=closing))}")
     exchange.respond(raw_response(200, b"ok", "text/plain"))
     raw = body((field("meta", {"k": [1, "x"]}), field("count", 5), file("f", b"raw")))
     record(lines, "raw parts", lambda: api.request_raw("POST", "https://forms.example.com/raw", body=raw).body_bytes)
@@ -311,7 +296,7 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
                 field("meta", meta),
                 photo,
                 file("pages", b"1"),
-                file("pages", bodies.StreamBody([b"2"])),
+                file("pages", [b"2"]),
                 field("bonus", 7),
             ),
         ),
@@ -501,11 +486,11 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
             "async profile",
             lambda: api.forms.submit_profile(body=request_body(package, "submitProfile", None, _PROFILE)),
         )
-        file_body = bodies.AsyncFileBody(io.BytesIO(b"doc"))
+        file_body = io.BytesIO(b"doc")
         parts = body((
             field("title", "Notes"),
             file("doc", file_body, filename="doc.txt"),
-            file("stream", bodies.AsyncStreamBody(chunks())),
+            file("stream", chunks()),
             file("image", b"\x00", content_type="image/png"),
         ))
         exchange.respond(raw_response(204))
@@ -513,24 +498,9 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         file_body.close()
         for label, value in (
             ("async body of the other mode", bodies.MultipartBody((field("a", "1"),))),
-            ("async file of the other mode", body((file("f", bodies.FileBody(io.BytesIO(b"x"))),))),
+            ("async file with invalid native input", body((file("f", object()),))),
         ):
             await arecord(lines, label, lambda value=value: api.forms.submit_parts(body=value))
-        spent = bodies.AsyncStreamBody(Chunks(lines, (b"once",)))
-        await spent(bodies.BodyAttemptContext(call_id="spent", attempt_index=0, hop_index=0, remaining_timeout=None))
-        begun = body((
-            file("first", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"x"))),
-            file("second", spent),
-        ))
-        await arecord(lines, "async file part refused after another began", lambda: api.forms.submit_parts(body=begun))
-        closing = body((
-            file("first", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"x", close_error=True))),
-            file("second", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"y", close_error=True))),
-        ))
-        exchange.respond(raw_response(204))
-        lines.append(
-            f"  async file parts failing to close: {await aoutcome(lambda: api.forms.submit_parts(body=closing))}"
-        )
         exchange.respond(raw_response(200, b"ok", "text/plain"))
         raw = body((field("meta", {"k": 1}), file("f", b"raw")))
 
@@ -540,8 +510,8 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async raw parts", raw_call)
         upload = body((
             field("title", "Notes"),
-            file("photo", bodies.AsyncFileBody(io.BytesIO(b"png")), filename="a.png"),
-            file("pages", bodies.AsyncStreamBody(chunks())),
+            file("photo", io.BytesIO(b"png"), filename="a.png"),
+            file("pages", chunks()),
         ))
         exchange.respond(raw_response(204))
         await arecord(lines, "async upload", lambda: api.forms.submit_upload(body=upload))
