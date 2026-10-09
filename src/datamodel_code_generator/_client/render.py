@@ -123,7 +123,6 @@ _OPTION_NAMES: Final = (
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
-    "RedirectOptions",
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
@@ -289,7 +288,6 @@ _ERROR_NAMES: Final = (
     "ConfigurationError",
     "ConflictError",
     "DecodeError",
-    "DecompressionLimitError",
     "DeliveryState",
     "InternalServerError",
     "IOPhase",
@@ -302,7 +300,6 @@ _ERROR_NAMES: Final = (
     "RetryStopReason",
     "SDKError",
     "UnprocessableEntityError",
-    "UnsupportedContentCodingError",
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
@@ -3217,8 +3214,8 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 ## Layered options and budgets
 
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
-`UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
-sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
+`UNSET` inherits. `TimeoutOptions` and `RetryOptions` merge their fields independently; sets and tuples replace the
+inherited collection. `retry=None` is invalid.
 `timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
 removes the optional budget across attempts.
 The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
@@ -3233,8 +3230,7 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
-| redirects / maximum redirects / 303 conversion | False / 5 / False |
-| allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
+| follow redirects | the native client's: False for an SDK-created client |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
@@ -3248,8 +3244,8 @@ Native cancellation remains the original exception.
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
 declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
-from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt or hop
-of the call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
+from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt of the
+call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
 resend. All candidates still need replayable input. Pool timeouts need explicit `retry_on_pool_timeout=True`.
 Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
 
@@ -3259,8 +3255,8 @@ explicitly ignores server hints. Vendor millisecond/boolean controls require the
 an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
 
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
-including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
-still raise. Stream acquisition can retry; body reads never retry after handle handoff.
+including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
+failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
 set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
@@ -3290,12 +3286,16 @@ call running in a thread before it closes the file.
 
 ## Redirects and transport construction
 
-`RedirectOptions(enabled=True)` enables SDK-controlled hops. 301/302 permit only GET/HEAD. 303 changes to GET for
-GET/HEAD or explicit `allow_303_to_get=True`, dropping body and content/framing headers including Content-Encoding.
-307/308 preserve method/body and require safety and replayability. Every hop consumes the logical deadline. The
-origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the original request are
-stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise `ConfigurationError`
-with the reason `redirect_refused`, no redirect body, and delivery/response metadata when available.
+Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
+`follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
+SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
+`Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
+that carries a credential at a position a declared security scheme names other than `Authorization`, or a
+signature, is never redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in
+a header, query, or cookie never reaches another origin. Response content codings are removed by HTTPX2: the native
+client's `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a
+body that does not decode raises `ProtocolDataError`. A streaming raw response's `iter_raw_bytes()` yields the body as
+it arrived; a buffered one keeps only its decoded body.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
@@ -3330,8 +3330,8 @@ cooperative and cannot be forcibly terminated. Wrong callback modes fail before 
 
 Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
 explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
-Authentication, redirect, and signer origin permissions are independent. Every hop reconstructs credentials and
-signatures for its current origin. Generic patches cannot change managed credential/signature names.
+Authentication and signer origin permissions are independent. Every attempt reconstructs credentials and signatures.
+Generic patches cannot change managed credential/signature names.
 
 Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
 the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
@@ -3340,8 +3340,8 @@ retry counts and the original deadline still apply. Zero retries prevents recove
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
 Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
-sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
+They receive the final method/URL/raw query/headers after credential and body framing, before attempt hooks and
+sending. Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
 `signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
@@ -3385,7 +3385,7 @@ when the SDK compresses the body. The gzip encoder uses level 6 and a zero modif
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.

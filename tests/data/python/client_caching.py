@@ -435,7 +435,7 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         raw_response(302, location="https://api.example.com/users/13"),
         user(13, **{"cache-control": "max-age=60"}),
     )
-    follow = cache.options.RequestOptions(redirects=cache.options.RedirectOptions(enabled=True))
+    follow = cache.options.RequestOptions(follow_redirects=True)
     fetched(lines, "redirected", lambda: helper.fetch(user_id=twelve, options=follow))
     fetched(lines, "redirected again", lambda: helper.fetch(user_id=twelve, options=follow))
     fourteen = cache.user_id(14)

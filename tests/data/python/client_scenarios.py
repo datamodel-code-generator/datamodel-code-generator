@@ -732,22 +732,8 @@ def _corrupt(content: bytes) -> bytes:
     return content[:-8] + bytes([content[-8] ^ 1]) + content[-7:]
 
 
-def _limit(call: Callable[[], object]) -> Callable[[], str]:
-    """Report an expansion failure by its fixed facts, leaving out the byte counts the compressor decides."""
-
-    def limited() -> str:
-        try:
-            call()
-        except Exception as error:  # ruff: ignore[blind-except]
-            over = error.observed > error.limit >= 1024 * 1024
-            return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
-        return "decoded"
-
-    return limited
-
-
 def codings(package: ModuleType, lines: list[str]) -> None:
-    """Remove gzip, deflate, and stacked codings exactly once, and refuse unknown, broken, and expanding ones."""
+    """Remove gzip, deflate, and stacked codings with HTTPX2, refuse broken ones, and bound expanding ones."""
     exchange = Exchange(lines)
     pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
     (options,) = _modules(package, "options")
@@ -766,7 +752,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
             ("identity", _coded("identity", _PET)),
             ("members", _coded("gzip", gzip.compress(_PET[:5], mtime=0) + gzip.compress(_PET[5:], mtime=0))),
             ("layers", _coded("gzip, deflate, gzip", _PET)),
-            ("unknown", _coded("gzip, br", _PET)),
+            ("unknown", _coded("gzip, compress", _PET)),
             ("truncated", _coded("gzip", gzip.compress(_PET, mtime=0)[:-4])),
             ("corrupt", _coded("gzip", _corrupt(gzip.compress(_PET, mtime=0)))),
             ("deflate trailing", _coded("deflate", zlib.compress(_PET) + b"x")),
@@ -775,7 +761,8 @@ def codings(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(responder)
             record(lines, f"coding {label}", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_coded("gzip", _BOMB))
-        record(lines, "coding bomb", _limit(lambda: api.pets.get_pet(pet_id=pet)))
+        bounded = options.RequestOptions(max_response_bytes=1024 * 1024)
+        record(lines, "coding bomb past the response limit", lambda: api.pets.get_pet(pet_id=pet, options=bounded))
         exchange.respond(injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})))
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
@@ -791,8 +778,8 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(
             *((_coded("gzip", gzip.compress(_ERROR, mtime=0), 500),) * 3),
             *((_coded("gzip", gzip.compress(_ERROR, mtime=0)[:-4], 500),) * 3),
-            chunked_response(302, b"moved", 5, "text/plain", **{"content-encoding": "br"}),
-            chunked_response(204, b"", 1, "text/plain", **{"content-encoding": "br"}),
+            chunked_response(302, b"moved", 5, "text/plain", **{"content-encoding": "compress"}),
+            chunked_response(204, b"", 1, "text/plain", **{"content-encoding": "compress"}),
         )
         record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
@@ -813,11 +800,13 @@ async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[st
             _coded("identity", _PET),
             _coded("gzip", gzip.compress(_PET, mtime=0)[:-4]),
             injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})),
+            _coded("gzip", _corrupt(gzip.compress(_PET, mtime=0))),
         )
         await arecord(lines, "async coding stacked", lambda: api.pets.get_pet(pet_id=pet))
         await arecord(lines, "async coding identity", lambda: api.pets.get_pet(pet_id=pet))
         await arecord(lines, "async coding truncated", lambda: api.pets.get_pet(pet_id=pet))
         await arecord(lines, "async coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
+        await arecord(lines, "async coding corrupt", lambda: api.pets.get_pet(pet_id=pet))
 
 
 BACKENDS: Final = (

@@ -4,12 +4,11 @@ client/arguments.py: __future__, collections.abc, typing
 client/auth.py: ..model_codecs.unset, .errors, .responses, .scopes, .timing, __future__, collections.abc, dataclasses, datetime, os, types, typing, typing_extensions
 client/auth_challenges.py: .responses, __future__, re, typing
 client/auth_policy.py: ..model_codecs.unset, .auth, .auth_challenges, .errors, .native, .options, .security, .timing, .urls, __future__, base64, collections.abc, dataclasses, functools, httpx2, inspect, re, typing, typing_extensions, urllib.parse
-client/bodies.py: .coding, .errors, .logical, __future__, abc, collections.abc, inspect, io, os, pathlib, typing, typing_extensions
+client/bodies.py: .errors, .logical, __future__, abc, collections.abc, inspect, io, os, pathlib, typing, typing_extensions
 client/body_sources.py: .bodies, .errors, .logical, .multipart, __future__, collections.abc, dataclasses, typing
-client/client.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .auth, .auth_policy, .bodies, .body_sources, .coding, .errors, .events, .hooks, .logical, .media, .multipart, .native, .operations, .options, .paths, .raw, .redirects, .responses, .retry, .security, .timing, .urls, __future__, collections.abc, contextlib, dataclasses, functools, httpx2, inspect, re, typing, typing_extensions, urllib.parse
+client/client.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .auth, .auth_policy, .bodies, .body_sources, .errors, .events, .hooks, .logical, .media, .multipart, .native, .operations, .options, .paths, .raw, .responses, .retry, .security, .timing, .urls, __future__, collections.abc, contextlib, dataclasses, functools, httpx2, inspect, re, typing, typing_extensions, urllib.parse
 client/codecs.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .operations, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
-client/coding.py: ..protocols.errors, .errors, .responses, __future__, collections.abc, typing, zlib
-client/compression.py: .bodies, .body_sources, .coding, __future__, collections.abc, typing, zlib
+client/compression.py: .bodies, .body_sources, __future__, collections.abc, typing, zlib
 client/errors.py: ..protocols.references, .responses, __future__, datetime, enum, re, typing, typing_extensions
 client/events.py: ..model_codecs.unset, .errors, .hooks, .logical, .options, .responses, __future__, collections.abc, dataclasses, inspect, types, typing, urllib.parse
 client/grants.py: .auth, .auth_policy, .errors, .oauth, .options, .refresh, __future__, collections.abc, httpx2, inspect, typing, typing_extensions
@@ -17,13 +16,12 @@ client/hooks.py: .errors, __future__, collections.abc, dataclasses, types, typin
 client/logical.py: .errors, .options, .timing, __future__, anyio, asyncio, collections.abc, functools, time, typing, uuid
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, codecs, collections.abc, typing
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .errors, .media, .responses, __future__, collections.abc, functools, os, re, typing, typing_extensions
-client/native.py: .errors, .options, .timing, __future__, collections.abc, httpx2, typing
+client/native.py: ..protocols.errors, .errors, .options, .responses, .timing, __future__, collections.abc, httpx2, typing
 client/oauth.py: ..model_codecs.unset, .auth, .bodies, .errors, .native, .options, .responses, .scopes, .timing, .urls, __future__, asyncio, base64, collections.abc, contextlib, dataclasses, datetime, httpx2, importlib.util, inspect, json, re, ssl, sys, threading, typing, typing_extensions, urllib.parse
 client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .media, .multipart, .responses, .retry, .security, __future__, collections.abc, dataclasses, functools, typing, typing_extensions
 client/options.py: ..model_codecs.media, ..model_codecs.unset, .auth, .errors, .hooks, .timing, __future__, collections.abc, dataclasses, inspect, math, re, ssl, types, typing, typing_extensions, urllib.parse, uuid
 client/paths.py: __future__, collections.abc, re, typing
-client/raw.py: ..model_codecs.media, .coding, .errors, .events, .logical, .media, .operations, .options, .responses, __future__, collections.abc, contextlib, errno, os, pathlib, threading, types, typing, typing_extensions
-client/redirects.py: .errors, .options, .responses, .retry, .urls, __future__, dataclasses, typing
+client/raw.py: ..model_codecs.media, .bodies, .errors, .events, .logical, .media, .operations, .options, .responses, __future__, collections.abc, contextlib, errno, os, pathlib, threading, types, typing, typing_extensions
 client/refresh.py: .auth, .errors, .oauth, .options, __future__, asyncio, collections.abc, dataclasses, datetime, threading, typing
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.unset, .errors, .hooks, .options, .responses, __future__, collections.abc, dataclasses, datetime, math, re, typing

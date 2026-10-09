@@ -253,7 +253,6 @@ class SigningInput:
     query: bytes = field(repr=False)
     headers: HeadersView = field(repr=False)
     attempt_index: int = field(repr=False)
-    hop_index: int = field(repr=False)
 
 
 def _signature_pairs(value: object, name: str) -> tuple[tuple[str, str], ...]:

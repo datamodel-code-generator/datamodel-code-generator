@@ -3124,7 +3124,7 @@ Every exception a client raises derives from `SDKError`, and all of them are imp
 
 | Exception | Raised for | Fields beside the shared ones |
 |---|---|---|
-| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed`, `response_consumed`, and `redirect_refused` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id`, `operation` |
+| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed` and `response_consumed` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id`, `operation` |
 | `APIConnectionError` | A classified I/O failure of the transport | `phase`, `retry_stop_reason`; `delivery_state` tells how far the request got |
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's deadline, with the reason `deadline_exceeded` | `effective_timeout` of a phase timeout, or `deadline_at`, the absolute monotonic deadline |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated`, `retry_stop_reason` |
@@ -3173,8 +3173,8 @@ cancellation, and logical deadlines never restart a request.
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
 `retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError` (TLS and DNS failures
 included), `ConnectTimeout`, or `PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods,
-unless an earlier attempt or redirect hop of the call reached the server; every other failure after the send started
-is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
+unless an earlier attempt of the call, or a response HTTPX2 followed a redirect from, reached the server; every other
+failure after the send started is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
 Configuration errors and unclassified failures are not candidates.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
@@ -3184,13 +3184,13 @@ policy override, disclosed in every generated README; it is never silently embed
 
 ```python
 from pets import Client
-from pets.options import RedirectOptions, RequestOptions, RetryOptions
+from pets.options import RequestOptions, RetryOptions
 
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
         retry=RetryOptions(max_retries=2, max_retry_after=20),
-        redirects=RedirectOptions(enabled=True, max_redirects=2),
+        follow_redirects=True,
         total_timeout=30,
     )
     return client.request_raw("GET", url, options=options).read()
@@ -3302,7 +3302,7 @@ when the SDK compresses the body. The gzip encoder uses level 6 and a zero modif
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3355,8 +3355,8 @@ is named in a note on the cancellation. To keep a slow caller-opened file off th
 object such as `await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async
 file is read in 64 KiB chunks even though iterating it would yield lines.
 
-A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
-position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
+A retry, or a 307 or 308 redirect HTTPX2 follows, sends bytes again as they are and seeks a seekable file back to its
+entry position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
 sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
 call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
 part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
@@ -3379,24 +3379,52 @@ file, path or iterable itself. Callers manage the lifetime and concurrent use of
 
 ## Redirects and transport construction
 
-Redirects are disabled by default. `RedirectOptions` merges per field, with `enabled=False`, `max_redirects=5`,
-`allow_303_to_get=False`, `allowed_origins=()`, and `allow_https_downgrade=False`. An empty origin allowlist permits
-only the original origin. An allowed destination and permission to downgrade HTTPS are separate conditions.
+Calls are sent through the native client with `send(request, stream=True)`: its `auth`, event hooks, redirect
+setting, and framing are effective. `follow_redirects` on `ClientOptions`, a view's, or a call's `RequestOptions` is
+the native boolean for that call; unset, an SDK-created client follows no redirect, as HTTPX2's default is, and an
+injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itself: 301 and 302 change POST to GET,
+303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
+the native client is its limit, past which `TooManyRedirects` raises `APIConnectionError`. A bytes body, a seekable
+file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
+`Authorization` and the `Cookie` header on a redirect to another origin, and keeps every other header. Every hop
+consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
+sent again.
 
-301/302 follow only GET/HEAD. 303 changes to GET for GET/HEAD or explicit `allow_303_to_get=True`; it removes the body
-and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability and
-operation safety. Every hop consumes the same call deadline. Credentials and cookies from the original
-request are stripped across origins, and so are the headers and query fields the package's security schemes name,
-however the request came to carry them. Repeated method/URL loops, invalid or multiple Location values, forbidden
-destinations, exhausted redirect limits, or unsafe replay raise `ConfigurationError` with the reason
-`redirect_refused` and the `field_path` `("redirects",)`. Its `delivery_state` is `RESPONSE_STARTED`, it exposes
-available response metadata, and it keeps no redirect body. Native failure while constructing a redirect also raises
-this error if no response handle can be returned.
+A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
+never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
+carry it, and every signed request. HTTPX2 would forward such a value to another origin. Its 3xx is the final
+response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
+anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
+request it sends, or read the `Location` and send a call of your own.
 
-A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
-bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise
-`DecodeError` with the reason `forbidden_body` if the GET returns content. Use `with_raw_response` or
-`with_streaming_response` to access that final GET body without typed decoding.
+```python
+import httpx2
+
+from pets import Client
+from pets.options import ClientOptions
+
+
+class ApiKey(httpx2.Auth):
+    def __init__(self, key: str) -> None:
+        self.key = key
+
+    def auth_flow(self, request: httpx2.Request):
+        request.headers["X-API-Key"] = self.key
+        yield request
+
+
+def following_client(key: str) -> Client:
+    native = httpx2.Client(auth=ApiKey(key), follow_redirects=True)
+    return Client(http_client=native, options=ClientOptions())
+```
+
+The native client removes response content codings: its `Accept-Encoding`, gzip and deflate plus brotli and zstd
+where their decoders are installed, is sent, a body that does not decode raises `ProtocolDataError`, and a coding it
+does not know passes the body through. A streaming raw response's `iter_raw_bytes()` yields the body as it arrived; a
+buffered one keeps only its decoded body, so its `iter_raw_bytes()` raises `ConfigurationError` with the reason
+`response_consumed`. A HEAD operation's typed return contract remains bodyless after a redirect: ordinary and
+`with_response` calls return `None` data for an empty final body and raise `DecodeError` with the reason
+`forbidden_body` if the final response has content. Use `with_raw_response` or `with_streaming_response` to access it.
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
 `verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
@@ -3429,9 +3457,9 @@ effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
 
 An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
 rejected. The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
-Views share their root's core and its ownership. A borrowed client's auth, cookies, headers and query defaults are
-not merged into SDK requests. Its native event hooks retain HTTPX2 semantics. SDK sends explicitly disable native
-auth and redirect following; the SDK's bounded retry and origin policies govern its calls.
+Views share their root's core and its ownership. A borrowed client's cookies, headers, and query defaults are not
+merged into SDK requests; its `Accept-Encoding` is. Its native auth, event hooks, and redirect setting retain HTTPX2
+semantics, and the SDK's bounded retries resend from the original request.
 
 ## Explicit authentication and request signing
 
@@ -3542,9 +3570,8 @@ is invalid. Ordered mixed anonymous/authenticated alternatives retain their decl
 
 An empty authentication `allowed_origins` permits only the selected server's origin. An origin includes scheme, host,
 and effective port. Arbitrary `request_raw` destinations require explicit allowed origins as well as anonymous opt-in.
-Authentication and redirect allowlists are independent: permitting a redirect does not permit sending credentials
-there. Each hop rebuilds credentials and signatures for its current destination; managed fields from an earlier hop
-are never carried across origins. Generic header/query patches cannot override or delete credential/signature owners.
+Each attempt places credentials and signatures for its destination; a request carrying a key or a signature is never
+redirected, so they never reach another origin. Generic header/query patches cannot override or delete credential/signature owners.
 
 A static provider does not refresh. A custom refresh provider explicitly implements `get`, `invalidate(version)`, and
 `refresh(context)`; the async Protocol makes all three methods async. At most one eligible 401 recovery invalidates the
@@ -3576,7 +3603,7 @@ operation = ClientOperationConfig(
 
 Signers declare their allowed origins and managed header/query names.
 They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
-hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe that hop's
+hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe the attempt's
 unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
 callbacks or sends; arbitrary signer exceptions raise `AuthError` with the reason `signing_failed` and do not retry.
 
@@ -3614,7 +3641,7 @@ def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> by
 ```
 
 This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
-are rebuilt for every attempt and redirect hop. Unsigned calls do not invoke signer/provider callbacks.
+are rebuilt for every attempt. Unsigned calls do not invoke signer/provider callbacks.
 A signer does not receive the body or a digest of it: the SDK never pre-reads or hashes a body for signing.
 
 Credential values, signing inputs, and returned signature values are omitted from their representations and from

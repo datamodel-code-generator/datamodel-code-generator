@@ -166,16 +166,13 @@ class LogicalCallContext:
             return self.snapshot_error(error)
         return error
 
-    def admit_send(self, *, redirect: bool = False) -> None:
+    def admit_send(self) -> None:
         """Record one native send invocation at its boundary."""
         self.check("send")
         self.sends += 1
         if self.session is not None:
             self.session.sends += 1
-        if redirect:
-            self.redirects_followed += 1
-        else:
-            self.attempt_count += 1
+        self.attempt_count += 1
         self.delivery_state = DeliveryState.MAYBE_SENT
 
     def _wait(self, not_before: float) -> float:
