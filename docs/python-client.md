@@ -328,36 +328,6 @@ interpreter's decimal conversion limit raise `ValueError`. A member name that is
 confirmed bytes never exceed the total. `UploadSource` is `bytes | bytearray | memoryview | BinaryIO`, the content an
 upload reads; see [upload helpers](#upload-helpers). The handles are loaded only when first requested.
 
-### Resume state
-
-`ResumeState(*, helper: str, state: JSONValue)` is a small, opaque token: the identity of the helper it belongs to and
-the state that helper continues from, such as a Last-Event-ID. Pagination, polling, and uploads have no token of their
-own: their checkpoints are plain JSON of the server's values, as [checkpoints and resume](#checkpoints-and-resume)
-describes. The helper's identity must be a string without lone surrogates. The representation is
-`ResumeState(version=1)`, each instance equals only itself, and nothing is written to disk automatically: the caller
-saves the token where it likes. `copy.copy` and `copy.deepcopy` return the same instance, which cannot change, and
-`pickle.dumps` raises `TypeError`. A token carries no credential, page, digest, or security binding; a resumed call
-authenticates with the resuming client's own auth.
-
-`state.export()` returns canonical JSON with the members `helper`, `state`, and `version`, which is `1`.
-`import_state(data)` validates the bytes and rejects them in this order:
-
-| Rejected input | Exception |
-|---|---|
-| Not bytes, or not a JSON object | `ResumeStateError(condition='malformed')` |
-| An integer version other than 1, whatever the other members | `ResumeStateError(condition='version')` |
-| Unknown, missing, or mistyped members, or a state nested too deeply | `ResumeStateError(condition='malformed')` |
-
-```python
-from pkg.protocols import ResumeState, import_state
-
-state = ResumeState(helper="helper", state={"cursor": "c2"})
-restored = import_state(state.export())
-```
-
-Errors never include the helper's identity or the state. `import_state` does not compare the helper; the helper that
-resumes the token compares it with its own, and checks the state, before sending anything.
-
 ### Helper options
 
 Every option field defaults to `UNSET`, imported from `pkg.options`. The effective defaults below apply after
@@ -373,18 +343,14 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `interval` | The declared interval, `1` second by default | Positive duration |
 | | `max_wait` | `60` seconds | Positive duration or `None` |
 | `StreamOptions` | `idle_timeout` | The native read timeout | Positive duration or `None` |
-| | `max_line_bytes` | `262144` | Positive integer |
-| | `max_event_bytes` | `1048576` | Positive integer |
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
-| `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
-| | `close_timeout` | `5` seconds | Positive duration |
-| | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
-| | `compression` | `None` | `"deflate"` or `None` |
+| `WSOptions` | `open_timeout`, `idle_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
+| | `max_message_bytes` | `1048576` | Positive integer |
 
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
@@ -424,8 +390,6 @@ client = Client(options=options)
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
 | `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions`, default `UNSET` | Kind-specific options of that helper |
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
-| `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
-| `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -440,29 +404,27 @@ Invalid field values raise `ValueError`.
 |---|---|---|
 | `ProtocolDataError` | `ProtocolError` | `condition: Literal['missing', 'null', 'type', 'value', 'malformed', 'inconsistent'] = 'value'`, `location: Selector \| RequestTarget \| None = None` |
 | `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
-| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: ResumeState \| None = None` |
+| `SessionLimitError` | `ProtocolError` | `kind: Literal['pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress` |
 | `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is always `reconnects` |
-| `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'expired', 'malformed']` |
+| `ResumeStateError` | `ProtocolError` | `condition: Literal['expired']` |
 | `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`; `condition` is always `inconsistent` |
 | `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
 | `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float` |
 | `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
 | `OperationCancelledError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
 | `StreamDecodeError` | `ProtocolDataError` | `sequence: int`, `raw_prefix: bytes` of at most 65536 bytes, `truncated: bool`; `condition` defaults to `malformed` |
-| `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
-| `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
+| `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int` |
+| `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`, of an NDJSON line without a line end; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
 | `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
 | `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
 | `CacheValidatorConflictError` | `ConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `reason` is always `binding_mismatch` |
 | `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
 | `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
-| `WebSocketHandshakeError` | `APIConnectionError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
-| `WebSocketProxyError` | `APIConnectionError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
-| `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
-| `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
+| `WebSocketHandshakeError` | `APIConnectionError` | `condition: Literal['negotiation']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
+| `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `message_id: str \| None = None` |
 | `NonResumableSourceError` | `ConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `reason` `wrong_capability` |
-| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` or `resume_state` |
+| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
@@ -973,7 +935,7 @@ between pages. `resume(None, ...)` starts at the caller's own first request, as 
 available after a pager fails or is closed, and a pager fetching a page raises `ProtocolStateError`.
 
 A pager stopped by `SessionLimitError` or `PaginationCycleError` is resumed from its `checkpoint()` like any other;
-the errors themselves carry no continuation, and a pager's `SessionLimitError.resume_state` is None. A page fetched with
+the errors themselves carry no continuation. A page fetched with
 `page` or `next_page` continues from its own `continuation`. An item limit that stops inside a page leaves the
 continuation before that page, None inside the first one, so resuming with a `max_items` below the page size delivers
 the same items again; raise the limit, or limit pages instead.
@@ -1708,13 +1670,15 @@ explicitly before closing an owning root; a borrowed native client retains its c
 
 ### Framing and events
 
-The body is read as the WHATWG event-stream interpretation reads it: a leading byte order mark is skipped, CR, LF, and
-CRLF end lines, including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF,
-`event` names the type, an `id` containing NUL is ignored, `retry` of ASCII digits sets the reconnection time (more than
-18 digits are ignored), and a blank line dispatches an event that has data. Invalid UTF-8 decodes to replacement
-characters. Each event's data is JSON converted to its schema's type through its converter; data that is not JSON, or
-that the type refuses, raises `StreamDecodeError`
-with at most the event limit or 64 KiB of the data as `raw_prefix`.
+HTTPX2's `EventSource` parses the body as the WHATWG event-stream interpretation reads it: CR, LF, and CRLF end lines,
+including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF, `event` names
+the type, an `id` containing NUL is ignored, and a blank line dispatches an event. The body is decoded as UTF-8 without
+a leading byte order mark, whatever charset it declares, and invalid UTF-8 decodes to replacement characters. An event
+without data is not delivered, though its `id` and `retry` still count; a `retry` that is negative or of more than 18
+digits is ignored. An event over HTTPX2's event size limit, 1 MiB, raises `ProtocolDataError` with the condition
+`malformed` and HTTPX2's `SSEError` as its `cause`. Each event's data is JSON converted to its schema's type through its
+converter; data that is not JSON, or that the type refuses, raises `StreamDecodeError` with at most 64 KiB of the data as
+`raw_prefix`.
 
 An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
 body pointer reads from the JSON data with `{from: body, pointer}`; a missing, null, or non-string body discriminator,
@@ -1724,9 +1688,9 @@ and an unmapped one without `unknown: raw`, raise `StreamDecodeError`. An `error
 The stream ends as its `completion` declares: at the end of the body for `eof`, or at the event whose raw data equals a
 `sentinel` value or whose SSE type is the `event_type` value; neither terminal event is decoded or yielded, and the
 response is released. A body that ends before a sentinel or terminal type raises `StreamInterruptedError` with the
-condition `eof`, and one that cuts a line or an event, under any completion, raises `IncompleteFrameError` with the
-bytes of the cut frame. A connection that breaks while the body is read raises `StreamInterruptedError` with the
-condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
+condition `eof`; an event the body ends in the middle of is discarded, as the event-stream interpretation discards it,
+so under `eof` the stream simply ends and `incomplete_eof` cannot trigger a reconnect there. A connection that breaks while the body is read raises `StreamInterruptedError`
+with the condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
 
 ### Stream limits and sessions
 
@@ -1739,16 +1703,13 @@ then the default below:
 | Limit | Default | None |
 |---|---|---|
 | `StreamOptions.idle_timeout` | The native read timeout | No idle limit |
-| `StreamOptions.max_line_bytes` | 256 KiB per line | Not allowed |
-| `StreamOptions.max_event_bytes` | 1 MiB of data per event | Not allowed |
 | `SessionOptions.total_timeout` | None | No session deadline |
 | `StreamOptions.reconnect` | False | Not allowed |
 | `StreamOptions.max_reconnects` | 5 reconnections, counted across resumes; 0 allows none | Removes the limit |
 | `StreamOptions.max_reconnect_wait` | 60 seconds | No wait limit |
 
-A line or event over its limit raises `ProtocolSizeError` with the kind `line` or `event` before it is kept. Only a
-helper that declares `resume` reconnects: for any other, `StreamOptions(reconnect=True)` raises `ConfigurationError`
-with the reason `missing_metadata`. Options of another type raise `ConfigurationError`.
+Only a helper that declares `resume` reconnects: for any other, `StreamOptions(reconnect=True)` raises
+`ConfigurationError` with the reason `missing_metadata`. Options of another type raise `ConfigurationError`.
 
 ### Checkpoints, resume, and reconnection
 
@@ -1816,8 +1777,9 @@ into the reopen request, read from the open response for `initial` or the latest
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-json -->
 
-The helper then also has `resume`, which takes a `ResumeState` and the options `open` takes; the asyncio one is awaited
-once and returns the stream:
+The helper then also has `resume`, which takes a checkpoint and the options `open` takes; when the reopen operation is
+the helper's own, it also takes the operation's parameters and body again, as pagination's `resume` does. The asyncio
+one is awaited once and returns the stream:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume -->
 <!-- fmt: off -->
@@ -1825,8 +1787,11 @@ once and returns the stream:
 ```python
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1836,6 +1801,9 @@ once and returns the stream:
             self._core,
             _plans.STREAM_0,
             state,
+            (criteria,),
+            body=body,
+            media_type=media_type,
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -1849,8 +1817,8 @@ once and returns the stream:
 with Client() as client, client.protocols.events.live.open() as stream:
     for event in stream:
         handle(event)
-        save(stream.checkpoint().export())
-with Client() as client, client.protocols.events.live.resume(import_state(load())) as stream:
+        save(json.dumps(stream.checkpoint()))
+with Client() as client, client.protocols.events.live.resume(json.loads(load())) as stream:
     for event in stream:
         handle(event)
 ```
@@ -1863,43 +1831,42 @@ its event.
 
 `checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
 that, and while another step runs, it raises `ProtocolStateError`, and on a stream of a helper without resume metadata
-`ConfigurationError` with the reason `missing_metadata`. It saves the cursor, the bindings' values, the
-server's expiry, and, when the reopen operation is the helper's own, the wire values of the caller's first request,
-never events, counts, `retry` times, responses, the session, the call's options, or what its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
-out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
-raises `ConfigurationError` with the reason `wrong_capability`, and so does a stream whose cursor or binding
-value the reopen sends as such a query field, including a property of an exploded form or deepObject query parameter. A cursor
-the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
-raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
-written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
-interruption as its context. Like pagination and polling tokens, it holds no credential and binds to no auth.
+`ConfigurationError` with the reason `missing_metadata`. It returns plain JSON, an object with the `cursor`, the
+`bound` values of the bindings, and the server's `expires_at` as ISO 8601 text or null, never the caller's arguments,
+events, counts, `retry` times, responses, the session, the call's options, or what its auth adds. Like pagination and
+polling checkpoints, it holds no credential and binds to no auth; store it as the call's own data. Errors carry no
+checkpoint: call the stream's `checkpoint()`.
 
-`resume` creates a session of its own and sends the reopen at once: the helper's own operation repeats the caller's
-first request, another one sends only what is written, each binding's value first and then the cursor, whose
-parameter is omitted once the cursor is cleared, so a cleared SSE cursor sends no `Last-Event-ID`. The request then
-returns once its response is a declared success, as `open` does; sequences, reconnections, and the session's deadline
-start afresh, and the reopen counts as no reconnection. Before sending it refuses a value that is not a
-`ResumeState` with `ConfigurationError`, and with `ResumeStateError` another helper's state, an expired one,
-and one that does not fit the helper or whose request does not encode. The saved cursor and bindings' values are written into the saved request and validated with it as a
-saved request is, its body whole, so a value that does not fit its target is refused too; a saved dot segment for a
-path parameter raises `ProtocolDataError` as a server's would.
+`resume` creates a session of its own and sends the reopen at once: the helper's own operation sends the arguments and
+body the caller gives `resume`, another one sends only what is written, each binding's value first and then the cursor,
+whose parameter is omitted once the cursor is cleared, so a cleared SSE cursor sends no `Last-Event-ID`. The request
+then returns once its response is a declared success, as `open` does; sequences, reconnections, and the session's
+deadline start afresh, and the reopen counts as no reconnection. Before sending it refuses a checkpoint that is not JSON
+or does not fit the helper, such as a missing or extra member, an empty event ID, or an expiry of another form, with
+`ConfigurationError(field_path=("state",))`, and an expired one with `ResumeStateError(condition="expired")`. The cursor
+and the bindings' values are written as a server's are: a saved dot segment for a path parameter raises
+`ProtocolDataError`, a value the reopen would send as a credential header or a security scheme's query field,
+including a property of an exploded form or deepObject query parameter, raises `ConfigurationError` with the reason
+`wrong_capability`, and one the request cannot encode, such as an event ID ending in a space, raises the request's
+`DecodeError`.
 
 With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
 read-phase transport failure the shared retry classification retries, or a read timeout the call's own
-`TimeoutOptions(read=...)` set rather than the stream's idle limit, which wins a tie; after a cut frame or an end before
-the declared completion it does so only when `reconnect_on` lists `incomplete_eof`. Each reopen is one more child call
-of the stream's session: its own retries, Retry-After included, follow the call's retry options. Before a reopen the
-stream waits the retry backoff, and at least the last `retry` time the server sent, in the session's deadline. When the
-backoff's cap or that `retry` time is longer than `max_reconnect_wait`, whatever the jitter draws below the cap, or the
-wait is not shorter than the session's remaining time, the wait is not begun and the interruption is raised with its
-`resume_state`. Running out of reconnections raises `StreamResumeExhaustedError` with the kind `reconnects`, with a
-checkpoint as `resume_state` and never as a normal end. A decode, size, remote, idle, or deadline failure, the declared
-end, a reopen answered with an error, and closing never reconnect. Events the server sends again after a reopen are
-delivered again, numbered on: nothing removes duplicates. Every open and reopen reports its own hook events, so an
-interrupted response reports `stream_end` with the outcome `error` before its reopen starts. A `StreamInterruptedError`
-that does not reconnect keeps a checkpoint as `resume_state`, or None before any cursor. No options of a resuming
-helper, the client's, a view's, or the call's, may patch a header or query parameter its reopen writes or fix an
-idempotency key.
+`TimeoutOptions(read=...)` set rather than the stream's idle limit, which wins a tie; after an NDJSON line cut by the
+end of the body or an end before the declared completion it does so only when `reconnect_on` lists `incomplete_eof`.
+Each reopen is one more child call of the stream's session: its own retries, Retry-After included, follow the call's
+retry options. Before a reopen the stream waits the retry backoff, and at least the last `retry` time the server sent,
+in the session's deadline. When the backoff's cap or that `retry` time is longer than `max_reconnect_wait`, whatever the
+jitter draws below the cap, or the wait is not shorter than the session's remaining time, the wait is not begun and the
+interruption is raised. Running out of reconnections raises `StreamResumeExhaustedError` with the kind `reconnects`,
+never a normal end. A cursor a reconnection cannot encode raises `ProtocolDataError` with the condition `value` and the
+cursor's selector, or for an event ID the target it is written to, as `location`, with the interruption as its context,
+and a value it would send as a credential raises `ConfigurationError` with the reason `wrong_capability`. A decode,
+size, remote, idle, or deadline failure, the declared end, a reopen answered with an error, and closing never reconnect.
+Events the server sends again after a reopen are delivered again, numbered on: nothing removes duplicates. Every open
+and reopen reports its own hook events, so an interrupted response reports `stream_end` with the outcome `error` before
+its reopen starts. No options of a resuming helper, the client's, a view's, or the call's, may patch a header or query
+parameter its reopen writes or fix an idempotency key.
 
 ### Stream generation checks
 
@@ -2028,9 +1995,7 @@ containing LF could never match, so it fails generation.
 last one raise `IncompleteFrameError` with their count as `buffered_bytes`. With `allow_eof`, those bytes are decoded as
 the last record, a sentinel included; a body that ends with a line end ends the same way under both.
 
-A record counts toward both `StreamOptions.max_line_bytes` and `max_event_bytes`, without its LF or the CR of a CRLF;
-one over the smaller limit raises `ProtocolSizeError` with that limit's kind, `line` or `event`, before it is kept.
-Bytes are searched for a line end at most twice, so a line split over many reads costs time linear in its length.
+A line split over many reads is joined once its line end arrives, so it costs time linear in its length.
 
 ### NDJSON generation checks
 
@@ -2057,8 +2022,9 @@ and resumption checks are those of SSE helpers, and an NDJSON cursor is always a
 An enabled `websocket` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one
 method, `connect`. Its channel is a GET operation, whose handshake request the helper sends: the operation gives the
 URL, the parameters, the servers, and the security. `connect` takes the operation's parameters as keywords, then
-`ws_options`, `options`, and `session_options`, and returns a `WebSocketSession[S, R]`, or with one `await` an
-`AsyncWebSocketSession[S, R]`, once the server accepted the handshake:
+`ws_options`, `options`, and `session_options`. On `Client` it returns a `WebSocketSession[S, R]` once the server
+accepted the handshake; `with` or `close()` closes it. On `AsyncClient` it returns an async context manager: `async
+with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which leaving the block closes:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
 <!-- fmt: off -->
@@ -2092,6 +2058,11 @@ with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as se
     session.send(ClientMessage(text="hi"))
     for message in session:
         print(message.sequence, message.data)
+
+async with AsyncClient() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
+    await session.send(ClientMessage(text="hi"))
+    async for message in session:
+        print(message.sequence, message.data)
 ```
 
 ```json
@@ -2112,30 +2083,32 @@ is sent as compact UTF-8 JSON and received through the schema's codec, `codec: u
 `codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
 bytes, and only JSON messages may choose. `S` is the send schema's argument type, its model type `T`, or `str` or
 `bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
-subprotocols in order (`[]` by default), and `compression` (`false` by default) permits
-`WSOptions(compression="deflate")`.
+subprotocols in order (`[]` by default). `compression` is still accepted and has no effect: HTTPX2 WebSockets do not
+negotiate `permessage-deflate`.
 
-`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, `WSOptions`, and `WebSocketTransportOptions` are
-imported from `pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. A package without WebSocket helpers
-never imports the WebSocket library.
+`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, and `WSOptions` are imported from
+`pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. Sessions run on `httpx2.websockets`, so generation
+prints `httpx2[ws]` among the packages to add for a package with WebSocket helpers; other packages never import it.
 
 ### Handshakes
 
-The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline. Only a
-101 response whose headers validate opens the session: any other response is read up to `max_error_body_bytes` and
-raises the `APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an
-undeclared status, so 101 need not be declared. Received refusals are terminal, including redirects and 401s; a refused
-upgrade never invalidates or refreshes credentials. Only an initial transport failure proven `NOT_SENT` before session
-handover may use the call's existing retry policy. A handshake that may have reached the server is never sent again.
+The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline, sent as
+a GET with the upgrade headers through the client's HTTP client: its transport, proxy, TLS, and `event_hooks` apply
+as to any call. Only a 101 response whose subprotocol the helper offered opens the session; HTTPX2 checks nothing else
+of it, as its own WebSocket client does. Any other response is read up to `max_error_body_bytes` and raises the
+`APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an undeclared
+status, so 101 need not be declared. Received refusals are terminal, including redirects, which a handshake never
+follows, and 401s; a refused upgrade never invalidates or refreshes credentials. Only an initial transport failure
+proven `NOT_SENT` before session handover may use the call's existing retry policy. A handshake that may have reached
+the server is never sent again.
 
-The handshake's limiter permit is held for the whole session and released when it closes or fails. URLs keep their
-`https` or `http` server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one
-of them, or `connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the
-selected one and `session.response` the 101 response. Credentials are sent as the operation's security declares,
-only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
-`Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError`
-with the reason `managed` before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and
-the session's end emits `stream_end`.
+The handshake's limiter permit is held for the whole session and released when it closes or fails. When the helper
+offers subprotocols, the server must select one of them, or `connect` raises `WebSocketHandshakeError` with the
+condition `negotiation`; `session.subprotocol` is the selected one and `session.response` the 101 response.
+Credentials are sent as the operation's security declares, only to the server's origin or the security context's
+allowed origins. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
+request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent. The
+handshake's hooks end with the call outcome `handed_off`, and the session's end emits `stream_end`.
 
 ### Sessions
 
@@ -2144,67 +2117,54 @@ the session's end emits `stream_end`.
 | `send(value)` | Encodes one message and sends it as one message of the declared frame |
 | `receive()` | Returns the next `Message[R]`: `data`, `frame` (`text` or `binary`), `sequence` from 1, and `raw` bytes |
 | Iteration | Yields messages until the server closes normally |
-| `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
+| `ping(payload=b"")` | Sends a ping of at most 125 bytes, a random one when empty, and returns a `PingReceipt` with the pong's `latency` in seconds |
 | `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
-| `with`, `async with` | Closes the session on exit |
+| `with` | Closes a synchronous session on exit; an asyncio session is the `async with` block of its `connect` |
 | `progress` | The session's `messages_sent` and `messages_received` |
 
-The session owns the connection until it closes or fails; closing the client leaves an open session to its owner.
-One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
-sends go one at a time in arrival order. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves
-the session usable, since whole messages are read; a cancelled `send` or `ping` fails the session, since a message may
-be half written. A received message of another frame kind, or one that does not decode, raises
-`StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's closure
-raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for a normal closure that alone
-ends iteration; after it, `receive`, `send`, and `ping` raise it again. After any other failure, every step raises
-`ProtocolStateError`, as it does after `close()`. Representations
-never show messages, URLs, headers, or close reasons.
+An HTTPX2 `WebSocketSession` or `AsyncWebSocketSession` carries the connection: it reads in the background, answers
+pings, and sends keepalive pings. The session owns it until it closes or fails, but the connection belongs to the HTTP
+client's pool. Closing a `Client` that created its HTTP client closes its open sessions first, as their `close()` does,
+after which every step raises `ProtocolStateError`; close sessions before closing a borrowed HTTP client, since closing
+a socket does not wake the session's reader on every platform. Closing an `AsyncClient` closes the connections of its
+open sessions, whose next step then fails. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while
+sends, which HTTPX2 writes one at a time, may run beside it. Cancelling the task of an asyncio `receive`, as
+`asyncio.wait_for` does, leaves the session usable, since HTTPX2 queues whole messages; a cancelled `send` or `ping`
+fails the session, since a message may be half written. An `AsyncWebSocketSession` runs the HTTPX2 session in the task
+that entered its `connect` block, as HTTPX2's task group must end in the task that started it, and closes it when the
+block ends; tasks the block starts may use and close it meanwhile. A failure the block raises, even an exit such as
+`SystemExit`, leaves it unwrapped; a failure of HTTPX2's background tasks cancels the block and leaves it as
+`APIConnectionError` with the phase `read`. A received message of another frame kind, or one that does not decode,
+raises `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's
+closure raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for 1000 and 1001, the
+closures that alone end iteration; the session answers it with the same code and reason, and after it `receive`, `send`,
+and `ping` raise it again. A `send` or `ping` on a connection that is already closing, before `receive` reported why,
+raises `WebSocketClosedError` without a code. After any other failure, every step raises `ProtocolStateError`, as it
+does after `close()`. Representations never show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 
 Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below. The session's optional total budget uses the client's `Clock`; native socket operations
-receive the remaining duration as their timeout:
+then the default below. The session's optional total budget uses the client's `Clock`; native waits receive the
+remaining duration as their timeout:
 
 | Limit | Default | None |
 |---|---|---|
-| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
+| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, write, and pool timeouts and the deadline | No open limit |
 | `WSOptions.idle_timeout` | The native read timeout | No idle limit |
-| `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
-| `WSOptions.max_queue` | 16 frames: the high-water mark of received frames, above which reading pauses | Not allowed |
-| `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
-| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
-| `WSOptions.close_timeout` | 5 seconds | Not allowed |
+| `WSOptions.max_message_bytes` | 1 MiB per message, HTTPX2's `max_message_size_bytes` | Not allowed |
+| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each, HTTPX2's keepalive settings; `pong_timeout` also bounds `ping()` | No keepalive pings |
 | `SessionOptions.total_timeout` | None | No session budget |
 
-A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
-1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason `phase_timeout` and the
-phase `read` and closes with 1001, and a missed pong closes with 1011 and raises `WebSocketClosedError` with `clean`
-false. The session deadline bounds every wait and raises `APITimeoutError` with the reason `deadline_exceeded`. A send
-that sent nothing before its timeout raises `APITimeoutError` with the reason `phase_timeout` and the phase `write` and
-keeps the session open; one that may have reached the server raises
-`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A message is
-written whole: in both sessions, the send timeout bounds the wait for earlier sends and is checked before the write
-starts, and a write that started runs until it completes or the connection fails; in an `AsyncWebSocketSession` the
-session deadline also bounds the write, and a write it cuts short raises `DeliveryUnknownError`. A send to a connection
-the server closed raises `WebSocketClosedError`. Sessions never reconnect.
-`WSOptions(compression="deflate")` for a helper that does not permit it raises `ConfigurationError` with the reason
-`invalid_value`. Options of another type raise `ConfigurationError`.
-
-### Connectors and transports
-
-Without a connector, the client opens its connections with the `websockets` library, which a package with WebSocket
-helpers depends on, so generation prints it among the packages to add. `ProtocolClientOptions(websocket_connector=...)`
-borrows a `WebSocketConnector`, or an `AsyncWebSocketConnector` for `AsyncClient`, which is never closed: its `open`
-receives a `WebSocketOpenRequest` with the `ws` or `wss` URL, the headers, and the offered subprotocols, the attempt's
-context, the resolved `WSOptions`, and the resolved transport settings, and opens one connection or raises
-`HandshakeResponse` with a response other than 101, which the client turns into the call's result. A connector of the
-other kind raises `ConfigurationError` with the reason `wrong_capability` when the client is constructed.
-
-`websocket_transport=WebSocketTransportOptions(...)` sets the `ssl_context` of the server connection, an HTTP or HTTPS
-`proxy` URL, which the representation hides, the `proxy_ssl_context` of an HTTPS proxy, and `trust_env`, which lets
-environment proxies apply. A proxy that refuses or breaks the tunnel raises `WebSocketProxyError`; SOCKS proxies are
-not supported.
+A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after HTTPX2 closed the
+connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
+`phase_timeout` and the phase `read` and closes with 1001, as does a ping whose pong does not arrive within the pong
+timeout; another failure closes with 1011. A missed keepalive pong makes HTTPX2 close with 1011, and the next `receive` raises
+`APIConnectionError` with the phase `read`. The session deadline bounds every wait and raises `APITimeoutError` with
+the reason `deadline_exceeded`. Messages are written whole by HTTPX2, without a timeout of their own; a send that may
+have reached the server raises `DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is
+never sent again. Received messages wait in HTTPX2's queue until they are read. Sessions never reconnect. Options of
+another type raise `ConfigurationError`.
 
 ### WebSocket generation checks
 
@@ -2886,6 +2846,13 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
+- **Cookies.** A cookie parameter with a single value is sent as it is, without percent-encoding, which is how HTTP
+  clients send cookies and how the generated server reads them. A cookie cannot carry `;`, `,`, `"`, `\`,
+  whitespace, control characters, or non-ASCII text (RFC 6265), so such a value fails with a request `DecodeError`
+  of the reason `unencodable`, with a `ParameterEncodingError` cause, before anything is sent, instead of arriving
+  cut short. Encode a value that needs those characters yourself, for example as Base64, and decode it in the
+  service. Such a parameter whose name is not a token stops generation with an error. Array and object cookie
+  parameters send one cookie for each item or property, percent-encoded in the `form` style.
 - **Headers.** Header values are converted through their native types. Read a body without any model with
   `with_raw_response` or `with_streaming_response` instead.
 
@@ -3307,7 +3274,10 @@ The JSON encoding allocation scales with the call's input size independently of 
 fixes its boundary once per logical call and can replay only if every part can replay.
 
 A binary body, and the content of a multipart `FilePart`, is one of the inputs below. Each is consumed in exactly
-one way, and nothing is buffered or spooled to make a one-shot input replayable.
+one way, and nothing is buffered or spooled to make a one-shot input replayable. A multipart `FilePart` takes only
+the synchronously readable inputs: `bytes`, a binary file object with a synchronous `read`, a path, or an iterable of
+`bytes`. HTTPX2 reads multipart files synchronously, so an async file object or an async iterable given as a
+`FilePart`, in either client, raises a request `DecodeError` with the reason `unencodable` before anything is sent.
 
 | Input | Calls | How it is read | Framing | Sent again |
 | --- | --- | --- | --- | --- |
@@ -3315,8 +3285,8 @@ one way, and nothing is buffered or spooled to make a one-shot input replayable.
 | Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there when it can seek, else until it returns no bytes. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
 | `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length`; chunked when its file cannot seek, such as a FIFO | Yes; no when its file cannot seek |
 | Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
-| Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
-| Async iterable of `bytes` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
+| Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file; not as a `FilePart` | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
+| Async iterable of `bytes`; not as a `FilePart` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 
 A `str` is not read as a path. `str`, `bytearray`, `memoryview`, synchronous text-mode files, a synchronous file
 that is already closed, and a path that cannot be opened raise a request `DecodeError` with the reason `unencodable`
@@ -3335,7 +3305,8 @@ file:
 
 | File | Async call |
 | --- | --- |
-| A path given as a body or `FilePart`, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A path given as a body, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A path given as a `FilePart`, which the call opens | Opened and closed in a worker thread; HTTPX2 reads it on the event loop, as it reads multipart files. |
 | A synchronous file object the caller opened | `tell`, `seek` and each `read` of at most 64 KiB block the event loop, as HTTPX2 reads multipart files. |
 | An async file object | `await read(65536)` on the event loop; the file decides where its I/O runs. |
 | `stream_to(path)` | The temporary file is created, written about 64 KiB at a time, moved to the target, or removed in a worker thread. |
@@ -3354,6 +3325,23 @@ sending. An iterable, an async file, an async iterable or a file that cannot see
 call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
 part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
 `cause`.
+
+### Multipart bodies
+
+A `MultipartBody` (`AsyncMultipartBody` for an asyncio client) is sent through HTTPX2's `files=` encoding, its parts
+in their order: each `FieldPart` and `FilePart` keeps its name, filename, media type and extra headers, and parts may
+repeat a name. A field's value goes through its member's model codec, a repeated member sends a part for each item,
+a styled member the parts its style gives, and a media type the member's encoding declares must cover the one a part
+names. The SDK does not check parts against the schema: a missing, repeated, undeclared or read-only member is sent as
+given and left to the server's model. HTTPX2 refuses a part header that is no token or holds a line break; that, and a
+part that is not a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason
+`unencodable` before sending; so does a `FilePart` whose content is not read synchronously, such as an async file or
+an async iterable, in either client. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without
+parts is sent empty, without a Content-Type, as HTTPX2 sends it. HTTPX2 chooses the boundary.
+
+A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
+bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a
+multipart body or a message, raises `DecodeError` with the reason `invalid_framing`.
 
 ```python
 from pathlib import Path

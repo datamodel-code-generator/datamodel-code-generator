@@ -45,6 +45,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_check(self, **arguments: object) -> None:
             record("post_check", arguments)
 
+        def post_note(self, **arguments: object) -> None:
+            record("post_note", arguments)
+
         def upload(self, **arguments: object) -> None:
             record("upload", arguments)
 

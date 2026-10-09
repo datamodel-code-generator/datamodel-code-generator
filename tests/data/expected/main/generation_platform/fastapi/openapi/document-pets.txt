@@ -33,10 +33,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Tags"
             }
           },
@@ -45,7 +52,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/FieldPetsGetQueryKindParameter"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FieldPetsGetQueryKindParameter"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           },
           {
@@ -53,8 +68,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "date-time",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Since"
             }
           },
@@ -63,16 +85,32 @@
             "in": "header",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "X-Request-Id"
             }
           },
           {
             "name": "session",
             "in": "cookie",
+            "required": false,
             "schema": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session"
             }
           }
         ],

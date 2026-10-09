@@ -1,0 +1,37 @@
+"""Build the router and the application of every selected operation from the services that implement them."""
+
+{{ imports }}
+
+ROUTES: {{ final }} = {{ routes }}
+INFO: {{ final }}[{{ options }}] = {{ info }}
+
+
+{{ build_signature }}
+    """Register every operation on a new router, literal paths first."""
+    return {{ build }}(
+        ROUTES,
+        services={{ services }},
+        dependencies=dependencies,
+        operation_dependencies=operation_dependencies,
+        prefix=prefix,
+    )
+
+
+{{ app_signature }}
+    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
+    app.include_router(
+        build_router(
+{%- for name in arguments %}
+            {{ name }}={{ name }},
+{%- endfor %}
+        )
+    )
+    return app
+
+
+__all__ = [
+{%- for name in exports %}
+    {{ name }},
+{%- endfor %}
+]

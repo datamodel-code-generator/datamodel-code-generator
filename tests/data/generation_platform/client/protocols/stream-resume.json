@@ -237,5 +237,21 @@
       "delivery": "at_least_once",
       "bindings": [{"target": {"in": "query", "name": "scope"}, "value": {"literal": {"api_key": "SERVER_KEY"}}}]
     }
+  },
+  "searches.keyed": {
+    "kind": "sse",
+    "operation": "/paths/~1search-feed/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Mark"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/scope"},
+      "missing": "inherit",
+      "null": "error",
+      "write": {"in": "querystring", "name": "criteria", "pointer": ""},
+      "reopen_operation": "/paths/~1search-feed/post",
+      "delivery": "at_least_once"
+    }
   }
 }

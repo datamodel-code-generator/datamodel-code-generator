@@ -48,7 +48,6 @@ _OCCURRENCES: Final = ("single", "all")
 _PARAMETER_LOCATIONS: Final = ("path", "query", "header", "cookie")
 _POINTER: Final = re.compile(r"(?:/(?:[^~/]|~[01])*)*")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
 _SURROGATES: Final = "A wire string must not contain lone surrogates"
 
@@ -59,13 +58,6 @@ def record_string(value: object, name: str) -> str:
         return value
     msg = f"{name} must be a string"
     raise TypeError(msg)
-
-
-def wire_string(value: object, name: str) -> str:
-    """Return a record field that must be UTF-8 encodable wire text, refusing lone surrogates with ValueError."""
-    if (text := record_string(value, name)).isascii() or _SURROGATE.search(text) is None:
-        return text
-    raise ValueError(_SURROGATES)
 
 
 def record_instance(value: object, kinds: type | tuple[type, ...], message: str) -> None:

@@ -7,29 +7,23 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas32_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1search/get',
-    '/paths/~1spread/get',
-    '/paths/~1raw/post',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1search/get': Sequence[Dependency],
-        '/paths/~1spread/get': Sequence[Dependency],
-        '/paths/~1raw/post': Sequence[Dependency],
+        'get__search': Sequence[params.Depends],
+        'get__spread': Sequence[params.Depends],
+        'post__raw': Sequence[params.Depends],
     },
     total=False,
 )
@@ -38,18 +32,12 @@ OperationDependencies = TypedDict(
 class GetSearch:
     """Plans of the get__search operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__search',
-        key='/paths/~1search/get',
-        service='untagged',
-        keywords=('query', 'theme', 'prefs'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__search."""
 
-        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | Unset
-        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | Unset
+        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | None
+        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -89,22 +77,16 @@ class GetSearch:
 class GetSpread:
     """Plans of the get__spread operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__spread',
-        key='/paths/~1spread/get',
-        service='untagged',
-        keywords=('extra', 'window', 'jar', 'crumbs', 'x_counts', 'x_tallies'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__spread."""
 
-        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | Unset
-        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | Unset
-        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | Unset
-        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | Unset
-        x_counts: dict[str, int] | Unset
-        x_tallies: dict[str, int] | Unset
+        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | None
+        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | None
+        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | None
+        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | None
+        x_counts: dict[str, int] | None
+        x_tallies: dict[str, int] | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -198,18 +180,12 @@ class GetSpread:
 class PostRaw:
     """Plans of the post__raw operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='post__raw',
-        key='/paths/~1raw/post',
-        service='untagged',
-        keywords=('querystring_body', 'note'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of post__raw."""
 
-        querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | Unset
-        note: str | Unset
+        querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | None
+        note: str | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

@@ -17,7 +17,9 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
+from ..client.client import request_decode_error
 from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
+from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.unset import UNSET
@@ -1059,15 +1061,15 @@ def _ignored(
     """Confirm an append by its success response alone."""
 
 
-def _sized(
-    core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int
-) -> tuple[object, ...]:
+def _sized(plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int) -> tuple[object, ...]:
     """Return the create arguments with the content's size where the helper declares it, built as a caller's value."""
     if (position := plan.size_position) is None:
         return arguments
-    create = plan.create
-    wire = tuple(size if index == position else UNSET for index in range(len(create.parameters)))
-    value = core.restored_request(create, wire, None)[0][position]
+    spec = plan.create.parameters[position]
+    try:
+        value = spec.restored(size)
+    except request_errors(spec.codec) as error:
+        raise request_decode_error(plan.create, (spec.plan.location, spec.plan.name), error) from None
     return (*arguments[:position], value, *arguments[position:])
 
 
@@ -1088,7 +1090,7 @@ def start_upload(  # noqa: PLR0913
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
-    handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 
@@ -1109,7 +1111,7 @@ async def astart_upload(  # noqa: PLR0913
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
-    await handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 

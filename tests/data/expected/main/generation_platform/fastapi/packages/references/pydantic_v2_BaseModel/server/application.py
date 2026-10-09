@@ -6,11 +6,11 @@
 from collections.abc import Sequence
 from typing import Any, Final
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, params
 
 from . import routes as routes_1
-from ._generated.contract import OperationDependencies, OperationKey
-from ._runtime.server.application import Dependency, build
+from ._generated.contract import OperationDependencies
+from ._runtime.server.application import build, error_handlers, validation_error_handler
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -32,11 +32,11 @@ def build_router(
     *,
     service: Service[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
         services={'service': service},
@@ -55,7 +55,11 @@ def create_app(
     prefix: str = "",
     **fastapi_kwargs: Any,
 ) -> FastAPI:
-    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    """Create the application with every operation, passing the other keyword arguments to FastAPI.
+
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    """
+    fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
@@ -72,10 +76,9 @@ __all__ = [
     'AsyncAuthorize',
     'Authorize',
     'Credentials',
-    'Dependency',
     'OperationDependencies',
-    'OperationKey',
     'RequirementSets',
     'build_router',
     'create_app',
+    'validation_error_handler',
 ]

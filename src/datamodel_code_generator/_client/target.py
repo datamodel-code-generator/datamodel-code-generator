@@ -62,7 +62,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.sockets import SocketSpec
-    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -73,7 +72,8 @@ if TYPE_CHECKING:
         TypeUseId,
     )
 
-DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
+HTTPX2: Final = "httpx2>=2.13.0"
+DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
@@ -121,8 +121,8 @@ class ClientTarget:
             ) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
-        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request, wire)
-        opened, messages, socket_problems = socket_uses(protocols, plan, request, wire)
+        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+        opened, messages, socket_problems = socket_uses(protocols, plan, request)
         uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
@@ -135,13 +135,13 @@ class ClientTarget:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         coded = frozenset(item.use for item in codecs.uses)
         plan, named = plan_fields(plan, facts, coded)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         if refused := (
@@ -172,11 +172,10 @@ class ClientTarget:
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
-        fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
+            WEBSOCKETS if sockets else HTTPX2,
             *DEPENDENCIES,
-            *((WEBSOCKETS,) if sockets else ()),
             *BACKEND_DEPENDENCIES.get(backend, ()),
             *webhook_dependencies(webhooks),
             *model_dependencies(request.models),
@@ -321,35 +320,6 @@ class _HelperDigests:
             "operations": [],
             "schemas": [event.schema for event in events],
             "type_uses": [self.contract(event.use) for event in events],
-        })
-
-    def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
-        """Return the digest of a stream helper's contract closure: its signature, settings, operations, and schemas.
-
-        Each event and error use contributes its type and contract, so a changed schema changes the digest, and a helper
-        reopening its stream with another operation adds that operation.
-        """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
-        signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "events": [(key, self.type(use)) for key, use in spec.events],
-            "errors": [(key, self.type(use)) for key, use in spec.errors],
-            "settings": settings,
-        }
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [
-                self.request.documents.operation(item.contract.id)
-                for item in (operation, *(() if spec.reopen is None or spec.own else (spec.reopen,)))
-            ],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in spec.uses],
         })
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:

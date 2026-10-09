@@ -84,10 +84,9 @@ from tests.data.python.client_runtime import (
     run,
 )
 from tests.data.python.client_signatures import keywords, signatures
-from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
-from tests.data.python.client_stream_resume import stream_checkpoint_bodies, stream_resume
+from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_unions import copied_unions, split_unions, unions
@@ -190,6 +189,10 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
+    exchange.respond(json_response(200, pets))
+    for label, value in (("cookie as given", "a%20b+c"), ("cookie delimiter", "a;b"), ("cookie non-ASCII", "caf\u00e9")):
+        cookie = argument(package, "listPets", "cookie", "session", value)
+        record(lines, label, lambda cookie=cookie: api.pets.list_pets(x_trace=trace, session=cookie))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
     response = record(lines, "list response", lambda: api.pets.with_response.list_pets(x_trace=trace))
     info = response.info
@@ -374,7 +377,7 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     runtime = Path(package.__file__).parent / "_runtime" / "protocols"
-    optional = ("client", "client_options", "caches", "names", "options", "origins", "websocket_types")
+    optional = ("client", "client_options", "caches", "names", "options", "origins")
     (options,) = _modules(package, "options")
     option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
     lines.extend((
@@ -906,11 +909,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
-    "stream-checkpoint-bodies": ("stream-resume", ("msgspec.Struct",), stream_checkpoint_bodies),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
-    "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),
-    "socket-connector-outcomes": ("sockets", ("pydantic_v2.BaseModel",), socket_connector_outcomes),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
