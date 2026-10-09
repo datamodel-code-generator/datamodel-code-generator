@@ -7,9 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import FieldLookupGetResponse as _dcg_type_2
-from models import FieldSearchGetResponse as _dcg_type_0
-from models import FieldSearchGetResponse200XNextHeader as _dcg_type_1
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
@@ -17,10 +15,10 @@ from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import Unset
 from ...responses import ResponseInfo
 
-SearchResponse: TypeAlias = _dcg_type_0
+SearchResponse: TypeAlias = models.FieldSearchGetResponse
 
 
-_SEARCH_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_SEARCH_HEADERS: Final[ResponseHeaders[models.FieldSearchGetResponse200XNextHeader, Unset]] = ResponseHeaders(
     'search',
     frozenset({'200'}),
     (
@@ -49,9 +47,9 @@ def decode_search_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | Unset:
+) -> models.FieldSearchGetResponse200XNextHeader | Unset:
     """Decode one declared response header of search from a response's metadata."""
     return _SEARCH_HEADERS.decode(info, name)
 
 
-LookupResponse: TypeAlias = _dcg_type_2
+LookupResponse: TypeAlias = models.FieldLookupGetResponse

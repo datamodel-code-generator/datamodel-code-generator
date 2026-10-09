@@ -42,6 +42,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedTypeContractBatch,
     GenericType,
     GraphObjectId,
+    HintText,
     IgnoredDeclaration,
     ImportedExpression,
     ImportedType,
@@ -55,6 +56,7 @@ from datamodel_code_generator._target_contract import (
     MetadataCall,
     ModelArtifactAddress,
     ModelFieldFacts,
+    ModelHint,
     NoneType,
     OpaqueBackendValue,
     OperationContract,
@@ -77,7 +79,8 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     WireDeclaration,
 )
-from datamodel_code_generator.imports import IMPORT_ANY, Import
+from datamodel_code_generator._target_module import TypeComposer
+from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model.base import UNDEFINED, DataModel, DataModelFieldBase
@@ -86,6 +89,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
+from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
@@ -214,6 +218,26 @@ _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
 }
 _SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
 _PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
+_SLOT: Final = "\x00"
+_CONTAINERS: Final = {
+    "frozen_set": "is_frozen_set",
+    "set": "is_set",
+    "sequence": "is_sequence",
+    "list": "is_list",
+    "mapping": "is_mapping",
+    "dict": "is_dict",
+}
+_STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
+_WRAPPED: Final = frozenset({"alias", "root"})
+_ALONE: Final[dict[str, object]] = {
+    **dict.fromkeys(_CONTAINERS.values(), False),
+    "is_optional": False,
+    "dict_key": None,
+    "data_types": [],
+    "reference": None,
+    "parent": None,
+    "children": [],
+}
 
 
 class _UnsupportedError(Exception):
@@ -914,19 +938,28 @@ def _python_literal(text: str) -> object:
         raise ValueError(text) from error
 
 
-def _ordered_union(members: tuple[FinalPythonType, ...], *, preserve_order: bool) -> FinalPythonType:
+def _ordered_union(
+    members: tuple[TypeView, ...],
+    *,
+    preserve_order: bool,
+    hint: Callable[[tuple[TypeView, ...]], ModelHint],
+    discriminator: UnionDiscriminator | None = None,
+) -> TypeView:
+    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself."""
     flattened = tuple(
         member for value in members for member in (value.members if isinstance(value, UnionType) else (value,))
     )
     unique = tuple(dict.fromkeys(flattened))
-    discriminator = next(
+    discriminator = discriminator or next(
         (value.discriminator for value in members if isinstance(value, UnionType) and value.discriminator is not None),
         None,
     )
-    return unique[0] if len(unique) == 1 else UnionType(unique, preserve_order, discriminator)
+    if len(unique) == 1:
+        return unique[0]
+    return UnionType(unique, preserve_order, discriminator, hint(unique))
 
 
-def _has_null(value: FinalPythonType) -> bool:
+def _has_null(value: TypeView) -> bool:
     members = value.members if isinstance(value, UnionType) else (value,)
     return any(isinstance(member, NoneType) for member in members)
 
@@ -995,6 +1028,8 @@ class _Binder:
         manager = parser.data_type_manager
         self.serialize_as_any = bool(manager.use_serialize_as_any) and issubclass(manager.data_type, PydanticV2DataType)
         self.overrides = parser.config.import_overrides or {}
+        self.hints = _Hints(manager.data_type)
+        self.projectors: dict[tuple[Direction, bool], _Projector] = {}
         self.finals: dict[tuple[int, Direction], Reference | None] = {}
         self.declaration_types = {
             _declaration(key): value
@@ -1081,8 +1116,21 @@ class _Binder:
             return model.fields[0].data_type
         return None
 
-    def projector(self, direction: Direction) -> _Projector:
-        return _Projector(self, direction)
+    def root(self, model: DataModel) -> DataType | None:
+        """Return the type an alias or root model stands for: its field's, or that of the model its reuse inherits."""
+        while (
+            not model.fields
+            and len(model.base_classes) == 1
+            and (base := model.base_classes[0].reference) is not None
+            and (final := self.final(base)) is not None
+        ):
+            model = _source(final)
+        return model.fields[0].data_type if len(model.fields) == 1 else None
+
+    def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
+        if (projector := self.projectors.get((direction, inline))) is None:
+            projector = self.projectors[direction, inline] = _Projector(self, direction, inline=inline)
+        return projector
 
     def resolve_import(self, import_: Import) -> Import:
         if import_.from_ == "__future__" or (module := self.overrides.get(import_.import_)) is None:
@@ -1090,12 +1138,178 @@ class _Binder:
         return replace(import_, from_=module)
 
 
-class _Projector:
-    """Project final DataTypes of one direction into contract type values."""
+def _identity(import_: Import) -> tuple[str | None, str]:
+    return import_.from_, import_.import_
 
-    def __init__(self, binder: _Binder, direction: Direction) -> None:
+
+def _differs(value: TypeView) -> bool:
+    """Return whether a type's static spelling differs from its annotation."""
+    hint = getattr(value, "hint", None)
+    return hint is not None and hint.static is not hint.annotation
+
+
+class _Hints:
+    """Spell projected types with the model generator's own type rendering, leaving model and import names open.
+
+    A leaf renders a copy of its DataType, and a composite renders the configured type class over the spellings of its
+    parts, as the model's type hint composes them. A generated symbol or an imported name is a slot that a target
+    module names; the names the rendering writes as they are, such as typing constructs, are the hint's imports.
+    """
+
+    def __init__(self, hint_type: type[DataType]) -> None:
+        self.hint_type = hint_type
+        self.composer = TypeComposer(hint_type)
+        self.texts: dict[tuple[str, tuple[tuple[str | None, str], ...]], HintText] = {}
+        self.slots: dict[object, str] = {}
+        self.values: list[SymbolId | Import] = []
+        self.fixed: dict[Import, None] = {}
+
+    def slot(self, value: SymbolId | Import) -> str:
+        key = value if isinstance(value, int) else _identity(value)
+        if (slot := self.slots.get(key)) is None:
+            slot = self.slots[key] = f"{_SLOT}{len(self.values)}{_SLOT}"
+            self.values.append(value if isinstance(value, int) else Import(import_=value.import_, from_=value.from_))
+        return slot
+
+    def text(self, encoded: str, imports: Iterable[Import]) -> HintText:
+        """Return the hint text of a rendering, one record for each distinct text and its fixed names."""
+        fixed = tuple(dict.fromkeys(_identity(item) for item in imports))
+        if (found := self.texts.get(key := (encoded, fixed))) is None:
+            names = tuple(Import(import_=name, from_=module) for module, name in fixed)
+            self.fixed.update(dict.fromkeys(names))
+            pieces = encoded.split(_SLOT)
+            found = self.texts[key] = HintText(
+                tuple(self.values[int(piece)] if index % 2 else piece for index, piece in enumerate(pieces) if piece),
+                names,
+            )
+        return found
+
+    def hint(
+        self, annotation: tuple[str, Iterable[Import]], static: tuple[str, Iterable[Import]] | None = None
+    ) -> ModelHint:
+        spelled = self.text(*annotation)
+        return ModelHint(spelled, spelled if static is None else self.text(*static))
+
+    def of(self, value: TypeView) -> ModelHint:
+        """Return the hint of a projected type, deriving that of a generated symbol, an import or a builtin."""
+        if isinstance(value, GeneratedSymbolType | ImportedType | BuiltinType | NoneType):
+            return self.hint(self.spelled(value, static=True))
+        assert value.hint is not None
+        return value.hint
+
+    def spelled(self, value: TypeView, *, static: bool) -> tuple[str, tuple[Import, ...]]:
+        """Return a projected type's spelling as rendering text, with the names it writes as they are."""
+        match value:
+            case GeneratedSymbolType():
+                return self.slot(value.symbol), ()
+            case ImportedType():
+                return self.slot(value.import_) + "".join(f".{part}" for part in value.qualified_suffix), ()
+            case BuiltinType():
+                return value.name, ()
+            case NoneType():
+                return "None", ()
+            case _:
+                pass
+        hint = cast("ModelHint", value.hint)
+        text = hint.static if static else hint.annotation
+        return "".join(part if isinstance(part, str) else self.slot(part) for part in text.parts), text.imports
+
+    def compose(
+        self,
+        style: DataType,
+        *,
+        base: str = "",
+        members: tuple[str, ...] = (),
+        key: str | None = None,
+        **flags: object,
+    ) -> tuple[str, tuple[Import, ...]]:
+        """Render the configured type class over spelled parts, in the style of the DataType they stand for."""
+        values = tuple((name, getattr(style, name)) for name in _STYLE)
+        return self.composer.compose(values, base=base, members=members, key=key, **flags)
+
+    def composed(
+        self,
+        style: DataType,
+        *,
+        base: TypeView | None = None,
+        members: tuple[TypeView, ...] = (),
+        key: TypeView | None = None,
+        container: str | None = None,
+        **flags: object,
+    ) -> ModelHint:
+        """Return the hint a composite renders to, statically and as an annotation, from its parts' hints."""
+        if container is not None:
+            flags[container] = True
+        parts = tuple(part for part in (base, key, *members) if part is not None)
+        variants: list[tuple[str, tuple[Import, ...]]] = []
+        for static in (False, True) if any(_differs(part) for part in parts) else (False,):
+            spelled = [self.spelled(part, static=static) for part in parts]
+            texts = iter(text for text, _ in spelled)
+            text, imports = self.compose(
+                style,
+                base="" if base is None else next(texts),
+                key=None if key is None else next(texts),
+                members=tuple(texts),
+                **flags,
+            )
+            variants.append((text, (*imports, *(item for _, found in spelled for item in found))))
+        annotation, static = variants if len(variants) > 1 else (variants[0], None)
+        return self.hint(annotation, None if static == annotation else static)
+
+    def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
+        """Render one DataType without its containers and optionality, as the model's own type hint spells it.
+
+        Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
+        type and a constrained string is str.
+        """
+        update: dict[str, object] = {**_ALONE, "data_types": [], "children": []}
+        slotted: set[tuple[str | None, str]] = set()
+        if (import_ := data_type.import_) is not None and import_.from_ is not None:
+            update["alias"] = self.slot(import_)
+            slotted.add(_identity(import_))
+        if data_type.enum_member_literals or data_type.literals:
+            update.update(type=None, alias=None)
+            if enum is not None:
+                update["enum_member_literals"] = [(self.slot(enum), name) for _, name in data_type.enum_member_literals]
+        if (kwargs := data_type.kwargs) and any(
+            isinstance(value, PythonRuntimeExpression) for value in kwargs.values()
+        ):
+            update["kwargs"] = {name: self.expression(value, slotted) for name, value in kwargs.items()}
+        copy = data_type.model_copy(update=update)
+        if runtime := data_type.runtime_expression_imports:
+            slotted.update(map(_identity, runtime))
+            copy._set_runtime_expression_imports(tuple(replace(item, alias=self.slot(item)) for item in runtime))  # noqa: SLF001
+        annotation = copy.type_hint, [item for item in copy.imports if _identity(item) not in slotted]
+        static = None
+        if import_ is not None and data_type.is_func and kwargs:
+            base = (
+                "str"
+                if getattr(data_type, "annotated_string", False)
+                else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+            )
+            static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
+        return self.hint(annotation, static)
+
+    def expression(self, value: object, slotted: set[tuple[str | None, str]]) -> object:
+        if not isinstance(value, PythonRuntimeExpression):
+            return value
+        slotted.add(key := _identity(value.import_))
+        return value.with_import_aliases({key: replace(value.import_, alias=self.slot(value.import_))})
+
+
+class _Projector:
+    """Project final DataTypes of one direction into type views, each spelled as the model spells it.
+
+    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it.
+    """
+
+    def __init__(self, binder: _Binder, direction: Direction, *, inline: bool = False) -> None:
         self.binder = binder
         self.direction = direction
+        self.hints = binder.hints
+        self.inline = inline
+        self.inlined: set[SymbolId] = set()
+        self.projected: dict[int, tuple[DataType, TypeView]] = {}
 
     def project(self, data_type: DataType) -> TypeProjection:
         try:
@@ -1113,7 +1327,9 @@ class _Projector:
         except _NotEmittedError:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def _project(self, data_type: DataType) -> FinalPythonType:
+    def _project(self, data_type: DataType) -> TypeView:
+        if not self.inline and (known := self.projected.get(id(data_type))) is not None:
+            return known[1]
         projected, inferred_optional = self._base(data_type)
         projected = self._container(data_type, projected)
         binding = (
@@ -1121,12 +1337,19 @@ class _Projector:
         )
         nullable_reference = binding is not None and binding.nullable and not binding.is_alias
         if (data_type.is_optional or inferred_optional or nullable_reference) and projected != ImportedType(IMPORT_ANY):
-            return _ordered_union((projected, NoneType()), preserve_order=data_type.preserve_union_member_order)
+            base = projected
+            projected = _ordered_union(
+                (projected, NoneType()),
+                preserve_order=data_type.preserve_union_member_order,
+                hint=lambda _: self.hints.composed(data_type, base=base, is_optional=True),
+            )
+        if not self.inline:
+            self.projected[id(data_type)] = data_type, projected
         return projected
 
-    def _base(self, data_type: DataType) -> tuple[FinalPythonType | None, bool]:
+    def _base(self, data_type: DataType) -> tuple[TypeView | None, bool]:
         if data_type.python_type is not None:
-            return BoundType(data_type.python_type), False
+            return BoundType(data_type.python_type, self.hints.leaf(data_type)), False
         if data_type.type is not None:
             return self._atomic(data_type), False
         if data_type.data_types or data_type.is_tuple:
@@ -1139,29 +1362,45 @@ class _Projector:
             ), False
         return self._atomic(data_type), False
 
-    def _reference_value(self, reference: Reference, *, serialize_as_any: bool) -> FinalPythonType:
-        if (binding := self.binder.reference(reference, self.direction)) is None:
-            if (root := self.binder.unwrapped(reference)) is not None:
+    def _reference_value(self, reference: Reference, *, serialize_as_any: bool) -> TypeView:
+        binder = self.binder
+        if (binding := binder.reference(reference, self.direction)) is None:
+            if (root := binder.unwrapped(reference)) is not None:
                 return self._project(root)
             raise _NotEmittedError
-        result: FinalPythonType = GeneratedSymbolType(binding.symbol)
+        symbol = binding.symbol
+        if (
+            self.inline
+            and symbol not in self.inlined
+            and binder.policies[id(model := binder.models[symbol])].kind in _WRAPPED
+            and (root := binder.root(model)) is not None
+        ):
+            self.inlined.add(symbol)
+            try:
+                return self._project(root)
+            finally:
+                self.inlined.discard(symbol)
+        result: TypeView = GeneratedSymbolType(symbol)
         if serialize_as_any and binding.serialize_as_any:
-            result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,))
+            spelled = f"{self.hints.slot(_SERIALIZE_AS_ANY)}[{self.hints.slot(symbol)}]", ()
+            result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,), hint=self.hints.hint(spelled))
         return result
 
-    def _atomic(self, data_type: DataType) -> FinalPythonType | None:
+    def _atomic(self, data_type: DataType) -> TypeView | None:
         if data_type.enum_member_literals:
-            return LiteralType(self._enum_members(data_type))
+            symbol, members = self._enum_members(data_type)
+            return LiteralType(members, self.hints.leaf(data_type, symbol))
         if data_type.literals:
-            return LiteralType(tuple(self._literal(value) for value in data_type.literals))
+            return LiteralType(tuple(self._literal(value) for value in data_type.literals), self.hints.leaf(data_type))
         if (import_ := data_type.import_) is not None:
             imported = ImportedType(import_)
             if data_type.is_func and data_type.kwargs:
                 keywords = tuple((name, _freeze_argument(value)) for name, value in data_type.kwargs.items())
+                hint = self.hints.leaf(data_type)
                 return (
-                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),))
+                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),), hint)
                     if getattr(data_type, "annotated_string", False)
-                    else ConstructorType(imported, keywords)
+                    else ConstructorType(imported, keywords, hint)
                 )
             return imported
         if data_type.type is None:
@@ -1178,22 +1417,31 @@ class _Projector:
             case _:
                 return LiteralScalar("str", str(value))
 
-    def _enum_members(self, data_type: DataType) -> tuple[GeneratedEnumMember, ...]:
+    def _enum_members(self, data_type: DataType) -> tuple[SymbolId, tuple[GeneratedEnumMember, ...]]:
         reference = data_type._enum_member_literal_reference or data_type.reference  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         model = _source(cast("Reference", self.binder.final(cast("Reference", reference))))
         fields = {field.name: field for field in model.fields}
         symbol = self.binder.symbols[id(model)]
-        return tuple(
+        return symbol, tuple(
             GeneratedEnumMember(symbol, self.binder.identity(fields[name]), name)
             for _, name in data_type.enum_member_literals
         )
 
-    def _structural(self, data_type: DataType) -> tuple[FinalPythonType, bool]:
+    def _structural(self, data_type: DataType) -> tuple[TypeView, bool]:
+        hints = self.hints
         if data_type.is_tuple:
             arguments = tuple(self._project(child) for child in data_type.data_types)
-            if (count := data_type.tuple_item_count) is not None:
+            count = data_type.tuple_item_count
+            hint = hints.composed(
+                data_type,
+                base=None,
+                members=arguments[:1] if count is not None else arguments,
+                is_tuple=True,
+                tuple_item_count=count,
+            )
+            if count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * count
-            return GenericType(BuiltinType("tuple"), arguments, "fixed"), False
+            return GenericType(BuiltinType("tuple"), arguments, "fixed", hint), False
         if len(data_type.data_types) == 1:
             return self._project(data_type.data_types[0]), False
         preserve_order = data_type.preserve_union_member_order
@@ -1205,13 +1453,33 @@ class _Projector:
             projected if preserve_order else tuple(member for member in flattened if not isinstance(member, NoneType))
         )
         inferred_optional = not preserve_order and len(members) != len(flattened)
-        union = _ordered_union(members, preserve_order=preserve_order) if members else ImportedType(IMPORT_ANY)
-        if isinstance(union, UnionType) and (selector := self.selector(data_type)) is not None:
-            union = replace(union, discriminator=selector)
+        union = (
+            _ordered_union(
+                members,
+                preserve_order=preserve_order,
+                hint=lambda parts: hints.composed(data_type, members=parts, preserve_union_member_order=preserve_order),
+                discriminator=self.selector(data_type) if len(dict.fromkeys(flattened)) > 1 else None,
+            )
+            if members
+            else ImportedType(IMPORT_ANY)
+        )
+        parts = union.members if isinstance(union, UnionType) else (union,)
         if (discriminator := data_type.discriminator) is not None:
+            wrapped = hints.composed(
+                data_type,
+                base=None,
+                members=parts,
+                preserve_union_member_order=preserve_order,
+                discriminator=discriminator,
+            )
+            annotation = wrapped.annotation
+            hint = ModelHint(HintText(annotation.parts, (*annotation.imports, _PYDANTIC_FIELD)), hints.of(union).static)
+            hints.fixed[_PYDANTIC_FIELD] = None
             return (
                 AnnotatedType(
-                    union, (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),)
+                    union,
+                    (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),),
+                    hint,
                 ),
                 inferred_optional,
             )
@@ -1277,22 +1545,15 @@ class _Projector:
             else None
         )
 
-    def _container(self, data_type: DataType, value: FinalPythonType | None) -> FinalPythonType:
+    def _container(self, data_type: DataType, value: TypeView | None) -> TypeView:
         generic = data_type.use_generic_container
         module = "collections.abc" if data_type.use_standard_collections else "typing"
-        for modifier, enabled in (
-            ("frozen_set", data_type.is_frozen_set),
-            ("set", data_type.is_set),
-            ("sequence", data_type.is_sequence),
-            ("list", data_type.is_list),
-            ("mapping", data_type.is_mapping),
-            ("dict", data_type.is_dict),
-        ):
-            if not enabled:
+        for modifier, flag in _CONTAINERS.items():
+            if not getattr(data_type, flag):
                 continue
             match modifier:
                 case "frozen_set":
-                    base: FinalPythonType = BuiltinType("frozenset")
+                    base: TypeView = BuiltinType("frozenset")
                 case "set":
                     base = BuiltinType("frozenset" if generic else "set")
                 case "sequence" | "list" if modifier == "sequence" or generic:
@@ -1304,14 +1565,17 @@ class _Projector:
                 case _:
                     base = BuiltinType("dict")
             if modifier in {"mapping", "dict"} and (data_type.dict_key is not None or value is not None):
-                key = self._project(data_type.dict_key) if data_type.dict_key is not None else BuiltinType("str")
-                return GenericType(base, (key, value if value is not None else ImportedType(IMPORT_ANY)))
-            return GenericType(base, (value,) if value is not None else ())
+                key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
+                value = value if value is not None else ImportedType(IMPORT_ANY)
+                hint = self.hints.composed(data_type, base=value, key=key, container=flag)
+                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint)
+            hint = self.hints.composed(data_type, base=value, container=flag)
+            return GenericType(base, (value,) if value is not None else (), hint=hint)
         if value is None:
             raise _UnsupportedError
         return value
 
-    def _imports(self, value: FinalPythonType) -> FinalPythonType:  # noqa: PLR0911
+    def _imports(self, value: TypeView) -> TypeView:  # noqa: PLR0911
         if not self.binder.overrides:
             return value
         resolve = self.binder.resolve_import
@@ -1319,22 +1583,26 @@ class _Projector:
             case ImportedType():
                 return ImportedType(resolve(value.import_), value.qualified_suffix)
             case BoundType():
-                return BoundType(_bound(value.binding, resolve))
+                return replace(value, binding=_bound(value.binding, resolve))
             case GenericType():
-                return GenericType(
-                    self._imports(value.base), tuple(self._imports(item) for item in value.arguments), value.tuple_form
+                return replace(
+                    value,
+                    base=self._imports(value.base),
+                    arguments=tuple(self._imports(item) for item in value.arguments),
                 )
             case UnionType():
                 return replace(value, members=tuple(self._imports(item) for item in value.members))
             case ConstructorType():
-                return ConstructorType(
-                    ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
-                    tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
+                return replace(
+                    value,
+                    callable=ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
+                    keywords=tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
                 )
             case AnnotatedType():
-                return AnnotatedType(
-                    self._imports(value.base),
-                    tuple(
+                return replace(
+                    value,
+                    base=self._imports(value.base),
+                    metadata=tuple(
                         MetadataCall(
                             resolve(call.import_),
                             tuple((name, _argument_import(item, resolve)) for name, item in call.keywords),
@@ -1539,7 +1807,7 @@ class _FieldContext:
 
 def _field_facts(
     field: DataModelFieldBase,
-    type_value: FinalPythonType,
+    type_value: TypeView,
     backend: BackendName,
     model_facts: BackendModelFacts | None,
     context: _FieldContext | None,
@@ -1581,7 +1849,7 @@ def _field_facts(
     )
 
 
-def _annotation_null(field: DataModelFieldBase, type_value: FinalPythonType) -> bool:
+def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
     if _has_null(type_value):
         return True
@@ -2236,19 +2504,20 @@ class _Models:
             tuple(other for other, value in results.items() if value is result and other != key),
         )
 
-    def lightweight(self, declaration: _Declaration, direction: Direction = "neutral") -> TypeProjection:
+    def lightweight(
+        self, declaration: _Declaration, direction: Direction = "neutral", *, inline: bool = False
+    ) -> TypeProjection:
         """Project a subschema that no model field holds: a referenced model, or the parser's model-free type."""
         parser = self.parser
+        projector = self.binder.projector(direction, inline=inline)
         resolved, _ = self.schemas.resolve(declaration)
         key = parser.model_resolver.join_path((resolved.document, "#", *resolved.tokens))
         if resolved != declaration and (reference := parser.model_resolver.references.get(key)) is not None:
-            return self.projectors[direction].declaration(reference)
+            return projector.declaration(reference)
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
             data_type = parser._build_lightweight_type(parser.free_schemas[declaration])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         projected = (
-            self.projectors[direction].project(data_type)
-            if data_type is not None
-            else TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+            projector.project(data_type) if data_type is not None else TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
         )
         for item in data_type.all_data_types if data_type is not None else ():
             item.unregister_reference()
@@ -2446,7 +2715,7 @@ class _Models:
         direct = field.nullable is True or (field.nullable is None and field.required and bool(field.type_has_null))
         unknown = value is None
         references: list[SymbolId] = []
-        pending: list[FinalPythonType] = [] if value is None else [value]
+        pending: list[TypeView] = [] if value is None else [value]
         while pending:
             item = pending.pop()
             match item:
@@ -2572,11 +2841,14 @@ class _Models:
 class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
-    def projection(self, declaration: _Declaration, projection: Projection, direction: Direction) -> TypeProjection:
+    def projection(
+        self, declaration: _Declaration, projection: Projection, direction: Direction, *, inline: bool = False
+    ) -> TypeProjection:
         """Bind an acquired declaration: its emitted model wins over a direct reference type.
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
-        the model-free type of its schema, which is the referenced model.
+        the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
+        root model as the type it stands for.
         """
         binder = self.binder
         parser = self.parser
@@ -2585,7 +2857,7 @@ class _SchemaUses(_Models):
             engine = parser.model_resolver.join_path((declaration.document, "#", *declaration.tokens))
         reference = parser.model_resolver.references.get(engine) if engine is not None else None
         data_type = binder.declaration_types.get(declaration) if projection == "value" else None
-        projector = binder.projector(direction)
+        projector = binder.projector(direction, inline=inline)
         if reference is not None and (
             data_type is None
             or binder.final(reference, direction) is not None
@@ -2594,7 +2866,7 @@ class _SchemaUses(_Models):
             return projector.declaration(reference)
         if data_type is not None:
             return projector.project(data_type)
-        return self.lightweight(declaration, direction)
+        return self.lightweight(declaration, direction, inline=inline)
 
     def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""
@@ -2661,6 +2933,11 @@ class _SchemaUses(_Models):
             if isinstance(projected.value, GeneratedSymbolType)
             else ()
         )
+        argument = (
+            self.projection(schema, projection, direction, inline=True).value
+            if role == "parameter" and projected.value is not None
+            else None
+        )
         self.uses[use] = TypeUseBinding(
             use,
             "bound" if projected.value is not None else "invalid",
@@ -2668,6 +2945,7 @@ class _SchemaUses(_Models):
             projected.reason,
             members,
             locate(schema, "schema"),
+            argument=None if argument is None else self.binder.hints.of(argument),
         )
         return use
 
@@ -3287,6 +3565,8 @@ def bind_operations(
             security_schemes,
             api_scope=True,
             document_facts=parser.document_facts.get(next(iter(documents.ids), ""), ()),
+            hint_type=builder.binder.hints.hint_type,
+            hint_imports=tuple(builder.binder.hints.fixed),
         ),
         tuple(documents.documents.items()),
     )
@@ -3304,11 +3584,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         BackendValue,
         DefaultKind,
-        FinalPythonType,
         FrozenLiteral,
         LeafStep,
         TypeArgument,
         TypeUseRole,
+        TypeView,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports

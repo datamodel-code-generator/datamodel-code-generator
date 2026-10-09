@@ -67,11 +67,11 @@ render pydantic_v2.BaseModel default
       ship_to: str = Field(..., alias='ship-to')
       values: Optional[List[constr(min_length=1)]] = None
   model_bindings.py
-  codec_0 models_item_request.ItemRequest
-  codec_1 models_item_response.ItemResponse
-  codec_2 models_base_request.BaseRequest
-  codec_3 models_base.Base
-  codec_4 models_item_request.ItemRequest
-  codec_5 models_item_response.ItemResponse
+  codec_0 item_request.ItemRequest
+  codec_1 item_response.ItemResponse
+  codec_2 base_request.BaseRequest
+  codec_3 base.Base
+  codec_4 item_request.ItemRequest
+  codec_5 item_response.ItemResponse
   codec_6 str
   codec_7 str

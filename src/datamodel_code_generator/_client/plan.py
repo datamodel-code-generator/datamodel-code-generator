@@ -61,12 +61,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
         Direction,
-        FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
         SourceDocumentId,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
 
@@ -144,7 +144,7 @@ class ParameterSpec:
     required: bool
     use: TypeUseBinding | None
     plan: ParameterPlan
-    argument: FinalPythonType | None = None
+    argument: TypeView | None = None
     default: LiteralScalar | None = None
     converts: bool = False
 
@@ -195,7 +195,7 @@ class FieldArgument:
     python_name: str
     wire_name: str
     required: bool
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1006,7 +1006,7 @@ class Planner:
         )
 
 
-def _default(use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
+def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
     if argument is None or use is None:
         return None

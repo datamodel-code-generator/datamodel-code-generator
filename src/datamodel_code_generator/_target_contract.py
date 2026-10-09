@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.types import DataType
 
 SourceDocumentId = NewType("SourceDocumentId", int)
 GraphObjectId = NewType("GraphObjectId", int)
@@ -135,6 +136,31 @@ class ImportedExpression:
 
 
 TypeArgument: TypeAlias = FrozenLiteral | SourceExpression | ImportedExpression
+HintPart: TypeAlias = "str | SymbolId | Import"
+
+
+@dataclass(frozen=True, slots=True)
+class HintText:
+    """One spelling of a model type: its text, with each generated model and imported name left for a module to name.
+
+    A part is text, a generated symbol, or an imported name by its identity. `imports` are the names the text spells
+    as they are, such as the typing constructs the model generator writes.
+    """
+
+    parts: tuple[HintPart, ...]
+    imports: tuple[Import, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ModelHint:
+    """A model type as the model generator spells it.
+
+    `annotation` validates like the model's own annotation, and `static` is what type checkers read: a constrained
+    scalar as its base type, and a union without its discriminator.
+    """
+
+    annotation: HintText
+    static: HintText
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,15 +197,17 @@ class BoundType:
     """Reuse an existing immutable semantic Python annotation without reparsing it."""
 
     binding: BoundPythonType
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
 class GenericType:
     """Preserve ordered container arguments and fixed versus variadic tuple shape."""
 
-    base: FinalPythonType
-    arguments: tuple[FinalPythonType, ...]
+    base: TypeView
+    arguments: tuple[TypeView, ...]
     tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,9 +228,10 @@ class UnionType:
     The discriminator is metadata of this occurrence, so it takes no part in comparing types.
     """
 
-    members: tuple[FinalPythonType, ...]
+    members: tuple[TypeView, ...]
     preserve_order: bool
     discriminator: UnionDiscriminator | None = dataclasses.field(default=None, compare=False)
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,6 +248,7 @@ class LiteralType:
     """Keep type-sensitive literals and actual enum member identities."""
 
     values: tuple[LiteralScalar | GeneratedEnumMember, ...]
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +257,7 @@ class ConstructorType:
 
     callable: ImportedType
     keywords: tuple[tuple[str, TypeArgument], ...]
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,8 +272,9 @@ class MetadataCall:
 class AnnotatedType:
     """Retain metadata layer placement around an already projected Python type."""
 
-    base: FinalPythonType
+    base: TypeView
     metadata: tuple[MetadataCall, ...]
+    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
 
 
 UnannotatedPythonType: TypeAlias = (
@@ -257,7 +289,7 @@ UnannotatedPythonType: TypeAlias = (
     | ConstructorType
 )
 
-FinalPythonType: TypeAlias = UnannotatedPythonType | AnnotatedType
+TypeView: TypeAlias = UnannotatedPythonType | AnnotatedType
 
 
 TypeProjectionReason: TypeAlias = Literal[
@@ -272,7 +304,7 @@ TypeProjectionReason: TypeAlias = Literal[
 class TypeProjection:
     """Keep unsupported final-type forms as finite consumer diagnostics."""
 
-    value: FinalPythonType | None
+    value: TypeView | None
     reason: TypeProjectionReason | None = None
 
 
@@ -300,7 +332,7 @@ class ModelFieldFacts:
     type_has_null: bool | None
     read_only: bool
     write_only: bool
-    type: FinalPythonType
+    type: TypeView
     backend: BackendFieldFacts
     schema_null: bool
 
@@ -464,11 +496,13 @@ class TypeUseBinding:
     `default` is the JSON boolean, number, or string default a parameter's schema declares, `parts` what the
     schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
     text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
+    `argument` spells the type a parameter's argument takes: its type with each alias and root model by the type it
+    stands for.
     """
 
     id: TypeUseId
     state: Literal["bound", "not_generated", "invalid"]
-    type: FinalPythonType | None
+    type: TypeView | None
     reason: BindingReason | None
     members: tuple[FieldUseBinding, ...] = ()
     schema: SourceLocation | None = None
@@ -476,6 +510,7 @@ class TypeUseBinding:
     parts: PartFacts | None = None
     encoding: EncodingFacts | None = None
     keywords: tuple[tuple[str, FrozenLiteral], ...] = ()
+    argument: ModelHint | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -539,7 +574,9 @@ class OperationContract:
 class GeneratedTypeContractBatch:
     """Own one accepted attempt's immutable contracts, with no parser or source mappings.
 
-    `document_facts` are the OpenAPI version, info, tags and servers the root document declares.
+    `document_facts` are the OpenAPI version, info, tags and servers the root document declares. `hint_type` is the
+    model generator's configured type class, which composes model types as the models spell them, and `hint_imports`
+    the names its spellings write as they are.
     """
 
     attempt: AttemptId
@@ -553,6 +590,8 @@ class GeneratedTypeContractBatch:
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
     document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
+    hint_type: type[DataType] | None = None
+    hint_imports: tuple[Import, ...] = ()
 
     @property
     def openapi(self) -> str:

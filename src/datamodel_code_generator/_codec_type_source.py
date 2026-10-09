@@ -27,12 +27,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
     from datamodel_code_generator._target_contract import (
         FinalModelSymbol,
-        FinalPythonType,
         GeneratedTypeContractBatch,
         LeafStep,
         SourceLocation,
         TypeArgument,
         TypeProjectionReason,
+        TypeView,
     )
 
 _UNSUPPORTED: Final = "BND_TYPE_EXPRESSION_UNSUPPORTED"
@@ -99,7 +99,7 @@ _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _WRAPPERS: Final = frozenset({"alias", "root"})
 
 
-def static_scalar(value: FinalPythonType) -> FinalPythonType:
+def static_scalar(value: TypeView) -> TypeView:
     """Return the builtin scalar a static checker sees for a constrained one, or any other type itself."""
     match value:
         case ConstructorType() if (
@@ -125,7 +125,7 @@ class LexicalKinds:
         self._batch = batch
 
     @cached_property
-    def _types(self) -> dict[tuple[int, str], FinalPythonType | None]:
+    def _types(self) -> dict[tuple[int, str], TypeView | None]:
         return {
             (use.id.use_site.document, use.id.use_site.pointer): use.type
             for use in self._batch.type_uses
@@ -137,7 +137,7 @@ class LexicalKinds:
         return {symbol.id: symbol for symbol in self._batch.symbols}
 
     @cached_property
-    def _roots(self) -> dict[int, FinalPythonType]:
+    def _roots(self) -> dict[int, TypeView]:
         return {
             member.consumer: facts.type
             for member in self._batch.fields
@@ -153,21 +153,21 @@ class LexicalKinds:
         value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
         return _kind(set(self._leaves(value, frozenset())), mixed=True)
 
-    def of(self, value: FinalPythonType, steps: tuple[LeafStep, ...] = ()) -> LexicalKind | None:
-        """Return the kind of the leaf the steps reach from a final type, such as a model field's type."""
+    def of(self, value: TypeView, steps: tuple[LeafStep, ...] = ()) -> LexicalKind | None:
+        """Return the kind of the leaf the steps reach from a type, such as a model field's type."""
         return _kind(set(self._leaves(self._stepped(value, steps), frozenset())), mixed=True)
 
-    def _reached(self, location: SourceLocation, steps: tuple[LeafStep, ...]) -> FinalPythonType | None:
+    def _reached(self, location: SourceLocation, steps: tuple[LeafStep, ...]) -> TypeView | None:
         return self._stepped(self._types.get((location.document, location.pointer)), steps)
 
-    def _stepped(self, value: FinalPythonType | None, steps: tuple[LeafStep, ...]) -> FinalPythonType | None:
+    def _stepped(self, value: TypeView | None, steps: tuple[LeafStep, ...]) -> TypeView | None:
         for step in steps:
             value = self._argument(value, *_ARGUMENTS[step])
         return value
 
     def _argument(
-        self, value: FinalPythonType | None, count: int, containers: frozenset[tuple[str | None, str]]
-    ) -> FinalPythonType | None:
+        self, value: TypeView | None, count: int, containers: frozenset[tuple[str | None, str]]
+    ) -> TypeView | None:
         """Return the last argument of a container type, through aliases, root models and a union with None alone."""
         seen: set[int] = set()
         while True:
@@ -189,7 +189,7 @@ class LexicalKinds:
                     else None
                 )
 
-    def _leaves(self, value: FinalPythonType | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
+    def _leaves(self, value: TypeView | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
         match value:
             case NoneType():
                 pass
@@ -229,11 +229,11 @@ class LexicalKinds:
             yield None
 
 
-def _present(value: UnionType) -> list[FinalPythonType]:
+def _present(value: UnionType) -> list[TypeView]:
     return [member for member in value.members if not isinstance(member, NoneType)]
 
 
-def _name(value: FinalPythonType) -> tuple[str | None, str]:
+def _name(value: TypeView) -> tuple[str | None, str]:
     """Return the module and name of a builtin or imported type, or no name for any other type."""
     return (
         (None, value.name)
@@ -326,16 +326,16 @@ class TypeSource:
     def _attribute(self, module: str, name: str) -> str:
         return f"{self._namespace.module(module)}.{name}"
 
-    def runtime(self, value: FinalPythonType) -> str:
+    def runtime(self, value: TypeView) -> str:
         """Return the expression that evaluates to the native type."""
         return self._spell(value, static=False)
 
-    def static(self, value: FinalPythonType) -> str:
+    def static(self, value: TypeView) -> str:
         """Return the type expression that type checkers read for the native type."""
         return self._spell(value, static=True)
 
     def _spell(  # noqa: PLR0911, PLR0912
-        self, value: FinalPythonType | TypeArgument | GeneratedEnumMember, *, static: bool
+        self, value: TypeView | TypeArgument | GeneratedEnumMember, *, static: bool
     ) -> str:
         match value:
             case GeneratedSymbolType() if value.symbol in self._symbols:
@@ -358,7 +358,7 @@ class TypeSource:
             case LiteralType():
                 literals = ", ".join(self._spell(item, static=static) for item in value.values)
                 return f"{self._namespace.module('typing')}.Literal[{literals}]"
-            case GeneratedEnumMember() if value.symbol in self._symbols:
+            case GeneratedEnumMember() if value.symbol in self._symbols:  # pragma: no cover - only server form fields
                 module, _, name = self._symbols[value.symbol].partition(":")
                 return f"{self._leaf(module, name)}.{value.name}"
             case LiteralScalar(kind="decimal"):
@@ -388,7 +388,7 @@ class TypeSource:
         return ", ".join(f"{name}={self._spell(argument, static=False)}" for name, argument in keywords)
 
 
-def type_reason(value: FinalPythonType, symbols: Mapping[int, str]) -> TypeProjectionReason | None:
+def type_reason(value: TypeView, symbols: Mapping[int, str]) -> TypeProjectionReason | None:
     """Return why a final type has no runtime or static expression in a generated module, if it has none."""
     source = TypeSource(Namespace(()), symbols)
     try:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import Note as _dcg_type_0
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -71,7 +71,7 @@ class NotesAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_0, ListNotesResponse]:
+    ) -> Page[models.Note, ListNotesResponse]:
         """Fetch the first page of GET /notes."""
         return first_page(
             self._core,
@@ -89,7 +89,7 @@ class NotesAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_0, ListNotesResponse]:
+    ) -> Pager[models.Note, ListNotesResponse]:
         """Return a pager over the items of GET /notes; it sends nothing until it is iterated."""
         return iterate_pages(
             self._core,
@@ -102,12 +102,12 @@ class NotesAllPagination:
 
     def next_page(
         self,
-        page: Page[_dcg_type_0, ListNotesResponse],
+        page: Page[models.Note, ListNotesResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_0, ListNotesResponse] | None:
+    ) -> Page[models.Note, ListNotesResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
             self._core,
@@ -126,7 +126,7 @@ class NotesAllPagination:
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_0, ListNotesResponse]:
+    ) -> Pager[models.Note, ListNotesResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
             self._core,
@@ -152,7 +152,7 @@ class NotesWatchSse:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[models.Note]:
         """Open the event stream of GET /notes/events, returning once its response is a declared success."""
         return open_events(
             self._core,

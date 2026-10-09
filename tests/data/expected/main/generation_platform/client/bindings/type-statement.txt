@@ -34,8 +34,8 @@ render pydantic_v2.BaseModel default
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -85,8 +85,8 @@ render pydantic_v2.dataclass default
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -136,8 +136,8 @@ render dataclasses.dataclass default
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -186,8 +186,8 @@ render typing.TypedDict default
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -237,8 +237,8 @@ render msgspec.Struct default
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base

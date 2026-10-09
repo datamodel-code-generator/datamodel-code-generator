@@ -7,18 +7,9 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from functools import cached_property
-from typing import Any as _dcg_type_6
-from typing import Literal, overload
+from typing import Any, Literal, overload
 
-from models import Address as _dcg_type_4
-from models import Bounds as _dcg_type_9
-from models import FieldAnythingPostRequest as _dcg_type_2
-from models import FieldAttachmentsGetResponse as _dcg_type_3
-from models import FieldCardsPostRequest as _dcg_type_7
-from models import FieldFormsPostRequest as _dcg_type_0
-from models import FieldProfilesPostRequest as _dcg_type_1
-from models import FieldSearchesPostRequest as _dcg_type_5
-from models import FieldStickersPostRequest as _dcg_type_8
+import models
 from typing_extensions import Never
 
 from ... import _operations
@@ -74,7 +65,7 @@ class FormsResource:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.FieldFormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -92,7 +83,7 @@ class FormsResource:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitProfileResponse:
@@ -122,7 +113,7 @@ class FormsResource:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2,
+        body: models.FieldAnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAnythingResponse:
@@ -171,7 +162,7 @@ class FormsResource:
         *,
         response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_3: ...
+    ) -> models.FieldAttachmentsGetResponse: ...
     def read_parts(
         self,
         *,
@@ -207,7 +198,7 @@ class FormsResource:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | str | list[str] | _dcg_type_4],
+        body: MultipartBody[int | str | list[str] | models.Address],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitUploadResponse:
@@ -246,7 +237,7 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4,
+        body: models.Address,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
@@ -261,7 +252,7 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
@@ -325,7 +316,7 @@ class FormsResource:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5,
+        body: models.FieldSearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitSearchResponse:
@@ -341,7 +332,7 @@ class FormsResource:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
+        body: MultipartBody[str | int | models.Address | Any | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCoverResponse:
@@ -357,7 +348,7 @@ class FormsResource:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7,
+        body: models.FieldCardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCardResponse:
@@ -373,7 +364,7 @@ class FormsResource:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8,
+        body: models.FieldStickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitStickersResponse:
@@ -389,7 +380,7 @@ class FormsResource:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
+        body: MultipartBody[models.Bounds | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
@@ -413,7 +404,7 @@ class FormsWithResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.FieldFormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -431,7 +422,7 @@ class FormsWithResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitProfileResponse]:
@@ -461,7 +452,7 @@ class FormsWithResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2,
+        body: models.FieldAnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAnythingResponse]:
@@ -510,7 +501,7 @@ class FormsWithResponse:
         *,
         response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_3]: ...
+    ) -> Response[models.FieldAttachmentsGetResponse]: ...
     def read_parts(
         self,
         *,
@@ -546,7 +537,7 @@ class FormsWithResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | str | list[str] | _dcg_type_4],
+        body: MultipartBody[int | str | list[str] | models.Address],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitUploadResponse]:
@@ -585,7 +576,7 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4,
+        body: models.Address,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
@@ -600,7 +591,7 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
@@ -664,7 +655,7 @@ class FormsWithResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5,
+        body: models.FieldSearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitSearchResponse]:
@@ -680,7 +671,7 @@ class FormsWithResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
+        body: MultipartBody[str | int | models.Address | Any | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCoverResponse]:
@@ -696,7 +687,7 @@ class FormsWithResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7,
+        body: models.FieldCardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCardResponse]:
@@ -712,7 +703,7 @@ class FormsWithResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8,
+        body: models.FieldStickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitStickersResponse]:
@@ -728,7 +719,7 @@ class FormsWithResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
+        body: MultipartBody[models.Bounds | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
@@ -752,7 +743,7 @@ class FormsWithRawResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.FieldFormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -770,7 +761,7 @@ class FormsWithRawResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -800,7 +791,7 @@ class FormsWithRawResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2,
+        body: models.FieldAnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -864,7 +855,7 @@ class FormsWithRawResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | str | list[str] | _dcg_type_4],
+        body: MultipartBody[int | str | list[str] | models.Address],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -903,7 +894,7 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4,
+        body: models.Address,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -918,7 +909,7 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -982,7 +973,7 @@ class FormsWithRawResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5,
+        body: models.FieldSearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -998,7 +989,7 @@ class FormsWithRawResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
+        body: MultipartBody[str | int | models.Address | Any | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1014,7 +1005,7 @@ class FormsWithRawResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7,
+        body: models.FieldCardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1030,7 +1021,7 @@ class FormsWithRawResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8,
+        body: models.FieldStickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1046,7 +1037,7 @@ class FormsWithRawResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
+        body: MultipartBody[models.Bounds | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1070,7 +1061,7 @@ class FormsWithStreamingResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.FieldFormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -1088,7 +1079,7 @@ class FormsWithStreamingResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1118,7 +1109,7 @@ class FormsWithStreamingResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2,
+        body: models.FieldAnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1182,7 +1173,7 @@ class FormsWithStreamingResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | str | list[str] | _dcg_type_4],
+        body: MultipartBody[int | str | list[str] | models.Address],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1221,7 +1212,7 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4,
+        body: models.Address,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -1236,7 +1227,7 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1300,7 +1291,7 @@ class FormsWithStreamingResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5,
+        body: models.FieldSearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1316,7 +1307,7 @@ class FormsWithStreamingResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
+        body: MultipartBody[str | int | models.Address | Any | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1332,7 +1323,7 @@ class FormsWithStreamingResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7,
+        body: models.FieldCardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1348,7 +1339,7 @@ class FormsWithStreamingResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8,
+        body: models.FieldStickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1364,7 +1355,7 @@ class FormsWithStreamingResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
+        body: MultipartBody[models.Bounds | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
