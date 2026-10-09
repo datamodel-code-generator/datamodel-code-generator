@@ -48,7 +48,6 @@ from datamodel_code_generator._client.webhooks import (
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
@@ -338,7 +337,6 @@ class _HelperDigests:
         The model options that only style annotations, such as the union operator, leave the spelling unchanged, so a
         regenerated package with the same contract keeps its fingerprints.
         """
-        value = value.base if isinstance(value, AnnotatedType) else value
         match value:
             case GenericType():
                 arguments = ", ".join(self.spelled(item) for item in value.arguments)
@@ -403,7 +401,7 @@ def _named(value: TypeView) -> tuple[SymbolId, ...]:
     nested: tuple[TypeView, ...] = (
         *getattr(value, "members", ()),
         *getattr(value, "arguments", ()),
-        *((value.base,) if isinstance(value, AnnotatedType | GenericType) else ()),
+        *((value.base,) if isinstance(value, GenericType) else ()),
         *(
             GeneratedSymbolType(item.symbol)
             for item in getattr(value, "values", ())

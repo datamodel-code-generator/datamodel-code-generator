@@ -1,0 +1,52 @@
+# spellings
+serve pydantic_v2.BaseModel
+service DaysService: post_day
+service DaysService without its methods: TypeError
+service FieldsService: post_field
+service FieldsService without its methods: TypeError
+service PetsService: get_code, get_pet, list_counts, list_pets
+service PetsService without its methods: TypeError
+> GET /code
+  get_code(invalid=None)
+< 200 application/json "ab"
+> GET /code?invalid=true
+  get_code(invalid=True)
+< ResponseValidationError: ['String should have at least 2 characters']
+> GET /pets
+  list_pets(invalid=None)
+< 200 application/json [{"petType":"dog","bark":true},{"petType":"cat","name":"Mimi"}]
+> GET /pets?invalid=true
+  list_pets(invalid=True)
+< ResponseValidationError: ['Field required']
+> GET /counts
+  list_counts(invalid=None)
+< 200 application/json [1,2]
+> GET /counts?invalid=true
+  list_counts(invalid=True)
+< ResponseValidationError: ['Input should be greater than or equal to 0']
+> GET /pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a
+  get_pet(pet_id=1, limit=5, code='ab', codes=["Code{'root': 'ab'}", "Code{'root': 'cde'}"], step=1.5, raw=b'x', day=datetime.date(2024, 1, 2), filter="Query{'term': 'a'}")
+< 200 application/json {"petType":"cat","name":"Mimi"}
+> GET /pets/2
+  get_pet(pet_id=2, limit=10, code=None, codes=None, step=None, raw=None, day=None, filter=None)
+< 200 application/json {"petType":"dog","bark":true}
+> GET /pets/0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["path", "petId"]}]
+> GET /pets/1?limit=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
+> GET /pets/1?code=a
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "code"]}]
+> GET /pets/1?codes=abcdef
+< 422 application/json [{"type": "string_too_long", "loc": ["query", "codes", 0]}]
+> GET /pets/1?step=1.2
+< 422 application/json [{"type": "multiple_of", "loc": ["query", "step"]}]
+> GET /pets/1?day=tomorrow
+< 422 application/json [{"type": "date_from_datetime_parsing", "loc": ["query", "day"]}]
+> POST /fields
+  post_field(body="FieldModel{'name': 'x'}")
+< 200 application/json {"echo":"x"}
+> POST /days
+  post_day(body=Day(root=datetime.date(2024, 1, 2)))
+< 200 application/json "2024-01-02"
+> POST /days
+< 422 application/json [{"type": "date_from_datetime_parsing", "loc": ["body"]}]

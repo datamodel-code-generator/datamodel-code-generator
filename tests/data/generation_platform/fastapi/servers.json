@@ -3090,5 +3090,184 @@
       "routers/store.py"
     ],
     "package_snapshots": []
+  },
+  "spellings": {
+    "input": "server-spellings.yaml",
+    "services": "spellings",
+    "model": {
+      "import_overrides": {
+        "conint": "pydantic.types",
+        "constr": "pydantic.types"
+      }
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/code"
+      },
+      {
+        "method": "GET",
+        "url": "/code?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/counts"
+      },
+      {
+        "method": "GET",
+        "url": "/counts?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?code=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?codes=abcdef"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?step=1.2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?day=tomorrow"
+      },
+      {
+        "method": "POST",
+        "url": "/fields",
+        "json": {
+          "name": "x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-02"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "never"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "spellings-exact": {
+    "input": "server-spellings.yaml",
+    "services": "spellings",
+    "model": {
+      "use_exact_imports": true,
+      "collapse_root_models": true,
+      "use_decimal_for_multiple_of": true,
+      "import_overrides": {
+        "conint": "pydantic.types",
+        "constr": "pydantic.types"
+      }
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/code"
+      },
+      {
+        "method": "GET",
+        "url": "/code?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/counts"
+      },
+      {
+        "method": "GET",
+        "url": "/counts?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?code=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?codes=abcdef"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?step=1.2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?day=tomorrow"
+      },
+      {
+        "method": "POST",
+        "url": "/fields",
+        "json": {
+          "name": "x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-02"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "never"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

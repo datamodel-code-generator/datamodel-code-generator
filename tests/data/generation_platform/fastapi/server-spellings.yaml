@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info: {title: Server type spellings, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - {name: invalid, in: query, schema: {type: boolean}}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - {$ref: "#/components/schemas/Cat"}
+                    - {$ref: "#/components/schemas/Dog"}
+                  discriminator:
+                    propertyName: petType
+                    mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
+  /counts:
+    get:
+      operationId: listCounts
+      tags: [pets]
+      parameters:
+        - {name: invalid, in: query, schema: {type: boolean}}
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema: {type: array, items: {type: integer, minimum: 0}}
+  /code:
+    get:
+      operationId: getCode
+      tags: [pets]
+      parameters:
+        - {name: invalid, in: query, schema: {type: boolean}}
+      responses:
+        "200":
+          description: A code.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Code"}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {$ref: "#/components/schemas/PetId"}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 10}}
+        - {name: code, in: query, schema: {$ref: "#/components/schemas/Code"}}
+        - {name: codes, in: query, schema: {type: array, items: {$ref: "#/components/schemas/Code"}}}
+        - {name: step, in: query, schema: {type: number, multipleOf: 0.5}}
+        - {name: raw, in: query, schema: {type: string, format: binary, minLength: 0}}
+        - {name: day, in: query, schema: {type: string, x-python-type: "datetime.date"}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Query"}}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /fields:
+    post:
+      operationId: postField
+      tags: [fields]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Field"}
+      responses:
+        "200":
+          description: The field.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Response"}
+  /days:
+    post:
+      operationId: postDay
+      tags: [days]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Day"}
+      responses:
+        "200":
+          description: The day.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Day"}
+components:
+  schemas:
+    PetId: {type: integer, minimum: 1}
+    Code: {type: string, minLength: 2, maxLength: 5}
+    Day: {type: string, x-python-type: "datetime.date"}
+    Pet:
+      oneOf:
+        - {$ref: "#/components/schemas/Cat"}
+        - {$ref: "#/components/schemas/Dog"}
+      discriminator:
+        propertyName: petType
+        mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
+    Cat:
+      type: object
+      required: [petType, name]
+      properties:
+        petType: {const: cat}
+        name: {type: string}
+    Dog:
+      type: object
+      required: [petType, bark]
+      properties:
+        petType: {const: dog}
+        bark: {type: boolean}
+    Query:
+      type: object
+      properties:
+        term: {type: string}
+    Field:
+      type: object
+      properties:
+        name: {type: string}
+    Response:
+      type: object
+      properties:
+        echo: {type: string}

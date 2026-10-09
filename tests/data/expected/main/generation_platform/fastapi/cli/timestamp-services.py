@@ -6,13 +6,13 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import abstractmethod
 from typing import Protocol
+from uuid import UUID
 
 import models
-import pydantic
 from fastapi.responses import Response
+from pydantic import AwareDatetime
 
 from ._runtime.server.responses import HTTPResult
 
@@ -27,8 +27,8 @@ class PetsService(Protocol):
         limit: int,
         tags: list[str] | None,
         kind: models.FieldPetsGetQueryKindParameter | None,
-        x_request_id: uuid.UUID | None,
-        since: pydantic.AwareDatetime | None,
+        x_request_id: UUID | None,
+        since: AwareDatetime | None,
         session: str | None,
     ) -> (
         models.FieldPetsGetResponse

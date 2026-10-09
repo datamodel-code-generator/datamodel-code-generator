@@ -44,6 +44,7 @@ _BUILTINS: Final = (
     "tuple",
 )
 _LOCAL: Final = (None, "")
+_FIELD: Final = Import(import_="Field", from_="pydantic")
 _PART: Final = "\x01"
 _Identity: TypeAlias = tuple[str | None, str]
 
@@ -257,7 +258,8 @@ class TargetModule:
             case ModelHint():
                 hint: ModelHint | None = value
             case UnionType() if value.hint is None:
-                return self.union(*(self.hint(member, static=static) for member in value.members))
+                parts = (self.hint(member, static=static) for member in value.members)
+                return self.union(*parts, tag=None if static else value.tag)
             case _:
                 hint = value.hint
         assert hint is not None, "a type view without a hint is a union a target composed"
@@ -276,35 +278,49 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str) -> str:
-        """Return a composite of spelled types this module writes, importing the names its text writes once."""
-        if (found := self.spelled.get(key := (kind, *parts))) is None:
+    def _composed(self, kind: str, *parts: str, tag: str | None = None, key: str | None = None) -> str:
+        """Return a composite of spelled types this module writes, importing the names its text writes once.
+
+        A union is of its parts, and any other kind is the type flag of a container of its one part.
+        """
+        if (found := self.spelled.get(cache := (kind, tag, key, *parts))) is None:
             composer = self.names.composer
             match kind:
+                case "union" if tag is not None:
+                    text, imports = composer.compose(members=parts, preserve_union_member_order=True, discriminator=tag)
+                    imports = (*imports, _FIELD)
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
-                case "optional":
-                    text, imports = composer.compose(base=parts[0], is_optional=True)
                 case _:
-                    text, imports = composer.compose(base=parts[0], is_sequence=True)
+                    flags: dict[str, Any] = {kind: True}
+                    text, imports = composer.compose(base=parts[0], key=key, **flags)
             if not self.qualified:
                 for item in imports:
                     self.imported(item)
-            found = self.spelled[key] = text
+            found = self.spelled[cache] = text
         return found
 
-    def union(self, *parts: str) -> str:
-        """Return the union of spelled types, each once in the order given, as the model generator writes unions."""
+    def union(self, *parts: str, tag: str | None = None) -> str:
+        """Return the union of spelled types, each once in the order given, as the model generator writes unions.
+
+        A tag discriminates the members as the model's annotation does, which a union of one member keeps too.
+        """
         members = tuple(dict.fromkeys(parts))
-        return "".join(members) if len(members) < 2 else self._composed("union", *members)  # noqa: PLR2004
+        if len(members) < 2 and tag is None:  # noqa: PLR2004
+            return "".join(members)
+        return self._composed("union", *members, tag=tag)
 
     def optional(self, part: str) -> str:
         """Return a spelled type or None, as the model generator writes an optional type."""
-        return self._composed("optional", part)
+        return self._composed("is_optional", part)
 
     def sequence(self, part: str) -> str:
         """Return a read-only sequence of a spelled type, as the model generator writes one."""
-        return self._composed("sequence", part)
+        return self._composed("is_sequence", part)
+
+    def container(self, flag: str, part: str, *, key: str | None = None) -> str:
+        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type."""
+        return self._composed(flag, part, key=key)
 
     def imports(self) -> str:
         """Return the module's import statements: whole modules in path order, then names by module."""

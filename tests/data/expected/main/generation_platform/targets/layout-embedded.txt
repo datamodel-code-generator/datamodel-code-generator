@@ -24,13 +24,13 @@ show server/routers/pets.py
   | 
   | """Endpoints of the pets operations; regenerate them instead of editing."""
   | 
-  | import example.models as example_models
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
   | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | from collections.abc import Sequence
+  | from example import models
   | from fastapi import APIRouter, Body, params
   | from fastapi.responses import Response
   | from typing import Annotated, Final
@@ -51,7 +51,7 @@ show server/routers/pets.py
   |         list_pets,
   |         methods=['GET'],
   |         status_code=200,
-  |         response_model=example_models.FieldPetsGetResponse,
+  |         response_model=models.FieldPetsGetResponse,
   |         response_model_by_alias=True,
   |         response_model_exclude_unset=True,
   |         operation_id='listPets',
@@ -70,9 +70,7 @@ show server/routers/pets.py
   | 
   |     def create_pet(
   |         *,
-  |         body: Annotated[example_models.Pet | None, Body(
-  |             media_type='application/json',
-  |         )] = None,
+  |         body: Annotated[models.Pet | None, Body(media_type='application/json')] = None,
   |     ) -> object:
   |         return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
   | 

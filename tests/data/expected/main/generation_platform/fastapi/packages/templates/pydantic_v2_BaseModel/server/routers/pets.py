@@ -6,15 +6,14 @@
 Ask the platform team before changing the API document; regenerate the package instead of editing it.
 """
 
-import uuid
 from collections.abc import Sequence
 from typing import Annotated, Final
+from uuid import UUID
 
 import models
-import pydantic
 from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 from fastapi.responses import Response
-from pydantic import Field
+from pydantic import AwareDatetime, Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -40,11 +39,11 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
             alias='kind',
         )] = None,
-        x_request_id: Annotated[uuid.UUID | None, Header(
+        x_request_id: Annotated[UUID | None, Header(
             alias='X-Request-Id',
             convert_underscores=False,
         )] = None,
-        since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
+        since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
         return dispatch(

@@ -158,7 +158,7 @@
          )
 --- server/routers/pets.py (baseline input)
 +++ server/routers/pets.py (current input)
-@@ -31,7 +31,7 @@
+@@ -30,7 +30,7 @@
          *,
          limit: Annotated[int, Field(ge=1, le=100), Query(
              alias='limit',

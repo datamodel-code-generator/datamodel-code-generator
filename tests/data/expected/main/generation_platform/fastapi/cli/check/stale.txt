@@ -257,17 +257,17 @@
          )
 --- server/routers/pets.py
 +++ server/routers/pets.py (expected)
-@@ -9,8 +9,7 @@
+@@ -8,8 +8,7 @@
+ from uuid import UUID
  
  import models
- import pydantic
 -from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 -from fastapi.responses import Response
 +from fastapi import APIRouter, Body, Cookie, Header, Query, params
- from pydantic import Field
+ from pydantic import AwareDatetime, Field
  
  from .._generated import contract
-@@ -99,92 +98,11 @@
+@@ -98,92 +97,11 @@
      )
  
  

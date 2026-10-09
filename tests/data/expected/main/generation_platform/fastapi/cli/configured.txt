@@ -105,15 +105,14 @@ __all__ = [
 
 """Endpoints of the animals operations; regenerate them instead of editing."""
 
-import uuid
 from collections.abc import Sequence
 from typing import Annotated, Final
+from uuid import UUID
 
 import models
-import pydantic
 from fastapi import APIRouter, Body, Cookie, Header, Path, Query, Request, params
 from fastapi.responses import Response
-from pydantic import Field
+from pydantic import AwareDatetime, Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -140,11 +139,11 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
             alias='kind',
         )] = None,
-        trace: Annotated[uuid.UUID | None, Header(
+        trace: Annotated[UUID | None, Header(
             alias='X-Request-Id',
             convert_underscores=False,
         )] = None,
-        since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
+        since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
         return dispatch(
@@ -400,14 +399,14 @@ def build_router(
 
 from __future__ import annotations
 
-import uuid
 from abc import abstractmethod
 from typing import Protocol
+from uuid import UUID
 
 import models
-import pydantic
 from fastapi import Request
 from fastapi.responses import Response
+from pydantic import AwareDatetime
 
 from ._runtime.server.responses import HTTPResult
 
@@ -423,8 +422,8 @@ class AnimalsService(Protocol):
         page_size: int,
         tags: list[str] | None,
         kind: models.FieldPetsGetQueryKindParameter | None,
-        trace: uuid.UUID | None,
-        since: pydantic.AwareDatetime | None,
+        trace: UUID | None,
+        since: AwareDatetime | None,
         session: str | None,
     ) -> (
         models.FieldPetsGetResponse

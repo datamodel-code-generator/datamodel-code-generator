@@ -7,14 +7,12 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
-from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.plan import (
-    CONSTRAINED,
     Default,
     MemberDefault,
     ParameterDefault,
@@ -22,24 +20,31 @@ from datamodel_code_generator._fastapi.plan import (
     default_media,
     fact,
     json_value,
-    symbol_imports,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
 from datamodel_code_generator._target_contract import (
+    BuiltinType,
     ConstructorType,
+    GenericType,
+    ImportedExpression,
+    ImportedType,
+    LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     NoneType,
+    SourceExpression,
     UnionType,
 )
+from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role
+from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._fastapi.plan import (
@@ -58,23 +63,24 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
-    from datamodel_code_generator._target_contract import (
-        GeneratedEnumMember,
-        GeneratedTypeContractBatch,
-        TypeArgument,
-        TypeView,
-    )
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeArgument, TypeView
+    from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, TemplateOverlay
 
 WIDTH: Final = 88
 _MIN_CONTENT_STATUS: Final = 200
-_BASES: Final = {
-    "conbytes": (None, "bytes"),
-    "condecimal": ("decimal", "Decimal"),
-    "confloat": (None, "float"),
-    "conint": (None, "int"),
-    "constr": (None, "str"),
+_METADATA: Final = frozenset({"Field", "StringConstraints"})
+_CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
+    (None, "list"): "is_list",
+    (None, "set"): "is_set",
+    (None, "frozenset"): "is_frozen_set",
+    (None, "dict"): "is_dict",
+    ("collections.abc", "Sequence"): "is_sequence",
+    ("typing", "Sequence"): "is_sequence",
+    ("collections.abc", "Mapping"): "is_mapping",
+    ("typing", "Mapping"): "is_mapping",
 }
+_KEYED: Final = frozenset({"is_dict", "is_mapping"})
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
@@ -127,6 +133,20 @@ _INPUT_RUNTIME: Final = (
 )
 
 
+def _constrained(value: TypeView) -> bool:
+    """Return whether a type holds a constrained scalar, whose validating annotation the server spells itself."""
+    match value:
+        case ConstructorType():
+            return value.base is not None
+        case UnionType():
+            return any(map(_constrained, value.members))
+        case GenericType():
+            return any(map(_constrained, value.arguments))
+        case _:
+            pass
+    return False
+
+
 def _reads_inputs(spec: OperationSpec) -> bool:
     """Return whether an operation reads an input through an adapter."""
     return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
@@ -171,71 +191,97 @@ def _items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
     return tuple(("", value) for value in values)
 
 
-class _Annotations(TypeSource):
-    """Spell final types as runtime annotations that type checkers also read.
+class Module(TargetModule):
+    """One generated server module: model types as the models spell them, with FastAPI's validating annotations.
 
-    A constrained scalar such as `conint(ge=1)` becomes `Annotated[int, Field(ge=1)]`, which validates the same.
+    A constrained scalar validates as `Annotated[base, Field(...)]`, with `StringConstraints` for a string, its
+    constraints split as the model generator splits them for a type alias, so it reads the same in one annotation with
+    a FastAPI declaration. A type the planner rebuilt, such as a parameter type with its aliases inlined, is composed
+    from its parts as the model generator composes types.
     """
 
-    __slots__ = ()
-
-    def parts(self, value: TypeView) -> tuple[str, tuple[str, ...]]:
-        """Return a type's runtime base and the Annotated metadata that constrains a constrained scalar."""
-        if (
-            not isinstance(value, ConstructorType)
-            or ((imported := value.callable.import_).from_, imported.import_) not in CONSTRAINED
-        ):
-            return self.runtime(value), ()
-        module, name = _BASES[imported.import_]
-        base = name if module is None else self._namespace.name(module, name)
-        metadata = self._namespace.name("pydantic", "StringConstraints" if name == "str" else "Field")
-        return base, (f"{metadata}({self._keywords(value.keywords)})",)
-
-    def literal(self, value: LiteralScalar) -> str:
-        """Return the Python literal of a scalar value."""
-        return self._spell(value, static=False)
-
-    def _spell(self, value: TypeView | TypeArgument | GeneratedEnumMember, *, static: bool) -> str:
-        if static or not isinstance(value, ConstructorType):
-            return super()._spell(value, static=static)
-        base, metadata = self.parts(value)
-        return f"{self._namespace.name('typing', 'Annotated')}[{base}, {', '.join(metadata)}]" if metadata else base
-
-
-class Module:
-    """One generated module: collision-free import aliases, type spellings, and runtime imports at its depth."""
-
-    def __init__(self, reserved: Iterable[str], symbols: Mapping[int, str], *, level: int) -> None:
-        """Reserve the names the module defines, and remember its depth."""
-        self.namespace = Namespace(reserved)
-        self.types = _Annotations(self.namespace, symbols)
-        self.level = level
-
-    def name(self, module: str, name: str) -> str:
-        """Return the local alias of an imported name."""
-        return self.namespace.name(module, name)
-
-    def local(self, module: str, name: str) -> str:
-        """Return the local alias of a name imported from a module of the generated package."""
-        return self.namespace.name(f"{'.' * self.level}{module}", name)
-
     def static(self, value: TypeView) -> str:
-        """Return the static spelling of a final type."""
-        return self.types.static(value)
+        """Return the type type checkers read: a constrained scalar as its base."""
+        match value:
+            case ConstructorType() if value.hint is None and value.base is not None:
+                return self.hint(value.base)
+            case UnionType() | GenericType() if value.hint is None:
+                return self.composed(value, static=True)
+            case _:
+                pass
+        return self.hint(value)
 
     def annotation(self, value: TypeView, *metadata: str) -> str:
-        """Return the spelling FastAPI validates with: the model's runtime type, readable by type checkers.
-
-        Extra metadata, such as a FastAPI parameter declaration, joins the type's own Annotated metadata.
-        """
-        base, own = self.types.parts(value)
+        """Return the annotation FastAPI validates with, joined by extra metadata such as a parameter declaration."""
+        base, own = self.parts(value)
         if not (items := (*own, *metadata)):
             return base
         return f"{self.name('typing', 'Annotated')}[{base}, {', '.join(items)}]"
 
-    def imports(self) -> str:
-        """Return the module's import statements."""
-        return "\n".join(self.namespace.imports())
+    def parts(self, value: TypeView) -> tuple[str, tuple[str, ...]]:
+        """Return a type's validating base and the Annotated metadata that constrains a constrained scalar."""
+        if isinstance(value, ConstructorType) and value.base is not None:
+            return self.hint(value.base), self.constraints(value, value.base)
+        return self.validating(value), ()
+
+    def validating(self, value: TypeView) -> str:
+        match value:
+            case ConstructorType() if value.base is not None:
+                return self.annotation(value)
+            case UnionType() | GenericType() if value.hint is None or _constrained(value):
+                return self.composed(value, static=False)
+            case _:
+                pass
+        return self.hint(value, static=False)
+
+    def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
+        """Return a union or container of spelled parts, as the model generator writes one."""
+        spell = self.static if static else self.validating
+        if isinstance(value, UnionType):
+            return self.union(*map(spell, value.members), tag=None if static else value.tag)
+        arguments = [spell(item) for item in value.arguments]
+        base = value.base
+        identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
+        flag = _CONTAINERS.get((None, base.name) if isinstance(base, BuiltinType) else identity)
+        if flag is None or not arguments:
+            return f"{self.hint(base)}[{', '.join(arguments)}]" if arguments else self.hint(base)
+        if flag in _KEYED:
+            return self.container(flag, arguments[-1], key=arguments[0])
+        return self.container(flag, arguments[0])
+
+    def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
+        """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""
+        keywords = dict(value.keywords)
+        name = base.name if isinstance(base, BuiltinType) else base.import_.import_
+        raw = {key: item.value if isinstance(item, LiteralScalar) else item for key, item in keywords.items()}
+        field, multiple_of = annotated_constraint_metadata(name, raw)
+        callable_ = value.callable.import_
+        metadata = (
+            self.imported(callable_)
+            if callable_.import_ in _METADATA
+            else self.name("pydantic", "StringConstraints" if name == "str" else "Field")
+        )
+        found: list[str] = []
+        if field:
+            found.append(f"{metadata}({', '.join(f'{key}={self.argument(keywords[key])}' for key in field)})")
+        if multiple_of is not None:
+            found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
+        return tuple(found)
+
+    def argument(self, value: TypeArgument) -> str:
+        """Return the Python expression of a recorded literal or source expression."""
+        match value:
+            case LiteralScalar(kind="decimal"):
+                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
+            case LiteralScalar():
+                return repr(value.value)
+            case LiteralSequence() | LiteralMapping():
+                return repr(json_value(value))
+            case SourceExpression():
+                return value.text
+            case ImportedExpression():
+                pass
+        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 
 class ServerRenderer:  # ruff: ignore[too-many-public-methods]
@@ -249,6 +295,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         plan: ServerPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
+        types: TypeNames,
         templates: TemplateOverlay | None = None,
         document: str = "{}",
     ) -> None:
@@ -264,7 +311,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.document = document
         self.batch = batch
         self.wire = wire
-        self.symbols = symbol_imports(batch)
+        self.types = types
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:
@@ -348,7 +395,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         single = self.config.layout == "single"
         groups = self.plan.groups
         services = [group.stem for group in groups]
-        module = Module({*BUILDER_NAMES, *(services if single else ())}, {}, level=1)
+        module = Module(self.types, {*BUILDER_NAMES, *(services if single else ())}, level=1)
         modules = [module.local("", "routes")] if single else [module.local("routers", stem) for stem in services]
         routes = (*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules))
         secured = bool(self.plan.schemes)
@@ -414,7 +461,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
                 *(argument.name for argument in spec.arguments),
                 *locals_.values(),
             ))
-        module = Module(reserved, self.symbols, level=level)
+        module = Module(self.types, reserved, level=level)
         routes = (
             []
             if group is None
@@ -546,7 +593,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def security(self) -> str:
         """Return the security module: one overridable FastAPI dependency for each scheme the operations use."""
-        module = Module(set(self.scheme_names.values()), self.symbols, level=1)
+        module = Module(self.types, set(self.scheme_names.values()), level=1)
         definitions = [
             _scheme_dependency(module, scheme, self.scheme_names[scheme.name]) for scheme in self.plan.schemes
         ]
@@ -588,7 +635,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         kinds = dict.fromkeys(self.media_type(module, media) for media in body.media)
         if not (body.required or any(_nullable(_payload(media)) for media in body.media)):
             kinds["None"] = None
-        return " | ".join(kinds)
+        return module.union(*kinds)
 
     @staticmethod
     def media_type(module: Module, media: MediaSpec) -> str:
@@ -603,7 +650,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         reserved = {"PrincipalT_contra", *(group.service for group in groups)}
         for spec in self.plan.operations:
             reserved.update(argument.name for argument in spec.arguments)
-        module = Module(reserved, self.symbols, level=1)
+        module = Module(self.types, reserved, level=1)
         protocol = module.name("typing", "Protocol")
         single = self.config.layout == "single"
         protocols = [
@@ -666,7 +713,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             for response in spec.responses
             if _body_status(spec, response.status) and (media := default_media(response)) is not None
         )
-        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{' | '.join(payloads) or 'None'}]"
+        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{module.union(*payloads) or 'None'}]"
         return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
@@ -680,7 +727,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     def contract(self) -> str:
         """Return the contract module: the dependency keys, and each operation's plans and request adapters."""
         reserved = {"OperationDependencies", *(spec.pascal for spec in self.plan.operations)}
-        module = Module(reserved, self.symbols, level=2)
+        module = Module(self.types, reserved, level=2)
         sections = [self.operation_plan(module, spec) for spec in self.plan.operations]
         names = tuple((f"{spec.python_name!r}: ", _dependency_sequence(module)) for spec in self.plan.operations)
         dependencies: Doc = Group("{", names, "}") if names else "{}"
@@ -778,10 +825,10 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
         keywords.append("convert_underscores=False")
     keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
     if field.default is Default.ABSENT:
-        parts: tuple[str, ...] = (_none(module.annotation(field.type), field.type),)
+        parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = " = None"
     else:
-        base, metadata = module.types.parts(field.type)
+        base, metadata = module.parts(field.type)
         parts = (base, *metadata)
         default = "" if (value := _default_value(module, field.default)) is None else f" = {value}"
     head = ", ".join((*parts, f"{module.name('fastapi', field.api)}("))
@@ -798,15 +845,15 @@ def _nullable(value: TypeView | None) -> bool:
     return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
 
 
-def _none(text: str, value: TypeView | None) -> str:
+def _none(module: Module, text: str, value: TypeView | None) -> str:
     """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
-    return text if _nullable(value) else f"{text} | None"
+    return text if _nullable(value) else module.optional(text)
 
 
 def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
     value = None if media.use is None else media.use.type
     text = module.name("typing", "Any") if value is None else module.annotation(value)
-    return text if required else _none(text, value)
+    return text if required else _none(module, text, value)
 
 
 def _adapter(module: Module, value: TypeView) -> str:
@@ -815,8 +862,8 @@ def _adapter(module: Module, value: TypeView) -> str:
 
 def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     if isinstance(value, LiteralScalar):
-        return module.types.literal(value)
-    return f"[{', '.join(module.types.literal(item) for item in value.items if isinstance(item, LiteralScalar))}]"
+        return module.argument(value)
+    return f"[{', '.join(module.argument(item) for item in value.items if isinstance(item, LiteralScalar))}]"
 
 
 def _default_value(module: Module, default: ParameterDefault) -> str | None:
@@ -835,9 +882,9 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
         case MemberDefault():
             enum, literal = module.annotation(default.type), default.literal
             if isinstance(literal, LiteralScalar):
-                return f"{enum}({module.types.literal(literal)})"
+                return f"{enum}({module.argument(literal)})"
             items = (item for item in literal.items if isinstance(item, LiteralScalar))
-            return f"[{', '.join(f'{enum}({module.types.literal(item)})' for item in items)}]"
+            return f"[{', '.join(f'{enum}({module.argument(item)})' for item in items)}]"
         case _:
             pass
     return None
@@ -854,7 +901,7 @@ def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
         text = module.name("typing", "Any")
     if parameter.required or parameter.default is not Default.ABSENT or _nullable(parameter.type):
         return text
-    return f"{text} | None"
+    return module.optional(text)
 
 
 def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group:
@@ -919,7 +966,7 @@ def _registration(module: Module, spec: OperationSpec, names: dict[str, str]) ->
     if spec.native_primary and primary is not None and primary.media is not None and primary.media.use is not None:
         assert primary.media.use.type is not None
         items.extend((
-            ("response_model=", module.static(primary.media.use.type)),
+            ("response_model=", module.annotation(primary.media.use.type)),
             ("response_model_by_alias=", "True"),
             ("response_model_exclude_unset=", "True"),
         ))

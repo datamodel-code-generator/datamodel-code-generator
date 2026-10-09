@@ -8,9 +8,9 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Protocol
 
-import pydantic
 import strict_basemodel_models
 from fastapi.responses import Response
+from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
 
 from ._runtime.server.responses import HTTPResult
 
@@ -22,22 +22,22 @@ class UntaggedService(Protocol):
     def get_values(
         self,
         *,
-        id: pydantic.StrictInt,
-        count: pydantic.StrictInt | None,
+        id: StrictInt,
+        count: StrictInt | None,
         bounded: int | None,
-        score: pydantic.StrictFloat | None,
-        flag: pydantic.StrictBool | None,
-        name: pydantic.StrictStr | None,
+        score: StrictFloat | None,
+        flag: StrictBool | None,
+        name: StrictStr | None,
         label: str | None,
-        counts: list[pydantic.StrictInt] | None,
-        names: list[pydantic.StrictStr] | None,
-        page: pydantic.StrictInt,
+        counts: list[StrictInt] | None,
+        names: list[StrictStr] | None,
+        page: StrictInt,
         size: int,
-        maybe: pydantic.StrictInt | None,
-        x_trace: pydantic.StrictInt | None,
-        x_tag: pydantic.StrictStr | None,
+        maybe: StrictInt | None,
+        x_trace: StrictInt | None,
+        x_tag: StrictStr | None,
         blob: bytes | None,
-        visits: pydantic.StrictInt | None,
+        visits: StrictInt | None,
     ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod

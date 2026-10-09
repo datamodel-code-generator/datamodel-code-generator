@@ -15,6 +15,7 @@ from datamodel_code_generator._fastapi.source_document import SourceDocument
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._target_documents import shown
+from datamodel_code_generator._target_module import TypeNames
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -69,6 +70,11 @@ class FastAPITarget:
             plan=plan,
             batch=request.batch,
             wire=wire,
+            types=TypeNames(
+                request.batch,
+                exact=bool(request.model_config.use_exact_imports),
+                overrides=request.model_config.import_overrides,
+            ),
             templates=FastAPITemplates.custom(request.model_config, request.cwd),
             document=document,
         )

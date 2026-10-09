@@ -25,7 +25,7 @@ from datamodel_code_generator._client.pagination import (
     _target_key,
     credential_place,
 )
-from datamodel_code_generator._target_contract import AnnotatedType, NoneType, UnionType
+from datamodel_code_generator._target_contract import NoneType, UnionType
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 
 if TYPE_CHECKING:
@@ -105,11 +105,16 @@ def _response(spec: OperationSpec, status: int) -> ResponseSpec | None:
 
 
 def _nonnull(value: TypeView) -> TypeView:
-    """Return a type without None, through its metadata, as a result that reads null is refused at runtime."""
-    if not isinstance(base := value.base if isinstance(value, AnnotatedType) else value, UnionType):
+    """Return a type without None, as a result that reads null is refused at runtime.
+
+    The union of the other members keeps the discriminators of its schema and of its annotation.
+    """
+    if not isinstance(value, UnionType) or not any(isinstance(member, NoneType) for member in value.members):
         return value
-    members = tuple(member for member in base.members if not isinstance(member, NoneType))
-    return members[0] if len(members) == 1 else UnionType(members, base.preserve_order)
+    members = tuple(member for member in value.members if not isinstance(member, NoneType))
+    if len(members) == 1 and value.tag is None:
+        return members[0]
+    return UnionType(members, value.preserve_order, value.discriminator, tag=value.tag)
 
 
 class _Polls:

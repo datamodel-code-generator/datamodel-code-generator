@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
@@ -401,9 +400,6 @@ def plan_client_codecs(
                 "The use has no generated native type",
                 code="BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING",
             )
-            continue
-        if (reason := type_reason(use.type, facts.imports)) is not None:
-            planner.report("The use's final type has no expression a generated module can import", code=reason)
             continue
         kind = _KINDS[backend]
         shape = None
