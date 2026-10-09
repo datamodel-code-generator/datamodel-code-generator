@@ -9,14 +9,19 @@ import pytest
 
 from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
-from tests.conftest import assert_generated_modules_output, assert_output
+from tests.conftest import (
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    write_generated_modules,
+)
 from tests.data.python.client_generation import (
     client_api_report,
     client_config_report,
     client_documentation_report,
     client_helper_spelling_report,
     client_input_report,
-    client_model_parity_report,
+    client_ordinary_models,
     client_render,
     generate_client,
 )
@@ -165,17 +170,12 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "retry-headers",
         "validation-arguments",
     }:
-        assert_output(
-            client_model_parity_report(
-                case,
-                tmp_path / "ordinary",
-                {
-                    backend: {parts: content for parts, content in modules.items() if parts[0] != "client"}
-                    for backend, modules in rendered.items()
-                },
-            ),
-            EXPECTED / "bindings" / "capture-parity.txt",
-        )
+        for backend, ordinary in client_ordinary_models(case, tmp_path / "ordinary").items():
+            write_generated_modules(
+                captured := tmp_path / "captured" / backend,
+                {parts: content for parts, content in rendered.get(backend, {}).items() if parts[0] != "client"},
+            )
+            assert_exact_directory_content(captured, ordinary)
 
 
 @pytest.mark.parametrize(

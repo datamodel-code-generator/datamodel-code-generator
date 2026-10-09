@@ -426,21 +426,17 @@ def client_api_report(root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
-    """Report whether ordinary generation matches each backend's already-rendered model bytes."""
+def client_ordinary_models(case_name: str, root: Path) -> dict[str, Path]:
+    """Generate each backend's models of a case the ordinary way, returning the directory of each backend's models."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
-    matches: list[bool] = []
+    directories: dict[str, Path] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
-        attempt = root / (name := backend.replace(".", "_"))
+        attempt = directories[backend.replace(".", "_")] = root / backend.replace(".", "_")
         attempt.mkdir(parents=True)
         source = _prepare_input(case, attempt)
         with _working_directory(case, attempt):
             generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
-        ordinary = {path.relative_to(attempt).parts: path.read_bytes() for path in attempt.rglob("*.py")}
-        encoding = case.get("model", {}).get("encoding", "utf-8")
-        target = {parts: content.encode(encoding) for parts, content in rendered.get(name, {}).items()}
-        matches.append(bool(ordinary) and ordinary == target)
-    return f"{bool(matches) and all(matches)}\n"
+    return directories
 
 
 def cyclic_input_failure(error: Exception, *, source: str, pointer: str, location: tuple[int, int]) -> str:
