@@ -19,7 +19,6 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
     info = responses.ResponseInfo(
         status_code=400,
         headers=responses.HeadersView((("x-private", secret),)),
-        call_id="call-1",
         elapsed=0.25,
         content_type="application/json",
     )

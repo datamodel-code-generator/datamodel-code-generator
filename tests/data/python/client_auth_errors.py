@@ -20,7 +20,7 @@ _CONFIGURATION_FIELDS = ("reason", "field_path", "source_uri", "source_pointer",
 def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     headers = responses.HeadersView((("Authorization", "private-secret"),))
     info = responses.ResponseInfo(
-        status_code=401, headers=headers, call_id="auth-call", elapsed=0.25, content_type=None, attempt_count=2
+        status_code=401, headers=headers, elapsed=0.25, content_type=None, attempt_count=2
     )
     cause = ValueError("private-secret")
     for name, required, fields in (

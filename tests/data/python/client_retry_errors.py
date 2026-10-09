@@ -19,7 +19,6 @@ def retry_errors(package: ModuleType, lines: list[str]) -> None:
     info = responses.ResponseInfo(
         status_code=307,
         headers=headers,
-        call_id="redirect-call",
         elapsed=0.25,
         content_type="text/plain",
         request_id="redirect-request",
@@ -60,7 +59,6 @@ def retry_errors(package: ModuleType, lines: list[str]) -> None:
             responses.ResponseInfo(
                 status_code=200,
                 headers=responses.HeadersView(),
-                call_id="counter-call",
                 elapsed=0.0,
                 content_type=None,
             ).attempt_count

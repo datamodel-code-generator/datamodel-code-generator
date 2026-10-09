@@ -646,7 +646,7 @@ def _records(cache: Caching, lines: list[str]) -> None:
     ):
         record(lines, label, lambda fields=fields: entry(**fields))
     record(lines, "entry headers", lambda: protocols.CacheEntry(headers={}, **_stamp()))
-    info = responses.ResponseInfo(status_code=200, headers=headers, call_id="c", elapsed=0.0, content_type=None)
+    info = responses.ResponseInfo(status_code=200, headers=headers, elapsed=0.0, content_type=None)
     record(lines, "result", lambda: protocols.CacheResult(data=1, source="network", response=info, network_status=200))
     record(
         lines, "result source", lambda: protocols.CacheResult(data=1, source="disk", response=info, network_status=None)
