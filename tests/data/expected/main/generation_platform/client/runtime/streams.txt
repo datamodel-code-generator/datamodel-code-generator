@@ -270,6 +270,10 @@ text
   async after the end ! StopAsyncIteration:  []
   async options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/events accept=text/event-stream
+  async event over the native size limit
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', call_id='<call>', condition='malformed') [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SSEError('Server-sent event exceeded the 1048576 byte limit.')] protocol_data_error
+  > GET https://api.example.com/events accept=text/event-stream
   async left early 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events accept=text/event-stream

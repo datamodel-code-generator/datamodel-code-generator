@@ -263,8 +263,7 @@ class _Lines:
     def split(self, chunk: bytes) -> list[bytes]:
         """Return the lines a chunk ends, each without its LF."""
         if b"\n" not in chunk:
-            if chunk:
-                self._parts.append(chunk)
+            self._parts.append(chunk)
             return []
         ended = chunk.split(b"\n")
         parts, self._parts = self._parts, [rest] if (rest := ended.pop()) else []
@@ -565,16 +564,12 @@ def _written(
 
 def _wire(value: object) -> JSONValue:
     """Return a value written by wire value with its writes applied, or the value itself."""
-    return value.applied(_same) if isinstance(value, Patch) else cast("JSONValue", value)
+    return value.applied(plain_copy) if isinstance(value, Patch) else cast("JSONValue", value)
 
 
 def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | Unset, ...]:
     """Return arguments written by wire value with their writes applied."""
     return cast("tuple[JSONValue | Unset, ...]", tuple(map(_wire, arguments)))
-
-
-def _same(value: object) -> JSONValue:
-    return cast("JSONValue", value)
 
 
 class _State(Enum):

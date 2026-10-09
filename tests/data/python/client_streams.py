@@ -488,6 +488,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             harness.reply((b'data: {"text": "a"}\n\n', b"data: cut")),
             harness.reply((b'data: {"text": "a"}\n\n', harness.interrupted())),
             harness.reply((b'data: {"text": "a"}\n\n' * 2,)),
+            harness.reply((b"data: " + b"x" * 1048576 + b"\n\n",)),
         ))
         async with await protocols.events.messages.open() as stream:
             await _adrained(lines, "async one byte at a time", stream)
@@ -501,6 +502,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async after the end", lambda: anext(stream))
         await stream.aclose()
         await arecord(lines, "async options of another type", lambda: protocols.events.messages.open(options=1))
+        await _adrained(lines, "async event over the native size limit", await protocols.events.messages.open())
         feed.replies.append(harness.reply((b'data: {"text": "a"}\n\n' * 2,)))
         async with await protocols.events.messages.open() as stream:
             lines.append(f"  async left early {_event(await anext(stream))}")
