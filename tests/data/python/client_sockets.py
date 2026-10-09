@@ -496,9 +496,12 @@ def _closed_meanwhile(harness: _Harness) -> None:
 
         thread = threading.Thread(target=iterate)
         thread.start()
-        receiving.wait(10)
+        reached = receiving.wait(10)
         session.close(4000, "bye")
         thread.join(10)
+        if not reached or thread.is_alive():
+            msg = "the receiver did not reach its receive or did not end after the close"
+            raise RuntimeError(msg)
     lines.append(f"  iteration closed meanwhile {iterated} {session!r}")
     harness.report(play)
 
