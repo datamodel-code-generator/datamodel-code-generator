@@ -7,28 +7,24 @@ dependencies
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/auth.py: 485
-  client/auth_challenges.py: 99
-  client/auth_policy.py: 660
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2866
+  client/client.py: 2419
   client/codecs.py: 95
   client/errors.py: 723
-  client/events.py: 515
-  client/hooks.py: 148
-  client/logical.py: 231
+  client/events.py: 497
+  client/hooks.py: 144
+  client/logical.py: 230
   client/media.py: 77
   client/multipart.py: 546
   client/native.py: 224
   client/operations.py: 838
-  client/options.py: 628
+  client/options.py: 605
   client/paths.py: 40
-  client/raw.py: 940
+  client/raw.py: 929
   client/responses.py: 88
-  client/retry.py: 335
-  client/scopes.py: 29
-  client/security.py: 82
+  client/retry.py: 330
+  client/security.py: 131
   client/timing.py: 121
   client/urls.py: 85
   model_codecs/__init__.py: 2
@@ -53,10 +49,9 @@ copied runtime
   protocols/webhook_events.py: 293
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-total 48 modules, 14679 lines
+total 44 modules, 12946 lines
 public files
   publication_client/__init__.py
-  publication_client/auth.py
   publication_client/bodies.py
   publication_client/errors.py
   publication_client/hooks.py

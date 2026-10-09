@@ -434,11 +434,12 @@ credentials the client places, and selected by the request headers its `Vary` na
 declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
 declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
 `ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
-permission set: credentials the client cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
-only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
-`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
+and a 304 without a usable entry raises `CacheProtocolError`. A response is stored only when its status is cacheable, it
+came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `CacheStoreError` and never
+resend a request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.

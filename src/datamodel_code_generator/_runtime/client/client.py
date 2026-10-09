@@ -1094,6 +1094,7 @@ class Core(Generic[AdapterT, HandleT]):
         explicit = call.settings.auth
         if isinstance(explicit, httpx2.Auth):
             return
+        placements: tuple[Placement, ...] | None
         if explicit is None or (credentials := self._shared.credentials) is None:
             placements = None if security.alternatives and all(security.alternatives) else ()
         else:

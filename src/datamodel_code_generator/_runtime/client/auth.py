@@ -9,7 +9,7 @@ from __future__ import annotations
 import base64
 import re
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 
 import httpx2
 
@@ -89,12 +89,22 @@ def _called(value: object) -> object:
         raise AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error) from None
 
 
+def _pair(value: object) -> tuple[str, str] | None:
+    """Return a username and password pair, or None for a value of another shape."""
+    if not isinstance(value, tuple):
+        return None
+    items = cast("tuple[object, ...]", value)
+    if len(items) != 2 or not all(isinstance(item, str) for item in items):  # noqa: PLR2004
+        return None
+    return cast("tuple[str, str]", items)
+
+
 def _text(scheme: SecurityScheme, value: object) -> str:
     """Return the wire text of a resolved credential, refusing a value of another type than its scheme's."""
     if scheme.kind == "basic":
-        if not (isinstance(value, tuple) and len(value) == 2 and all(isinstance(part, str) for part in value)):  # noqa: PLR2004
+        if (pair := _pair(value)) is None:
             raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
-        return "Basic " + base64.b64encode(f"{value[0]}:{value[1]}".encode()).decode("ascii")
+        return "Basic " + base64.b64encode(f"{pair[0]}:{pair[1]}".encode()).decode("ascii")
     if not isinstance(value, str):
         raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
     return f"Bearer {value}" if scheme.kind == "bearer" else value

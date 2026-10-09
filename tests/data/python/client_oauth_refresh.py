@@ -173,6 +173,23 @@ async def _async_refresh(package: ModuleType, auth: ModuleType, lines: list[str]
             lines.append(f"  async invalid grant ! {failure_line(error)}")
     lines.append(f"  async saved {saved}")
 
+    async def failed(tokens: Any) -> None:
+        msg = "store unavailable"
+        raise OSError(msg)
+
+    provider = auth.OauthRefreshToken(
+        _expiring(auth, "access-0", "refresh-0", 3600),
+        client_id="pets-app",
+        on_token_refreshed=failed,
+        clock=clock.clock,
+    )
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
+        exchange.respond(_INVALID, issued("access-1"))
+        try:
+            await api.auth.oauth_read()
+        except Exception as error:  # noqa: BLE001
+            lines.append(f"  async failing callback ! {failure_line(error)}")
+
 
 def oauth_refresh(package: ModuleType, lines: list[str]) -> None:
     """Refresh a token set when a resource rejects it or it is due, and refuse invalid token sets and grants."""

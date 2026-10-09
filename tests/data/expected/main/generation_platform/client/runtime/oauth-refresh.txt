@@ -83,3 +83,8 @@ async
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
   async invalid grant ! AuthError reason=reauthorization_required delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_grant
   async saved ['access-1/refresh-1 expires=3600']
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  async failing callback ! AuthError reason=provider_failed delivery_state=NOT_SENT phase=unknown cause=OSError

@@ -129,11 +129,21 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
         msg = "se:cr et vault down"
         raise OSError(msg)
 
-    with (
-        exchange.client() as http,
-        package.Client(http_client=http, oauth=_provider(auth, client_secret=secret)) as api,
+    errors = importlib.import_module(f"{package.__name__}.errors")
+
+    def refused() -> str:
+        raise errors.ConfigurationError(field_path=("vault",), reason="missing_value")
+
+    for label, value in (
+        ("secret callable failure", secret),
+        ("secret callable's own error", refused),
+        ("secret callable of another type", lambda: 7),
     ):
-        _outcome(lines, "secret callable failure", api.auth.oauth_read)
+        with (
+            exchange.client() as http,
+            package.Client(http_client=http, oauth=_provider(auth, client_secret=value)) as api,
+        ):
+            _outcome(lines, label, api.auth.oauth_read)
     with httpx2.Client() as native:
         _outcome(
             lines,
@@ -147,6 +157,13 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
         record(
             lines,
             "provider as a call's native auth",
+            lambda: api.auth.anonymous(options=options.RequestOptions(auth=provider)),
+        )
+        exchange.respond(_INVALID, _OK)
+        script.replies.append(token("access-native-2"))
+        record(
+            lines,
+            "native auth renews once",
             lambda: api.auth.anonymous(options=options.RequestOptions(auth=provider)),
         )
         lines.append(f"  native token requests {script.forms}")
@@ -219,8 +236,46 @@ def _concurrent(package: ModuleType, auth: ModuleType, exchange: Exchange, lines
     lines.append(f"  concurrent calls results={sorted(map(repr, results))} token requests={script.sends}")
 
 
+async def _aoutcome(lines: list[str], label: str, call: Callable[[], Any]) -> None:
+    try:
+        result = await call()
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {failure_line(error)}")
+    else:
+        lines.append(f"  {label} = {result!r}")
+
+
+async def _async_faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    options = importlib.import_module(f"{package.__name__}.options")
+    clock = _Clock(options)
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, oauth=_provider(auth, clock=clock.clock)) as api,
+    ):
+        exchange.respond(issued("access-a3", expires_in=100), _OK)
+        await _aoutcome(lines, "async token of a hundred seconds", api.auth.oauth_read)
+        clock.now = 95.0
+        exchange.respond(failing(httpx2.ConnectError), _OK)
+        await _aoutcome(lines, "async failed early renewal keeps the token", api.auth.oauth_read)
+        clock.now = 101.0
+        exchange.respond(failing(httpx2.ConnectError))
+        await _aoutcome(lines, "async failed renewal after expiry", api.auth.oauth_read)
+    sync_script = Script(token("access-x"))
+    provider = _provider(auth, http_client=sync_script.client())
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
+        await _aoutcome(lines, "synchronous token client in an asyncio call", api.auth.oauth_read)
+    script = Script(token("access-async-native"))
+    provider = _provider(auth, http_client=script.async_client())
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+        exchange.respond(_OK)
+        native = options.RequestOptions(auth=provider)
+        await _aoutcome(lines, "async provider as a call's native auth", lambda: api.auth.anonymous(options=native))
+    lines.append(f"  async native token requests {script.forms}")
+
+
 async def _async_tokens(package: ModuleType, auth: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
+    await _async_faults(package, auth, exchange, lines)
     async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=_provider(auth)) as api:
         exchange.respond(issued("access-a1"), _OK, _INVALID, issued("access-a2"), _OK)
         lines.append(f"  async first = {await api.auth.oauth_read()!r}")
@@ -229,7 +284,7 @@ async def _async_tokens(package: ModuleType, auth: ModuleType, lines: list[str])
     provider = _provider(auth, http_client=script.async_client())
     async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
         exchange.respond(_OK, _OK)
-        gathered = await asyncio.gather(api.auth.oauth_read(), api.auth.oauth_scopes())
+        gathered = await asyncio.gather(api.auth.oauth_read(), api.auth.oauth_read())
         lines.append(f"  async gathered={gathered} token requests={script.sends}")
     hold = asyncio.Event()
     script = Script(token("access-after"), hold=hold)

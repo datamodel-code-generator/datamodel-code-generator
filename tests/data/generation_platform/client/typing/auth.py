@@ -20,7 +20,7 @@ def credentials(token: Callable[[], str], user: Callable[[], tuple[str, str]]) -
     assert_type(tokens.refresh_token, str | None)
     refresh = OauthRefreshToken(tokens, client_id="c", on_token_refreshed=lambda refreshed: None)
     Client(oauth=refresh, openid=RefreshToken(TokenSet("access"), client_id="c", token_url="https://id.example.com/t"))
-    assert_type(OauthClientCredentials.token_url, str | None)
+    assert_type(ClientCredentials.token_url, str | None)
     provider = ClientCredentials(client_id="c", client_secret="s", token_url="https://id.example.com/t", scopes=["a"])
     Client(bearer_alias=provider, http_client=httpx2.Client())
 

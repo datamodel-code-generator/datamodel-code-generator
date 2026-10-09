@@ -12,7 +12,7 @@ import inspect
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, ClassVar, Final, Literal
+from typing import TYPE_CHECKING, ClassVar, Final, Literal, cast
 from urllib.parse import quote_plus, urlencode
 
 import httpx2
@@ -22,7 +22,7 @@ from .auth import SchemeAuth, TokenSource
 from .errors import OAUTH_ERROR_CODES, AuthError, ConfigurationError, DeliveryState, OAuthErrorCode, SDKError
 from .native import delivery
 from .security import SecurityScheme
-from .timing import SYSTEM_CLOCK, Clock
+from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
@@ -54,14 +54,39 @@ class TokenSet:
 
     def __post_init__(self) -> None:
         """Refuse empty tokens and a naive expiry."""
-        if not isinstance(self.access_token, str) or not self.access_token:
-            raise ConfigurationError(field_path=("access_token",), reason="invalid_value")
-        if self.refresh_token is not None and (not isinstance(self.refresh_token, str) or not self.refresh_token):
-            raise ConfigurationError(field_path=("refresh_token",), reason="invalid_value")
-        if self.expires_at is not None and (
-            not isinstance(self.expires_at, datetime) or self.expires_at.utcoffset() is None
-        ):
-            raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
+        _text(self.access_token, "access_token")
+        _text(self.refresh_token, "refresh_token", optional=True)
+        _aware(self.expires_at)
+
+
+def _text(value: object, name: str, *, optional: bool = False) -> None:
+    """Refuse a value that is not a nonempty string, or None when it is optional."""
+    if not ((optional and value is None) or (isinstance(value, str) and value)):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
+
+
+def _aware(value: object) -> None:
+    """Refuse an expiry that is not None or a timezone-aware datetime."""
+    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+        raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
+
+
+def _settings(client_secret: object, http_client: object, clock: object) -> None:
+    """Refuse a client secret, token client, or clock of another type."""
+    if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
+        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    checked_instance(http_client, (httpx2.Client, httpx2.AsyncClient, type(None)), ("http_client",))
+    checked_instance(clock, (Clock, type(None)), ("clock",))
+
+
+def _scope_list(value: object) -> tuple[str, ...]:
+    """Return requested scopes in order, refusing a string or a scope that is not a nonempty string."""
+    if isinstance(value, str) or not isinstance(value, (tuple, list)):
+        raise ConfigurationError(field_path=("scopes",), reason="invalid_value")
+    items = tuple(cast("tuple[object, ...] | list[object]", value))
+    for scope in items:
+        _text(scope, "scopes")
+    return cast("tuple[str, ...]", items)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +98,7 @@ class _Held:
     expires_at: float | None
 
 
-def _url(value: str | None) -> str:
+def _url(value: object) -> str:
     """Accept an HTTPS token URL, or plain HTTP to a loopback host."""
     if not isinstance(value, str):
         raise ConfigurationError(field_path=("token_url",), reason="missing_value" if value is None else "invalid_type")
@@ -101,9 +126,14 @@ def _secret(value: Secret | None) -> str | None:
         secret = value()
     except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
         raise _failed(error) from None
-    if not isinstance(secret, str):
+    return _string(secret)
+
+
+def _string(value: object) -> str:
+    """Return a client secret a callable returned, refusing a value of another type."""
+    if not isinstance(value, str):
         raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
-    return secret
+    return value
 
 
 def _expiry(fields: dict[str, object], received: float) -> float | None:
@@ -123,10 +153,10 @@ def _is_oauth_error(value: object) -> TypeIs[OAuthErrorCode]:
 def _answer(response: httpx2.Response, *, refreshing: bool) -> dict[str, object]:
     """Return the members of a successful token response, or raise the error of any other answer."""
     try:
-        data = response.json()
+        data: object = response.json()
     except ValueError:
         data = None
-    fields: dict[str, object] = data if isinstance(data, dict) else {}
+    fields = cast("dict[str, object]", data) if isinstance(data, dict) else {}
     status = response.status_code
     token, kind = fields.get("access_token"), fields.get("token_type")
     if status in _SUCCESS and isinstance(token, str) and token and isinstance(kind, str) and kind.lower() == "bearer":
@@ -160,19 +190,13 @@ class _Provider(TokenSource):
         http_client: httpx2.Client | httpx2.AsyncClient | None,
         clock: Clock | None,
     ) -> None:
-        if not isinstance(client_id, str) or not client_id:
-            raise ConfigurationError(field_path=("client_id",), reason="invalid_value")
+        _text(client_id, "client_id")
         if client_auth_method not in {"none", "client_secret_basic", "client_secret_post"}:
             raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
         if (client_auth_method == "none") != (client_secret is None):
             reason = "forbidden_value" if client_secret is not None else "missing_value"
             raise ConfigurationError(field_path=("client_secret",), reason=reason)
-        if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
-            raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
-        if http_client is not None and not isinstance(http_client, (httpx2.Client, httpx2.AsyncClient)):
-            raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
-        if clock is not None and not isinstance(clock, Clock):
-            raise ConfigurationError(field_path=("clock",), reason="invalid_type")
+        _settings(client_secret, http_client, clock)
         self._url = _url(token_url if token_url is not None else type(self).token_url)
         self._client_id = client_id
         self._secret = client_secret
@@ -263,9 +287,8 @@ class _Provider(TokenSource):
                 if (kept := self._kept(stale)) is None:
                     raise
                 return kept
-            if inspect.isawaitable(result := self._notify(tokens)):
-                if inspect.iscoroutine(result):
-                    result.close()
+            if inspect.iscoroutine(result := self._notify(tokens)):
+                result.close()
                 raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_mode")
             return tokens.access_token
 
@@ -374,12 +397,8 @@ class ClientCredentials(_Provider):
         clock: Clock | None = None,
     ) -> None:
         """Validate the endpoint, the client authentication, the scopes, and the audience without I/O."""
-        if client_auth_method == "none":
-            raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
-        if isinstance(scopes, str) or not all(isinstance(scope, str) and scope for scope in scopes):
-            raise ConfigurationError(field_path=("scopes",), reason="invalid_value")
-        if audience is not None and (not isinstance(audience, str) or not audience):
-            raise ConfigurationError(field_path=("audience",), reason="invalid_value")
+        requested = _scope_list(scopes)
+        _text(audience, "audience", optional=True)
         super().__init__(
             client_id=client_id,
             client_secret=client_secret,
@@ -388,7 +407,7 @@ class ClientCredentials(_Provider):
             http_client=http_client,
             clock=clock,
         )
-        self._scopes = tuple(scopes)
+        self._scopes = requested
         self._audience = audience
 
     def _form(self) -> list[tuple[str, str]]:
@@ -404,6 +423,13 @@ class ClientCredentials(_Provider):
         tokens = TokenSet(str(fields["access_token"]))
         self._hold(tokens, received, expires_at)
         return tokens
+
+
+def _refresh_settings(token_set: object, callback: object) -> None:
+    """Refuse a token set of another type and a callback that cannot be called."""
+    checked_instance(token_set, (TokenSet,), ("token_set",))
+    if callback is not None and not callable(callback):
+        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
 
 
 class RefreshToken(_Provider):
@@ -428,10 +454,7 @@ class RefreshToken(_Provider):
         clock: Clock | None = None,
     ) -> None:
         """Validate the endpoint, the client authentication, the token set, and the callback without I/O."""
-        if not isinstance(token_set, TokenSet):
-            raise ConfigurationError(field_path=("token_set",), reason="invalid_type")
-        if on_token_refreshed is not None and not callable(on_token_refreshed):
-            raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
+        _refresh_settings(token_set, on_token_refreshed)
         super().__init__(
             client_id=client_id,
             client_secret=client_secret,
