@@ -144,39 +144,6 @@ id
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
     For further information visit https://errors.pydantic.dev/<version>/v/string_type] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
-  line over the limit in one chunk
-    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=18) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=18] protocol_size_error
-  > GET https://api.example.com/records accept=application/x-ndjson
-  line a later chunk extends over the limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=20) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=20] protocol_size_error
-  > GET https://api.example.com/records accept=application/x-ndjson
-  unended line after a line end over the limit
-    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=21) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=21] protocol_size_error
-  > GET https://api.example.com/records accept=application/x-ndjson
-  line at the limit
-    1  id=None retry=None data=Record{'text': 'abcd'} raw='{"text": "abcd"}'
-  < closed
-    end
-  > GET https://api.example.com/records accept=application/x-ndjson
-  CRLF line at the limit
-    1  id=None retry=None data=Record{'text': 'abcd'} raw='{"text": "abcd"}'
-    2  id=None retry=None data=Record{'text': 'efgh'} raw='{"text": "efgh"}'
-  < closed
-    end
-  > GET https://api.example.com/records accept=application/x-ndjson
-  CR inside a line counted
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=30) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=30] protocol_size_error
-  > GET https://api.example.com/records accept=application/x-ndjson
-  record over a record limit under the line limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='event', limit=16, observed=17) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='event', unit='bytes', limit=16, observed=17] protocol_size_error
-  > GET https://api.example.com/records accept=application/x-ndjson
   first 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
   after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.errors import SessionLimitError
 from pets.options import SessionOptions
 from pets.protocols import Page, Pager
 from pets.types.users import ListUsersResponse
@@ -31,8 +30,3 @@ async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[Use
     resumed: Pager[object, ListUsersResponse] = client.protocols.users.all.resume(state)  # error
     client.protocols.users.all.resume(page)  # error
     del items, pages, resumed, exported
-
-
-def wrong_states(client: Client, limit: SessionLimitError) -> None:
-    """Reject another helper's resume state as a pager's continuation."""
-    client.protocols.users.all.resume(limit.resume_state)  # error

@@ -3,23 +3,25 @@ event ID cursors
   > GET https://api.example.com/events?topic=news last-event-id='0'
   checkpoint before any event ! ProtocolStateError: ProtocolStateError(state='uncursored', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  after one event saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+  after one event saved {"bound": [], "cursor": "1", "expires_at": null}
   2 message id='1' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
-  after an event without an ID saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+  after an event without an ID saved {"bound": [], "cursor": "1", "expires_at": null}
   rest
     3 message id='2' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
   < closed
     end
-  after the end saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "expires_at": null}
-  state repr ResumeState(version=1)
+  after the end saved {"bound": [], "cursor": "2", "expires_at": null}
+  state repr {'cursor': '2', 'bound': [], 'expires_at': None}
   > GET https://api.example.com/events?topic=news last-event-id='2'
   resumed response 200 progress {'reconnects': 0}
   resumed
     1 message id='2' retry=None data=Message{'text': 'd'} raw='{"text": "d"}'
-    2 message id=None retry=None data=Message{'text': 'cleared'} raw='{"text": "cleared"}'
+    2 message id='2' retry=None data=Message{'text': 'empty before any ID'} raw='{"text": "empty before any ID"}'
+    3 message id='3' retry=None data=Message{'text': 'e'} raw='{"text": "e"}'
+    4 message id=None retry=None data=Message{'text': 'cleared'} raw='{"text": "cleared"}'
   < closed
     end
-  cleared saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": null, "expires_at": null}
+  cleared saved {"bound": [], "cursor": null, "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id=None
   resumed without a cursor
     1 message id='9' retry=None data=Message{'text': 'fresh'} raw='{"text": "fresh"}'
@@ -39,13 +41,13 @@ checkpoints
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error resume_state=NoneType
-  failed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
+  failed saved {"bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   < closed
-  closed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+  closed saved {"bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
-  checkpoint of a call giving a cookie ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.cookie.session') [field_path=('arguments', 'cookie', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  checkpoint of a call giving a cookie = {'cursor': '1', 'bound': [], 'expires_at': None}
   < closed
   > GET https://api.example.com/events last-event-id=None
   checkpoint without resume metadata ! ConfigurationError: ConfigurationError(reason='missing_metadata', field_path='resume') [field_path=('resume',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_metadata
@@ -78,13 +80,13 @@ reconnections
   interrupted before any cursor
     1 message id=None retry=None data=Message{'text': 'no ID'} raw='{"text": "no ID"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=NoneType
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events?topic=news last-event-id=None
   interrupted without reconnecting
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
-  interruption saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
+  interruption saved {"bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id='1'
   resumed after the interruption
     1 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
@@ -94,7 +96,7 @@ reconnections
   cut frame without incomplete_eof
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=9) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error resume_state=ResumeState
+    end
   > GET https://api.example.com/events last-event-id=None
   reopened after the reconnection time
     1 message id='1' retry=1 data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -118,34 +120,29 @@ failures that never reconnect
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error resume_state=NoneType
-  > GET https://api.example.com/events last-event-id=None
-  line over its limit
-    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=24, observed=49) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=24, observed=49] protocol_size_error resume_state=NoneType
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
   > GET https://api.example.com/events last-event-id=None
   idle read
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events last-event-id='1'
-    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=IndexError('pop from empty list')] api_connection_error resume_state=NoneType
+    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=IndexError('pop from empty list')] api_connection_error
   > GET https://api.example.com/events last-event-id=None
   read timeout tied with the idle limit
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events last-event-id='1'
-    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=IndexError('pop from empty list')] api_connection_error resume_state=NoneType
+    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='streamEvents', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=IndexError('pop from empty list')] api_connection_error
   > GET https://api.example.com/events last-event-id=None
   read failure classified as not retryable
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events last-event-id=None
   failure outside the read phase
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events last-event-id=None
   < closed
   stopped ! Stop then ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
@@ -158,13 +155,13 @@ failures that never reconnect
   < closed
   > GET https://api.example.com/events last-event-id='1'
   < closed
-    ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='gone'), body_bytes=b'{"detail": "gone"}', truncated=False] not_found_error resume_state=NoneType
-  after the failed reopen saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
+    ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='gone'), body_bytes=b'{"detail": "gone"}', truncated=False] not_found_error
+  after the failed reopen saved {"bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   error event
     1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
   < closed
-    ! StreamRemoteError: StreamRemoteError(operation_id='streamEvents', call_id='<call>', sequence=2) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_remote_error resume_state=NoneType
+    ! StreamRemoteError: StreamRemoteError(operation_id='streamEvents', call_id='<call>', sequence=2) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_remote_error
 budgets
   > GET https://api.example.com/events last-event-id=None
   one reconnection allowed
@@ -173,29 +170,29 @@ budgets
   > GET https://api.example.com/events last-event-id='1'
     2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
-    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=1) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=1, cause=StreamInterruptedError()] stream_resume_exhausted_error resume_state=ResumeState
+    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=1) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=1, cause=StreamInterruptedError()] stream_resume_exhausted_error
     progress {'reconnects': 1}
   > GET https://api.example.com/events last-event-id=None
   no reconnection allowed
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=0) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=0, cause=StreamInterruptedError()] stream_resume_exhausted_error resume_state=ResumeState
+    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=0) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=0, cause=StreamInterruptedError()] stream_resume_exhausted_error
 waits
   > GET https://api.example.com/events last-event-id=None
   reconnection time over the allowed wait
     1 message id='1' retry=70000 data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events last-event-id=None
   reconnection time past the deadline
     1 message id='1' retry=70000 data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events last-event-id=None
   backoff cap over the allowed wait
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
 another reopen operation
   > GET https://api.example.com/events last-event-id=None
   incomplete ends reopened
@@ -208,7 +205,7 @@ another reopen operation
   < closed
     end
     progress {'reconnects': 2}
-  tracked saved {"arguments": [], "body": [], "bound": ["s1", "t3", "resume"], "cursor": "2", "expires_at": "2999-01-01T00:00:00+00:00"}
+  tracked saved {"bound": ["s1", "t3", "resume"], "cursor": "2", "expires_at": "2999-01-01T00:00:00+00:00"}
   > GET https://api.example.com/streams/s1?token=t3&mode=resume last-event-id='2'
   resumed with the bindings
   < closed
@@ -247,7 +244,7 @@ another reopen operation
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
     hook stream_end outcome=error
-    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 bound path values
   > GET https://api.example.com/rooms/r0 last-event-id=None
   reopened with the shard
@@ -257,18 +254,18 @@ bound path values
     2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
     end
-  shard saved {"arguments": [["r"], ["0"], []], "body": [], "bound": ["2"], "cursor": "2", "expires_at": null}
+  shard saved {"bound": ["2"], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/rooms/.x last-event-id=None
   < closed
   open with a shard making a dot segment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Shard', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 NDJSON body cursors
   > GET https://api.example.com/records last-event-id=None
   1  id=None retry=None data=Record{'id': 'r1', 'text': 'a'} raw='{"id": "r1", "text": "a"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "expires_at": null}
+  record saved {"bound": [], "cursor": "r1", "expires_at": null}
   2  id=None retry=None data=Record{'id': None, 'text': 'no ID'} raw='{"text": "no ID"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "expires_at": null}
+  record saved {"bound": [], "cursor": "r1", "expires_at": null}
   3  id=None retry=None data=Record{'id': None, 'text': 'cleared'} raw='{"id": null, "text": "cleared"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": null, "expires_at": null}
+  record saved {"bound": [], "cursor": null, "expires_at": null}
   rest
     4  id=None retry=None data=Record{'id': 'r2', 'text': 'b'} raw='{"id": "r2", "text": "b"}'
   < closed
@@ -302,8 +299,8 @@ SSE body cursors
   transport interruption not declared
     1 tick id=None retry=None data=Tick{'seq': 1} raw='{"seq": 1}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='transport', sequence=1) [operation_id='streamFeed', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
-  ticks saved {"arguments": [[]], "body": [{"topic": "t"}, "application/json", null], "bound": [], "cursor": 1, "expires_at": null}
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='transport', sequence=1) [operation_id='streamFeed', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
+  ticks saved {"bound": [], "cursor": 1, "expires_at": null}
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","after":1}'
   resumed writing the body
   < closed
@@ -311,38 +308,38 @@ SSE body cursors
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
   missing cursor
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamFeed', condition='missing', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error resume_state=NoneType
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamFeed', condition='missing', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
   null cursor
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='null', sequence=1, truncated=False) [operation_id='streamFeed', condition='null', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error resume_state=NoneType
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='null', sequence=1, truncated=False) [operation_id='streamFeed', condition='null', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
   unknown event that is not JSON
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamFeed', condition='missing', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error resume_state=NoneType
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamFeed', condition='missing', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
 cursors a reopen cannot encode
   > GET https://api.example.com/events last-event-id=None
   event ID ending in a space
     1 message id='5 ' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
     operation OperationRef(pointer='/paths/~1events/get', document=None) cause DecodeError context StreamInterruptedError
-  checkpoint ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
+  checkpoint = {'cursor': '5 ', 'bound': [], 'expires_at': None}
   > GET https://api.example.com/events last-event-id=None
   object body cursor written to a query parameter
     1 other id=None retry=None data=UnknownEvent{'discriminator': 'other', 'raw_data': '{"id": {"a": 1}}'} raw='{"id": {"a": 1}}'
   < closed
-    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
     operation OperationRef(pointer='/paths/~1events/get', document=None) cause DecodeError context StreamInterruptedError
-  checkpoint ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
+  checkpoint = {'cursor': {'a': 1}, 'bound': [], 'expires_at': None}
 cursors written as exploded query fields
   > GET https://api.example.com/marks last-event-id=None
   1 message id=None retry=None data=Mark{'scope': {'after': '5'}} raw='{"scope": {"after": "5"}}'
-  scope saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": {"after": "5"}, "expires_at": null}
+  scope saved {"bound": [], "cursor": {"after": "5"}, "expires_at": null}
   2 message id=None retry=None data=Mark{'scope': {'api_key': 'k'}} raw='{"scope": {"api_key": "k"}}'
-  checkpoint of a credential field ! ConfigurationError: ConfigurationError(operation_id='streamMarks', reason='wrong_capability', field_path='arguments.query.scope') [operation_id='streamMarks', field_path=('arguments', 'query', 'scope'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  checkpoint of a credential field = {'cursor': {'api_key': 'k'}, 'bound': [], 'expires_at': None}
   < closed
-  resume a credential field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  resume a credential field ! ConfigurationError: ConfigurationError(operation_id='streamMarks', reason='wrong_capability', field_path='arguments.query.scope') [operation_id='streamMarks', field_path=('arguments', 'query', 'scope'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
   > GET https://api.example.com/marks?after=5 last-event-id=None
   resumed after the scope
     1 message id=None retry=None data=Mark{'scope': {'after': '6'}} raw='{"scope": {"after": "6"}}'
@@ -354,38 +351,38 @@ refusals
   > GET https://api.example.com/records last-event-id=None
   < closed
   resume a string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  resume another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume missing members ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume cursor not a string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume empty cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume bound values of another count ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume a saved cookie ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume an expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  resume cursor the reopen cannot encode ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  object cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  resume an object ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume missing members ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume cursor not a string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume empty cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume bound values of another count ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume an extra member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume an expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  resume cursor the reopen cannot encode ! DecodeError: DecodeError(operation_id='streamEvents', call_id='<call>', reason='unencodable', location='header.Last-Event-ID') [operation_id='streamEvents', location=('header', 'Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  object cursor ! DecodeError: DecodeError(operation_id='streamRecords', call_id='<call>', reason='unencodable', location='query.after') [operation_id='streamRecords', location=('query', 'after'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('The dict value does not have the string lexical kind')] unencodable
   > GET https://api.example.com/events last-event-id=None
   < closed
-  resume arguments of another operation ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  resume arguments of another operation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of changed invalid body ! ProtocolDataError: ProtocolDataError(operation_id='streamFeed', condition='value') [operation_id='streamFeed', condition='value', location=BodySelector(pointer='/seq'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
+  checkpoint of changed invalid body = {'cursor': 1, 'bound': [], 'expires_at': None}
   < closed
   > POST https://api.example.com/search-feed?term=news last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of ordinary querystring = 'ResumeState'
+  checkpoint of ordinary querystring = 'dict'
   < closed
   > POST https://api.example.com/search-feed?api_key=secret last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of credential querystring ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  checkpoint of credential querystring = 'dict'
   < closed
   > POST https://api.example.com/search-feed?term=news last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of ordinary querystring with a signer = 'ResumeState'
+  checkpoint of ordinary querystring with a signer = 'dict'
   < closed
   > POST https://api.example.com/search-feed?sig=echoed last-event-id=None body=b'{"topic":"t"}'
-  checkpoint of signer querystring field ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='arguments.querystring.criteria') [field_path=('arguments', 'querystring', 'criteria'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  checkpoint of signer querystring field = 'dict'
   < closed
-  ticks cleared cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  ticks cursor replaced by an object ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  invalid saved body ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  invalid saved media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  mismatched saved media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  ticks cleared cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","after":{"$gt":0}}'
+  ticks cursor replaced by an object, written as the server's
+  < closed
+    end
   > GET https://api.example.com/events?topic=news last-event-id='1'
   resume after the refusals
     1 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
@@ -402,7 +399,7 @@ asyncio
   < closed
     hook stream_end outcome=success
     end
-  async saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "expires_at": null}
+  async saved {"bound": [], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id='2'
   async resumed
     1 message id='3' retry=None data=Message{'text': 'c'} raw='{"text": "c"}'
@@ -412,15 +409,15 @@ asyncio
   async no reconnection allowed
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=0) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=0, cause=StreamInterruptedError()] stream_resume_exhausted_error resume_state=ResumeState
+    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='reconnects', limit=0) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='reconnects', limit=0, cause=StreamInterruptedError()] stream_resume_exhausted_error
   > GET https://api.example.com/events last-event-id=None
   async past the deadline
     1 message id='1' retry=70000 data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error resume_state=ResumeState
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events last-event-id=None
   < closed
-    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=DecodeError()] protocol_data_error
     operation OperationRef(pointer='/paths/~1events/get', document=None) cause DecodeError context StreamInterruptedError
   > GET https://api.example.com/events last-event-id=None
   < closed
@@ -434,7 +431,7 @@ asyncio
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
-    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
@@ -452,7 +449,7 @@ stepped client clock
     2 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
   < closed
     end
-  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
+  clock checkpoint saved {"bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1}
   expired on the client wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
 async stepped client clock
@@ -467,7 +464,7 @@ async stepped client clock
     2 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
   < closed
     end
-  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
+  clock checkpoint saved {"bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1}
 stream write guards
   > GET https://api.example.com/marks last-event-id=None
@@ -476,7 +473,7 @@ credential reconnect scoped authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks last-event-id=None
 credential reconnect bound authenticated=False
@@ -484,7 +481,7 @@ credential reconnect bound authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks last-event-id=None
 credential reconnect deep authenticated=False
@@ -492,7 +489,7 @@ credential reconnect deep authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks last-event-id=None
 credential reconnect deepbound authenticated=False
@@ -500,7 +497,7 @@ credential reconnect deepbound authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect scoped authenticated=True
@@ -508,7 +505,7 @@ credential reconnect scoped authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect bound authenticated=True
@@ -516,7 +513,7 @@ credential reconnect bound authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect deep authenticated=True
@@ -524,7 +521,7 @@ credential reconnect deep authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect deepbound authenticated=True
@@ -532,7 +529,7 @@ credential reconnect deepbound authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
 safe authenticated reconnect
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
@@ -670,6 +667,14 @@ cleared resume patch deep scope[after]
   < closed
   > GET https://api.example.com/deep-marks?other=unrelated last-event-id=None
   < closed
+  > POST https://api.example.com/search-feed last-event-id=None body=b'{"topic":"t"}'
+credential reconnect into a querystring
+  < closed
+  refused ConfigurationError condition=None path=('arguments', 'querystring', 'criteria') operation='/paths/~1search-feed/post' operation_id='searchFeed' cause=NoneType context=NoneType
+  new sends=0
+credential resume into a querystring
+  refused ConfigurationError condition=None path=('arguments', 'querystring', 'criteria') operation='/paths/~1search-feed/post' operation_id='searchFeed' cause=NoneType context=NoneType
+  new sends=0
   > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t"}'
   < closed
   > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t","after":1}'
@@ -685,7 +690,7 @@ credential reconnect scoped authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks last-event-id=None
 credential reconnect bound authenticated=False
@@ -693,7 +698,7 @@ credential reconnect bound authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks last-event-id=None
 credential reconnect deep authenticated=False
@@ -701,7 +706,7 @@ credential reconnect deep authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks last-event-id=None
 credential reconnect deepbound authenticated=False
@@ -709,7 +714,7 @@ credential reconnect deepbound authenticated=False
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect scoped authenticated=True
@@ -717,7 +722,7 @@ credential reconnect scoped authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect bound authenticated=True
@@ -725,7 +730,7 @@ credential reconnect bound authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect deep authenticated=True
@@ -733,7 +738,7 @@ credential reconnect deep authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
   > GET https://api.example.com/deep-marks?api_key=CLIENT_KEY last-event-id=None
 credential reconnect deepbound authenticated=True
@@ -741,7 +746,7 @@ credential reconnect deepbound authenticated=True
   refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
   new sends=0
 credential checkpoint
-  refused ConfigurationError condition=None path=('arguments', 'query', 'scope') operation='/paths/~1deep-marks/get' operation_id='streamDeepMarks' cause=NoneType context=NoneType
+  returned dict
   new sends=0
 safe authenticated reconnect
   > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None

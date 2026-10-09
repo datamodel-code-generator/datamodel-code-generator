@@ -35,7 +35,7 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 from datamodel_code_generator._target_templates import builtin_role
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.codec_render import RenderedBindings, UseAccessors
@@ -308,7 +308,6 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "CacheValidatorConflictError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
-    "HandshakeResponse",
     "IncompleteFrameError",
     "NonResumableSourceError",
     "OperationCancelledError",
@@ -330,12 +329,11 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "UploadSourceChangedError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
-    "WebSocketProxyError",
 )
 _ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
 _SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
-    "pagination": ("PaginationCycleError", "ResumeStateError", *_SESSION_ERRORS),
+    "pagination": ("PaginationCycleError", *_SESSION_ERRORS),
     "polling": (
         "OperationCancelledError",
         "OperationFailedError",
@@ -367,11 +365,9 @@ _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
     "websocket": (
         "ConcurrentReceiveError",
         "DeliveryUnknownError",
-        "HandshakeResponse",
         "StreamDecodeError",
         "WebSocketClosedError",
         "WebSocketHandshakeError",
-        "WebSocketProxyError",
         *_SESSION_ERRORS,
     ),
 }
@@ -437,7 +433,6 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
             "StatusSelector",
         ),
         "references": ("OperationRef",),
-        "resume": ("ResumeState", "import_state"),
     },
     "pagination": {"options": ("PaginationOptions",), "pagination": ("AsyncPager", "Page", "Pager")},
     "polling": {
@@ -460,20 +455,8 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
         "cache_stores": ("AsyncMemoryCacheStore", "MemoryCacheStore"),
     },
     "websocket": {
-        "options": ("WSOptions", "WebSocketTransportOptions"),
-        "websocket_types": (
-            "AsyncWebSocketConnection",
-            "AsyncWebSocketConnector",
-            "Message",
-            "PingReceipt",
-            "ResolvedWSOptions",
-            "ResolvedWebSocketTransportOptions",
-            "WSFrame",
-            "WebSocketConnection",
-            "WebSocketConnector",
-            "WebSocketOpenRequest",
-        ),
-        "websocket": ("AsyncWebSocketSession", "WebSocketSession"),
+        "options": ("WSOptions",),
+        "websocket": ("AsyncWebSocketSession", "Message", "PingReceipt", "WebSocketSession"),
     },
     "webhooks": {
         "references": ("OperationRef",),
@@ -546,22 +529,30 @@ _MULTIPART_NAMES: Final = (
     "AsyncBodyInput",
     "AsyncMultipartBody",
     "BodyInput",
-    "DecodedPart",
     "FieldPart",
     "FilePart",
     "MultipartBody",
-    "MultipartData",
 )
-_BODIES: Final = (
-    '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n'
-    "from ._runtime.client.bodies import (\n"
-    + "".join(f"    {name},\n" for name in _BODY_NAMES)
-    + ")\nfrom ._runtime.client.multipart import (\n"
-    + "".join(f"    {name},\n" for name in _MULTIPART_NAMES)
-    + ")\nfrom ._runtime.client.operations import FormData\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, "FormData")))
-    + "]\n"
-)
+_RESPONSE_PART_NAMES: Final = ("DecodedPart", "MultipartData")
+_PARTS: Final = "_runtime.client.multipart_responses"
+
+
+def _bodies(capabilities: Capabilities) -> str:
+    """Return the bodies module: request bodies, and the parts of multipart responses when one is declared."""
+    parts = _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()
+    return "".join((
+        '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n',
+        "from ._runtime.client.bodies import (\n",
+        *(f"    {name},\n" for name in _BODY_NAMES),
+        ")\nfrom ._runtime.client.multipart import (\n",
+        *(f"    {name},\n" for name in _MULTIPART_NAMES),
+        *((f"){chr(10)}from .{_PARTS} import {', '.join(parts)}{chr(10)}",) if parts else (")\n",)),
+        "from ._runtime.client.operations import FormData\n\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, *parts, "FormData"))),
+        "]\n",
+    ))
+
+
 _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
@@ -1110,7 +1101,7 @@ class _Typing:
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
         """Return the values the field parts of a body sent as parts take: each member's, JSONValue for any extra."""
-        keys = (self.key("json", part.use) for part in member_parts(media) if not part.plan.file)
+        keys = (self.key("json", part.use) for part in member_parts(media) if not part.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
     def codec(self, module: Module, use: TypeUseBinding) -> str:
@@ -1894,17 +1885,11 @@ class _Registry(_Typing):
     def sent_plan(self, module: Module, part: PartSpec) -> Group:
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
-        flags = (
-            ("repeated=", plan.repeated),
-            ("file=", plan.file),
-            ("required=", plan.required),
-            ("excluded=", plan.excluded),
-        )
         return _call(
             module.local("_runtime.client.multipart", "PartPlan"),
             (
                 ("", repr(plan.name)),
-                *((flag, "True") for flag, value in flags if value),
+                *((("repeated=", "True"),) if plan.repeated else ()),
                 *((("codec=", self.codec(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
                 *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
@@ -1923,10 +1908,6 @@ class _Registry(_Typing):
             entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
         if media.content_types:
             entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
-        if media.parts:
-            entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
-        if media.additional_part is not None:
-            entries.append(("additional_part=", _part_plan(module, media.additional_part)))
         return entries
 
     def decoder(self, module: Module, spec: OperationSpec) -> Group:
@@ -1956,12 +1937,24 @@ class _Registry(_Typing):
             elif media.members is not None:
                 branches.append(self.parts_branch(module, status, media))
             elif media.use is None or media.use.id not in self.accessors:
-                name = {"json": "wire_branch", "text": "text_branch", "multipart": "multipart_branch"}.get(
-                    media.kind, "form_branch"
-                )
-                branches.append(f"{module.local(_RUNTIME, name)}({status}, {media_type})")
-            else:
+                runtime, name = {
+                    "json": (_RUNTIME, "wire_branch"),
+                    "text": (_RUNTIME, "text_branch"),
+                    "multipart": (_PARTS, "multipart_branch"),
+                }.get(media.kind, (_RUNTIME, "form_branch"))
+                branches.append(f"{module.local(runtime, name)}({status}, {media_type})")
+            elif media.kind == "multipart":
                 entries: list[tuple[str, Doc]] = [
+                    ("", status),
+                    ("", media_type),
+                    ("", self.codec(module, media.use)),
+                    ("", _tuple(_part_plan(module, item) for item in media.parts)),
+                ]
+                if media.additional_part is not None:
+                    entries.append(("", _part_plan(module, media.additional_part)))
+                branches.append(_call(module.local(_PARTS, "object_branch"), entries))
+            else:
+                entries = [
                     ("", status),
                     ("", media_type),
                     ("", repr(media.kind)),
@@ -1973,12 +1966,12 @@ class _Registry(_Typing):
 
     def parts_branch(self, module: Module, status: str, media: MediaSpec) -> Group:
         """Return the branch of a form-data response with file parts: its reader of each member's parts."""
-        reader = f"{module.local(_RUNTIME, 'PartsReader')}[{self.values(module, self.parts(media))}]"
+        reader = f"{module.local(_PARTS, 'PartsReader')}[{self.values(module, self.parts(media))}]"
         entries: list[tuple[str, Doc]] = [("", _tuple(self.read_part(module, part) for part in media.members or ()))]
         if media.extra is not None:
             entries.append(("additional=", self.read_part(module, media.extra)))
         return _call(
-            module.local(_RUNTIME, "parts_branch"),
+            module.local(_PARTS, "parts_branch"),
             (("", status), ("", repr(media.media_type)), ("", _call(reader, entries))),
         )
 
@@ -1989,17 +1982,16 @@ class _Registry(_Typing):
             (flag, "True")
             for flag, value in (
                 ("repeated=", plan.repeated),
-                ("required=", plan.required),
-                ("excluded=", plan.excluded),
+                ("required=", part.required),
+                ("excluded=", part.excluded),
             )
             if value
         ]
-        multipart = "_runtime.client.multipart"
         if part.use is None:
-            return _call(module.local(multipart, "file_part"), (("", repr(plan.name)), *flags))
+            return _call(module.local(_PARTS, "file_part"), (("", repr(plan.name)), *flags))
         codec = self.codec(module, part.use)
         return _call(
-            module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", codec), *flags)
+            module.local(_PARTS, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", codec), *flags)
         )
 
 
@@ -2057,21 +2049,21 @@ _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None 
 _RESUMED: Final = """
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the bindings' values, the server's
-expiry, and the caller's first request when the reopen repeats it, never events, counts, responses, the session, or
-the call's options. A call given a cookie or credential argument cannot be checkpointed: `checkpoint()` raises
-`ConfigurationError` with the reason `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
-request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of its own, writing
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's
+expiry, never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that
+failed, ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing
 the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
-reconnections afresh; it refuses another helper's state, an expired one, and one that does not fit with
-`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
-client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError` and an expired one with
+`ResumeStateError` before sending, and a cursor written where a credential goes with `ConfigurationError` with the
+reason `wrong_capability`. No options, the client's, a view's, or the call's, may patch a header or query parameter a
+reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
-`StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+`StreamResumeExhaustedError`; a wait whose backoff cap or `retry` time is
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.
@@ -2844,7 +2836,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
             ("media=", repr(spec.media)),
-            ("fingerprint=", repr(self.fingerprints[helper.name])),
         ]
         if not isinstance(schema := tree["event_schema"], dict):
             entries.append(("event=", self.codec(module, spec.events[0][1])))
@@ -2936,30 +2927,34 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ))
         ]
         if spec.reopen is not None:
-            methods.append(self.stream_resume(module, index, spec, (options, returns), asynchronous=asynchronous))
+            if not spec.own:
+                signature = tuple(argument.parameter(module) for argument in options)
+                passed = [*passed[:2], *passed[-len(_STREAM_OPTIONS) :]]
+            methods.append(self.stream_resume(module, spec, (signature, returns), passed, wait))
         return methods
 
     @staticmethod
     def stream_resume(
-        module: Module, index: int, spec: StreamSpec, signature: tuple[list[_Argument], str], *, asynchronous: bool
+        module: Module,
+        spec: StreamSpec,
+        signature: tuple[tuple[str, ...], str],
+        passed: Sequence[tuple[str, Doc]],
+        wait: str,
     ) -> str:
-        """Return a stream helper's resume method, which takes a checkpoint and the open method's options."""
-        options, returns = signature
-        resume = module.local(_STREAMS, "aresume_events" if asynchronous else "resume_events")
-        state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
-        passed = [
-            ("", "self._core"),
-            ("", f"{module.namespace.name('.', '_plans')}.STREAM_{index}"),
-            ("", "state"),
-            *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
-        ]
-        wait = "await " if asynchronous else ""
+        """Return a stream helper's resume method, which takes a checkpoint and the open method's options.
+
+        A reopen of the helper's own operation also takes the open method's arguments and body, which it sends again.
+        """
+        given, returns = signature
+        resume = module.local(_STREAMS, "aresume_events" if wait else "resume_events")
+        state = f"state: {module.local('_runtime.model_codecs.media', 'JSONValue')}"
+        passed = [*passed[:2], ("", "state"), *passed[2:]]
         what = f"Reopen the {_STREAM_KINDS[spec.helper.kind]} after a checkpoint's cursor"
         return "\n".join((
             layout(
                 Group(
-                    f"    {'async ' if asynchronous else ''}def resume(",
-                    items(("self", state, "*", *(argument.parameter(module) for argument in options))),
+                    f"    {'async ' if wait else ''}def resume(",
+                    items(("self", state, "*", *given)),
                     f") -> {returns}:",
                 ),
                 4,
@@ -2980,16 +2975,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     def socket_plan(self, module: Module, index: int, spec: SocketSpec) -> str:
-        """Return a WebSocket helper's plan: its identity, handshake call, connectors, messages, and subprotocols.
+        """Return a WebSocket helper's plan: its identity, handshake call, messages, and subprotocols.
 
         Only the settings that differ from the plan's defaults are written.
         """
-        runtime = "_runtime.protocols.websocket"
-        factories = "_runtime.protocols.websocket_connectors"
         helper = spec.helper
         tree = helper.tree
-        plan = module.local(runtime, "ChannelPlan")
-        connectors = (module.local(factories, "native_connector"), module.local(factories, "async_native_connector"))
+        plan = module.local("_runtime.protocols.websocket", "ChannelPlan")
         entries: list[tuple[str, Doc]] = [
             ("helper_id=", repr(helper.name)),
             (
@@ -3001,7 +2993,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
             ("fingerprint=", repr(self.fingerprints[helper.name])),
-            ("connectors=", _tuple(connectors)),
         ]
         for direction, use in (("send", spec.send), ("receive", spec.receive)):
             message = tree[direction]
@@ -3013,8 +3004,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 entries.append(("encoder=" if direction == "send" else "decoder=", self.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
             entries.append(("subprotocols=", _tuple(map(repr, subprotocols))))
-        if tree["compression"]:
-            entries.append(("compression=", "True"))
         sent, received = self.message_types(module, spec)
         head = f"SOCKET_{index}: {module.name('typing', 'Final')}[{plan}[{sent}, {received}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
@@ -3038,12 +3027,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
-        wait = "await " if asynchronous else ""
         sent, received = self.message_types(module, spec)
+        returns = f"{session}[{sent}, {received}]"
+        summary = f"Open the WebSocket of {route}, returning once its handshake got a valid 101."
+        if asynchronous:
+            returns = f"{module.name('contextlib', 'AbstractAsyncContextManager')}[{returns}]"
+            summary = f"Open the WebSocket of {route} for an async with block once its handshake got a valid 101."
         return "\n".join((
-            _signature("connect", signature, f"{session}[{sent}, {received}]", asynchronous=asynchronous, stub=False),
-            f'        """Open the WebSocket of {route}, returning once its handshake got a valid 101."""',
-            f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+            _signature("connect", signature, returns, asynchronous=False, stub=False),
+            f'        """{summary}"""',
+            f"        return {layout(_call(opener, passed), 8, 7, WIDTH)}",
         ))
 
 
@@ -3272,16 +3265,19 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
 `bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
+raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
+files, including paths, are sent with `Content-Length` for the bytes measured at call
 entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
 files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
 async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
-all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
-read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
-loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
+file parts can. Files are read at most 64 KiB at a time. In async calls a
+path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
+reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
+async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
 call running in a thread before it closes the file.
 
 ## Redirects and transport construction
@@ -3616,10 +3612,10 @@ session, the first page's own included, ends it with `PaginationCycleError` afte
         lines = (
             """
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record, without its LF or the CR of a CRLF,
-counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
-the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
-event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. Bytes after the last line end raise
+`IncompleteFrameError` unless the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record
+has the empty string as its event type and no event ID, and a declared error record raises `StreamRemoteError` with
+the event type None.
 """
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""
@@ -3641,15 +3637,16 @@ from:
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| line size | 256 KiB |
-| event data size | 1 MiB |
 | session total timeout | None |
 {_RECONNECT_LIMITS if resumed else ""}
-The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
-discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
-`StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
-completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
-connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
+The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
+UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the native
+`SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator maps it to; data that does not
+decode raises `StreamDecodeError`, and a declared error event raises `StreamRemoteError`. The stream ends at its
+declared completion; an end before it raises `StreamInterruptedError`, and a broken connection
+`StreamInterruptedError` with its transport failure as the cause. A frame an SSE body ends in the middle of is
+discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
 active streams; each stream releases its own response and limiter permit.
@@ -3663,47 +3660,38 @@ active streams; each stream releases its own response and limiter permit.
         return f"""
 ## WebSocket sessions
 
-A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's `APIStatusError`. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
+A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
+`AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
+task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
+sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
+raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
+for the helper, then the default below. The session types are imported from:
 
-- `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
-  `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
-  `WebSocketConnection`, `AsyncWebSocketConnection`, `WebSocketOpenRequest`, and `WSFrame`
+- `{package}.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
 - `{package}.options`: `SessionOptions` and `ProtocolClientOptions`
 
 | Limit | Effective default |
 |---|---|
-| open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
+| open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB, decompressed |
-| received frames buffered before reading pauses | 16 |
-| send timeout | 30 seconds, waiting for earlier sends included; None removes it |
+| message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| close timeout | 5 seconds |
 | session total timeout | None |
 
-The connection and the handshake's limiter permit belong to the session until it closes or fails; closing the client
-leaves an open session to its owner. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`;
-sends go one at a time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a
-cancelled send or ping fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind
-the helper declares; one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one
-over the size limit raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than
-the idle timeout raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError`
-with its code and reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises
-`APITimeoutError` and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`,
-closes the session, and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is
-checked before the write starts, and a started write runs until it completes or the connection fails. Sessions never
-reconnect. `WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
-Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
-by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
-policy.
-
-`ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
-opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
-context, an HTTP or HTTPS proxy, and whether environment proxies apply; both reach a borrowed connector too. Closing a
-session sends the code and reason given, 1000 by default, and drops the connection when the closing handshake fails.
+The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
+client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
+and a second one raises `ConcurrentReceiveError`; HTTPX2 writes sends one at a time beside it. Cancelling an asyncio
+`receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON coded by the helper's schema,
+UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode raises `StreamDecodeError` and
+closes the connection with 1002, and one over the size limit raises `ProtocolSizeError` after HTTPX2 closed the
+connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` and closes with 1001.
+A closure by the server raises `WebSocketClosedError` with its code and reason, is answered with the same code, and
+ends iteration when it was normal. A send or ping on a connection that is already closing raises `WebSocketClosedError`
+without a code; a send that may have reached the server raises `DeliveryUnknownError`, closes the session, and is never
+sent again. Sessions never reconnect. Received handshake refusals are terminal, including redirects and 401s;
+credentials are never refreshed or invalidated by a refused upgrade. Only a transport failure proven `NOT_SENT` before
+handover may use the call's existing retry policy. Closing a session sends the code and reason given, 1000 by default.
 """
 
     @staticmethod
@@ -3762,6 +3750,12 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             signatures=self.signatures,
             backends=declared_backends(self.codecs),
             keywords=resources.records is not None,
+            multipart_responses=any(
+                media.kind == "multipart"
+                for spec in self.plan.operations
+                for response in spec.responses
+                for media in response.media
+            ),
         )
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
@@ -3772,7 +3766,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
-            self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
+            self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),

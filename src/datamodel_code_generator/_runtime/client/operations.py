@@ -13,7 +13,6 @@ from ..model_codecs.media import (
     decode_form,
     encode_form,
     form_encode,
-    issue,
     json_value,
     percent_decode,
     split_form,
@@ -23,18 +22,7 @@ from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import Unset
 from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
 from .media import charset, encode_text, essence, most_specific, normalized, with_charset
-from .multipart import (
-    DecodedPart,
-    MultipartData,
-    MultipartSource,
-    PartPlan,
-    PartSyntaxError,
-    PartValueError,
-    decode_parts,
-    encode_multipart,
-    new_boundary,
-    parse_multipart,
-)
+from .multipart import PartPlan, encode_multipart, encode_parts
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
@@ -42,7 +30,7 @@ if TYPE_CHECKING:
 
     from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
-    from .multipart import PartDecoder
+    from .multipart import FormParts
     from .responses import ResponseInfo
     from .retry import IdempotencyPlan
     from .security import SecurityBinding
@@ -52,7 +40,7 @@ T_co = TypeVar("T_co", covariant=True)
 
 FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
-ReadKind: TypeAlias = Literal["json", "text", "form", "multipart"]
+ReadKind: TypeAlias = Literal["json", "text", "form"]
 
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _MIN_SUCCESS: Final = 200
@@ -166,7 +154,7 @@ class ParameterSpec:
 class EncodedBody:
     """A request body encoded for its selected media type; a binary body stays the input the call was given."""
 
-    media_type: str
+    media_type: str | None
     content: object
 
 
@@ -275,15 +263,18 @@ class BodyMedia:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
         return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
 
-    def multipart(self, value: object, boundary: str) -> object:
-        """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
+    def multipart(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+        """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts.
+
+        The sent media type keeps its parameters beside the boundary.
+        """
         if self.codec is None:
-            return MultipartSource(value, boundary, self.parts, self.additional_part)
+            return encode_parts(value, self.parts, self.additional_part, sent)
         return encode_multipart(
             cast("JSONValue", self.codec.dump(value)),
-            boundary,
             dict(self.content_types) if self.content_types else None,
             {plan.name: plan for plan in self.encoded} if self.encoded else None,
+            sent,
         )
 
 
@@ -335,10 +326,8 @@ class RequestBody:
         )
         try:
             if selected.kind == "multipart":
-                boundary = new_boundary()
-                return EncodedBody(
-                    media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
-                )
+                parts, multipart = selected.multipart(value, sent)
+                return EncodedBody(media_type=multipart, content=parts)
             content = selected.encode(value, sent)
         except DecodeError as error:
             raise _unencodable(error.location, operation_id, error.cause) from None
@@ -380,7 +369,7 @@ def _quoted(names: tuple[str, ...], positions: Iterable[int]) -> str:
 def _sent(concrete: str, declared: str) -> str:
     """Return the media type a call sends: its concrete type, with the declared charset when it names none.
 
-    A boundary the concrete type names is left out, since a multipart body names the boundary of its call.
+    A boundary the concrete type names is left out, since HTTPX2 names the boundary of a multipart body.
     """
     bare, *parameters = concrete.split("; ")
     kept = "; ".join((bare, *(parameter for parameter in parameters if not parameter.startswith("boundary="))))
@@ -431,7 +420,7 @@ def _unencodable(
     )
 
 
-class _InvalidBodyError(Exception):
+class InvalidBodyError(Exception):
     """A body that failed to decode, published as the error of its kind of failure."""
 
     reason = "invalid_syntax"
@@ -445,11 +434,11 @@ class _InvalidBodyError(Exception):
         return response_failure(info, self.reason, body, self.cause)
 
 
-class _BodyValueError(_InvalidBodyError):
+class BodyValueError(InvalidBodyError):
     reason = "invalid_value"
 
 
-class _BodyFramingError(_InvalidBodyError):
+class BodyFramingError(InvalidBodyError):
     reason = "invalid_framing"
 
 
@@ -458,7 +447,7 @@ def _parsed(parse: Callable[[bytes], T], body: bytes) -> T:
     try:
         return parse(body)
     except (CodecError, ValueError, RecursionError) as error:
-        raise _InvalidBodyError(error) from None
+        raise InvalidBodyError(error) from None
 
 
 def _json(body: bytes, _: ResponseInfo) -> JSONValue:
@@ -469,7 +458,7 @@ def _text(body: bytes, info: ResponseInfo) -> str:
     try:
         return body.decode(charset(info.content_type or ""))
     except UnicodeDecodeError as error:
-        raise _InvalidBodyError(error) from None
+        raise InvalidBodyError(error) from None
 
 
 def _form_pairs(body: bytes) -> FormData:
@@ -490,109 +479,40 @@ def _none(_body: bytes, _info: ResponseInfo) -> None:
     return None
 
 
-def _multipart(body: bytes, info: ResponseInfo) -> tuple[DecodedPart[bytes], ...]:
-    try:
-        return parse_multipart(body, info.content_type)
-    except ValueError as error:
-        raise _BodyFramingError(error) from None
-
-
-def _multipart_data(body: bytes, info: ResponseInfo) -> MultipartData[bytes]:
-    return MultipartData(_multipart(body, info))
-
-
-class PartsReader(Generic[T]):
-    """Read a form-data response with file parts into its parts, each value read by the decoder of its member.
-
-    A part must be declared, or allowed by the schema's other properties, only a repeated member may repeat, and
-    every required member must have a part; text that is not its member's kind is a decode failure, a value its codec
-    refuses a validation failure.
-    """
-
-    __slots__ = ("_additional", "_declared")
-
-    def __init__(self, parts: tuple[PartDecoder[T], ...], additional: PartDecoder[T] | None = None) -> None:
-        """Keep the decoder of each declared member and of any other part."""
-        self._declared = {part.name: part for part in parts}
-        self._additional = additional
-
-    def __call__(self, body: bytes, info: ResponseInfo) -> MultipartData[T]:
-        """Split the body into its parts and read each of them."""
-        parts: list[DecodedPart[T]] = []
-        seen: set[str] = set()
-        for part in _multipart(body, info):
-            if (name := part.name) is None or (plan := self._declared.get(name, self._additional)) is None:
-                raise _InvalidBodyError(issue(code="multipart.undeclared", message="A form-data part is not declared"))
-            if plan.excluded:
-                raise _BodyValueError(
-                    issue(code="multipart.excluded", message="A form-data part carries a member its direction excludes")
-                )
-            if name in seen and not plan.repeated:
-                raise _InvalidBodyError(
-                    issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
-                )
-            seen.add(name)
-            try:
-                value = plan.read(part)
-            except PartSyntaxError as error:
-                raise _InvalidBodyError(error.cause) from None
-            except PartValueError as error:
-                raise _BodyValueError(error.cause) from None
-            parts.append(DecodedPart(name, value, part.filename, part.content_type, part.headers))
-        for plan in self._declared.values():
-            if plan.required and plan.name not in seen:
-                raise _BodyValueError(
-                    issue(code="multipart.missing", message="A required form-data member has no part")
-                )
-        return MultipartData(tuple(parts))
-
-
 class _Model(Generic[T_co]):
-    __slots__ = ("additional", "additional_part", "codec", "fields", "kind", "parts")
+    """Decode a body through a model codec: JSON bytes as they are, any other body as the text value it reads to."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
-        self,
-        kind: ReadKind,
-        codec: InboundModelCodec[T_co],
-        fields: tuple[FieldPlan, ...],
-        additional: FieldPlan | None,
-        parts: tuple[PartPlan, ...],
-        additional_part: PartPlan | None,
-    ) -> None:
-        self.kind = kind
+    __slots__ = ("codec", "read")
+
+    def __init__(self, codec: InboundModelCodec[T_co], read: Callable[[bytes, ResponseInfo], object] | None) -> None:
         self.codec = codec
-        self.fields = fields
-        self.additional = additional
-        self.parts = parts
-        self.additional_part = additional_part
+        self.read = read
 
     def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
         codec = self.codec
         try:
-            return codec.decode(body) if self.kind == "json" else codec.text(self.read(body, info))
+            return codec.decode(body) if self.read is None else codec.text(self.read(body, info))
         except codec.errors as error:
             if codec.malformed(error):
-                raise _InvalidBodyError(error) from None
-            raise _BodyValueError(error) from None
+                raise InvalidBodyError(error) from None
+            raise BodyValueError(error) from None
 
     def paged(self, body: bytes, info: ResponseInfo) -> tuple[T_co, JSONValue]:
         """Decode a helper response and keep the parsed JSON its selectors read."""
         value = self(body, info)
-        return value, _json(body, info) if self.kind == "json" else None
+        return value, _json(body, info) if self.read is None else None
 
-    def read(self, body: bytes, info: ResponseInfo) -> object:
-        match self.kind:
-            case "text":
-                return _text(body, info)
-            case "multipart":
-                parts = _multipart(body, info)
-                try:
-                    return decode_parts(parts, self.parts, self.additional_part)
-                except (CodecError, ValueError) as error:
-                    raise _InvalidBodyError(error) from None
-            case _:
-                pass
-        return _parsed(partial(decode_form, fields=self.fields, additional=self.additional), body)
+
+def _form_object(fields: tuple[FieldPlan, ...], additional: FieldPlan | None, body: bytes, _: ResponseInfo) -> object:
+    return _parsed(partial(decode_form, fields=fields, additional=additional), body)
+
+
+def read_branch(
+    status: str, media_type: str, codec: InboundModelCodec[T], read: Callable[[bytes, ResponseInfo], object] | None
+) -> Branch[T]:
+    """Return a branch whose body `read` reads into the value its model codec decodes, or that decodes JSON."""
+    model = _Model(codec, read)
+    return Branch(status, media_type, model, model.paged)
 
 
 def model_branch(  # noqa: PLR0913
@@ -603,12 +523,10 @@ def model_branch(  # noqa: PLR0913
     *,
     fields: tuple[FieldPlan, ...] = (),
     additional: FieldPlan | None = None,
-    parts: tuple[PartPlan, ...] = (),
-    additional_part: PartPlan | None = None,
 ) -> Branch[T]:
     """Return a branch that decodes its body through a model codec into the native value."""
-    model = _Model(kind, codec, fields, additional, parts, additional_part)
-    return Branch(status, media_type, model, model.paged)
+    read = None if kind == "json" else _text if kind == "text" else partial(_form_object, fields, additional)
+    return read_branch(status, media_type, codec, read)
 
 
 def wire_branch(status: str, media_type: str) -> Branch[JSONValue]:
@@ -624,16 +542,6 @@ def text_branch(status: str, media_type: str) -> Branch[str]:
 def form_branch(status: str, media_type: str) -> Branch[FormData]:
     """Return a URL-encoded branch without a schema, keeping pair order and repeated names."""
     return Branch(status, media_type, _pairs)
-
-
-def multipart_branch(status: str, media_type: str) -> Branch[MultipartData[bytes]]:
-    """Return a multipart branch without a schema, keeping each part's bytes, name, filename, and headers."""
-    return Branch(status, media_type, _multipart_data)
-
-
-def parts_branch(status: str, media_type: str, reader: PartsReader[T]) -> Branch[MultipartData[T]]:
-    """Return a form-data branch whose schema has file parts, read part by part into their members' values."""
-    return Branch(status, media_type, reader)
 
 
 def binary_branch(status: str, media_type: str) -> Branch[bytes]:
@@ -781,7 +689,7 @@ class ResponseDecoder(Generic[T_co]):
             branch = self._branch(info, body)
             try:
                 return branch.page(body, info)
-            except _InvalidBodyError as error:
+            except InvalidBodyError as error:
                 raise error.failure(info, body) from None
         raise self.failure(info, body, truncated=truncated, problem=problem)
 
@@ -817,7 +725,7 @@ class ResponseDecoder(Generic[T_co]):
     def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T]) -> T:
         try:
             return branch.decode(body, info)
-        except _InvalidBodyError as error:
+        except InvalidBodyError as error:
             raise error.failure(info, body) from None
 
     def _failure(
@@ -830,7 +738,7 @@ class ResponseDecoder(Generic[T_co]):
             try:
                 branch = _select(info, body, declared, bodyless=self._bodyless(info.status_code))
                 data = branch.decode(body, info)
-            except _InvalidBodyError as error:
+            except InvalidBodyError as error:
                 problem = error.cause
             except DecodeError as error:
                 if error.reason not in _SELECTION_FAILURES:

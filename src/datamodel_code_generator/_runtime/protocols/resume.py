@@ -1,49 +1,38 @@
-"""Resume tokens: the small state a helper continues from, its exported JSON, and the import that checks its form."""
+"""Checkpoints: the plain JSON state a helper continues from, the checks of its form, and its expiry error."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from datetime import datetime
-from typing import Final, Literal, TypeAlias, cast, final, get_args
+from typing import TYPE_CHECKING, Literal, cast
 
 from ..client.errors import ProtocolError, error_choice
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from ..model_codecs.media import (
-    JSONValue,
-    json_value,
-)
-from .records import Sealed, canonical_json, wire_string
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
+
+if TYPE_CHECKING:
+    from ..model_codecs.media import JSONValue
 
 __all__ = (
     "MalformedStateError",
-    "ResumeState",
     "ResumeStateError",
-    "import_state",
     "require_state",
     "saved_expiry",
     "state_array",
     "state_count",
     "state_expiry",
-    "state_fields",
     "state_text",
 )
 
-_ResumeCondition: TypeAlias = Literal["version", "fingerprint", "expired", "malformed"]
-
-_RESUME_CONDITIONS: Final = get_args(_ResumeCondition)
-_FIELDS: Final = frozenset({"helper", "state", "version"})
-
 
 class ResumeStateError(ProtocolError):
-    """Resume state rejected before any send because of its version, helper, expiry, or form."""
+    """A checkpoint past the expiry its server declared, rejected before any send; its condition is always expired."""
 
-    condition: _ResumeCondition
+    condition: Literal["expired"]
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        condition: _ResumeCondition,
+        condition: Literal["expired"],
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -54,7 +43,7 @@ class ResumeStateError(ProtocolError):
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep only the rejection category, never the state's contents."""
-        error_choice(condition, _RESUME_CONDITIONS, "condition")
+        error_choice(condition, ("expired",), "condition")
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -71,67 +60,12 @@ class ResumeStateError(ProtocolError):
         return (*super()._details(), ("condition", self.condition))
 
 
-@final
-class ResumeState(Sealed):
-    """A version 1 token a helper resumes from: the helper's identity and its small state, which export() reveals."""
-
-    __slots__ = ("_helper", "_state_json")
-
-    _helper: str
-    _state_json: bytes
-
-    def __init__(self, *, helper: str, state: JSONValue) -> None:
-        """Keep the identity of the helper and the canonical JSON of its state."""
-        wire_string(helper, "helper")
-        _assign(self, helper, canonical_json(state))
-
-    def export(self) -> bytes:
-        """Return the token as canonical JSON with the members `helper`, `state`, and `version`."""
-        return b"".join((b'{"helper":', canonical_json(self._helper), b',"state":', self._state_json, b',"version":1}'))
-
-    def __repr__(self) -> str:
-        """Name the token's version only, never its helper or state."""
-        return "ResumeState(version=1)"
-
-
-def _assign(state: ResumeState, helper: str, state_json: bytes) -> ResumeState:
-    object.__setattr__(state, "_helper", helper)  # noqa: PLC2801 - Initialize the opaque immutable value.
-    object.__setattr__(state, "_state_json", state_json)  # noqa: PLC2801 - Initialize the opaque immutable value.
-    return state
-
-
-def state_fields(state: ResumeState) -> tuple[str, bytes]:
-    """Return a token's helper identity and the canonical JSON of its state."""
-    return state._helper, state._state_json  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-
-
-def import_state(data: bytes) -> ResumeState:
-    """Rebuild an exported token, rejecting in order its form, its version, and its members."""
-    if not isinstance(envelope := _envelope(data), Mapping):
-        raise ResumeStateError(condition="malformed")
-    if type(version := envelope.get("version")) is int and version != 1:
-        raise ResumeStateError(condition="version")
-    if frozenset(envelope) != _FIELDS or type(version) is not int or not isinstance(helper := envelope["helper"], str):
-        raise ResumeStateError(condition="malformed")
-    try:
-        return _assign(object.__new__(ResumeState), wire_string(helper, "helper"), canonical_json(envelope["state"]))
-    except ValueError:
-        raise ResumeStateError(condition="malformed") from None
-
-
-def _envelope(data: object) -> JSONValue:
-    try:
-        return json_value(data) if isinstance(data, bytes) else None
-    except (ValueError, RecursionError):
-        return None
-
-
 class MalformedStateError(Exception):
-    """A token whose state does not fit the helper resuming it; the helper raises it as malformed."""
+    """A checkpoint whose state does not fit the helper resuming it; the helper refuses it as an invalid value."""
 
 
 def require_state(condition: bool) -> None:  # noqa: FBT001
-    """Refuse a token's state that breaks a condition of its helper."""
+    """Refuse a checkpoint's state that breaks a condition of its helper."""
     if not condition:
         raise MalformedStateError
 
@@ -157,7 +91,7 @@ def state_text(value: JSONValue) -> str | None:
 
 
 def saved_expiry(expires_at: datetime | None) -> JSONValue:
-    """Return how a token saves a server's expiry: its ISO 8601 text, or null without one."""
+    """Return how a checkpoint keeps a server's expiry: its ISO 8601 text, or null without one."""
     return None if expires_at is None else expires_at.isoformat()
 
 

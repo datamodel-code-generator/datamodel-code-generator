@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator, Iterator
     from types import TracebackType
 
+    import httpx2
+
     from ..model_codecs.media import JSONValue
     from .events import CallEvents
     from .logical import LogicalCallContext
@@ -201,6 +203,7 @@ class _Raw(Generic[SourceT, HandleT]):
         "_events",
         "_info",
         "_limits",
+        "_native",
         "_operation_id",
         "_raw_source",
         "_retry_stop_reason",
@@ -219,6 +222,7 @@ class _Raw(Generic[SourceT, HandleT]):
         *,
         source: SourceT,
         raw_source: SourceT,
+        native: httpx2.Response,
         events: CallEvents | None,
         call: LogicalCallContext,
         retry_stop_reason: RetryStopReason | None = None,
@@ -239,6 +243,7 @@ class _Raw(Generic[SourceT, HandleT]):
         self._classify = failure
         self._source = source
         self._raw_source = raw_source
+        self._native = native
         self._body = b""
         self._state: State = "open"
 
@@ -377,6 +382,11 @@ def aheld(response: AsyncRawResponse) -> AsyncGenerator[bytes, None]:
     return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
+def native_request(response: RawResponse | AsyncRawResponse) -> httpx2.Request:
+    """Return the native request a streaming handle answers, which a native reader of its body names in its errors."""
+    return response._native.request  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
 def refused(response: RawResponse) -> None:
     """Close an open response its caller cannot use, whatever its status, raising its typed failure from its prefix."""
     response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -414,6 +424,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         *,
         source: Callable[[], Iterator[bytes]],
         raw_source: Callable[[], Iterator[bytes]],
+        native: httpx2.Response,
         close: Callable[[], None],
         call: LogicalCallContext,
         events: CallEvents | None = None,
@@ -429,6 +440,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             failure,
             source=source,
             raw_source=raw_source,
+            native=native,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
@@ -662,6 +674,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         *,
         source: Callable[[], AsyncIterator[bytes]],
         raw_source: Callable[[], AsyncIterator[bytes]],
+        native: httpx2.Response,
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
         events: CallEvents | None = None,
@@ -677,6 +690,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             failure,
             source=source,
             raw_source=raw_source,
+            native=native,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,

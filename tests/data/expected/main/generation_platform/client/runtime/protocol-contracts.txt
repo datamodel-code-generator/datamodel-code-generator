@@ -12,7 +12,6 @@
   pagination optional imports=[]
   client protocols=True
   option identities=(True, True)
-  resume round trip=True
   construction threads unchanged=True
   configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names', '_runtime.protocols.references']
   BodySelector fields=('pointer',)
@@ -35,15 +34,14 @@
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
   ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -157,27 +155,27 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  canonical string = (b'"secret-cursor"', True, True)
-  canonical integer = (b'20', True, True)
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical float = (b'2.5', True, True)
-  canonical large float = (b'1e+16', True, True)
-  canonical small float = (b'1e-07', True, True)
-  canonical negative zero float = (b'-0.0', True, True)
-  canonical whole float = (b'100.0', True, True)
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
   canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical large integer = (b'1180591620717411303424', True, True)
-  canonical null = (b'null', True, True)
-  canonical boolean = (b'false', True, True)
-  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical list = (b'[1,"two"]', True, True)
-  canonical tuple = (b'[1,"two"]', True, True)
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
-  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
@@ -195,48 +193,6 @@
   snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
-  resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
-  resume export stable=True
-  resume identity equality=True/False
-  resume dict=False public=['export']
-  resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"helper":"","state":null,"version":1}'
-  resume set state ! FrozenInstanceError: ResumeState is immutable []
-  resume set new ! FrozenInstanceError: ResumeState is immutable []
-  resume delete state ! FrozenInstanceError: ResumeState is immutable []
-  resume copies=True/True
-  resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume helper None ! TypeError: helper must be a string []
-  resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  resume state object ! TypeError: Object of type object is not JSON serializable []
-  resume state set ! TypeError: Object of type set is not JSON serializable []
-  resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
-  import valid = ResumeState(version=1)
-  import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member = ResumeState(version=1)
-  import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import extra field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import missing field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import secret=False
-  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_pages 1 = 1
@@ -294,22 +250,6 @@
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1 = 1
-  StreamOptions.max_line_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_line_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1 = 1
-  StreamOptions.max_event_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_event_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
   StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -336,13 +276,13 @@
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
   explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, max_line_bytes=1, max_event_bytes=1, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
   security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
   security origins=tuple identity=True
   security default origins = ()
@@ -362,17 +302,17 @@
   security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
   defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
+  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
   defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -436,7 +376,6 @@
   pagination optional imports=[]
   client protocols=True
   option identities=(True, True)
-  resume round trip=True
   construction threads unchanged=True
   configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names', '_runtime.protocols.references']
   BodySelector fields=('pointer',)
@@ -459,15 +398,14 @@
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
   ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -581,27 +519,27 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  canonical string = (b'"secret-cursor"', True, True)
-  canonical integer = (b'20', True, True)
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical float = (b'2.5', True, True)
-  canonical large float = (b'1e+16', True, True)
-  canonical small float = (b'1e-07', True, True)
-  canonical negative zero float = (b'-0.0', True, True)
-  canonical whole float = (b'100.0', True, True)
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
   canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical large integer = (b'1180591620717411303424', True, True)
-  canonical null = (b'null', True, True)
-  canonical boolean = (b'false', True, True)
-  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical list = (b'[1,"two"]', True, True)
-  canonical tuple = (b'[1,"two"]', True, True)
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
-  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
@@ -619,48 +557,6 @@
   snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
-  resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
-  resume export stable=True
-  resume identity equality=True/False
-  resume dict=False public=['export']
-  resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"helper":"","state":null,"version":1}'
-  resume set state ! FrozenInstanceError: ResumeState is immutable []
-  resume set new ! FrozenInstanceError: ResumeState is immutable []
-  resume delete state ! FrozenInstanceError: ResumeState is immutable []
-  resume copies=True/True
-  resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume helper None ! TypeError: helper must be a string []
-  resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  resume state object ! TypeError: Object of type object is not JSON serializable []
-  resume state set ! TypeError: Object of type set is not JSON serializable []
-  resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
-  import valid = ResumeState(version=1)
-  import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member = ResumeState(version=1)
-  import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import extra field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import missing field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import secret=False
-  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_pages 1 = 1
@@ -718,22 +614,6 @@
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1 = 1
-  StreamOptions.max_line_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_line_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1 = 1
-  StreamOptions.max_event_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_event_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
   StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -760,13 +640,13 @@
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
   explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, max_line_bytes=1, max_event_bytes=1, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
   security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
   security origins=tuple identity=True
   security default origins = ()
@@ -786,17 +666,17 @@
   security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
   defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
+  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
   defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -860,7 +740,6 @@
   pagination optional imports=[]
   client protocols=True
   option identities=(True, True)
-  resume round trip=True
   construction threads unchanged=True
   configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names', '_runtime.protocols.references']
   BodySelector fields=('pointer',)
@@ -883,15 +762,14 @@
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
   ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -1005,27 +883,27 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  canonical string = (b'"secret-cursor"', True, True)
-  canonical integer = (b'20', True, True)
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical float = (b'2.5', True, True)
-  canonical large float = (b'1e+16', True, True)
-  canonical small float = (b'1e-07', True, True)
-  canonical negative zero float = (b'-0.0', True, True)
-  canonical whole float = (b'100.0', True, True)
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
   canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical large integer = (b'1180591620717411303424', True, True)
-  canonical null = (b'null', True, True)
-  canonical boolean = (b'false', True, True)
-  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical list = (b'[1,"two"]', True, True)
-  canonical tuple = (b'[1,"two"]', True, True)
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
-  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
@@ -1043,48 +921,6 @@
   snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
-  resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
-  resume export stable=True
-  resume identity equality=True/False
-  resume dict=False public=['export']
-  resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"helper":"","state":null,"version":1}'
-  resume set state ! FrozenInstanceError: ResumeState is immutable []
-  resume set new ! FrozenInstanceError: ResumeState is immutable []
-  resume delete state ! FrozenInstanceError: ResumeState is immutable []
-  resume copies=True/True
-  resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume helper None ! TypeError: helper must be a string []
-  resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  resume state object ! TypeError: Object of type object is not JSON serializable []
-  resume state set ! TypeError: Object of type set is not JSON serializable []
-  resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
-  import valid = ResumeState(version=1)
-  import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member = ResumeState(version=1)
-  import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import extra field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import missing field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import secret=False
-  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_pages 1 = 1
@@ -1142,22 +978,6 @@
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1 = 1
-  StreamOptions.max_line_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_line_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1 = 1
-  StreamOptions.max_event_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_event_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
   StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -1184,13 +1004,13 @@
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
   explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, max_line_bytes=1, max_event_bytes=1, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
   security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
   security origins=tuple identity=True
   security default origins = ()
@@ -1210,17 +1030,17 @@
   security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
   defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
+  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
   defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1284,7 +1104,6 @@
   pagination optional imports=[]
   client protocols=True
   option identities=(True, True)
-  resume round trip=True
   construction threads unchanged=True
   configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names', '_runtime.protocols.references']
   BodySelector fields=('pointer',)
@@ -1307,15 +1126,14 @@
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
   ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -1429,27 +1247,27 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  canonical string = (b'"secret-cursor"', True, True)
-  canonical integer = (b'20', True, True)
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical float = (b'2.5', True, True)
-  canonical large float = (b'1e+16', True, True)
-  canonical small float = (b'1e-07', True, True)
-  canonical negative zero float = (b'-0.0', True, True)
-  canonical whole float = (b'100.0', True, True)
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
   canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical large integer = (b'1180591620717411303424', True, True)
-  canonical null = (b'null', True, True)
-  canonical boolean = (b'false', True, True)
-  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical list = (b'[1,"two"]', True, True)
-  canonical tuple = (b'[1,"two"]', True, True)
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
-  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
@@ -1467,48 +1285,6 @@
   snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
-  resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
-  resume export stable=True
-  resume identity equality=True/False
-  resume dict=False public=['export']
-  resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"helper":"","state":null,"version":1}'
-  resume set state ! FrozenInstanceError: ResumeState is immutable []
-  resume set new ! FrozenInstanceError: ResumeState is immutable []
-  resume delete state ! FrozenInstanceError: ResumeState is immutable []
-  resume copies=True/True
-  resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume helper None ! TypeError: helper must be a string []
-  resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  resume state object ! TypeError: Object of type object is not JSON serializable []
-  resume state set ! TypeError: Object of type set is not JSON serializable []
-  resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
-  import valid = ResumeState(version=1)
-  import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member = ResumeState(version=1)
-  import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import extra field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import missing field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import secret=False
-  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_pages 1 = 1
@@ -1566,22 +1342,6 @@
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1 = 1
-  StreamOptions.max_line_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_line_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1 = 1
-  StreamOptions.max_event_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_event_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
   StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -1608,13 +1368,13 @@
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
   explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, max_line_bytes=1, max_event_bytes=1, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
   security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
   security origins=tuple identity=True
   security default origins = ()
@@ -1634,17 +1394,17 @@
   security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
   defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
+  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
   defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1708,7 +1468,6 @@
   pagination optional imports=[]
   client protocols=True
   option identities=(True, True)
-  resume round trip=True
   construction threads unchanged=True
   configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names', '_runtime.protocols.references']
   BodySelector fields=('pointer',)
@@ -1731,15 +1490,14 @@
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
   ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
-  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -1853,27 +1611,27 @@
   origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
   origin 'https' None 443 ! TypeError: host must be a string []
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
-  canonical string = (b'"secret-cursor"', True, True)
-  canonical integer = (b'20', True, True)
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
   canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical float = (b'2.5', True, True)
-  canonical large float = (b'1e+16', True, True)
-  canonical small float = (b'1e-07', True, True)
-  canonical negative zero float = (b'-0.0', True, True)
-  canonical whole float = (b'100.0', True, True)
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
   canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical large integer = (b'1180591620717411303424', True, True)
-  canonical null = (b'null', True, True)
-  canonical boolean = (b'false', True, True)
-  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
-  canonical list = (b'[1,"two"]', True, True)
-  canonical tuple = (b'[1,"two"]', True, True)
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
   canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
-  canonical integer key = (b'{"1":"secret-cursor"}', True, True)
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
@@ -1891,48 +1649,6 @@
   snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
-  resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
-  resume export stable=True
-  resume identity equality=True/False
-  resume dict=False public=['export']
-  resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"helper":"","state":null,"version":1}'
-  resume set state ! FrozenInstanceError: ResumeState is immutable []
-  resume set new ! FrozenInstanceError: ResumeState is immutable []
-  resume delete state ! FrozenInstanceError: ResumeState is immutable []
-  resume copies=True/True
-  resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume helper None ! TypeError: helper must be a string []
-  resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
-  resume state object ! TypeError: Object of type object is not JSON serializable []
-  resume state set ! TypeError: Object of type set is not JSON serializable []
-  resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
-  import valid = ResumeState(version=1)
-  import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member = ResumeState(version=1)
-  import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import extra field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import missing field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import secret=False
-  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions.max_pages 1 = 1
@@ -1990,22 +1706,6 @@
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1 = 1
-  StreamOptions.max_line_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_line_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_line_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_line_bytes') [field_path=('max_line_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1 = 1
-  StreamOptions.max_event_bytes 2**63 = 9223372036854775808
-  StreamOptions.max_event_bytes -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  StreamOptions.max_event_bytes '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_event_bytes') [field_path=('max_event_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
   StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -2032,13 +1732,13 @@
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
   explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, max_line_bytes=1, max_event_bytes=1, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
   security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
   security origins=tuple identity=True
   security default origins = ()
@@ -2058,17 +1758,17 @@
   security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
   defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
+  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
   defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)

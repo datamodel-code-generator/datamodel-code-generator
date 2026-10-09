@@ -48,7 +48,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary
+from .multipart import encode_parts, is_multipart
 from .native import (
     async_decoded_bytes,
     async_response_bytes,
@@ -130,7 +130,7 @@ if TYPE_CHECKING:
     from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
-    from .operations import OperationPlan, ParameterSpec, ServerPlan
+    from .operations import OperationPlan, ServerPlan
     from .options import ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
@@ -367,14 +367,6 @@ def exploded_object(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
-def encode_parameter_value(operation: OperationPlan[object], spec: ParameterSpec, code: Callable[[], R]) -> R:
-    """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
-    try:
-        return code()
-    except request_errors(spec.codec) as error:
-        raise request_decode_error(operation, (spec.plan.location, spec.plan.name), error) from None
-
-
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
     """Return the path parameter that makes its segment a dot segment, which URL normalization would remove.
 
@@ -604,13 +596,18 @@ def _close_failed(failures: list[OSError], call: Call, error: BaseException | No
 def _framing(
     request: httpx2.Request, attempt: SyncContent | AsyncContent | EncodedAttempt | None
 ) -> list[tuple[str, str]]:
-    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream."""
-    headers = [
-        (name, value)
-        for name, value in request_fields(request)
-        if name.lower() not in {"host", "content-length", "transfer-encoding"}
-    ]
-    if not isinstance(attempt, EncodedAttempt | None) and (length := attempt.content_length) is not None:
+    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream.
+
+    A stream that names its media type, as a multipart body's attempt names its boundary, sends it as Content-Type.
+    """
+    media_type = length = None
+    if not isinstance(attempt, EncodedAttempt | None):
+        media_type, length = attempt.content_type, attempt.content_length
+    framed = {"host", "content-length", "transfer-encoding", *(() if media_type is None else ("content-type",))}
+    headers = [(name, value) for name, value in request_fields(request) if name.lower() not in framed]
+    if media_type is not None:
+        headers.append(("Content-Type", media_type))
+    if length is not None:
         headers.append(("Content-Length", str(length)))
     return headers
 
@@ -1089,8 +1086,8 @@ class _Shared(Generic[AdapterT]):
         coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.options: ClientOptions | None = None
-        self.socket_connector: object = None
         self.root_auth: AuthConfig | None = None
+        self.sockets: set[Callable[[], None]] = set()
 
 
 class Core(Generic[AdapterT, HandleT]):
@@ -1173,8 +1170,7 @@ class Core(Generic[AdapterT, HandleT]):
             target = f"{base}?{query}" if query else base
         media_type = None
         if is_multipart(body):
-            body = MultipartSource(body, boundary := new_boundary())
-            media_type = f"multipart/form-data; boundary={boundary}"
+            body, media_type = encode_parts(body)
         fixed = self._shared.fixed
         call = () if options is None else options.headers
         if self._settings.headers or call:
@@ -1741,12 +1737,8 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         body: object,
         prepare: Callable[[], tuple[httpx2.Request, object]],
         receive: Callable[[httpx2.Response, ResponseInfo], T],
-        opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
-
-        A WebSocket handshake sends through its own adapter instead of the client's.
-        """
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths."""
         entry: BodyBindings | None = None
         source: BodySource | None = None
         try:
@@ -1769,7 +1761,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 if coding is not None:
                     source = coding.source(source)
 
-            result = self._exchange(request, source, call, receive, opener)
+            result = self._exchange(request, source, call, receive)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             _close_body(source or entry, call, failure)
@@ -1788,7 +1780,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         source: BodySource | None,
         call: Call,
         receive: Callable[[httpx2.Response, ResponseInfo], T],
-        opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> T:
         """Read and decode error bodies before deciding whether a complete status response may retry."""
         events = call.events
@@ -1801,7 +1792,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             sends_before = call.sends
             call.response_transferred = False
             try:
-                response = self._send(original, source, call, opener)
+                response = self._send(original, source, call)
                 info = self._response_info(response, call.request_id_header, call)
                 call.received(info)
                 if events is not None:
@@ -1902,6 +1893,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(decoded_bytes, response, info, call.operation_id),
             raw_source=partial(response_bytes, response),
+            native=response,
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -2018,7 +2010,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         request: httpx2.Request,
         source: BodySource | None,
         call: Call,
-        opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
         attempt: SyncContent | EncodedAttempt | None = request_body(request)
@@ -2054,16 +2045,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if call.events is not None:
                 call.events.sending()
             try:
-                response = self._native_send(outgoing, call) if opener is None else opener(outgoing, call)
+                response = self._native_send(outgoing, call)
             except Exception as error:  # noqa: BLE001
-                native_failure = (
-                    error
-                    if opener is not None and isinstance(error, SDKError)
-                    else native_error(
-                        error,
-                        send_started=True,
-                        response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                    )
+                native_failure = native_error(
+                    error,
+                    send_started=True,
+                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
                 )
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
@@ -2170,13 +2157,18 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         return received
 
     def close(self) -> None:
-        """Close only the native client this root created, at most once even if close fails."""
+        """Close only the native client this root created, at most once even if close fails.
+
+        The WebSocket sessions open on it close first, so that none of their readers outlives its connection.
+        """
         shared = self._shared
         if shared.closed:
             return
         shared.closed = True
         if shared.created:
             try:
+                for close in tuple(shared.sockets):
+                    close()
                 shared.http_client.close()
             except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None
@@ -2432,12 +2424,8 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         body: object,
         prepare: Callable[[], tuple[httpx2.Request, object]],
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
-        opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
-
-        A WebSocket handshake sends through its own adapter instead of the client's.
-        """
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths."""
         entry: BodyBindings | None = None
         source: BodySource | None = None
         try:
@@ -2460,7 +2448,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 if coding is not None:
                     source = coding.source(source)
 
-            result = await self._exchange(request, source, call, receive, opener)
+            result = await self._exchange(request, source, call, receive)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
@@ -2479,7 +2467,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         source: BodySource | None,
         call: Call,
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
-        opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> T:
         """Read and decode error bodies before deciding whether a complete status response may retry."""
         events = call.events
@@ -2492,7 +2479,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             sends_before = call.sends
             call.response_transferred = False
             try:
-                response = await self._send(original, source, call, opener)
+                response = await self._send(original, source, call)
                 info = self._response_info(response, call.request_id_header, call)
                 call.received(info)
                 if events is not None:
@@ -2595,6 +2582,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(async_decoded_bytes, response, info, call.operation_id),
             raw_source=partial(async_response_bytes, response),
+            native=response,
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -2714,7 +2702,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         request: httpx2.Request,
         source: BodySource | None,
         call: Call,
-        opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
         attempt: AsyncContent | EncodedAttempt | None = request_body(request)
@@ -2750,16 +2737,12 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if call.events is not None:
                 call.events.sending()
             try:
-                response = await (self._native_send(outgoing, call) if opener is None else opener(outgoing, call))
+                response = await self._native_send(outgoing, call)
             except Exception as error:  # noqa: BLE001
-                native_failure = (
-                    error
-                    if opener is not None and isinstance(error, SDKError)
-                    else native_error(
-                        error,
-                        send_started=True,
-                        response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                    )
+                native_failure = native_error(
+                    error,
+                    send_started=True,
+                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
                 )
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None

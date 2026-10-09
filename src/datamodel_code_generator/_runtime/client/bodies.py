@@ -90,7 +90,8 @@ class EncodedAttempt:
     content_type: str | None
 
 
-def _step(chunks: Iterator[bytes]) -> bytes | None:
+def next_chunk(chunks: Iterator[bytes]) -> bytes | None:
+    """Return the next chunk, or None at the end."""
     return next(chunks, None)
 
 
@@ -174,7 +175,7 @@ class BinarySource:
         elif self._owned:
             chunks, left = self.chunks(), self.content_length
             while left != 0:
-                if (piece := await in_thread(_step, chunks)) is None:
+                if (piece := await in_thread(next_chunk, chunks)) is None:
                     break
                 yield piece
                 left = None if left is None else left - len(piece)

@@ -68,7 +68,6 @@ _PROTOCOLS: Final = (
     "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
-    "protocols/websocket_types.py",
 )
 _OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
 _PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
@@ -78,7 +77,7 @@ _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "streams": (*_PAGES, "protocols/streams.py"),
     "uploads": (*_PAGES, "protocols/uploads.py"),
     "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
-    "websocket": ("protocols/websocket.py", "protocols/websocket_connectors.py", "protocols/websocket_native.py"),
+    "websocket": ("protocols/websocket.py",),
     "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }
@@ -112,7 +111,7 @@ class Capabilities:
     """What a client package declares: its usable security schemes, its helpers, and its model codec kinds.
 
     `signatures` holds the signature kinds of the webhook helpers; `keywords` marks a package whose generated keyword
-    records name the runtime's unpacked-argument types.
+    records name the runtime's unpacked-argument types, and `multipart_responses` one that reads multipart responses.
     """
 
     security: frozenset[Security]
@@ -120,6 +119,7 @@ class Capabilities:
     signatures: frozenset[str]
     backends: frozenset[str]
     keywords: bool
+    multipart_responses: bool = False
 
     @property
     def oauth(self) -> bool:
@@ -139,16 +139,13 @@ class Capabilities:
         if self.protocols:
             modules.update(_PROTOCOLS)
         if "webhooks" in self.helpers:
-            modules.update((
-                "protocols/caches.py",
-                "protocols/options.py",
-                "protocols/origins.py",
-                "protocols/websocket_types.py",
-            ))
+            modules.update(("protocols/caches.py", "protocols/options.py", "protocols/origins.py"))
         if self.oauth:
             modules.update(_OAUTH)
         if self.keywords:
             modules.add("client/arguments.py")
+        if self.multipart_responses:
+            modules.add("client/multipart_responses.py")
         return tuple(sorted(modules))
 
 
