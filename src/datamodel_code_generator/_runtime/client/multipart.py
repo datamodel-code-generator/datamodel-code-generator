@@ -16,7 +16,6 @@ from io import UnsupportedOperation
 from os import SEEK_END, SEEK_SET
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
-import httpx2
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
@@ -24,8 +23,9 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
-from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input
+from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .errors import DecodeError
+from .logical import in_thread
 from .media import encode_text, most_specific, normalized, with_charset
 
 if TYPE_CHECKING:
@@ -290,12 +290,30 @@ def _entry(
     return name, filename, content, media_type, headers
 
 
+def _part_headers(media_type: str | None, headers: tuple[tuple[str, str], ...]) -> dict[str, str]:
+    """Return a part's headers as HTTPX2 writes them: its media type first, then each name once, repeats comma-joined.
+
+    A Content-Type header the part names replaces its media type.
+    """
+    written: dict[str, str] = {} if media_type is None else {"Content-Type": media_type}
+    names: dict[str, str] = {}
+    for key, value in headers:
+        if (name := names.get(folded := key.lower())) is not None:
+            written[name] = f"{written[name]}, {value}"
+            continue
+        if folded == "content-type":
+            written.pop("Content-Type", None)
+        names[folded] = key
+        written[key] = value
+    return written
+
+
 def native_files(entries: Iterable[Entry], contents: Iterable[object] | None = None) -> Any:
     """Return the parts as HTTPX2's `files=` takes them, with the given contents in place of the parts' own."""
     if contents is None:
         contents = (content for _, _, content, _, _ in entries)
     return [
-        (name, (filename, content, media_type, dict(headers)))
+        (name, (filename, content, media_type, _part_headers(media_type, headers)))
         for (name, filename, _, media_type, headers), content in zip(entries, contents, strict=True)
     ]
 
@@ -306,6 +324,8 @@ def _encoded(entries: list[Entry]) -> tuple[bytes | FormParts, str | None]:
     A body without parts has no media type, as HTTPX2 sends none, and each attempt of streamed parts names its
     boundary. HTTPX2 checks every part's name and headers before any file input is opened.
     """
+    import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
+
     try:
         if all(type(content) is bytes for _, _, content, _, _ in entries):
             native = httpx2.Request("POST", "/", files=native_files(entries))
@@ -451,10 +471,10 @@ class PartFile:
         self._chunks: Iterator[bytes] | None = None
 
     def read(self, _size: int = -1) -> bytes:
-        """Return the input's next chunk, or no bytes at its end."""
+        """Return the input's next chunk that has bytes, or no bytes at its end, where HTTPX2 stops reading."""
         if self._chunks is None:
             self._chunks = self._content.iter_bytes()
-        return next(self._chunks, b"")
+        return next((chunk for chunk in self._chunks if chunk), b"")
 
     def seek(self, _offset: int, whence: int = SEEK_SET) -> int:
         """Rewind to the captured position, or return the measured length from the end, as HTTPX2 measures a file."""
@@ -471,10 +491,18 @@ class PartFile:
 class MultipartAttempt:
     """One attempt of a body with streamed file parts, encoded by HTTPX2 under the boundary its media type names."""
 
-    __slots__ = ("_stream", "content_length", "content_type")
+    __slots__ = ("_stream", "_threaded", "content_length", "content_type")
 
-    def __init__(self, entries: tuple[Entry, ...], contents: list[object], content_type: str | None) -> None:
-        """Encode the parts with the attempt's contents, under a new boundary when no media type names one."""
+    def __init__(
+        self, entries: tuple[Entry, ...], contents: list[object], content_type: str | None, *, threaded: bool = False
+    ) -> None:
+        """Encode the parts with the attempt's contents, under a new boundary when no media type names one.
+
+        A threaded attempt, one with a file the call opened from a path, is read in a thread in async mode.
+        """
+        import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
+
+        self._threaded = threaded
         native = httpx2.Request(
             "POST",
             "/",
@@ -491,5 +519,12 @@ class MultipartAttempt:
         return iter(cast("Iterable[bytes]", self._stream))
 
     def aiter_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the encoded parts in async mode."""
+        """Yield the encoded parts in async mode, one chunk at a time in a thread when the call opened a file."""
+        if self._threaded:
+            return _in_thread(self.iter_bytes())
         return aiter(cast("AsyncIterable[bytes]", self._stream))
+
+
+async def _in_thread(chunks: Iterator[bytes]) -> AsyncIterator[bytes]:
+    while (chunk := await in_thread(next_chunk, chunks)) is not None:
+        yield chunk

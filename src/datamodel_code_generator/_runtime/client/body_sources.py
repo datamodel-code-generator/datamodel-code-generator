@@ -108,8 +108,8 @@ class BodySource:
         self._encode, self._aencode = encode, aencode
         return self
 
-    def _multipart(self, parts: FormParts, contents: list[object]) -> MultipartAttempt:
-        attempt = MultipartAttempt(parts.entries, contents, self._content_type)
+    def _multipart(self, parts: FormParts, contents: list[object], *, threaded: bool = False) -> MultipartAttempt:
+        attempt = MultipartAttempt(parts.entries, contents, self._content_type, threaded=threaded)
         self._content_type = attempt.content_type
         return attempt
 
@@ -131,6 +131,7 @@ class BodySource:
             attempt = self._multipart(
                 parts,
                 [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+                threaded=any(not isinstance(piece, bytes) and piece.owned for piece in self._pieces),
             )
         return self._aencode(attempt) if self._aencode is not None else attempt
 

@@ -332,7 +332,7 @@ def value_part(  # noqa: PLR0913
 def _parts(body: bytes, info: ResponseInfo) -> tuple[DecodedPart[bytes], ...]:
     try:
         return parse_multipart(body, info.content_type)
-    except ValueError as error:
+    except (ValueError, RecursionError) as error:
         raise BodyFramingError(error) from None
 
 
@@ -344,7 +344,7 @@ def _object(plans: tuple[PartPlan, ...], additional: PartPlan | None, body: byte
     parts = _parts(body, info)
     try:
         return decode_parts(parts, plans, additional)
-    except (CodecError, ValueError) as error:
+    except (CodecError, ValueError, RecursionError) as error:
         raise InvalidBodyError(error) from None
 
 

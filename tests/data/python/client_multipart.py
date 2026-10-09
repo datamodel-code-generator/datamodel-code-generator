@@ -5,12 +5,15 @@ from __future__ import annotations
 import importlib
 import io
 import re
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import (
     Exchange,
     arecord,
     form_part,
+    outcome,
     raw_response,
     record,
     request_body,
@@ -72,6 +75,14 @@ def _form(*parts: tuple[str, bytes], boundary: str = "b1") -> bytes:
     """Return a multipart body of raw part heads and contents."""
     return b"".join(b"--%s\r\n%s\r\n\r\n%s\r\n" % (boundary.encode(), head, content) for head, content in parts) + (
         b"--%s--\r\n" % boundary.encode()
+    )
+
+
+def _nested(depth: int) -> bytes:
+    """Return a multipart body whose each part opens the next level of nested multipart."""
+    return b"".join(
+        b"--b%d\r\nContent-Type: multipart/mixed; boundary=b%d\r\n\r\n" % (level + 1, level + 2)
+        for level in range(depth)
     )
 
 
@@ -145,6 +156,8 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     ):
         exchange.respond(raw_response(200, content, media))
         record(lines, label, api.forms.read_profile)
+    exchange.respond(raw_response(200, _nested(3000), form))
+    lines.append(f"  profile read of deeply nested parts {outcome(api.forms.read_profile)}")
     mixed = (
         b'--b1\r\nContent-Disposition: attachment; filename="a\\"b.txt"\r\nContent-Type: text/plain\r\nX-Trace: t\r\n\r\none'
         b"\r\n--b1\r\n\r\n\x00two\r\n\r\n"
@@ -283,6 +296,12 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         ("part header naming the media type", body((field("a", "1", headers=(("Content-Type", "text/plain"),)),))),
         ("part media type as given", body((field("a", "1", content_type="not a media type"),))),
         ("body of the other mode", bodies.AsyncMultipartBody((field("a", "1"),))),
+        ("file of an empty chunk", body((file("f", iter([b"aa", b"", b"bb"])),))),
+        ("part headers of one name", body((field("a", "1", headers=(("X-T", "1"), ("x-t", "2"))),))),
+        (
+            "file part header naming a media type in its name",
+            body((file("f", b"x", content_type="image/png", headers=(("X-Content-Type-Options", "nosniff"),)),)),
+        ),
     ):
         record(lines, label, lambda value=value: _answered(exchange, lambda: api.forms.submit_parts(body=value)))
     for label, value in (
@@ -559,6 +578,16 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         ))
         exchange.respond(raw_response(204))
         await arecord(lines, "async upload", lambda: api.forms.submit_upload(body=upload))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "photo.png"
+            path.write_bytes(b"png" * 3)
+            exchange.respond(raw_response(204))
+            await arecord(
+                lines,
+                "async upload of a path",
+                lambda: api.forms.submit_upload(body=body((field("title", "Notes"), file("photo", path)))),
+            )
+            path.unlink()
         missing = body((field("title", "Notes"),))
         exchange.respond(raw_response(204))
         await arecord(lines, "async upload without its photo", lambda: api.forms.submit_upload(body=missing))

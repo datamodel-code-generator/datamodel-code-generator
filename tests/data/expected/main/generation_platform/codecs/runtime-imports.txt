@@ -15,7 +15,7 @@ client/grants.py: .auth, .auth_policy, .errors, .oauth, .options, .refresh, __fu
 client/hooks.py: .errors, __future__, collections.abc, dataclasses, types, typing
 client/logical.py: .errors, .options, .timing, __future__, anyio, asyncio, collections.abc, functools, time, typing, uuid
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, codecs, collections.abc, typing
-client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .errors, .media, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions
+client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .errors, .logical, .media, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions
 client/multipart_responses.py: ..model_codecs.errors, ..model_codecs.media, .media, .multipart, .operations, .responses, __future__, collections.abc, email.message, email.parser, email.policy, functools, re, typing, typing_extensions
 client/native.py: ..protocols.errors, .errors, .options, .responses, .timing, __future__, collections.abc, httpx2, typing
 client/oauth.py: ..model_codecs.unset, .auth, .bodies, .errors, .native, .options, .responses, .scopes, .timing, .urls, __future__, asyncio, base64, collections.abc, contextlib, dataclasses, datetime, httpx2, importlib.util, inspect, json, re, ssl, sys, threading, typing, typing_extensions, urllib.parse
