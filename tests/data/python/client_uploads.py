@@ -1134,6 +1134,19 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
         result = fresh.protocols.files.finish.start(source, tus_resumable=harness.tus).run()
         lines.append(f"  fresh size={result.size} token={len(token.methods)} resource={resource.methods}")
     lines.append(f"  responses closed={_closed(token, resource)} borrowed closed={native.is_closed}")
+    for label, client_headers, call_headers in (
+        ("start under a client idempotency header", {"Idempotency-Key": "fixed"}, None),
+        ("start with a call idempotency header", None, {"idempotency-key": "fixed"}),
+    ):
+        with package.Client(http_client=native, default_headers=client_headers, **credentials) as keyed:
+            call = harness.options.RequestOptions(extra_headers=call_headers)
+            record(
+                lines,
+                label,
+                lambda keyed=keyed, call=call: keyed.protocols.files.finish.start(
+                    source, tus_resumable=harness.tus, options=call
+                ),
+            )
     handle.close()
     native.close()
     run(lambda: _async_completion_oauth(harness, lines))

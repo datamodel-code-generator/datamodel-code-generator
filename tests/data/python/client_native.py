@@ -211,6 +211,43 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
         server.stop()
 
 
+def _environment(package: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
+    """Let an HTTP client the SDK creates proxy through the environment HTTPX2 reads, and bypass a peer by NO_PROXY."""
+    mode = "async" if asynchronous else "sync"
+    for name, proxy, variable, bypass in (
+        ("HTTPS_PROXY tunnel", "tunnel", "HTTPS_PROXY", ""),
+        ("HTTP_PROXY forward", "forward", "HTTP_PROXY", ""),
+        ("NO_PROXY bypass", None, "HTTPS_PROXY", "127.0.0.1"),
+    ):
+        server, peer = NativeFixture(proxy=proxy), NativeFixture(proxy="tunnel")
+        base_url = server.url if proxy is None else ("https" if proxy == "tunnel" else "http") + "://origin.test"
+        try:
+            with _trusted(server), pytest.MonkeyPatch.context() as environment:
+                environment.setenv("NO_PROXY", bypass)
+                environment.setenv(variable, server.proxy_url if proxy else peer.proxy_url)
+                if asynchronous:
+
+                    async def call() -> None:
+                        async with package.AsyncClient(base_url=base_url, max_retries=0) as api:
+                            await arecord(
+                                lines,
+                                f"{mode} environment {name}",
+                                lambda: _acalled(api.retry.with_response.get_safe),
+                            )
+
+                    run(call)
+                else:
+                    with package.Client(base_url=base_url, max_retries=0) as api:
+                        record(lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe))
+            lines.append(
+                f"  origin arrivals={len(server.requests)} connects={server.connects} "
+                f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
+            )
+        finally:
+            server.stop()
+            peer.stop()
+
+
 def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     mode = "async" if asynchronous else "sync"
     errors = importlib.import_module(f"{package.__name__}.errors")
@@ -407,6 +444,7 @@ def native_wire(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     for asynchronous in (False, True):
         _wire(package, options, lines, asynchronous=asynchronous)
+        _environment(package, lines, asynchronous=asynchronous)
         _refusal(package, options, lines, asynchronous=asynchronous)
         _locations(package, options, lines, asynchronous=asynchronous)
         _borrowed(package, lines, asynchronous=asynchronous)

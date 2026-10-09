@@ -55,6 +55,7 @@ checkpoints
   < closed
   open patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.last-event-id') [field_path=('options', 'extra_headers', 'last-event-id')] invalid_value
   open patching the cursor query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.after') [field_path=('options', 'extra_query', 'after')] invalid_value
+  open through a view patching the cursor query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_query.after') [field_path=('default_query', 'after')] invalid_value
   open through a view patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.last-event-id') [field_path=('default_headers', 'last-event-id')] invalid_value
   open on a client patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.Last-Event-ID') [field_path=('default_headers', 'Last-Event-ID')] invalid_value
   open fixing an idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
@@ -448,6 +449,31 @@ async stepped client clock
     end
   clock checkpoint saved {"bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1}
+reconnection waits through the client clock's sleep
+  > GET https://api.example.com/events last-event-id=None
+  reconnected twice
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='1'
+    2 message id='2' retry=2500 data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='2'
+    3 message id='3' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
+  < closed
+    end
+  waits [0.5, 2.5]
+  > GET https://api.example.com/events last-event-id=None
+  async reconnected twice
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='1'
+    2 message id='2' retry=2500 data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='2'
+    3 message id='3' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
+  < closed
+    end
+  async waits [0.5, 2.5]
 stream write guards
   > GET https://api.example.com/marks last-event-id=None
 credential reconnect scoped authenticated=False

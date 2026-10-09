@@ -151,6 +151,7 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_resume(package, lines))
     _clocked(package, lines)
     run(lambda: _aclocked(package, lines))
+    _slept(package, lines)
     _write_guards(package, lines)
     run(lambda: _awrite_guards(package, lines))
 
@@ -225,6 +226,44 @@ async def _aclocked(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"  clock progress {dict(resumed.progress)}")
 
 
+def _slept(package: ModuleType, lines: list[str]) -> None:
+    """Wait out each reconnection through the client clock's sleep, which moves the clock as far as the wait."""
+    resumes = _Resumes(package, lines)
+    options, now, waits = resumes.harness.options, [100.0], []
+
+    def sleep(duration: float) -> None:
+        waits.append(duration)
+        now[0] += duration
+
+    async def asleep(duration: float) -> None:
+        sleep(duration)
+
+    clock = options.Clock(monotonic=lambda: now[0], random=lambda: 0.5, sleep=sleep, asleep=asleep)
+    settings = {"clock": clock, "retry": options.RetryOptions(initial_delay=1.0, max_delay=4.0)}
+    cut = resumes.harness.interrupted()
+
+    def replies() -> None:
+        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
+        resumes.reply(b'retry: 2500\nid: 2\ndata: {"text": "b"}\n\n', cut)
+        resumes.reply(*_events('id: 3\ndata: {"text": "c"}\n\n'))
+
+    lines.append("reconnection waits through the client clock's sleep")
+    replies()
+    with resumes.client(settings) as api:
+        _drained(lines, "reconnected twice", api.protocols.events.live.open(stream_options=resumes.reconnect))
+    lines.append(f"  waits {waits}")
+    waits.clear()
+
+    async def awaited() -> None:
+        replies()
+        async with resumes.async_client(settings) as api:
+            stream = await api.protocols.events.live.open(stream_options=resumes.reconnect)
+            await _adrained(lines, "async reconnected twice", stream)
+
+    run(awaited)
+    lines.append(f"  async waits {waits}")
+
+
 def _cursors(resumes: _Resumes, api: Any) -> None:
     """Track the event ID cursor of delivered events, checkpoint it, and reopen after it, or without it once cleared."""
     lines, helper = resumes.lines, api.protocols.events.live
@@ -297,6 +336,11 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
     record(lines, "open patching the cursor header", lambda: helper.open(options=headers))
     query = harness.options.RequestOptions(extra_query={"after": "7"})
     record(lines, "open patching the cursor query", lambda: api.protocols.records.all.open(options=query))
+    record(
+        lines,
+        "open through a view patching the cursor query",
+        api.with_options(default_query={"after": "7"}).protocols.records.all.open,
+    )
     record(
         lines,
         "open through a view patching the cursor header",
