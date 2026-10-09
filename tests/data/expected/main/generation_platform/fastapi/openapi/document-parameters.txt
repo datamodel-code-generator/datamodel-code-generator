@@ -310,15 +310,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Mode"
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter",
+              "default": "fast"
             }
           },
           {

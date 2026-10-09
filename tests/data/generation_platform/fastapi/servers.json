@@ -816,7 +816,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "\u00ff",
+        "content": "ÿ",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }
@@ -2396,9 +2396,10 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
         "headers": {
-          "X-Level": "6"
+          "X-Level": "6",
+          "X-Colors": "red,blue"
         }
       },
       {
@@ -2432,9 +2433,10 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
         "headers": {
-          "X-Level": "6"
+          "X-Level": "6",
+          "X-Colors": "red,blue"
         }
       },
       {
@@ -2462,9 +2464,10 @@
       },
       {
         "method": "GET",
-        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
         "headers": {
-          "X-Level": "6"
+          "X-Level": "6",
+          "X-Colors": "red,blue"
         }
       },
       {

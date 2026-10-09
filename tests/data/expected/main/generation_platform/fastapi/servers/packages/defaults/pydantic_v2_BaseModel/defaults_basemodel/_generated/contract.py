@@ -39,6 +39,7 @@ class GetValues:
         marks: defaults_basemodel_models.Tags
         notes: defaults_basemodel_models.Notes
         extras: defaults_basemodel_models.FieldValuesGetQueryExtrasParameter | None
+        x_colors: list[defaults_basemodel_models.Color]
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -50,7 +51,7 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'rows', 'size', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'rows', 'shade', 'size', 'sized', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.Tags),
                 default=defaults_basemodel_models.Tags.model_construct(['a']),
@@ -63,7 +64,7 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'extras', 'marks', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'extras', 'marks', 'notes', 'page', 'rows', 'shade', 'size', 'sized', 'tags', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryLabelsParameter),
                 default=['x'],
@@ -77,7 +78,7 @@ class GetValues:
                     explode=True,
                     shape='array',
                     kind='integer',
-                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'extras', 'labels', 'marks', 'notes', 'page', 'shade', 'size', 'sized', 'tags', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryRowsParameter),
             ),
@@ -89,7 +90,7 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'extras', 'labels', 'notes', 'page', 'rows', 'shade', 'size', 'sized', 'tags', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.Tags),
                 default=defaults_basemodel_models.Tags.model_construct(['b']),
@@ -102,7 +103,7 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'extras', 'labels', 'marks', 'page', 'rows', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'extras', 'labels', 'marks', 'page', 'rows', 'shade', 'size', 'sized', 'tags', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.Notes),
                 default=defaults_basemodel_models.Notes(),
@@ -115,9 +116,21 @@ class GetValues:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('bounded', 'depth', 'labels', 'marks', 'notes', 'page', 'rows', 'size', 'tags', 'words'),
+                    reserved_names=('bounded', 'color', 'colors', 'depth', 'labels', 'marks', 'notes', 'page', 'rows', 'shade', 'size', 'sized', 'tags', 'tone', 'words'),
                 ),
                 adapter=TypeAdapter(defaults_basemodel_models.FieldValuesGetQueryExtrasParameter),
+            ),
+            ParameterArgument(
+                name='x_colors',
+                plan=ParameterPlan(
+                    location='header',
+                    name='X-Colors',
+                    style='simple',
+                    shape='array',
+                    reserved_names=('X-Level',),
+                ),
+                adapter=TypeAdapter(list[defaults_basemodel_models.Color]),
+                default=[defaults_basemodel_models.Color('blue')],
             ),
         ),
         record=Parameters,

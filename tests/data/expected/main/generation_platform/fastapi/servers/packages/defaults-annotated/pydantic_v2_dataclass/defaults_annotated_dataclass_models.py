@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Annotated
 
 from pydantic import Field
@@ -17,6 +18,21 @@ Tags = TypeAliasType(
 
 
 Notes = TypeAliasType("Notes", Annotated[list[str], Field(default_factory=list)])
+
+
+class Color(StrEnum):
+    red = 'red'
+    blue = 'blue'
+
+
+class Shade(StrEnum):
+    light = 'light'
+    dark = 'dark'
+
+
+Colors = TypeAliasType(
+    "Colors", Annotated[list[Color], Field(default_factory=lambda: ['red'])]
+)
 
 
 FieldValuesGetQueryDepthParameter = TypeAliasType(
@@ -68,4 +84,21 @@ FieldValuesGetQueryMarksParameter = TypeAliasType("FieldValuesGetQueryMarksParam
 FieldValuesGetQueryExtrasParameter = TypeAliasType(
     "FieldValuesGetQueryExtrasParameter",
     Annotated[list[str], Field(default_factory=list)],
+)
+
+
+FieldValuesGetQueryColorParameter = TypeAliasType("FieldValuesGetQueryColorParameter", Color)
+
+
+class FieldValuesGetQueryToneParameter(StrEnum):
+    red = 'red'
+    blue = 'blue'
+
+
+FieldValuesGetQuerySizedParameter = TypeAliasType("FieldValuesGetQuerySizedParameter", Size)
+
+
+FieldValuesGetHeaderXColorsParameter = TypeAliasType(
+    "FieldValuesGetHeaderXColorsParameter",
+    Annotated[list[Color], Field(default_factory=lambda: ['blue'])],
 )

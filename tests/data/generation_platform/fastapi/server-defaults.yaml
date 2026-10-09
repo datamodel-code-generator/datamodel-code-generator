@@ -17,6 +17,12 @@ paths:
         - {name: marks, in: query, schema: {$ref: "#/components/schemas/Tags", default: [b]}}
         - {name: notes, in: query, schema: {$ref: "#/components/schemas/Notes"}}
         - {name: extras, in: query, schema: {type: array, items: {type: string}, default_factory: list}}
+        - {name: color, in: query, schema: {$ref: "#/components/schemas/Color", default: red}}
+        - {name: tone, in: query, schema: {type: string, enum: [red, blue], default: blue}}
+        - {name: shade, in: query, schema: {$ref: "#/components/schemas/Shade"}}
+        - {name: colors, in: query, schema: {$ref: "#/components/schemas/Colors"}}
+        - {name: sized, in: query, schema: {$ref: "#/components/schemas/Size", default: null}}
+        - {name: X-Colors, in: header, schema: {type: array, items: {$ref: "#/components/schemas/Color"}, default: [blue]}}
       responses:
         "204": {description: Done.}
 components:
@@ -24,3 +30,6 @@ components:
     Size: {type: integer, minimum: 1, default: 10}
     Tags: {type: array, minItems: 1, items: {type: string}, default: [a]}
     Notes: {type: array, items: {type: string}, default_factory: list}
+    Color: {type: string, enum: [red, blue]}
+    Shade: {type: string, enum: [light, dark], default: dark}
+    Colors: {type: array, items: {$ref: "#/components/schemas/Color"}, default: [red]}

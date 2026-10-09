@@ -6,6 +6,7 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
+import defaults_basemodel_models
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
 from pydantic import Field, StringConstraints
@@ -37,6 +38,21 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
             alias='X-Level',
             convert_underscores=False,
         )] = 4,
+        color: Annotated[defaults_basemodel_models.Color, Query(
+            alias='color',
+        )] = defaults_basemodel_models.Color('red'),
+        tone: Annotated[defaults_basemodel_models.FieldValuesGetQueryToneParameter, Query(
+            alias='tone',
+        )] = defaults_basemodel_models.FieldValuesGetQueryToneParameter('blue'),
+        shade: Annotated[defaults_basemodel_models.Shade, Query(
+            alias='shade',
+        )] = defaults_basemodel_models.Shade('dark'),
+        colors: Annotated[list[defaults_basemodel_models.Color], Query(
+            alias='colors',
+        )] = [defaults_basemodel_models.Color('red')],
+        sized: Annotated[Annotated[int, Field(ge=1)] | None, Query(
+            alias='sized',
+        )] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -53,6 +69,12 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 marks=parameters.marks,
                 notes=parameters.notes,
                 extras=parameters.extras,
+                color=color,
+                tone=tone,
+                shade=shade,
+                colors=colors,
+                sized=sized,
+                x_colors=parameters.x_colors,
             ),
             contract.GetValues.RESPONSES,
         )
@@ -124,6 +146,15 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                         'type': 'array',
                         'items': {'type': 'string'},
                         'default_factory': 'list',
+                    },
+                },
+                {
+                    'name': 'X-Colors',
+                    'in': 'header',
+                    'schema': {
+                        'type': 'array',
+                        'items': {'type': 'string', 'enum': ['red', 'blue']},
+                        'default': ['blue'],
                     },
                 },
             ],
