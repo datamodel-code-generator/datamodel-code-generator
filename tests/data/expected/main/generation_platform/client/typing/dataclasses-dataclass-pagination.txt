@@ -1,58 +1,61 @@
 mypy pets and pagination.py: clean
 pyright pets and pagination.py: clean
 ty pets and pagination.py: clean
-pagination_negative.py 17 marked lines
-mypy pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 call-overload
-  16 misc
-  17 assignment
-  18 assignment
-  19 arg-type
-  20 call-arg
+pagination_negative.py 18 marked lines
+mypy pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  17 call-overload
+  18 misc
+  19 assignment
+  20 assignment
   21 arg-type
-  22 arg-type
-  23 misc
-  24 attr-defined
+  22 call-arg
+  23 arg-type
+  24 arg-type
   25 misc
-  26 assignment
-  27 arg-type
-  28 arg-type
+  26 attr-defined
+  27 misc
+  28 assignment
   29 arg-type
-  30 assignment
+  30 arg-type
   31 arg-type
-pyright pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 reportArgumentType
-  16 reportGeneralTypeIssues
-  17 reportAssignmentType
-  18 reportAssignmentType
-  19 reportArgumentType
-  20 reportCallIssue
+  32 assignment
+  33 arg-type
+  39 arg-type
+pyright pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  17 reportArgumentType
+  18 reportGeneralTypeIssues
+  19 reportAssignmentType
+  20 reportAssignmentType
   21 reportArgumentType
-  22 reportArgumentType
-  23 reportAttributeAccessIssue
-  24 reportAttributeAccessIssue
-  25 reportGeneralTypeIssues
-  26 reportAssignmentType
-  27 reportArgumentType
-  28 reportArgumentType
+  22 reportCallIssue
+  23 reportArgumentType
+  24 reportArgumentType
+  25 reportAttributeAccessIssue
+  26 reportAttributeAccessIssue
+  27 reportGeneralTypeIssues
+  28 reportAssignmentType
   29 reportArgumentType
-  30 reportAssignmentType
+  30 reportArgumentType
   31 reportArgumentType
-ty pagination_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  15 invalid-argument-type
-  16 invalid-await
-  17 invalid-assignment
-  18 invalid-assignment
-  19 invalid-argument-type
-  20 unknown-argument
+  32 reportAssignmentType
+  33 reportArgumentType
+  39 reportArgumentType
+ty pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  17 invalid-argument-type
+  18 invalid-await
+  19 invalid-assignment
+  20 invalid-assignment
   21 invalid-argument-type
-  22 invalid-argument-type
-  23 invalid-assignment
-  24 unresolved-attribute
-  25 invalid-await
-  26 invalid-assignment
-  27 invalid-argument-type
-  28 invalid-argument-type
+  22 unknown-argument
+  23 invalid-argument-type
+  24 invalid-argument-type
+  25 invalid-assignment
+  26 unresolved-attribute
+  27 invalid-await
+  28 invalid-assignment
   29 invalid-argument-type
-  30 invalid-assignment
+  30 invalid-argument-type
   31 invalid-argument-type
+  32 invalid-assignment
+  33 invalid-argument-type
+  39 invalid-argument-type

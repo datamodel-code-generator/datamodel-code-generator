@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import httpx2
 from pets import AsyncClient, Client
 from pets.auth import ClientCredentials, OauthClientCredentials, OauthRefreshToken, RefreshToken, TokenSet
+from pets.errors import AuthError, AuthReason
 from pets.options import RequestOptions
 from typing_extensions import assert_type
 
@@ -23,6 +24,13 @@ def credentials(token: Callable[[], str], user: Callable[[], tuple[str, str]]) -
     assert_type(ClientCredentials.token_url, str | None)
     provider = ClientCredentials(client_id="c", client_secret="s", token_url="https://id.example.com/t", scopes=["a"])
     Client(bearer_alias=provider, http_client=httpx2.Client())
+
+
+def errors() -> None:
+    """Keep the credentials' errors typed."""
+    auth = AuthError(reason="oauth_error", status_code=400, oauth_error="invalid_grant")
+    assert_type(auth.reason, AuthReason)
+    assert_type(auth.status_code, int | None)
 
 
 def native(client: Client) -> None:

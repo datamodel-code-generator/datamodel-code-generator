@@ -17,8 +17,8 @@ from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
+from datamodel_code_generator._runtime.client.positions import secret_names
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
-from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import path_text

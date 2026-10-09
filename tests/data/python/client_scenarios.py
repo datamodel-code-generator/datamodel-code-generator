@@ -606,6 +606,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(200, []))
         extra = options.RequestOptions(extra_query={"page": "3", "sort": "name"})
         record(lines, "search with an extra query", lambda: api.default.search(criteria=criteria, options=extra))
+        record(lines, "lookup with a non-finite member", lambda: api.default.lookup(filter={"page": float("inf")}))
 
 
 def servers(package: ModuleType, lines: list[str]) -> None:
@@ -621,11 +622,16 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 
 
 def default_server(package: ModuleType, lines: list[str]) -> None:
-    """Send a request to the default base URL."""
+    """Send a request to the default base URL, and refuse a raw body a package without binary bodies cannot send."""
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(raw_response(204))
         record(lines, "status", api.default.get_status)
+        record(
+            lines,
+            "raw body other than bytes",
+            lambda: api.request_raw("POST", "https://default.example.com/raw", body=iter([b"x"])),
+        )
 
 
 _DOTS: Final = (".", "..", "...", ".a", "%2e", "")
@@ -788,7 +794,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
-    "auth-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), auth_errors),
+    "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),

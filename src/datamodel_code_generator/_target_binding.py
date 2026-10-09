@@ -17,6 +17,7 @@ from decimal import Decimal
 from functools import cached_property
 from keyword import iskeyword
 from math import isfinite
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
@@ -3618,15 +3619,22 @@ def _pristine(
     walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
     """
     cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    located = {id(prepared): (location, raw) for location, (raw, prepared) in cache.items()}
-    walked = [located.get(id(document), (uri, document)) for uri, document in documents.items()]
+    located = {id(prepared): (location or _unnamed(parser), raw) for location, (raw, prepared) in cache.items()}
+    walked = [located.get(id(document), (uri or _unnamed(parser), document)) for uri, document in documents.items()]
     seen = {id(document) for _, document in walked}
-    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen))
+    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen and location))
+
+
+def _unnamed(parser: TargetApiOpenAPIParser) -> str:
+    """Return the location of a document read as text, such as the input when its type is detected.
+
+    Its references resolve against the parser's base path, as the models' do.
+    """
+    return f"{Path(parser.base_path).resolve().as_uri()}/"
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping
-    from pathlib import Path
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr

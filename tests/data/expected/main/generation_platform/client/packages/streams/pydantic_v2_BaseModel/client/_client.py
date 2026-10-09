@@ -17,8 +17,6 @@ from typing_extensions import Self
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET
-from .bodies import BodyInput
-from .model_codecs import JSONValue
 from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import RawResponse
 
@@ -84,7 +82,7 @@ class ClientView:
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: bytes | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -199,7 +197,7 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: bytes | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

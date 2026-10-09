@@ -14,7 +14,7 @@ from pydantic import AwareDatetime
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import (
     AddPetsResponse,
@@ -49,13 +49,13 @@ class DefaultResource:
     def list_pets(
         self,
         *,
-        limit: Union[int, Unset] = UNSET,
-        offset: Union[int, Unset] = UNSET,
-        handle: Union[str, Unset] = UNSET,
-        kind: Union[models.Kind, Unset] = UNSET,
-        mode: Union[models.FieldPetsGetQueryModeParameter, Unset] = UNSET,
-        tags: Union[List[str], Unset] = UNSET,
-        since: Union[Optional[AwareDatetime], Unset] = UNSET,
+        limit: Union[int, UNSET] = UNSET,
+        offset: Union[int, UNSET] = UNSET,
+        handle: Union[str, UNSET] = UNSET,
+        kind: Union[models.Kind, UNSET] = UNSET,
+        mode: Union[models.FieldPetsGetQueryModeParameter, UNSET] = UNSET,
+        tags: Union[List[str], UNSET] = UNSET,
+        since: Union[Optional[AwareDatetime], UNSET] = UNSET,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> ListPetsResponse:
@@ -70,7 +70,7 @@ class DefaultResource:
     def add_pets(
         self,
         *,
-        body: Union[models.FieldPetsPostRequest, Unset] = UNSET,
+        body: Union[models.FieldPetsPostRequest, UNSET] = UNSET,
         media_type: Optional[Literal['application/json']] = None,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
@@ -125,13 +125,13 @@ class DefaultWithResponse:
     def list_pets(
         self,
         *,
-        limit: Union[int, Unset] = UNSET,
-        offset: Union[int, Unset] = UNSET,
-        handle: Union[str, Unset] = UNSET,
-        kind: Union[models.Kind, Unset] = UNSET,
-        mode: Union[models.FieldPetsGetQueryModeParameter, Unset] = UNSET,
-        tags: Union[List[str], Unset] = UNSET,
-        since: Union[Optional[AwareDatetime], Unset] = UNSET,
+        limit: Union[int, UNSET] = UNSET,
+        offset: Union[int, UNSET] = UNSET,
+        handle: Union[str, UNSET] = UNSET,
+        kind: Union[models.Kind, UNSET] = UNSET,
+        mode: Union[models.FieldPetsGetQueryModeParameter, UNSET] = UNSET,
+        tags: Union[List[str], UNSET] = UNSET,
+        since: Union[Optional[AwareDatetime], UNSET] = UNSET,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[ListPetsResponse]:
@@ -146,7 +146,7 @@ class DefaultWithResponse:
     def add_pets(
         self,
         *,
-        body: Union[models.FieldPetsPostRequest, Unset] = UNSET,
+        body: Union[models.FieldPetsPostRequest, UNSET] = UNSET,
         media_type: Optional[Literal['application/json']] = None,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
@@ -201,13 +201,13 @@ class DefaultWithRawResponse:
     def list_pets(
         self,
         *,
-        limit: Union[int, Unset] = UNSET,
-        offset: Union[int, Unset] = UNSET,
-        handle: Union[str, Unset] = UNSET,
-        kind: Union[models.Kind, Unset] = UNSET,
-        mode: Union[models.FieldPetsGetQueryModeParameter, Unset] = UNSET,
-        tags: Union[List[str], Unset] = UNSET,
-        since: Union[Optional[AwareDatetime], Unset] = UNSET,
+        limit: Union[int, UNSET] = UNSET,
+        offset: Union[int, UNSET] = UNSET,
+        handle: Union[str, UNSET] = UNSET,
+        kind: Union[models.Kind, UNSET] = UNSET,
+        mode: Union[models.FieldPetsGetQueryModeParameter, UNSET] = UNSET,
+        tags: Union[List[str], UNSET] = UNSET,
+        since: Union[Optional[AwareDatetime], UNSET] = UNSET,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
@@ -222,7 +222,7 @@ class DefaultWithRawResponse:
     def add_pets(
         self,
         *,
-        body: Union[models.FieldPetsPostRequest, Unset] = UNSET,
+        body: Union[models.FieldPetsPostRequest, UNSET] = UNSET,
         media_type: Optional[Literal['application/json']] = None,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
@@ -277,13 +277,13 @@ class DefaultWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: Union[int, Unset] = UNSET,
-        offset: Union[int, Unset] = UNSET,
-        handle: Union[str, Unset] = UNSET,
-        kind: Union[models.Kind, Unset] = UNSET,
-        mode: Union[models.FieldPetsGetQueryModeParameter, Unset] = UNSET,
-        tags: Union[List[str], Unset] = UNSET,
-        since: Union[Optional[AwareDatetime], Unset] = UNSET,
+        limit: Union[int, UNSET] = UNSET,
+        offset: Union[int, UNSET] = UNSET,
+        handle: Union[str, UNSET] = UNSET,
+        kind: Union[models.Kind, UNSET] = UNSET,
+        mode: Union[models.FieldPetsGetQueryModeParameter, UNSET] = UNSET,
+        tags: Union[List[str], UNSET] = UNSET,
+        since: Union[Optional[AwareDatetime], UNSET] = UNSET,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -298,7 +298,7 @@ class DefaultWithStreamingResponse:
     def add_pets(
         self,
         *,
-        body: Union[models.FieldPetsPostRequest, Unset] = UNSET,
+        body: Union[models.FieldPetsPostRequest, UNSET] = UNSET,
         media_type: Optional[Literal['application/json']] = None,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,

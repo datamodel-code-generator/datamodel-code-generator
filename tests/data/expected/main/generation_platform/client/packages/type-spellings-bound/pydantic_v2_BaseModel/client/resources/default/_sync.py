@@ -15,7 +15,7 @@ from tests.data.python.fastapi_handlers.spelling_types import List as List_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import PostNamedResponse
 
@@ -45,7 +45,7 @@ class DefaultResource:
     def post_named(
         self,
         *,
-        listed: List_1 | Unset = UNSET,
+        listed: List_1 | UNSET = UNSET,
         body: models.Named,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -72,7 +72,7 @@ class DefaultWithResponse:
     def post_named(
         self,
         *,
-        listed: List_1 | Unset = UNSET,
+        listed: List_1 | UNSET = UNSET,
         body: models.Named,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -99,7 +99,7 @@ class DefaultWithRawResponse:
     def post_named(
         self,
         *,
-        listed: List_1 | Unset = UNSET,
+        listed: List_1 | UNSET = UNSET,
         body: models.Named,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -126,7 +126,7 @@ class DefaultWithStreamingResponse:
     def post_named(
         self,
         *,
-        listed: List_1 | Unset = UNSET,
+        listed: List_1 | UNSET = UNSET,
         body: models.Named,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,

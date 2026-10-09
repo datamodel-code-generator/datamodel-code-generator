@@ -21,7 +21,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
 from ..types.loose import ListLooseResponse
@@ -196,12 +196,11 @@ class UsersAllPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -210,18 +209,16 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -230,7 +227,6 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -239,7 +235,6 @@ class UsersAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -248,19 +243,17 @@ class UsersAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -270,7 +263,6 @@ class UsersAllPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -284,12 +276,11 @@ class UsersByHeaderPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -298,18 +289,16 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
         """Return a pager over the items of GET /users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -318,7 +307,6 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -327,7 +315,6 @@ class UsersByHeaderPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -336,19 +323,17 @@ class UsersByHeaderPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -358,7 +343,6 @@ class UsersByHeaderPagination:
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -372,12 +356,11 @@ class UsersSearchPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, SearchUsersResponse]:
         """Fetch the first page of POST /users/search."""
         return first_page(
@@ -388,18 +371,16 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, SearchUsersResponse]:
         """Return a pager over the items of POST /users/search; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -410,7 +391,6 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -419,7 +399,6 @@ class UsersSearchPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, SearchUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -428,19 +407,17 @@ class UsersSearchPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, SearchUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -452,7 +429,6 @@ class UsersSearchPagination:
             media_type=media_type,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -466,10 +442,9 @@ class LooseAllPagination:
     def page(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return first_page(
@@ -478,16 +453,14 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -496,7 +469,6 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -505,7 +477,6 @@ class LooseAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -514,17 +485,15 @@ class LooseAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -534,7 +503,6 @@ class LooseAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -548,10 +516,9 @@ class LooseTokensPagination:
     def page(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListLooseResponse]:
         """Fetch the first page of GET /loose."""
         return first_page(
@@ -560,16 +527,14 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListLooseResponse]:
         """Return a pager over the items of GET /loose; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -578,7 +543,6 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -587,7 +551,6 @@ class LooseTokensPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListLooseResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -596,17 +559,15 @@ class LooseTokensPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListLooseResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -616,7 +577,6 @@ class LooseTokensPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -630,10 +590,9 @@ class NestedAllPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListNestedResponse]:
         """Fetch the first page of GET /nested."""
         return first_page(
@@ -642,16 +601,14 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListNestedResponse]:
         """Return a pager over the items of GET /nested; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -660,7 +617,6 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -669,7 +625,6 @@ class NestedAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListNestedResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -678,17 +633,15 @@ class NestedAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListNestedResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -698,7 +651,6 @@ class NestedAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -712,10 +664,9 @@ class LabelsAllPagination:
     def page(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Label, ListLabelsResponse]:
         """Fetch the first page of GET /labels."""
         return first_page(
@@ -724,16 +675,14 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Label, ListLabelsResponse]:
         """Return a pager over the items of GET /labels; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -742,7 +691,6 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -751,7 +699,6 @@ class LabelsAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Label, ListLabelsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -760,17 +707,15 @@ class LabelsAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Label, ListLabelsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -780,7 +725,6 @@ class LabelsAllPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -794,10 +738,9 @@ class LabelsSetsPagination:
     def page(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Label, ListLabelSetsResponse]:
         """Fetch the first page of GET /label-sets."""
         return first_page(
@@ -806,16 +749,14 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Label, ListLabelSetsResponse]:
         """Return a pager over the items of GET /label-sets; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -824,7 +765,6 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -833,7 +773,6 @@ class LabelsSetsPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Label, ListLabelSetsResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -842,17 +781,15 @@ class LabelsSetsPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Label, ListLabelSetsResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -862,7 +799,6 @@ class LabelsSetsPagination:
             (after,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -879,7 +815,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListArchiveResponse]:
         """Fetch the first page of GET /archive/{cursor}."""
         return first_page(
@@ -888,7 +823,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -897,7 +831,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListArchiveResponse]:
         """Return a pager over the items of GET /archive/{cursor}; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -906,7 +839,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -915,7 +847,6 @@ class ArchiveAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListArchiveResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -924,7 +855,6 @@ class ArchiveAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -934,7 +864,6 @@ class ArchiveAllPagination:
         cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListArchiveResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -944,7 +873,6 @@ class ArchiveAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -958,10 +886,9 @@ class StatusesAllPagination:
     def page(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListStatusesResponse]:
         """Fetch the first page of GET /statuses."""
         return first_page(
@@ -970,16 +897,14 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListStatusesResponse]:
         """Return a pager over the items of GET /statuses; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -988,7 +913,6 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -997,7 +921,6 @@ class StatusesAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListStatusesResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -1006,17 +929,15 @@ class StatusesAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListStatusesResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -1026,7 +947,6 @@ class StatusesAllPagination:
             (code,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -1040,10 +960,9 @@ class SecureUsersPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListSecureUsersResponse]:
         """Fetch the first page of GET /secure/users."""
         return first_page(
@@ -1052,16 +971,14 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListSecureUsersResponse]:
         """Return a pager over the items of GET /secure/users; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -1070,7 +987,6 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -1079,7 +995,6 @@ class SecureUsersPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListSecureUsersResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -1088,17 +1003,15 @@ class SecureUsersPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.User, ListSecureUsersResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -1108,5 +1021,4 @@ class SecureUsersPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )

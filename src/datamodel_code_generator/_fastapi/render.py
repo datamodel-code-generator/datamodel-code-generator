@@ -139,6 +139,7 @@ _SECURITY_RUNTIME: Final = ("server/security.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
+    "model_codecs/parameter_reads.py",
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
     "server/errors.py",

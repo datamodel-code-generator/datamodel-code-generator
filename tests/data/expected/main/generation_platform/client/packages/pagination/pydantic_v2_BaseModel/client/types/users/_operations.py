@@ -12,13 +12,13 @@ import models
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListUsersResponse: TypeAlias = models.UserPage
 
 
-_LIST_USERS_HEADERS: Final[ResponseHeaders[models.FieldUsersGetResponse200XNextHeader, Unset]] = ResponseHeaders(
+_LIST_USERS_HEADERS: Final[ResponseHeaders[models.FieldUsersGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listUsers',
     frozenset({'200', '500'}),
     (
@@ -47,7 +47,7 @@ def decode_list_users_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldUsersGetResponse200XNextHeader | Unset:
+) -> models.FieldUsersGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_users from a response's metadata."""
     return _LIST_USERS_HEADERS.decode(info, name)
 

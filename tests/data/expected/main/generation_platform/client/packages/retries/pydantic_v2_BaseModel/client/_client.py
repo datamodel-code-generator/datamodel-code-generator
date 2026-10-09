@@ -14,18 +14,18 @@ from typing import TYPE_CHECKING
 import httpx2
 from typing_extensions import Self
 
+from ._runtime.client.body_sources import BINARY_BODIES
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET
-from .bodies import BodyInput
-from .model_codecs import JSONValue
+from .bodies import SyncBinaryBody
 from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import RawResponse
 
 if TYPE_CHECKING:
     from .resources.retry._sync import RetryResource
 
-_DEFAULTS = ClientDefaults()
+_DEFAULTS = ClientDefaults(bodies=BINARY_BODIES)
 
 
 class ClientView:
@@ -73,7 +73,7 @@ class ClientView:
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -163,7 +163,7 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

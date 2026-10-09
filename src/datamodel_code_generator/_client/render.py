@@ -54,7 +54,7 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
-    from datamodel_code_generator._client.runtime import Helper
+    from datamodel_code_generator._client.runtime import Helper, RawBody
     from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
@@ -192,8 +192,6 @@ _ERROR_NAMES: Final = (
     "APIStatusError",
     "APITimeoutError",
     "AuthenticationError",
-    "AuthError",
-    "AuthReason",
     "BadRequestError",
     "ConfigurationError",
     "ConflictError",
@@ -205,6 +203,7 @@ _ERROR_NAMES: Final = (
     "SDKError",
     "UnprocessableEntityError",
 )
+_AUTH_ERROR_NAMES: Final = ("AuthError", "AuthReason")
 _PROTOCOL_ERROR_NAMES: Final = (
     "ProtocolDataError",
     "SessionLimitError",
@@ -223,13 +222,18 @@ _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
 
 
 def _errors(capabilities: Capabilities) -> str:
-    """Return the errors module: the client's errors and those of the declared helpers, loaded on first use."""
+    """Return the errors module: the client's errors, its credentials' errors, and those of the declared helpers.
+
+    The helpers' errors load on first use.
+    """
     raised = {name for helper in capabilities.helpers for name in _PROTOCOL_ERRORS.get(helper, ())}
     protocol = [name for name in _PROTOCOL_ERROR_NAMES if name in raised]
+    auth = _AUTH_ERROR_NAMES if capabilities.security else ()
     parts = [
         '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n',
         "from __future__ import annotations\n\n",
         *(("from typing import TYPE_CHECKING\n\n",) if protocol else ()),
+        *((_from("._runtime.client.auth", auth),) if auth else ()),
         "from ._runtime.client.errors import (\n",
         *(f"    {name},\n" for name in _ERROR_NAMES),
         ")\n",
@@ -240,7 +244,11 @@ def _errors(capabilities: Capabilities) -> str:
             *(f"        {name},\n" for name in protocol),
             "    )\n",
         ))
-    parts.extend(("\n__all__ = [\n", *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *protocol))), "]\n"))
+    parts.extend((
+        "\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *auth, *protocol))),
+        "]\n",
+    ))
     if protocol:
         parts.extend((
             "_PROTOCOL_ERRORS = frozenset({\n",
@@ -332,8 +340,8 @@ def _from(module: str, names: Iterable[str], *, indent: str = "", wrap: bool = T
     return f"{indent}from {module} import (\n" + "".join(f"{indent}    {name},\n" for name in names) + f"{indent})\n"
 
 
-def _protocols(capabilities: Capabilities) -> str:
-    """Return the public protocol module: the records, options, and types of the declared helpers.
+def _protocols(capabilities: Capabilities) -> str | None:
+    """Return the public protocol module: the records, options, and types of the declared helpers, or None without one.
 
     The modules of helper sessions, handles, and memory stores load when one of their names is first requested.
     """
@@ -346,7 +354,7 @@ def _protocols(capabilities: Capabilities) -> str:
     eager = sorted(module for module in groups if module not in lazy)
     text = ['"""Public protocol contracts: selectors, helper options, records, resume state, and webhooks."""\n\n']
     if not groups:
-        return "".join((*text, "__all__: list[str] = []\n"))
+        return None
     text.append("from __future__ import annotations\n\n")
     if lazy:
         text.append("from typing import TYPE_CHECKING\n\n")
@@ -388,18 +396,28 @@ _RESPONSE_PART_NAMES: Final = ("DecodedPart", "MultipartData")
 _PARTS: Final = "_runtime.client.multipart_responses"
 
 
-def _bodies(capabilities: Capabilities) -> str:
-    """Return the bodies module: request bodies, and the parts of multipart responses when one is declared."""
-    parts = _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()
+def _bodies(capabilities: Capabilities) -> str | None:
+    """Return the bodies module: the request bodies and media values the package declares, or None without one.
+
+    It exports the binary bodies, the multipart bodies, the parts of multipart responses, and the form data that no
+    schema describes, each only when the package's operations declare them.
+    """
+    groups = (
+        (
+            "._runtime.client.bodies",
+            _BODY_NAMES if capabilities.binary_bodies or capabilities.multipart_requests else (),
+        ),
+        ("._runtime.client.multipart", _MULTIPART_NAMES if capabilities.multipart_requests else ()),
+        (f".{_PARTS}", _RESPONSE_PART_NAMES if capabilities.multipart_responses else ()),
+        ("._runtime.client.operations", ("FormData",) if capabilities.form_data else ()),
+    )
+    if not (names := sorted(name for _, group in groups for name in group)):
+        return None
     return "".join((
         '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n',
-        "from ._runtime.client.bodies import (\n",
-        *(f"    {name},\n" for name in _BODY_NAMES),
-        ")\nfrom ._runtime.client.multipart import (\n",
-        *(f"    {name},\n" for name in _MULTIPART_NAMES),
-        *((f"){chr(10)}from .{_PARTS} import {', '.join(parts)}{chr(10)}",) if parts else (")\n",)),
-        "from ._runtime.client.operations import FormData\n\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, *parts, "FormData"))),
+        *(_from(module, group) for module, group in groups if group),
+        "\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in names),
         "]\n",
     ))
 
@@ -930,6 +948,12 @@ class _Typing:
         return f"{module.local('_generated', 'model_bindings')}.{self.accessors[use.id].codec}"
 
 
+_BINDERS: Final[dict[str, tuple[str, str]]] = {
+    "binary": ("_runtime.client.body_sources", "BINARY_BODIES"),
+    "multipart": ("_runtime.client.multipart", "MULTIPART_BODIES"),
+}
+
+
 class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
@@ -944,13 +968,15 @@ class _Resources(_Typing):
         sockets: tuple[SocketSpec, ...] = (),
         role: Role = builtin_role,
         types: TypeNames,
+        raw_body: RawBody = "multipart",
     ) -> None:
-        """Keep the typing context, unpacked methods' TypedDicts, and protocol helpers."""
+        """Keep the typing context, unpacked methods' TypedDicts, protocol helpers, and the bodies raw calls take."""
         super().__init__(plan, accessors, role, types=types)
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
         self.streams = streams
         self.sockets = sockets
+        self.raw_body: RawBody = raw_body
 
     def defaults(self, module: TargetModule) -> str:
         """Return the generated defaults of the clients."""
@@ -962,6 +988,8 @@ class _Resources(_Typing):
             entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
             entries.append(("request_coding=", module.local("_runtime.client.compression", "GZIP")))
+        if (binder := _BINDERS.get(self.raw_body)) is not None:
+            entries.append(("bodies=", module.local(*binder)))
         if len(entries) == bool(self.plan.security_schemes):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
@@ -986,6 +1014,16 @@ class _Resources(_Typing):
             credentials_call = _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))
             entries.append(("credentials=", credentials_call))
         return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
+
+    def raw_annotation(self, module: TargetModule, prefix: str) -> str:
+        """Return the body type `request_raw` takes: the bodies of the package's request media, else bytes."""
+        match self.raw_body:
+            case "multipart":
+                return f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]"
+            case "binary":
+                return module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
+            case _:
+                return "bytes"
 
     @cached_property
     def _follows(self) -> bool:
@@ -1119,7 +1157,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
-            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]",
+            "binary": self.raw_annotation(module, prefix),
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
@@ -1644,11 +1682,10 @@ class _Security:
         for spec in self.plan.operations:
             if (binding := spec.security) is None:
                 continue
-            requirement = module.local(runtime, "SecurityRequirement")
             alternatives = _tuple(
                 _tuple(
                     _call(
-                        requirement,
+                        module.local(runtime, "SecurityRequirement"),
                         (("scheme=", self.names[item.scheme]), ("required_scopes=", repr(item.required_scopes))),
                     )
                     for item in alternative
@@ -1815,16 +1852,22 @@ class _Registry(_Typing):
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: TargetModule, media: MediaSpec) -> Group:
-        """Return the BodyMedia constructor of one request media type."""
+        """Return the BodyMedia constructor of one request media type, a form-data one with its form encoder."""
         kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, Doc]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
+        form: list[tuple[str, Doc]] = []
         if media.members is not None:
-            entries.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
+            form.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
-                entries.append(("additional_part=", self.sent_plan(module, media.extra)))
+                form.append(("additional=", self.sent_plan(module, media.extra)))
         elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
             entries.append(("codec=", self.codec(module, media.use)))
-            entries.extend(self.form(module, media))
+            if kind == "multipart":
+                form.extend((("members=", "True"), *self.multipart_members(module, media)))
+            else:
+                entries.extend(self.form(module, media))
+        if kind == "multipart":
+            entries.append(("form=", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
         return _call(module.local(_RUNTIME, "BodyMedia"), entries)
 
     def sent_plan(self, module: TargetModule, part: PartSpec) -> Group:
@@ -1843,7 +1886,7 @@ class _Registry(_Typing):
 
     @staticmethod
     def form(module: TargetModule, media: MediaSpec) -> list[tuple[str, Doc]]:
-        """Return the member plan keywords of a URL-encoded or form-data media type."""
+        """Return the member plan keywords of a URL-encoded media type."""
         entries: list[tuple[str, Doc]] = []
         if media.fields:
             entries.append(("fields=", _tuple(field_plan(module.local, item) for item in media.fields)))
@@ -1851,8 +1894,16 @@ class _Registry(_Typing):
             entries.append(("additional=", field_plan(module.local, media.additional)))
         if media.encoded:
             entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
+        return entries
+
+    @staticmethod
+    def multipart_members(module: TargetModule, media: MediaSpec) -> list[tuple[str, Doc]]:
+        """Return the keywords of a form-data media type whose members its codec writes: their media and styles."""
+        entries: list[tuple[str, Doc]] = []
         if media.content_types:
             entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
+        if media.encoded:
+            entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
 
     def decoder(self, module: TargetModule, spec: OperationSpec) -> Group:
@@ -3052,8 +3103,10 @@ class ClientRenderer:
         groups: dict[str, list[str]] = {}
         for path in runtime:
             groups.setdefault(path.parent.as_posix(), []).append(path.name)
+        public = ("options", *(("bodies",) if _bodies(capabilities) is not None else ()), "errors")
         return self.role("readme.jinja2", readme_template.render)(
             package=config.package,
+            public_modules=f"{', '.join(public)}, and response types",
             reference="runtime.md",
             signature_style=config.signature_style,
             body_arguments=config.body_arguments,
@@ -3084,13 +3137,9 @@ class ClientRenderer:
         }
 
     def _credentials_runtime(self) -> str:
-        """Show how to pass the first credential, and name the credential arguments the clients take."""
-        credentials = self.plan.credentials
-        if not credentials:
-            return _paragraph(
-                "No operation of this API requires a security scheme, so its clients take no credentials.",
-                _NATIVE_AUTH,
-            )
+        """Describe the credential arguments and how to pass the first one, or nothing without a credential."""
+        if not (credentials := self.plan.credentials):
+            return ""
         first = credentials[0]
         value, annotation = _CREDENTIAL_EXAMPLES[first.scheme.kind]
         listed = ", ".join(
@@ -3102,7 +3151,10 @@ class ClientRenderer:
             _CREDENTIALS,
             _NATIVE_AUTH,
         )
-        return f"""```python
+        return f"""
+## Authentication
+
+```python
 from {self.config.package} import Client
 
 
@@ -3110,7 +3162,8 @@ def authenticated_client({annotation}) -> Client:
     return Client({first.name}={value})
 ```
 
-{text}"""
+{text}{self._oauth_runtime()}
+"""
 
     def _oauth_runtime(self) -> str:
         """Describe the token requests of the declared OAuth flows, or nothing without one."""
@@ -3126,9 +3179,55 @@ def authenticated_client({annotation}) -> Client:
             _OAUTH_REQUESTS,
         )
 
+    @staticmethod
+    def _bodies_runtime(capabilities: Capabilities) -> str:
+        """Describe the binary and multipart request bodies a package declares, or that raw calls send bytes."""
+        if capabilities.raw_body == "bytes":
+            return "No operation of this package sends a binary or multipart body, so `request_raw` takes `bytes`."
+        multipart = (
+            "A multipart body replays when all its file parts can; HTTPX2 reads multipart files synchronously, so an "
+            "async file or async iterable as a file part raises a request `DecodeError` with the reason "
+            "`unencodable` before sending."
+            if capabilities.multipart_requests
+            else ""
+        )
+        return _paragraph(
+            "A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async "
+            "calls also take an async file whose `read` is a coroutine function and an async iterable of `bytes`.",
+            "Bytes and seekable files, paths included, are sent with the `Content-Length` measured at call entry and "
+            "replay from that offset; other inputs are chunked, are never buffered, and cannot replay once consumed.",
+            "Text, `bytearray`, `memoryview`, text-mode or closed files, and paths that cannot be opened raise a "
+            "request `DecodeError` with the reason `unencodable`.",
+            "The SDK opens a path when the body is first sent, reads at most 64 KiB at a time, in a worker thread in "
+            "async calls, and closes it when the call ends; caller files stay open.",
+            multipart,
+        )
+
     def runtime_documentation(self, capabilities: Capabilities) -> str:
-        """Render public runtime settings and their resource and delivery obligations."""
-        clock = "An OAuth provider takes `clock=Clock(...)` for its own token expiry." if capabilities.oauth else ""
+        """Render the runtime settings and obligations of the capabilities the package declares."""
+        clock = _paragraph(
+            "`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, "
+            "jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or "
+            "`asleep` in an asyncio client.",
+            "An OAuth provider takes `clock=Clock(...)` for its own token expiry." if capabilities.oauth else "",
+        )
+        transport = _paragraph(
+            "Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and "
+            "content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per "
+            "call.",
+            "A request carrying a credential at a declared scheme's position other than `Authorization` is never "
+            "redirected: its 3xx is the final response."
+            if capabilities.schemes
+            else "",
+            "An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root "
+            "close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays "
+            "caller owned.",
+            ""
+            if capabilities.security
+            else "`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, and "
+            "`auth=None` sends without one; unset, the HTTP client's own Auth applies.",
+        )
+        reasons = "`AuthError` names its `reason`, " if capabilities.security else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3163,116 +3262,43 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | follow redirects | the native client's: False for an SDK-created client |
 | error body prefix | 64 KiB; response and stream bodies are not capped |
 
-Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
-retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
-cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
-Native cancellation remains the original exception.
-`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
-sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 {clock}
 
-## Retry decisions and delays
+## Retries and replayable input
 
-GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
-from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt of the
-call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
-resend. All candidates still need replayable input. Pool timeouts need `RetryOptions(retry_on_pool_timeout=True)`.
-Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
 
-Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
-is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
-explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
-a `RetryOptions` value cannot invent that declaration, and explicit None disables an inherited vendor control.
+{self._bodies_runtime(capabilities)}
 
-Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
-including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
-failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response.
+## Transport
 
-## Idempotency and replayable input
-
-A call's `RequestOptions(idempotency_key="...")` supplies a caller's stable key, sent unchanged, and
-`idempotency_key=None` disables the automatic one; unset, an operation with a declared key header gets a UUID4 key.
-A header of that name among the call's extra headers or the client's or a view's default headers is the call's key
-instead; a protocol helper refuses one, as it refuses a call's key.
-The key is created once per logical call and reused across eligible retries.
-A caller key on an operation without a declared header fails before sending.
-One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
-
-
-Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
-`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
-raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
-files, including paths, are sent with `Content-Length` for the bytes measured at call
-entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
-files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
-async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
-Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
-The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
-file parts can. Files are read at most 64 KiB at a time. In async calls a
-path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
-reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
-async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
-call running in a thread before it closes the file.
-
-## Redirects and transport construction
-
-Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
-Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
-attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
-as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
-`follow_redirects` of the client, a view, or a call overrides the native client's choice per call; unset, an
-SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
-`Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
-that carries a credential at a position a declared security scheme names other than `Authorization` is never
-redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
-cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
-`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
-does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
-yields the body as it arrived; a buffered one keeps only its decoded body.
-
-An SDK-created HTTP client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect. Configure proxies,
-TLS, connection pools, HTTP/2, and environment settings on the `httpx2.Client` or `httpx2.AsyncClient` passed as
-`http_client`, which keeps them, its timeout unless `timeout` is given, and its owner.
-Typed errors and exception bodies keep at most a 64 KiB prefix of an error body; buffered raw responses and streams
-are not capped, and of a buffered raw response only `raise_for_status()` applies the error prefix.
-Borrowed clients stay caller owned. Root close is idempotent and closes only the native client the SDK created.
-Request views share that root and have no close method.
-
-## Authentication
-
-{self._credentials_runtime()}{self._oauth_runtime()}
-
+{transport}
+{self._credentials_runtime()}
 ## Errors and cleanup
 
 Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
 `attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
-failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
-(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
-subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
-decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
-start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
-key, header, or body values.
-
-Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
-new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
-caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. {reasons}`DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""
 
     def _compression_runtime(self) -> str:
-        """Describe request compression, or that no operation of the package accepts a request coding."""
+        """Describe request compression, or nothing when no operation of the package accepts a request coding."""
         if not self._accepted_encodings():
-            return """
-## Request compression
-
-No operation of this package declares request compression, so every request is sent without SDK compression.
-"""
+            return ""
         return """
 ## Request compression
 
@@ -3630,19 +3656,9 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
         config = self.config
-        resources = _Resources(
-            self.plan,
-            self.accessors,
-            unpacked=config.signature_style == "unpack",
-            helpers=self.helpers,
-            streams=self.streams,
-            sockets=self.sockets,
-            role=self.role,
-            types=self.types,
-        )
-        types = _Types(self.plan, self.accessors, self.role, types=self.types)
-        registry = _Registry(self.plan, self.accessors, self.role, types=self.types)
-        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
+        operations = self.plan.operations
+        sent = [media for spec in operations if spec.body is not None for media in spec.body.media]
+        received = [media for spec in operations for response in spec.responses for media in response.media]
         capabilities = Capabilities(
             security=declared_security(self.plan),
             helpers=declared_helpers(
@@ -3654,14 +3670,30 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             ),
             signatures=self.signatures,
             backends=declared_backends(self.codecs),
-            keywords=resources.records is not None,
-            multipart_responses=any(
-                media.kind == "multipart"
-                for spec in self.plan.operations
-                for response in spec.responses
-                for media in response.media
+            keywords=config.signature_style == "unpack",
+            schemes=bool(self.plan.security_schemes) or any(spec.security is not None for spec in operations),
+            binary_bodies=any(media.kind == "binary" for media in sent),
+            multipart_requests=any(media.kind == "multipart" for media in sent),
+            form_data=any(
+                media.kind == "form" and (media.use is None or media.use.type is None) for media in (*sent, *received)
             ),
+            response_headers=any(response.headers for spec in operations for response in spec.responses),
+            multipart_responses=any(media.kind == "multipart" for media in received),
         )
+        resources = _Resources(
+            self.plan,
+            self.accessors,
+            unpacked=config.signature_style == "unpack",
+            helpers=self.helpers,
+            streams=self.streams,
+            sockets=self.sockets,
+            role=self.role,
+            types=self.types,
+            raw_body=capabilities.raw_body,
+        )
+        types = _Types(self.plan, self.accessors, self.role, types=self.types)
+        registry = _Registry(self.plan, self.accessors, self.role, types=self.types)
+        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
@@ -3674,9 +3706,13 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
                 if (auth := _auth(self.plan.credentials)) is not None
                 else ()
             ),
-            self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
+            *((self.file(PurePosixPath("bodies.py"), "bodies", bodies),) if (bodies := _bodies(capabilities)) else ()),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
-            self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
+            *(
+                (self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols),)
+                if (protocols := _protocols(capabilities))
+                else ()
+            ),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]
         for resource in self.plan.resources:
@@ -3701,7 +3737,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         ))
         if (records := resources.records) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
-        if self.plan.security_schemes or any(spec.security is not None for spec in self.plan.operations):
+        if capabilities.schemes:
             files.append(
                 self.file(
                     PurePosixPath("_generated", "security.py"),

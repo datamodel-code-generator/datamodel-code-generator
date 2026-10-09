@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pets import Client
 from pets.auth import OauthClientCredentials, OauthRefreshToken, TokenSet
+from pets.errors import AuthError
 
 
 def wrong_credentials(provider: OauthClientCredentials) -> None:
@@ -16,3 +17,4 @@ def wrong_credentials(provider: OauthClientCredentials) -> None:
     OauthRefreshToken("access", client_id="c")  # error
     OauthClientCredentials(client_id="c")  # error
     Client(auth="token")  # error
+    AuthError(reason="expired")  # error

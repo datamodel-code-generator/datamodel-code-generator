@@ -1,8 +1,9 @@
 """Declare the runtime modules a client package copies from its capabilities, and what it exports.
 
-The capabilities are the security schemes, the helpers, and the model codec kinds. The copy set never follows the
-modules' imports: each capability names every module it needs, including those its modules import only for
-annotations or inside functions, so that the package type-checks as copied.
+The capabilities are the security schemes, the helpers, the model codec kinds, and the request bodies and response
+headers the operations declare. The copy set never follows the modules' imports: each capability names every module it
+needs, including those its modules import only for annotations or inside functions, so that the package type-checks as
+copied, and the core modules name no other module.
 """
 
 from __future__ import annotations
@@ -17,27 +18,25 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan
 
 Security: TypeAlias = Literal["api_key", "basic", "bearer", "client_credentials", "refresh_token"]
+RawBody: TypeAlias = Literal["bytes", "binary", "multipart"]
 Helper: TypeAlias = Literal[
     "pagination", "polling", "streams", "websocket", "webhooks", "cache", "uploads", "compression"
 ]
 
 _CORE: Final = (
-    "client/bodies.py",
-    "client/body_sources.py",
     "client/client.py",
-    "client/codecs.py",
+    "client/content.py",
     "client/errors.py",
     "client/logical.py",
     "client/media.py",
-    "client/multipart.py",
     "client/native.py",
     "client/operations.py",
     "client/options.py",
     "client/paths.py",
+    "client/positions.py",
     "client/raw.py",
     "client/responses.py",
     "client/retry.py",
-    "client/security.py",
     "client/timing.py",
     "client/urls.py",
     "model_codecs/errors.py",
@@ -51,7 +50,12 @@ _PROTOCOLS: Final = (
     "protocols/options.py",
     "protocols/origins.py",
 )
-_OAUTH: Final = ("client/auth.py", "client/oauth.py")
+_SCHEMES: Final = ("client/security.py",)
+_AUTH: Final = (*_SCHEMES, "client/auth.py")
+_OAUTH: Final = (*_AUTH, "client/oauth.py")
+_BINARY: Final = ("client/bodies.py", "client/body_sources.py")
+_MULTIPART: Final = (*_BINARY, "client/multipart.py")
+_HEADERS: Final = ("client/codecs.py", "model_codecs/parameter_reads.py")
 _BASE: Final = ("protocols/errors.py", "protocols/records.py", "protocols/references.py")
 _PAGES: Final = (*_BASE, "protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
 _RESUMED: Final = (*_PAGES, "protocols/resume.py")
@@ -95,7 +99,10 @@ class Capabilities:
     """What a client package declares: its usable security schemes, its helpers, and its model codec kinds.
 
     `signatures` holds the signature kinds of the webhook helpers; `keywords` marks a package whose generated keyword
-    records name the runtime's unpacked-argument types, and `multipart_responses` one that reads multipart responses.
+    records name the runtime's unpacked-argument types. `schemes` marks a package that declares security schemes or
+    operation security, usable or not; `binary_bodies` and `multipart_requests` one whose operations send binary or
+    form-data bodies, `form_data` one with a URL-encoded body or response no schema describes, `response_headers` one
+    that decodes declared response headers, and `multipart_responses` one that reads multipart responses.
     """
 
     security: frozenset[Security]
@@ -103,6 +110,11 @@ class Capabilities:
     signatures: frozenset[str]
     backends: frozenset[str]
     keywords: bool
+    schemes: bool = False
+    binary_bodies: bool = False
+    multipart_requests: bool = False
+    form_data: bool = False
+    response_headers: bool = False
     multipart_responses: bool = False
 
     @property
@@ -122,17 +134,26 @@ class Capabilities:
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
         if self.protocols:
             modules.update(_PROTOCOLS)
-        if "webhooks" in self.helpers:
-            modules.update(("protocols/caches.py", "protocols/options.py", "protocols/origins.py"))
+        if self.schemes:
+            modules.update(_SCHEMES)
         if self.security:
-            modules.add("client/auth.py")
-        if self.oauth:
-            modules.update(_OAUTH)
+            modules.update(_OAUTH if self.oauth else _AUTH)
         if self.keywords:
             modules.add("client/arguments.py")
+        if self.binary_bodies:
+            modules.update(_BINARY)
+        if self.multipart_requests:
+            modules.update(_MULTIPART)
+        if self.response_headers:
+            modules.update(_HEADERS)
         if self.multipart_responses:
-            modules.add("client/multipart_responses.py")
+            modules.update((*_MULTIPART, "client/multipart_responses.py"))
         return tuple(sorted(modules))
+
+    @property
+    def raw_body(self) -> RawBody:
+        """Return the bodies `request_raw` takes: those of the request media the package declares, else bytes."""
+        return "multipart" if self.multipart_requests else "binary" if self.binary_bodies else "bytes"
 
 
 def declared_security(plan: ClientPlan) -> frozenset[Security]:

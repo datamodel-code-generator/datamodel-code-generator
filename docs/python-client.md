@@ -267,8 +267,10 @@ causes; callers may read those attributes explicitly.
 ## Protocol contracts
 
 Generated packages also expose the shared contracts of the pagination, polling, stream, WebSocket, cache, upload, and
-webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, and the
-model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions`
+webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, request
+bodies, and response headers, and the model backend need; `pkg.protocols` exists only with a helper, and `pkg.bodies`
+only with a binary, multipart, or schema-less form body. Records, options, cache stores, and resume state come from
+`pkg.protocols`; `ProtocolClientOptions`
 and `SessionOptions` come from `pkg.options` when a pagination, polling, stream, WebSocket, cache, or upload helper is
 declared. The client's `protocols=` keyword is available only in those packages. Helper execution loads when `client.protocols`
 is first used; ordinary operations share the same native HTTP client. Exceptions come from `pkg.errors`, each with the
@@ -1242,8 +1244,8 @@ The concrete handle classes are not exported from `pkg.protocols`: use the type 
 annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they subclass, without `cancel_remote`.
 
 `expires_at` is a selector of the server's expiry of the operation, read once from the accepted create response: a
-string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
-before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
+string giving an RFC 3339 date-time with an offset, where a leap second is the second after the one before it, or
+an HTTP date, read as [`Retry-After` dates](#retries-and-operation-contracts) are. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
 response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The
 expiry, in UTC, becomes the expiry of every checkpoint of the handle, so `resume` refuses them afterwards with
 `ConfigurationError` with the reason `expired`; it does not stop a live handle from polling. Without `expires_at`,
@@ -2904,15 +2906,9 @@ def read_with_budget(client: Client, url: str) -> bytes:
     return client.request_raw("GET", url, options=options).read()
 ```
 
-Before an attempt or retry wait, the client checks the remaining budget. Each native I/O timeout is capped by that
-remaining duration. Native timeout failures raise `APITimeoutError` with the reason `phase_timeout` and the native
-failure as `cause`; a native failure that arrives once the budget has expired raises it with the reason
-`deadline_exceeded` and that cause. An expired budget prevents another attempt; fully received responses remain
-available when decoding or cleanup finishes after expiry. A sequence of reads can take longer than the budget because
-native read timeouts apply to each I/O wait.
-
-Connect and pool timeouts may qualify for a retry under the safety and replay rules below; pool timeouts require
-`RetryOptions(retry_on_pool_timeout=True)`. Read and write failures may have reached the server and are never resent.
+The budget is checked before each attempt and retry wait and caps each native I/O timeout. A native timeout raises
+`APITimeoutError` with the reason `phase_timeout`, or `deadline_exceeded` once the budget has expired, with the native
+failure as `cause`. A fully received response stays available when decoding or cleanup finishes after expiry.
 
 ### Native cancellation
 
@@ -2944,18 +2940,11 @@ def download(client: Client, url: str, destination: BinaryIO) -> None:
 Always leave the response's context manager, including when abandoning a download early. A configured helper
 session may additionally stop before its next step when its total budget has expired.
 
-`stream_to(path)` writes the decoded body to a new temporary file beside the target and moves it there only once the
-body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
-`response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
-Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
-existing target unchanged. In async calls these file calls run one at a time in a worker thread, and a cancelled
-caller waits for the running one before the temporary file is removed, so a partly written file never takes the
-target's name. A cancellation that arrives while the final move is running lets that move finish: the call then
-raises the cancellation although the complete file is at the target, replacing an existing one under
-`overwrite=True`. Saved buffered bytes remain usable after the call completes.
-
-`stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
-truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
+`stream_to(path)` writes the decoded body to a temporary file beside the target and moves it there once the body is
+complete; an existing target raises `FileExistsError` unless `overwrite=True`, and a consumed handle raises
+`ConfigurationError` with the reason `response_consumed`. A failure removes the temporary file and leaves the target
+unchanged. In async calls the file calls run one at a time in a worker thread, and a cancellation during the final move
+lets the move finish. `stream_to(file_object)` writes to a borrowed file and never closes, seeks, or truncates it.
 
 ### Clocks and retry jitter
 
@@ -2971,13 +2960,10 @@ cannot change it. Each source is a function:
 | `asleep` | `anyio.sleep` | Each wait of an asyncio client, given its seconds, returning the awaitable the call waits on, which task cancellation interrupts |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
-keep their own time through their `clock=` argument, since one provider can serve several clients. A client and the
-providers it uses must agree on wall time, because a `TokenSet`'s `expires_at` passes between them as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
-
-A private request budget uses its client's monotonic source. Retry, polling, and reconnection waits pass the
-remaining duration to the clock's `sleep` or `asleep`, and I/O timeouts use the duration measured before the
-operation. A test that records the waits and advances its own monotonic source by each one runs every wait at once and
-can check its length:
+keep their own time through their `clock=` argument and must agree with their clients on wall time. Retry,
+polling, and reconnection waits pass the remaining duration to the clock's `sleep` or `asleep`, and I/O timeouts
+use the duration the monotonic source measured. A test that records the waits and advances its own monotonic
+source by each one runs every wait at once and can check its length:
 
 ```python
 from pets import Client
@@ -3006,12 +2992,10 @@ Each retry of this client starts at once, server delays included, and `fake.wait
 ## Instrumentation
 
 The SDK adds no hook or limiter layer of its own. Instrument calls on the HTTP client: pass an `httpx2.Client` or
-`httpx2.AsyncClient` with `event_hooks`, or one whose transport wraps another, as `http_client`. A request hook runs
-before every attempt the SDK sends and before every redirect HTTPX2 follows, with the request's final method, URL and
-headers, credentials included; a response hook runs for every response once its headers arrived. An ordinary exception
-a hook raises ends the call as `APIConnectionError` with that exception as `cause`, and the call is not sent again,
-since the request may already have reached the server; an interruption propagates unchanged. Limit
-concurrency the same way, with the HTTP client's connection pool limits or an application semaphore around calls.
+`httpx2.AsyncClient` with `event_hooks`, or a wrapping transport, as `http_client`. Request hooks see every attempt and
+followed redirect, credentials included, and response hooks every response. An ordinary exception a hook raises ends
+the call as `APIConnectionError` with that exception as `cause`, and the call is not sent again. Limit concurrency
+with the HTTP client's pool limits or an application semaphore.
 
 ```python
 import httpx2
@@ -3036,17 +3020,10 @@ An injected client stays the caller's: close it after the SDK client.
 
 ### Counters and cleanup
 
-`attempt_count` counts attempts at send time; preparation failures before sending do not increment it.
-`ResponseInfo` and every `SDKError` expose `attempt_count`, `elapsed`, and `request_id`. Errors expose these measurements even when no response
-arrived: their `info` remains `None` in that case.
-
-Closing a root refuses new calls from the root and its views. It closes its created native HTTP client once;
-a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
-and callers close their streaming responses with `with` or `async with`.
-
-Responses and files opened from paths are released in `finally`. A later release failure is named in
-the notes of the primary error (`Secondary failure: <ClassName>`); with no primary error, the release failure
-propagates.
+`ResponseInfo` and every `SDKError` expose `attempt_count`, counted at send time, `elapsed`, and `request_id`, also
+when no response arrived. Closing a root refuses new calls from the root and its views and closes its created native
+client once; borrowed clients and providers keep the caller's lifetime. Responses and files opened from paths are
+released in `finally`; a release failure is named in the notes of the primary error, or propagates without one.
 
 ## Errors
 
@@ -3065,7 +3042,7 @@ place.
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's total timeout, with the reason `deadline_exceeded` | None |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated` |
 | `DecodeError` | A request argument its wire form cannot carry, or a response, stream event, record, or message that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
-| `AuthError` | Credential acquisition or a token exchange failed | `reason`, `status_code`, `oauth_error` |
+| `AuthError` | Credential acquisition or a token exchange failed; exported only by a package whose operations take credentials | `reason`, `status_code`, `oauth_error` |
 
 `APIStatusError` has a subclass for each common status: `BadRequestError` (400), `AuthenticationError` (401),
 `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422),
@@ -3116,12 +3093,15 @@ included), `ConnectTimeout`, or `PoolTimeout` proves the request unsent and can 
 unless an earlier attempt of the call, or a response HTTPX2 followed a redirect from, reached the server; every other
 failure after the send started may have been sent and is never sent again. `retry_safety="never"` prohibits every
 resend, including an unsent request.
-Configuration errors and unclassified failures are not candidates.
 
-A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
-valid server veto prevents a retry. Without a valid hint, bounded exponential backoff applies. Retry waits consume the
-same logical budget as sending and decoding. `RetryOptions(respect_retry_after=False)` is an explicit application
-policy override, disclosed in every generated README; it is never silently embedded in generated defaults.
+A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline, and a
+valid server veto prevents a retry. `Retry-After` gives seconds or an HTTP date, read by the standard library's
+`email.utils.parsedate_to_datetime`: a date without a zone, with `-0000`, or with an unknown zone is UTC, and an
+impossible date, such as one with a leap second, is ignored. The two-digit year of an RFC 850 date is the latest that
+is at most 50 years after receipt, as RFC 9110 reads it; a year below 100 in another form is read as 1969 to 2068.
+Without a valid hint, bounded exponential backoff applies. Retry waits consume the same logical budget as sending and
+decoding. `RetryOptions(respect_retry_after=False)` is an explicit application policy override, disclosed in every
+generated README; it is never silently embedded in generated defaults.
 
 ```python
 from pets import Client
@@ -3238,15 +3218,13 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 ## Body replay and resource ownership
 
-Immutable bytes and JSON encoding results are retained and reused without rerunning serialization for each attempt.
-The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
-fixes its boundary once per logical call and can replay only if every part can replay.
+A package accepts the request bodies its operations declare. Without a binary or multipart request body it copies no
+body runtime, and `request_raw` takes `bytes`; with a binary body `request_raw` also takes the binary inputs below, and
+with a `multipart/form-data` body a `MultipartBody` (`AsyncMultipartBody` for an asyncio client) as well. Encoded
+bytes, JSON included, are kept once per logical call and resent unchanged; a multipart body keeps its boundary.
 
-A binary body, and the content of a multipart `FilePart`, is one of the inputs below. Each is consumed in exactly
-one way, and nothing is buffered or spooled to make a one-shot input replayable. A multipart `FilePart` takes only
-the synchronously readable inputs: `bytes`, a binary file object with a synchronous `read`, a path, or an iterable of
-`bytes`. HTTPX2 reads multipart files synchronously, so an async file object or an async iterable given as a
-`FilePart`, in either client, raises a request `DecodeError` with the reason `unencodable` before anything is sent.
+A binary body, and the content of a multipart `FilePart`, is one of these inputs. Nothing is buffered or spooled to
+make a one-shot input replayable.
 
 | Input | Calls | How it is read | Framing | Sent again |
 | --- | --- | --- | --- | --- |
@@ -3257,56 +3235,32 @@ the synchronously readable inputs: `bytes`, a binary file object with a synchron
 | Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file; not as a `FilePart` | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
 | Async iterable of `bytes`; not as a `FilePart` | async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 
-A `str` is not read as a path. `str`, `bytearray`, `memoryview`, synchronous text-mode files, a synchronous file
-that is already closed, and a path that cannot be opened raise a request `DecodeError` with the reason `unencodable`
-before anything is sent; the underlying `OSError` or `ValueError` is the `cause`. Pass `bytes`, or a file opened in
-binary mode. An async file object is not inspected before it is read: one opened in text mode or already closed fails
-while the request is being sent, as `APIConnectionError` with that failure as `cause`.
+A `str` is not read as a path. `str`, `bytearray`, `memoryview`, synchronous text-mode or closed files, a path that
+cannot be opened, and an async file or async iterable as a `FilePart` (HTTPX2 reads multipart files synchronously)
+raise a request `DecodeError` with the reason `unencodable` before anything is sent, with the underlying failure as
+`cause`. An async file is not inspected first: a text-mode or closed one fails while sending as `APIConnectionError`.
 
-A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. From a seekable
-file the call sends the bytes between the position and the end it measured at call entry, also when the file grows
-afterward; an async file or a file that cannot seek is read until it returns no bytes. A path the call opened is
-closed when the call ends; if that close fails, the failure is attached to an error already
-propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
+Caller files stay open, wherever the last read left them. A path the call opened is closed when the call ends; a close
+failure is attached to an error already propagating, and otherwise raises `SDKError` with the reason
+`cleanup_failed`. Sync calls do all file I/O on the calling thread. In async calls a path the call opens is opened,
+read, and closed in a worker thread, one chunk at a time; a caller's synchronous file is read on the event loop, and
+an async file where it decides. A cancelled or timed-out call waits for a running file call before it closes the file.
 
-Sync calls do all file I/O on the calling thread. In async calls, where the file I/O runs depends on who opened the
-file:
-
-| File | Async call |
-| --- | --- |
-| A path given as a body, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
-| A path given as a `FilePart`, which the call opens | Opened and closed in a worker thread; HTTPX2 reads it on the event loop, as it reads multipart files. |
-| A synchronous file object the caller opened | `tell`, `seek` and each `read` of at most 64 KiB block the event loop, as HTTPX2 reads multipart files. |
-| An async file object | `await read(65536)` on the event loop; the file decides where its I/O runs. |
-| `stream_to(path)` | The temporary file is created, written about 64 KiB at a time, moved to the target, or removed in a worker thread. |
-| `stream_to(file_object)` | Each `write` blocks the event loop. |
-
-Only one file call of a body or download runs at a time, so memory stays bounded by the chunk size. When a call is
-cancelled or times out while a file call is running in a thread, the call waits for that one file call to finish
-before it closes, moves or removes the file, and then lets the cancellation propagate; a failure of that file call
-is named in a note on the cancellation. To keep a slow caller-opened file off the loop, pass its path, an async file
-object such as `await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async
-file is read in 64 KiB chunks even though iterating it would yield lines.
-
-A retry, or a 307 or 308 redirect HTTPX2 follows, sends bytes again as they are and seeks a seekable file back to its
-entry position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
-sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
-call is not retried: the failure that would have been retried is raised as it is. Multipart can replay when every file
-part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
-`cause`.
+A retry, or a 307 or 308 redirect HTTPX2 follows, resends bytes and seeks a seekable file back to its entry position; a
+failing seek raises a request `DecodeError` with the reason `body_not_replayable`. A consumed one-shot input is not
+retried: the failure that would have been retried is raised. A multipart body replays when every file part can. A
+failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as `cause`.
 
 ### Multipart bodies
 
-A `MultipartBody` (`AsyncMultipartBody` for an asyncio client) is sent through HTTPX2's `files=` encoding, its parts
-in their order: each `FieldPart` and `FilePart` keeps its name, filename, media type and extra headers, and parts may
-repeat a name. A field's value goes through its member's model codec, a repeated member sends a part for each item,
-a styled member the parts its style gives, and a media type the member's encoding declares must cover the one a part
-names. The SDK does not check parts against the schema: a missing, repeated, undeclared or read-only member is sent as
-given and left to the server's model. HTTPX2 refuses a part header that is no token or holds a line break; that, and a
-part that is not a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason
-`unencodable` before sending; so does a `FilePart` whose content is not read synchronously, such as an async file or
-an async iterable, in either client. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without
-parts is sent empty, without a Content-Type, as HTTPX2 sends it. HTTPX2 chooses the boundary.
+A `MultipartBody` is sent through HTTPX2's `files=` encoding, its parts in their order: each `FieldPart` and
+`FilePart` keeps its name, filename, media type and extra headers, and parts may repeat a name. A field's value goes
+through its member's model codec, a repeated member sends a part for each item, a styled member the parts its style
+gives, and a media type the member's encoding declares must cover the one a part names. The SDK does not check parts
+against the schema. A part header HTTPX2 refuses, and a part that is not a `FieldPart` or a `FilePart` with a string
+name, raises a request `DecodeError` with the reason `unencodable` before sending. A body whose parts are all bytes is
+encoded once, with `Content-Length`; a body without parts is sent empty, without a Content-Type. HTTPX2 chooses the
+boundary.
 
 A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
 bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a
@@ -3324,31 +3278,21 @@ def upload_file(client: Client, url: str, path: Path) -> bytes:
     return response.read()
 ```
 
-The experimental runtime no longer has `FileBody`, `StreamBody`, `BodyFactory` or their async counterparts; pass the
-file, path or iterable itself. Callers manage the lifetime and concurrent use of their own files and iterables.
-
 ## Redirects and transport construction
 
 Calls are sent through the native client with `send(request, stream=True)`: its `auth`, event hooks, redirect
-setting, and framing are effective. `follow_redirects` of the client, a view, or a call's `RequestOptions` is
-the native boolean for that call; unset, an SDK-created client follows no redirect, as HTTPX2's default is, and an
-injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itself: 301 and 302 change POST to GET,
-303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
-the native client is its limit, past which `TooManyRedirects` raises `APIConnectionError`. A bytes body, a seekable
-file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
-`Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
-same-host `http` to `https` upgrade, and keeps every other header. Every hop
-consumes the same call deadline, and a failure after a redirect was answered may have been sent, so it is never
-sent again, as is a failure an injected client's response event hook raises.
+setting, framing, and content decoding are effective. `follow_redirects` of the client, a view, or a call's
+`RequestOptions` is the native boolean for that call; unset, an SDK-created client follows no redirect and an injected
+one keeps its own. HTTPX2 follows redirects itself, with its method rewriting, its `max_redirects` limit
+(`TooManyRedirects` raises `APIConnectionError`), and its header rules: it drops `Cookie` on every redirect and
+`Authorization` across origins. Every hop consumes the same call deadline, and a failure after a redirect was answered
+is never sent again.
 
-A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
-never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
-carry it. HTTPX2 would forward such a value to another origin. Its 3xx is the final
-response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
-anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
-request it sends, or read the `Location` and send a call of your own.
-The request event hooks of an injected client and an `httpx2.Auth` of your own are caller code that runs after the
-follow decision, so they can still add headers, such as an `X-API-Key`, to a request sent to another origin.
+In a package that declares security schemes, a request carrying a credential at a scheme's position other than
+`Authorization` (an API key in a header, query field, or cookie, however the request came to carry it) is never
+redirected: its 3xx is the final response, which the typed call raises as `APIStatusError` and `with_raw_response`
+returns with its `Location`. To follow it anyway, place the credential with an `httpx2.Auth` of your own on the
+injected client, which HTTPX2 runs on every request it sends:
 
 ```python
 import httpx2
@@ -3370,21 +3314,19 @@ def following_client(key: str) -> Client:
     return Client(http_client=native)
 ```
 
-The native client removes response content codings: its `Accept-Encoding`, gzip and deflate plus brotli and zstd
-where their decoders are installed, is sent, a body that does not decode raises `ProtocolDataError`, and a coding it
-does not know passes the body through. A streaming raw response's `iter_raw_bytes()` yields the body as it arrived; a
-buffered one keeps only its decoded body, so its `iter_raw_bytes()` raises `ConfigurationError` with the reason
-`response_consumed`. A HEAD operation's typed return contract remains bodyless after a redirect: ordinary and
-`with_response` calls return `None` data for an empty final body and raise `DecodeError` with the reason
-`forbidden_body` if the final response has content. Use `with_raw_response` or `with_streaming_response` to access it.
+Request event hooks and an `httpx2.Auth` of your own run after the follow decision, so they can still add a header such
+as `X-API-Key` to a request sent to another origin.
 
-A client the SDK creates is `httpx2.Client(timeout=httpx2.Timeout(600, connect=5))` (or its asyncio twin) with every
-other HTTPX2 default: TLS verification against the system's trust, proxy and CA environment settings honored
-(`trust_env=True`), HTTP/1.1, and a pool of 100 connections keeping 20 alive for 5 seconds. Configure TLS, proxies,
-pools, HTTP/2, and environment handling on an HTTPX2 client of your own and pass it as `http_client`; the SDK keeps its
-settings, its timeout unless `timeout` is given, and its ownership. Typed errors and exception bodies keep at most a
-64 KiB prefix of an error body. Buffered raw responses and streams are not capped; of a buffered raw response, only
-`raise_for_status()` applies the error-body prefix.
+The native client's `Accept-Encoding` is sent and response content codings are removed by HTTPX2; a body that does
+not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
+yields the body as it arrived; a buffered one keeps only its decoded body. A HEAD operation's typed result stays
+bodyless after a redirect.
+
+A client the SDK creates is `httpx2.Client(timeout=httpx2.Timeout(600, connect=5))`, or its asyncio twin, with
+every other HTTPX2 default. Configure TLS, proxies, pools, HTTP/2, and environment handling on an HTTPX2 client of
+your own passed as `http_client`; the SDK keeps its settings, its timeout unless `timeout` is given, and its
+ownership. Typed errors and exception bodies keep at most a 64 KiB prefix of an error body; buffered raw responses
+and streams are not capped.
 
 ```python
 from ssl import create_default_context
@@ -3400,21 +3342,17 @@ def configured_client(ca_file: str) -> tuple[Client, httpx2.Client]:
     return Client(http_client=native), native
 ```
 
-Use the returned client in a `with` block and close the native client after it. The supplied CA bundle controls TLS
-verification; this example leaves verification enabled and keeps HTTPX2's `trust_env=True`.
-
-The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
-Views share their root's core and its ownership. A borrowed client's cookies, headers, and query defaults are not
-merged into SDK requests; its `Accept-Encoding` is. Its native auth, event hooks, and redirect setting retain HTTPX2
-semantics, and the SDK's bounded retries resend from the original request.
+An injected native client keeps its own pool, proxy, and TLS settings. The root closes only the native client it
+created, once; views share their root. A borrowed client's cookies, headers, and query defaults are not merged
+into SDK requests; its `Accept-Encoding` is.
 
 ## Authentication
 
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
-whose operations require none takes no credentials. A scheme whose argument would be empty, `options`, `http_client`,
-`self`, or another scheme's, or whose OAuth provider classes would take another scheme's PascalCase prefix, fails
-generation with `E_RESERVED_NAME`.
+whose operations require none takes no credentials, copies no credential runtime, and exports no `AuthError`. A
+scheme whose argument would be empty, `options`, `http_client`, `self`, or another scheme's, or whose OAuth
+provider classes would take another scheme's PascalCase prefix, fails generation with `E_RESERVED_NAME`.
 
 These examples assume a generated API with a `bearer` scheme, a `header_key` API key scheme, and an `oauth` OAuth 2
 scheme with client credentials and authorization code flows, and an `auth` resource containing `bearer` and

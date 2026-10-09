@@ -20,7 +20,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
 
@@ -89,7 +89,7 @@ class SearchAllPagination:
     def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -105,7 +105,7 @@ class SearchAllPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -138,7 +138,7 @@ class SearchAllPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -163,7 +163,7 @@ class SearchFixedPagination:
     def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -179,7 +179,7 @@ class SearchFixedPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -212,7 +212,7 @@ class SearchFixedPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -237,7 +237,7 @@ class SearchNextPagination:
     def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, SearchResponse]:
@@ -253,7 +253,7 @@ class SearchNextPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -286,7 +286,7 @@ class SearchNextPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, SearchResponse]:
@@ -311,7 +311,7 @@ class LookupAllPagination:
     def page(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[str, LookupResponse]:
@@ -327,7 +327,7 @@ class LookupAllPagination:
     def iterate(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, LookupResponse]:
@@ -360,7 +360,7 @@ class LookupAllPagination:
         self,
         state: JSONValue,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[str, LookupResponse]:

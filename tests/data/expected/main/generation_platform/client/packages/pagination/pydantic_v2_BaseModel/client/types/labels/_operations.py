@@ -12,13 +12,13 @@ import models
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListLabelsResponse: TypeAlias = models.FieldLabelsGetResponse
 
 
-_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, Unset]] = ResponseHeaders(
+_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
     (
@@ -47,7 +47,7 @@ def decode_list_labels_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldLabelsGetResponse200XNextHeader | Unset:
+) -> models.FieldLabelsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_labels from a response's metadata."""
     return _LIST_LABELS_HEADERS.decode(info, name)
 
@@ -55,7 +55,7 @@ def decode_list_labels_header(
 ListLabelSetsResponse: TypeAlias = models.LabelList
 
 
-_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, Unset]] = ResponseHeaders(
+_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
     (
@@ -84,6 +84,6 @@ def decode_list_label_sets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldLabelSetsGetResponse200XNextHeader | Unset:
+) -> models.FieldLabelSetsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_label_sets from a response's metadata."""
     return _LIST_LABEL_SETS_HEADERS.decode(info, name)

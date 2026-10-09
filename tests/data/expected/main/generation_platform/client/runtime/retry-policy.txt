@@ -153,22 +153,34 @@
     unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay RFC850 window boundary = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  delay unknown date timezone = (FieldSafeGetResponse(root='server payload'), 2)
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay RFC850 past the window = (FieldSafeGetResponse(root='server payload'), 2)
     unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay unknown date timezone = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  delay date trailing junk = (FieldSafeGetResponse(root='server payload'), 2)
-    unused=0
+  delay unknown local timezone = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay offset timezone = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  delay date wrong case = (FieldSafeGetResponse(root='server payload'), 2)
-    unused=0
+  delay date trailing junk = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay date wrong case = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
@@ -229,6 +241,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   delay invalid date = (FieldSafeGetResponse(root='server payload'), 2)
     unused=0
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay RFC850 next century at the last second of 2099 = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  delay RFC850 next century from 2060 = ('InternalServerError', 1, b'server payload', FieldSafeGetResponse(root='server payload'), None, False, 503)
+    unused=1
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   vendor maximum = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)

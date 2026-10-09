@@ -10,7 +10,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import GetPetResponse
 
@@ -41,8 +41,8 @@ class DefaultResource:
         self,
         *,
         pet_id: str,
-        page: int | Unset = UNSET,
-        offset: int | Unset = UNSET,
+        page: int | UNSET = UNSET,
+        offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
         """Call GET /pets/{petId}."""
@@ -64,8 +64,8 @@ class DefaultWithResponse:
         self,
         *,
         pet_id: str,
-        page: int | Unset = UNSET,
-        offset: int | Unset = UNSET,
+        page: int | UNSET = UNSET,
+        offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
         """Call GET /pets/{petId}."""
@@ -87,8 +87,8 @@ class DefaultWithRawResponse:
         self,
         *,
         pet_id: str,
-        page: int | Unset = UNSET,
-        offset: int | Unset = UNSET,
+        page: int | UNSET = UNSET,
+        offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /pets/{petId}."""
@@ -110,8 +110,8 @@ class DefaultWithStreamingResponse:
         self,
         *,
         pet_id: str,
-        page: int | Unset = UNSET,
-        offset: int | Unset = UNSET,
+        page: int | UNSET = UNSET,
+        offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /pets/{petId}."""
