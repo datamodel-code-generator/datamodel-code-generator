@@ -29,16 +29,22 @@ if TYPE_CHECKING:
     import pytest
 
 
+def _models(case: dict[str, Any], package: str) -> str:
+    """Return the import path of a case's models: a module beside the package, or inside it for a nested case."""
+    return f"{package}.models" if case.get("nested") else f"{package}_models"
+
+
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     for name in case.get("files", ()):
         shutil.copy2(SOURCE / name, root / name)
     model = case.get("model", {})
     if isinstance(directory := model.get("custom_template_dir"), str):
         model = {**model, "custom_template_dir": SOURCE / directory}
+    models = _models(case, package)
     generate_fastapi(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=GenerateConfig(
-            output=root / f"{package}_models{'' if case.get('modular') else '.py'}",
+            output=root / f"{models.replace('.', '/')}{'' if case.get('modular') else '.py'}",
             input_file_type="openapi",
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
@@ -48,7 +54,7 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             **model,
         ),
         config=fastapi_config(
-            {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},
+            {"output": package, "package": package, "model_package": models, **case.get("config", {})},
             root,
         ),
     )
@@ -60,13 +66,14 @@ def _generated(root: Path, package: str, package_snapshots: set[str]) -> dict[tu
     return {
         parts: path.read_text(encoding="utf-8")
         for path in sorted(root.rglob("*.py"))
-        if (parts := path.relative_to(root).parts)[0] in owners and "_runtime" not in parts
+        if ((parts := path.relative_to(root).parts)[0] in owners or parts == (package, "models.py"))
+        and "_runtime" not in parts
     }
 
 
-def _import(package: str) -> tuple[ModuleType, ModuleType]:
-    """Import a generated package and its models."""
-    return import_generated(package), importlib.import_module(f"{package}_models")
+def _import(package: str, models: str | None = None) -> tuple[ModuleType, ModuleType]:
+    """Import a generated package and its models, a module beside the package unless they are named."""
+    return import_generated(package), importlib.import_module(models or f"{package}_models")
 
 
 class _WithoutRawPath:
@@ -201,7 +208,7 @@ def fastapi_server_report(
         _generate(case, backend, root, package)
         packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
-            server, models = _import(package)
+            server, models = _import(package, _models(case, package))
             calls: list[str] = []
             lines.extend(_interfaces(server))
             sets = services.services(server, models, calls)

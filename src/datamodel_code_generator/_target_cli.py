@@ -211,6 +211,20 @@ def _target_json(project: GeneratedProject, models: Path, encoding: str) -> str:
     return generation_output_json(files, output=models.as_posix())
 
 
+def _nested(models: Path, target: Path) -> dict[str, tuple[Path, Path]]:
+    """Return the output root that lies inside the other one, by artifact kind, with its path inside that root.
+
+    A comparison takes that root as part of the other one, so each file is reported once and neither root lists
+    the files of the other as extra.
+    """
+    model_root, target_root = models.resolve(), target.resolve()
+    if model_root.is_relative_to(target_root):
+        return {"model": (models, model_root.relative_to(target_root))}
+    if target_root.is_relative_to(model_root):
+        return {"target": (target, target_root.relative_to(model_root))}
+    return {}
+
+
 def _compare_target(project: GeneratedProject, models: Path, target: Path, encoding: str) -> OutputComparison:
     """Compare rendered text and Python output roots through the model comparison path.
 
@@ -224,6 +238,7 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
         _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
     )
 
+    nested = _nested(models, target)
     differences: list[CheckDifferencePayload] = []
     contents: list[str] = []
     base, cwd = _payload_base(project, models), Path.cwd()
@@ -232,20 +247,25 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
         for kind, output, is_directory in (("model", models, base == models), ("target", target, True)):
             if not is_directory and not any(artifact.kind == kind for artifact in project.artifacts):
                 continue
+            if kind in nested:
+                continue
             staged_root = staging / kind
             staged_root.mkdir()
-            non_python: list[tuple[Path, Path]] = []
+            non_python: list[tuple[Path, Path, str]] = []
             for artifact in project.artifacts:
-                if artifact.kind != kind or artifact.content is None:
-                    continue
                 path = artifact.path
-                staged = staged_root / (path.relative_to(output) if is_directory else path.name)
+                if artifact.kind == kind:
+                    staged = staged_root / (path.relative_to(output) if is_directory else path.name)
+                elif (inner := nested.get(artifact.kind)) is not None:
+                    staged = staged_root / inner[1] / path.relative_to(inner[0])
+                else:
+                    continue
                 staged.parent.mkdir(parents=True, exist_ok=True)
                 staged.write_bytes(artifact.content)
                 if is_directory and path.suffix != ".py":
-                    non_python.append((staged, path))
+                    non_python.append((staged, path, encoding if artifact.kind == "model" else "utf-8"))
             comparisons = [(staged_root if is_directory else staged_root / output.name, output, is_directory, encoding)]
-            comparisons.extend((staged, path, False, "utf-8") for staged, path in non_python)
+            comparisons.extend((staged, path, False, codec) for staged, path, codec in non_python)
             for generated, actual, directory_output, codec in comparisons:
                 try:
                     compared = _compare_generated_outputs(

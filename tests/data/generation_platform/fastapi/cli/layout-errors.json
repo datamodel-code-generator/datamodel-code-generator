@@ -1,0 +1,24 @@
+{
+  "module-beside-package": {
+    "output": "server/routers.py",
+    "arguments": ["--server-model-package", "server.routers"]
+  },
+  "package-beside-module": {
+    "output": "server/application/models.py",
+    "arguments": ["--server-model-package", "server.application.models"]
+  },
+  "model-module-beside-nested-package": {
+    "input": "layout-clash.yaml",
+    "output": "models",
+    "server": "models/server",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"]
+  },
+  "model-module-beside-package": {
+    "output": "server.py",
+    "arguments": ["--server-model-package", "server"]
+  },
+  "model-in-package-root": {
+    "output": "server/__init__.py",
+    "arguments": ["--server-model-package", "server"]
+  }
+}

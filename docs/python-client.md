@@ -51,7 +51,8 @@ emits the model generation and check payloads, as with `--generate-server`.
 As for models, every generation overwrites every generated file of the package, also one you edited, and never
 deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
 them as extra files; keep your own code outside the package, because `--check` treats every `.py` file under
-`--client-output` as generated.
+`--client-output` as generated. The models can live inside the package, such as `--output client/models.py` with
+`--client-model-package client.models`, as for the [server package](fastapi-server.md#the-generated-package).
 
 ## Client settings
 

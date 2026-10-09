@@ -103,6 +103,33 @@ def test_client_cli_generate(
     )
 
 
+@pytest.mark.parametrize("job", [[], ["--job", "client"]], ids=["options", "job"])
+def test_client_cli_nested_models(
+    job: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep the models inside the client package, from options or a job: one tree to write and to check."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *(["pyproject-nested-jobs.toml"] if job else []))
+    arguments = job or [
+        *("--input", "options.yaml", "--input-file-type", "openapi", "--output", "client/models.py"),
+        *OPTIONS,
+        *CLIENT,
+        *("--client-model-package", "client.models"),
+    ]
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
+    assert_file_content(tmp_path / "client" / "models.py", "cli/options/models.py")
+    run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "client" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
+    (tmp_path / "client" / "models.py").unlink()
+    run_main_with_args(
+        [*arguments, "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check-nested.txt",
+        assert_no_stderr=True,
+    )
+
+
 @pytest.mark.parametrize("form", ["pyproject", "options"])
 @pytest.mark.parametrize("case", ["pets-unpack", "retries", "compression", "auth", "media", "fields"])
 def test_client_cli_equivalence(

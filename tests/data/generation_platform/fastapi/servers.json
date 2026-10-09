@@ -2038,6 +2038,22 @@
     ],
     "package_snapshots": []
   },
+  "nested-models": {
+    "input": "unbound.yaml",
+    "services": "unbound",
+    "nested": true,
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/values/invalid"
+      }
+    ],
+    "package_snapshots": []
+  },
   "stale": {
     "input": "unbound.yaml",
     "previous": "pets.yaml",

@@ -48,6 +48,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "publish",
         "publish-lock",
         "collision",
+        "nested-models",
+        "nested-package",
         "directory",
         "layout-embedded",
         "model-dependencies",
@@ -213,6 +215,17 @@ def test_target_jobs_rollback(
     batch("the server job's services.py cannot be replaced", {0: failure})
     lines.extend(f"  {name} still edited {Path(name).read_bytes() == content}" for name, content in edited.items())
     assert_output("\n".join(lines) + "\n", EXPECTED / "jobs-publish-failure.txt")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+def test_target_render_nested_models_symlink(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Render models written through a symlink to the target directory without staging anything inside it.
+
+    The target directory is read-only, so a private directory created there would fail the render.
+    """
+    assert_output(
+        target_render_report("nested-models-symlink", tmp_path, monkeypatch), EXPECTED / "nested-models-symlink.txt"
+    )
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")

@@ -20,6 +20,7 @@ from datamodel_code_generator._api_manifest import (
     RootInput,
     config_error,
     document_identity,
+    shown,
     target_identity,
 )
 from datamodel_code_generator._api_types import (
@@ -228,16 +229,6 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput(ROOT_URN, cwd)
 
 
-def _check_layout(config: TargetConfig, output: Path, cwd: Path) -> None:
-    package, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
-    if package == models or package in models.parents or models in package.parents:
-        raise config_error(
-            code="E_PATH_COLLISION",
-            option_path="output",
-            message="The target package and the model output must not contain each other",
-        )
-
-
 def _remote_lock(
     input_: _GenerationInput, config: GenerateConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
@@ -252,8 +243,16 @@ def _remote_lock(
     return _resolve_generation_remote_lock(input_, config, cwd), None
 
 
-def _staging(stack: ExitStack, destination: Path, cwd: Path) -> Path:
-    parent = Path(os.path.abspath(cwd / destination.expanduser())).parent  # noqa: PTH100
+def _staging(stack: ExitStack, destination: Path, cwd: Path, around: Path | None = None) -> Path:
+    """Create a private directory beside a destination, or beside the output `around` that contains it.
+
+    Models inside the target package are then staged beside the package, so a render writes nothing into it.
+    """
+    full = cwd / destination.expanduser()
+    location = Path(os.path.abspath(full))  # noqa: PTH100
+    if around is not None and (outer := (cwd / around.expanduser()).resolve()) in full.resolve().parents:
+        location = outer
+    parent = location.parent
     while not parent.exists():
         parent = parent.parent
     return Path(stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)))
@@ -285,14 +284,13 @@ def _generate_models(
     source = _root_input(input_, cwd)
     output = config.output
     assert output is not None
-    _check_layout(target, output, cwd)
     prepared, lock = _remote_lock(input_, config, cwd)
     output = prepared.output
     assert output is not None
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
-        staged_output = _staging(stack, output, cwd) / (output.name or "output")
+        staged_output = _staging(stack, output, cwd, target.output) / (output.name or "output")
         if (cwd / output).is_dir():
             staged_output.mkdir()
         updates: dict[str, Any] = {"output": staged_output}
@@ -374,6 +372,10 @@ def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContra
     )
 
 
+def _collision_key(path: Path) -> str:
+    return unicodedata.normalize("NFC", str(path)).casefold()
+
+
 class _Planner:
     def __init__(
         self, models: _Models, effective: GenerateConfig, config: TargetConfig, generator: TargetGenerator
@@ -417,19 +419,43 @@ class _Planner:
         return (self.artifact(lock.path, "remote_lock", content),)
 
     def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
-        seen: set[str] = set()
-        problems: list[Diagnostic] = []
+        """Refuse files that cannot be written or imported together.
+
+        Two files resolve to one path, a file takes the path of the directory of another file, or a module has the
+        name of a directory that the run generates into beside it, which Python imports instead of the module.
+        """
+        output = self.effective.output
+        assert output is not None
+        roots = [self.root, *(() if self.models.single else ((self.cwd / output).resolve(),))]
+        parents: dict[Path, Path] = {}
+        directories: set[str] = set()
+        packages: set[str] = set()
+        locations: list[Path] = []
         for artifact in artifacts:
             location = self.cwd / artifact.path
-            key = unicodedata.normalize("NFC", str(location.parent.resolve() / location.name)).casefold()
-            if key in seen:
+            if (parent := parents.get(location.parent)) is None:
+                parent = parents[location.parent] = location.parent.resolve()
+                for directory in (parent, *parent.parents):
+                    directories.add(key := _collision_key(directory))
+                    if any(directory == root or root in directory.parents for root in roots):
+                        packages.add(key)
+            locations.append(parent / location.name)
+        seen: set[str] = set()
+        problems: list[Diagnostic] = []
+        for artifact, location in zip(artifacts, locations, strict=True):
+            message = None
+            if (key := _collision_key(location)) in seen or key in directories:
+                message = "Two generated files resolve to the same path"
+            elif location.suffix == ".py" and _collision_key(location.with_suffix("")) in packages:
+                message = "The module has the name of a generated package directory beside it"
+            if message is not None:
                 problems.append(
                     Diagnostic(
                         code="E_PATH_COLLISION",
                         severity="error",
                         stage="ownership",
-                        message="Two generated files resolve to the same path",
-                        artifact_path=artifact.path.as_posix(),
+                        message=message,
+                        artifact_path=shown(artifact.path, self.cwd).as_posix(),
                         target_id=self.target_id if artifact.kind == "target" else None,
                     )
                 )
