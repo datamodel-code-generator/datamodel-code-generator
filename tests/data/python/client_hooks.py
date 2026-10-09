@@ -172,10 +172,10 @@ async def _aobserved(lines: list[str], label: str, call: Callable[[], Awaitable[
     lines.append(f"  {label} = {_measured(result)}")
 
 
-def _settings(package: ModuleType) -> object:
+def _settings(package: ModuleType) -> dict[str, Any]:
     """Retry at once and follow redirects, so a call's every attempt and hop reaches the hooks."""
     options = importlib.import_module(f"{package.__name__}.options")
-    return options.ClientOptions(retry=options.RetryOptions(initial_delay=0), follow_redirects=True)
+    return {"retry": options.RetryOptions(initial_delay=0), "follow_redirects": True}
 
 
 def hooks(package: ModuleType, lines: list[str]) -> None:
@@ -184,7 +184,7 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
     observer = _Hooks(lines)
     http = exchange.client(event_hooks={"request": [observer.request], "response": [observer.response]})
     pet = argument(package, "getPet", "path", "petId", 3)
-    with package.Client(http_client=http, options=_settings(package)) as api:
+    with package.Client(http_client=http, **_settings(package)) as api:
         _calls(api, exchange, lines, pet)
         _failing_hooks(api, exchange, lines, observer, pet)
         _faults(api, exchange, lines, pet)
@@ -297,7 +297,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
     observer = _Hooks(lines)
     http = exchange.async_client(event_hooks={"request": [observer.arequest], "response": [observer.aresponse]})
     pet = argument(package, "getPet", "path", "petId", 3)
-    async with package.AsyncClient(http_client=http, options=_settings(package)) as api:
+    async with package.AsyncClient(http_client=http, **_settings(package)) as api:
         await _async_calls(api, exchange, lines, pet)
         await _async_failing_hooks(api, exchange, lines, observer, pet)
         await _async_faults(api, exchange, lines, pet)

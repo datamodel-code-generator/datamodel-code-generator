@@ -8,8 +8,6 @@
   iterate with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   page with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   next page of options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  iterate with a fixed key from scoped options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
-  page with a fixed key from client options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users

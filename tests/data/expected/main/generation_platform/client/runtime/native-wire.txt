@@ -19,69 +19,14 @@
   arrivals=0 connects=0 alpn=[]
   sync tunnel-certificate = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   arrivals=0 connects=3 alpn=[]
-  sync environment forward-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment forward-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment tunnel-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  sync environment tunnel-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  sync environment all-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment all-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment no-proxy-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment no-proxy-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment opt-out = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-default-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-opt-out = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-context = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment injected = 'Response status=200 attempts=1'
-  native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 sync size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
 sync size default/16777217 raw=True: status=200 bytes=16777217
   arrivals=1
-sync size client/8 raw=False: status=200 bytes=8
-  arrivals=1
-sync size client/8 raw=True: status=200 bytes=8
-  arrivals=1
-sync size client/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size client/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size view/8 raw=False: status=200 bytes=8
-  arrivals=1
-sync size view/8 raw=True: status=200 bytes=8
-  arrivals=1
-sync size view/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size view/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size call/8 raw=False: status=200 bytes=8
-  arrivals=1
-sync size call/8 raw=True: status=200 bytes=8
-  arrivals=1
-sync size call/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size call/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-sync size error-default/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
+sync size error-default/65537 raw=False: InternalServerError bytes=65536 truncated=True
   arrivals=1
 sync size error-default/65537 raw=True: status=500 bytes=65537
-sync size error-default/65537 raw=True: InternalServerError limit=None bytes=65536 truncated=True
-  arrivals=1
-sync size error-explicit/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
-  arrivals=1
-sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=False
+sync size error-default/65537 raw=True: InternalServerError bytes=65536 truncated=True
   arrivals=1
   sync refused 127.0.0.1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   sync refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
@@ -222,69 +167,14 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   arrivals=0 connects=0 alpn=[]
   async tunnel-certificate = 'APIConnectionError attempts=3 reason=None status=None cause=ConnectError'
   arrivals=0 connects=3 alpn=[]
-  async environment forward-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment forward-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment tunnel-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  async environment tunnel-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  async environment all-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment all-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment no-proxy-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment no-proxy-lower = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment opt-out = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-default-upper = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-opt-out = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  async environment ca-context = 'Response status=200 attempts=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment injected = 'Response status=200 attempts=1'
-  native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 async size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
 async size default/16777217 raw=True: status=200 bytes=16777217
   arrivals=1
-async size client/8 raw=False: status=200 bytes=8
-  arrivals=1
-async size client/8 raw=True: status=200 bytes=8
-  arrivals=1
-async size client/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size client/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size view/8 raw=False: status=200 bytes=8
-  arrivals=1
-async size view/8 raw=True: status=200 bytes=8
-  arrivals=1
-async size view/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size view/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size call/8 raw=False: status=200 bytes=8
-  arrivals=1
-async size call/8 raw=True: status=200 bytes=8
-  arrivals=1
-async size call/9 raw=False: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size call/9 raw=True: DecodeError limit=8 bytes=0 truncated=False
-  arrivals=1
-async size error-default/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
+async size error-default/65537 raw=False: InternalServerError bytes=65536 truncated=True
   arrivals=1
 async size error-default/65537 raw=True: status=500 bytes=65537
-async size error-default/65537 raw=True: InternalServerError limit=None bytes=65536 truncated=True
-  arrivals=1
-async size error-explicit/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
-  arrivals=1
-async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=False
+async size error-default/65537 raw=True: InternalServerError bytes=65536 truncated=True
   arrivals=1
   async refused 127.0.0.1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   async refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'

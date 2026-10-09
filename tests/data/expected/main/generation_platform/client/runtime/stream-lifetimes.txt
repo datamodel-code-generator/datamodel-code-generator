@@ -1,11 +1,10 @@
 # pets pydantic_v2.BaseModel
   sync borrowed after rounds b'pong'
-  sync borrowed first chunk x4 ['read True']
-  sync borrowed typed decode x4 ['DecodeError notes []']
-  sync borrowed retried 503 x4 ["returned Pet(id=3, name='fox', tag=None)"]
-  sync borrowed read timeout x4 ['APITimeoutError notes []']
-  sync borrowed stream limit x4 ['DecodeError notes []']
-  sync borrowed kept open True b'pong' sent 26
+  sync borrowed first chunk x5 ['read True']
+  sync borrowed typed decode x5 ['DecodeError notes []']
+  sync borrowed retried 503 x5 ["returned Pet(id=3, name='fox', tag=None)"]
+  sync borrowed read timeout x5 ['APITimeoutError notes []']
+  sync borrowed kept open True b'pong' sent 27
   sync passed client kept open True closes 0
   sync full disk OSError notes [] then b'pong' []
   sync unopenable OSError notes [] [] then read 196608
@@ -13,19 +12,16 @@
   sync consumed to existing 196608 ConfigurationError notes [] ['kept.bin']
   sync borrowed file open True at 65545 True
   sync file object write OSError notes [] then b'pong'
-  sync limit to path DecodeError notes [] ['kept.bin']
   async borrowed after rounds b'pong'
   async borrowed first chunk x4 ['read True']
   async borrowed typed decode x4 ['DecodeError notes []']
-  async borrowed retried 503 x3 ["returned Pet(id=3, name='fox', tag=None)"]
-  async borrowed cancelled x3 ["CancelledError ('reader cancelled',)"]
-  async borrowed read timeout x3 ['APITimeoutError notes []']
-  async borrowed stream limit x3 ['DecodeError notes []']
-  async borrowed kept open True b'pong' sent 25
+  async borrowed retried 503 x4 ["returned Pet(id=3, name='fox', tag=None)"]
+  async borrowed cancelled x4 ["CancelledError ('reader cancelled',)"]
+  async borrowed read timeout x4 ['APITimeoutError notes []']
+  async borrowed kept open True b'pong' sent 26
   async passed client kept open True closes 0
   async download mid-body wrote True
   async download identity True gzip True again ConfigurationError notes []
-  async download gzip past its decoded limit DecodeError response_too_large 524288 ['coded.bin', 'held.bin', 'identity.bin']
   async borrowed file open True at 65545 True
   async file object while iterating ConfigurationError notes [] then read 196608
   async consumed to existing 196608 ConfigurationError notes [] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']

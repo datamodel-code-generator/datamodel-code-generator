@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, get_type_hints
+from typing import TYPE_CHECKING, Any, get_type_hints
 
 import httpx2
 
@@ -12,51 +12,51 @@ from tests.data.python.client_runtime import Exchange, raw_response, record
 if TYPE_CHECKING:
     from types import ModuleType
 
+_INVALID_SECONDS = (
+    ("bool", True),
+    ("negative", -1),
+    ("nan", float("nan")),
+    ("infinity", float("inf")),
+    ("negative infinity", float("-inf")),
+    ("overflow", 10**400),
+)
 
-def _values(options: ModuleType, lines: list[str]) -> None:
-    for label, value in (
-        ("bool", True),
-        ("negative", -1),
-        ("nan", float("nan")),
-        ("infinity", float("inf")),
-        ("negative infinity", float("-inf")),
-        ("text", "1"),
-        ("overflow", 10**400),
-    ):
-        for field in ("connect", "read", "write", "pool"):
-            record(
-                lines,
-                f"phase {field} {label}",
-                lambda field=field, value=value: options.TimeoutOptions(**{field: value}),
-            )
-        for field in ("total_timeout",):
+
+def _values(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for label, value in _INVALID_SECONDS:
+        for field in ("timeout", "total_timeout"):
             record(
                 lines,
                 f"option {field} {label}",
                 lambda field=field, value=value: options.RequestOptions(**{field: value}),
             )
-    for field, value in (
-        ("timeout", False),
-        ("clock", object()),
-    ):
-        record(lines, f"option {field} type", lambda field=field, value=value: options.ClientOptions(**{field: value}))
-    record(lines, "timeout unset", options.TimeoutOptions)
-    record(lines, "timeout zero", lambda: options.TimeoutOptions(connect=0, read=0.0, write=0, pool=0))
-    record(lines, "timeout mixed", lambda: options.TimeoutOptions(connect=None, read=1, write=2.5))
-    lines.append(f"  public deadline exported={hasattr(options, 'Deadline')}")
+    with httpx2.Client() as native:
+        for field in ("timeout", "total_timeout"):
+            record(
+                lines,
+                f"root {field} negative",
+                lambda field=field: package.Client(http_client=native, **{field: -1}),
+            )
+            with package.Client(http_client=native) as api:
+                record(lines, f"view {field} bool", lambda field=field, api=api: api.with_options(**{field: True}))
+    lines.extend(
+        f"  public {label} exported={hasattr(options, name)}"
+        for label, name in (("deadline", "Deadline"), ("timeout options", "TimeoutOptions"))
+    )
     for removed in ("deadline", "stream_idle_timeout", "stream_total_timeout"):
         record(lines, f"removed option {removed}", lambda removed=removed: options.RequestOptions(**{removed: None}))
-    options.ClientOptions(timeout=None, total_timeout=None)
-    values = options.RequestOptions(total_timeout=0)
-    lines.append(f"  seconds {values.total_timeout}")
-    lines.append(f"  slotted {tuple(hasattr(value, '__dict__') for value in (values, options.TimeoutOptions()))}")
+    values = options.RequestOptions(timeout=0, total_timeout=0)
+    phased = options.RequestOptions(timeout=httpx2.Timeout(None, read=1), total_timeout=None)
+    lines.extend((
+        f"  seconds timeout={values.timeout!r} total={values.total_timeout!r}",
+        f"  phases timeout={phased.timeout!r} total={phased.total_timeout!r}",
+        f"  slotted {hasattr(values, '__dict__')}",
+    ))
 
 
 def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     headers = responses.HeadersView((("Authorization", "private-secret"),))
-    info = responses.ResponseInfo(
-        status_code=200, headers=headers, elapsed=0.5, content_type=None, attempt_count=3
-    )
+    info = responses.ResponseInfo(status_code=200, headers=headers, elapsed=0.5, content_type=None, attempt_count=3)
     for error in (
         errors.SDKError(attempt_count=1, elapsed=2),
         errors.APITimeoutError(reason="phase_timeout"),
@@ -70,53 +70,59 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         error.cause = RuntimeError("private-secret")
         lines.append(f"  with response {error} safe={'private-secret' not in repr(error) + str(error)}")
     answered = errors.SDKError(info=info, attempt_count=9, elapsed=9)
-    lines.append(f"  response measurements attempts={answered.attempt_count} elapsed={answered.elapsed}")
-    lines.append(f"  hierarchy timeout={issubclass(errors.APITimeoutError, errors.APIConnectionError)}")
+    lines.extend((
+        f"  response measurements attempts={answered.attempt_count} elapsed={answered.elapsed}",
+        f"  hierarchy timeout={issubclass(errors.APITimeoutError, errors.APIConnectionError)}",
+    ))
 
 
-def _hints(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    for owner in (
-        options.TimeoutOptions,
-        options.ClientOptions,
-        options.RequestOptions,
-        options.Clock,
-        errors.SDKError,
-        errors.APIConnectionError,
-        errors.APITimeoutError,
+def _hints(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    for label, function in (
+        ("Client", package.Client.__init__),
+        ("ClientView.with_options", package.ClientView.with_options),
+        ("RequestOptions", options.RequestOptions.__init__),
+        ("Clock", options.Clock.__init__),
+        ("SDKError", errors.SDKError.__init__),
+        ("APIConnectionError", errors.APIConnectionError.__init__),
+        ("APITimeoutError", errors.APITimeoutError.__init__),
     ):
-        lines.append(f"  hints {owner.__name__} {tuple(get_type_hints(owner.__init__))}")
+        record(lines, f"hints {label}", lambda function=function: tuple(get_type_hints(function)))
 
 
 def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Report the phases each call hands HTTPX2 as the root, a view, and the call give or inherit a timeout."""
     exchange = Exchange(lines)
 
     def inspect_timeout(request: httpx2.Request) -> None:
         lines.append(f"  native timeout {request.extensions['timeout']}")
 
-    with exchange.client(event_hooks={"request": [inspect_timeout]}) as native:
+    def send(label: str, api: Any, path: str, call: object = None) -> None:
+        exchange.respond(raw_response(200, path.encode()))
+        record(lines, label, lambda: api.request_raw("GET", f"https://example.com/{path}", options=call).read())
+
+    hooks = {"request": [inspect_timeout]}
+    with exchange.client(event_hooks=hooks) as native, package.Client(http_client=native) as api:
+        send("injected default timeout kept", api, "default")
+    injected = httpx2.Timeout(9, connect=4)
+    with exchange.client(event_hooks=hooks, timeout=injected) as native:
         with package.Client(http_client=native) as api:
-            exchange.respond(raw_response(200, b"default"))
-            record(
-                lines, "default total and phases", lambda: api.request_raw("GET", "https://example.com/default").read()
-            )
-        client = options.ClientOptions(timeout=options.TimeoutOptions(connect=3, read=5), total_timeout=None)
-        with package.Client(http_client=native, options=client) as api:
-            view = api.with_options(options.RequestOptions(timeout=options.TimeoutOptions(write=7)))
-            exchange.respond(raw_response(200, b"layered"))
-            call = options.RequestOptions(timeout=options.TimeoutOptions(pool=2))
-            record(
-                lines,
-                "nested timeout merge",
-                lambda: view.request_raw("GET", "https://example.com/layered", options=call).read(),
-            )
-            cleared = view.with_options(options.RequestOptions(timeout=None))
-            exchange.respond(raw_response(200, b"cleared"))
-            call = options.RequestOptions(timeout=options.TimeoutOptions(read=8))
-            record(
-                lines,
-                "nested timeout clear",
-                lambda: cleared.request_raw("GET", "https://example.com/cleared", options=call).read(),
-            )
+            send("injected own timeout kept", api, "injected")
+        with package.Client(http_client=native, timeout=2.5) as api:
+            send("root number limits every phase", api, "number")
+        with package.Client(http_client=native, timeout=None) as api:
+            send("root none lifts every phase", api, "unlimited")
+        root = httpx2.Timeout(5, connect=3, write=7, pool=2)
+        with package.Client(http_client=native, timeout=root, total_timeout=None) as api:
+            view = api.with_options(max_retries=0)
+            send("root phases inherited by view and call", view, "inherited")
+            numbered = view.with_options(timeout=7)
+            send("view number over root phases", numbered, "view-number")
+            call = options.RequestOptions(timeout=httpx2.Timeout(None, read=8))
+            send("call phases over view number", numbered, "call-phases", call)
+            cleared = numbered.with_options(timeout=None)
+            send("view none inherited by call", cleared, "cleared")
+            send("call number over view none", cleared, "call-number", options.RequestOptions(timeout=1))
+            send("call none over root phases", api, "call-none", options.RequestOptions(timeout=None))
 
 
 class _Refusing(httpx2.BaseTransport):
@@ -134,12 +140,11 @@ class _Refusing(httpx2.BaseTransport):
 def _attempt_timeout(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Hand each attempt the time left until the absolute deadline as every unlimited phase's timeout."""
     refusing = _Refusing()
-    settings = options.ClientOptions(
-        total_timeout=3600,
-        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
-        retry=options.RetryOptions(max_retries=1, initial_delay=0, jitter="none"),
-    )
-    with httpx2.Client(transport=refusing) as native, package.Client(http_client=native, options=settings) as api:
+    retry = options.RetryOptions(initial_delay=0, jitter="none")
+    with (
+        httpx2.Client(transport=refusing) as native,
+        package.Client(http_client=native, total_timeout=3600, timeout=None, max_retries=1, retry=retry) as api,
+    ):
         record(lines, "refused attempts", lambda: api.request_raw("GET", "https://example.com/failure"))
     first, second = refusing.timeouts
     lines.append(
@@ -149,8 +154,8 @@ def _attempt_timeout(package: ModuleType, options: ModuleType, lines: list[str])
 
 
 def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Use the client's clock for its optional budget without a separate absolute deadline value."""
-    for name in ("monotonic", "time", "random"):
+    """Use the client's clock for its optional budget, which a view or a call may remove or exhaust."""
+    for name in ("monotonic", "time", "random", "sleep", "asleep"):
         record(lines, f"clock {name} type", lambda name=name: options.Clock(**{name: 1.0}))
     fake = options.Clock(monotonic=lambda: 100.0)
 
@@ -163,15 +168,22 @@ def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     odd = options.Clock(monotonic=Unhashable())
     lines.append(f"  hashing ignores sources clock={hash(odd) == hash(fake)}")
     refusing = _Refusing()
-    settings = options.ClientOptions(
-        total_timeout=5,
-        clock=fake,
-        timeout=None,
-        retry=options.RetryOptions(max_retries=0),
-    )
-    with httpx2.Client(transport=refusing) as native, package.Client(http_client=native, options=settings) as api:
-        record(lines, "budget on the client clock", lambda: api.request_raw("GET", "https://example.com/clock"))
-    lines.append(f"  native phases {refusing.timeouts}")
+    with (
+        httpx2.Client(transport=refusing) as native,
+        package.Client(http_client=native, total_timeout=5, clock=fake, timeout=None, max_retries=0) as api,
+    ):
+        unbounded = api.with_options(total_timeout=None)
+        for label, view, call in (
+            ("budget on the client clock", api, None),
+            ("view none removes the budget", unbounded, None),
+            ("call none removes the budget", api, options.RequestOptions(total_timeout=None)),
+            ("call budget over a view without one", unbounded, options.RequestOptions(total_timeout=2)),
+            ("call zero budget", api, options.RequestOptions(total_timeout=0)),
+            ("view zero budget", api.with_options(total_timeout=0), None),
+        ):
+            refusing.timeouts.clear()
+            record(lines, label, lambda view=view, call=call: view.request_raw("GET", "https://x.test/", options=call))
+            lines.append(f"  native phases {refusing.timeouts}")
 
 
 def deadline_options(package: ModuleType, lines: list[str]) -> None:
@@ -179,9 +191,9 @@ def deadline_options(package: ModuleType, lines: list[str]) -> None:
     options, errors, responses = (
         importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors", "responses")
     )
-    _values(options, lines)
+    _values(package, options, lines)
     _errors(errors, responses, lines)
-    _hints(options, errors, lines)
+    _hints(package, options, errors, lines)
     _live_calls(package, options, lines)
     _attempt_timeout(package, options, lines)
     _clocks(package, options, lines)

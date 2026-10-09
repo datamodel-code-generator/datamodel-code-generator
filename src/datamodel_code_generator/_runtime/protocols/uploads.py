@@ -225,12 +225,12 @@ def _limits(
     if core.fixes_key(request):
         raise _invalid(plan, ("options", "idempotency_key"))
     if request is not None:
-        for name, _ in request.headers:
+        for name in request.extra_headers or ():
             if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "headers", name))
-        for name, _ in request.query:
+                raise _invalid(plan, ("options", "extra_headers", name))
+        for name in request.extra_query or ():
             if name in plan.queries:
-                raise _invalid(plan, ("options", "query", name))
+                raise _invalid(plan, ("options", "extra_query", name))
     defaults = core.protocol_defaults(plan.helper_id)
     kinds = (upload_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)

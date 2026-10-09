@@ -31,11 +31,10 @@ loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if 
 print('client imports load protocols=' + repr(loaded))
 errors = importlib.import_module(sys.argv[2] + '.errors')
 options = importlib.import_module(sys.argv[2] + '.options')
-names = importlib.import_module(sys.argv[2] + '._runtime.protocols.names')
-print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options), 'ProtocolClientOptions' in dir(names))))
+print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options))))
 print('dir loads nothing=' + repr(sys.argv[2] + '._runtime.protocols.options' not in sys.modules and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules))
 print('protocol errors loaded on use=' + repr(errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'))
-print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), options.ProtocolClientOptions is names.ProtocolClientOptions, 'ProtocolClientOptions' in vars(options), 'ProtocolClientOptions' in vars(names))))
+print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), 'ProtocolClientOptions' in vars(options))))
 module = importlib.import_module(sys.argv[2] + '.protocols')
 optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgspec', 'anyio')
 print('optional imports=' + repr([name for name in optional if name in sys.modules]))
@@ -55,8 +54,7 @@ import importlib
 import sys
 sys.path.insert(0, sys.argv[1])
 package = importlib.import_module(sys.argv[2])
-options = importlib.import_module(sys.argv[2] + '.options')
-with package.Client(options=options.ClientOptions(retry=options.RetryOptions(max_retries=1))):
+with package.Client(max_retries=1):
     loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if name.startswith(sys.argv[2] + '._runtime.protocols.'))
 print('configured client loads protocols=' + repr(loaded))
 """
@@ -537,19 +535,13 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         record(
             lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments)
         )
-    client_options = options.ClientOptions(protocols=configured)
-    hints = get_type_hints(options.ClientOptions)
+    parameter = inspect.signature(package.Client).parameters["protocols"]
     lines.append(
-        f"  client protocols identity={client_options.protocols is configured} "
-        f"omitted={options.ClientOptions().protocols!r} "
-        f"hint={hints['protocols'] == options.ProtocolClientOptions | options.Unset | None} "
+        f"  client protocols keyword={parameter.kind.name} default={parameter.default!r} "
         f"defaults in options={hasattr(options, 'ProtocolDefaults')} "
         f"request field={'protocols' in {item.name for item in fields(options.RequestOptions)}}"
     )
     for label, create in (
-        ("client protocols None", lambda: options.ClientOptions(protocols=None).protocols),
-        ("client protocols mapping", lambda: options.ClientOptions(protocols={})),
-        ("client protocols security", lambda: options.ClientOptions(protocols=security)),
         ("request protocols", lambda: options.RequestOptions(protocols=configured)),
         ("request protocols None", lambda: options.RequestOptions(protocols=None)),
     ):
@@ -557,48 +549,47 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     for label, module in (
         ("options", options),
         ("errors", importlib.import_module(f"{package.__name__}.errors")),
-        ("names", importlib.import_module(f"{package.__name__}._runtime.protocols.names")),
     ):
         record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
         record(
             lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")]
         )
-    record(lines, "client with defaults of helpers it lacks", lambda: package.Client(options=client_options))
-    secured = options.ClientOptions(protocols=options.ProtocolClientOptions(security=security))
-    _calls(package, options, secured, lines)
-    run(lambda: _async_calls(package, options, secured, lines))
+    record(lines, "client with defaults of helpers it lacks", lambda: package.Client(protocols=configured))
+    secured = options.ProtocolClientOptions(security=security)
+    _calls(package, secured, lines)
+    run(lambda: _async_calls(package, secured, lines))
 
 
 def _trace(package: ModuleType) -> object:
     return argument(package, "listPets", "header", "X-Trace", "t")
 
 
-def _calls(package: ModuleType, options: ModuleType, client_options: Any, lines: list[str]) -> None:
+def _calls(package: ModuleType, protocols: Any, lines: list[str]) -> None:
     """Send ordinary calls unchanged through a client configured with protocol settings."""
     exchange = Exchange(lines)
     trace = _trace(package)
-    with exchange.client() as native, package.Client(http_client=native, options=client_options) as api:
+    with exchange.client() as native, package.Client(http_client=native, protocols=protocols) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
         record(lines, "configured client list", lambda: api.pets.list_pets(x_trace=trace))
-        view = api.with_options(options.RequestOptions(total_timeout=2))
+        view = api.with_options(total_timeout=2)
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
         record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(protocols=None)) as api,
+        package.Client(http_client=native, protocols=None) as api,
     ):
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
         record(lines, "anonymous protocols list", lambda: api.pets.list_pets(x_trace=trace))
-    record(lines, "client wrong protocols", lambda: package.Client(options=options.ClientOptions(protocols="x")))
+    record(lines, "client wrong protocols", lambda: package.Client(protocols="x"))
 
 
-async def _async_calls(package: ModuleType, options: ModuleType, client_options: Any, lines: list[str]) -> None:
+async def _async_calls(package: ModuleType, protocols: Any, lines: list[str]) -> None:
     """Send an asynchronous call through a client configured with protocol settings."""
     exchange = Exchange(lines)
     trace = _trace(package)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=client_options) as api,
+        package.AsyncClient(http_client=native, protocols=protocols) as api,
     ):
         exchange.respond(json_response(200, [{"id": 2, "name": "dog"}], **{"X-Rate": "1"}))
         await arecord(lines, "async configured client list", lambda: api.pets.list_pets(x_trace=trace))

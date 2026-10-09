@@ -5,8 +5,8 @@
         "name": "populated",
         "context": {
           "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
-          "defaults": "ClientOptions()",
+          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
+          "defaults": "ClientDefaults()",
           "name": "Client",
           "core": "SyncCore",
           "request_options": "RequestOptions",
@@ -34,8 +34,6 @@
             }
           ],
           "class_docstring": "Client API {braces}",
-          "options": "ClientOptions",
-          "http_client": "HTTPClient",
           "lifecycle": "    def close(self) -> None:\n        self._core.close()",
           "manager": "AbstractContextManager",
           "credentials": [
@@ -48,15 +46,45 @@
               "annotation": "Secret | TokenSource"
             }
           ],
-          "create": "SyncCore.create(\n            _DEFAULTS,\n            options=options,\n            http_client=http_client,\n            credentials=SchemeCredentials({\"api_key\": api_key, \"oauth\": oauth}),\n        )"
+          "create": "SyncCore.create(\n            _DEFAULTS,\n            base_url=base_url,\n            timeout=timeout,\n            http_client=http_client,\n            credentials=SchemeCredentials({\"api_key\": api_key, \"oauth\": oauth}),\n        )",
+          "view_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | Unset | None",
+              "default": "UNSET"
+            }
+          ],
+          "view": "self._core.view(base_url=base_url, timeout=timeout)",
+          "client_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | Unset | None",
+              "default": "UNSET"
+            },
+            {
+              "name": "http_client",
+              "annotation": "HTTPClient | None",
+              "default": "None"
+            }
+          ]
         }
       },
       {
         "name": "empty",
         "context": {
           "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
-          "defaults": "ClientOptions()",
+          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
+          "defaults": "ClientDefaults()",
           "name": "Client",
           "core": "SyncCore",
           "request_options": "RequestOptions",
@@ -71,20 +99,27 @@
           "protocols_module": ".protocols",
           "resources": [],
           "class_docstring": "Client API {braces}",
-          "options": "ClientOptions",
-          "http_client": "HTTPClient",
           "lifecycle": "    def close(self) -> None:\n        self._core.close()",
           "manager": "AbstractContextManager",
           "credentials": [],
-          "create": "SyncCore.create(_DEFAULTS, options=options, http_client=http_client)"
+          "create": "SyncCore.create(_DEFAULTS, http_client=http_client)",
+          "view_keywords": [],
+          "view": "self._core.view()",
+          "client_keywords": [
+            {
+              "name": "http_client",
+              "annotation": "HTTPClient | None",
+              "default": "None"
+            }
+          ]
         }
       },
       {
         "name": "async_protocols",
         "context": {
           "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import ClientOptions, RequestOptions",
-          "defaults": "ClientOptions()",
+          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
+          "defaults": "ClientDefaults()",
           "name": "AsyncClient",
           "core": "AsyncCore",
           "request_options": "RequestOptions",
@@ -112,8 +147,6 @@
             }
           ],
           "class_docstring": "Client API {braces}",
-          "options": "ClientOptions",
-          "http_client": "HTTPClient",
           "lifecycle": "    async def aclose(self) -> None:\n        await self._core.aclose()",
           "manager": "AbstractAsyncContextManager",
           "credentials": [
@@ -122,7 +155,37 @@
               "annotation": "Secret | TokenSource"
             }
           ],
-          "create": "AsyncCore.create(_DEFAULTS, options=options, http_client=http_client, credentials=SchemeCredentials({\"bearer\": token}))"
+          "create": "AsyncCore.create(_DEFAULTS, base_url=base_url, timeout=timeout, http_client=http_client, credentials=SchemeCredentials({\"bearer\": token}))",
+          "view_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | Unset | None",
+              "default": "UNSET"
+            }
+          ],
+          "view": "self._core.view(base_url=base_url, timeout=timeout)",
+          "client_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | Unset | None",
+              "default": "UNSET"
+            },
+            {
+              "name": "http_client",
+              "annotation": "HTTPClient | None",
+              "default": "None"
+            }
+          ]
         }
       }
     ],

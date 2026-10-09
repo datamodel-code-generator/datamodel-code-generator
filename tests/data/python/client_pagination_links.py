@@ -99,7 +99,7 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
         "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
     }
-    patched = harness.options.RequestOptions(headers=(("X-Client", "c"),), query=(("debug", "1"),))
+    patched = harness.options.RequestOptions(extra_headers={"X-Client": "c"}, extra_query={"debug": "1"})
     exchange.respond(
         user_page("1", next=f"{_SERVER}/users?limit=2&cursor=b%2Fc"),
         user_page(next="?cursor=c"),
@@ -193,15 +193,15 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     fetched(lines, "next followed page at another server", lambda: helper.next_page(first, options=moved))
 
 
-def _secured(harness: Harness, *origins: Any, **settings: Any) -> Any:
-    """Return client options whose protocol security context allows the origins, with any other settings."""
+def _secured(harness: Harness, *origins: Any, **settings: Any) -> dict[str, Any]:
+    """Return client keywords whose protocol security context allows the origins, with any other settings."""
     protocols = harness.protocols
     context = protocols.ProtocolSecurityContext(credential_partition="tenant", allowed_origins=origins)
-    return harness.options.ClientOptions(protocols=harness.options.ProtocolClientOptions(security=context), **settings)
+    return {"protocols": harness.options.ProtocolClientOptions(security=context), **settings}
 
 
 def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, dict[str, str]], ...]:
-    """Return rows of client options, responders, the start of a traversal or an ordinary call, and credentials.
+    """Return rows of client keywords, responders, the start of a traversal or an ordinary call, and credentials.
 
     They follow URLs to allowed origins and back, without the server's credentials, cookies, or the positions of the
     package's security schemes at any origin, authenticate only at the server's origin, and redirect.
@@ -212,9 +212,9 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
     arguments = {
         "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
-        "options": options.RequestOptions(headers=(("Authorization", "Basic c2VjcmV0"),)),
+        "options": options.RequestOptions(extra_headers={"Authorization": "Basic c2VjcmV0"}),
     }
-    patched = (("X-Api-Key", "k"), ("Authorization", "Basic c2VjcmV0"))
+    patched = {"X-Api-Key": "k", "Authorization": "Basic c2VjcmV0"}
     secure = f"<{_OTHER}/secure/users?page=2>; rel=next"
     return (
         (
@@ -231,7 +231,7 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
         ),
         (
             "scheme credentials kept from another origin",
-            _secured(harness, other, headers=patched),
+            _secured(harness, other, default_headers=patched),
             (
                 user_page("1", next=f"{_OTHER}/v1/users?api_key=k&cursor=2"),
                 user_page("2", next=f"{_SERVER}/users?api_key=k&cursor=3"),
@@ -263,21 +263,21 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
         ),
         (
             "scheme query key without auth at the same origin",
-            options.ClientOptions(),
+            {},
             (user_page("1", next="/v1/users?cursor=2&api_key=leak"), user_page("2")),
             lambda api: api.protocols.users.follow.iterate(),
             {},
         ),
         (
             "query key repeated by the URL",
-            options.ClientOptions(),
+            {},
             (user_page("1", next="/v1/keyed/users?api_key=key&cursor=2"), user_page("2")),
             lambda api: api.protocols.keyed.users.iterate(),
             {"query_key": "key"},
         ),
         (
             "relative URL after a redirect",
-            options.ClientOptions(follow_redirects=True),
+            {"follow_redirects": True},
             (
                 lambda _: httpx2.Response(302, headers={"Location": "/v2/people"}),
                 user_page("1", next="?cursor=2"),
@@ -288,7 +288,7 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
         ),
         (
             "a scheme key header is never redirected",
-            options.ClientOptions(headers=patched, follow_redirects=True),
+            {"default_headers": patched, "follow_redirects": True},
             (
                 lambda _: httpx2.Response(302, headers={"Location": f"{_OTHER}/v1/users?api_key=k&page=1"}),
                 user_page("1"),
@@ -304,7 +304,7 @@ def _guards(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     for label, settings, responders, start, credentials in _guarded(harness):
         with (
             exchange.client() as native,
-            harness.package.Client(http_client=native, options=settings, **credentials) as api,
+            harness.package.Client(http_client=native, **settings, **credentials) as api,
         ):
             exchange.respond(*responders)
             started = start(api)
@@ -320,7 +320,7 @@ async def _aguards(harness: Harness, exchange: Exchange, lines: list[str]) -> No
     for label, settings, responders, start, credentials in _guarded(harness):
         async with (
             exchange.async_client() as native,
-            harness.package.AsyncClient(http_client=native, options=settings, **credentials) as api,
+            harness.package.AsyncClient(http_client=native, **settings, **credentials) as api,
         ):
             exchange.respond(*responders)
             started = start(api)

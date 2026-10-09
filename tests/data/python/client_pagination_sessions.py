@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     import httpx2
 
 
-
 def _foreign(package: ModuleType) -> ModuleType:
     """Return the runtime options module, whose helper options include those of kinds the package does not declare."""
     return importlib.import_module(f"{package.__name__}._runtime.protocols.options")
@@ -95,7 +94,7 @@ def pagination_sessions(package: ModuleType, lines: list[str]) -> None:
     """Bound one pager's pages by its session, and fail it where a page or its session fails."""
     harness = Harness(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _options(harness, api, lines)
         _status_errors(harness, api, exchange, lines)
         _deadlines(harness, api, exchange, lines)
@@ -108,23 +107,18 @@ def pagination_sessions(package: ModuleType, lines: list[str]) -> None:
 
 
 def _options(harness: Harness, api: Any, lines: list[str]) -> None:
-    """Refuse options of other types and a fixed idempotency key, from any options layer, before sending anything."""
+    """Refuse options of other types and a call's fixed idempotency key before sending anything."""
     options, protocols = harness.options, harness.protocols
     helper = api.protocols.users.all
     for label, settings in (
         ("pagination options of another type", {"pagination_options": options.SessionOptions()}),
         ("request options of another type", {"options": protocols.PaginationOptions()}),
         ("session options of another type", {"session_options": options.RequestOptions()}),
-        ("fixed idempotency key", {"options": options.RequestOptions(idempotency_key=options.IdempotencyKey.new())}),
+        ("fixed idempotency key", {"options": options.RequestOptions(idempotency_key="fixed-key")}),
     ):
         record(lines, f"iterate with {label}", lambda settings=settings: helper.iterate(**settings))
         record(lines, f"page with {label}", lambda settings=settings: helper.page(**settings))
     record(lines, "next page of options of another type", lambda: helper.next_page(None, options="fast"))
-    fixed = options.IdempotencyKey.new()
-    scoped = api.with_options(options.RequestOptions(idempotency_key=fixed)).protocols.users.all
-    record(lines, "iterate with a fixed key from scoped options", scoped.iterate)
-    with harness.package.Client(options=harness.client_options(idempotency_key=fixed)) as keyed:
-        record(lines, "page with a fixed key from client options", keyed.protocols.users.all.page)
 
 
 def _status_errors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -146,9 +140,7 @@ def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     """End a session at its total timeout or deadline, bounding each page by it, without sending after it."""
     options = harness.options
     helper = api.protocols.users.all
-    for label, session in (
-        ("session timeout", options.SessionOptions(total_timeout=0)),
-    ):
+    for label, session in (("session timeout", options.SessionOptions(total_timeout=0)),):
         pager = helper.iterate(session_options=session)
         error = _failure(lambda pager=pager: next(pager))
         lines.append(f"  {label} ! {describe(error)} {progress(pager)}")
@@ -187,7 +179,7 @@ def _concurrency(harness: Harness, exchange: Exchange, lines: list[str]) -> None
     sends = _Sends(lines)
     with (
         exchange.client(event_hooks={"request": [sends]}) as native,
-        harness.package.Client(http_client=native, options=harness.client_options()) as api,
+        harness.package.Client(http_client=native, **harness.client_options()) as api,
     ):
         pager = api.protocols.users.all.iterate()
 
@@ -211,7 +203,7 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         ("explicit page budget", protocols.PaginationOptions(max_pages=values["explicit_pages"]), None),
     ):
         quiet = Exchange([])
-        with quiet.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+        with quiet.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
             pager = api.protocols.users.all.iterate(pagination_options=pagination, session_options=session)
             count, failure = 0, "none"
             try:
@@ -232,7 +224,7 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         ("explicit item budget", protocols.PaginationOptions(max_items=values["explicit_items"])),
     ):
         quiet = Exchange([])
-        with quiet.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+        with quiet.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
             quiet.respond(users(*["x"] * values["items"]))
             pager = api.protocols.users.all.iterate(pagination_options=pagination)
             count, failure = 0, "none"
@@ -251,7 +243,7 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         quiet = Exchange([])
         with (
             quiet.client() as native,
-            package.Client(http_client=native, options=harness.client_options(clock=clock)) as api,
+            package.Client(http_client=native, **harness.client_options(clock=clock)) as api,
         ):
             quiet.respond(users("1", cursor="a"))
             pager = api.protocols.users.all.iterate(session_options=session)
@@ -272,12 +264,14 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
             {"users.all": protocols.ProtocolDefaults(options=_foreign(package).PollOptions())},
         ),
     ):
-        settings = options.ClientOptions(protocols=options.ProtocolClientOptions(defaults=entries))
-        record(lines, f"client with defaults of an {label}", lambda settings=settings: package.Client(options=settings))
+        settings = options.ProtocolClientOptions(defaults=entries)
+        record(
+            lines, f"client with defaults of an {label}", lambda settings=settings: package.Client(protocols=settings)
+        )
         record(
             lines,
             f"async client with defaults of an {label}",
-            lambda settings=settings: package.AsyncClient(options=settings),
+            lambda settings=settings: package.AsyncClient(protocols=settings),
         )
     for label, settings in (
         ("no defaults", options.ProtocolClientOptions()),
@@ -286,14 +280,14 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         record(
             lines,
             f"client with {label}",
-            lambda settings=settings: package.Client(options=options.ClientOptions(protocols=settings)).close(),
+            lambda settings=settings: package.Client(protocols=settings).close(),
         )
     client_options = harness.client_options(
         protocols=options.ProtocolClientOptions(
             defaults={"users.all": defaults, "users.search": protocols.ProtocolDefaults()}
         )
     )
-    with exchange.client() as native, package.Client(http_client=native, options=client_options) as api:
+    with exchange.client() as native, package.Client(http_client=native, **client_options) as api:
         helper = api.protocols.users.all
         exchange.respond(users("1", "2"))
         drained(lines, "default item limit", helper.iterate())
@@ -306,14 +300,14 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         exchange.respond(users("1", "2"))
         drained(lines, "helper without defaults", api.protocols.users.by_header.iterate())
         exchange.respond(users("1", "2"))
-        drained(lines, "view keeps defaults", api.with_options(options.RequestOptions()).protocols.users.all.iterate())
+        drained(lines, "view keeps defaults", api.with_options().protocols.users.all.iterate())
 
 
 def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     """Run the HTTP client's own hooks for every page of a pager, failing the pager where a response hook fails."""
     package, settings = harness.package, harness.client_options()
     hooks = {"request": [_Sends(lines)], "response": [_received(lines)]}
-    with exchange.client(event_hooks=hooks) as native, package.Client(http_client=native, options=settings) as api:
+    with exchange.client(event_hooks=hooks) as native, package.Client(http_client=native, **settings) as api:
         exchange.respond(users("1", cursor="a"), users("2"))
         drained(lines, "hooked items", api.protocols.users.all.iterate())
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
@@ -321,7 +315,7 @@ def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         lines.append(f"  failed page ! {describe(error)}")
     with (
         exchange.client(event_hooks={"response": [_fail]}) as native,
-        package.Client(http_client=native, options=settings) as api,
+        package.Client(http_client=native, **settings) as api,
     ):
         exchange.respond(users("1", cursor="a"))
         pager = api.protocols.users.all.iterate()
@@ -333,7 +327,7 @@ def _hooks(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
 def _closing(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     """Refuse the next page of a pager whose client closed after its first page."""
     with exchange.client() as native:
-        api = harness.package.Client(http_client=native, options=harness.client_options())
+        api = harness.package.Client(http_client=native, **harness.client_options())
         pager = api.protocols.users.all.iterate()
         exchange.respond(users("1", cursor="a"))
         record(lines, "item before closing the client", lambda pager=pager: next(pager).id)
@@ -355,7 +349,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         quiet = Exchange([])
         async with (
             quiet.async_client() as native,
-            package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+            package.AsyncClient(http_client=native, **harness.client_options()) as api,
         ):
             pager = api.protocols.users.all.iterate(pagination_options=pagination, session_options=session)
             count, failure = 0, "none"
@@ -379,7 +373,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         quiet = Exchange([])
         async with (
             quiet.async_client() as native,
-            package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+            package.AsyncClient(http_client=native, **harness.client_options()) as api,
         ):
             quiet.respond(users(*["x"] * values["items"]))
             pager = api.protocols.users.all.iterate(pagination_options=pagination)
@@ -399,7 +393,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         quiet = Exchange([])
         async with (
             quiet.async_client() as native,
-            package.AsyncClient(http_client=native, options=harness.client_options(clock=clock)) as api,
+            package.AsyncClient(http_client=native, **harness.client_options(clock=clock)) as api,
         ):
             quiet.respond(users("1", cursor="a"))
             pager = api.protocols.users.all.iterate(session_options=session)
@@ -414,7 +408,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
     sends = _AsyncSends(lines)
     async with (
         exchange.async_client(event_hooks={"request": [sends]}) as native,
-        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper = api.protocols.users.all
         exchange.respond(users("1", cursor="a"), users("2"))
@@ -463,7 +457,7 @@ def pagination_auth(package: ModuleType, lines: list[str]) -> None:
         script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
         provider = auth.OauthClientCredentials(client_id="c", client_secret="s", http_client=script.client())
         settings = harness.client_options()
-        with exchange.client() as native, package.Client(http_client=native, options=settings, oauth=provider) as api:
+        with exchange.client() as native, package.Client(http_client=native, **settings, oauth=provider) as api:
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             drained(lines, label, pager)
@@ -479,7 +473,7 @@ async def _async_auth(harness: Harness, auth: ModuleType, lines: list[str]) -> N
         settings = harness.client_options()
         async with (
             exchange.async_client() as native,
-            harness.package.AsyncClient(http_client=native, options=settings, oauth=provider) as api,
+            harness.package.AsyncClient(http_client=native, **settings, oauth=provider) as api,
         ):
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())

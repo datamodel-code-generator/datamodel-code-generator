@@ -59,6 +59,16 @@
     unused=1 hops=[('GET', 'https://api.example.com/safe'), 302]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  not followed by the view = ('APIStatusError', 'unexpected_status', 301, 1, 'NoneType')
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 301]
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/done
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  followed by the call over the view = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 301, ('GET', 'https://api.example.com/done'), 200]
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/hop0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/hop1

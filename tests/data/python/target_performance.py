@@ -68,17 +68,16 @@ def generated_client_calls(root: Path) -> Iterator[dict[str, Callable[[], Any]]]
     with generated_root(root, PACKAGE):
         module = import_generated(PACKAGE, copied=True)
         models = importlib.import_module(f"{PACKAGE}_models")
-        client_options = importlib.import_module(f"{PACKAGE}.options")
         body = models.Pet(id=7, name="benchmark")
-        options = client_options.ClientOptions(base_url="https://benchmark.invalid")
+        base_url = "https://benchmark.invalid"
         with (
             asyncio.Runner() as runner,
             httpx2.Client(transport=httpx2.MockTransport(response), trust_env=False) as native,
-            module.Client(options=options, http_client=native) as client,
+            module.Client(base_url=base_url, http_client=native) as client,
         ):
             runner.get_loop()
             async_native = httpx2.AsyncClient(transport=httpx2.MockTransport(response), trust_env=False)
-            async_client = module.AsyncClient(options=options, http_client=async_native)
+            async_client = module.AsyncClient(base_url=base_url, http_client=async_native)
 
             def sync_calls() -> None:
                 for _ in range(200):

@@ -30,7 +30,7 @@
   stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  stream close failure primary=True APIConnectionError notes ['Secondary failure: SDKError']
   stream close count 1
   buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
@@ -94,7 +94,7 @@
   async stream close count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream close failure primary=True DecodeError notes ['Secondary failure: SDKError']
+  async stream close failure primary=True APIConnectionError notes ['Secondary failure: SDKError']
   async stream close count 1
   async buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption

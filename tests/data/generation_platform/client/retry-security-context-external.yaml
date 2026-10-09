@@ -15,7 +15,7 @@ components:
       post:
         operationId: external_explicit
         security:
-          - auth: []
+          - apiToken: []
         responses:
           '204':
             description: Accepted
@@ -28,7 +28,7 @@ components:
           '204':
             description: Accepted
   securitySchemes:
-    auth:
+    apiToken:
       type: apiKey
       in: header
       name: X-Idempotency

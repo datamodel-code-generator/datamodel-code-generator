@@ -82,8 +82,8 @@ create responses
 options
   poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',)] invalid_value
   fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
-  patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.x-trace') [field_path=('options', 'headers', 'x-trace')] invalid_value
-  patched written query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.verbose') [field_path=('options', 'query', 'verbose')] invalid_value
+  patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.x-trace') [field_path=('options', 'extra_headers', 'x-trace')] invalid_value
+  patched written query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.verbose') [field_path=('options', 'extra_query', 'verbose')] invalid_value
 inline results
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from functools import cached_property
 from types import TracebackType
@@ -20,7 +21,7 @@ from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
 from .model_codecs import JSONValue
-from .options import ClientOptions, RequestOptions
+from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import RawResponse
 
 if TYPE_CHECKING:
@@ -40,9 +41,34 @@ class ClientView:
         view._core = core
         return view
 
-    def with_options(self, options: RequestOptions) -> ClientView:
-        """Return a typed view with these request options layered on the current settings."""
-        return ClientView._from_core(self._core.view(options))
+    def with_options(
+        self,
+        *,
+        base_url: str | None = None,
+        server: ServerSelection | None = None,
+        timeout: float | httpx2.Timeout | Unset | None = UNSET,
+        total_timeout: float | Unset | None = UNSET,
+        max_retries: int | None = None,
+        retry: RetryOptions | None = None,
+        default_headers: Mapping[str, str | None] | None = None,
+        default_query: Mapping[str, str | None] | None = None,
+        follow_redirects: bool | None = None,
+        auth: httpx2.Auth | Unset | None = UNSET,
+    ) -> ClientView:
+        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
+        core = self._core.view(
+            base_url=base_url,
+            server=server,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            max_retries=max_retries,
+            retry=retry,
+            default_headers=default_headers,
+            default_query=default_query,
+            follow_redirects=follow_redirects,
+            auth=auth,
+        )
+        return ClientView._from_core(core)
 
     def request_raw(
         self,
@@ -80,13 +106,33 @@ class Client(ClientView):
         openid: Secret | TokenSource | None = None,
         cookie_key: Secret | None = None,
         query_key: Secret | None = None,
-        options: ClientOptions | None = None,
-        http_client: httpx2.Client | Unset | None = UNSET,
+        base_url: str | None = None,
+        server: ServerSelection | None = None,
+        timeout: float | httpx2.Timeout | Unset | None = UNSET,
+        total_timeout: float | None = None,
+        max_retries: int = 2,
+        retry: RetryOptions | None = None,
+        default_headers: Mapping[str, str | None] | None = None,
+        default_query: Mapping[str, str | None] | None = None,
+        follow_redirects: bool | None = None,
+        auth: httpx2.Auth | Unset | None = UNSET,
+        clock: Clock | None = None,
+        http_client: httpx2.Client | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
         self._core = ClientCore.create(
             _DEFAULTS,
-            options=options,
+            base_url=base_url,
+            server=server,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            max_retries=max_retries,
+            retry=retry,
+            default_headers=default_headers,
+            default_query=default_query,
+            follow_redirects=follow_redirects,
+            auth=auth,
+            clock=clock,
             http_client=http_client,
             credentials=SchemeCredentials(
                 {

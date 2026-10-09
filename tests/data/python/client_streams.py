@@ -342,9 +342,7 @@ def _routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     try:
         next(stream)
     except harness.errors.ProtocolDataError as failure:
-        lines.append(
-            f"  error event {failure.reason} {_data(failure.data)!r} {describe(failure)}"
-        )
+        lines.append(f"  error event {failure.reason} {_data(failure.data)!r} {describe(failure)}")
     record(lines, "after the error", lambda: next(stream))
     tagged = protocols.events.tagged
     _drained(lines, "body discriminator", tagged.open())
@@ -511,7 +509,7 @@ class _Clock:
 def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any, Any, float], ...]:
     """Return native idle settings and optional helper session budgets on the client clock."""
     options, streams = harness.options, harness.protocols.StreamOptions
-    idle = options.RequestOptions(timeout=options.TimeoutOptions(read=1.0))
+    idle = options.RequestOptions(timeout=httpx2.Timeout(None, read=1.0))
     return (
         ("native idle while waiting for bytes", None, streams(idle_timeout=1.0), None, 2.0),
         ("native read timeout from call options", idle, streams(), None, 2.0),
@@ -550,7 +548,7 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
             record(lines, "borrowed pool after the client closed", again.status.get_status)
     clock, feed, options = _Clock(), _Feed(lines), harness.options
     with feed.client() as http:
-        api = package.Client(http_client=http, options=options.ClientOptions(clock=options.Clock(monotonic=clock)))
+        api = package.Client(http_client=http, clock=options.Clock(monotonic=clock))
         helper = api.protocols.events.messages
         for label, request, limits, session, seconds in _clocked_limits(harness):
             feed.replies.append(harness.reply((message, clock.advance(seconds), message)))
@@ -583,7 +581,7 @@ async def _async_lifetimes(harness: _Harness) -> None:
     clock, feed = _Clock(), _Feed(lines)
     never, reached = asyncio.Event(), asyncio.Event()
     async with feed.async_client() as http:
-        api = package.AsyncClient(http_client=http, options=options.ClientOptions(clock=options.Clock(monotonic=clock)))
+        api = package.AsyncClient(http_client=http, clock=options.Clock(monotonic=clock))
         helper = api.protocols.events.messages
         for label, request, limits, session, seconds in _clocked_limits(harness):
             feed.replies.append(harness.reply((message, clock.advance(seconds), message)))

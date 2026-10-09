@@ -234,8 +234,9 @@ class _Fetch(Generic[T]):
 
         A request carrying credentials needs the client's credential partition and a helper declared authenticated,
         and an anonymous one a helper declared anonymous. The base key names the headers its entries vary on beyond a
-        response's Vary: each one a header patch or a header parameter fills, and Cookie for a cookie parameter. A
-        request patching other headers than a stored one never shares its entries, whichever was stored first.
+        response's Vary: each one the client's, a view's, or the call's extra headers name or a header parameter
+        fills, and Cookie for a cookie parameter. A request naming other headers than a stored one never shares its
+        entries, whichever was stored first.
         """
         self.plan, self.clock = plan, core.clock
         self.started = self.clock.monotonic()
@@ -260,7 +261,8 @@ class _Fetch(Generic[T]):
             raise _configuration(plan, ("auth",), "binding_mismatch")
         if credentials is not None and partition is None:
             raise _configuration(plan, ("protocols", "security"), "security_partition")
-        patched = {name.lower() for layer in self.settings.headers for name, _ in layer}
+        extra = () if self.options is None or self.options.extra_headers is None else self.options.extra_headers
+        patched = {name.lower() for name, _ in self.settings.headers} | {name.lower() for name in extra}
         declared = {
             spec.plan.name.lower() if spec.plan.location == "header" else "cookie"
             for spec in plan.call.parameters
@@ -312,7 +314,7 @@ class _Fetch(Generic[T]):
         ):
             return None
         info = self.info(entry.status_code, entry.headers)
-        data = stored_value(self.plan.call, info, entry.body, self.settings)
+        data = stored_value(self.plan.call, info, entry.body)
         return CacheResult(
             data=data,
             source="fresh_cache",
@@ -373,7 +375,7 @@ class _Fetch(Generic[T]):
             )
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
-        response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
+        response = Response(data=stored_value(plan.call, merged, entry.body), info=merged)
         return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected)
 
     def stored(self, received: _Received[T]) -> dict[str, Any] | None:

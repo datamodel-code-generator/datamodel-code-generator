@@ -32,9 +32,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -42,8 +41,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -222,12 +221,17 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 
 ## Layered options and budgets
 
-`RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
-`UNSET` inherits. `TimeoutOptions` and `RetryOptions` merge their fields independently; sets and tuples replace the
-inherited collection. `retry=None` is invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
-removes the optional budget across attempts.
-The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
@@ -240,13 +244,14 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | follow redirects | the native client's: False for an SDK-created client |
-| maximum response / error prefix / stream bytes | None / 64 KiB / None |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
 
 Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
 retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
 cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
 Native cancellation remains the original exception.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
+sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 
 
 ## Retry decisions and delays
@@ -255,13 +260,13 @@ GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PA
 declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
 from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt of the
 call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
-resend. All candidates still need replayable input. Pool timeouts need explicit `retry_on_pool_timeout=True`.
+resend. All candidates still need replayable input. Pool timeouts need `RetryOptions(retry_on_pool_timeout=True)`.
 Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
 
 Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
 is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
 explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
-an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
+a `RetryOptions` value cannot invent that declaration, and explicit None disables an inherited vendor control.
 
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
@@ -271,10 +276,11 @@ set an optional session total timeout. Close an abandoned stream to release its 
 
 ## Idempotency and replayable input
 
-`IdempotencyKey(value)` supplies a caller's stable key; `IdempotencyKey.new()` creates a UUID4 value.
-`idempotency_key=None` disables automatic creation; `UNSET` permits it for an operation with a declared key header.
-The key is created once per logical call and reused across eligible retries. Caller keys are sent unchanged.
-An effective caller key on an operation without a declared header fails before sending, including inherited keys.
+A call's `RequestOptions(idempotency_key="...")` supplies a caller's stable key, sent unchanged, and
+`idempotency_key=None` disables the automatic one; unset, an operation with a declared key header gets a UUID4 key.
+A header of that name among the call's extra headers is the call's key instead.
+The key is created once per logical call and reused across eligible retries.
+A caller key on an operation without a declared header fails before sending.
 One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
 
 
@@ -302,7 +308,7 @@ Requests are sent through the native client, with its own `auth`, event hooks, r
 Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
 attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
 as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
-`follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
+`follow_redirects` of the client, a view, or a call overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
 that carries a credential at a position a declared security scheme names other than `Authorization` is never
@@ -312,28 +318,21 @@ cookie never reaches another origin. Response content codings are removed by HTT
 does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
 yields the body as it arrived; a buffered one keeps only its decoded body.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
-http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
-SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
-trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
-preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
-ownership.
-Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
-Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
-view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
-`raise_for_status()` applies the error-prefix cap.
-An SSLContext supplies TLS settings and conflicts with any explicit verify override.
-HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
-incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
-closes only the native client the SDK created. Request views share that root and have no close method.
+An SDK-created HTTP client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect. Configure proxies,
+TLS, connection pools, HTTP/2, and environment settings on the `httpx2.Client` or `httpx2.AsyncClient` passed as
+`http_client`, which keeps them, its timeout unless `timeout` is given, and its owner.
+Typed errors and exception bodies keep at most a 64 KiB prefix of an error body; buffered raw responses and streams
+are not capped, and of a buffered raw response only `raise_for_status()` applies the error prefix.
+Borrowed clients stay caller owned. Root close is idempotent and closes only the native client the SDK created.
+Request views share that root and have no close method.
 
 ## Authentication
 
-No operation of this API requires a security scheme, so its clients take no credentials. `auth` on `ClientOptions`, a
-view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and
-`auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth. Sign requests with
-an `httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr; a query credential
-is part of the request URL, which the `httpx2` logger records at INFO level.
+No operation of this API requires a security scheme, so its clients take no credentials. `auth` of the client, a view,
+or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None`
+sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth. Sign requests with an
+`httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr; a query credential is
+part of the request URL, which the `httpx2` logger records at INFO level.
 
 ## Errors and cleanup
 

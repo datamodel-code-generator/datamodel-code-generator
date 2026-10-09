@@ -8,7 +8,7 @@ from typing import Literal
 
 from pets import AsyncClient, Client
 from pets.errors import APIConnectionError, ConfigurationError, WebSocketClosedError
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
+from pets.options import ProtocolClientOptions, RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncWebSocketSession,
     Message,
@@ -76,9 +76,9 @@ def failures(error: WebSocketClosedError, unknown: APIConnectionError, busy: Con
     assert_type(busy.field_path, tuple[str | int, ...])
 
 
-def options() -> ClientOptions:
+def options() -> Client:
     """Give a client WebSocket helper defaults; transport settings are the HTTP client's."""
-    return ClientOptions(
+    return Client(
         protocols=ProtocolClientOptions(
             defaults={"rooms.chat": ProtocolDefaults(options=WSOptions(ping_interval=None))}
         ),

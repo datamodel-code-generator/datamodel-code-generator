@@ -295,7 +295,7 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
     _records(harness, lines)
     server = _Server()
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         sections = (_runs, _recoveries, _offsets, _completions, _sources, _resumes, _expiry, _clock, _limits, _steps)
         for section in sections:
             section(harness, api, server, exchange, lines)
@@ -315,7 +315,7 @@ def _file_terminal(
         exchange.client() as native,
         harness.package.Client(
             http_client=native,
-            options=harness.client_options() if settings is None else settings,
+            **harness.client_options() if settings is None else settings,
             **(credentials or {}),
         ) as api,
     ):
@@ -352,7 +352,7 @@ async def _async_file_terminal(
         exchange.async_client() as native,
         harness.package.AsyncClient(
             http_client=native,
-            options=harness.client_options() if settings is None else settings,
+            **harness.client_options() if settings is None else settings,
             **(credentials or {}),
         ) as api,
     ):
@@ -422,7 +422,7 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
     exchange.respond(*[server] * 4)
     put = api.protocols.files.put
     length = harness.argument("createFile", "header", "Upload-Length", 10)
-    trace = harness.options.RequestOptions(headers=(("X-Trace", "kept"),), query=(("trace", "kept"),))
+    trace = harness.options.RequestOptions(extra_headers={"X-Trace": "kept"}, extra_query={"trace": "kept"})
     handle = step(
         lines,
         "start",
@@ -473,7 +473,7 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
     lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "a probe that never answers"))
-    unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+    unretried = harness.options.RequestOptions(max_retries=0)
     exchange.respond(server, server.lost(), failing(httpx2.ConnectError))
     handle = helper.start(harness.source(), tus_resumable=harness.tus, options=unretried)
     step(lines, "advance", handle.advance)
@@ -707,7 +707,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
             security=protocols.ProtocolSecurityContext(credential_partition="tenant-a")
         )
     )
-    with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as secured_api:
+    with exchange.client() as native, harness.package.Client(http_client=native, **secured) as secured_api:
         exchange.respond(server)
         record(lines, "resume", lambda: secured_api.protocols.files.upload.resume(harness.source(), state))
 
@@ -755,7 +755,7 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     )["upload_limits"]
     with (
         exchange.client() as native,
-        harness.package.Client(http_client=native, options=harness.client_options(clock=clock)) as timed,
+        harness.package.Client(http_client=native, **harness.client_options(clock=clock)) as timed,
     ):
         helper = timed.protocols.files.upload
         for label, session in (
@@ -796,7 +796,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             lambda: helper.start(
                 harness.source(),
                 tus_resumable=harness.tus,
-                options=options.RequestOptions(idempotency_key=options.IdempotencyKey.new()),
+                options=options.RequestOptions(idempotency_key="fixed-key"),
             ),
         ),
         (
@@ -804,7 +804,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             lambda: helper.start(
                 harness.source(),
                 tus_resumable=harness.tus,
-                options=options.RequestOptions(headers=(("upload-offset", "1"),)),
+                options=options.RequestOptions(extra_headers={"upload-offset": "1"}),
             ),
         ),
         (
@@ -812,7 +812,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             lambda: helper.start(
                 harness.source(),
                 tus_resumable=harness.tus,
-                options=options.RequestOptions(headers=(("Upload-Length", "1"),)),
+                options=options.RequestOptions(extra_headers={"Upload-Length": "1"}),
             ),
         ),
     ):
@@ -824,7 +824,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             harness.source(),
             upload_length=harness.argument("createFile", "header", "Upload-Length", 10),
             tus_resumable=harness.tus,
-            options=options.RequestOptions(query=(("offset", "1"),)),
+            options=options.RequestOptions(extra_query={"offset": "1"}),
         ),
     )
     for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("a removed chunk count", {"max_parts": 2})):
@@ -835,7 +835,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     )
     with (
         exchange.client() as native,
-        harness.package.Client(http_client=native, options=harness.client_options(protocols=defaults)) as other,
+        harness.package.Client(http_client=native, **harness.client_options(protocols=defaults)) as other,
     ):
         exchange.respond(server, server)
         handle = other.protocols.files.upload.start(harness.source(), tus_resumable=harness.tus)
@@ -863,7 +863,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper, finish = api.protocols.files.upload, api.protocols.files.finish
         content = _CONTENT
@@ -913,7 +913,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         await astep(lines, "run with a completion of unknown outcome", unknown.run)
         await astep(lines, "resume it", lambda: finish.resume(content, unknown.checkpoint()))
         exchange.respond(server, failing(httpx2.ReadError), failing(httpx2.ConnectError))
-        unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+        unretried = harness.options.RequestOptions(max_retries=0)
         lost = await helper.start(content, tus_resumable=harness.tus, options=unretried)
         await astep(lines, "advance with a probe that never answers", lost.advance)
         exchange.respond(server, server, failing(httpx2.ReadError), server.offered(0))
@@ -962,7 +962,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
     clock = harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: 0.0)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=harness.client_options(clock=clock)) as timed,
+        package.AsyncClient(http_client=native, **harness.client_options(clock=clock)) as timed,
     ):
         for label, session in (
             ("explicit", harness.session(total_timeout=values["total_timeout"])),

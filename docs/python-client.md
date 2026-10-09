@@ -270,7 +270,7 @@ Generated packages also expose the shared contracts of the pagination, polling, 
 webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, and the
 model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions`
 and `SessionOptions` come from `pkg.options` when a pagination, polling, stream, WebSocket, cache, or upload helper is
-declared. `ClientOptions.protocols` is available only in those packages. Helper execution loads when `client.protocols`
+declared. The client's `protocols=` keyword is available only in those packages. Helper execution loads when `client.protocols`
 is first used; ordinary operations share the same native HTTP client. Exceptions come from `pkg.errors`, each with the
 helper that raises it. These imports need no HTTP library and start no threads. A client that uses no protocol settings
 loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
@@ -366,26 +366,24 @@ Protocol settings belong to the client only; `RequestOptions` has no `protocols`
 
 ```python
 from pkg import Client
-from pkg.options import ClientOptions, ProtocolClientOptions, SessionOptions
+from pkg.options import ProtocolClientOptions, SessionOptions
 from pkg.protocols import PaginationOptions, ProtocolDefaults, ProtocolSecurityContext
 
-options = ClientOptions(
-    protocols=ProtocolClientOptions(
-        security=ProtocolSecurityContext(credential_partition="tenant-a"),
-        defaults={
-            "users.all": ProtocolDefaults(
-                session=SessionOptions(total_timeout=300),
-                options=PaginationOptions(max_pages=10),
-            ),
-        },
-    ),
+protocols = ProtocolClientOptions(
+    security=ProtocolSecurityContext(credential_partition="tenant-a"),
+    defaults={
+        "users.all": ProtocolDefaults(
+            session=SessionOptions(total_timeout=300),
+            options=PaginationOptions(max_pages=10),
+        ),
+    },
 )
-client = Client(options=options)
+client = Client(protocols=protocols)
 ```
 
 | Setting | Type | Meaning |
 |---|---|---|
-| `ClientOptions.protocols` | `ProtocolClientOptions \| None`, default `UNSET` | `None` or `UNSET` uses every protocol default. Another type raises `ConfigurationError(reason='invalid_type')` |
+| `Client(protocols=...)` | `ProtocolClientOptions \| None`, default `None` | `None` uses every protocol default. Its defaults and stores are checked against the package's helpers when the client is created |
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
@@ -755,7 +753,7 @@ that no end covers, missing or null items, a header repeated for a single cursor
 parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and the
 helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case counting as `.`) raise
 `ProtocolDataError` as a failure of the page's call. The error names the first such read value whose encoded text is
-non-empty, or else the first one. A page is read within the call's `max_response_bytes` like any response. A
+non-empty, or else the first one. A page is read whole like any response. A
 continuation returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
 `ProtocolDataError` with the reason `pagination_cycle` after the repeating page.
 
@@ -805,8 +803,8 @@ raises `ProtocolDataError` with the reason `inconsistent`. Positions only grow, 
 ### Next URLs and Link headers
 
 A `next_url` or `link` continuation follows the URL a page gives. The first request is sent as the caller gives it, and
-each later page goes to the URL the last page gave, as it came: the caller's query and the query patches of the client,
-a view, or the call are never laid over it, while the call's headers and the operation's header and cookie parameters
+each later page goes to the URL the last page gave, as it came: the caller's query and the `default_query` or `extra_query` of
+the client, a view, or the call are never laid over it, while the call's headers and the operation's header and cookie parameters
 are sent again. A later page is a GET without a body, unless a next URL sets `repeat_request_body: true`, which sends
 the operation's method with the caller's body again; generation refuses it unless the body may
 be sent again as a 307 or 308 redirect sends it: the operation's method is GET, HEAD, OPTIONS, PUT, or DELETE, or its
@@ -844,7 +842,7 @@ host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; an
 `ProtocolDataError` with `value` before anything is sent to it, and so does a `next_page` whose options select a server
 whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
 `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
-package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
+package's security schemes name, whether the authentication, a client, view, or call header, a parameter, a binding, or the server's URL
 put them there; its other headers, the call's and the operation's, are sent as usual. The client's credentials are
 placed only at the server's origin, so such a page is sent without them. A query credential the URL repeats is
 removed before the client places its own. `Page.continuation` is the resolved server URL, and a URL an earlier
@@ -865,8 +863,9 @@ targets that can carry it. A parameter target replaces the argument. A querystri
 caller's querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives none;
 a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then
 encoded once, so no query pair is added. The values a server gave are never checked against their targets' schemas. A
-call's `options` must not patch a header or a query parameter the helper writes: `iterate`, `page`, and `next_page`
-raise `ConfigurationError` with a `field_path` of `("options", "headers" or "query", <name>)` before sending. A binding
+call's `extra_headers` and `extra_query` must not name a header or a query parameter the helper writes: `iterate`,
+`page`, and `next_page` raise `ConfigurationError` with a `field_path` of `("options", "extra_headers" or
+"extra_query", <name>)` before sending. A binding
 with `source: input` is not supported yet.
 
 ### Limits and sessions
@@ -886,8 +885,8 @@ A limit reached while pages remain raises `SessionLimitError` with the progress 
 exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
 crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises `SessionLimitError(reason="items",
 limit=0)` without sending. Defaults naming a helper the package lacks, or giving it another kind's options, fail the
-client's construction with `ConfigurationError`, and so do options of another type, and an idempotency key fixed by the
-client's options, `with_options`, or the call, when a helper is called.
+client's construction with `ConfigurationError`, and so do options of another type, and an idempotency key the call's
+`RequestOptions` fixes, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
 mixing items with pages raise `ConfigurationError` with the reason `invalid_state`. After a failure, cancellation
@@ -1143,8 +1142,8 @@ earlier of its own and the session's. Each limit comes from the call's options, 
 
 A poll past a limit raises `SessionLimitError` with the reason `polls` and the progress so far, before sending; the
 handle's `checkpoint()` continues the operation. The options of `start` apply to
-every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
-must not patch a header or a query parameter a binding writes; `start` raises `ConfigurationError` before
+every call of the handle. They must not fix an idempotency key, and their extra headers and query must not name
+a header or a query parameter a binding writes; `start` raises `ConfigurationError` before
 sending, as it does for options of another type.
 
 ### Checkpoints and resume of operations
@@ -1542,8 +1541,8 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
 `start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
 `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. The options must
-not fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter
-the helper writes, the size included; `start` and `resume` raise `ConfigurationError` before reading or
+not fix an idempotency key, and their extra headers and query must not name a header or a query parameter the helper
+writes, the size included; `start` and `resume` raise `ConfigurationError` before reading or
 sending, as they do for options of another type.
 
 ### Upload generation checks
@@ -1849,8 +1848,8 @@ reason `wrong_capability`, and one the request cannot encode, such as an event I
 request's `DecodeError`.
 
 With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
-read-phase transport failure the shared retry classification retries, or a read timeout the call's own
-`TimeoutOptions(read=...)` set rather than the stream's idle limit, which wins a tie; after an NDJSON line cut by the
+read-phase transport failure the shared retry classification retries, or a read timeout the call's own `timeout`
+set rather than the stream's idle limit, which wins a tie; after an NDJSON line cut by the
 end of the body or an end before the declared completion it does so only when `reconnect_on` lists `incomplete_eof`.
 Each reopen is one more child call of the stream's session: its own retries, Retry-After included, follow the call's
 retry options. Before a reopen the stream waits the retry backoff, and at least the last `retry` time the server sent,
@@ -1862,8 +1861,9 @@ cursor's selector, or for an event ID the target it is written to, as `location`
 and a value it would send as a credential raises `ConfigurationError` with the reason `wrong_capability`. A decode,
 size, remote, idle, or deadline failure, the declared end, a reopen answered with an error, and closing never reconnect.
 Events the server sends again after a reopen are delivered again, numbered on: nothing removes duplicates. Every open
-and reopen is its own request of the HTTP client, which its `event_hooks` see. No options of a resuming helper, the client's, a view's, or the call's, may patch a header or query
-parameter its reopen writes or fix an idempotency key.
+and reopen is its own request of the HTTP client, which its `event_hooks` see. Neither the headers and query of the
+client, a view, or the call may name a header or query parameter a resuming helper's reopen writes, nor the call fix
+an idempotency key.
 
 ### Stream generation checks
 
@@ -2092,7 +2092,7 @@ prints `httpx2[ws]` among the packages to add for a package with WebSocket helpe
 The handshake is one logical call of the operation, with initial authentication and deadline, sent as
 a GET with the upgrade headers through the client's HTTP client: its transport, proxy, TLS, and `event_hooks` apply
 as to any call. Only a 101 response whose subprotocol the helper offered opens the session; HTTPX2 checks nothing else
-of it, as its own WebSocket client does. Any other response is read up to `max_error_body_bytes` and raises the
+of it, as its own WebSocket client does. Any other response is read up to its 64 KiB error prefix and raises the
 `APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an undeclared
 status, so 101 need not be declared. Received refusals are terminal, including redirects, which a handshake never
 follows, and 401s; a refused upgrade never renews a token. Only an initial transport failure
@@ -2264,7 +2264,7 @@ client borrows a store: it never creates, closes, or keeps one after a call.
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
     store = MemoryCacheStore(max_entries=1000)
-    return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
+    return Client(protocols=ProtocolClientOptions(cache_stores={"users.profile": store}))
 ```
 
 <!-- fmt: on -->
@@ -2308,11 +2308,12 @@ Entries hold the body after content decoding and the headers without `Content-En
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
 time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
-declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
-declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
-`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
-permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+credentials the client places, and selected by the request headers its `Vary` names and those the client's, views', or
+call's headers name or a declared parameter fills. A request carrying credentials needs
+`ProtocolSecurityContext.credential_partition`, a helper declared authenticated, and the client's own credentials or
+Auth, not a view's or a call's Auth; anything else raises `ConfigurationError`. A response whose `Vary` names a
+credential header is never stored, and one partition is one permission set: credentials the client cannot see, such as
+a client certificate, need a partition of their own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
@@ -2859,36 +2860,52 @@ one, generation raises `Error` naming the use:
 
 ## Timeouts and cancellation
 
-The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, and `Clock`.
-These settings apply to typed operations and `request_raw`, including their response and streaming views.
+A client takes its settings as keyword arguments, a view takes them through `with_options(...)`, and one call takes
+them as `options=RequestOptions(...)` from the generated package's `options` module, which also provides `RetryOptions`,
+`ServerSelection`, and `Clock`. These settings apply to typed operations and `request_raw`, including their response
+and streaming views.
 
-| Option | Effective default | Meaning |
+```python
+import httpx2
+
+from pets import Client
+from pets.options import RequestOptions
+
+client = Client(base_url="https://api.example.com", timeout=30, max_retries=3, default_headers={"X-App": "demo"})
+patient = client.with_options(timeout=httpx2.Timeout(120, connect=5), total_timeout=None)
+response = patient.request_raw(
+    "GET", "https://api.example.com/health", options=RequestOptions(extra_headers={"X-App": None})
+)
+```
+
+| Setting | Effective default | Meaning |
 |---|---|---|
 | `timeout` | Owned client: connect 5, read/write/pool 600 seconds; injected client: its native timeouts | Native I/O phase limits |
 | `total_timeout` | `None` | Optional budget across attempts and retry waits, starting at call entry |
-| `clock` | `Clock()`, the system clock | Client only: time and jitter sources |
+| `clock` | `Clock()`, the system clock | Client only: time, jitter, and wait sources |
 
-Omitted fields remain `UNSET` until resolution. Each field inherits from the request, the nearest `with_options`
-view, and the client. An injected HTTP client's native timeouts supply the initial phase settings.
-`TimeoutOptions` merges each phase separately. `timeout=None` clears all four phase limits, while
-`TimeoutOptions(read=None)` clears only the read limit. `total_timeout=None` removes an inherited total budget.
-Durations must be finite and nonnegative; booleans are rejected. Invalid values raise `ConfigurationError` with the
-option's `field_path`. `total_timeout=0` is valid configuration; starting a call with it raises
-`APITimeoutError` before preparing or sending a request.
+Each setting a call leaves None inherits from the nearest `with_options` view, then the client. Where None has a
+meaning of its own, UNSET is the default and inherits instead: `timeout=None` clears all four phase limits, and
+`total_timeout=None` on a view or a call removes an inherited total budget. A number as `timeout` limits every phase,
+and an `httpx2.Timeout` gives each phase its own limit. An injected HTTP client's native timeouts supply the initial
+phase settings unless the client is given `timeout`. Durations must be finite and nonnegative; booleans are rejected.
+Invalid values raise `ConfigurationError` with the setting's `field_path`. `total_timeout=0` is valid configuration;
+starting a call with it raises `APITimeoutError` before preparing or sending a request.
 
 ### An optional budget across attempts
 
-The experimental runtime no longer supplies the previous 60-second whole-call budget. Set
-`ClientOptions(total_timeout=60)` to retain that limit. Native phase timeouts bound each I/O wait; they do not
-limit the total duration of a call that keeps making progress.
+The runtime supplies no whole-call budget by default. Set `Client(total_timeout=60)` to bound every call to a minute.
+Native phase timeouts bound each I/O wait; they do not limit the total duration of a call that keeps making progress.
 
 ```python
+import httpx2
+
 from pets import Client
-from pets.options import RequestOptions, TimeoutOptions
+from pets.options import RequestOptions
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
-    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(connect=2, read=3))
+    options = RequestOptions(total_timeout=10, timeout=httpx2.Timeout(3, connect=2))
     return client.request_raw("GET", url, options=options).read()
 ```
 
@@ -2900,7 +2917,7 @@ available when decoding or cleanup finishes after expiry. A sequence of reads ca
 native read timeouts apply to each I/O wait.
 
 Connect and pool timeouts may qualify for a retry under the safety and replay rules below; pool timeouts require
-`retry_on_pool_timeout=True`. Read and write failures may have reached the server and are never resent.
+`RetryOptions(retry_on_pool_timeout=True)`. Read and write failures may have reached the server and are never resent.
 
 ### Native cancellation
 
@@ -2917,12 +2934,14 @@ phase timeouts before sending; it does not add a separate stream lifetime timer.
 ```python
 from typing import BinaryIO
 
+import httpx2
+
 from pets import Client
-from pets.options import RequestOptions, TimeoutOptions
+from pets.options import RequestOptions
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
-    options = RequestOptions(timeout=TimeoutOptions(read=60))
+    options = RequestOptions(timeout=httpx2.Timeout(600, read=60))
     with client.with_streaming_response.request_raw("GET", url, options=options) as response:
         response.stream_to(destination)
 ```
@@ -2945,36 +2964,49 @@ truncates it; bytes already written stay there. A failed write closes the respon
 
 ### Clocks and retry jitter
 
-`ClientOptions(clock=Clock(...))` replaces the time and jitter sources of every call a client makes. Views and requests
-cannot change it. Each of the three sources is a function that takes no arguments:
+`Client(clock=Clock(...))` replaces the time, jitter, and wait sources of every call a client makes. Views and requests
+cannot change it. Each source is a function:
 
 | Source | Default | Read for |
 |---|---|---|
 | `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, token expiry, and protocol helper sessions, poll intervals, and stream deadlines |
 | `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
+| `sleep` | `time.sleep` | Each wait of a synchronous client, given its seconds: retry waits, polling intervals, and stream reconnection waits |
+| `asleep` | `anyio.sleep` | Each wait of an asyncio client, given its seconds, returning the awaitable the call waits on, which task cancellation interrupts |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
 keep their own time through their `clock=` argument, since one provider can serve several clients. A client and the
 providers it uses must agree on wall time, because a `TokenSet`'s `expires_at` passes between them as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
 
-A private request budget uses its client's monotonic source. Retry and polling waits pass the remaining duration
-to ordinary sleeps, and I/O timeouts use the duration measured before the operation. A frozen test clock therefore
-leaves waits in real time.
-
-A test that should not wait for full-jitter backoff draws zero from its random source:
+A private request budget uses its client's monotonic source. Retry, polling, and reconnection waits pass the
+remaining duration to the clock's `sleep` or `asleep`, and I/O timeouts use the duration measured before the
+operation. A test that records the waits and advances its own monotonic source by each one runs every wait at once and
+can check its length:
 
 ```python
 from pets import Client
-from pets.options import ClientOptions, Clock, RetryOptions
+from pets.options import Clock
 
 
-def instant_retries(url: str) -> Client:
-    clock = Clock(random=lambda: 0.0)
-    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), clock=clock))
+class FakeTime:
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.waits: list[float] = []
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.waits.append(seconds)
+        self.now += seconds
+
+
+def instant_retries(url: str, fake: FakeTime) -> Client:
+    return Client(base_url=url, clock=Clock(monotonic=fake.monotonic, sleep=fake.sleep))
 ```
 
-Each retry of this client starts at once, unless the server asks for a delay, which is still waited for in real time.
+Each retry of this client starts at once, server delays included, and `fake.waits` holds the waits it chose.
 
 ## Instrumentation
 
@@ -2990,7 +3022,6 @@ concurrency the same way, with the HTTP client's connection pool limits or an ap
 import httpx2
 
 from pets import Client
-from pets.options import ClientOptions
 
 
 def log_request(request: httpx2.Request) -> None:
@@ -3003,7 +3034,7 @@ def log_response(response: httpx2.Response) -> None:
 
 def instrumented(url: str, http: httpx2.Client) -> Client:
     http.event_hooks = {"request": [log_request], "response": [log_response]}
-    return Client(http_client=http, options=ClientOptions(base_url=url))
+    return Client(http_client=http, base_url=url)
 ```
 
 An injected client stays the caller's: close it after the SDK client.
@@ -3046,7 +3077,7 @@ place.
 `RateLimitError` (429), and `InternalServerError` (500 and above); any other error status raises `APIStatusError`
 itself. Its message is `Error code: <status> - <start of the body>`, with at most 500 characters of the body and `...`
 when it is cut. Its `body` is the payload decoded with the operation's declared error schema for that status, or the raw
-bytes, bounded by `max_error_body_bytes`, when none is declared; a body that does not decode stays raw, and the decode
+bytes, at most a 64 KiB prefix, when none is declared; a body that does not decode stays raw, and the decode
 failure is the `cause`. A final status declared neither as a success nor as an error, such as an undeclared 3xx or 2xx,
 raises `APIStatusError` with the reason `unexpected_status`.
 
@@ -3067,14 +3098,15 @@ fails.
 
 ## Retries and operation contracts
 
-`RetryOptions` applies on clients, views, and calls. Its fields merge independently; omitted fields inherit, while a
-status set replaces the inherited set. `retry=None` is invalid. Automatic retries require a candidate failure or
-status, operation safety, replayable input, and enough time. JSON/model decoding, arbitrary callbacks,
+`max_retries` and `retry=RetryOptions(...)` apply on clients, views, and calls. The fields of `RetryOptions` merge
+independently; omitted fields inherit, while a status set replaces the inherited set, and `retry=None` inherits the
+whole record. Automatic retries require a candidate failure or status, operation safety, replayable input, and enough
+time. JSON/model decoding, arbitrary callbacks,
 cancellation, and logical deadlines never restart a request.
 
-| Field | Effective default | Meaning |
+| Setting | Effective default | Meaning |
 |---|---|---|
-| `max_retries` | `2` | Retries after the initial attempt; `0` disables retries |
+| `max_retries` | `2` | Retries after the initial attempt; `0` disables retries; a setting of its own, not a `RetryOptions` field |
 | `initial_delay`, `max_delay` | `0.5`, `8` seconds | Exponential backoff, with maximum at least the initial delay |
 | `jitter` | `"full"` | Uniform delay below the exponential cap; `"none"` uses the cap |
 | `statuses` | `{408, 429, 500, 502, 503, 504}` | Replace with an integer set in 400–599; 401/403/407 are forbidden |
@@ -3103,7 +3135,8 @@ from pets.options import RequestOptions, RetryOptions
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
-        retry=RetryOptions(max_retries=2, max_retry_after=20),
+        max_retries=2,
+        retry=RetryOptions(max_retry_after=20),
         follow_redirects=True,
         total_timeout=30,
     )
@@ -3153,32 +3186,27 @@ setting. The generated README lists only the finalized selected operations and t
 
 ### Supply and retain an idempotency key
 
-The `idempotency` setting's `header_name` declares the API's idempotency key header. Supply a caller key with
-`IdempotencyKey("saved-value")`, or create a UUID4 value with `IdempotencyKey.new()`. The value is omitted from its
-representation.
+The `idempotency` setting's `header_name` declares the API's idempotency key header. A key belongs to one call:
+supply the caller's own as `RequestOptions(idempotency_key="saved-value")`.
 
-With `idempotency_key=UNSET`, the client creates one key per logical call for an operation with a declared header.
-`idempotency_key=None` disables automatic creation and clears an inherited key. An effective caller key on an
-undeclared operation or `request_raw` fails before sending, including keys inherited from a client or view.
-The same key is sent unchanged on every eligible retry. A declaration without an active key does not authorize
-unsafe retries. The contract does not guarantee exactly-once business execution.
-
-Keys must be nonempty, UTF-8-encodable strings. ASCII control characters are rejected except for interior tabs;
-leading or trailing ASCII spaces and tabs are also rejected. Interior spaces, tabs, and valid Unicode are preserved
-without trimming or normalization. Invalid keys raise `ConfigurationError` when constructed, before any send.
+Unset, the client creates one UUID4 key per logical call for an operation with a declared header.
+`idempotency_key=None` disables that automatic key. A caller key on an undeclared operation or `request_raw` fails
+before sending with `ConfigurationError` and the reason `not_declared`. A header of the declared name among the call's
+`extra_headers` is sent as it is and is the call's key instead. The same key is sent unchanged on every eligible
+retry. A declaration without an active key does not authorize unsafe retries. The contract does not guarantee
+exactly-once business execution. HTTPX2 refuses a key that is not a valid header value when it sends the request.
 
 ```python
-from pets import Client, ClientView
-from pets.options import IdempotencyKey, RequestOptions
+from pets import Client
+from pets.options import RequestOptions
 
 
-def keyed_view(client: Client, value: str) -> ClientView:
-    key = IdempotencyKey(value)
-    return client.with_options(RequestOptions(idempotency_key=key))
+def keyed_options(value: str) -> RequestOptions:
+    return RequestOptions(idempotency_key=value)
 ```
 
-Call an operation with the matching declaration through the returned view. The client reuses the supplied value
-across eligible retries.
+Pass the returned options to an operation with the matching declaration. The client reuses the supplied value across
+eligible retries.
 
 ## Request compression
 
@@ -3198,8 +3226,9 @@ The generated README lists the operations that accept a coding.
 
 ### Select a coding
 
-`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
-`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+`Client(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`Client(compression=None)` disables it. Views and calls inherit the client setting; a package without such an
+operation has no `compression` setting. Undeclared operations,
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
@@ -3291,11 +3320,11 @@ multipart body or a message, raises `DecodeError` with the reason `invalid_frami
 from pathlib import Path
 
 from pets import Client
-from pets.options import RequestOptions, RetryOptions
+from pets.options import RequestOptions
 
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
-    response = client.request_raw("PUT", url, body=path, options=RequestOptions(retry=RetryOptions(max_retries=2)))
+    response = client.request_raw("PUT", url, body=path, options=RequestOptions(max_retries=2))
     return response.read()
 ```
 
@@ -3305,7 +3334,7 @@ file, path or iterable itself. Callers manage the lifetime and concurrent use of
 ## Redirects and transport construction
 
 Calls are sent through the native client with `send(request, stream=True)`: its `auth`, event hooks, redirect
-setting, and framing are effective. `follow_redirects` on `ClientOptions`, a view's, or a call's `RequestOptions` is
+setting, and framing are effective. `follow_redirects` of the client, a view, or a call's `RequestOptions` is
 the native boolean for that call; unset, an SDK-created client follows no redirect, as HTTPX2's default is, and an
 injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itself: 301 and 302 change POST to GET,
 303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
@@ -3329,7 +3358,6 @@ follow decision, so they can still add headers, such as an `X-API-Key`, to a req
 import httpx2
 
 from pets import Client
-from pets.options import ClientOptions
 
 
 class ApiKey(httpx2.Auth):
@@ -3343,7 +3371,7 @@ class ApiKey(httpx2.Auth):
 
 def following_client(key: str) -> Client:
     native = httpx2.Client(auth=ApiKey(key), follow_redirects=True)
-    return Client(http_client=native, options=ClientOptions())
+    return Client(http_client=native)
 ```
 
 The native client removes response content codings: its `Accept-Encoding`, gzip and deflate plus brotli and zstd
@@ -3354,37 +3382,32 @@ buffered one keeps only its decoded body, so its `iter_raw_bytes()` raises `Conf
 `with_response` calls return `None` data for an empty final body and raise `DecodeError` with the reason
 `forbidden_body` if the final response has content. Use `with_raw_response` or `with_streaming_response` to access it.
 
-`TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
-`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
-`max_keepalive_connections=20`, and `keepalive_expiry=5`. Supplying an SSLContext uses its CA,
-verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
-settings follow HTTPX2 environment handling by default, preserving native system trust. With `trust_env=False`,
-HTTPX2 environment configuration is disabled while native TLS trust behavior is preserved. Caller `ssl_context` or
-`verify=False` controls origin TLS; injected native clients retain their settings and ownership.
-Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
-Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
-view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
-`raise_for_status()` applies the error-prefix cap. HTTP/2 is opt-in and requires its optional dependency.
+A client the SDK creates is `httpx2.Client(timeout=httpx2.Timeout(600, connect=5))` (or its asyncio twin) with every
+other HTTPX2 default: TLS verification against the system's trust, proxy and CA environment settings honored
+(`trust_env=True`), HTTP/1.1, and a pool of 100 connections keeping 20 alive for 5 seconds. Configure TLS, proxies,
+pools, HTTP/2, and environment handling on an HTTPX2 client of your own and pass it as `http_client`; the SDK keeps its
+settings, its timeout unless `timeout` is given, and its ownership. Typed errors and exception bodies keep at most a
+64 KiB prefix of an error body. Buffered raw responses and streams are not capped; of a buffered raw response, only
+`raise_for_status()` applies the error-body prefix.
 
 ```python
 from ssl import create_default_context
 
+import httpx2
+
 from pets import Client
-from pets.options import ClientOptions, TransportOptions
 
 
-def configured_client(ca_file: str) -> Client:
+def configured_client(ca_file: str) -> tuple[Client, httpx2.Client]:
     context = create_default_context(cafile=ca_file)
-    transport = TransportOptions(ssl_context=context, max_connections=50, max_keepalive_connections=10)
-    return Client(options=ClientOptions(transport=transport))
+    native = httpx2.Client(verify=context, limits=httpx2.Limits(max_connections=50, max_keepalive_connections=10))
+    return Client(http_client=native), native
 ```
 
-Use the returned client in a `with` block. The supplied CA bundle controls TLS verification; this example leaves
-verification enabled. Omitting `trust_env` keeps its default of `True`, so native environment proxy settings remain
-effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
+Use the returned client in a `with` block and close the native client after it. The supplied CA bundle controls TLS
+verification; this example leaves verification enabled and keeps HTTPX2's `trust_env=True`.
 
-An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
-rejected. The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
+The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
 Views share their root's core and its ownership. A borrowed client's cookies, headers, and query defaults are not
 merged into SDK requests; its `Accept-Encoding` is. Its native auth, event hooks, and redirect setting retain HTTPX2
 semantics, and the SDK's bounded retries resend from the original request.
@@ -3429,17 +3452,17 @@ async def rotated_get(read_token: Callable[[], str]) -> bytes:
 
 A call sends the credentials of its operation's first security alternative they all satisfy: an AND alternative
 needs all its schemes, and an OR list is tried in declared order. Each credential goes to the header, query field, or
-cookie its scheme declares, replacing a value a header patch or a parameter put there, and only to the server's
+cookie its scheme declares, replacing a value a client, view, or call header or a parameter put there, and only to the server's
 origin: a page a server links at another origin, and `request_raw`, carry none of them. Absent security, explicit
 `[]`, and an empty alternative are anonymous choices that apply only when no other alternative is satisfied, so an
 optional operation sends a credential given for a listed scheme and, with none, sends nothing. A required operation that no credential satisfies raises `ConfigurationError` with the reason
 `missing_credentials` before sending, unless the HTTP client has an Auth of its own, which it then uses. The client
 authorizes no scopes: the resource server decides, and a 403 is terminal.
 
-`auth` on `ClientOptions`, or on a view's or a call's `RequestOptions`, takes any `httpx2.Auth`, which replaces the
-credentials for those calls, and `auth=None` sends without an Auth; it cannot make a required operation anonymous.
-Unset, the credentials apply, or else the HTTP client's own `auth`. Credentials given beside `ClientOptions(auth=...)`
-or an injected HTTP client with an `auth` raise `ConfigurationError` with the reason `conflicting_auth`, since one
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials
+for those calls, and `auth=None` sends without an Auth; it cannot make a required operation anonymous. Unset, the
+credentials apply, or else the HTTP client's own `auth`. Credentials given beside `Client(auth=...)` or an injected
+HTTP client with an `auth` raise `ConfigurationError` with the reason `conflicting_auth`, since one
 request runs one Auth flow.
 
 Declare an API-specific challenge-less 401 contract in the operation's `runtime` setting. It is false unless

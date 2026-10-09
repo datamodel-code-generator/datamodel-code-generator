@@ -27,6 +27,19 @@ RESERVED_MEMBERS: Final = frozenset({
     "with_streaming_response",
 })
 RESERVED_ARGUMENTS: Final = frozenset({"body", "media_type", "options", "response_media_type", "self"})
+VIEW_KEYWORDS: Final = (
+    "base_url",
+    "server",
+    "timeout",
+    "total_timeout",
+    "max_retries",
+    "retry",
+    "default_headers",
+    "default_query",
+    "follow_redirects",
+    "auth",
+)
+CLIENT_KEYWORDS: Final = (*VIEW_KEYWORDS, "compression", "clock", "http_client", "protocols")
 HELPER_ARGUMENTS: Final = frozenset({
     "cache_options",
     "items",

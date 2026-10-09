@@ -139,8 +139,8 @@ class Polling(Harness):
         super().__init__(package)
         self.body = request_body(package, "createJob", None, {"name": "nightly"})
 
-    def client_options(self, **settings: Any) -> Any:
-        """Return client options that retry at once and poll each helper without a noticeable interval."""
+    def client_options(self, **settings: Any) -> dict[str, Any]:
+        """Return client keywords that retry at once and poll each helper without a noticeable interval."""
         protocols = self.protocols
         fast = protocols.ProtocolDefaults(options=protocols.PollOptions(interval=0.000001))
         defaults = self.options.ProtocolClientOptions(defaults=dict.fromkeys(_HELPERS, fast))
@@ -163,7 +163,7 @@ def polling(package: ModuleType, lines: list[str]) -> None:
     """Create, poll, wait for, and limit long-running operations through the synchronous and asyncio clients."""
     harness = Polling(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _lifecycle(harness, api, exchange, lines)
         _terminal(harness, api, exchange, lines)
         _states(harness, api, exchange, lines)
@@ -248,14 +248,14 @@ def _creates(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     lines.append("options")
     for label, settings in (
         ("poll options of another type", {"poll_options": harness.session()}),
-        ("fixed idempotency key", {"options": harness.request(idempotency_key=harness.options.IdempotencyKey.new())}),
-        ("patched written header", {"options": harness.request(headers=[("x-trace", "mine")])}),
+        ("fixed idempotency key", {"options": harness.request(idempotency_key="fixed-key")}),
+        ("patched written header", {"options": harness.request(extra_headers={"x-trace": "mine"})}),
     ):
         step(lines, label, lambda settings=settings: helper.start(body=body, **settings))
     step(
         lines,
         "patched written query",
-        lambda: api.protocols.jobs.inline.start(body=body, options=harness.request(query=[("verbose", "false")])),
+        lambda: api.protocols.jobs.inline.start(body=body, options=harness.request(extra_query={"verbose": "false"})),
     )
 
 
@@ -355,7 +355,7 @@ def _waits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> 
     handle = helper.start(
         body=body,
         poll_options=harness.polls(interval=_PAUSE),
-        options=harness.request(headers=[("X-Client", "tests")], query=[("lang", "en")]),
+        options=harness.request(extra_headers={"X-Client": "tests"}, extra_query={"lang": "en"}),
         session_options=harness.session(total_timeout=None),
     )
     step(lines, "session without a deadline, with other patches", handle.status)
@@ -377,7 +377,7 @@ def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     """Keep a handle pending through transport errors, and retry only a failed result fetch."""
     helper = api.protocols.jobs.run
     body = harness.body
-    once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
+    once = harness.request(max_retries=0)
     lines.append("failures that settle nothing")
     exchange.respond(job("queued", 202), failing(httpx2.ConnectError), job("done"), json_response(500, {}), report(2))
     handle = helper.start(body=body, options=once)
@@ -406,7 +406,7 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
     settings = harness.client_options(clock=harness.options.Clock(monotonic=clock, time=lambda: _WALL))
     body = harness.body
     lines.append("waits and limits on the client clock")
-    with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+    with exchange.client() as native, harness.package.Client(http_client=native, **settings) as api:
         helper = api.protocols.jobs.run
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
         handle = helper.start(body=body)
@@ -436,7 +436,7 @@ async def _async_clocked(harness: Polling, lines: list[str]) -> None:
     body = harness.body
     async with (
         exchange.async_client() as native,
-        harness.package.AsyncClient(http_client=native, options=settings) as api,
+        harness.package.AsyncClient(http_client=native, **settings) as api,
     ):
         helper = api.protocols.jobs.run
         delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
@@ -460,7 +460,7 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper = api.protocols.jobs.run
         body = harness.body
@@ -511,7 +511,7 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
         await astep(lines, "close the handle the block left open", handle.aclose)
         await astep(lines, "status after its close", handle.status)
         lines.append("async server delay of a failed result fetch")
-        once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
+        once = harness.request(max_retries=0)
         exchange.respond(
             job("queued", 202), job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
         )
@@ -531,7 +531,7 @@ async def _async_closing(harness: Polling, lines: list[str]) -> None:
     exchange = Exchange(lines)
     lines.append("async client closing during a wait")
     async with exchange.async_client() as native:
-        api = harness.package.AsyncClient(http_client=native, options=harness.client_options())
+        api = harness.package.AsyncClient(http_client=native, **harness.client_options())
         exchange.respond(job("queued", 202))
         handle = await api.protocols.jobs.run.start(body=harness.body, poll_options=harness.polls(interval=30))
         waiting = asyncio.create_task(handle.status())

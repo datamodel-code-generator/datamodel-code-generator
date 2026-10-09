@@ -1,6 +1,10 @@
 # retries pydantic_v2.BaseModel
-  declared key header stays managed ! ConfigurationError: ConfigurationError(operation_id='postKeyed', reason='managed', field_path='headers.Idempotency-Key') [operation_id='postKeyed', field_path=('headers', 'Idempotency-Key')] managed
-  missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(reason='unavailable', field_path='transport.http2') [field_path=('transport', 'http2'), cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] unavailable
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: manual, content-type: application/octet-stream, content-length: 7] b'payload'
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: manual, content-type: application/octet-stream, content-length: 7] b'payload'
+  declared key header becomes the key = FieldKeyedPostResponse(root='accepted')
+    queued=0
   request hook failure first send = (('APITimeoutError', 'phase_timeout', 1, ()), False, 1)
     events=[] queued=2
   request hook failure retried send = (('APITimeoutError', 'phase_timeout', 2, ()), False, 2)
@@ -24,4 +28,3 @@
   async stream close interruption after a failed body = ('_Stop', True, ['Secondary failure: APIConnectionError'], ['Secondary failure: APIConnectionError'])
   async stream close interruption after a failed block = ('_Stop', True, ['Secondary failure: ValueError'], ['Secondary failure: ValueError'])
   stream reuses its deadline through EOF = b'bounded stream'
-  async missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(reason='unavailable', field_path='transport.http2') [field_path=('transport', 'http2'), cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] unavailable
