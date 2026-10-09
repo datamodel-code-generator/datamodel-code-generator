@@ -11,8 +11,9 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import TYPE_CHECKING, Final, cast
+
+from typing_extensions import Sentinel
 
 from ..model_codecs.unset import UNSET
 from .records import BodySelector, HeaderSelector
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from ..model_codecs.media import JSONValue
     from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
+__all__ = ("MISSING", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
 
 _RFC3339: Final = re.compile(
     r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})(?:\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})"
@@ -32,20 +33,15 @@ _RFC3339: Final = re.compile(
 _LEAP_SECOND: Final = "60"
 
 
-class Missing(Enum):
-    """The absence of the member a selector names, which is neither JSON null nor an empty string."""
-
-    MISSING = "missing"
-
-
-MISSING: Final = Missing.MISSING
+MISSING = Sentinel("MISSING")
+"""The absence of the member a selector names, which is neither JSON null nor an empty string."""
 
 
 def _tokens(pointer: str) -> list[str]:
     return [token.replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:]]
 
 
-def resolve(value: JSONValue, pointer: str) -> JSONValue | Missing:
+def resolve(value: JSONValue, pointer: str) -> JSONValue | MISSING:
     """Return the member of a decoded JSON value an RFC 6901 pointer names, or MISSING when there is none.
 
     Generated helpers point only through object members, so an absent member and a step into anything but an object,
@@ -62,7 +58,7 @@ class RepeatedValueError(Exception):
     """A header a selector reads once that the response repeats; each helper raises its own data error instead."""
 
 
-def selected(read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | Missing:
+def selected(read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | MISSING:
     """Return what a selector reads from a response, or MISSING; every occurrence of a header is an array of them.
 
     A header selected once that the response repeats raises RepeatedValueError.

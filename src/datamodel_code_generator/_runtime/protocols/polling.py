@@ -33,7 +33,7 @@ from .records import (
     plain_copy,
 )
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
+from .values import MISSING, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -258,7 +258,7 @@ def _limits(
     return limits
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -290,7 +290,7 @@ class _Step(Generic[T, P]):
     not_before: float
     snapshot: PollSnapshot[P] | None = None
     bound: tuple[JSONValue, ...] = ()
-    result: T | Missing = MISSING
+    result: T | MISSING = MISSING
     seed: tuple[JSONValue, ...] | None = None
     cancel: tuple[JSONValue, ...] = ()
     expires_at: datetime | None = None
@@ -347,7 +347,7 @@ class _Operation(Generic[T, P]):
         self._bound: tuple[JSONValue, ...] = ()
         self._seed: tuple[JSONValue, ...] = ()
         self._cancel: tuple[JSONValue, ...] = ()
-        self._result: T | Missing = MISSING
+        self._result: T | MISSING = MISSING
         self._expires_at: datetime | None = None
         self._not_before = 0.0
         self._polls = 0
@@ -375,7 +375,7 @@ class _Operation(Generic[T, P]):
         """
         with self._guard:
             if (pending := self._phase is _Phase.PENDING) or (
-                self._phase is _Phase.SUCCEEDED and isinstance(self._result, Missing)
+                self._phase is _Phase.SUCCEEDED and self._result is MISSING
             ):
                 return plain_copy({
                     "phase": "pending" if pending else "fetch",
@@ -470,7 +470,7 @@ class _Operation(Generic[T, P]):
 
     def _selected(
         self, read: Selector, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
-    ) -> JSONValue | Missing:
+    ) -> JSONValue | MISSING:
         """Return what a selector reads from a response, or MISSING, refusing a header selected once it repeats."""
         try:
             return selected(read, wire, info)
@@ -616,12 +616,12 @@ class _Operation(Generic[T, P]):
             cancels = self._values(cancel.targeted, cancel.bindings, wire, info, operation, self._cancel)
             return _Step(phase, self._after(info), snapshot, polled, cancel=cancels)
         bound: tuple[JSONValue, ...] = ()
-        result: T | Missing = MISSING
+        result: T | MISSING = MISSING
         if phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
         return _Step(phase, self._limits.clock.monotonic(), snapshot, bound, result)
 
-    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | Missing]:
+    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | MISSING]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         operation = plan.poll_operation
@@ -671,7 +671,7 @@ class _Operation(Generic[T, P]):
             raise self._state_error(action, _Phase.SUCCEEDED.value)
         return snapshot
 
-    def _outcome(self) -> T | Missing:
+    def _outcome(self) -> T | MISSING:
         """Return the settled operation's result, MISSING while its fetch is due; a failure or cancellation raises.
 
         The terminal poll's data and response stay on the error, which every later `wait` raises again without sending.
@@ -866,7 +866,7 @@ class LroHandle(_Operation[T, P]):
         try:
             while self._phase is _Phase.PENDING:
                 self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return self._fetch()
         finally:
@@ -1003,7 +1003,7 @@ class AsyncLroHandle(_Operation[T, P]):
         try:
             while self._phase is _Phase.PENDING:
                 await self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return await self._fetch()
         finally:

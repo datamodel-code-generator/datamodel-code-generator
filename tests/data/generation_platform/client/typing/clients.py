@@ -314,6 +314,16 @@ def retry_options(client: Client) -> None:
     Client(follow_redirects=None)
 
 
+def retry_delay(retry: RetryOptions) -> float | None:
+    if (after := retry.max_retry_after) is UNSET:
+        assert_type(after, UNSET)
+        return None
+    assert_type(after, float | None)
+    if retry.max_delay is not UNSET:
+        assert_type(retry.max_delay, float)
+    return after
+
+
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
         max_retries=2,

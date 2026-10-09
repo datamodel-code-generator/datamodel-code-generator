@@ -191,6 +191,8 @@ still constructed without added schema validation. Repeated undeclared members k
 The generated `model_codecs` module exports `UNSET` and `JSONValue`. `UNSET` is a PEP 661 sentinel
 (`typing_extensions.Sentinel`): annotations spell it as its own type, as in `int | UNSET`, checks use `value is UNSET`,
 and it is truthy like other sentinels. Parameter parsing records and wire validation errors are implementation details.
+The protocol helpers' runtime marks a member a selector does not find with its own `MISSING` sentinel, also a
+`typing_extensions.Sentinel`; it is unrelated to Pydantic's `MISSING`, which `--use-missing-sentinel` emits in models.
 
 ## Webhook contracts
 

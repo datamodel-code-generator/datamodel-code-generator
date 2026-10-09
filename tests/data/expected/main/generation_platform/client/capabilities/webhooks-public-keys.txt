@@ -42,12 +42,12 @@ copied runtime
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/signatures.py: 99
-  protocols/values.py: 158
+  protocols/values.py: 154
   protocols/verification.py: 203
-  protocols/webhook_events.py: 290
+  protocols/webhook_events.py: 287
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-total 41 modules, 10045 lines
+total 41 modules, 10038 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

@@ -42,7 +42,7 @@ from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLim
 from .options import StreamOptions, layered
 from .records import plain_copy
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, server_expiry, written
+from .values import MISSING, Patch, RepeatedValueError, resolve, selected, server_expiry, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
@@ -463,7 +463,7 @@ def _bound(  # noqa: PLR0913, PLR0917
     return bound
 
 
-def _json(frame: _Frame) -> JSONValue | Missing:
+def _json(frame: _Frame) -> JSONValue | MISSING:
     """Return an event's data parsed as JSON, or MISSING when it is not JSON.
 
     `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
@@ -474,7 +474,7 @@ def _json(frame: _Frame) -> JSONValue | Missing:
         return MISSING
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 

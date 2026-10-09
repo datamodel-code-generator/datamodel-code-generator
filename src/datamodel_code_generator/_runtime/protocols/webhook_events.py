@@ -26,7 +26,7 @@ from ..model_codecs.errors import (
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .records import BodySelector
-from .values import Missing, resolve
+from .values import MISSING, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
@@ -134,15 +134,12 @@ class MappedEventDecoder(Generic[T_co]):
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
             return decoder.decode(raw_body, helper_id)
         condition: Literal["missing", "null", "type", "value"] = "type"
-        match name:
-            case str():
-                condition = "value"
-            case Missing():
-                condition = "missing"
-            case None:
-                condition = "null"
-            case _:
-                pass
+        if isinstance(name, str):
+            condition = "value"
+        elif name is MISSING:
+            condition = "missing"
+        elif name is None:
+            condition = "null"
         raise ProtocolDataError(reason=condition, location=self._location, helper_id=helper_id)
 
 

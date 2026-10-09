@@ -37,7 +37,7 @@ from .records import (
     plain_copy,
     record_instance,
 )
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
+from .values import MISSING, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
@@ -437,15 +437,15 @@ def _data_error(
     )
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
-def _unfit(value: JSONValue | Missing) -> Literal["missing", "null", "type"]:
+def _unfit(value: JSONValue | MISSING) -> Literal["missing", "null", "type"]:
     return "type" if value is not MISSING and value is not None else _absence(value)
 
 
-def _selected(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | Missing:
+def _selected(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | MISSING:
     """Return what a selector reads from a page, or MISSING; every occurrence of a header is an array of them.
 
     A header selected once that the response repeats is refused.
@@ -458,7 +458,7 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info:
 
 def _ended(
     plan: PaginationPlan[T, P], rule: CursorPlan | NextUrlPlan, wire: JSONValue, info: ResponseInfo
-) -> JSONValue | Missing:
+) -> JSONValue | MISSING:
     """Return the value a page's cursor or next URL reads, or MISSING when an end condition ends the traversal there."""
     read = rule.read
     value = _selected(plan, read, wire, info)
@@ -473,7 +473,7 @@ def _ended(
     return value
 
 
-def _linked(plan: PaginationPlan[T, P], rule: LinkPlan, info: ResponseInfo) -> str | Missing:
+def _linked(plan: PaginationPlan[T, P], rule: LinkPlan, info: ResponseInfo) -> str | MISSING:
     """Return the target of the one link of the helper's relation a page's Link header gives, or MISSING without one.
 
     The fields must parse as RFC 8288 links and give the relation at most once.
@@ -779,7 +779,7 @@ class _Walk(Generic[T, P]):
             return
         self.started(_numeral(values[0]) if len(values) == 1 else list(values))
 
-    def advance(self, rule: CountPlan, count: int, wire: JSONValue, info: ResponseInfo) -> int | Missing:
+    def advance(self, rule: CountPlan, count: int, wire: JSONValue, info: ResponseInfo) -> int | MISSING:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
 
         The first page is at the walk's start. A page number ends at a page without items once a total counts the
@@ -843,7 +843,7 @@ class _Walk(Generic[T, P]):
 
     def follow(
         self, rule: NextUrlPlan | LinkPlan, wire: JSONValue, info: ResponseInfo, url: str, stripped: frozenset[str]
-    ) -> str | Missing:
+    ) -> str | MISSING:
         """Return the absolute URL of the page after a page, or MISSING when the page is the last.
 
         A next URL must be a string; its reference resolves against the URL of the hop that returned the page. The
@@ -856,7 +856,7 @@ class _Walk(Generic[T, P]):
             first = strip_query(absolute_target(url).url, stripped)
             self.seed = sha256(canonical_json(first)).digest()
         reference = _linked(plan, rule, info) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
-        if isinstance(reference, Missing):
+        if reference is MISSING:
             return reference
         if not isinstance(reference, str):
             raise _data_error(plan, info, "type", rule.read)
@@ -864,7 +864,7 @@ class _Walk(Generic[T, P]):
 
     def build(
         self, data: P, wire: JSONValue, _content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
-    ) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
+    ) -> tuple[Page[T, P], JSONValue | MISSING, tuple[JSONValue, ...]]:
         """Return a decoded page, what the next request writes, and its bindings' values.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
@@ -889,14 +889,14 @@ class _Walk(Generic[T, P]):
             cursor = self.advance(rule, len(items), wire, info)
         else:
             cursor = self.follow(rule, wire, info, url, stripped)
-        if isinstance(cursor, Missing):
+        if cursor is MISSING:
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         self.dotted(bound if plan.follows else (*bound, cursor), info)
         page = Page(items=items, data=data, response=info, continuation=cursor)
         return page, cursor, bound
 
-    def record(self, page: Page[T, P], cursor: JSONValue | Missing, bound: tuple[JSONValue, ...]) -> Page[T, P]:
+    def record(self, page: Page[T, P], cursor: JSONValue | MISSING, bound: tuple[JSONValue, ...]) -> Page[T, P]:
         """Link a fetched page after the last one, noting whether its continuation was seen before on its line.
 
         The line of a walk that follows URLs starts with the first page's own URL, as if the first page continued from
@@ -904,7 +904,7 @@ class _Walk(Generic[T, P]):
         """
         previous = self.previous = self.link
         index = 0 if previous is None else previous.index + 1
-        digest = None if isinstance(cursor, Missing) else sha256(canonical_json(cursor)).digest()
+        digest = None if cursor is MISSING else sha256(canonical_json(cursor)).digest()
         history = _line(previous)
         if (seed := self.seed) is not None and previous is None:
             history.seen[seed] = 0
@@ -915,7 +915,7 @@ class _Walk(Generic[T, P]):
             self.request,
             index,
             len(page.items) + (0 if previous is None else previous.items),
-            None if isinstance(cursor, Missing) else cursor,
+            None if cursor is MISSING else cursor,
             bound,
             digest,
             None if first == index and not (index == 0 and digest == seed) else first,
@@ -1298,7 +1298,7 @@ def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
 
 def _fetch(
     core: ClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
+) -> tuple[Page[T, P], JSONValue | MISSING, tuple[JSONValue, ...]]:
     """Fetch the walk's next page as a child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits
@@ -1316,7 +1316,7 @@ def _fetch(
 
 async def _afetch(
     core: AsyncClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
+) -> tuple[Page[T, P], JSONValue | MISSING, tuple[JSONValue, ...]]:
     """Fetch the walk's next page as an asyncio child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits
