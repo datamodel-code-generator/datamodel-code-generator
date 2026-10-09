@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
 from models import ClientMessage as _dcg_type_0
@@ -86,7 +87,7 @@ class AsyncRoomsChatWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
         room: str,
@@ -94,9 +95,9 @@ class AsyncRoomsChatWebsocket:
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]:
-        """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]]:
+        """Open the WebSocket of GET /rooms/{room}/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_0,
             (room, since),
@@ -113,15 +114,15 @@ class AsyncFeedTextWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[str, bytes]:
-        """Open the WebSocket of GET /feed/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[str, bytes]]:
+        """Open the WebSocket of GET /feed/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_1,
             (),
@@ -138,16 +139,16 @@ class AsyncSecureChatWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
         x_trace: str | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[bytes, str]:
-        """Open the WebSocket of GET /secure/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[bytes, str]]:
+        """Open the WebSocket of GET /secure/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_2,
             (x_trace,),

@@ -2055,8 +2055,9 @@ E_CONFIG_VALUE config protocols['checks.discriminator_absent'].event_schema.disc
 An enabled `websocket` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one
 method, `connect`. Its channel is a GET operation, whose handshake request the helper sends: the operation gives the
 URL, the parameters, the servers, and the security. `connect` takes the operation's parameters as keywords, then
-`ws_options`, `options`, and `session_options`, and returns a `WebSocketSession[S, R]`, or with one `await` an
-`AsyncWebSocketSession[S, R]`, once the server accepted the handshake:
+`ws_options`, `options`, and `session_options`. On `Client` it returns a `WebSocketSession[S, R]` once the server
+accepted the handshake; `with` or `close()` closes it. On `AsyncClient` it returns an async context manager: `async
+with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which leaving the block closes:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
 <!-- fmt: off -->
@@ -2089,6 +2090,11 @@ URL, the parameters, the servers, and the security. `connect` takes the operatio
 with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
     session.send(ClientMessage(text="hi"))
     for message in session:
+        print(message.sequence, message.data)
+
+async with AsyncClient() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
+    await session.send(ClientMessage(text="hi"))
+    async for message in session:
         print(message.sequence, message.data)
 ```
 
@@ -2146,23 +2152,25 @@ handshake's hooks end with the call outcome `handed_off`, and the session's end 
 | Iteration | Yields messages until the server closes normally |
 | `ping(payload=b"")` | Sends a ping of at most 125 bytes, a random one when empty, and returns a `PingReceipt` with the pong's `latency` in seconds |
 | `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
-| `with`, `async with` | Closes the session on exit |
+| `with` | Closes a synchronous session on exit; an asyncio session is the `async with` block of its `connect` |
 | `progress` | The session's `messages_sent` and `messages_received` |
 
 An HTTPX2 `WebSocketSession` or `AsyncWebSocketSession` carries the connection: it reads in the background, answers
 pings, and sends keepalive pings. The session owns it until it closes or fails, but the connection belongs to the HTTP
 client's pool: closing the client also closes the connections of its open sessions, whose next step then fails. One
 `receive` waits at a time: another raises `ConcurrentReceiveError`, while sends, which HTTPX2 writes one at a time, may
-run beside it. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves the session usable,
-since HTTPX2 queues whole messages; a cancelled `send` or `ping` fails the session, since a message may be half
-written. An `AsyncWebSocketSession` runs the HTTPX2 session in a task of its own, so any task may use and close it. A
-received message of another frame kind, or one that does not decode, raises `StreamDecodeError` with at most 64 KiB of
-it as `raw_prefix` and closes the connection with 1002. A server's closure raises `WebSocketClosedError` with its
-`code`, `reason`, and `clean`, which is true for 1000 and 1001, the closures that alone end iteration; the session
-answers it with the same code and reason, and after it `receive`, `send`, and `ping` raise it again. A `send` or `ping`
-on a connection that is already closing, before `receive` reported why, raises `WebSocketClosedError` without a code.
-After any other failure, every step raises `ProtocolStateError`, as it does after `close()`. Representations never
-show messages, URLs, headers, or close reasons.
+run beside it. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves the session usable, since
+HTTPX2 queues whole messages; a cancelled `send` or `ping` fails the session, since a message may be half written. An
+`AsyncWebSocketSession` runs the HTTPX2 session in the task that entered its `connect` block, as HTTPX2's task group
+must end in the task that started it, and closes it when the block ends; tasks the block starts may use and close it
+meanwhile. A failure the block raises leaves it unwrapped; a failure of HTTPX2's background tasks cancels the block and
+leaves it as `APIConnectionError` with the phase `read`. A received message of another frame kind, or one that does not
+decode, raises `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A
+server's closure raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for 1000 and 1001,
+the closures that alone end iteration; the session answers it with the same code and reason, and after it `receive`,
+`send`, and `ping` raise it again. A `send` or `ping` on a connection that is already closing, before `receive` reported
+why, raises `WebSocketClosedError` without a code. After any other failure, every step raises `ProtocolStateError`, as
+it does after `close()`. Representations never show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 

@@ -69,9 +69,9 @@ copied runtime
   protocols/webhook_events.py: 293
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-  protocols/websocket.py: 945
+  protocols/websocket.py: 910
   protocols/writes.py: 288
-total 65 modules, 25846 lines
+total 65 modules, 25811 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

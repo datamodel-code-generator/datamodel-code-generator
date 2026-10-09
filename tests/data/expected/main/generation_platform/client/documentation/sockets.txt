@@ -135,8 +135,10 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 See the runtime reference for their limits.
 
 ```json
@@ -368,11 +370,13 @@ Native task cancellation propagates unchanged, and user callbacks are not shield
 
 ## WebSocket sessions
 
-A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, sent
-through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's transport,
-proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response raises the
-operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
+A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
+`AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
+task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
+sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
+raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
+for the helper, then the default below. The session types are imported from:
 
 - `client.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
 - `client.options`: `SessionOptions` and `ProtocolClientOptions`

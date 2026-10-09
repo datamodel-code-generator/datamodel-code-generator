@@ -50,8 +50,8 @@ copied runtime
   protocols/references.py: 16
   protocols/resume.py: 176
   protocols/sources.py: 43
-  protocols/websocket.py: 945
-total 46 modules, 16277 lines
+  protocols/websocket.py: 910
+total 46 modules, 16242 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

@@ -3016,12 +3016,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
-        wait = "await " if asynchronous else ""
         sent, received = self.message_types(module, spec)
+        returns = f"{session}[{sent}, {received}]"
+        summary = f"Open the WebSocket of {route}, returning once its handshake got a valid 101."
+        if asynchronous:
+            returns = f"{module.name('contextlib', 'AbstractAsyncContextManager')}[{returns}]"
+            summary = f"Open the WebSocket of {route} for an async with block once its handshake got a valid 101."
         return "\n".join((
-            _signature("connect", signature, f"{session}[{sent}, {received}]", asynchronous=asynchronous, stub=False),
-            f'        """Open the WebSocket of {route}, returning once its handshake got a valid 101."""',
-            f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+            _signature("connect", signature, returns, asynchronous=False, stub=False),
+            f'        """{summary}"""',
+            f"        return {layout(_call(opener, passed), 8, 7, WIDTH)}",
         ))
 
 
@@ -3641,11 +3645,13 @@ active streams; each stream releases its own response and limiter permit.
         return f"""
 ## WebSocket sessions
 
-A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, sent
-through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's transport,
-proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response raises the
-operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
+A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
+`AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
+task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
+sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
+raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
+for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
 - `{package}.options`: `SessionOptions` and `ProtocolClientOptions`

@@ -12,6 +12,7 @@ import base64
 import os
 import threading
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import partial
@@ -58,8 +59,7 @@ from .errors import (
 from .options import WSOptions
 
 if TYPE_CHECKING:
-    import asyncio
-    from collections.abc import Mapping
+    from collections.abc import AsyncGenerator, Mapping
     from types import TracebackType
 
     import httpx2
@@ -365,7 +365,7 @@ class _Sockets(Generic[SendT, RecvT]):
         failure.info = self._info
         return failure
 
-    def _lost(self, error: Exception) -> APIConnectionError:
+    def _lost(self, error: BaseException) -> APIConnectionError:
         """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
         return self._stamped(
             APIConnectionError(phase="read", delivery_state=DeliveryState.RESPONSE_STARTED, cause=error)
@@ -697,14 +697,14 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
 
 @final
 class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
-    """An asyncio WebSocket session, with the synchronous session's contract.
+    """An asyncio WebSocket session, with the synchronous session's contract, open for the block of its connect.
 
-    The HTTPX2 session runs in a task of its own, since its task group must end in the task that started it; any task
-    may use and close the session. Cancelling a receive's task leaves the session usable, as HTTPX2 queues whole
+    The HTTPX2 session runs in the task that entered the block, since its task group must end there; tasks the block
+    starts may use and close the session. Cancelling a receive's task leaves the session usable, as HTTPX2 queues whole
     messages; a cancelled send or ping fails the session, since a message may be half written.
     """
 
-    __slots__ = ("_host", "_native", "_response", "_stop")
+    __slots__ = ("_native", "_response")
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -725,31 +725,34 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             keepalive_ping_timeout_seconds=limits.pong_timeout,
             response=upgraded,
         )
-        self._stop = anyio.Event()
-        self._host: asyncio.Task[None]
 
-    async def _start(self) -> None:
-        """Start the HTTPX2 session in its own task, returning once it runs."""
-        import asyncio  # noqa: PLC0415 - Only an asyncio session hosts a task.
+    @asynccontextmanager
+    async def _opened(self) -> AsyncGenerator[Self, None]:
+        """Run the HTTPX2 session for one block in the caller's task, then close the session.
 
-        loop = asyncio.get_running_loop()
-        started: asyncio.Future[None] = loop.create_future()
-        self._host = loop.create_task(self._hosted(started))
-        await started
-
-    async def _hosted(self, started: asyncio.Future[None]) -> None:
-        async with self._native:
-            started.set_result(None)
-            await self._stop.wait()
+        The block's own failure leaves it as raised, not in the group HTTPX2's task group wraps it in; a failure of
+        HTTPX2's background tasks, which cancels the block, leaves it as the session's lost connection.
+        """
+        escaped: BaseException | None = None
+        try:
+            async with self._native:
+                try:
+                    yield self
+                except BaseException as error:
+                    escaped = error
+                    raise
+        except Exception as exited:  # noqa: BLE001
+            escaped = escaped if getattr(exited, "exceptions", None) == (escaped,) else self._lost(exited)
+        finally:
+            with anyio.CancelScope(shield=True):
+                await self.aclose()
+        if escaped is not None:
+            raise escaped
 
     async def _shut(self, code: int, reason: str = "") -> None:
-        """Close the HTTPX2 session with a code and a reason and wait for its task, keeping its failure out."""
-        import asyncio  # noqa: PLC0415 - Only an asyncio session hosts a task.
-
+        """Close the HTTPX2 session with a code and a reason; leaving the block ends its tasks."""
         with anyio.CancelScope(shield=True):
             await self._native.close(code, reason)
-            self._stop.set()
-            await asyncio.gather(self._host, return_exceptions=True)
 
     async def _end(self, error: Exception, action: str) -> Exception:
         """End the session at a failure or a received closure, or report the end another step reached first."""
@@ -847,16 +850,6 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
                 raise StopAsyncIteration from None
             raise
 
-    async def __aenter__(self) -> Self:
-        """Return this session, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the session."""
-        await self.aclose()
-
 
 def connect_socket(  # noqa: PLR0913
     core: ClientCore,
@@ -883,6 +876,7 @@ def connect_socket(  # noqa: PLR0913
     return WebSocketSession(plan, limits, session, response, call, upgraded)
 
 
+@asynccontextmanager
 async def aconnect_socket(  # noqa: PLR0913
     core: AsyncClientCore,
     plan: ChannelPlan[SendT, RecvT],
@@ -891,8 +885,11 @@ async def aconnect_socket(  # noqa: PLR0913
     ws_options: object = None,
     options: object = None,
     session_options: object = None,
-) -> AsyncWebSocketSession[SendT, RecvT]:
-    """Open a helper's WebSocket with asyncio, returning once its handshake got a valid 101."""
+) -> AsyncGenerator[AsyncWebSocketSession[SendT, RecvT], None]:
+    """Open a helper's WebSocket with asyncio for one block, entered once its handshake got a valid 101.
+
+    The session runs in the task that enters the block and closes when it leaves.
+    """
     limits = _limits(core, plan, ws_options, options, session_options)
     session = _session(limits)
     response, call, upgraded = await core.open_socket(
@@ -906,5 +903,5 @@ async def aconnect_socket(  # noqa: PLR0913
         accept=partial(_negotiated, plan.subprotocols),
     )
     opened = AsyncWebSocketSession(plan, limits, session, response, call, upgraded)
-    await opened._start()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return opened
+    async with opened._opened():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        yield opened
