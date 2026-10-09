@@ -334,7 +334,7 @@ class FinalModelSymbol:
     """Identify a real emitted declaration without retaining its generation graph.
 
     `source` is the path of the schema the declaration is generated from, and `discriminator` the one the schema of a
-    union that reuse replaced with an equal union declares.
+    union that reuse replaced with an equal union declares. An enum's `value_types` are the JSON types of its values.
     """
 
     id: SymbolId
@@ -353,6 +353,7 @@ class FinalModelSymbol:
     values: tuple[LiteralScalar | None, ...] = ()
     source: str = ""
     discriminator: UnionDiscriminator | None = None
+    value_types: tuple[str, ...] = ()
 
 
 BindingReason: TypeAlias = Literal[
