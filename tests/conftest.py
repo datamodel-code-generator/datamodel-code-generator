@@ -1333,6 +1333,7 @@ def _inline_snapshot_file_formats() -> None:
     register_format_alias(".py", ".txt")
     register_format_alias(".pyi", ".txt")
     register_format_alias(".snapshot", ".txt")
+    register_format_alias(".md", ".txt")
 
 
 @pytest.fixture(scope="session")

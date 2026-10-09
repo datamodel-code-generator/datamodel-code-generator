@@ -18,7 +18,7 @@ from tests.conftest import (
 from tests.data.python.client_generation import (
     client_api_report,
     client_config_report,
-    client_documentation_report,
+    client_documents,
     client_helper_spelling_report,
     client_input_report,
     client_ordinary_models,
@@ -275,10 +275,8 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
     assert_output(report, EXPECTED / f"{expected}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
-    assert_output(
-        client_documentation_report(case, tmp_path / "documentation", builtin_sources=builtin_sources),
-        EXPECTED / "documentation" / f"{expected}.txt",
-    )
+    for path, content in client_documents(case, tmp_path / "documentation", builtin_sources=builtin_sources).items():
+        assert_output(content, EXPECTED / "packages" / expected / "pydantic_v2_BaseModel" / path)
 
 
 @pytest.mark.parametrize(
@@ -323,7 +321,8 @@ def test_client_helper_spellings(first: str, second: str, expected: str, tmp_pat
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, and documentation ownership visible."""
-    assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")
+    for path, content in client_documents(case, tmp_path).items():
+        assert_output(content, EXPECTED / "packages" / case / "pydantic_v2_BaseModel" / path)
 
 
 @pytest.mark.parametrize(

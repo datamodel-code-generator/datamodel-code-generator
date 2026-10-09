@@ -593,7 +593,16 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: (
                 "\n"
-                + blocks(EXPECTED_CLIENT / "documentation" / "caching.txt", "`fetch` returns a `CacheResult`")
+                + blocks(
+                    EXPECTED_CLIENT
+                    / "packages"
+                    / "caching"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "_generated_docs"
+                    / "runtime.md",
+                    "`fetch` returns a `CacheResult`",
+                )
                 + "\n"
             ),
         ),

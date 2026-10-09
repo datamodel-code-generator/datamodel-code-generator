@@ -622,24 +622,15 @@ def client_input_report(case_name: str, root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def client_documentation_report(case_name: str, root: Path, *, builtin_sources: bool = False) -> str:
-    """Report generated Markdown and packaging files for a finalized client selection.
+def client_documents(case_name: str, root: Path, *, builtin_sources: bool = False) -> dict[str, str]:
+    """Render a finalized client selection and return its generated Markdown and packaging files by path.
 
     With builtin_sources, the files render from a copy of the builtin client templates, as in `client_render`.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     documents: dict[str, str] = {}
-    lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents, builtin_sources=builtin_sources)
-    return (
-        "\n"
-        .join((
-            *lines,
-            *(f"\n# artifact {path}\n{content}" for path, content in documents.items()),
-        ))
-        .replace(root.resolve().as_posix(), "<root>")
-        .rstrip("\n")
-        + "\n"
-    )
+    _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents, builtin_sources=builtin_sources)
+    return documents
 
 
 def _setting(value: object, root: Path) -> str:
