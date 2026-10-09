@@ -259,7 +259,8 @@ nothing but the model metadata and a remote lock update, and returns `GeneratedM
 file, each under the path its import path implies: `server_model_package="models"` gives `("models.py",)`, or
 `("models", "__init__.py")` and the other modules of modular models, and `server_package="server"` gives
 `("server", "application.py")`, `("server", "README.md")`, and so on. These are the files a run with `output` and
-`server_output` in the working directory writes; `server_output` is not used. `load_pyproject_config()` takes the
+`server_output` in the working directory writes; `server_output` is not used. The run renders the files in a private
+directory of the working directory, which it removes afterwards, so the working directory must be writable. `load_pyproject_config()` takes the
 server and client keys of `pyproject.toml` too, so a config it loads with `overrides={"output": None}` returns the
 files of the configured run.
 

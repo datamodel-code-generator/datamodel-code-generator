@@ -127,7 +127,8 @@ def test_generate_server(form: str, tmp_path: Path, monkeypatch: pytest.MonkeyPa
         case _:
             (tmp_path / "pyproject.toml").write_text(
                 '[tool.datamodel-codegen]\noutput = "models.py"\ngenerate-server = "fastapi"\n'
-                'server-output = "server"\nserver-package = "server"\nserver-model-package = "models"\n',
+                'server-output = "server"\nserver-package = "server"\nserver-model-package = "models"\n'
+                "server-router-names = '{}'\n",
                 encoding="utf-8",
             )
             (elsewhere := tmp_path / "elsewhere").mkdir()
@@ -237,6 +238,58 @@ def test_generate_target_errors(options: dict[str, Any], message: str, tmp_path:
         },
     )
     assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
+
+
+def test_generate_server_lock_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Refuse a lock update inside the server output, as a lock inside the model output is refused."""
+    monkeypatch.chdir(tmp_path)
+    source, server = _server(tmp_path), tmp_path / "server"
+    run_generate_and_assert(
+        input_=source,
+        expected_error=Error,
+        expected_error_match=f"^{re.escape(f'Server output and Remote lock paths must not overlap: {server}')}$",
+        **MODELS,
+        **SERVER,
+        output=Path("models.py"),
+        server_output=Path("server"),
+        update_lock=True,
+        lockfile=Path("server", "api.lock"),
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
+
+
+@pytest.mark.parametrize(
+    ("model_package", "output", "message"),
+    [
+        (
+            "server.application",
+            "server/application.py",
+            "server/application.py: Two generated files resolve to the same path",
+        ),
+        ("server", "server.py", "server.py: The module has the name of a generated package directory beside it"),
+        (
+            "server.routers",
+            "server/routers.py",
+            "server/routers.py: The module has the name of a generated package directory beside it",
+        ),
+    ],
+    ids=["same-path", "package-name", "subpackage-name"],
+)
+@pytest.mark.parametrize("written", [False, True])
+def test_generate_server_collisions(
+    model_package: str, output: str, message: str, written: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse models that collide with the package, naming them alike whether the run writes the files or not."""
+    monkeypatch.chdir(tmp_path)
+    run_generate_and_assert(
+        input_=_server(tmp_path),
+        expected_error=Error,
+        expected_error_match=f"^{re.escape(message)}$",
+        **MODELS,
+        **{**SERVER, "server_model_package": model_package},
+        **({"output": Path(output), "server_output": Path("server")} if written else {}),
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
 
 
 def test_generate_target_input_errors(tmp_path: Path) -> None:

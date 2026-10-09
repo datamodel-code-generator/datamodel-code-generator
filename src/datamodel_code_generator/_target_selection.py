@@ -25,9 +25,15 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.target import FastAPITarget
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
+    from datamodel_code_generator.json_config import JsonConfigFieldName
 
 _SERVER_CHOICES: Final = ("layout", "handler_mode", "include_request", "body_mode")
-_OPERATION_SETTINGS: Final = ("handler_modes", "body_modes", "operation_names", "parameter_names")
+_OPERATION_SETTINGS: Final = (
+    "server_handler_modes",
+    "server_body_modes",
+    "server_operation_names",
+    "server_parameter_names",
+)
 _CLIENT_CHOICES: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
 _INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 
@@ -37,7 +43,7 @@ def _plain(value: Any) -> Any:
     return value.value if isinstance(value, Enum) else value
 
 
-def _json(config: Any, field: str) -> Any:
+def _json(config: Any, field: JsonConfigFieldName) -> Any:
     """Return a JSON-shaped setting validated like its command-line form, or None while it is unset."""
     if (value := getattr(config, field)) is None:
         return None
@@ -62,7 +68,7 @@ def target_of(
     return _client(config, base, config.client_output if output is None else output)
 
 
-def _server(config: Any, base: Callable[[str], Path], output: Path | None) -> tuple[FastAPITarget, FastAPIConfig]:
+def _server(config: Any, base: Callable[[str], Path], output: Path) -> tuple[FastAPITarget, FastAPIConfig]:
     from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
@@ -71,9 +77,10 @@ def _server(config: Any, base: Callable[[str], Path], output: Path | None) -> tu
     }
     if (router_names := _json(config, "server_router_names")) is not None:
         values["router_names"] = router_names
-    for name in _OPERATION_SETTINGS:
-        if (entries := _json(config, field := f"server_{name}")) is not None:
-            values[name] = {_operation(key, base(field)): value for key, value in entries.items()}
+    for field in _OPERATION_SETTINGS:
+        if (entries := _json(config, field)) is not None:
+            root = base(field)
+            values[field.removeprefix("server_")] = {_operation(key, root): value for key, value in entries.items()}
     if (responses := _json(config, "server_primary_responses")) is not None:
         root = base("server_primary_responses")
         values["primary_responses"] = {
@@ -85,9 +92,7 @@ def _server(config: Any, base: Callable[[str], Path], output: Path | None) -> tu
     )
 
 
-def _client(
-    config: Any, base: Callable[[str], Path], output: Path | None
-) -> tuple[ClientTarget, ClientGenerationConfig]:
+def _client(config: Any, base: Callable[[str], Path], output: Path) -> tuple[ClientTarget, ClientGenerationConfig]:
     from datamodel_code_generator._client.config import (  # noqa: PLC0415
         ClientGenerationConfig,
         ResourceName,
@@ -200,9 +205,18 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
         for field in ("settings_path", "http_local_ref_path"):
             if (path := getattr(config, field)) is not None and not path.expanduser().is_absolute():
                 updates[field] = cwd / path.expanduser()
-        planned = plan_target(
-            input_, model_config=config.model_copy(update=updates), config=target, generator=generator
-        )
+        try:
+            planned = plan_target(
+                input_,
+                model_config=config.model_copy(update=updates),
+                config=target,
+                generator=generator,
+                models_module=True,
+            )
+        except APIGenerationError as error:
+            if (staged := _staged(error, root.relative_to(cwd).as_posix())) is error:
+                raise
+            raise staged from None
         artifacts = planned.project.artifacts
         publish_target(
             replace(
@@ -214,16 +228,22 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
             )
         )
         return {
-            _module_key(item, root, models): _text(item, config.encoding)
+            item.path.relative_to(root).parts: _text(item, config.encoding)
             for item in artifacts
             if item.kind in {"model", "target"}
         }
 
 
-def _module_key(artifact: GeneratedArtifact, root: Path, models: Path) -> tuple[str, ...]:
-    """Return the path of a rendered file under the source root, naming a single models module by its import path."""
-    parts = artifact.path.relative_to(root).parts
-    return (*parts[:-1], f"{parts[-1]}.py") if artifact.path == models else parts
+def _staged(error: APIGenerationError, root: str) -> APIGenerationError:
+    """Name the files of a failed render by their paths under the private directory, as the returned keys name them."""
+    prefix = f"{root}/"
+    diagnostics = tuple(
+        replace(item, artifact_path=path.removeprefix(prefix))
+        if (path := item.artifact_path) is not None and path.startswith(prefix)
+        else item
+        for item in error.diagnostics
+    )
+    return error if diagnostics == error.diagnostics else APIGenerationError(diagnostics)
 
 
 def _text(artifact: GeneratedArtifact, encoding: str) -> str:
