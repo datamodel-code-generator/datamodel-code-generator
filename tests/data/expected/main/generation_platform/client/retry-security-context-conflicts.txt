@@ -1,6 +1,3 @@
 # retry-security-context-conflicts
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_CONFLICT config operations[0].runtime.idempotency.header_name /paths/~1actual-header/post: The idempotency header 'X-Idempotency' of POST /actual-header already has a request owner
-  E_CONFIG_CONFLICT config operations[1].runtime.idempotency.header_name /paths/~1aliased-header/post: The idempotency header 'X-Idempotency' of POST /aliased-header already has a request owner
-  E_CONFIG_CONFLICT config operations[2].runtime.idempotency.header_name /paths/~1external-query/post: The idempotency header 'X-Idempotency' of POST /external-query already has a request owner
+  Error: --client-operations[0].runtime.idempotency.header_name: The idempotency header 'X-Idempotency' of POST /actual-header already has a request owner; --client-operations[1].runtime.idempotency.header_name: The idempotency header 'X-Idempotency' of POST /aliased-header already has a request owner; --client-operations[2].runtime.idempotency.header_name: The idempotency header 'X-Idempotency' of POST /external-query already has a request owner

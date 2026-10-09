@@ -1,10 +1,8 @@
 # validation
 render
   Error: The fastapi target needs --output
-  E_CONFIG_VALUE error config model_config.output: The fastapi target needs model_config.output
 render
   Error: --output-model-type: The fastapi target does not support 'dataclasses.dataclass'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-  E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not support 'dataclasses.dataclass'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 render
   target=fastapi schema_version=1
   write model models.py
