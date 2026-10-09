@@ -98,7 +98,7 @@ class GetItems:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(plan_oas30_models.Item),
+                model=plan_oas30_models.Item,
             ),
         },
     )

@@ -732,7 +732,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> Group:
         if _body_status(spec, response.status) and (media := default_media(response)) is not None:
             entries.append(("media_type=", repr(media.media_type)))
             if media.kind != "binary" and media.use is not None and media.use.type is not None:
-                entries.append(("adapter=", _adapter(module, media.use.type)))
+                entries.append(("model=", module.annotation(media.use.type)))
         declared = Group(f"{module.local('_runtime.server.responses', 'Declared')}(", tuple(entries), ")")
         responses.append((f"{response.status!r}: ", declared))
     items: list[tuple[str, Doc]] = [("responses=", Group("{", tuple(responses), "}"))]

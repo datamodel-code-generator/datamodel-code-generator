@@ -10,7 +10,6 @@ from typing import Final, TypedDict
 
 import models
 from fastapi import params
-from pydantic import TypeAdapter
 
 from .._runtime.server.responses import Declared, OperationResponses
 
@@ -30,10 +29,7 @@ class ListPets:
 
     RESPONSES: Final = OperationResponses(
         responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.PetsResponse),
-            ),
+            '200': Declared(media_type='application/json', model=models.PetsResponse),
         },
     )
 
@@ -42,12 +38,7 @@ class CreatePet:
     """Plans of the create_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '201': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Pet),
-            ),
-        },
+        responses={'201': Declared(media_type='application/json', model=models.Pet)},
     )
 
 
@@ -58,7 +49,7 @@ class ListOwners:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(models.FieldOwnersGetResponse),
+                model=models.FieldOwnersGetResponse,
             ),
         },
     )

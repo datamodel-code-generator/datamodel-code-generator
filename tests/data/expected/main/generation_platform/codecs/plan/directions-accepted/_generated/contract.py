@@ -10,7 +10,6 @@ from typing import Final, TypedDict
 
 import plan_directions_accepted_models
 from fastapi import params
-from pydantic import TypeAdapter
 
 from .._runtime.server.responses import Declared, OperationResponses
 
@@ -30,7 +29,7 @@ class PostItems:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(plan_directions_accepted_models.Item),
+                model=plan_directions_accepted_models.Item,
             ),
         },
     )

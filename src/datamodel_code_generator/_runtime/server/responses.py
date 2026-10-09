@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 from collections.abc import Coroutine, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Final, Generic
 
 from fastapi.encoders import jsonable_encoder
@@ -34,10 +34,22 @@ class HTTPResult(Generic[BodyT_co]):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Declared:
-    """One declared response: its default media type, and the adapter of the model its body takes."""
+    """One declared response: its default media type, and the model its body takes.
+
+    The model's adapter is built when the response first sends a body; a concurrent first send builds an equal one.
+    """
 
     media_type: str | None = None
-    adapter: TypeAdapter[object] | None = None
+    model: object = None
+    _adapter: TypeAdapter[object] | None = field(default=None, init=False, repr=False, compare=False)
+
+    def adapter(self) -> TypeAdapter[object] | None:
+        """Return the adapter of the body model, building and keeping it on first use, or None without a model."""
+        if (adapter := self._adapter) is None and (model := self.model) is not None:
+            built: TypeAdapter[object] = TypeAdapter(model)
+            object.__setattr__(self, "_adapter", built)  # noqa: PLC2801 - Keep the adapter on the frozen value.
+            return built
+        return adapter
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -92,7 +104,7 @@ def _unawaited(body: object) -> TypeError:
 
 def _content(declared: Declared, media_type: str, body: object) -> bytes:
     json_media = media_kind(media_type) == "json"
-    if (adapter := declared.adapter) is None:
+    if (adapter := declared.adapter()) is None:
         payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
     else:
         try:
