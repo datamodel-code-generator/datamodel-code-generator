@@ -26,7 +26,6 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.errors import SDKError
 from ..client.logical import Delivery, LogicalCallContext
 from ..client.native import request_fields, wire_fields
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
@@ -392,13 +391,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             accept=operation.responses.accept,
         )
         if operation.security is not None:
-            try:
-                self._bind_auth(call)
-            except SDKError as error:
-                failure = call.failure(error)
-                raise failure from failure.__cause__
-        if call.placements:
-            call.initial_origin = request_origin(str(request.url))
+            self._bind_auth(call)
         headers, queries = self._secret_positions()
         return CacheRequest(settings, request, call, headers, queries)
 

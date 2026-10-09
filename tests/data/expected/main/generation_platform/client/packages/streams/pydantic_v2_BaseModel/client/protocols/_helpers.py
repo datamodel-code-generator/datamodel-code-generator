@@ -16,7 +16,7 @@ from models import Message as _dcg_type_0
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, Unset
 from . import StreamOptions, _plans
 
 
@@ -88,7 +88,6 @@ class EventsMessagesSse:
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_0]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -97,7 +96,6 @@ class EventsMessagesSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -115,7 +113,6 @@ class EventsTypedSse:
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1 | _dcg_type_2 | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -124,7 +121,6 @@ class EventsTypedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -142,7 +138,6 @@ class EventsTaggedSse:
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1 | _dcg_type_2]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -151,7 +146,6 @@ class EventsTaggedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -169,7 +163,6 @@ class FeedAllSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_0]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
@@ -180,5 +173,4 @@ class FeedAllSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

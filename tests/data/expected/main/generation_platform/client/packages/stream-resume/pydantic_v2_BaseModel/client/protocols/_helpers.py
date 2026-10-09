@@ -27,7 +27,7 @@ from .._runtime.protocols.streams import (
     open_events,
     resume_events,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, Unset
 from . import StreamOptions, _plans
 
 
@@ -220,7 +220,6 @@ class SearchesTicksSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1]:
         """Open the event stream of POST /search-feed, returning once its response is a declared success."""
         return open_events(
@@ -231,7 +230,6 @@ class SearchesTicksSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -243,7 +241,6 @@ class SearchesTicksSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -255,7 +252,6 @@ class SearchesTicksSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -274,7 +270,6 @@ class FeedLiveSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
@@ -285,7 +280,6 @@ class FeedLiveSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -297,7 +291,6 @@ class FeedLiveSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -309,7 +302,6 @@ class FeedLiveSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -328,7 +320,6 @@ class EventsLiveSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_2]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -337,7 +328,6 @@ class EventsLiveSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -349,7 +339,6 @@ class EventsLiveSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_2]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -359,7 +348,6 @@ class EventsLiveSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -378,7 +366,6 @@ class EventsPlainSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_2]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -387,7 +374,6 @@ class EventsPlainSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -406,7 +392,6 @@ class EventsTrackedSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_3 | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -415,7 +400,6 @@ class EventsTrackedSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -424,7 +408,6 @@ class EventsTrackedSse:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_3 | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -433,7 +416,6 @@ class EventsTrackedSse:
             state,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -452,7 +434,6 @@ class RoomsLiveSse:
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_2]:
         """Open the event stream of GET /rooms/{room}{shard}, returning once its response is a declared success."""
         return open_events(
@@ -461,7 +442,6 @@ class RoomsLiveSse:
             (room, shard, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -473,7 +453,6 @@ class RoomsLiveSse:
         last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_2]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -483,7 +462,6 @@ class RoomsLiveSse:
             (room, shard, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -500,7 +478,6 @@ class RecordsAllNdjson:
         after: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_4]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
@@ -509,7 +486,6 @@ class RecordsAllNdjson:
             (after,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -519,7 +495,6 @@ class RecordsAllNdjson:
         after: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_4]:
         """Reopen the NDJSON stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -529,7 +504,6 @@ class RecordsAllNdjson:
             (after,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -548,7 +522,6 @@ class FeedTicksSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1 | UnknownEvent]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
@@ -559,7 +532,6 @@ class FeedTicksSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -571,7 +543,6 @@ class FeedTicksSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_1 | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -583,7 +554,6 @@ class FeedTicksSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -602,7 +572,6 @@ class TopicsMarksSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_3 | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -611,7 +580,6 @@ class TopicsMarksSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -623,7 +591,6 @@ class TopicsMarksSse:
         session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_3 | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -633,7 +600,6 @@ class TopicsMarksSse:
             (topic, last_event_id, session),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -652,7 +618,6 @@ class MarksScopedSse:
         scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return open_events(
@@ -661,7 +626,6 @@ class MarksScopedSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -673,7 +637,6 @@ class MarksScopedSse:
         scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -683,7 +646,6 @@ class MarksScopedSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -702,7 +664,6 @@ class MarksNamedSse:
         scope: _dcg_type_7 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of GET /named-marks, returning once its response is a declared success."""
         return open_events(
@@ -711,7 +672,6 @@ class MarksNamedSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -723,7 +683,6 @@ class MarksNamedSse:
         scope: _dcg_type_7 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -733,7 +692,6 @@ class MarksNamedSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -752,7 +710,6 @@ class MarksDeepSse:
         scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return open_events(
@@ -761,7 +718,6 @@ class MarksDeepSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -773,7 +729,6 @@ class MarksDeepSse:
         scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -783,7 +738,6 @@ class MarksDeepSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -802,7 +756,6 @@ class MarksBoundSse:
         scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return open_events(
@@ -811,7 +764,6 @@ class MarksBoundSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -823,7 +775,6 @@ class MarksBoundSse:
         scope: _dcg_type_5 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -833,7 +784,6 @@ class MarksBoundSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -852,7 +802,6 @@ class MarksDeepboundSse:
         scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return open_events(
@@ -861,7 +810,6 @@ class MarksDeepboundSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -873,7 +821,6 @@ class MarksDeepboundSse:
         scope: _dcg_type_8 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -883,7 +830,6 @@ class MarksDeepboundSse:
             (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -902,7 +848,6 @@ class SearchesKeyedSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Open the event stream of POST /search-feed, returning once its response is a declared success."""
         return open_events(
@@ -913,7 +858,6 @@ class SearchesKeyedSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -925,7 +869,6 @@ class SearchesKeyedSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[_dcg_type_6]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -937,5 +880,4 @@ class SearchesKeyedSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

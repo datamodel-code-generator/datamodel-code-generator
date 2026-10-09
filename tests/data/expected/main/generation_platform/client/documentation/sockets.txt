@@ -352,11 +352,9 @@ A WebSocket helper's `connect` is one session. On `Client` it returns the sessio
 task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
 sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
 transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
-raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
-for the helper, then the default below. The session types are imported from:
-
-- `client.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
-- `client.options`: `SessionOptions` and `ProtocolClientOptions`
+raises the operation's `APIStatusError`. Each limit comes from the call's `ws_options`, then the client's
+`helper_defaults` for the helper, then the default below. The session types are imported from `client.protocols`:
+`WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`.
 
 | Limit | Effective default |
 |---|---|
@@ -364,7 +362,7 @@ for the helper, then the default below. The session types are imported from:
 | idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 
 The connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,

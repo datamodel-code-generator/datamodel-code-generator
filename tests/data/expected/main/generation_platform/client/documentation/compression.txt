@@ -524,18 +524,16 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 ## Pagination sessions
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
-total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
-another kind's options, fail construction. The session types are imported from:
-
-- `client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
-- `client.options`: `SessionOptions`
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
 binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
@@ -549,8 +547,8 @@ A next-URL or Link helper sends the first request as the caller gives it and eac
 gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
-and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
-else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+and name an HTTP or HTTPS URL at the server's origin or at one the client's `allowed_origins` lists; anything else
+raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
 headers or query fields the package's security schemes name, and the client's credentials are placed only at the
 server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
@@ -574,18 +572,16 @@ continuation.
 
 A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
 and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
-session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
-
-- `client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`
-- `client.options`: `SessionOptions`
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
 
 | Limit | Effective default |
 |---|---|
 | polls per session | 1000; None removes it |
 | poll interval | the helper's declared interval, 1 second unless declared |
 | allowed wait before a poll | 60 seconds; None removes it |
-| session total timeout | 600 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
@@ -632,17 +628,14 @@ polls again; closing sends nothing.
 An SSE helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
-options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
-from:
-
-- `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
-  `UnknownEvent`
-- `client.options`: `SessionOptions`
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
 
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 | reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
 | reconnection wait | 60 seconds; None removes it |
 

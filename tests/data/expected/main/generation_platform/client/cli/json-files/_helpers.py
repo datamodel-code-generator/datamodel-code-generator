@@ -20,7 +20,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, Unset
 from ..types.pets import FindAllResponse
 from . import PaginationOptions, _plans
 
@@ -65,7 +65,6 @@ class PetsAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, FindAllResponse]:
         """Fetch the first page of GET /pets."""
         return first_page(
@@ -74,7 +73,6 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -84,7 +82,6 @@ class PetsAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, FindAllResponse]:
         """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -93,7 +90,6 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -102,7 +98,6 @@ class PetsAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[_dcg_type_0, FindAllResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -111,7 +106,6 @@ class PetsAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -122,7 +116,6 @@ class PetsAllPagination:
         cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[_dcg_type_0, FindAllResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -132,5 +125,4 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )

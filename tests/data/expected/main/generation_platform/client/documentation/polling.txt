@@ -446,18 +446,16 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 
 A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
 and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
-session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
-
-- `client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`
-- `client.options`: `SessionOptions`
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
 
 | Limit | Effective default |
 |---|---|
 | polls per session | 1000; None removes it |
 | poll interval | the helper's declared interval, 1 second unless declared |
 | allowed wait before a poll | 60 seconds; None removes it |
-| session total timeout | 600 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises

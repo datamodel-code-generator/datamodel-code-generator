@@ -441,7 +441,7 @@ refused checkpoints and sources
   resume with a naive expiry ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with an expiry with a Z suffix instead of an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with a path value of dots and an iterator for a source ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/id')] value
-a checkpoint resumed under another security partition, with that client's own credentials
+a checkpoint resumed by another client, with that client's own credentials
   > HEAD https://api.example.com/files/u36
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   resume = UploadHandle(phase='uploading', confirmed_bytes=8, total_bytes=10)

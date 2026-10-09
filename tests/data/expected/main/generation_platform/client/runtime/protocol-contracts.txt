@@ -1,9 +1,9 @@
 # pets-protocols pydantic_v2.BaseModel
   client imports load protocols=[]
-  dir lists lazy names=(True, True, True)
+  dir lists lazy names=(True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, False)
+  lazy names cached=(True, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -13,7 +13,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=[]
+  configured client loads protocols=['_runtime.protocols.options']
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -30,18 +30,12 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
-  PollOptions fields=('max_polls', 'interval', 'max_wait')
-  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
-  ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
-  ProtocolDefaults fields=('session', 'options')
-  ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -61,9 +55,6 @@
   body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
   origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
   options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
-  security positional ! TypeError: ProtocolSecurityContext.__init__() takes 1 positional argument but 2 were given []
-  defaults positional ! TypeError: ProtocolDefaults.__init__() takes 1 positional argument but 2 were given []
-  client options positional ! TypeError: ProtocolClientOptions.__init__() takes 1 positional argument but 2 were given []
   equal selectors = True
   equal status selectors = True
   hashable targets = 1
@@ -209,6 +200,17 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
   PollOptions.max_polls 1 = 1
@@ -239,6 +241,17 @@
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -274,76 +287,42 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
-  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
-  stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
-  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
-  security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
-  security origins=tuple identity=True
-  security default origins = ()
-  security frozen ! FrozenInstanceError: cannot assign to field 'credential_partition' []
-  security missing partition ! TypeError: ProtocolSecurityContext.__init__() missing 1 required keyword-only argument: 'credential_partition' []
-  security empty partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security newline partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security delete partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security C1 partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security unicode partition = ProtocolSecurityContext(allowed_origins=())
-  security origin string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins generator ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
-  defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
-  defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
-  protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
-  protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
-  helper name 'users' = ('users',)
-  helper name 'users.all' = ('users.all',)
-  helper name '_private.x1' = ('_private.x1',)
-  helper name 'v2.users.list_all' = ('v2.users.list_all',)
-  helper name 'match.case' = ('match.case',)
-  helper name 'élèves' = ('élèves',)
-  helper name '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '.users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users..all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '1users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users-all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 3 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options security string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options security options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options defaults list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
-  request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
   unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.options' has no attribute 'MissingProtocolType' []
-  options dir = ['ProtocolClientOptions']
+  options dir = []
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured client list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
@@ -352,17 +331,16 @@
   configured view list = FieldPetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  anonymous protocols list = FieldPetsGetResponse(root=[])
-  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
+  default helper settings list = FieldPetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = FieldPetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
 # pets-protocols pydantic_v2.dataclass
   client imports load protocols=[]
-  dir lists lazy names=(True, True, True)
+  dir lists lazy names=(True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, False)
+  lazy names cached=(True, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -372,7 +350,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=[]
+  configured client loads protocols=['_runtime.protocols.options']
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -389,18 +367,12 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
-  PollOptions fields=('max_polls', 'interval', 'max_wait')
-  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
-  ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
-  ProtocolDefaults fields=('session', 'options')
-  ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -420,9 +392,6 @@
   body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
   origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
   options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
-  security positional ! TypeError: ProtocolSecurityContext.__init__() takes 1 positional argument but 2 were given []
-  defaults positional ! TypeError: ProtocolDefaults.__init__() takes 1 positional argument but 2 were given []
-  client options positional ! TypeError: ProtocolClientOptions.__init__() takes 1 positional argument but 2 were given []
   equal selectors = True
   equal status selectors = True
   hashable targets = 1
@@ -568,6 +537,17 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
   PollOptions.max_polls 1 = 1
@@ -598,6 +578,17 @@
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -633,76 +624,42 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
-  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
-  stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
-  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
-  security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
-  security origins=tuple identity=True
-  security default origins = ()
-  security frozen ! FrozenInstanceError: cannot assign to field 'credential_partition' []
-  security missing partition ! TypeError: ProtocolSecurityContext.__init__() missing 1 required keyword-only argument: 'credential_partition' []
-  security empty partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security newline partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security delete partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security C1 partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security unicode partition = ProtocolSecurityContext(allowed_origins=())
-  security origin string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins generator ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
-  defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
-  defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
-  protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
-  protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
-  helper name 'users' = ('users',)
-  helper name 'users.all' = ('users.all',)
-  helper name '_private.x1' = ('_private.x1',)
-  helper name 'v2.users.list_all' = ('v2.users.list_all',)
-  helper name 'match.case' = ('match.case',)
-  helper name 'élèves' = ('élèves',)
-  helper name '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '.users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users..all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '1users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users-all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 3 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options security string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options security options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options defaults list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
-  request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
   unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.options' has no attribute 'MissingProtocolType' []
-  options dir = ['ProtocolClientOptions']
+  options dir = []
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured client list = [Pet(id=1, name='cat', tag=None)]
@@ -711,17 +668,16 @@
   configured view list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  anonymous protocols list = []
-  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
+  default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols dataclasses.dataclass
   client imports load protocols=[]
-  dir lists lazy names=(True, True, True)
+  dir lists lazy names=(True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, False)
+  lazy names cached=(True, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -731,7 +687,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=[]
+  configured client loads protocols=['_runtime.protocols.options']
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -748,18 +704,12 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
-  PollOptions fields=('max_polls', 'interval', 'max_wait')
-  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
-  ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
-  ProtocolDefaults fields=('session', 'options')
-  ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -779,9 +729,6 @@
   body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
   origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
   options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
-  security positional ! TypeError: ProtocolSecurityContext.__init__() takes 1 positional argument but 2 were given []
-  defaults positional ! TypeError: ProtocolDefaults.__init__() takes 1 positional argument but 2 were given []
-  client options positional ! TypeError: ProtocolClientOptions.__init__() takes 1 positional argument but 2 were given []
   equal selectors = True
   equal status selectors = True
   hashable targets = 1
@@ -927,6 +874,17 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
   PollOptions.max_polls 1 = 1
@@ -957,6 +915,17 @@
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -992,76 +961,42 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
-  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
-  stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
-  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
-  security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
-  security origins=tuple identity=True
-  security default origins = ()
-  security frozen ! FrozenInstanceError: cannot assign to field 'credential_partition' []
-  security missing partition ! TypeError: ProtocolSecurityContext.__init__() missing 1 required keyword-only argument: 'credential_partition' []
-  security empty partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security newline partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security delete partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security C1 partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security unicode partition = ProtocolSecurityContext(allowed_origins=())
-  security origin string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins generator ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
-  defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
-  defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
-  protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
-  protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
-  helper name 'users' = ('users',)
-  helper name 'users.all' = ('users.all',)
-  helper name '_private.x1' = ('_private.x1',)
-  helper name 'v2.users.list_all' = ('v2.users.list_all',)
-  helper name 'match.case' = ('match.case',)
-  helper name 'élèves' = ('élèves',)
-  helper name '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '.users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users..all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '1users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users-all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 3 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options security string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options security options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options defaults list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
-  request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
   unknown options attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.options' has no attribute 'MissingProtocolType' []
-  options dir = ['ProtocolClientOptions']
+  options dir = []
   unknown errors attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured client list = [Pet(id=1, name='cat', tag=None)]
@@ -1070,17 +1005,16 @@
   configured view list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  anonymous protocols list = []
-  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
+  default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols typing.TypedDict
   client imports load protocols=[]
-  dir lists lazy names=(True, True, True)
+  dir lists lazy names=(True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, False)
+  lazy names cached=(True, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1090,7 +1024,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=[]
+  configured client loads protocols=['_runtime.protocols.options']
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -1107,18 +1041,12 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
-  PollOptions fields=('max_polls', 'interval', 'max_wait')
-  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
-  ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
-  ProtocolDefaults fields=('session', 'options')
-  ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -1138,9 +1066,6 @@
   body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
   origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
   options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
-  security positional ! TypeError: ProtocolSecurityContext.__init__() takes 1 positional argument but 2 were given []
-  defaults positional ! TypeError: ProtocolDefaults.__init__() takes 1 positional argument but 2 were given []
-  client options positional ! TypeError: ProtocolClientOptions.__init__() takes 1 positional argument but 2 were given []
   equal selectors = True
   equal status selectors = True
   hashable targets = 1
@@ -1286,6 +1211,17 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
   PollOptions.max_polls 1 = 1
@@ -1316,6 +1252,17 @@
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -1351,76 +1298,42 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
-  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
-  stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
-  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
-  security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
-  security origins=tuple identity=True
-  security default origins = ()
-  security frozen ! FrozenInstanceError: cannot assign to field 'credential_partition' []
-  security missing partition ! TypeError: ProtocolSecurityContext.__init__() missing 1 required keyword-only argument: 'credential_partition' []
-  security empty partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security newline partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security delete partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security C1 partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security unicode partition = ProtocolSecurityContext(allowed_origins=())
-  security origin string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins generator ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
-  defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
-  defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
-  protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
-  protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
-  helper name 'users' = ('users',)
-  helper name 'users.all' = ('users.all',)
-  helper name '_private.x1' = ('_private.x1',)
-  helper name 'v2.users.list_all' = ('v2.users.list_all',)
-  helper name 'match.case' = ('match.case',)
-  helper name 'élèves' = ('élèves',)
-  helper name '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '.users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users..all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '1users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users-all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 3 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options security string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options security options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options defaults list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
-  request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
   unknown options attribute ! AttributeError: module 'pets_protocols_typing_typeddict.options' has no attribute 'MissingProtocolType' []
-  options dir = ['ProtocolClientOptions']
+  options dir = []
   unknown errors attribute ! AttributeError: module 'pets_protocols_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured client list = [{'id': 1, 'name': 'cat'}]
@@ -1429,17 +1342,16 @@
   configured view list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  anonymous protocols list = []
-  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
+  default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [{'id': 2, 'name': 'dog'}]
 # pets-protocols msgspec.Struct
   client imports load protocols=[]
-  dir lists lazy names=(True, True, True)
+  dir lists lazy names=(True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, False)
+  lazy names cached=(True, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1449,7 +1361,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=[]
+  configured client loads protocols=['_runtime.protocols.options']
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -1466,18 +1378,12 @@
   Origin keyword-only=True hints=('scheme', 'host', 'port')
   PollSnapshot fields=('state', 'terminal', 'data', 'response')
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
-  PaginationOptions fields=('max_pages', 'max_items')
-  PaginationOptions keyword-only=True hints=('max_pages', 'max_items')
-  PollOptions fields=('max_polls', 'interval', 'max_wait')
-  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
-  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
-  ProtocolSecurityContext fields=('credential_partition', 'allowed_origins')
-  ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
-  ProtocolDefaults fields=('session', 'options')
-  ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
@@ -1497,9 +1403,6 @@
   body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
   origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
   options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
-  security positional ! TypeError: ProtocolSecurityContext.__init__() takes 1 positional argument but 2 were given []
-  defaults positional ! TypeError: ProtocolDefaults.__init__() takes 1 positional argument but 2 were given []
-  client options positional ! TypeError: ProtocolClientOptions.__init__() takes 1 positional argument but 2 were given []
   equal selectors = True
   equal status selectors = True
   hashable targets = 1
@@ -1645,6 +1548,17 @@
   PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
   PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
   PollOptions.max_polls 1 = 1
@@ -1675,6 +1589,17 @@
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -1710,76 +1635,42 @@
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
-  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET) UNSET=True
-  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
-  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
-  stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
-  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET)
-  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None)
-  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25)
-  security repr=ProtocolSecurityContext(allowed_origins=(Origin(scheme='https', host='files.example.com', port=443),)) secret=False
-  security origins=tuple identity=True
-  security default origins = ()
-  security frozen ! FrozenInstanceError: cannot assign to field 'credential_partition' []
-  security missing partition ! TypeError: ProtocolSecurityContext.__init__() missing 1 required keyword-only argument: 'credential_partition' []
-  security empty partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security newline partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security delete partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security C1 partition ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security partition bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='credential_partition') [field_path=('credential_partition',)] invalid_value
-  security unicode partition = ProtocolSecurityContext(allowed_origins=())
-  security origin string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins generator ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security origins None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  security duplicate origins ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='allowed_origins') [field_path=('allowed_origins',)] invalid_value
-  defaults identity=True/True omitted=ProtocolDefaults(session=UNSET, options=UNSET)
-  defaults poll = ProtocolDefaults(session=UNSET, options=PollOptions(max_polls=UNSET, interval=2, max_wait=UNSET))
-  defaults stream = ProtocolDefaults(session=UNSET, options=StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=UNSET, max_reconnect_wait=UNSET))
-  defaults session None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults session request options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session') [field_path=('session',)] invalid_value
-  defaults webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  defaults options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=3.0), options=PaginationOptions(max_pages=UNSET, max_items=0)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET)
-  protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
-  protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET)
-  helper name 'users' = ('users',)
-  helper name 'users.all' = ('users.all',)
-  helper name '_private.x1' = ('_private.x1',)
-  helper name 'v2.users.list_all' = ('v2.users.list_all',)
-  helper name 'match.case' = ('match.case',)
-  helper name 'élèves' = ('élèves',)
-  helper name '' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '.users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users..all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users.class' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name '1users' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users-all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 'users all' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name 3 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  helper name None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options security string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options security options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='security') [field_path=('security',)] invalid_value
-  protocol options defaults list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
-  protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
-  request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
   unknown options attribute ! AttributeError: module 'pets_protocols_msgspec_struct.options' has no attribute 'MissingProtocolType' []
-  options dir = ['ProtocolClientOptions']
+  options dir = []
   unknown errors attribute ! AttributeError: module 'pets_protocols_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured client list = [Pet(id=1, name='cat', tag=UNSET)]
@@ -1788,8 +1679,7 @@
   configured view list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  anonymous protocols list = []
-  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
+  default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=UNSET)]

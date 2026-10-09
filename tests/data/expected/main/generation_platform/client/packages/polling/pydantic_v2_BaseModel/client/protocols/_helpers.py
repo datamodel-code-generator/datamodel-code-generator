@@ -16,7 +16,7 @@ from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.polling import LroHandle, resume_operation, start_operation
 from .._runtime.protocols.records import CancelReceipt
-from ..options import RequestOptions, SessionOptions
+from ..options import RequestOptions
 from ..types.exports import CancelExportsResponse, ExportStatusResponse
 from ..types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
 from ..types.reports import FindReportResponse, LatestReportResponse
@@ -101,7 +101,6 @@ class JobsRunPolling:
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[GetReportResponse, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -112,7 +111,6 @@ class JobsRunPolling:
             media_type=media_type,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -121,7 +119,6 @@ class JobsRunPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[GetReportResponse, GetJobResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -130,7 +127,6 @@ class JobsRunPolling:
             state,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -148,7 +144,6 @@ class JobsInlinePolling:
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[_dcg_type_1, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -159,7 +154,6 @@ class JobsInlinePolling:
             media_type=media_type,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -168,7 +162,6 @@ class JobsInlinePolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[_dcg_type_1, GetJobResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -177,7 +170,6 @@ class JobsInlinePolling:
             state,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -195,7 +187,6 @@ class JobsReportPolling:
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[FindReportResponse, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -206,7 +197,6 @@ class JobsReportPolling:
             media_type=media_type,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -215,7 +205,6 @@ class JobsReportPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[FindReportResponse, GetJobResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -224,7 +213,6 @@ class JobsReportPolling:
             state,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -240,7 +228,6 @@ class ExportsRunPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> ExportsRunHandle:
         """Create the operation of POST /exports and return the handle that polls it."""
         return start_operation(
@@ -250,7 +237,6 @@ class ExportsRunPolling:
             handle=ExportsRunHandle,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -259,7 +245,6 @@ class ExportsRunPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> ExportsRunHandle:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -269,7 +254,6 @@ class ExportsRunPolling:
             handle=ExportsRunHandle,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -295,7 +279,6 @@ class ExportsLatestPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[LatestReportResponse, ExportStatusResponse]:
         """Create the operation of POST /exports and return the handle that polls it."""
         return start_operation(
@@ -304,7 +287,6 @@ class ExportsLatestPolling:
             (),
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -313,7 +295,6 @@ class ExportsLatestPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[LatestReportResponse, ExportStatusResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -322,7 +303,6 @@ class ExportsLatestPolling:
             state,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -340,7 +320,6 @@ class JobsTrackedPolling:
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> JobsTrackedHandle:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -352,7 +331,6 @@ class JobsTrackedPolling:
             handle=JobsTrackedHandle,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -361,7 +339,6 @@ class JobsTrackedPolling:
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> JobsTrackedHandle:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return resume_operation(
@@ -371,7 +348,6 @@ class JobsTrackedPolling:
             handle=JobsTrackedHandle,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 
 

@@ -30,7 +30,7 @@
     [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: application/xml, content-length: 4] b'<a/>'
   raw bytes labeled = b'ok'
   > POST https://raw.example.com/items
-    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: multipart/mixed, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: multipart/mixed; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
   raw parts relabeled = b'ok'
   header value on two lines ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='LocalProtocolError') [operation_id='getPet', cause=LocalProtocolError("Illegal header value b'a\\r\\nb'")]
   header value on two lines retry waits []

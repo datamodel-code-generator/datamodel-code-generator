@@ -14,7 +14,7 @@ from models import ServerMessage as _dcg_type_1
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.websocket import AsyncWebSocketSession, aconnect_socket
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, Unset
 from . import WSOptions, _plans
 
 
@@ -94,7 +94,6 @@ class AsyncRoomsChatWebsocket:
         since: int | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]]:
         """Open the WebSocket of GET /rooms/{room}/socket for an async with block once its handshake got a valid 101."""
         return aconnect_socket(
@@ -103,7 +102,6 @@ class AsyncRoomsChatWebsocket:
             (room, since),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -119,7 +117,6 @@ class AsyncFeedTextWebsocket:
         *,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncWebSocketSession[str, bytes]]:
         """Open the WebSocket of GET /feed/socket for an async with block once its handshake got a valid 101."""
         return aconnect_socket(
@@ -128,7 +125,6 @@ class AsyncFeedTextWebsocket:
             (),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -145,7 +141,6 @@ class AsyncSecureChatWebsocket:
         x_trace: str | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncWebSocketSession[bytes, str]]:
         """Open the WebSocket of GET /secure/socket for an async with block once its handshake got a valid 101."""
         return aconnect_socket(
@@ -154,5 +149,4 @@ class AsyncSecureChatWebsocket:
             (x_trace,),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
