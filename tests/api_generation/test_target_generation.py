@@ -18,7 +18,7 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
-from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
+from tests.data.python.target_generation import SOURCE, target_render_report
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
@@ -239,18 +239,6 @@ def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         )
     finally:
         os.umask(mask)
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        "defaults",
-        "invalid-values",
-    ],
-)
-def test_target_config(case: str) -> None:
-    """Validate the shared target settings of the public configuration, reporting every problem in field order."""
-    assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
 
 
 def test_target_pyproject_output(

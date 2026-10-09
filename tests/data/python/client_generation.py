@@ -12,10 +12,9 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from functools import partial
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
-from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.config import (
@@ -41,18 +40,6 @@ if TYPE_CHECKING:
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
-_DEFERRED_MODULES = (
-    "datamodel_code_generator._api_generation",
-    "datamodel_code_generator._client.target",
-    "datamodel_code_generator.json_config",
-)
-_PUBLIC_NAMES_PROBE = (
-    "import json, sys\n"
-    "import datamodel_code_generator.client as client\n"
-    "for name in client.__all__:\n"
-    "    getattr(client, name)\n"
-    "print(json.dumps([name for name in sys.argv[1:] if name in sys.modules]))\n"
-)
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
@@ -179,12 +166,13 @@ def client_render_call(
 ) -> Callable[[], GeneratedProject]:
     """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
     return partial(
-        public_client.render_client,
+        render_target,
         source,
         model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
+        generator=ClientTarget(),
     )
 
 
@@ -417,46 +405,31 @@ def client_cli_modules(case_name: str, root: Path) -> tuple[str, Modules]:
 
 
 def client_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited file.
+    """Generate a client through generate(): without an output, then twice into it, then over an edited file.
 
-    The helpers are a JSON object whose documents resolve against the working directory, and the helper records
-    load from the public module on first use: a fresh interpreter that reads every public name imports neither the
-    JSON option schemas nor the generation modules.
+    The helpers are a JSON object whose documents resolve against the working directory.
     """
-    import subprocess
-    import sys
-
-    import datamodel_code_generator.client as client_api
-    from datamodel_code_generator._client import protocols
-
-    hints = {"input_": client_api.GenerationInput, "model_config": GenerateConfig, "config": ClientGenerationConfig}
-    functions = (
-        (client_api.generate_client, type(None)),
-        (client_api.render_client, client_api.GeneratedProject),
-    )
-    lines = [
-        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
-        for function, result in functions
-    ]
-    lines.append(f"records {client_api.PaginationHelper is protocols.PaginationHelper}")
-    probe = subprocess.run(
-        [sys.executable, "-c", _PUBLIC_NAMES_PROBE, *_DEFERRED_MODULES], capture_output=True, text=True, check=True
-    )
-    lines.append(f"reading every public name imports {json.loads(probe.stdout)} of {list(_DEFERRED_MODULES)}")
-    try:
-        client_api.Missing  # ruff: ignore[useless-expression]
-    except AttributeError as error:
-        lines.append(f"AttributeError: {error}")
     source = shutil.copy2(SOURCE / "cli" / "options.yaml", root / "api.yaml")
     helpers = json.loads((SOURCE / "cli" / "protocols.json").read_text(encoding="utf-8"))
     helpers["pets.all"]["operation"] = {"pointer": "/paths/~1pets/get", "document": "api.yaml"}
-    model = model_config(root / "models.py", "pydantic_v2.BaseModel", {})
-    config = client_config({"protocols": {"raw": helpers}}, root)
+    options: dict[str, Any] = {
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        "generate_client": "httpx2",
+        "client_output": root / PACKAGE,
+        "client_package": PACKAGE,
+        "client_model_package": "models",
+        "client_protocols": helpers,
+    }
     with _working_directory({"cwd": True}, root):
-        project = client_api.render_client(source, model_config=model, config=config)
-        lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+        returned = generate(source, **options)
+        lines = [f"returned without an output {sorted('/'.join(parts) for parts in returned if '_runtime' not in parts)}"]
         for _ in range(2):
-            result = client_api.generate_client(source, model_config=model, config=config)
+            result = generate(source, output=root / "models.py", **options)
             files = sorted(
                 path.relative_to(root).as_posix()
                 for path in root.rglob("*")
@@ -467,7 +440,7 @@ def client_api_report(root: Path) -> str:
         owned.write_text("# edited\n", encoding="utf-8")
         with warnings.catch_warnings(record=True) as recorded:
             warnings.simplefilter("always", UserWarning)
-            result = client_api.generate_client(source, model_config=model, config=config)
+            result = generate(source, output=root / "models.py", **options)
     restored = owned.read_bytes() == original
     lines.append(f"generate returned {result}; edited file restored {restored}; warnings {len(recorded)}")
     return "\n".join(lines) + "\n"

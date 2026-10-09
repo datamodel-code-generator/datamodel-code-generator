@@ -6,21 +6,11 @@ import json
 import re
 import shutil
 import warnings
-from dataclasses import fields
-from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime, generate
+from datamodel_code_generator import DataModelType, Error, _runtime, generate
 from datamodel_code_generator.enums import OpenAPIScope
-from datamodel_code_generator.fastapi import (
-    FastAPIConfig,
-    GeneratedProject,
-    GenerationInput,
-    OperationRef,
-    ResponseChoice,
-    generate_fastapi,
-    render_fastapi,
-)
 from datamodel_code_generator.format import Formatter
 
 if TYPE_CHECKING:
@@ -35,30 +25,6 @@ _SIZE = re.compile(r'"size":\d+')
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
-def _selector(value: object) -> object:
-    return OperationRef(**value) if isinstance(value, dict) else value
-
-
-def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
-    """Build a FastAPI configuration from JSON fixture values."""
-    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", **values}
-    converted: dict[str, Any] = {}
-    for key, value in values.items():
-        match key:
-            case "output":
-                converted[key] = root / value
-            case "primary_responses" if isinstance(value, list):
-                converted[key] = {
-                    _selector(selector): ResponseChoice(**choice) if isinstance(choice, dict) else choice
-                    for selector, choice in value
-                }
-            case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
-                converted[key] = {_selector(selector): item for selector, item in value}
-            case _:
-                converted[key] = value
-    return FastAPIConfig(**converted)
-
-
 def _copied(name: str, root: Path) -> Path:
     """Copy a fixture file or directory under the target root, so persistent paths stay relative on every drive."""
     source, target = SOURCE / name, root / name
@@ -68,17 +34,6 @@ def _copied(name: str, root: Path) -> Path:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
     return target
-
-
-def _setting(value: object, root: Path) -> str:
-    match value:
-        case tuple():
-            items = [_setting(item, root) for item in value]
-            return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-        case Path():
-            return repr(PurePosixPath(value.relative_to(root if value.is_relative_to(root) else SOURCE).as_posix()))
-        case _:
-            return repr(value)
 
 
 def server_options(case: dict[str, Any], package: str = PACKAGE, models: str = "models") -> dict[str, Any]:
@@ -176,38 +131,24 @@ def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False)
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
 
 
-def fastapi_config_report(case_name: str, root: Path) -> str:
-    """Construct one FastAPI configuration and report every setting or the ordered diagnostics."""
-    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
-    try:
-        config = fastapi_config(case, root)
-    except Error as error:
-        return f"Error: {error}\n"
-    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
-
-
 def fastapi_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, render, generate twice, then generate over an edited file."""
-    hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
-    lines = [
-        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
-        for function, result in ((generate_fastapi, type(None)), (render_fastapi, GeneratedProject))
-    ]
+    """Generate a server through generate(): without an output, then twice into it, then over an edited file."""
     source = shutil.copy2(SOURCE / "pets.yaml", root / "api.yaml")
-    model = GenerateConfig(
-        output=root / "models.py",
-        input_file_type="openapi",
-        target_python_version="3.11",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
-    config = fastapi_config({}, root)
-    project = render_fastapi(source, model_config=model, config=config)
-    lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+    options: dict[str, Any] = {
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        "server_output": root / PACKAGE,
+        **server_options({}),
+    }
+    with in_directory(root):
+        returned = generate(source, **options)
+    lines = [f"returned without an output {sorted('/'.join(parts) for parts in returned)}"]
     for _ in range(2):
-        result = generate_fastapi(source, model_config=model, config=config)
+        result = generate(source, output=root / "models.py", **options)
         files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
         lines.append(f"generate returned {result}; files {files}")
     readme = root / PACKAGE / "README.md"
@@ -215,7 +156,7 @@ def fastapi_api_report(root: Path) -> str:
     readme.write_text("# edited\n", encoding="utf-8")
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
-        result = generate_fastapi(source, model_config=model, config=config)
+        result = generate(source, output=root / "models.py", **options)
     lines.append(
         f"generate returned {result}; readme restored {readme.read_bytes() == original}; warnings {len(recorded)}"
     )
