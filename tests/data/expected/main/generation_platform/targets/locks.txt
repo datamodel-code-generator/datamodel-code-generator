@@ -1,7 +1,6 @@
 # locks
 generate
   Error: --update-lock: A target run cannot publish a remote lock update that another caller owns
-  E_CONFIG_CONFLICT error config model_config.update_lock: A target run cannot publish a remote lock update that another caller owns
 render
   target=fastapi schema_version=1
   write model models.py

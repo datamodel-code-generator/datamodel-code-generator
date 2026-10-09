@@ -1,10 +1,3 @@
 # fields-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config operations /paths/~1pets/post: The body field name of the application/json property 'id' of POST /pets names no field argument
-  E_CONFIG_VALUE config operations /paths/~1pets/post: The body field name of the application/xml property 'tag' of POST /pets names no field argument
-  E_CONFIG_VALUE config operations /paths/~1pets/post: The body field name of the application/json property 'absent' of POST /pets names no field argument
-  E_NAME_COLLISION target /paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with body_field_names
-  E_NAME_COLLISION target /paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with body_field_names
-  E_NAME_COLLISION target /paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with body_field_names
-  E_CONFIG_VALUE config operations /paths/~1search/post: The body field name of the text/plain property 'q' of POST /search names no field argument
+  Error: --client-operations: The body field name of the application/json property 'id' of POST /pets names no field argument; --client-operations: The body field name of the application/xml property 'tag' of POST /pets names no field argument; --client-operations: The body field name of the application/json property 'absent' of POST /pets names no field argument; /paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with body_field_names; /paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with body_field_names; /paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with body_field_names; --client-operations: The body field name of the text/plain property 'q' of POST /search names no field argument
