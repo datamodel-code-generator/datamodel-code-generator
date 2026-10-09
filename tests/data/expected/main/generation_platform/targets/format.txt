@@ -14,7 +14,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 show models.py
   | # Example header
   | #
@@ -163,28 +163,20 @@ show server/__init__.py
   | 
   | from ._runtime.server.responses import HTTPResult
   | from .application import (
-  |     AsyncAuthorize,
-  |     Authorize,
-  |     Credentials,
   |     OperationDependencies,
-  |     RequirementSets,
   |     build_router,
   |     create_app,
   |     validation_error_handler,
   | )
   | 
   | __all__ = [
-  |     "AsyncAuthorize",
-  |     "Authorize",
-  |     "Credentials",
   |     "HTTPResult",
   |     "OperationDependencies",
-  |     "RequirementSets",
   |     "build_router",
   |     "create_app",
   |     "validation_error_handler",
   | ]
-show server/_runtime/model_codecs/unset.py
+show server/_runtime/server/__init__.py
   | # Example header
   | #
   | # Second line
@@ -193,26 +185,4 @@ show server/_runtime/model_codecs/unset.py
   | #   filename:  api.yaml
   | #   timestamp: 2026-09-25T12:00:00+00:00
   | 
-  | """The single HTTP omission marker owned by one generated package runtime."""
-  | 
-  | from __future__ import annotations
-  | 
-  | from enum import Enum
-  | from typing import Final, Literal
-  | 
-  | 
-  | class Unset(Enum):
-  |     """Mark an omitted HTTP value, distinct from JSON null and native model sentinels."""
-  | 
-  |     UNSET = "UNSET"
-  | 
-  |     def __repr__(self) -> str:
-  |         """Render the marker by its public name."""
-  |         return "UNSET"
-  | 
-  |     def __bool__(self) -> Literal[False]:
-  |         """Treat omission as falsy, like an absent value."""
-  |         return False
-  | 
-  | 
-  | UNSET: Final = Unset.UNSET
+  | """FastAPI server runtime of a generated package: request adapters, response dispatch, and HTTP results."""

@@ -14,13 +14,13 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
+written like a text file server/_runtime/server/__init__.py: True
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -35,8 +35,8 @@ render
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  11 runtime modules ['unchanged']
-rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/model_codecs/unset.py']
+  4 runtime modules ['unchanged']
+rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
   returned None
 tree
@@ -52,14 +52,14 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
-rewrite with '\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/model_codecs/unset.py']
+written like a text file server/_runtime/server/__init__.py: True
+rewrite with '\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
   returned None
 tree
@@ -75,10 +75,10 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
+written like a text file server/_runtime/server/__init__.py: True
