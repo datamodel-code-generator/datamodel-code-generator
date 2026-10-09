@@ -1378,7 +1378,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         call = Call(self._call_settings(options, None))
         call.handing_off = stream
         self._admitted(call)
-        result: RawResponse | None = None
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
             return self._raw_response(response, info, call, stream=stream)
@@ -1388,16 +1387,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
         try:
             result = self._run(call, body, prepare, receive)
-
-            if stream:
-                call.handoff()
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if result is not None:
-                result.discard(failure)
             raise failure from failure.__cause__
-        else:
-            return result
+        if stream:
+            call.handoff()
+        return result
 
     def stream_raw(
         self,
@@ -1853,7 +1848,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         call = Call(self._call_settings(options, None))
         call.handing_off = stream
         self._admitted(call)
-        result: AsyncRawResponse | None = None
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
             return await self._raw_response(response, info, call, stream=stream)
@@ -1863,16 +1857,12 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
         try:
             result = await self._run(call, body, prepare, receive)
-
-            if stream:
-                call.handoff()
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            if result is not None:
-                await result.discard(failure)
             raise failure from failure.__cause__
-        else:
-            return result
+        if stream:
+            call.handoff()
+        return result
 
     def stream_raw(
         self,

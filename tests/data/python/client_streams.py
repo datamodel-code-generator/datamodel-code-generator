@@ -486,6 +486,8 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         feed.replies.append(harness.reply((b'data: {"text": "a"}\n\n' * 2,)))
         async with await protocols.events.messages.open() as stream:
             lines.append(f"  async left early {_event(await anext(stream))}")
+        feed.replies.append(harness.reply((b'{"detail": "missing"}',), status=404, media="application/json"))
+        await arecord(lines, "async declared error status", protocols.events.messages.open)
 
 
 class _Clock:
