@@ -23,6 +23,44 @@ paths:
         - {name: visits, in: cookie, schema: {type: integer}}
       responses:
         "204": {description: Done.}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: "#/components/schemas/Form"}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, count]
+              properties:
+                file: {type: string, format: binary}
+                count: {type: integer}
+                score: {type: number}
+                flag: {type: boolean}
+                note: {type: string}
+                counts: {type: array, items: {type: integer}}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Size: {type: integer, minimum: 1, default: 10}
+    Form:
+      type: object
+      required: [count]
+      properties:
+        count: {type: integer}
+        score: {type: number}
+        flag: {type: boolean}
+        name: {type: string}
+        counts: {type: array, items: {type: integer}}

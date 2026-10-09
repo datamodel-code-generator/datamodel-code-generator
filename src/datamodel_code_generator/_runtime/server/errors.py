@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from pydantic import ValidationError
 
 _MALFORMED: Final = frozenset({
-    "parameter.duplicate",
     "parameter.empty",
     "parameter.encoding",
     "parameter.object",
@@ -21,7 +20,6 @@ _MALFORMED: Final = frozenset({
     "parameter.syntax",
 })
 _REASONS: Final = {
-    "form.duplicate": ("media_invalid", "Invalid request body"),
     "text.encoding": ("media_invalid", "Invalid request body"),
 }
 REQUEST_ERRORS: Final = (WireValidationError, CodecResourceLimitError)

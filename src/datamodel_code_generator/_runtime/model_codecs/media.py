@@ -382,7 +382,7 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
 
 
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> WireValue:
-    """Split URL-encoded text for native model conversion, collecting declared repeated fields."""
+    """Split URL-encoded text for native model conversion: repeated fields as lists, a single value by its last."""
     declared = {field.name: field for field in fields}
     result: dict[str, JSONValue] = {}
     for raw_name, raw_value in split_form(raw):
@@ -394,10 +394,6 @@ def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan
                 values.append(value)
             case None if field is not None and field.repeated:
                 result[name] = [value]
-            case None:
-                result[name] = value
-            case _ if name not in declared:
-                result[name] = value
             case _:
-                raise issue(code="form.duplicate", message="A URL-encoded form repeats a single-valued member")
+                result[name] = value
     return result

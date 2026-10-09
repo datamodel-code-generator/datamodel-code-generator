@@ -18,7 +18,6 @@ from datamodel_code_generator._client._compiled_templates import types as types_
 from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.render import WIDTH, Module
-from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._python_layout import Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, SourceLocation
@@ -178,9 +177,7 @@ def webhook_uses(
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
         location = SourceLocation(documents[protocols.documents[reference]], reference.pointer, "schema")
-        try:
-            request.lease.borrow(location)
-        except BindingCaptureError:
+        if not request.lease.exists(location):
             message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None

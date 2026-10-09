@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import GenerateConfig, generate
-from datamodel_code_generator.fastapi import FastAPIConfig, render_fastapi
 from tests.conftest import assert_output
 from tests.data.python.client_bindings import (
     CASES,
@@ -21,6 +20,7 @@ from tests.data.python.client_bindings import (
     client_binding_rewrite_report,
 )
 from tests.data.python.client_generation import render_client
+from tests.data.python.fastapi_generation import in_directory
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/bindings"
 BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))
@@ -77,20 +77,16 @@ def test_capture_preserves_ordinary_model_bytes(
         _, modules = render_client(source, captured, backend, options, CLIENT, models=models)
         actual = {Path(*parts): text.encode("utf-8") for parts, text in modules.items() if parts[0] != "client"}
     else:
-        project = render_fastapi(
-            source,
-            model_config=GenerateConfig(output=captured / models, **options),
-            config=FastAPIConfig(
-                output=captured / "server",
-                package="server",
-                model_package="models",
-            ),
-        )
-        actual = {
-            artifact.path.relative_to(captured): artifact.content
-            for artifact in project.artifacts
-            if artifact.path.suffix == ".py" and not artifact.path.is_relative_to(captured / "server")
-        }
+        captured.mkdir()
+        with in_directory(captured):
+            modules = generate(
+                source,
+                **options,
+                generate_server="fastapi",
+                server_package="server",
+                server_model_package=Path(models).stem,
+            )
+        actual = {Path(*parts): text.encode("utf-8") for parts, text in modules.items() if parts[0] != "server"}
     assert_output(f"{bool(expected) and actual == expected}\n", EXPECTED / "capture-parity.txt")
 
 

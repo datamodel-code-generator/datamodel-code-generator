@@ -10,17 +10,27 @@ from dataclasses import dataclass
 from typing import Annotated, Final, TypedDict
 
 import pydantic
+import strict_basemodel_models
 from fastapi import params
 from pydantic import Field, TypeAdapter
 
+from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
+from .._runtime.server.requests import (
+    BodyAdapter,
+    BodyMedia,
+    ParameterAdapter,
+    ParameterArgument,
+    RawPath,
+)
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get_values': Sequence[params.Depends]
+        'get_values': Sequence[params.Depends],
+        'post_form': Sequence[params.Depends],
+        'upload': Sequence[params.Depends],
     },
     total=False,
 )
@@ -182,5 +192,50 @@ class GetValues:
         ),
         record=Parameters,
         path=RawPath(template='/values/{id}', names=frozenset({'id'})),
+    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+
+
+class PostForm:
+    """Plans of the post_form operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                adapter=TypeAdapter(strict_basemodel_models.Form),
+                fields=(
+                    FieldPlan('count', 'integer'),
+                    FieldPlan('score', 'number'),
+                    FieldPlan('flag', 'boolean'),
+                    FieldPlan('name', 'string'),
+                    FieldPlan('counts', 'integer', repeated=True),
+                ),
+            ),
+        ),
+    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+
+
+class Upload:
+    """Plans of the upload operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                adapter=TypeAdapter(strict_basemodel_models.FieldUploadsPostRequest),
+                fields=(
+                    FieldPlan('file', 'string'),
+                    FieldPlan('count', 'integer'),
+                    FieldPlan('score', 'number'),
+                    FieldPlan('flag', 'boolean'),
+                    FieldPlan('note', 'string'),
+                    FieldPlan('counts', 'integer', repeated=True),
+                ),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

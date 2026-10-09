@@ -4958,6 +4958,12 @@
       "custom_template_dir": "templates/not-found"
     }
   },
+  "output-required": {
+    "input": "pets.yaml",
+    "model": {
+      "output": null
+    }
+  },
   "api-scope-required": {
     "input": "pets.yaml",
     "model": {
@@ -5097,6 +5103,38 @@
       [
         "client",
         "_operations.py"
+      ]
+    ]
+  },
+  "fingerprint-nested": {
+    "input": "fingerprint-nested.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "fingerprint-nested-changed": {
+    "input": "fingerprint-nested-changed.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
       ]
     ]
   }

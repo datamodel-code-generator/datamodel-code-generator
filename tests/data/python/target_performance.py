@@ -10,14 +10,12 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator.fastapi import FastAPIConfig, render_fastapi
+from datamodel_code_generator import generate
 from tests.data.python.client_generation import client_render_call, generate_client, model_config
 from tests.data.python.generated_packages import generated_root, import_generated
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
-
-    from datamodel_code_generator.api_types import GeneratedProject
 
 DATA = Path(__file__).parents[1]
 SMALL = DATA / "generation_platform" / "client" / "publication" / "minimal.json"
@@ -26,8 +24,11 @@ PACKAGE = "performance_client"
 BACKEND = "pydantic_v2.BaseModel"
 
 
-def target_render_call(target: str, size: str, root: Path) -> Callable[[], GeneratedProject]:
-    """Copy the input beside the output and prepare a render of both models and target artifacts."""
+def target_render_call(target: str, size: str, root: Path) -> Callable[[], object]:
+    """Copy the input beside the output and prepare a render of both models and target files.
+
+    The server renders through generate() without an output, which stages its files under the working directory.
+    """
     original = SMALL if size == "small" else LARGE
     source = shutil.copy2(original, root / f"input{original.suffix}")
     if target == "client":
@@ -35,11 +36,17 @@ def target_render_call(target: str, size: str, root: Path) -> Callable[[], Gener
             source, root, PACKAGE, BACKEND, config={"server_base_url": "https://benchmark.invalid"}
         )
     return partial(
-        render_fastapi,
+        generate,
         source,
-        model_config=model_config(root / "performance_server_models.py", BACKEND, {}),
-        config=FastAPIConfig(
-            output=root / "performance_server", package="performance_server", model_package="performance_server_models"
+        config=model_config(
+            root / "performance_server_models.py",
+            BACKEND,
+            {
+                "output": None,
+                "generate_server": "fastapi",
+                "server_package": "performance_server",
+                "server_model_package": "performance_server_models",
+            },
         ),
     )
 

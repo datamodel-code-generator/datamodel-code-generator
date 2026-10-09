@@ -10,7 +10,6 @@ from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.fastapi_acceptance import fastapi_checkout_report, fastapi_scope_report
 from tests.data.python.fastapi_generation import (
     fastapi_api_report,
-    fastapi_config_report,
     fastapi_render,
 )
 
@@ -97,17 +96,8 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
         assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
 
 
-@pytest.mark.parametrize(
-    "case",
-    ["defaults", "values", "invalid-values", "invalid-shapes", "invalid-mappings"],
-)
-def test_fastapi_config(case: str, tmp_path: Path) -> None:
-    """Construct the server settings, freezing their mappings and reporting every invalid value."""
-    assert_output(fastapi_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
-
-
 def test_fastapi_api(tmp_path: Path) -> None:
-    """Resolve the public annotations, render and generate twice, then warn about each package's edited file."""
+    """Return the files without an output, generate twice, then restore an edited package file."""
     assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
 
 
