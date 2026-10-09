@@ -13,10 +13,7 @@ from datamodel_code_generator._api_types import (
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
-    PublicationRollbackError,
     SchemaRef,
-    TargetEditWarning,
-    TargetStateWarning,
 )
 
 __all__ = [
@@ -26,8 +23,5 @@ __all__ = [
     "GeneratedArtifact",
     "GeneratedProject",
     "OperationRef",
-    "PublicationRollbackError",
     "SchemaRef",
-    "TargetEditWarning",
-    "TargetStateWarning",
 ]

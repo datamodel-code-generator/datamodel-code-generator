@@ -772,7 +772,8 @@ def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
 def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     """Validate all selected jobs before any job starts generation.
 
-    Jobs that each generate a target may name one models output, which they must then generate identically.
+    Jobs that each generate a target may name one models output, which they must then generate identically. A job
+    may keep its models inside its target output, or the target output inside its models directory.
     """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
@@ -804,7 +805,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
                 and first_kind == second_kind == "output"
                 and target_jobs.issuperset((first_job, second_job))
             )
-            if shares_models or not _paths_overlap_or_samefile(first_path, second_path):
+            nests_models = first_job == second_job and "model metadata" not in {first_kind, second_kind}
+            if shares_models or nests_models or not _paths_overlap_or_samefile(first_path, second_path):
                 continue
             msg = (
                 f"Jobs '{first_job}' ({first_kind}: {first_path}) and '{second_job}' "
@@ -1116,7 +1118,9 @@ class OutputComparisonOptions(NamedTuple):
     directory_display_path: str | None = None
 
     def directory_file_path(self, path: Path) -> str:
-        """Qualify a directory entry when comparing several output roots."""
+        """Qualify a directory entry when comparing several output roots; a single-module output keeps its own name."""
+        if not path.parts and self.single_file_display_path is not None:
+            return self.single_file_display_path
         return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
@@ -1204,7 +1208,10 @@ def _compare_directories(
     encoding: str,
     comparison: OutputComparisonOptions,
 ) -> tuple[list[DirectoryChangedFile], list[str], list[str]]:
-    """Compare generated directory with existing directory."""
+    """Compare generated directory with existing directory.
+
+    Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
+    """
     changed_files: list[DirectoryChangedFile] = []
 
     generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
@@ -1214,6 +1221,11 @@ def _compare_directories(
         for path in actual_dir.rglob("*.py"):
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
+
+    if comparison.input_diff:
+        for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
+            if not files and output.is_file():
+                files.add(Path())
 
     missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
@@ -1498,19 +1510,21 @@ def _structured_output_json_schema() -> str:
 
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
-    if is_directory_output:
-        for generated_file in sorted(generated_output.rglob("*")):
-            if not generated_file.is_file():
-                continue
-            target = actual_output / generated_file.relative_to(generated_output)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(generated_file, target)
-        return
+    from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
-    if not generated_output.exists():
-        return
-    actual_output.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(generated_output, actual_output)
+    targets: dict[Path, Path] = {}
+    if is_directory_output:
+        targets = {
+            generated_file: actual_output / generated_file.relative_to(generated_output)
+            for generated_file in sorted(generated_output.rglob("*"))
+            if generated_file.is_file()
+        }
+    if not targets and generated_output.is_file():
+        targets = {generated_output: actual_output}
+    warn_shadowed_modules(targets.values())
+    for generated_file, target in targets.items():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(generated_file, target)
 
 
 def _write_generated_result(
@@ -1676,8 +1690,8 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
     """Return the remote lock file a generation target's models read or update, or None while no lock applies.
 
-    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target, and the
-    target manifest, only while a policy uses it: an update, a locked run, or an existing file to verify.
+    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
+    while a policy uses it: an update, a locked run, or an existing file to verify.
     """
     if config.lockfile is not None:
         return config.lockfile
