@@ -1,5 +1,3 @@
 # reference-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_OPERATION_REF config operations[0].ref: The operation setting '/paths/~1missing/get' selects no root path operation
-  E_CONFIG_CONFLICT config operations[2].ref: Two settings name '/paths/~1pets/get'
+  Error: --client-operations[0].ref: The operation setting '/paths/~1missing/get' selects no root path operation; --client-operations[2].ref: Two settings name '/paths/~1pets/get'

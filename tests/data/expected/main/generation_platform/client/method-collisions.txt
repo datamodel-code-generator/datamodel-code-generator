@@ -1,5 +1,3 @@
 # method-collisions
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_NAME_COLLISION target: The resource 'default' takes the name 'get_pet' twice
-  E_NAME_COLLISION target: Several methods of the resource 'default' become 'GetPet'
+  Error: The resource 'default' takes the name 'get_pet' twice; Several methods of the resource 'default' become 'GetPet'
