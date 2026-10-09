@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
 
 __all__ = ("StreamSpec", "plan_streams", "stream_uses")
 
@@ -271,6 +272,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
+    wire: WirePlan,
     request: TargetRequest,
     problems: dict[str, list[Diagnostic]],
 ) -> tuple[StreamSpec, ...]:
@@ -281,7 +283,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     """
     if protocols is None or not specs:
         return ()
-    pages = _Pages(protocols, plan, facts, codecs, request)
+    pages = _Pages(protocols, plan, facts, codecs, wire, request)
     polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, protocols)
     planned: list[StreamSpec] = []
     for spec in specs:

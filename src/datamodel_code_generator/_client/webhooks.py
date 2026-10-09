@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import folded
-from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.render import WIDTH, Module
 from datamodel_code_generator._generation_contract import BindingCaptureError
+from datamodel_code_generator._openapi_wire_plan import plan_wire
 from datamodel_code_generator._python_layout import Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, SourceLocation
@@ -165,15 +165,17 @@ def webhook_uses(
         problems[helper.name].append(problem)
     documents = {pointer: document for document, pointer in request.documents.pointers.items()}
     candidates = [
-        use
+        (use, schema)
         for use in request.batch.type_uses
         if use.id.role == "request_body"
         and isinstance(owner := use.id.owner, OperationId)
         and owner.kind in _SENDERS
-        and use.type is not None
+        and (schema := use.schema) is not None
         and media_kind(use.id.media or "") == "json"
     ]
-    schemas = schema_uses(request.batch.type_uses)
+    wire = plan_wire(
+        request.batch, request.lease, [use.id for use, _ in candidates], documents=request.documents.pointers
+    )
 
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
@@ -184,8 +186,8 @@ def webhook_uses(
             message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None
-        expected = None if (bound := schema_use(schemas, location, "request")) is None else bound.type
-        if expected is None or (use := next((item for item in candidates if item.type == expected), None)) is None:
+        resolved = wire.schema(location)[0]
+        if (use := next((item for item, schema in candidates if wire.schema(schema)[0] == resolved), None)) is None:
             message = (
                 f"The event_schema {reference.pointer!r} of {helper.name!r} is not the schema of a JSON request body "
                 "of any webhook or callback operation"

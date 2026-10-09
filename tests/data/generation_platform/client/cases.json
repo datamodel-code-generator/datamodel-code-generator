@@ -4050,6 +4050,19 @@
     },
     "modules": false
   },
+  "protocols-pagination-wrapper-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-wrapper-checks.json"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "config": {
+      "protocols": "protocols/pagination-wrapper-checks.json"
+    },
+    "modules": false
+  },
   "pagination-links": {
     "input": "pagination-links.yaml",
     "references": [

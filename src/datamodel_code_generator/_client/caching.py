@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 _MIN_SUCCESS: Final = 200
@@ -117,17 +118,18 @@ class _Caches:
         return found[0] if found else None
 
 
-def plan_caches(
+def plan_caches(  # noqa: PLR0913, PLR0917
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
+    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[CacheSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled cache helper, returning the planned ones and each checked helper's problems."""
     if protocols is None:
         return (), {}
-    caches = _Caches(_Pages(protocols, plan, facts, codecs, request))
+    caches = _Caches(_Pages(protocols, plan, facts, codecs, wire, request))
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[CacheSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

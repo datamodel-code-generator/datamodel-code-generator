@@ -137,13 +137,13 @@ class ClientTarget:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         coded = frozenset(item.use for item in codecs.uses)
         plan, named = plan_fields(plan, facts, coded)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         if refused := (

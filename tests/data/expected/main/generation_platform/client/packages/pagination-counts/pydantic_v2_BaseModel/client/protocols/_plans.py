@@ -43,7 +43,7 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=2,
         has_more=BodySelector(pointer='/has_more'),
     ),
-    fingerprint='43766ab7dde4f5e640c90bcb0d0835ffe21db575c30c9417156c5a8fbab3e08a',
+    fingerprint='87c8517478829bb9d304a9c20128614ab2d989a45b1e40311bebf30ace5cb973',
     bindings=(
         PageBinding(target=ParameterTarget(location='query', name='limit'), literal=2),
     ),
@@ -68,7 +68,7 @@ PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=None,
         total=BodySelector(pointer='/total'),
     ),
-    fingerprint='cbae773911f3e112e859f7ccf802581bc930db66312f31800b873a5bdb7d3daf',
+    fingerprint='49af58e2057129c408244c5d7a76810da384c5b78f27a0a49dbcaa1293f20797',
 )
 
 
@@ -90,7 +90,7 @@ PLAN_2: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=None,
         has_more=BodySelector(pointer='/more'),
     ),
-    fingerprint='6dad37035c3e82e652c3973012dd40b34ebcb587a51a37943294a20841277382',
+    fingerprint='dea450f69d3fc6160e549eb431f5bb0eaa14a53c69278663e7852ff609ee81cb',
 )
 
 
@@ -112,7 +112,7 @@ PLAN_3: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=1,
         total=HeaderSelector(name='x-total-count'),
     ),
-    fingerprint='3519a14a40205f7ddbd498431d252b133480febe0332c9e747b06de89e96efc5',
+    fingerprint='e56c3a279327d30775b44368400f7c5175acdbbf4e1475992de0b36269a8c8f1',
 )
 
 
@@ -134,7 +134,7 @@ PLAN_4: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=2,
         total=BodySelector(pointer='/count'),
     ),
-    fingerprint='8884e5b403e6167ca1ad0b9eede701bf727f3763aa81bf8f158ccd04655ea081',
+    fingerprint='b6467b5eea6763bca1984c0cc0b51d6082b22c327addafe9c1e217a51cd422d0',
 )
 
 
@@ -156,7 +156,7 @@ PLAN_5: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=1,
         has_more=HeaderSelector(name='X-Has-More'),
     ),
-    fingerprint='ec2d7e6dfc833829e4a132dfc62a2c0ce41b468f5853e0af5aa9f420d4c8209a',
+    fingerprint='c6e6e7ff7a06632f14746c39cf9def1f9a4b80e6981b801dd73f089faf0f6859',
 )
 
 
@@ -168,7 +168,7 @@ def _items_6(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
 PLAN_6: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
     helper_id='searches.all',
     operation=OperationRef(pointer='/paths/~1searches/post'),
-    call=_operations.OPERATION_1,
+    call=_operations.OPERATION_2,
     items=_items_6,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(
@@ -178,7 +178,7 @@ PLAN_6: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
         step=10,
         total=BodySelector(pointer='/total'),
     ),
-    fingerprint='b8aad62315902fdb9fb828f04174d79dfaa820a8850e930f5d66eb3837d02df7',
+    fingerprint='55d98b1070ab109143f45039aacd2abd5d9642acd93a090b62d747593e2cc237',
 )
 
 
@@ -190,7 +190,7 @@ def _items_7(data: FindResponse) -> Sequence[_dcg_type_0] | None:
 PLAN_7: Final[PaginationPlan[_dcg_type_0, FindResponse]] = PaginationPlan(
     helper_id='finds.all',
     operation=OperationRef(pointer='/paths/~1finds/get'),
-    call=_operations.OPERATION_2,
+    call=_operations.OPERATION_3,
     items=_items_7,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(
@@ -200,7 +200,7 @@ PLAN_7: Final[PaginationPlan[_dcg_type_0, FindResponse]] = PaginationPlan(
         step=5,
         has_more=BodySelector(pointer='/has_more'),
     ),
-    fingerprint='974b575d12dfe854578dae4c41129a4d6b58997bed7835da44d2adb063a88c32',
+    fingerprint='e21aaeb217b1bcb5f1e8f49cff503f9819e57faca91b4d877933218cbae13820',
 )
 
 
@@ -222,5 +222,5 @@ PLAN_8: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
         step=1,
         has_more=BodySelector(pointer='/has_more'),
     ),
-    fingerprint='ad68222a1b6e6c75d87fad747d795e3e2c2e5027503051e0916e08d7a5d62314',
+    fingerprint='ee505f096e299a6dd94513c92e7261b8e886d598575c409d7eb4ed4b9c4ba49c',
 )
