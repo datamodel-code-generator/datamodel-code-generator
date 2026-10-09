@@ -12,7 +12,7 @@ from typing import Literal
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.retry import (
     GetKeyedSafeResponse,
@@ -66,7 +66,7 @@ class RetryResource:
     def post_unsafe(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -84,7 +84,7 @@ class RetryResource:
     def post_idempotent(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -102,7 +102,7 @@ class RetryResource:
     def post_keyed(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -120,7 +120,7 @@ class RetryResource:
     def post_key_only(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -152,7 +152,7 @@ class RetryResource:
     def post_never(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -220,7 +220,7 @@ class RetryWithResponse:
     def post_unsafe(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -238,7 +238,7 @@ class RetryWithResponse:
     def post_idempotent(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -256,7 +256,7 @@ class RetryWithResponse:
     def post_keyed(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -274,7 +274,7 @@ class RetryWithResponse:
     def post_key_only(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -306,7 +306,7 @@ class RetryWithResponse:
     def post_never(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -374,7 +374,7 @@ class RetryWithRawResponse:
     def post_unsafe(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -392,7 +392,7 @@ class RetryWithRawResponse:
     def post_idempotent(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -410,7 +410,7 @@ class RetryWithRawResponse:
     def post_keyed(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -428,7 +428,7 @@ class RetryWithRawResponse:
     def post_key_only(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -460,7 +460,7 @@ class RetryWithRawResponse:
     def post_never(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -528,7 +528,7 @@ class RetryWithStreamingResponse:
     def post_unsafe(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -546,7 +546,7 @@ class RetryWithStreamingResponse:
     def post_idempotent(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -564,7 +564,7 @@ class RetryWithStreamingResponse:
     def post_keyed(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -582,7 +582,7 @@ class RetryWithStreamingResponse:
     def post_key_only(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -614,7 +614,7 @@ class RetryWithStreamingResponse:
     def post_never(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,

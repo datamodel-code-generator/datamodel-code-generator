@@ -15,13 +15,13 @@ from models import LabelList as _dcg_type_2
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListLabelsResponse: TypeAlias = _dcg_type_0
 
 
-_LIST_LABELS_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_LIST_LABELS_HEADERS: Final[ResponseHeaders[_dcg_type_1, UNSET]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
     (
@@ -50,7 +50,7 @@ def decode_list_labels_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | Unset:
+) -> _dcg_type_1 | UNSET:
     """Decode one declared response header of list_labels from a response's metadata."""
     return _LIST_LABELS_HEADERS.decode(info, name)
 
@@ -58,7 +58,7 @@ def decode_list_labels_header(
 ListLabelSetsResponse: TypeAlias = _dcg_type_2
 
 
-_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseHeaders(
+_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[_dcg_type_3, UNSET]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
     (
@@ -87,6 +87,6 @@ def decode_list_label_sets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_3 | Unset:
+) -> _dcg_type_3 | UNSET:
     """Decode one declared response header of list_label_sets from a response's metadata."""
     return _LIST_LABEL_SETS_HEADERS.decode(info, name)

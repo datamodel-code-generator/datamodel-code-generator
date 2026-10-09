@@ -17,7 +17,7 @@ from models import Pet as _dcg_type_2
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.pets import (
     AttachFilesResponse,
@@ -61,10 +61,10 @@ class PetsResource:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -220,10 +220,10 @@ class PetsWithResponse:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -371,10 +371,10 @@ class PetsWithRawResponse:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -506,10 +506,10 @@ class PetsWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

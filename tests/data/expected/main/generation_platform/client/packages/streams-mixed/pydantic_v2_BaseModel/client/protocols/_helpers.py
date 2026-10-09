@@ -21,7 +21,7 @@ from .._runtime.protocols.pagination import (
     resume_pages,
 )
 from .._runtime.protocols.streams import EventStream, open_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.notes import ListNotesResponse
 from . import PaginationOptions, StreamOptions, _plans
 
@@ -67,7 +67,7 @@ class NotesAllPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -85,7 +85,7 @@ class NotesAllPagination:
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -122,7 +122,7 @@ class NotesAllPagination:
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

@@ -15,7 +15,7 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import ConfigurationError, is_sequence
 from ..client.timing import SessionOptions
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .caches import AsyncCacheStore, CacheStore  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
 from .origins import Origin
 
@@ -59,7 +59,7 @@ WEBHOOK_LIMITS: Final = (
 def layered(layers: tuple[object, ...], name: str, default: V) -> V:
     """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
     for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+        if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
 
@@ -85,13 +85,13 @@ def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> No
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
     """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
     for name, duration, nullable, allow_zero in rules:
-        if isinstance(value := getattr(options, name), Unset) or (nullable and value is None):
+        if (value := getattr(options, name)) is UNSET or (nullable and value is None):
             continue
         (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
-    if not isinstance(value, kinds):
+    if value is not UNSET and not isinstance(value, kinds):
         raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
@@ -120,8 +120,8 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 class PaginationOptions:
     """Pagination limits; only max_pages and max_items take None, and only max_items takes 0."""
 
-    max_pages: int | Unset | None = UNSET
-    max_items: int | Unset | None = UNSET
+    max_pages: int | UNSET | None = UNSET
+    max_items: int | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -132,9 +132,9 @@ class PaginationOptions:
 class PollOptions:
     """Polling limits; only max_polls and max_wait take None, and durations are finite positive seconds."""
 
-    max_polls: int | Unset | None = UNSET
-    interval: float | Unset = UNSET
-    max_wait: float | Unset | None = UNSET
+    max_polls: int | UNSET | None = UNSET
+    interval: float | UNSET = UNSET
+    max_wait: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, zero, and nonfinite durations."""
@@ -145,22 +145,22 @@ class PollOptions:
 class StreamOptions:
     """Stream limits; reconnection stays off unless enabled, and only max_reconnects takes 0."""
 
-    idle_timeout: float | Unset | None = UNSET
-    reconnect: bool | Unset = UNSET
-    max_reconnects: int | Unset | None = UNSET
-    max_reconnect_wait: float | Unset | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
+    reconnect: bool | UNSET = UNSET
+    max_reconnects: int | UNSET | None = UNSET
+    max_reconnect_wait: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, a nonboolean reconnect switch, and every forbidden None or zero."""
         check_limits(self, _STREAM)
-        _instance(self.reconnect, (bool, Unset), "reconnect")
+        _instance(self.reconnect, (bool,), "reconnect")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UploadOptions:
     """Upload limits: the positive size of the chunk one append holds in memory."""
 
-    chunk_bytes: int | Unset = UNSET
+    chunk_bytes: int | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -174,11 +174,11 @@ class WSOptions:
     `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout.
     """
 
-    open_timeout: float | Unset | None = UNSET
-    idle_timeout: float | Unset | None = UNSET
-    max_message_bytes: int | Unset = UNSET
-    ping_interval: float | Unset | None = UNSET
-    pong_timeout: float | Unset | None = UNSET
+    open_timeout: float | UNSET | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
+    max_message_bytes: int | UNSET = UNSET
+    ping_interval: float | UNSET | None = UNSET
+    pong_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, and forbidden None or zero."""
@@ -189,8 +189,8 @@ class WSOptions:
 class CacheOptions:
     """Cache limits of one fetch: the largest body it stores and the cap on any entry's freshness."""
 
-    max_entry_bytes: int | Unset = UNSET
-    max_ttl: float | Unset = UNSET
+    max_entry_bytes: int | UNSET = UNSET
+    max_ttl: float | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, zero, and nonfinite durations."""
@@ -238,12 +238,12 @@ def _stores(value: object, field: str) -> Mapping[str, object]:
 class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
-    session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset = UNSET
+    session: SessionOptions | UNSET = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
-        _instance(self.session, (SessionOptions, Unset), "session")
+        _instance(self.session, (SessionOptions,), "session")
         _instance(
             self.options,
             (
@@ -253,7 +253,6 @@ class ProtocolDefaults:
                 CacheOptions,
                 WSOptions,
                 UploadOptions,
-                Unset,
             ),
             "options",
         )
@@ -267,16 +266,16 @@ class ProtocolClientOptions:
     dotted helper names; each mapping is copied into a read-only one that keeps each value's identity.
     """
 
-    security: ProtocolSecurityContext | Unset | None = UNSET
-    defaults: Mapping[str, ProtocolDefaults] | Unset = UNSET
-    cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
+    security: ProtocolSecurityContext | UNSET | None = UNSET
+    defaults: Mapping[str, ProtocolDefaults] | UNSET = UNSET
+    cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values."""
-        _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
-        if not isinstance(self.defaults, Unset):
+        _instance(self.security, (ProtocolSecurityContext, type(None)), "security")
+        if self.defaults is not UNSET:
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
-        if not isinstance(self.cache_stores, Unset):
+        if self.cache_stores is not UNSET:
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
 
     def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
@@ -304,9 +303,9 @@ def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tu
     for name, item in defaults.items():
         if (kind := kinds.get(name)) is None:
             raise ConfigurationError(field_path=("protocols", "defaults", name), reason="unknown_field")
-        if not isinstance(item.options, (Unset, _KIND_OPTIONS[kind])):
+        if item.options is not UNSET and not isinstance(item.options, _KIND_OPTIONS[kind]):
             raise ConfigurationError(field_path=("protocols", "defaults", name, "options"), reason="invalid_value")
-        if kind == "cache" and not isinstance(item.session, Unset):
+        if kind == "cache" and item.session is not UNSET:
             raise ConfigurationError(field_path=("protocols", "defaults", name, "session"), reason="invalid_value")
 
 
@@ -334,7 +333,7 @@ def check_helpers(
     protocols: ProtocolClientOptions, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool
 ) -> None:
     """Check helper names and stores before creating the native client."""
-    if not isinstance(defaults := protocols.defaults, Unset) and defaults:
+    if (defaults := protocols.defaults) is not UNSET and defaults:
         checked_defaults(defaults, helpers)
-    if not isinstance(stores := protocols.cache_stores, Unset) and stores:
+    if (stores := protocols.cache_stores) is not UNSET and stores:
         checked_stores(stores, helpers, asynchronous=asynchronous)

@@ -31,13 +31,13 @@ from models import FieldUnusedPostResponse200XIdempotencyHeader as _dcg_type_19
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ParameterResponse: TypeAlias = _dcg_type_0
 
 
-_PARAMETER_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_PARAMETER_HEADERS: Final[ResponseHeaders[_dcg_type_1, UNSET]] = ResponseHeaders(
     'parameter',
     frozenset({'200'}),
     (
@@ -66,7 +66,7 @@ def decode_parameter_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_1 | Unset:
+) -> _dcg_type_1 | UNSET:
     """Decode one declared response header of parameter from a response's metadata."""
     return _PARAMETER_HEADERS.decode(info, name)
 
@@ -74,7 +74,7 @@ def decode_parameter_header(
 ApiKeyResponse: TypeAlias = _dcg_type_2
 
 
-_API_KEY_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseHeaders(
+_API_KEY_HEADERS: Final[ResponseHeaders[_dcg_type_3, UNSET]] = ResponseHeaders(
     'api_key',
     frozenset({'200'}),
     (
@@ -103,7 +103,7 @@ def decode_api_key_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_3 | Unset:
+) -> _dcg_type_3 | UNSET:
     """Decode one declared response header of api_key from a response's metadata."""
     return _API_KEY_HEADERS.decode(info, name)
 
@@ -111,7 +111,7 @@ def decode_api_key_header(
 BearerResponse: TypeAlias = _dcg_type_4
 
 
-_BEARER_HEADERS: Final[ResponseHeaders[_dcg_type_5, Unset]] = ResponseHeaders(
+_BEARER_HEADERS: Final[ResponseHeaders[_dcg_type_5, UNSET]] = ResponseHeaders(
     'bearer',
     frozenset({'200'}),
     (
@@ -140,7 +140,7 @@ def decode_bearer_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_5 | Unset:
+) -> _dcg_type_5 | UNSET:
     """Decode one declared response header of bearer from a response's metadata."""
     return _BEARER_HEADERS.decode(info, name)
 
@@ -148,7 +148,7 @@ def decode_bearer_header(
 OauthResponse: TypeAlias = _dcg_type_6
 
 
-_OAUTH_HEADERS: Final[ResponseHeaders[_dcg_type_7, Unset]] = ResponseHeaders(
+_OAUTH_HEADERS: Final[ResponseHeaders[_dcg_type_7, UNSET]] = ResponseHeaders(
     'oauth',
     frozenset({'200'}),
     (
@@ -177,7 +177,7 @@ def decode_oauth_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_7 | Unset:
+) -> _dcg_type_7 | UNSET:
     """Decode one declared response header of oauth from a response's metadata."""
     return _OAUTH_HEADERS.decode(info, name)
 
@@ -185,7 +185,7 @@ def decode_oauth_header(
 OpenidResponse: TypeAlias = _dcg_type_8
 
 
-_OPENID_HEADERS: Final[ResponseHeaders[_dcg_type_9, Unset]] = ResponseHeaders(
+_OPENID_HEADERS: Final[ResponseHeaders[_dcg_type_9, UNSET]] = ResponseHeaders(
     'openid',
     frozenset({'200'}),
     (
@@ -214,7 +214,7 @@ def decode_openid_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_9 | Unset:
+) -> _dcg_type_9 | UNSET:
     """Decode one declared response header of openid from a response's metadata."""
     return _OPENID_HEADERS.decode(info, name)
 
@@ -222,7 +222,7 @@ def decode_openid_header(
 CookieResponse: TypeAlias = _dcg_type_10
 
 
-_COOKIE_HEADERS: Final[ResponseHeaders[_dcg_type_11, Unset]] = ResponseHeaders(
+_COOKIE_HEADERS: Final[ResponseHeaders[_dcg_type_11, UNSET]] = ResponseHeaders(
     'cookie',
     frozenset({'200'}),
     (
@@ -251,7 +251,7 @@ def decode_cookie_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_11 | Unset:
+) -> _dcg_type_11 | UNSET:
     """Decode one declared response header of cookie from a response's metadata."""
     return _COOKIE_HEADERS.decode(info, name)
 
@@ -259,7 +259,7 @@ def decode_cookie_header(
 QueryResponse: TypeAlias = _dcg_type_12
 
 
-_QUERY_HEADERS: Final[ResponseHeaders[_dcg_type_13, Unset]] = ResponseHeaders(
+_QUERY_HEADERS: Final[ResponseHeaders[_dcg_type_13, UNSET]] = ResponseHeaders(
     'query',
     frozenset({'200'}),
     (
@@ -288,7 +288,7 @@ def decode_query_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_13 | Unset:
+) -> _dcg_type_13 | UNSET:
     """Decode one declared response header of query from a response's metadata."""
     return _QUERY_HEADERS.decode(info, name)
 
@@ -296,7 +296,7 @@ def decode_query_header(
 IgnoredResponse: TypeAlias = _dcg_type_14
 
 
-_IGNORED_HEADERS: Final[ResponseHeaders[_dcg_type_15, Unset]] = ResponseHeaders(
+_IGNORED_HEADERS: Final[ResponseHeaders[_dcg_type_15, UNSET]] = ResponseHeaders(
     'ignored',
     frozenset({'200'}),
     (
@@ -325,7 +325,7 @@ def decode_ignored_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_15 | Unset:
+) -> _dcg_type_15 | UNSET:
     """Decode one declared response header of ignored from a response's metadata."""
     return _IGNORED_HEADERS.decode(info, name)
 
@@ -333,7 +333,7 @@ def decode_ignored_header(
 DirectionResponse: TypeAlias = _dcg_type_16
 
 
-_DIRECTION_HEADERS: Final[ResponseHeaders[_dcg_type_17, Unset]] = ResponseHeaders(
+_DIRECTION_HEADERS: Final[ResponseHeaders[_dcg_type_17, UNSET]] = ResponseHeaders(
     'direction',
     frozenset({'200'}),
     (
@@ -362,7 +362,7 @@ def decode_direction_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_17 | Unset:
+) -> _dcg_type_17 | UNSET:
     """Decode one declared response header of direction from a response's metadata."""
     return _DIRECTION_HEADERS.decode(info, name)
 
@@ -370,7 +370,7 @@ def decode_direction_header(
 UnusedResponse: TypeAlias = _dcg_type_18
 
 
-_UNUSED_HEADERS: Final[ResponseHeaders[_dcg_type_19, Unset]] = ResponseHeaders(
+_UNUSED_HEADERS: Final[ResponseHeaders[_dcg_type_19, UNSET]] = ResponseHeaders(
     'unused',
     frozenset({'200'}),
     (
@@ -399,6 +399,6 @@ def decode_unused_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_19 | Unset:
+) -> _dcg_type_19 | UNSET:
     """Decode one declared response header of unused from a response's metadata."""
     return _UNUSED_HEADERS.decode(info, name)

@@ -15,7 +15,7 @@ from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dep
 
 from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type, plain, typed
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import REQUEST_ERRORS, invalid, malformed_request, missing, model_records, unsupported_media, wire_records
 
 if TYPE_CHECKING:
@@ -118,7 +118,7 @@ class ParameterAdapter:
             except REQUEST_ERRORS as error:
                 records.extend(wire_records(error, location))
                 continue
-            if isinstance(wire, Unset):
+            if wire is UNSET:
                 if plan.required:
                     records.append(missing(location))
                 else:

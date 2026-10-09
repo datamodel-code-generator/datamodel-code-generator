@@ -15,7 +15,7 @@ from models import FieldDocumentsIdGetPathIdParameter as _dcg_type_1
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...model_codecs import JSONValue
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.documents import (
     ReadDocumentResponse,
@@ -150,8 +150,8 @@ class AsyncDocumentsResource:
         self,
         *,
         id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        filter: JSONValue | UNSET = UNSET,
+        x_mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadDocumentResponse:
@@ -199,14 +199,14 @@ class AsyncDocumentsResource:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse:
@@ -330,8 +330,8 @@ class AsyncDocumentsWithResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        filter: JSONValue | UNSET = UNSET,
+        x_mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadDocumentResponse]:
@@ -379,14 +379,14 @@ class AsyncDocumentsWithResponse:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]:
@@ -456,8 +456,8 @@ class AsyncDocumentsWithRawResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        filter: JSONValue | UNSET = UNSET,
+        x_mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -505,14 +505,14 @@ class AsyncDocumentsWithRawResponse:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -582,8 +582,8 @@ class AsyncDocumentsWithStreamingResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        filter: JSONValue | UNSET = UNSET,
+        x_mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -631,14 +631,14 @@ class AsyncDocumentsWithStreamingResponse:
     def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

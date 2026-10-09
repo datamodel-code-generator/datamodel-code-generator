@@ -11,7 +11,7 @@ from ._runtime.client.options import (
     RetryOptions,
     ServerSelection,
 )
-from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.model_codecs.unset import UNSET
 
 __all__ = [
     "Clock",
@@ -19,5 +19,4 @@ __all__ = [
     "RetryOptions",
     "ServerSelection",
     "UNSET",
-    "Unset",
 ]

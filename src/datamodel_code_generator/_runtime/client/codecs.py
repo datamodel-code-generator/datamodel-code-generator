@@ -9,7 +9,7 @@ from typing_extensions import TypeVar
 
 from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import response_failure
 from .operations import PARSE_ERRORS, status_key
 
@@ -41,7 +41,7 @@ def required_header(info: ResponseInfo, operation_id: str | None, name: str) -> 
     raise _header_failure(info, operation_id, name)
 
 
-def optional_header(_info: ResponseInfo, _operation_id: str | None, _name: str) -> Unset:
+def optional_header(_info: ResponseInfo, _operation_id: str | None, _name: str) -> UNSET:
     """Return UNSET for an optional header the response lacks."""
     return UNSET
 
@@ -85,7 +85,7 @@ class ResponseHeaders(Generic[T_co, M_co]):
             native_json = media_kind(branch.plan.content_media_type or "") == "json"
             plan = replace(branch.plan, content_media_type="text/plain") if native_json else branch.plan
             wire = decode_parameter(plan, RawParameter(location="header", fragments=fragments))
-            if isinstance(wire, Unset):
+            if wire is UNSET:
                 return branch.missing(info, self._operation_id, name)
             return codec.decode(cast("str", wire).encode()) if native_json else codec.text(wire)
         except errors as error:

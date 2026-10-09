@@ -14,7 +14,7 @@ from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_he
 from ..._runtime.model_codecs.media import FieldPlan
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...model_codecs import JSONValue
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 StoreDocumentResponse: TypeAlias = JSONValue | str | None | _dcg_type_0
@@ -23,7 +23,7 @@ StoreDocumentResponse: TypeAlias = JSONValue | str | None | _dcg_type_0
 ReadDocumentResponse: TypeAlias = _dcg_type_0
 
 
-_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[_dcg_type_0, Unset]] = ResponseHeaders(
+_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[_dcg_type_0, UNSET]] = ResponseHeaders(
     'readDocument',
     frozenset({'200'}),
     (
@@ -59,7 +59,7 @@ def decode_read_document_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Draft'],
-) -> _dcg_type_0 | Unset:
+) -> _dcg_type_0 | UNSET:
     """Decode one declared response header of read_document from a response's metadata."""
     return _READ_DOCUMENT_HEADERS.decode(info, name)
 

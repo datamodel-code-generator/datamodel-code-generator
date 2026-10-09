@@ -23,7 +23,7 @@ from ..model_codecs.errors import (
     ParameterEncodingError,
     WireValidationError,
 )
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .records import BodySelector
 from .values import Missing, resolve
@@ -210,7 +210,7 @@ def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
         return _DEFAULTS
     if not isinstance(options, WebhookOptions):
         raise configuration_error(("options",), "invalid_value", helper_id)
-    given = {name: value for name in _OPTIONS if not isinstance(value := getattr(options, name), Unset)}
+    given = {name: value for name in _OPTIONS if (value := getattr(options, name)) is not UNSET}
     return replace(_DEFAULTS, **given)
 
 

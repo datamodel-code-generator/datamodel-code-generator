@@ -24,13 +24,13 @@ from ..._runtime.client.codecs import (
 )
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...bodies import MultipartData
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListPetsResponse: TypeAlias = _dcg_type_0 | _dcg_type_1
 
 
-_LIST_PETS_HEADERS: Final[ResponseHeaders[_dcg_type_2 | _dcg_type_3, Unset]] = ResponseHeaders(
+_LIST_PETS_HEADERS: Final[ResponseHeaders[_dcg_type_2 | _dcg_type_3, UNSET]] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
     (
@@ -79,7 +79,7 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_2 | Unset: ...
+) -> _dcg_type_2 | UNSET: ...
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
@@ -92,7 +92,7 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next', 'X-Rate'],
-) -> _dcg_type_2 | _dcg_type_3 | Unset:
+) -> _dcg_type_2 | _dcg_type_3 | UNSET:
     """Decode one declared response header of list_pets from a response's metadata."""
     return _LIST_PETS_HEADERS.decode(info, name)
 
@@ -109,7 +109,7 @@ DeletePetsByPetIdResponse: TypeAlias = None
 HeadPetResponse: TypeAlias = None
 
 
-_HEAD_PET_HEADERS: Final[ResponseHeaders[_dcg_type_6, Unset]] = ResponseHeaders(
+_HEAD_PET_HEADERS: Final[ResponseHeaders[_dcg_type_6, UNSET]] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
     (
@@ -138,7 +138,7 @@ def decode_head_pet_header(
     info: ResponseInfo,
     *,
     name: Literal['ETag'],
-) -> _dcg_type_6 | Unset:
+) -> _dcg_type_6 | UNSET:
     """Decode one declared response header of head_pet from a response's metadata."""
     return _HEAD_PET_HEADERS.decode(info, name)
 

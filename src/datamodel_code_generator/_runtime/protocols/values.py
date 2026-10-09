@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Final, cast
 
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .records import BodySelector, HeaderSelector
 
 if TYPE_CHECKING:
@@ -101,7 +101,7 @@ class Patch:
 
     def applied(self, encode: Callable[[object], JSONValue]) -> JSONValue:
         """Return the encoded value, an empty object when omitted, with every write applied."""
-        wire: JSONValue = {} if isinstance(self.value, Unset) else encode(self.value)
+        wire: JSONValue = {} if self.value is UNSET else encode(self.value)
         for pointer, new in self.writes:
             wire = _patched(wire, _tokens(pointer), new)
         return wire

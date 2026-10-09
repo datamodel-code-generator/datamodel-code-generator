@@ -11,7 +11,7 @@ from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.uploads import UploadHandle, resume_upload, start_upload
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
 
@@ -64,7 +64,7 @@ class FilesUploadResumableUpload:
         source: UploadSource,
         *,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -113,7 +113,7 @@ class FilesFinishResumableUpload:
         source: UploadSource,
         *,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -163,7 +163,7 @@ class FilesPutResumableUpload:
         *,
         upload_length: int,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

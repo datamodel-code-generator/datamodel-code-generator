@@ -29,7 +29,7 @@ model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses,
 model_codecs/native.py: .media, __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
 model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
 model_codecs/stdlib.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
-model_codecs/unset.py: __future__, enum, typing
+model_codecs/unset.py: __future__, typing_extensions
 model_codecs/wire.py: __future__, collections.abc, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions

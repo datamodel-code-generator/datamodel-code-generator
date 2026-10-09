@@ -13,13 +13,13 @@ from models import UserPage as _dcg_type_0
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListUsersResponse: TypeAlias = _dcg_type_0
 
 
-_LIST_USERS_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_LIST_USERS_HEADERS: Final[ResponseHeaders[_dcg_type_1, UNSET]] = ResponseHeaders(
     'listUsers',
     frozenset({'200', '500'}),
     (
@@ -48,7 +48,7 @@ def decode_list_users_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | Unset:
+) -> _dcg_type_1 | UNSET:
     """Decode one declared response header of list_users from a response's metadata."""
     return _LIST_USERS_HEADERS.decode(info, name)
 

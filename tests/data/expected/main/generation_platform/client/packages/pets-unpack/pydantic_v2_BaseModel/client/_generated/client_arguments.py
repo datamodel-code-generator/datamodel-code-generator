@@ -13,16 +13,16 @@ from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncBinaryBody, AsyncMultipartBody, MultipartBody, SyncBinaryBody
-from ..options import RequestOptions, Unset
+from ..options import UNSET, RequestOptions
 
 
 class Operation0Arguments(TypedDict):
     """The keyword arguments of one signature of list_pets."""
 
-    limit: NotRequired[int | Unset]
-    labels: NotRequired[list[str] | Unset]
+    limit: NotRequired[int | UNSET]
+    labels: NotRequired[list[str] | UNSET]
     x_trace: str
-    session: NotRequired[str | Unset]
+    session: NotRequired[str | UNSET]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -104,7 +104,7 @@ class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of upload."""
 
     pet_id: int
-    body: NotRequired[SyncBinaryBody | Unset]
+    body: NotRequired[SyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]
@@ -114,7 +114,7 @@ class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of upload."""
 
     pet_id: int
-    body: NotRequired[AsyncBinaryBody | Unset]
+    body: NotRequired[AsyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]

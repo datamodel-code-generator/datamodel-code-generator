@@ -22,7 +22,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError
@@ -135,7 +135,7 @@ class _Received(Generic[T]):
 
 def _option(layers: tuple[object, ...], name: str, default: V) -> V:
     for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+        if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
 

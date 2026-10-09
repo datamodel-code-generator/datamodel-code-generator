@@ -37,7 +37,7 @@ from ..client.raw import afinished, aheld, checked, finished, held, native_reque
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from .options import StreamOptions, layered
 from .records import plain_copy
@@ -269,7 +269,7 @@ class _Lines:
 class _Limits:
     """The effective limits of one stream, each from the first layer that sets it; None removes a limit."""
 
-    idle_timeout: float | Unset | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
     reconnect: bool = False
     max_reconnects: int | None = 5
     max_reconnect_wait: float | None = 60.0
@@ -318,7 +318,8 @@ def _limits(
             raise _invalid(plan, ("stream_options", "reconnect"), "missing_metadata")
     else:
         _unpatched(core, plan, resume, request)
-    if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
+    idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
+    if idle is not UNSET:
         phases = core.call_settings(request, plan.call).timeout
         timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
         request = replace(request or RequestOptions(), timeout=timeout)
@@ -551,9 +552,9 @@ def _wire(value: object) -> JSONValue:
     return value.applied(plain_copy) if isinstance(value, Patch) else cast("JSONValue", value)
 
 
-def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | Unset, ...]:
+def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | UNSET, ...]:
     """Return arguments written by wire value with their writes applied."""
-    return cast("tuple[JSONValue | Unset, ...]", tuple(map(_wire, arguments)))
+    return cast("tuple[JSONValue | UNSET, ...]", tuple(map(_wire, arguments)))
 
 
 class _State(Enum):

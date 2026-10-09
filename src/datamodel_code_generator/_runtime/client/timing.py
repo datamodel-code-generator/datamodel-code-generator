@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotati
 from dataclasses import dataclass, field
 from typing import Final, final
 
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
@@ -121,9 +121,9 @@ class SessionOptions:
     The total timeout is counted from the start of the session.
     """
 
-    total_timeout: float | Unset | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Refuse booleans, negative or nonfinite durations."""
-        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
+        if (timeout := self.total_timeout) is not None and timeout is not UNSET:
             object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))

@@ -21,7 +21,7 @@ from .._runtime.protocols.pagination import (
     aiterate_pages,
     aresume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
 
@@ -90,7 +90,7 @@ class AsyncSearchAllPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -108,7 +108,7 @@ class AsyncSearchAllPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -145,7 +145,7 @@ class AsyncSearchAllPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -172,7 +172,7 @@ class AsyncSearchFixedPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -190,7 +190,7 @@ class AsyncSearchFixedPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -227,7 +227,7 @@ class AsyncSearchFixedPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -254,7 +254,7 @@ class AsyncSearchNextPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -272,7 +272,7 @@ class AsyncSearchNextPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -309,7 +309,7 @@ class AsyncSearchNextPagination:
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: _dcg_type_0 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -336,7 +336,7 @@ class AsyncLookupAllPagination:
     async def page(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: _dcg_type_1 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -354,7 +354,7 @@ class AsyncLookupAllPagination:
     def iterate(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: _dcg_type_1 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -391,7 +391,7 @@ class AsyncLookupAllPagination:
         self,
         state: JSONValue,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: _dcg_type_1 | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

@@ -22,7 +22,7 @@ from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError
 from .options import PaginationOptions, layered
 from .records import (
@@ -716,7 +716,7 @@ class _Walk(Generic[T, P]):
         if (
             (position := plan.writes[-1][0]) is not None
             and call.parameters[position].plan.location in {"query", "header"}
-            and isinstance(self.request.arguments[position], Unset)
+            and self.request.arguments[position] is UNSET
         ):
             return call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.

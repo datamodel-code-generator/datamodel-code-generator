@@ -35,7 +35,7 @@ from pets.errors import (
     NotFoundError,
     SDKError,
 )
-from pets.options import UNSET, Clock, RequestOptions, RetryOptions, ServerSelection, Unset
+from pets.options import UNSET, Clock, RequestOptions, RetryOptions, ServerSelection
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.types.pets import (
     CreatePetResponse,
@@ -237,7 +237,7 @@ def timing_options(client: Client) -> None:
     assert_type(client.with_options(timeout=None, total_timeout=0), ClientView)
     client.with_options(timeout=httpx2.Timeout(2), total_timeout=None)
     options = RequestOptions(timeout=1.5, total_timeout=UNSET)
-    assert_type(options.total_timeout, float | Unset | None)
+    assert_type(options.total_timeout, float | UNSET | None)
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
@@ -305,9 +305,9 @@ def retry_options(client: Client) -> None:
         should_retry_header=UNSET,
         retry_on_pool_timeout=False,
     )
-    assert_type(retry.statuses, Set[int] | Unset)
-    assert_type(retry.jitter, Literal["full", "none"] | Unset)
-    assert_type(retry.max_retry_after, float | Unset | None)
+    assert_type(retry.statuses, Set[int] | UNSET)
+    assert_type(retry.jitter, Literal["full", "none"] | UNSET)
+    assert_type(retry.max_retry_after, float | UNSET | None)
     client.with_options(retry=retry, max_retries=3, follow_redirects=True)
     client.request_raw("GET", "https://example.com", options=RequestOptions(retry=retry, follow_redirects=True))
     Client(max_retries=0, retry=RetryOptions(initial_delay=1), follow_redirects=False)
@@ -362,7 +362,7 @@ def idempotency_input(client: Client, stored: str | None) -> None:
     client.request_raw("POST", "https://example.com/jobs", options=RequestOptions(idempotency_key="stored-key"))
     client.request_raw("POST", "https://example.com/jobs", options=RequestOptions(idempotency_key=None))
     options = RequestOptions(idempotency_key=stored)
-    assert_type(options.idempotency_key, str | Unset | None)
+    assert_type(options.idempotency_key, str | UNSET | None)
 
 
 def native_auth(client: Client) -> None:
