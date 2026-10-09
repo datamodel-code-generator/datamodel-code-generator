@@ -1,5 +1,9 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 reviews:
+  # Review a pull request when it is opened (or on `@coderabbitai review`), not again on every push
+  auto_review:
+    enabled: true
+    auto_incremental_review: false
   # Path filters to reduce review scope and save rate limits
   # Exclude patterns use ! prefix
   path_filters:
