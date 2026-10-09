@@ -16,23 +16,11 @@ class Group:
     lone: str = ""
 
 
-@dataclass(frozen=True, slots=True)
-class Chain:
-    """Operands joined by a binary operator, such as the members of a union."""
-
-    operator: str
-    operands: tuple[Doc, ...]
-
-
-Doc: TypeAlias = str | Group | Chain
+Doc: TypeAlias = str | Group
 
 
 def layout(doc: Doc, indent: int, used: int, width: int) -> str:
-    """Return a document on one line when it fits, otherwise broken one item or operand per line.
-
-    A group puts a trailing comma after each item; a chain is parenthesized with each later operand led by its
-    operator.
-    """
+    """Return a document on one line when it fits, otherwise broken one item per line, each with a trailing comma."""
     return _Layout(width).doc(doc, indent, used)
 
 
@@ -54,11 +42,8 @@ class _Layout:
         if isinstance(doc, str):
             return doc
         if (text := self.texts.get(id(doc))) is None:
-            text = self.texts[id(doc)] = self.chain(doc) if isinstance(doc, Chain) else self.group(doc)
+            text = self.texts[id(doc)] = self.group(doc)
         return text
-
-    def chain(self, doc: Chain) -> str:
-        return f" {doc.operator} ".join(self.flat(operand) for operand in doc.operands)
 
     def group(self, doc: Group) -> str:
         inner = ", ".join(prefix + self.flat(item) for prefix, item in doc.items)
@@ -69,12 +54,5 @@ class _Layout:
         if isinstance(doc, str) or indent + used + len(text) < self.width:
             return text
         inner = " " * (indent + 4)
-        if isinstance(doc, Chain):
-            operator = f"{doc.operator} "
-            first, *rest = doc.operands
-            lines = f"{inner}{self.doc(first, indent + 4, 0)}\n" + "".join(
-                f"{inner}{operator}{self.doc(operand, indent + 4, len(operator))}\n" for operand in rest
-            )
-            return f"(\n{lines}{' ' * indent})"
         lines = "".join(f"{inner}{prefix}{self.doc(item, indent + 4, len(prefix))},\n" for prefix, item in doc.items)
         return f"{doc.head}\n{lines}{' ' * indent}{doc.tail}"
