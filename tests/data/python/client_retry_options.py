@@ -9,7 +9,7 @@ import subprocess
 import sys
 from dataclasses import fields
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, get_type_hints
+from typing import TYPE_CHECKING, get_type_hints
 from uuid import UUID
 
 from tests.data.python.client_runtime import Exchange, arecord, describe, raw_response, record, run
@@ -274,7 +274,9 @@ def _records(options: ModuleType, lines: list[str]) -> None:
     ))
     for owner in (options.ClientOptions, options.RequestOptions):
         value = owner()
-        omitted = tuple(getattr(value, name) is options.UNSET for name in ("retry", "follow_redirects", "idempotency_key"))
+        omitted = tuple(
+            getattr(value, name) is options.UNSET for name in ("retry", "follow_redirects", "idempotency_key")
+        )
         lines.append(f"  option omitted {owner.__name__}={omitted}")
 
 
@@ -314,13 +316,14 @@ print("  optional-free public options=" + str(not any(name in sys.modules for na
     lines.extend(result.stdout.splitlines())
 
 
-class _Events:
-    def __init__(self) -> None:
-        self.retries: list[tuple[object, object]] = []
+class _Statuses:
+    """Record the status of each response the injected HTTP client receives, through its own response hook."""
 
-    def on_event(self, event: Any) -> None:
-        if event.name == "retry_scheduled":
-            self.retries.append((event.duration, event.retry_reason))
+    def __init__(self) -> None:
+        self.values: list[int] = []
+
+    def __call__(self, response: httpx2.Response) -> None:
+        self.values.append(response.status_code)
 
 
 def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -330,7 +333,7 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         raw_response(501, b"second", "text/plain", **{"Retry-After": "999"}),
         raw_response(200, b"merged", "text/plain"),
     )
-    events = _Events()
+    received = _Statuses()
     client = options.ClientOptions(
         retry=options.RetryOptions(
             max_retries=1,
@@ -341,10 +344,9 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             max_retry_after=1,
             respect_retry_after=False,
         ),
-        hooks=(events,),
     )
     with (
-        exchange.client() as native,
+        exchange.client(event_hooks={"response": [received]}) as native,
         package.Client(http_client=native, options=client) as api,
     ):
         first = api.with_options(options.RequestOptions(retry=options.RetryOptions(max_retries=2)))
@@ -354,7 +356,7 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             "retry nested client/view/view/call",
             lambda: view.retry.get_safe(options=options.RequestOptions(retry=options.RetryOptions(statuses={501}))),
         )
-    lines.append(f"  merged retry waits={events.retries} pending responses={len(exchange.responders)}")
+    lines.append(f"  merged retry statuses={received.values} pending responses={len(exchange.responders)}")
 
     exchange = Exchange(lines)
     exchange.respond(raw_response(200, b"valid inherited delay", "text/plain"))

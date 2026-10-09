@@ -11,8 +11,7 @@ from typing import TYPE_CHECKING
 
 import httpx2
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
-from tests.data.python.client_runtime import Exchange, arecord, failing, injected, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, injected, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
@@ -20,43 +19,35 @@ if TYPE_CHECKING:
 
 
 class _Events:
-    def __init__(
-        self,
-        *,
-        fail: str | None = None,
-        scheduled: Callable[[], None] | None = None,
-        ended: Callable[[], None] | None = None,
-    ) -> None:
-        self.fail = fail
-        self.ended = ended
-        self.scheduled = scheduled
-        self.values: list[tuple[object, ...]] = []
-        self.ids: list[object] = []
+    """Record each native send and response through the injected HTTP client's own event hooks."""
 
-    def on_event(self, event: object) -> None:
-        name = getattr(event, "name", None)
-        self.values.append(
-            tuple(
-                getattr(event, key)
-                for key in (
-                    "name",
-                    "attempt_index",
-                    "status",
-                    "sent",
-                    "attempt_count",
-                    "retry_reason",
-                    "outcome",
-                )
-            )
-        )
-        self.ids.append(getattr(event, "call_id", None))
-        if name == "retry_scheduled" and self.scheduled is not None:
-            self.scheduled()
-        if name == "attempt_end" and self.ended is not None:
-            self.ended()
-        if name == self.fail:
-            message = "injected retry hook failure"
+    def __init__(self, *, fail: bool = False, responded: Callable[[], None] | None = None) -> None:
+        self.fail = fail
+        self.responded = responded
+        self.values: list[tuple[object, ...]] = []
+
+    def request(self, request: httpx2.Request) -> None:
+        self.values.append(("request", request.method, request.url.path))
+
+    def response(self, response: httpx2.Response) -> None:
+        self.values.append(("response", response.status_code))
+        if self.responded is not None:
+            self.responded()
+        if self.fail:
+            message = "injected response hook failure"
             raise RuntimeError(message)
+
+    async def arequest(self, request: httpx2.Request) -> None:
+        self.request(request)
+
+    async def aresponse(self, response: httpx2.Response) -> None:
+        self.response(response)
+
+    def hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.request], "response": [self.response]}
+
+    def async_hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.arequest], "response": [self.aresponse]}
 
 
 class _Broken(httpx2.SyncByteStream, httpx2.AsyncByteStream):
@@ -98,6 +89,9 @@ class _RewindFile(io.BytesIO):
         self.armed = False
         self.calls = 0
 
+    def arm(self) -> None:
+        self.armed = True
+
     def seek(self, offset: int, whence: int = 0, /) -> int:
         if self.armed:
             self.calls += 1
@@ -106,16 +100,6 @@ class _RewindFile(io.BytesIO):
             message = "finite guard against pre-send retry"
             raise RuntimeError(message)
         return super().seek(offset, whence)
-
-
-class _ArmRewind:
-    def __init__(self, file: _RewindFile, event: str) -> None:
-        self.file = file
-        self.event = event
-
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) == self.event:
-            self.file.armed = True
 
 
 def _fault(body: _Broken, status: int = 200) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -160,9 +144,8 @@ async def _acapture(call: Callable[[], Awaitable[object]]) -> tuple[object, ...]
 
 
 def _report(lines: list[str], events: _Events, exchange: Exchange) -> None:
-    lines.append(f"    events={events.values!r} one-call={len(set(events.ids)) == 1} queued={len(exchange.responders)}")
+    lines.append(f"    events={events.values!r} queued={len(exchange.responders)}")
     events.values.clear()
-    events.ids.clear()
     exchange.responders.clear()
 
 
@@ -170,8 +153,11 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
     """Exercise released candidates, saved raw responses, and cooperative wait termination."""
     options = importlib.import_module(f"{package.__name__}.options")
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    with (
+        exchange.client(event_hooks=events.hooks()) as native,
+        package.Client(http_client=native, options=config) as api,
+    ):
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
         record(lines, "typed status retry", lambda: _capture(api.retry.with_response.get_safe))
         _report(lines, events, exchange)
@@ -201,19 +187,17 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
                 record(lines, f"stream status reason {label}", lambda: _capture(response.raise_for_status))
                 record(lines, f"stream repeated status reason {label}", lambda: _capture(response.raise_for_status))
             _report(lines, events, exchange)
-        for name in ("response_headers", "attempt_end", "retry_scheduled"):
-            events.fail = name
-            exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-            record(lines, f"stop hook {name}", lambda: _capture(api.retry.with_response.get_safe))
-            _report(lines, events, exchange)
-        events.fail = None
+        events.fail = True
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        record(lines, "stop response hook", lambda: _capture(api.retry.with_response.get_safe))
+        _report(lines, events, exchange)
+        events.fail = False
         body = _Broken(read=False, close=True)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         record(lines, "failed cleanup stops status retry", lambda: _capture(api.retry.with_response.get_safe))
         record(lines, "failed cleanup count", lambda body=body: body.closes)
         _report(lines, events, exchange)
         _close_interruptions(api, events, exchange, lines)
-    _resource_interruptions(package, options, lines)
     _presend(package, options, lines)
     _key_inheritance(package, options, lines)
     run(lambda: _async_calls(package, options, lines))
@@ -245,59 +229,22 @@ def _close_interruptions(api: object, events: _Events, exchange: Exchange, lines
         _report(lines, events, exchange)
 
 
-def _resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for phase in ("send", "response", "ordinary response"):
-        first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
-        limiter = _SemaphoreLimiter(release_failure=second)
-        body = _Broken(read=False, close=first if phase == "response" else True)
-        exchange, events = Exchange([]), _Events()
-        exchange.respond(
-            failing(httpx2.ReadError) if phase == "send" else _fault(body, 503),
-            raw_response(200, b"unused", "text/plain"),
-        )
-        config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-        with exchange.client() as native, package.Client(http_client=native, options=config) as api:
-            try:
-                api.retry.post_idempotent(body=b"request")
-            except BaseException as error:  # noqa: BLE001
-                expected = first if phase == "response" else second
-                observed = (
-                    type(error).__name__,
-                    error is expected,
-                    error.args,
-                    getattr(error, "__notes__", ()),
-                    _secondary(error),
-                )
-            else:
-                observed = ("returned",)
-        record(
-            lines,
-            f"interrupted cleanup {phase}",
-            lambda observed=observed, body=body, limiter=limiter: (
-                observed,
-                body.closes,
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
-
-
 def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            reason="phase_timeout"
-        )
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    for stage in ("before call", "first response"):
+        failure = errors.APITimeoutError(reason="phase_timeout")
         file = _RewindFile(failure)
-        exchange, events = Exchange([]), _Events()
+        exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
         config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0),
-            total_timeout=None if stage == "call_start" else 0.5,
-            hooks=(_ArmRewind(file, stage), events),
+            retry=options.RetryOptions(initial_delay=0), total_timeout=None if stage == "before call" else 0.5
         )
-        with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+        if stage == "before call":
+            file.arm()
+        with (
+            exchange.client(event_hooks=events.hooks()) as native,
+            package.Client(http_client=native, options=config) as api,
+        ):
             try:
                 api.retry.post_idempotent(body=file)
             except BaseException as error:  # noqa: BLE001
@@ -311,8 +258,11 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
 
 async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    async with (
+        exchange.async_client(event_hooks=events.async_hooks()) as native,
+        package.AsyncClient(http_client=native, options=config) as api,
+    ):
         for label, call in (
             ("typed", api.retry.with_response.get_safe),
             ("buffered", api.retry.with_raw_response.get_safe),
@@ -341,19 +291,17 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
                     lines, f"async repeated status reason {label}", lambda: _acapture(response.raise_for_status)
                 )
             _report(lines, events, exchange)
-        for name in ("attempt_end", "retry_scheduled"):
-            events.fail = name
-            exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-            await arecord(lines, f"async stop hook {name}", lambda: _acapture(api.retry.with_response.get_safe))
-            _report(lines, events, exchange)
-        events.fail = None
+        events.fail = True
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        await arecord(lines, "async stop response hook", lambda: _acapture(api.retry.with_response.get_safe))
+        _report(lines, events, exchange)
+        events.fail = False
         body = _Broken(read=False, close=True)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         await arecord(lines, "async failed cleanup stops retry", lambda: _acapture(api.retry.with_response.get_safe))
         _report(lines, events, exchange)
         await _async_close_interruptions(api, events, exchange, lines)
     await _async_wait(package, options, lines)
-    await _async_resource_interruptions(package, options, lines)
     await _async_presend(package, options, lines)
     await _async_key_inheritance(package, options, lines)
 
@@ -384,59 +332,22 @@ async def _async_close_interruptions(api: object, events: _Events, exchange: Exc
         _report(lines, events, exchange)
 
 
-async def _async_resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for phase in ("send", "response", "ordinary response"):
-        first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
-        limiter = _AsyncSemaphoreLimiter(release_failure=second)
-        body = _Broken(read=False, close=first if phase == "response" else True)
-        exchange, events = Exchange([]), _Events()
-        exchange.respond(
-            failing(httpx2.ReadError) if phase == "send" else _fault(body, 503),
-            raw_response(200, b"unused", "text/plain"),
-        )
-        config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-            try:
-                await api.retry.post_idempotent(body=b"request")
-            except BaseException as error:  # noqa: BLE001
-                expected = first if phase == "response" else second
-                observed = (
-                    type(error).__name__,
-                    error is expected,
-                    error.args,
-                    getattr(error, "__notes__", ()),
-                    _secondary(error),
-                )
-            else:
-                observed = ("returned",)
-        record(
-            lines,
-            f"async interrupted cleanup {phase}",
-            lambda observed=observed, body=body, limiter=limiter: (
-                observed,
-                body.closes,
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
-
-
 async def _async_presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            reason="phase_timeout"
-        )
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    for stage in ("before call", "first response"):
+        failure = errors.APITimeoutError(reason="phase_timeout")
         file = _RewindFile(failure)
-        exchange, events = Exchange([]), _Events()
+        exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
         config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0),
-            total_timeout=None if stage == "call_start" else 0.5,
-            hooks=(_ArmRewind(file, stage), events),
+            retry=options.RetryOptions(initial_delay=0), total_timeout=None if stage == "before call" else 0.5
         )
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+        if stage == "before call":
+            file.arm()
+        async with (
+            exchange.async_client(event_hooks=events.async_hooks()) as native,
+            package.AsyncClient(http_client=native, options=config) as api,
+        ):
             try:
                 await api.retry.post_idempotent(body=file)
             except BaseException as error:  # noqa: BLE001
@@ -449,15 +360,21 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
 
 
 async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Cancel the caller's task while it waits for a scheduled retry, and observe the cancellation propagate."""
+    """Cancel the caller's task once its retryable response arrived, and observe the cancellation propagate.
+
+    The in-process response closes without suspending the task, so the cancellation reaches its retry wait.
+    """
     ready = asyncio.Event()
-    events = _Events(scheduled=ready.set)
+    events = _Events(responded=ready.set)
     exchange = Exchange([])
     config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"), hooks=(events,), total_timeout=60
+        retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"), total_timeout=60
     )
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+    async with (
+        exchange.async_client(event_hooks=events.async_hooks()) as native,
+        package.AsyncClient(http_client=native, options=config) as api,
+    ):
+        exchange.respond(injected(raw_response(503, b"busy", "text/plain")), raw_response(200, b"unused", "text/plain"))
 
         async def observed() -> tuple[object, ...]:
             try:

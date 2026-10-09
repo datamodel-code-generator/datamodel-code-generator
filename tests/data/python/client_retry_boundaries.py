@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import httpx2
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_retry_calls import _Broken, _capture, _error, _Events, _report, _secondary, _Stop
 from tests.data.python.client_runtime import Exchange, arecord, failing, injected, raw_response, record, run
 
@@ -19,49 +18,45 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-class _ShapeLimiter:
-    """Inject a late descriptor failure after the application limiter passed option validation."""
+class _Fault:
+    """Raise a failure from the injected client's request hook once the call reaches a chosen send."""
 
-    def __init__(self, inner: _SemaphoreLimiter | _AsyncSemaphoreLimiter, failure: BaseException) -> None:
-        self.inner, self.failure = inner, failure
-        self.armed = False
+    def __init__(self, failure: BaseException, send: int) -> None:
+        self.failure, self.send = failure, send
         self.calls = 0
 
-    @property
-    def acquire(self) -> object:
-        if self.armed:
-            self.calls += 1
-            if self.calls <= 2:
-                raise self.failure
-            message = "finite guard against retrying a pre-send failure"
+    def __call__(self, request: httpx2.Request) -> None:
+        del request
+        self.calls += 1
+        if self.calls == self.send:
+            raise self.failure
+        if self.calls > self.send:
+            message = "finite guard against resending a failed send"
             raise RuntimeError(message)
-        return self.inner.acquire
+
+    async def asynchronous(self, request: httpx2.Request) -> None:
+        self(request)
 
 
-class _ArmLimiter:
-    def __init__(self, limiter: _ShapeLimiter, event: str) -> None:
-        self.limiter, self.event = limiter, event
+class _Interrupting:
+    """Interrupt each response from the injected client's response hook, before the SDK receives it."""
 
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) == self.event:
-            self.limiter.armed = True
+    def __init__(self, failure: BaseException) -> None:
+        self.failure = failure
 
+    def __call__(self, response: httpx2.Response) -> None:
+        del response
+        raise self.failure
 
-class _TerminalHook:
-    def __init__(self, failures: dict[str, BaseException]) -> None:
-        self.failures = failures
-        self.events: list[tuple[object, object]] = []
-
-    def on_event(self, event: object) -> None:
-        name = getattr(event, "name", "")
-        self.events.append((name, getattr(event, "outcome", None)))
-        if (failure := self.failures.get(name)) is not None:
-            raise failure
+    async def asynchronous(self, response: httpx2.Response) -> None:
+        self(response)
 
 
 class _NativeBody(_Broken):
+    """A body interrupted while it streams, whose close raises the same interruption again."""
+
     def __init__(self, failure: BaseException) -> None:
-        super().__init__(read=False)
+        super().__init__(read=False, close=failure)
         self.failure = failure
 
     def __iter__(self) -> Iterator[bytes]:
@@ -70,61 +65,14 @@ class _NativeBody(_Broken):
 
 
 def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
-    """Keep keys, permits, and error attribution correct when preparation or waiting changes the call state."""
-    options, bodies, errors = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "bodies", "errors")
-    )
+    """Keep keys and error attribution correct when a native send fails or an interruption ends the call."""
+    options, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors"))
     _configuration(package, options, lines)
     _presend(package, options, errors, lines)
     _uncapped(package, options, lines)
-    _terminal(package, options, lines)
-    _failed_streams(package, options, lines)
-    _hook_interruption(package, options, lines)
-    run(lambda: _async(package, options, bodies, errors, lines))
-
-
-def _hook_interruption(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    primary = _Stop("intermediate attempt hook interruption")
-    hook = _TerminalHook({"attempt_end": primary})
-    exchange = Exchange([])
-    exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
-    with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(hooks=(hook,), retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
-    ):
-        try:
-            api.retry.get_safe()
-        except BaseException as error:  # noqa: BLE001
-            observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
-        else:
-            observed = ("returned",)
-    record(lines, "intermediate hook interruption", lambda: observed)
-    record(lines, "intermediate hook interruption events", lambda: hook.events)
-
-
-async def _ahook_interruption(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    primary = _Stop("intermediate attempt hook interruption")
-    hook = _TerminalHook({"attempt_end": primary})
-    exchange = Exchange([])
-    exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
-    async with (
-        exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(hooks=(hook,), retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
-    ):
-        try:
-            await api.retry.get_safe()
-        except BaseException as error:  # noqa: BLE001
-            observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
-        else:
-            observed = ("returned",)
-    record(lines, "async intermediate hook interruption", lambda: observed)
-    record(lines, "async intermediate hook interruption events", lambda: hook.events)
+    _terminal(package, lines)
+    _failed_streams(package, lines)
+    run(lambda: _async(package, options, errors, lines))
 
 
 def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -145,31 +93,24 @@ def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -
 
 
 def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            reason="phase_timeout"
-        )
-        limiter, events, exchange = _ShapeLimiter(_SemaphoreLimiter(), failure), _Events(), Exchange([])
+    for stage, send in (("first", 1), ("retried", 2)):
+        failure = errors.APITimeoutError(reason="phase_timeout")
+        fault, events, exchange = _Fault(failure, send), _Events(), Exchange([])
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
         with (
-            exchange.client() as native,
+            exchange.client(event_hooks={"request": [fault, events.request], "response": [events.response]}) as native,
             package.Client(
                 http_client=native,
-                options=options.ClientOptions(
-                    total_timeout=None,
-                    retry=options.RetryOptions(initial_delay=0),
-                    limiter=limiter,
-                    hooks=(_ArmLimiter(limiter, stage), events),
-                ),
+                options=options.ClientOptions(total_timeout=None, retry=options.RetryOptions(initial_delay=0)),
             ) as api,
         ):
             try:
                 api.retry.get_safe()
             except BaseException as error:  # noqa: BLE001
-                observed = _error(error), error is failure, limiter.calls
+                observed = _error(error), getattr(error, "cause", None) is failure, fault.calls
             else:
                 observed = ("returned",)
-        record(lines, f"pre-send descriptor {stage}", lambda observed=observed: observed)
+        record(lines, f"request hook failure {stage} send", lambda observed=observed: observed)
         _report(lines, events, exchange)
 
 
@@ -189,20 +130,19 @@ def _uncapped(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
             exchange.responders.clear()
 
 
-async def _async(
-    package: ModuleType, options: ModuleType, bodies: ModuleType, errors: ModuleType, lines: list[str]
-) -> None:
+async def _async(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     await _async_presend(package, options, errors, lines)
-    await _late_native(package, options, bodies, lines)
-    await _async_terminal(package, options, lines)
-    await _async_failed_streams(package, options, lines)
-    await _ahook_interruption(package, options, lines)
+    await _late_native(package, lines)
+    await _async_terminal(package, lines)
+    await _async_failed_streams(package, lines)
     exchange = Exchange([])
     exchange.respond(raw_response(200, b"bounded stream", "text/plain"))
     async with (
         exchange.async_client() as native,
         package.AsyncClient(http_client=native) as api,
-        api.retry.with_streaming_response.get_safe(options=options.RequestOptions(timeout=options.TimeoutOptions(read=2))) as response,
+        api.retry.with_streaming_response.get_safe(
+            options=options.RequestOptions(timeout=options.TimeoutOptions(read=2))
+        ) as response,
     ):
         await arecord(lines, "stream reuses its deadline through EOF", response.read)
     with patch.dict(sys.modules, {"h2": None}):
@@ -214,31 +154,25 @@ async def _async(
 
 
 async def _async_presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            reason="phase_timeout"
-        )
-        limiter, events, exchange = _ShapeLimiter(_AsyncSemaphoreLimiter(), failure), _Events(), Exchange([])
+    for stage, send in (("first", 1), ("retried", 2)):
+        failure = errors.APITimeoutError(reason="phase_timeout")
+        fault, events, exchange = _Fault(failure, send), _Events(), Exchange([])
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        hooks = {"request": [fault.asynchronous, events.arequest], "response": [events.aresponse]}
         async with (
-            exchange.async_client() as native,
+            exchange.async_client(event_hooks=hooks) as native,
             package.AsyncClient(
                 http_client=native,
-                options=options.ClientOptions(
-                    total_timeout=None,
-                    retry=options.RetryOptions(initial_delay=0),
-                    limiter=limiter,
-                    hooks=(_ArmLimiter(limiter, stage), events),
-                ),
+                options=options.ClientOptions(total_timeout=None, retry=options.RetryOptions(initial_delay=0)),
             ) as api,
         ):
             try:
                 await api.retry.get_safe()
             except BaseException as error:  # noqa: BLE001
-                observed = _error(error), error is failure, limiter.calls
+                observed = _error(error), getattr(error, "cause", None) is failure, fault.calls
             else:
                 observed = ("returned",)
-        record(lines, f"async pre-send descriptor {stage}", lambda observed=observed: observed)
+        record(lines, f"async request hook failure {stage} send", lambda observed=observed: observed)
         _report(lines, events, exchange)
 
 
@@ -260,12 +194,11 @@ class _Blocking(httpx2.AsyncBaseTransport):
         return httpx2.Response(200)
 
 
-async def _late_native(package: ModuleType, options: ModuleType, bodies: ModuleType, lines: list[str]) -> None:
+async def _late_native(package: ModuleType, lines: list[str]) -> None:
     transport = _Blocking()
-    limiter = _AsyncSemaphoreLimiter()
     async with (
         httpx2.AsyncClient(transport=transport) as native,
-        package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+        package.AsyncClient(http_client=native) as api,
     ):
 
         async def request() -> tuple[object, ...]:
@@ -279,27 +212,15 @@ async def _late_native(package: ModuleType, options: ModuleType, bodies: ModuleT
         await transport.entered.wait()
         caller.cancel("original caller interruption")
         await arecord(lines, "native send cancellation", lambda: caller)
-    record(
-        lines, "cancelled send resources released", lambda: (transport.cancelled, limiter.usage.active)
-    )
+    record(lines, "cancelled native sends", lambda: transport.cancelled)
 
 
-def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for event in ("attempt_end", "call_end", "call_start", "stream_end", "body"):
+def _terminal(package: ModuleType, lines: list[str]) -> None:
+    for point in ("response hook", "body"):
         primary = KeyboardInterrupt("first native terminal interruption")
-        secondary = SystemExit("later native terminal interruption")
-        first = _TerminalHook({"stream_end" if event == "body" else event: secondary if event == "body" else primary})
-        second = _TerminalHook({"stream_end" if event == "body" else event: RuntimeError("ordinary terminal failure")})
-        third = _TerminalHook({
-            "call_end" if event == "call_start" else "stream_end" if event == "body" else event: secondary
-        })
-        if event == "call_start":
-            first.failures["call_end"] = primary
-        elif event == "attempt_end":
-            third.failures["call_end"] = _Stop("separate call_end interruption")
-        hooks = (second, first, third) if event == "call_start" else (first, second, third)
         exchange = Exchange([])
-        if event == "body":
+        hooks = {"response": [_Interrupting(primary)]} if point == "response hook" else {}
+        if point == "body":
             body = _NativeBody(primary)
             exchange.respond(
                 injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
@@ -307,11 +228,11 @@ def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
         else:
             exchange.respond(raw_response(200, b"done", "text/plain"))
         with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=options.ClientOptions(hooks=hooks)) as api,
+            exchange.client(event_hooks=hooks) as native,
+            package.Client(http_client=native) as api,
         ):
             try:
-                if event in {"stream_end", "body"}:
+                if point == "body":
                     with api.retry.with_streaming_response.get_safe() as response:
                         response.read()
                 else:
@@ -320,12 +241,7 @@ def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                 observed = type(error).__name__, error is primary, error.args, getattr(error, "__notes__", ())
             else:
                 observed = ("returned",)
-        record(lines, f"terminal native drain {event}", lambda observed=observed: observed)
-        record(
-            lines,
-            "terminal hook order",
-            lambda first=first, second=second, third=third: (first.events, second.events, third.events),
-        )
+        record(lines, f"terminal native interruption {point}", lambda observed=observed: observed)
 
 
 def _caller_block(failure: str) -> None:
@@ -335,66 +251,48 @@ def _caller_block(failure: str) -> None:
     raise ValueError(message)
 
 
-def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _failed_streams(package: ModuleType, lines: list[str]) -> None:
     for failure in ("body", "block"):
-        primary = KeyboardInterrupt("stream_end interruption")
-        hook = _TerminalHook({"stream_end": primary})
+        primary = KeyboardInterrupt("stream close interruption")
         exchange = Exchange([])
-        body = _Broken(read=True)
+        body = _Broken(read=True, close=primary)
         exchange.respond(
             injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
         )
-        with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
-        ):
+        with exchange.client() as native, package.Client(http_client=native) as api:
             try:
                 with api.retry.with_streaming_response.get_safe() as response:
                     _caller_block(failure)
                     response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
-        record(lines, f"stream_end interruption after a failed {failure}", lambda observed=observed: observed)
+        record(lines, f"stream close interruption after a failed {failure}", lambda observed=observed: observed)
 
 
-async def _async_failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _async_failed_streams(package: ModuleType, lines: list[str]) -> None:
     for failure in ("body", "block"):
-        primary = _Stop("stream_end interruption")
-        hook = _TerminalHook({"stream_end": primary})
+        primary = _Stop("stream close interruption")
         exchange = Exchange([])
-        body = _Broken(read=True)
+        body = _Broken(read=True, close=primary)
         exchange.respond(
             injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
         )
-        async with (
-            exchange.async_client() as native,
-            package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
-        ):
+        async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
             try:
                 async with api.retry.with_streaming_response.get_safe() as response:
                     _caller_block(failure)
                     await response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
-        record(lines, f"async stream_end interruption after a failed {failure}", lambda observed=observed: observed)
+        record(lines, f"async stream close interruption after a failed {failure}", lambda observed=observed: observed)
 
 
-async def _async_terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for event in ("attempt_end", "call_end", "call_start", "stream_end", "body"):
+async def _async_terminal(package: ModuleType, lines: list[str]) -> None:
+    for point in ("response hook", "body"):
         primary = asyncio.CancelledError("first native terminal interruption")
-        secondary = _Stop("later native terminal interruption")
-        first = _TerminalHook({"stream_end" if event == "body" else event: secondary if event == "body" else primary})
-        second = _TerminalHook({"stream_end" if event == "body" else event: RuntimeError("ordinary terminal failure")})
-        third = _TerminalHook({
-            "call_end" if event == "call_start" else "stream_end" if event == "body" else event: secondary
-        })
-        if event == "call_start":
-            first.failures["call_end"] = primary
-        elif event == "attempt_end":
-            third.failures["call_end"] = _Stop("separate call_end interruption")
-        hooks = (second, first, third) if event == "call_start" else (first, second, third)
         exchange = Exchange([])
-        if event == "body":
+        hooks = {"response": [_Interrupting(primary).asynchronous]} if point == "response hook" else {}
+        if point == "body":
             body = _NativeBody(primary)
             exchange.respond(
                 injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
@@ -402,11 +300,11 @@ async def _async_terminal(package: ModuleType, options: ModuleType, lines: list[
         else:
             exchange.respond(raw_response(200, b"done", "text/plain"))
         async with (
-            exchange.async_client() as native,
-            package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=hooks)) as api,
+            exchange.async_client(event_hooks=hooks) as native,
+            package.AsyncClient(http_client=native) as api,
         ):
             try:
-                if event in {"stream_end", "body"}:
+                if point == "body":
                     async with api.retry.with_streaming_response.get_safe() as response:
                         await response.read()
                 else:
@@ -415,9 +313,4 @@ async def _async_terminal(package: ModuleType, options: ModuleType, lines: list[
                 observed = type(error).__name__, error is primary, error.args, getattr(error, "__notes__", ())
             else:
                 observed = ("returned",)
-        record(lines, f"async terminal native drain {event}", lambda observed=observed: observed)
-        record(
-            lines,
-            "async terminal hook order",
-            lambda first=first, second=second, third=third: (first.events, second.events, third.events),
-        )
+        record(lines, f"async terminal native interruption {point}", lambda observed=observed: observed)

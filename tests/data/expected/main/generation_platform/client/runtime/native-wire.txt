@@ -87,205 +87,105 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   sync refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   sync refused localhost unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   sync location 301/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=301 cause=NoneType'
-  header events=1
   sync location 301/ipv6/False/True = 'RawResponse status=301 attempts=1'
-  header events=1
   sync location 301/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 301/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 301/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 301/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
-  header events=1
   sync location 302/ipv6/False/True = 'RawResponse status=302 attempts=1'
-  header events=1
   sync location 302/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 302/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 302/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 302/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=303 cause=NoneType'
-  header events=1
   sync location 303/ipv6/False/True = 'RawResponse status=303 attempts=1'
-  header events=1
   sync location 303/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 303/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 303/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 303/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=307 cause=NoneType'
-  header events=1
   sync location 307/ipv6/False/True = 'RawResponse status=307 attempts=1'
-  header events=1
   sync location 307/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 307/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 307/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 307/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=308 cause=NoneType'
-  header events=1
   sync location 308/ipv6/False/True = 'RawResponse status=308 attempts=1'
-  header events=1
   sync location 308/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 308/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   sync location 308/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location 308/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   sync location arrivals=100
   sync native borrowed raw=False = "Response status=200 attempts=1 headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
   sync native borrowed raw=True = "RawResponse status=200 attempts=1 headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
@@ -293,15 +193,15 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   sync native borrowed closed=False
   sync native captured responses closed=[True, True, True]
   sync borrowed client defaults leaked=True
-  sync malformed Location header-hook RuntimeError raw=False: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  sync malformed Location header-hook RuntimeError raw=True: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  sync malformed Location header-hook Stop raw=False: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  sync malformed Location header-hook Stop raw=True: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  sync header-hook arrivals=4
+  sync malformed Location response-hook RuntimeError raw=False: APIConnectionError attempts=1 reason=None status=None cause=RuntimeError notes=[] same=False
+  response-hook statuses=[302]
+  sync malformed Location response-hook RuntimeError raw=True: APIConnectionError attempts=1 reason=None status=None cause=RuntimeError notes=[] same=False
+  response-hook statuses=[302]
+  sync malformed Location response-hook Stop raw=False: Stop attempts=None reason=None status=None cause=NoneType notes=[] same=True
+  response-hook statuses=[302]
+  sync malformed Location response-hook Stop raw=True: Stop attempts=None reason=None status=None cause=NoneType notes=[] same=True
+  response-hook statuses=[302]
+  sync response-hook arrivals=4
   async h1 = "Response status=200 attempts=1 headers=(('content-length', '5'), ('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
   arrivals=1 connects=0 alpn=[]
   async h2 = "Response status=200 attempts=1 headers=(('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
@@ -390,205 +290,105 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   async refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   async refused localhost unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   async location 301/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=301 cause=NoneType'
-  header events=1
   async location 301/ipv6/False/True = 'AsyncRawResponse status=301 attempts=1'
-  header events=1
   async location 301/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 301/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 301/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 301/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
-  header events=1
   async location 302/ipv6/False/True = 'AsyncRawResponse status=302 attempts=1'
-  header events=1
   async location 302/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 302/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 302/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 302/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=303 cause=NoneType'
-  header events=1
   async location 303/ipv6/False/True = 'AsyncRawResponse status=303 attempts=1'
-  header events=1
   async location 303/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 303/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 303/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 303/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=307 cause=NoneType'
-  header events=1
   async location 307/ipv6/False/True = 'AsyncRawResponse status=307 attempts=1'
-  header events=1
   async location 307/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 307/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 307/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 307/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/port/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/port/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/port/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/port/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/ipv6/False/False = 'APIStatusError attempts=1 reason=unexpected_status status=308 cause=NoneType'
-  header events=1
   async location 308/ipv6/False/True = 'AsyncRawResponse status=308 attempts=1'
-  header events=1
   async location 308/ipv6/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 308/ipv6/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=ConnectError'
-  header events=0
   async location 308/idna/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/idna/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/idna/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/idna/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/control/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/control/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/control/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/control/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/length/False/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/length/False/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/length/True/False = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location 308/length/True/True = 'APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError'
-  header events=0
   async location arrivals=100
   async native borrowed raw=False = "Response status=200 attempts=1 headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
   async native borrowed raw=True = "AsyncRawResponse status=200 attempts=1 headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
@@ -596,12 +396,12 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   async native borrowed closed=False
   async native captured responses closed=[True, True, True]
   async borrowed client defaults leaked=True
-  async malformed Location header-hook RuntimeError raw=False: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  async malformed Location header-hook RuntimeError raw=True: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  async malformed Location header-hook Stop raw=False: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  async malformed Location header-hook Stop raw=True: APIConnectionError attempts=1 reason=None status=None cause=RemoteProtocolError notes=[] same=False
-  header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
-  async header-hook arrivals=4
+  async malformed Location response-hook RuntimeError raw=False: APIConnectionError attempts=1 reason=None status=None cause=RuntimeError notes=[] same=False
+  response-hook statuses=[302]
+  async malformed Location response-hook RuntimeError raw=True: APIConnectionError attempts=1 reason=None status=None cause=RuntimeError notes=[] same=False
+  response-hook statuses=[302]
+  async malformed Location response-hook Stop raw=False: Stop attempts=None reason=None status=None cause=NoneType notes=[] same=True
+  response-hook statuses=[302]
+  async malformed Location response-hook Stop raw=True: Stop attempts=None reason=None status=None cause=NoneType notes=[] same=True
+  response-hook statuses=[302]
+  async response-hook arrivals=4

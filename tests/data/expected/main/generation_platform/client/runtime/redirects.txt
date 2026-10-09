@@ -2,61 +2,61 @@
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   not followed by the call = ('APIStatusError', 'unexpected_status', 301, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, None), ('attempt_end', 0, 301, 'https://api.example.com', 1, None), ('call_end', 0, 301, 'https://api.example.com', 1, 'error')]
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 301]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   301 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 301, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   302 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   303 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 303, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   307 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 307, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   308 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 308, ('GET', 'https://api.example.com/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://other.example.com:9443/done
     [host: other.example.com:9443, accept-encoding: gzip, deflate, accept: text/plain] b''
   another origin = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://other.example.com:9443/done'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   unsupported 305 = ('APIStatusError', 'unexpected_status', 305, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 305, 'https://api.example.com', 1, None), ('attempt_end', 0, 305, 'https://api.example.com', 1, None), ('call_end', 0, 305, 'https://api.example.com', 1, 'error')]
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 305]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   missing Location = ('APIStatusError', 'unexpected_status', 302, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 302]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/next%2Fpart?q=a%2Fb
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   relative encoded = (FieldSafeGetResponse(root='server payload'), 200, 1)
-    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
+    unused=0 hops=[('GET', 'https://api.example.com/safe'), 302, ('GET', 'https://api.example.com/next%2Fpart?q=a%2Fb#omitted'), 200]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   invalid port = ('APIConnectionError', None, None, 1, 'RemoteProtocolError')
-    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('transport_failure', 0, None, 'https://api.example.com', 1, None), ('attempt_end', 0, None, 'https://api.example.com', 1, None), ('call_end', 0, None, 'https://api.example.com', 1, 'error')]
+    unused=1 hops=[('GET', 'https://api.example.com/safe'), 302]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/hop0

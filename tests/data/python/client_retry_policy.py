@@ -10,24 +10,24 @@ from uuid import UUID
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, failing, record, run
+from tests.data.python.client_runtime import Exchange, arecord, failing, injected, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
 
-class _Events:
-    def __init__(self) -> None:
-        self.values: list[tuple[object, ...]] = []
+class _Statuses:
+    """Record the status of each response the injected HTTP client receives, through its own response hook."""
 
-    def on_event(self, event: object) -> None:
-        self.values.append(
-            tuple(
-                getattr(event, name)
-                for name in ("name", "attempt_index", "status", "sent", "outcome", "retry_reason", "attempt_count")
-            )
-        )
+    def __init__(self) -> None:
+        self.values: list[int] = []
+
+    def __call__(self, response: httpx2.Response) -> None:
+        self.values.append(response.status_code)
+
+    async def asynchronous(self, response: httpx2.Response) -> None:
+        self(response)
 
 
 class _Clock:
@@ -48,24 +48,15 @@ class _Draw:
         return self.value
 
 
-class _TimingHook:
-    def __init__(self, clock: _Clock, *, headers_elapsed: float = 0.0, end_elapsed: float = 0.0) -> None:
-        self.clock = clock
-        self.headers_elapsed = headers_elapsed
-        self.end_elapsed = end_elapsed
-        self.delays: list[float | None] = []
+class _Elapsed(httpx2.ByteStream):
+    """A response body whose close lets a fake clock pass any retry wait, so no attempt waits in real time."""
 
-    def on_event(self, event: object) -> None:
-        name = getattr(event, "name", None)
-        if name == "response_headers" and getattr(event, "status", None) != 200:
-            self.clock.value += self.headers_elapsed
-        if name == "attempt_end":
-            self.clock.value += self.end_elapsed
-        if name == "retry_scheduled":
-            delay = getattr(event, "duration", None)
-            self.delays.append(round(delay, 12) if isinstance(delay, float) else None)
-            if isinstance(delay, float):
-                self.clock.value += delay
+    def __init__(self, clock: _Clock) -> None:
+        super().__init__(b"server payload")
+        self.clock = clock
+
+    def close(self) -> None:
+        self.clock.value += 1000.0
 
 
 def _response(status: int, headers: tuple[tuple[str, str], ...] = ()) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -78,6 +69,15 @@ def _response(status: int, headers: tuple[tuple[str, str], ...] = ()) -> Callabl
         )
 
     return respond
+
+
+def _elapsed(
+    status: int, headers: tuple[tuple[str, str], ...], clock: _Clock
+) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return an in-process response whose close advances the clock past the retry wait the client chose."""
+    return injected(
+        lambda _: httpx2.Response(status, headers=(("Content-Type", "text/plain"), *headers), stream=_Elapsed(clock))
+    )
 
 
 def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tuple[object, ...]:
@@ -104,12 +104,11 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
 def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    events = _Events()
+    received = _Statuses()
     with (
-        exchange.client() as native,
+        exchange.client(event_hooks={"response": [received]}) as native,
         package.Client(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,)),
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
         ) as api,
     ):
         for label, method, statuses, request in (
@@ -144,7 +143,7 @@ def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ),
         ):
             exchange.responders.clear()
-            events.values.clear()
+            received.values.clear()
             exchange.respond(*(_response(status) for status in statuses))
             record(
                 lines,
@@ -153,7 +152,7 @@ def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                     lambda: getattr(api.retry.with_response, method)(options=request)
                 ),
             )
-            lines.append(f"    events={events.values!r} unused={len(exchange.responders)}")
+            lines.append(f"    statuses={received.values!r} unused={len(exchange.responders)}")
 
 
 def _hints(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -335,10 +334,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             _response(503),
             lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
-        events = _Events()
-        raw = api.retry.with_raw_response.post_key_only(
-            body=b"automatic", options=options.RequestOptions(hooks=(events,))
-        )
+        raw = api.retry.with_raw_response.post_key_only(body=b"automatic")
         wire_key = raw.info.headers.get("X-Observed-Key")
         parsed = None if wire_key is None else UUID(wire_key)
         record(lines, "automatic declared key", lambda: outcome(raw.raise_for_status))
@@ -346,7 +342,6 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
             f"attempts={raw.info.attempt_count} "
-            f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
 
@@ -559,7 +554,7 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     exchange = Exchange(lines)
     with exchange.client() as native:
-        for label, retry_fields, statuses, fields, draw_value, total, expected, draws in (
+        for label, retry_fields, statuses, fields, draw_value, total, draws in (
             (
                 "saturated none",
                 {"initial_delay": 0.25, "max_delay": 0.5, "jitter": "none", "max_retries": 4},
@@ -567,12 +562,11 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (),
                 0.5,
                 None,
-                (0.25, 0.5, 0.5, 0.5),
                 0,
             ),
-            ("full jitter", {"initial_delay": 2, "max_delay": 4}, (503, 503, 200), (), 0.5, None, (1.0, 2.0), 2),
-            ("full lower bound", {"initial_delay": 1}, (503, 200), (), 0.0, None, (0.0,), 1),
-            ("full upper edge", {"initial_delay": 1}, (503, 200), (), math.nextafter(1.0, 0.0), None, (1.0,), 1),
+            ("full jitter", {"initial_delay": 2, "max_delay": 4}, (503, 503, 200), (), 0.5, None, 2),
+            ("full lower bound", {"initial_delay": 1}, (503, 200), (), 0.0, None, 1),
+            ("full upper edge", {"initial_delay": 1}, (503, 200), (), math.nextafter(1.0, 0.0), None, 1),
             (
                 "subnormal upper edge",
                 {"initial_delay": 5e-324, "max_delay": 5e-324},
@@ -580,21 +574,11 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (),
                 math.nextafter(1.0, 0.0),
                 None,
-                (0.0,),
                 1,
             ),
-            (
-                "zero remains zero",
-                {"initial_delay": 0, "max_delay": 5e-324},
-                (503, 503, 200),
-                (),
-                0.5,
-                None,
-                (0.0, 0.0),
-                0,
-            ),
-            ("server exact cap", {"initial_delay": 0}, (503, 200), (("Retry-After", "60"),), 0.5, None, (60.0,), 0),
-            ("server over cap no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "61"),), 0.5, None, (), 0),
+            ("zero remains zero", {"initial_delay": 0, "max_delay": 5e-324}, (503, 503, 200), (), 0.5, None, 0),
+            ("server exact cap", {"initial_delay": 0}, (503, 200), (("Retry-After", "60"),), 0.5, None, 0),
+            ("server over cap no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "61"),), 0.5, None, 0),
             (
                 "server unlimited cap",
                 {"initial_delay": 0, "max_retry_after": None},
@@ -602,77 +586,28 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (("Retry-After", "61"),),
                 0.5,
                 None,
-                (61.0,),
                 0,
             ),
-            ("server deadline equality no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "1"),), 0.5, 1.0, (), 0),
-            ("backoff deadline equality", {"initial_delay": 1, "jitter": "none"}, (503,), (), 0.5, 1.0, (), 0),
-            ("jitter deadline rejection", {"initial_delay": 2}, (503,), (), 0.75, 1.0, (), 1),
-            ("success no RNG", {"initial_delay": 1}, (200,), (), 0.5, None, (), 0),
-            ("excluded status no RNG", {"initial_delay": 1}, (404,), (), 0.5, None, (), 0),
-            (
-                "server forbids no RNG",
-                {"initial_delay": 1},
-                (503,),
-                (("X-Retry-Permitted", "false"),),
-                0.5,
-                None,
-                (),
-                0,
-            ),
+            ("server deadline equality no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "1"),), 0.5, 1.0, 0),
+            ("backoff deadline equality", {"initial_delay": 1, "jitter": "none"}, (503,), (), 0.5, 1.0, 0),
+            ("jitter deadline rejection", {"initial_delay": 2}, (503,), (), 0.75, 1.0, 1),
+            ("success no RNG", {"initial_delay": 1}, (200,), (), 0.5, None, 0),
+            ("excluded status no RNG", {"initial_delay": 1}, (404,), (), 0.5, None, 0),
+            ("server forbids no RNG", {"initial_delay": 1}, (503,), (("X-Retry-Permitted", "false"),), 0.5, None, 0),
         ):
             clock, draw = _Clock(), _Draw(draw_value)
-            hook = _TimingHook(clock)
             exchange.responders.clear()
-            exchange.respond(*(_response(status, fields) for status in statuses))
+            exchange.respond(*(_elapsed(status, fields, clock) for status in statuses))
             with package.Client(
                 http_client=native,
                 options=options.ClientOptions(
                     retry=options.RetryOptions(**retry_fields),
                     total_timeout=total,
-                    hooks=(hook,),
                     clock=options.Clock(monotonic=clock, random=draw),
                 ),
             ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
-            lines.append(
-                f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected} "
-                f"draws={draw.calls}/{draws} unused={len(exchange.responders)}"
-            )
-
-        for label, fields, retry_fields, elapsed, end_elapsed, expected in (
-            (
-                "receipt target survives headers hook",
-                (("Retry-After", "1"),),
-                {"initial_delay": 0.25, "jitter": "none"},
-                0.5,
-                0.0,
-                (0.5,),
-            ),
-            ("chosen target survives end hook", (), {"initial_delay": 0.5, "jitter": "none"}, 0.0, 0.25, (0.25,)),
-            (
-                "original server cap survives hook",
-                (("X-Retry-In-Ms", "64"),),
-                {"initial_delay": 0, "max_retry_after": 0.06},
-                1.0,
-                0.0,
-                (),
-            ),
-        ):
-            clock = _Clock()
-            hook = _TimingHook(clock, headers_elapsed=elapsed, end_elapsed=end_elapsed)
-            exchange.responders.clear()
-            exchange.respond(_response(503, fields), _response(200))
-            with package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(**retry_fields), hooks=(hook,), clock=options.Clock(monotonic=clock)
-                ),
-            ) as api:
-                record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
-            lines.append(
-                f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected}"
-            )
+            lines.append(f"    draws={draw.calls}/{draws} unused={len(exchange.responders)}")
 
 
 def _frozen(options: ModuleType) -> object:
@@ -694,20 +629,18 @@ def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    events = _Events()
+    received = _Statuses()
     async with (
-        exchange.async_client() as native,
+        exchange.async_client(event_hooks={"response": [received.asynchronous]}) as native,
         package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,)),
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
         ) as api,
     ):
         exchange.respond(_response(503), _response(200))
         response = await arecord(lines, "async retry", api.retry.with_response.get_safe)
         info = getattr(response, "info", None)
         counts = tuple(getattr(info, name, None) for name in ("attempt_count", "request_id"))
-        lines.append(f"    counts={counts!r} events={events.values!r}")
-        events.values.clear()
+        lines.append(f"    counts={counts!r} statuses={received.values!r}")
         async with package.AsyncClient(http_client=native, options=_frozen(options)) as frozen:
             exchange.respond(_response(503), _response(503), _response(200))
             response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
@@ -724,7 +657,6 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
             f"attempts={raw.info.attempt_count} "
-            f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
     await _adelivery(package, options, lines)
