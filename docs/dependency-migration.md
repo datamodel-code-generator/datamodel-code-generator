@@ -45,7 +45,8 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
 Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the new notices are recorded for the planned 0.78.0 release. The registry contains the
+original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
+and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
 [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including

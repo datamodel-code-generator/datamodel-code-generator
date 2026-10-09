@@ -71,7 +71,7 @@ def test_migration_notices_real_generation(selection: str, entry: str, tmp_path:
         ("Support for Black", "black", uses_black and Version(black.__version__) < Version("24.3.0")),
         ("Support for isort", "isort", uses_isort and Version(isort.__version__) < Version("6")),
         ("Support for DCG", "pydantic", Version(pydantic.VERSION) < Version("2.8.2")),
-        ("Python 3.10", "python310", sys.version_info < (3, 11)),
+        ("Running datamodel-code-generator on Python 3.10", "python310", sys.version_info < (3, 11)),
     )
     for prefix, name, expected in notices:
         assert_output(
