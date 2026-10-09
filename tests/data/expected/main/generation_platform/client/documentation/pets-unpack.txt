@@ -203,7 +203,7 @@ The package copies the runtime modules its capabilities and model backend need:
 - `_runtime`: `__init__.py`
 - `_runtime/client`: `__init__.py`, `arguments.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
-- `_runtime/protocols`: `__init__.py`, `caches.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket_types.py`
+- `_runtime/protocols`: `__init__.py`, `errors.py`, `records.py`, `references.py`, `resume.py`, `sources.py`
 
 
 # artifact client/_generated_docs/runtime.md

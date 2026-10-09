@@ -54,6 +54,16 @@ state = module.ResumeState(helper='helper', state={'page': 1})
 print('resume round trip=' + repr(module.import_state(state.export()).export() == state.export()))
 print('construction threads unchanged=' + repr(threading.active_count() == before))
 """
+_CLIENT_PROBE: Final = """
+import importlib
+import sys
+sys.path.insert(0, sys.argv[1])
+package = importlib.import_module(sys.argv[2])
+options = importlib.import_module(sys.argv[2] + '.options')
+with package.Client(options=options.ClientOptions(retry=options.RetryOptions(max_retries=1))):
+    loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if name.startswith(sys.argv[2] + '._runtime.protocols.'))
+print('configured client loads protocols=' + repr(loaded))
+"""
 _RECORDS: Final = (
     "BodySelector",
     "HeaderSelector",
@@ -134,13 +144,14 @@ def _imports(package: ModuleType, lines: list[str]) -> None:
         msg = "Generated package has no source path"
         raise RuntimeError(msg)
     root = Path(location).parent.parent
-    completed = subprocess.run(
-        [sys.executable, "-I", "-c", _IMPORT_PROBE, str(root), package.__name__],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    lines.extend(f"  {line}" for line in completed.stdout.splitlines())
+    for probe in (_IMPORT_PROBE, _CLIENT_PROBE):
+        completed = subprocess.run(
+            [sys.executable, "-I", "-c", probe, str(root), package.__name__],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        lines.extend(f"  {line}" for line in completed.stdout.splitlines())
 
 
 def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -672,11 +683,10 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         ("request protocols None", lambda: options.RequestOptions(protocols=None)),
     ):
         record(lines, label, create)
-    names = importlib.import_module(f"{package.__name__}._runtime.protocols.names")
     for label, module in (
         ("options", options),
         ("errors", importlib.import_module(f"{package.__name__}.errors")),
-        ("names", names),
+        ("names", importlib.import_module(f"{package.__name__}._runtime.protocols.names")),
     ):
         record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
         record(

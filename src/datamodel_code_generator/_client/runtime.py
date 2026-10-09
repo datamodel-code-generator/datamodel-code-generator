@@ -58,15 +58,19 @@ _CORE: Final = (
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
     "model_codecs/wire.py",
-    "protocols/caches.py",
     "protocols/errors.py",
-    "protocols/names.py",
-    "protocols/options.py",
-    "protocols/origins.py",
     "protocols/records.py",
     "protocols/references.py",
     "protocols/resume.py",
     "protocols/sources.py",
+)
+_PROTOCOLS: Final = (
+    "protocols/client.py",
+    "protocols/client_options.py",
+    "protocols/caches.py",
+    "protocols/names.py",
+    "protocols/options.py",
+    "protocols/origins.py",
     "protocols/websocket_types.py",
 )
 _OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
@@ -135,6 +139,15 @@ class Capabilities:
         modules = {*_CORE, *(module for kind in self.backends for module in _BACKENDS[kind])}
         modules.update(module for helper in self.helpers for module in _HELPERS[helper])
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
+        if self.protocols:
+            modules.update(_PROTOCOLS)
+        if "webhooks" in self.helpers:
+            modules.update((
+                "protocols/caches.py",
+                "protocols/options.py",
+                "protocols/origins.py",
+                "protocols/websocket_types.py",
+            ))
         if self.oauth:
             modules.update(_OAUTH)
         if self.keywords:

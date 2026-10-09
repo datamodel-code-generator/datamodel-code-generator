@@ -54,13 +54,13 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
     from types import TracebackType
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
     from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
+    from .client import AsyncClientCore, ClientCore
     from .references import OperationRef
     from .writes import ReadPaths
 

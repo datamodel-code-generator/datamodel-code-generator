@@ -54,12 +54,12 @@ if TYPE_CHECKING:
     from datetime import datetime
     from types import TracebackType
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
     from ..model_codecs.media import JSONValue
+    from .client import AsyncClientCore, ClientCore
     from .pagination import PageBinding
     from .records import ParameterTarget, Selector
     from .references import OperationRef

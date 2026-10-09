@@ -170,8 +170,9 @@ def _options(capabilities: Capabilities) -> str:
         "from __future__ import annotations\n\n",
         "from typing import TYPE_CHECKING\n\n" if protocols else "",
         "from ._runtime.client.options import (\n",
-        *(f"    {name},\n" for name in sorted(names)),
+        *(f"    {name},\n" for name in sorted(names) if not protocols or name != "ClientOptions"),
         ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
+        "from ._runtime.protocols.client_options import ClientOptions\n" if protocols else "",
         _PROTOCOL_OPTIONS if protocols else "",
         "\n__all__ = [\n",
         *(f'    "{name}",\n' for name in exported),
@@ -1195,7 +1196,7 @@ class _Resources(_Typing):
             lazy.append((protocols, helpers_module))
         values = {
             "defaults": self.defaults(module),
-            "options": module.local("options", "ClientOptions"),
+            "options": module.local("_runtime.client.options" if protocols else "options", "ClientOptions"),
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
@@ -2457,7 +2458,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *handles.values(),
         }
         module = Module(names, self.resources.symbols, level=2)
-        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
+        core = module.local("_runtime.protocols.client", f"{prefix}ClientCore")
+        base_core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         cached = module.name("functools", "cached_property")
         sections: list[str] = []
         for parts, children in nodes.items():
@@ -2469,7 +2471,14 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 for attribute, (child, dotted) in children.items()
             ]
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
-            sections.append(self.node(name, what, core, members))
+            sections.append(
+                self.node(
+                    name,
+                    what,
+                    core if parts else (base_core, f"{core}.from_client(core)"),
+                    members,
+                )
+            )
         for index, (name, spec) in enumerate(leaves.items()):
             sections.extend(
                 self.leaf(module, index, name, spec, core, handle=handles.get(name), asynchronous=asynchronous)
@@ -2538,13 +2547,14 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return [self.node(name, what, core, members, leaf=True)]
 
     @staticmethod
-    def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
+    def node(name: str, what: str, core: str | tuple[str, str], members: list[str], *, leaf: bool = False) -> str:
         """Return a namespace or helper class holding the client core its members send through."""
+        kind, binding = (core, "core") if isinstance(core, str) else core
         head = (
             f'class {name}:\n    """{what[0].upper()}{what[1:]}."""\n\n'
-            f"    def __init__(self, core: {core}) -> None:\n"
+            f"    def __init__(self, core: {kind}) -> None:\n"
             f'        """Keep the client core {"the helper sends" if leaf else "its helpers send"} through."""\n'
-            "        self._core = core"
+            f"        self._core = {binding}"
         )
         return "\n\n".join((head, *members))
 

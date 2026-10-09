@@ -1,4 +1,6 @@
 # pets pydantic_v2.BaseModel
+  helper modules copied=[]
+  helper options field=False
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
@@ -289,6 +291,8 @@
   async range upload streaming = b'jpeg'
   async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
 # pets typing.TypedDict
+  helper modules copied=[]
+  helper options field=False
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = [{'id': 1, 'name': 'cat', 'tag': None}]

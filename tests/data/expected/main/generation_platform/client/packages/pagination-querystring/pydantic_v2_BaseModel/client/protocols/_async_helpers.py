@@ -10,7 +10,8 @@ from functools import cached_property
 from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
 from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.pagination import (
     AsyncPager,
     Page,
@@ -28,9 +29,9 @@ from . import PaginationOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def search(self) -> AsyncSearchProtocols:
