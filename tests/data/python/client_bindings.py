@@ -165,7 +165,7 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
 def _renders(
     case: dict[str, Any], root: Path
 ) -> Iterator[tuple[str, Callable[..., tuple[list[str], Modules]], Callable[[str], Path]]]:
-    """Yield the label of each backend and variant of a case and functions that render it or its models under a directory.
+    """Yield the label of each backend and variant of a case, and functions that render it or its models in a directory.
 
     A render returns its report lines and the Python modules of the package it ships, and the ordinary generation
     returns the directory that holds its models.

@@ -14,7 +14,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "client-coordinator": (
         "private-import:tests/data/python/client_generation.py",
         "private-import:tests/data/python/client_protocol_records.py",
-        "private-import:tests/data/python/client_typing.py",
     ),
     "command-output": (
         "embedded-source:tests/data/expected/main/generation_platform/client/cli/check-edited.txt",
@@ -1464,7 +1463,7 @@ ALLOWLISTS = {
 }
 ALLOWLIST_GROUP_REASONS = {
     "client-coordinator": (
-        "The client target has no public entry point yet, so its report helpers reach the coordinator directly, and "
+        "The client render cases reach the coordinator directly until they run through generate(), and "
         "client_protocol_records builds the protocol configuration records that the coordinator consumes."
     ),
     "command-output": (

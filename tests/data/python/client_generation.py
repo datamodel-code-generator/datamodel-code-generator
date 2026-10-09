@@ -136,6 +136,47 @@ def model_config(output: Path, backend: str, options: Mapping[str, Any]) -> Gene
     })
 
 
+def _operation_option(value: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """Spell a fixture operation as the reference and settings that the --client-operations JSON keys it by."""
+    ref = value["ref"]
+    key = ref if isinstance(ref, str) else f"{ref.get('document') or ''}#{ref['pointer']}"
+    settings = {name: item for name, item in value.items() if name != "ref"}
+    if "parameter_names" in settings:
+        settings["parameter_names"] = {
+            f"{item['in_']}:{item['name']}": item["python_name"] for item in settings["parameter_names"]
+        }
+    if "body_field_names" in settings:
+        names: dict[str, dict[str, str]] = {}
+        for item in settings["body_field_names"]:
+            names.setdefault(item["media_type"], {})[item["name"]] = item["python_name"]
+        settings["body_field_names"] = names
+    return key, settings
+
+
+def client_options(values: Mapping[str, Any], root: Path, package: str) -> dict[str, Any]:
+    """Spell fixture client settings as the client options of generate() for a package and its `<package>_models`.
+
+    A helper file under the root is passed as the JSON object it holds, as client_generate_options passes it.
+    """
+    options: dict[str, Any] = {
+        "generate_client": "httpx2",
+        "client_output": root / package,
+        "client_package": package,
+        "client_model_package": f"{package}_models",
+    }
+    for key, value in values.items():
+        match key:
+            case "protocols":
+                options["client_protocols"] = json.loads((root / value).read_text(encoding="utf-8"))
+            case "resource_names":
+                options["client_resource_names"] = {item["tag"]: item["namespace"] for item in value}
+            case "operations":
+                options["client_operations"] = dict(map(_operation_option, value))
+            case _:
+                options[f"client_{key}"] = value
+    return options
+
+
 def generate_client(
     source: Path,
     root: Path,
@@ -144,14 +185,15 @@ def generate_client(
     model: Mapping[str, Any] | None = None,
     config: Mapping[str, Any] | None = None,
 ) -> None:
-    """Generate a client package and its `<package>_models` module under a root, from fixture option values."""
-    generate_target(
+    """Generate a client package and its `<package>_models` module under a root through generate().
+
+    The model and client settings are fixture option values.
+    """
+    generate(
         source,
-        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
-        config=client_config(
-            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        config=model_config(
+            root / f"{package}_models.py", backend, {**(model or {}), **client_options(config or {}, root, package)}
         ),
-        generator=ClientTarget(),
     )
 
 
