@@ -425,9 +425,10 @@ own placeholder names.
 The application keeps FastAPI's defaults for its documentation endpoints and for the shape of its error
 responses, with one difference: a request that fails validation answers `422` with FastAPI's `{"detail": [...]}`
 records without their `input` and `ctx`, and without pydantic's `url`, which FastAPI already leaves out: the
-response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc` and `msg` are still pydantic's and can hold text the client
-chose: a key of a mapping or an unexpected field in `loc`, a discriminator tag in `msg`, and whatever a validator
-of your own puts in its error message. Parameters and bodies that adapters read answer with the same three keys.
+response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc`
+and `msg` are still pydantic's and can hold text the client chose: a key of a mapping or an unexpected field in
+`loc`, a discriminator tag in `msg`, and whatever a validator of your own puts in its error message. Parameters and
+bodies that adapters read answer with the same three keys.
 
 - `create_app` registers the handler, `validation_error_handler`, through FastAPI's `exception_handlers`. Pass
   your own `exception_handlers` to send other error bodies, for example ones without `loc` and `msg`; an entry
