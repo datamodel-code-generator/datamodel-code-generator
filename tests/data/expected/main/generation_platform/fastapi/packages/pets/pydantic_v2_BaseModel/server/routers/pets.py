@@ -19,7 +19,10 @@ from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_pets_handler = checked(
         pets.list_pets,
@@ -62,7 +65,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     create_pet_handler = checked(
         pets.create_pet,
@@ -95,7 +101,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_my_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     list_my_pets_handler = checked(
         pets.list_my_pets,
@@ -123,7 +132,10 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     get_pet_handler = checked(
         pets.get_pet,
@@ -156,7 +168,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_delete_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     pets: PetsService = wiring.services['pets']
     delete_pet_handler = checked(
         pets.delete_pet,

@@ -23,7 +23,10 @@ from .._runtime.server.security import (
 from ..services import WiringService
 
 
-def _add_router(router_1: APIRouter, wiring_1: Wiring) -> None:
+def _add_router(
+    router_1: APIRouter,
+    wiring_1: Wiring,
+) -> None:
     wiring_2: WiringService[object] = wiring_1.services['wiring']
     router_handler_1 = checked(
         wiring_2.router,

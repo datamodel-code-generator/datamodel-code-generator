@@ -544,6 +544,19 @@ The values a role receives can change while server generation is experimental, a
 builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
 compare an override with the current builtin template after an upgrade. The templates write every module, class,
 function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+Each role receives these top-level values, where `imports` is the module's import block:
+
+| Role | Values |
+| --- | --- |
+| `application.jinja2` | `imports`, `exports`, `final`, `options`, `routes`, `info`, `build_router`, `build`, `services`, `settings`, `create_app`, `arguments`, `fastapi`, `error_handlers`, `serve_source_openapi` |
+| `contract.jinja2` | `imports`, `typed_dict`, `dependencies`, `plans`, `final`, `dataclass`, `parameter_adapter`, `body_adapter`, `operation_responses` |
+| `facade.jinja2` | `module`, `docstring`, `imports`, `exports` |
+| `openapi.jinja2` | `lines` |
+| `readme.jinja2` | `title`, `package`, `model_package`, `backend`, `operations`, `services`, `protocols`, `arguments`, `schemes`, `forms`, `raw_request` |
+| `router.jinja2` | `imports`, `docstring`, `routes`, `api_router`, `wiring`, `final`, `literal`, `templated`, `builder`, `group`, `build`, `services`, `settings` |
+| `security.jinja2` | `imports`, `schemes`, `exports` |
+| `services.jinja2` | `imports`, `typevar`, `abstract`, `protocol_type`, `protocols` |
+
 `router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
 `service`, `handler`), its `lookup` of the service method, its `principal` dependency or none, its `endpoint` with
 the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and

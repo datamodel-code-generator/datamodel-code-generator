@@ -601,7 +601,8 @@ def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> WireValue | UNSE
         case "header":
             return _decode_header_value(plan, raw.fragments)
         case _:
-            return _decode_cookie_value(plan, raw.fragments)
+            pass
+    return _decode_cookie_value(plan, raw.fragments)
 
 
 def split_query(raw: bytes | None) -> tuple[ParameterFragment, ...]:

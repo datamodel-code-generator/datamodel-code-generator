@@ -15,7 +15,10 @@ from fastapi import APIRouter, params
 from typing import Final
 
 
-def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_inventory(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     store: StoreService = wiring.services["store"]
     get_inventory_handler = checked(
         store.get_inventory,

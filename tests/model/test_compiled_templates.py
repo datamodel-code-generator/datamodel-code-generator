@@ -836,6 +836,14 @@ def test_inventory_rejects_unknown_filter_with_actionable_diagnostic(tmp_path: P
             ),
         ),
         (
+            "nested_macro.jinja2",
+            "{% macro row() %}x{% endmacro %}{% if enabled %}{% macro row() %}x{% endmacro %}{% endif %}{{ row() }}",
+            (
+                r"nested_macro\.jinja2:1: unsupported Jinja nested macro 'row'; "
+                r"update the standalone template compiler"
+            ),
+        ),
+        (
             "nested_target.jinja2",
             "{% for (first, second), third in values %}{{ first }}{% endfor %}",
             (

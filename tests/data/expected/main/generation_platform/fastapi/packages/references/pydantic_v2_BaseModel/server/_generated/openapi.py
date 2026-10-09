@@ -290,7 +290,10 @@ def document() -> dict[str, Any]:
 
 
 def serve_source_openapi(
-    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None
+    app: FastAPI,
+    *,
+    prefix: str = "",
+    metadata: Mapping[str, Any] | None = None,
 ) -> None:
     """Serve the source document instead of FastAPI's, read on its first request.
 

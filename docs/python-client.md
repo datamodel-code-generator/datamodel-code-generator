@@ -188,7 +188,7 @@ conversion rules, as they do for unknown object members. Dataclass and TypedDict
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
-The generated `model_codecs` module exports `UNSET`, `Unset` and `JSONValue`. Parameter parsing records and wire
+The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details.
 
 ## Webhook contracts
@@ -229,18 +229,18 @@ a generated helper calls a verifier and checks its result.
 
 `WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
 the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
-`Unset` removed and every argument required. Both types are exported from `pkg.protocols`.
+`UNSET` removed and every argument required. Both types are exported from `pkg.protocols`.
 `ResolvedWebhookOptions` records limits already validated and resolved by the consuming helper. Helpers must
 validate `WebhookOptions` before constructing this record and passing it to an application verifier.
 
 | Field | Type | Effective default | Valid values |
 |---|---|---|---|
-| `max_body_bytes` | `int \| Unset` | `8388608` | Positive integer |
-| `max_header_bytes` | `int \| Unset` | `16384` | Positive integer |
-| `max_keys` | `int \| Unset` | `8` | Positive integer |
-| `max_signatures` | `int \| Unset` | `8` | Positive integer |
-| `past_tolerance` | `float \| Unset` | `300` seconds | Finite, nonnegative number |
-| `future_tolerance` | `float \| Unset` | `30` seconds | Finite, nonnegative number |
+| `max_body_bytes` | `int \| UNSET` | `8388608` | Positive integer |
+| `max_header_bytes` | `int \| UNSET` | `16384` | Positive integer |
+| `max_keys` | `int \| UNSET` | `8` | Positive integer |
+| `max_signatures` | `int \| UNSET` | `8` | Positive integer |
+| `past_tolerance` | `float \| UNSET` | `300` seconds | Finite, nonnegative number |
+| `future_tolerance` | `float \| UNSET` | `30` seconds | Finite, nonnegative number |
 
 Options reject `None`, booleans, negative values, nonfinite durations, and zero count limits with
 `ConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
@@ -2661,8 +2661,8 @@ identifier, and when a body field name names no field argument or its operation 
 
 ### Signatures
 
-The body and each media type's fields are separate overloads. The body's takes every field as `Unset`; a field
-overload takes the body as `Unset`, the fields its model's constructor requires without a default, and its other
+The body and each media type's fields are separate overloads. The body's takes every field as `UNSET`; a field
+overload takes the body as `UNSET`, the fields its model's constructor requires without a default, and its other
 fields with `UNSET`, and a field takes `None` only when its property is nullable. A field is required exactly when the
 generated model requires it, so `--force-optional` and defaults make it optional. An optional body whose fields are all optional has one
 overload for each field, which that overload requires, and one that takes nothing and sends nothing:

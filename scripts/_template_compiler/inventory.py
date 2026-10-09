@@ -479,7 +479,7 @@ def inventory_templates(template_dir: Path, environment: Environment | None = No
                 _validate_for_target(relative_path, node)
             elif isinstance(node, nodes.Macro):
                 _inventory_macro(values["macros"], relative_path, node)
-                if node not in ast.body:
+                if not any(node is item for item in ast.body):
                     raise _unsupported(relative_path, node, "nested macro", node.name)
             elif isinstance(node, nodes.Include):
                 if not isinstance(node.template, nodes.Const) or not isinstance(node.template.value, str):
