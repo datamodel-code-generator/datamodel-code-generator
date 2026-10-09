@@ -9,6 +9,7 @@ from typing import Annotated, Final
 
 import spellings_basemodel_models
 from fastapi import APIRouter, Depends, Path, Query, params
+from fastapi.responses import Response
 from pydantic import Field, StringConstraints
 
 from .._generated import contract
@@ -105,6 +106,37 @@ def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_literal(router: APIRouter, wiring: Wiring) -> None:
+    pets: PetsService = wiring.services['pets']
+    literal_handler = checked(pets.literal, 'The pets.literal method of GET /literal')
+
+    def literal(
+        *,
+        parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
+    ) -> object:
+        return dispatch(
+            literal_handler(
+                modes=parameters.modes,
+                named=parameters.named,
+                listed=parameters.listed,
+            ),
+            contract.LiteralModel.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/literal',
+        literal,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='literal',
+        tags=['pets'],
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('literal'),
+    )
+
+
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
     get_pet_handler = checked(
@@ -165,6 +197,7 @@ LITERAL_ROUTES: Final = (
     ('list_pets', _add_list_pets),
     ('list_counts', _add_list_counts),
     ('get_code', _add_get_code),
+    ('literal', _add_literal),
 )
 TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet),)
 

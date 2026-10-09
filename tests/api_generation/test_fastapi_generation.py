@@ -36,6 +36,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "single",
         "encoding",
         "route-errors",
+        "relative-override",
         "name-errors",
         "group-errors",
         "repeat-32",

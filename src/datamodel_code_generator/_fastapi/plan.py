@@ -65,6 +65,7 @@ if TYPE_CHECKING:
         TypeView,
         WireDeclaration,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
@@ -456,11 +457,17 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
+        types: TypeNames,
     ) -> None:
-        """Index the batch, and resolve the per-operation settings to operation keys."""
+        """Index the batch, and resolve the per-operation settings to operation keys.
+
+        `types` says which types a generated module can import.
+        """
         self.request = request
         self.config = config
         self.wire = wire
+        self.types = types
+        self.unspelled: set[TypeUseId] = set()
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
@@ -673,8 +680,25 @@ class Planner:  # noqa: PLR0904
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
-        """Return the first type use of a declaration."""
-        return next((self.uses[use] for use in uses if use in self.uses), None)
+        """Return the first type use of a declaration, reporting a type no generated module can import."""
+        use = next((self.uses[use] for use in uses if use in self.uses), None)
+        if (
+            use is not None
+            and use.type is not None
+            and use.id not in self.unspelled
+            and self.types.unspellable(use.type)
+        ):
+            self.unspelled.add(use.id)
+            self.problems.append(
+                Diagnostic(
+                    code="BND_TYPE_EXPRESSION_UNSUPPORTED",
+                    severity="error",
+                    stage="binding",
+                    message="The use's final type has no expression a generated module can import",
+                    source_pointer=use.id.use_site.pointer,
+                )
+            )
+        return use
 
     def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
         """Return a request use, reporting a schema the model generator gave no type."""
@@ -801,7 +825,11 @@ class Planner:  # noqa: PLR0904
         settings = () if (model := self.symbols[symbol].facts) is None else model.configuration
         keywords = facts.backend.emitted.constructor_keywords
         constraints = tuple(item for item in keywords if item[0] in _CONSTRAINTS)
-        if any(setting.present for setting in settings) or any(name not in _PLAIN_KEYWORDS for name, _ in keywords):
+        if (
+            any(setting.present for setting in settings)
+            or any(name not in _PLAIN_KEYWORDS for name, _ in keywords)
+            or self.types.unspellable(facts.type)
+        ):
             return None
         value = self.nested(facts.type, seen | {symbol})
         return _constrained(value, constraints) if constraints else value

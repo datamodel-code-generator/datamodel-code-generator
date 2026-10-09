@@ -7,11 +7,14 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import date
-from typing import Protocol
+from typing import Literal, Protocol
 
 import spellings_basemodel_models
 from fastapi.responses import Response
 from typing_extensions import TypeVar
+
+import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
+from tests.data.python.fastapi_handlers.spelling_types import Annotated, List
 
 from ._runtime.server.responses import HTTPResult
 
@@ -55,6 +58,15 @@ class PetsService(Protocol):
     ): ...
 
     @abstractmethod
+    def literal(
+        self,
+        *,
+        modes: list[Literal['a']] | None,
+        named: Annotated | None,
+        listed: List | None,
+    ) -> None | HTTPResult[None] | Response: ...
+
+    @abstractmethod
     def get_pet(
         self,
         *,
@@ -79,6 +91,17 @@ class PetsService(Protocol):
 
 class FieldsService(Protocol):
     """Implement the fields operations: subclass this Protocol, or give an object its methods."""
+
+    @abstractmethod
+    def post_thing(
+        self,
+        *,
+        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
+    ) -> (
+        tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]
+        | HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]]
+        | Response
+    ): ...
 
     @abstractmethod
     def post_field(

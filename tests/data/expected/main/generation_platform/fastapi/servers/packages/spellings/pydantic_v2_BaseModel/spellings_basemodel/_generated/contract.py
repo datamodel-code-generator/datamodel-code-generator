@@ -8,11 +8,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Final, TypedDict
+from typing import Final, Literal, TypedDict
 
 import spellings_basemodel_models
 from fastapi import params
 from pydantic import TypeAdapter
+
+import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
+from tests.data.python.fastapi_handlers.spelling_types import Annotated, List
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
@@ -25,6 +28,8 @@ OperationDependencies = TypedDict(
         'list_pets': Sequence[params.Depends],
         'list_counts': Sequence[params.Depends],
         'get_code': Sequence[params.Depends],
+        'literal': Sequence[params.Depends],
+        'post_thing': Sequence[params.Depends],
         'get_pet': Sequence[params.Depends],
         'post_field': Sequence[params.Depends],
         'post_day': Sequence[params.Depends],
@@ -67,6 +72,71 @@ class GetCode:
             '200': Declared(
                 media_type='application/json',
                 model=spellings_basemodel_models.Code,
+            ),
+        },
+    )
+
+
+class LiteralModel:
+    """Plans of the literal operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of literal."""
+
+        modes: list[Literal['a']] | None
+        named: Annotated | None
+        listed: List | None
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='modes',
+                plan=ParameterPlan(
+                    location='query',
+                    name='modes',
+                    style='form',
+                    shape='array',
+                    reserved_names=('listed', 'named'),
+                ),
+                adapter=TypeAdapter(list[Literal['a']]),
+            ),
+            ParameterArgument(
+                name='named',
+                plan=ParameterPlan(
+                    location='query',
+                    name='named',
+                    style='form',
+                    explode=True,
+                    reserved_names=('listed', 'modes'),
+                ),
+                adapter=TypeAdapter(Annotated),
+            ),
+            ParameterArgument(
+                name='listed',
+                plan=ParameterPlan(
+                    location='query',
+                    name='listed',
+                    style='form',
+                    explode=True,
+                    reserved_names=('modes', 'named'),
+                ),
+                adapter=TypeAdapter(List),
+            ),
+        ),
+        record=Parameters,
+    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+
+
+class PostThing:
+    """Plans of the post_thing operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
             ),
         },
     )

@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Sequence as Sequence_1
 from dataclasses import dataclass
 from datetime import date
-from typing import Annotated, Final, Optional, TypedDict
+from typing import Annotated, Final, List, Literal, Optional, TypedDict
 
 from fastapi import params
 from pydantic import StringConstraints, TypeAdapter
@@ -23,6 +23,10 @@ from spellings_exact_basemodel_models import (
     Tag,
 )
 
+import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
+from tests.data.python.fastapi_handlers.spelling_types import Annotated as Annotated_1
+from tests.data.python.fastapi_handlers.spelling_types import List as List_1
+
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
@@ -31,12 +35,14 @@ from .._runtime.server.responses import Declared, OperationResponses
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'list_pets': Sequence[params.Depends],
-        'list_counts': Sequence[params.Depends],
-        'get_code': Sequence[params.Depends],
-        'get_pet': Sequence[params.Depends],
-        'post_field': Sequence[params.Depends],
-        'post_day': Sequence[params.Depends],
+        'list_pets': Sequence_1[params.Depends],
+        'list_counts': Sequence_1[params.Depends],
+        'get_code': Sequence_1[params.Depends],
+        'literal': Sequence_1[params.Depends],
+        'post_thing': Sequence_1[params.Depends],
+        'get_pet': Sequence_1[params.Depends],
+        'post_field': Sequence_1[params.Depends],
+        'post_day': Sequence_1[params.Depends],
     },
     total=False,
 )
@@ -73,6 +79,71 @@ class GetCode:
             '200': Declared(
                 media_type='application/json',
                 model=Annotated[str, StringConstraints(min_length=2, max_length=5)],
+            ),
+        },
+    )
+
+
+class LiteralModel:
+    """Plans of the literal operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of literal."""
+
+        modes: Optional[List[Literal['a']]]
+        named: Optional[Annotated_1]
+        listed: Optional[List_1]
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='modes',
+                plan=ParameterPlan(
+                    location='query',
+                    name='modes',
+                    style='form',
+                    shape='array',
+                    reserved_names=('listed', 'named'),
+                ),
+                adapter=TypeAdapter(List[Literal['a']]),
+            ),
+            ParameterArgument(
+                name='named',
+                plan=ParameterPlan(
+                    location='query',
+                    name='named',
+                    style='form',
+                    explode=True,
+                    reserved_names=('listed', 'modes'),
+                ),
+                adapter=TypeAdapter(Annotated_1),
+            ),
+            ParameterArgument(
+                name='listed',
+                plan=ParameterPlan(
+                    location='query',
+                    name='listed',
+                    style='form',
+                    explode=True,
+                    reserved_names=('modes', 'named'),
+                ),
+                adapter=TypeAdapter(List_1),
+            ),
+        ),
+        record=Parameters,
+    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+
+
+class PostThing:
+    """Plans of the post_thing operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
             ),
         },
     )

@@ -107,14 +107,12 @@ def _response(spec: OperationSpec, status: int) -> ResponseSpec | None:
 def _nonnull(value: TypeView) -> TypeView:
     """Return a type without None, as a result that reads null is refused at runtime.
 
-    The union of the other members keeps the discriminators of its schema and of its annotation.
+    The union of the other members keeps the discriminator its schema declares.
     """
     if not isinstance(value, UnionType) or not any(isinstance(member, NoneType) for member in value.members):
         return value
     members = tuple(member for member in value.members if not isinstance(member, NoneType))
-    if len(members) == 1 and value.tag is None:
-        return members[0]
-    return UnionType(members, value.preserve_order, value.discriminator, tag=value.tag)
+    return members[0] if len(members) == 1 else UnionType(members, value.preserve_order, value.discriminator)
 
 
 class _Polls:

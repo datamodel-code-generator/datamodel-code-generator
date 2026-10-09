@@ -1268,6 +1268,8 @@ class _Hints:
         Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
         type and a constrained string is str.
         """
+        if (python_type := data_type.python_type) is not None:
+            return self.hint(self.bound(python_type))
         update: dict[str, object] = {**_ALONE, "data_types": [], "children": []}
         slotted: set[tuple[str | None, str]] = set()
         if (import_ := data_type.import_) is not None and import_.from_ is not None:
@@ -1295,6 +1297,44 @@ class _Hints:
             )
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
         return self.hint(annotation, static)
+
+    def bound(self, binding: BoundPythonType) -> tuple[str, tuple[Import, ...]]:
+        """Render a bound Python type with each name it imports, and each module it names, as a slot.
+
+        The model generator's own aliases of those names stay out of the text, so a target module names them itself.
+        """
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeBoundName,
+            PythonTypeRuntimeSymbol,
+            render_python_type_expr,
+            rewrite_python_type_expr,
+        )
+
+        slots: dict[str, str] = {}
+
+        def placeholder(import_: Import) -> str:
+            slot = self.slot(import_)
+            name = f"__dcg_slot_{slot.strip(_SLOT)}__"
+            slots[name] = slot
+            return name
+
+        def leaf(expression: PythonTypeExpr) -> PythonTypeExpr:
+            match expression:
+                case PythonTypeBoundName():
+                    name = placeholder(Import(import_=expression.import_name, from_=expression.import_from))
+                    return PythonTypeBoundName(name, expression.import_from, expression.import_name)
+                case PythonTypeRuntimeSymbol() if expression.module:
+                    return PythonTypeRuntimeSymbol(
+                        placeholder(Import(import_=expression.module)), expression.qualname_parts
+                    )
+                case _:
+                    pass
+            return expression
+
+        text = render_python_type_expr(rewrite_python_type_expr(binding.expression, leaf))
+        for name, slot in slots.items():
+            text = text.replace(name, slot)
+        return text, ()
 
     def expression(self, value: object, slotted: set[tuple[str | None, str]]) -> object:
         if not isinstance(value, PythonRuntimeExpression):
@@ -1633,7 +1673,11 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
             actual := names.get((expression.import_from, expression.import_name, expression.value))
         ):
             return PythonTypeBoundName(actual.binding_name, actual.from_, actual.import_)
-        if isinstance(expression, PythonTypeRuntimeSymbol) and (actual := modules.get(expression.module)):
+        if (
+            isinstance(expression, PythonTypeRuntimeSymbol)
+            and (actual := modules.get(expression.module))
+            and not (actual.from_ or "").startswith(".")
+        ):
             return PythonTypeRuntimeSymbol(
                 f"{actual.from_}.{actual.import_}" if actual.from_ else actual.import_, expression.qualname_parts
             )

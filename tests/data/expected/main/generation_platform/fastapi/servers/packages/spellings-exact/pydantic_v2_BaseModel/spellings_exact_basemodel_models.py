@@ -6,12 +6,15 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from re import compile
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 from annotated_types import MultipleOf
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
+
+from tests.data.python.fastapi_handlers.spelling_types import Annotated as Annotated_1
+from tests.data.python.fastapi_handlers.spelling_types import List as List_1
 
 
 class PetId(RootModel[conint(ge=1)]):
@@ -25,8 +28,16 @@ class Tag(RootModel[str]):
     root: constr(pattern=r'^(?!x)')
 
 
-class Pair(RootModel[list[Union[constr(min_length=1), conint(ge=0)]]]):
-    root: list[Union[constr(min_length=1), conint(ge=0)]] = Field(..., max_length=2)
+class Named(RootModel[Annotated_1]):
+    root: Annotated_1
+
+
+class Listed(RootModel[List_1]):
+    root: List_1
+
+
+class Pair(RootModel[List[Union[constr(min_length=1), conint(ge=0)]]]):
+    root: List[Union[constr(min_length=1), conint(ge=0)]] = Field(..., max_length=2)
 
 
 class Day(RootModel[date]):
@@ -59,19 +70,22 @@ FieldPetsGetQueryInvalidParameter = TypeAliasType("FieldPetsGetQueryInvalidParam
 
 
 class FieldPetsGetResponse(
-    RootModel[list[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]]
+    RootModel[List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]]
 ):
-    root: list[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]
+    root: List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]
 
 
 FieldCountsGetQueryInvalidParameter = TypeAliasType("FieldCountsGetQueryInvalidParameter", bool)
 
 
-class FieldCountsGetResponse(RootModel[list[conint(ge=0)]]):
-    root: list[conint(ge=0)]
+class FieldCountsGetResponse(RootModel[List[conint(ge=0)]]):
+    root: List[conint(ge=0)]
 
 
 FieldCodeGetQueryInvalidParameter = TypeAliasType("FieldCodeGetQueryInvalidParameter", bool)
+
+
+FieldLiteralGetQueryModesParameter = TypeAliasType("FieldLiteralGetQueryModesParameter", List[Literal['a']])
 
 
 FieldPetsPetIdGetQueryLimitParameter = TypeAliasType(
@@ -81,7 +95,7 @@ FieldPetsPetIdGetQueryLimitParameter = TypeAliasType(
 
 FieldPetsPetIdGetQueryCodesParameter = TypeAliasType(
     "FieldPetsPetIdGetQueryCodesParameter",
-    list[Annotated[str, Field(min_length=2, max_length=5)]],
+    List[Annotated[str, Field(min_length=2, max_length=5)]],
 )
 
 

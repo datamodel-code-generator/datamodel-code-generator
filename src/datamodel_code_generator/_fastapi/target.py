@@ -51,8 +51,13 @@ class FastAPITarget:
             [use for operation in request.operations for use in operation_uses(operation)],
             operations=frozenset(operation.id for operation in request.operations),
         )
+        types = TypeNames(
+            request.batch,
+            exact=bool(request.model_config.use_exact_imports),
+            overrides=request.model_config.import_overrides,
+        )
         try:
-            plan = Planner(request, config, wire).plan()
+            plan = Planner(request, config, wire, types).plan()
         except PlanError as error:
             raise APIGenerationError(
                 error.diagnostics,
@@ -70,11 +75,7 @@ class FastAPITarget:
             plan=plan,
             batch=request.batch,
             wire=wire,
-            types=TypeNames(
-                request.batch,
-                exact=bool(request.model_config.use_exact_imports),
-                overrides=request.model_config.import_overrides,
-            ),
+            types=types,
             templates=FastAPITemplates.custom(request.model_config, request.cwd),
             document=document,
         )

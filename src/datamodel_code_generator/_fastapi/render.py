@@ -247,7 +247,7 @@ class Module(TargetModule):
         """Return a union or container of spelled parts, as the model generator writes one."""
         spell = self.static if static else self.validating
         if isinstance(value, UnionType):
-            return self.union(*map(spell, value.members), tag=None if static else value.tag)
+            return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
         base = value.base
         identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
@@ -318,6 +318,10 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.batch = batch
         self.wire = wire
         self.types = types
+        written = {name for module, name in types.fixed if module is not None}
+        self.classes = {
+            spec.key: f"{spec.pascal}Model" if spec.pascal in written else spec.pascal for spec in plan.operations
+        }
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:
@@ -502,7 +506,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def route(self, module: Module, spec: OperationSpec, group: GroupSpec, names: dict[str, str]) -> dict[str, str]:
         """Return the fragments of one operation's endpoint: service method lookup, signature, and handler call."""
-        plan = f"{module.local('_generated', 'contract')}.{spec.pascal}"
+        plan = f"{module.local('_generated', 'contract')}.{self.classes[spec.key]}"
         service = module.local("services", group.service)
         handler, record = names["handler"], names["record"]
         principal = "" if spec.security is None else names["principal"]
@@ -734,9 +738,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def contract(self) -> str:
         """Return the contract module: the dependency keys, and each operation's plans and request adapters."""
-        reserved = {"OperationDependencies", *(spec.pascal for spec in self.plan.operations)}
+        reserved = {"OperationDependencies", *self.classes.values()}
         module = Module(self.types, reserved, level=2)
-        sections = [self.operation_plan(module, spec) for spec in self.plan.operations]
+        sections = [self.operation_plan(module, spec, self.classes[spec.key]) for spec in self.plan.operations]
         names = tuple((f"{spec.python_name!r}: ", _dependency_sequence(module)) for spec in self.plan.operations)
         dependencies: Doc = Group("{", names, "}") if names else "{}"
         typed = Group(
@@ -757,10 +761,10 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         return _registration(module, spec, names)
 
     @staticmethod
-    def operation_plan(module: Module, spec: OperationSpec) -> str:
+    def operation_plan(module: Module, spec: OperationSpec, name: str) -> str:
         """Return one operation's plan class: adapter parameter record, request adapters, and responses."""
         final = module.name("typing", "Final")
-        lines = [f"class {spec.pascal}:", f'    """Plans of the {spec.python_name} operation."""', ""]
+        lines = [f"class {name}:", f'    """Plans of the {spec.python_name} operation."""', ""]
         adapters = [argument for argument in spec.arguments if argument.kind == "adapter"]
         if adapters:
             lines.extend((

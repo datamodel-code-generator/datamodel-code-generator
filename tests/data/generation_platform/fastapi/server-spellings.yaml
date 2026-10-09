@@ -45,6 +45,31 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Code"}
+  /literal:
+    get:
+      operationId: literal
+      tags: [pets]
+      parameters:
+        - {name: modes, in: query, explode: false, schema: {type: array, items: {const: a}}}
+        - {name: named, in: query, schema: {$ref: "#/components/schemas/Named"}}
+        - {name: listed, in: query, schema: {$ref: "#/components/schemas/Listed"}}
+      responses:
+        "204": {description: Done.}
+  /things:
+    post:
+      operationId: postThing
+      tags: [fields]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Thing"}
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
   /pets/{petId}:
     get:
       operationId: getPet
@@ -107,6 +132,14 @@ components:
     PetId: {type: integer, minimum: 1}
     Code: {type: string, minLength: 2, maxLength: 5}
     Tag: {type: string, pattern: "^(?!x)"}
+    Named: {type: string, x-python-type: tests.data.python.fastapi_handlers.spelling_types.Annotated}
+    Listed: {type: string, x-python-type: tests.data.python.fastapi_handlers.spelling_types.List}
+    Thing:
+      type: object
+      x-python-import:
+        module: tests.data.python.fastapi_handlers.spelling_types
+        name: Holder
+        native-field: {module: tests.data.python.fastapi_handlers.spelling_types, qualname: Holder, fields: [{name: items, arguments: [0], pydantic: true}]}
     Pair: {type: array, items: [{type: string, minLength: 1}, {type: integer, minimum: 0}], additionalItems: false}
     Day: {type: string, x-python-type: "datetime.date"}
     Pet:

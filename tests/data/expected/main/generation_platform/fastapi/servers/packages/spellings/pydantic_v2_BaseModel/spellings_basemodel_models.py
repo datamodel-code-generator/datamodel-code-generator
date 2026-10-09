@@ -11,6 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
+from tests.data.python.fastapi_handlers.spelling_types import Annotated as Annotated_1
+from tests.data.python.fastapi_handlers.spelling_types import List
+
 
 class PetId(RootModel[conint(ge=1)]):
     root: conint(ge=1)
@@ -25,6 +28,14 @@ class Tag(RootModel[str]):
         regex_engine="python-re",
     )
     root: constr(pattern=r'^(?!x)')
+
+
+class Named(RootModel[Annotated_1]):
+    root: Annotated_1
+
+
+class Listed(RootModel[List]):
+    root: List
 
 
 class Pair(RootModel[list[constr(min_length=1) | conint(ge=0)]]):
@@ -76,6 +87,9 @@ class FieldCountsGetResponse(RootModel[list[conint(ge=0)]]):
 
 
 FieldCodeGetQueryInvalidParameter = TypeAliasType("FieldCodeGetQueryInvalidParameter", bool)
+
+
+FieldLiteralGetQueryModesParameter = TypeAliasType("FieldLiteralGetQueryModesParameter", list[Literal['a']])
 
 
 FieldPetsPetIdGetQueryLimitParameter = TypeAliasType(

@@ -2,9 +2,9 @@
 serve pydantic_v2.BaseModel
 service DaysService: post_day
 service DaysService without its methods: TypeError
-service FieldsService: post_field
+service FieldsService: post_field, post_thing
 service FieldsService without its methods: TypeError
-service PetsService: get_code, get_pet, list_counts, list_pets
+service PetsService: get_code, get_pet, list_counts, list_pets, literal
 service PetsService without its methods: TypeError
 > GET /code
   get_code(invalid=None)
@@ -68,3 +68,13 @@ service PetsService without its methods: TypeError
   authorize ['bearer']
   post_day(principal='bearer', body=Day(root=datetime.date(2024, 1, 3)))
 < 200 application/json "2024-01-03"
+> GET /literal?modes=a,a&named=x&listed=y
+  literal(modes=['a', 'a'], named=Annotated(root='x'), listed=List(root='y'))
+< 204 - b''
+> GET /literal?modes=b
+< 422 application/json [{"type": "literal_error", "loc": ["query", "modes", 0]}]
+> POST /things
+  post_thing(body=Thing(w=2))
+< 200 application/json {"w":2}
+> POST /things
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "w"]}]

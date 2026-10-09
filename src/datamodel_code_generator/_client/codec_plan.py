@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         TypeView,
         UnionDiscriminator,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
@@ -381,14 +382,19 @@ class _Planner:
         return tag, tuple(tags.items())
 
 
-def plan_client_codecs(
+def plan_client_codecs(  # ruff: ignore[too-many-arguments]
     batch: GeneratedTypeContractBatch,
     wire: WirePlan,
     backend: CodecBackend,
     uses: Collection[TypeUseId],
     facts: ModelFacts,
+    *,
+    names: TypeNames,
 ) -> ClientCodecs:
-    """Plan only selected directional uses, keeping the accepted batch's final model names and modules."""
+    """Plan only selected directional uses, keeping the accepted batch's final model names and modules.
+
+    A use whose type `names` cannot import in a generated module is reported instead.
+    """
     planner = _Planner(backend, facts)
     planned = []
     for use in batch.type_uses:
@@ -399,6 +405,12 @@ def plan_client_codecs(
             planner.report(
                 "The use has no generated native type",
                 code="BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING",
+            )
+            continue
+        if names.unspellable(use.type):
+            planner.report(
+                "The use's final type has no expression a generated module can import",
+                code="BND_TYPE_EXPRESSION_UNSUPPORTED",
             )
             continue
         kind = _KINDS[backend]

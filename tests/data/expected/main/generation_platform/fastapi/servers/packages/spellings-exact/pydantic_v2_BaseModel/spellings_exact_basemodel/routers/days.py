@@ -3,7 +3,7 @@
 
 """Endpoints of the days operations; regenerate them instead of editing."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence as Sequence_1
 from typing import Annotated, Final, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, Security, params
@@ -75,7 +75,7 @@ def build_router(
     *,
     days: DaysService[PrincipalT],
     authorize: Union[Authorize[PrincipalT], AsyncAuthorize[PrincipalT]],
-    dependencies: Sequence[params.Depends] = (),
+    dependencies: Sequence_1[params.Depends] = (),
     operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:

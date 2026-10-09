@@ -31,6 +31,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append(f"get_code(invalid={invalid!r})")
             return "a" if invalid else "ab"
 
+        def literal(self, *, modes: object, named: object, listed: object) -> None:
+            calls.append(f"literal(modes={modes!r}, named={named!r}, listed={listed!r})")
+
         def list_counts(self, *, invalid: bool | None) -> object:
             calls.append(f"list_counts(invalid={invalid!r})")
             return [1, -1 if invalid else 2]
@@ -45,6 +48,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_field(self, *, body: object) -> object:
             calls.append(f"post_field(body={_plain(body)!r})")
             return {"echo": "x"}
+
+        def post_thing(self, *, body: object) -> object:
+            calls.append(f"post_thing(body={body!r})")
+            return body
 
     class Days(server.services.DaysService[object]):
         def post_day(self, *, principal: object, body: object) -> object:

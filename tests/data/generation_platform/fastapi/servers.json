@@ -3205,6 +3205,28 @@
         "headers": {
           "Authorization": "Bearer t"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=a,a&named=x&listed=y"
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=b"
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": 2
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": "no"
+        }
       }
     ],
     "package_snapshots": [
@@ -3222,7 +3244,8 @@
         "conint": "pydantic.types",
         "constr": "pydantic.types"
       },
-      "use_union_operator": false
+      "use_union_operator": false,
+      "use_standard_collections": false
     },
     "requests": [
       {
@@ -3328,6 +3351,28 @@
         "json": "2024-01-03",
         "headers": {
           "Authorization": "Bearer t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=a,a&named=x&listed=y"
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=b"
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": 2
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": "no"
         }
       }
     ],

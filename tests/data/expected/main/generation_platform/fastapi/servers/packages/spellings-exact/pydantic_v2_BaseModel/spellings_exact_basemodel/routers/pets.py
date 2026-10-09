@@ -3,13 +3,14 @@
 
 """Endpoints of the pets operations; regenerate them instead of editing."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence as Sequence_1
 from decimal import Decimal
 from re import compile
-from typing import Annotated, Final, Optional
+from typing import Annotated, Final, List, Optional
 
 from annotated_types import MultipleOf
 from fastapi import APIRouter, Depends, Path, Query, params
+from fastapi.responses import Response
 from pydantic import Field, StringConstraints
 from spellings_exact_basemodel_models import (
     FieldCountsGetResponse,
@@ -111,6 +112,37 @@ def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_literal(router: APIRouter, wiring: Wiring) -> None:
+    pets: PetsService = wiring.services['pets']
+    literal_handler = checked(pets.literal, 'The pets.literal method of GET /literal')
+
+    def literal(
+        *,
+        parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
+    ) -> object:
+        return dispatch(
+            literal_handler(
+                modes=parameters.modes,
+                named=parameters.named,
+                listed=parameters.listed,
+            ),
+            contract.LiteralModel.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/literal',
+        literal,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='literal',
+        tags=['pets'],
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('literal'),
+    )
+
+
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     pets: PetsService = wiring.services['pets']
     get_pet_handler = checked(
@@ -125,7 +157,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(
             alias='code',
         )] = None,
-        codes: Annotated[Optional[list[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(
+        codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(
             alias='codes',
         )] = None,
         step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(
@@ -174,6 +206,7 @@ LITERAL_ROUTES: Final = (
     ('list_pets', _add_list_pets),
     ('list_counts', _add_list_counts),
     ('get_code', _add_get_code),
+    ('literal', _add_literal),
 )
 TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet),)
 
@@ -181,7 +214,7 @@ TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet),)
 def build_router(
     *,
     pets: PetsService,
-    dependencies: Sequence[params.Depends] = (),
+    dependencies: Sequence_1[params.Depends] = (),
     operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:

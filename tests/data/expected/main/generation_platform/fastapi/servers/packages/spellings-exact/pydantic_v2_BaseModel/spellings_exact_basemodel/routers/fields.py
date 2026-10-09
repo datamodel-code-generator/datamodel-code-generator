@@ -3,17 +3,49 @@
 
 """Endpoints of the fields operations; regenerate them instead of editing."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence as Sequence_1
 from typing import Annotated, Final, Optional
 
 from fastapi import APIRouter, Body, params
 from spellings_exact_basemodel_models import FieldModel, Response
+
+import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import FieldsService
+
+
+def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
+    fields: FieldsService = wiring.services['fields']
+    post_thing_handler = checked(
+        fields.post_thing,
+        'The fields.post_thing method of POST /things',
+    )
+
+    def post_thing(
+        *,
+        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(
+            media_type='application/json',
+        )],
+    ) -> object:
+        return dispatch(post_thing_handler(body=body), contract.PostThing.RESPONSES)
+
+    router.add_api_route(
+        '/things',
+        post_thing,
+        methods=['POST'],
+        status_code=200,
+        response_model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='postThing',
+        tags=['fields'],
+        response_description='The thing.',
+        dependencies=wiring.dependencies.get('post_thing'),
+    )
 
 
 def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
@@ -44,14 +76,17 @@ def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('post_field', _add_post_field),)
+LITERAL_ROUTES: Final = (
+    ('post_thing', _add_post_thing),
+    ('post_field', _add_post_field),
+)
 TEMPLATED_ROUTES: Final = ()
 
 
 def build_router(
     *,
     fields: FieldsService,
-    dependencies: Sequence[params.Depends] = (),
+    dependencies: Sequence_1[params.Depends] = (),
     operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:

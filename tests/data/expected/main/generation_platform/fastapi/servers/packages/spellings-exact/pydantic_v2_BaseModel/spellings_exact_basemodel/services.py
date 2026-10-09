@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from datetime import date
 from decimal import Decimal
-from typing import Optional, Protocol, Union
+from typing import List, Literal, Optional, Protocol, Union
 
 from fastapi.responses import Response
 from spellings_exact_basemodel_models import Response as Response_1
@@ -23,6 +23,10 @@ from spellings_exact_basemodel_models import (
     Query,
 )
 from typing_extensions import TypeVar
+
+import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
+from tests.data.python.fastapi_handlers.spelling_types import Annotated as Annotated_1
+from tests.data.python.fastapi_handlers.spelling_types import List as List_1
 
 from ._runtime.server.responses import HTTPResult
 
@@ -54,13 +58,22 @@ class PetsService(Protocol):
     ) -> Union[str, HTTPResult[str], Response]: ...
 
     @abstractmethod
+    def literal(
+        self,
+        *,
+        modes: Optional[List[Literal['a']]],
+        named: Optional[Annotated_1],
+        listed: Optional[List_1],
+    ) -> Union[None, HTTPResult[None], Response]: ...
+
+    @abstractmethod
     def get_pet(
         self,
         *,
         pet_id: int,
         limit: int,
         code: Optional[str],
-        codes: Optional[list[str]],
+        codes: Optional[List[str]],
         step: Optional[Decimal],
         raw: Optional[bytes],
         day: Optional[date],
@@ -74,6 +87,13 @@ class PetsService(Protocol):
 
 class FieldsService(Protocol):
     """Implement the fields operations: subclass this Protocol, or give an object its methods."""
+
+    @abstractmethod
+    def post_thing(
+        self,
+        *,
+        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
+    ) -> Union[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]], Response]: ...
 
     @abstractmethod
     def post_field(

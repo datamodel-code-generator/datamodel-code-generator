@@ -3,7 +3,7 @@
 
 """Build the router and the application of every selected operation from the services that implement them."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence as Sequence_1
 from typing import Any, Final, Optional, Union
 
 from fastapi import APIRouter, FastAPI, params
@@ -38,7 +38,7 @@ def build_router(
     fields: FieldsService,
     days: DaysService[PrincipalT],
     authorize: Union[Authorize[PrincipalT], AsyncAuthorize[PrincipalT]],
-    dependencies: Sequence[params.Depends] = (),
+    dependencies: Sequence_1[params.Depends] = (),
     operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:

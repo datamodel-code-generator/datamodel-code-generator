@@ -24,7 +24,7 @@ from datamodel_code_generator.imports import Import
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, SymbolId, TypeView
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, HintText, SymbolId, TypeView
     from datamodel_code_generator.types import DataType
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
@@ -44,7 +44,7 @@ _BUILTINS: Final = (
     "tuple",
 )
 _LOCAL: Final = (None, "")
-_FIELD: Final = Import(import_="Field", from_="pydantic")
+_FLAGS: Final[tuple[dict[str, Any], ...]] = tuple({flag: True} for flag in ("is_list", "is_set", "is_frozen_set"))
 _PART: Final = "\x01"
 _Identity: TypeAlias = tuple[str | None, str]
 
@@ -137,12 +137,23 @@ class TypeNames:
         }
         self.exact = exact
         self.overrides = overrides or {}
+        address = next(iter(batch.artifacts), None)
+        self.package = (
+            None
+            if address is None
+            else address.model_package.rpartition(".")[0]
+            if address.result_key == "single"
+            else address.model_package
+        )
         assert batch.hint_type is not None
         self.composer = composer = TypeComposer(batch.hint_type)
         written = (
             composer.compose(members=("T", "U"), preserve_union_member_order=True),
             composer.compose(base="T", is_optional=True),
             composer.compose(base="T", is_sequence=True),
+            *(composer.compose(base="T", **flags) for flags in _FLAGS),
+            composer.compose(base="T", key="K", is_dict=True),
+            composer.compose(base="T", key="K", is_mapping=True),
         )
         self.fixed = tuple(
             dict.fromkeys(
@@ -155,9 +166,31 @@ class TypeNames:
         return self.resolve(import_.from_, import_.import_)
 
     def resolve(self, module: str | None, name: str) -> _Identity:
-        """Return the module and name a name imported from a module binds, after the import overrides."""
+        """Return the module and name a name imported from a module binds, after the import overrides.
+
+        An override to a relative module is relative to the model package, as the model modules import it; without a
+        package to resolve it against, it stays relative and no target module can import the name.
+        """
         override = self.overrides.get(name) if module != "__future__" else None
-        return override or module, name
+        if override is None or not override.startswith("."):
+            return override or module, name
+        level = len(override) - len(rest := override.lstrip("."))
+        parts = self.package.split(".") if self.package else []
+        if not parts or level > len(parts):
+            return override, name
+        return ".".join((*parts[: len(parts) - level + 1], *filter(None, (rest,)))), name
+
+    def unspellable(self, value: TypeView) -> bool:
+        """Return whether a type names a library name no target module can import: one from a relative module."""
+        if (hint := getattr(value, "hint", None)) is not None:
+            return any(self._relative(text) for text in (hint.annotation, hint.static))
+        return isinstance(value, ImportedType) and self._unimportable(value.import_)
+
+    def _relative(self, text: HintText) -> bool:
+        return any(map(self._unimportable, (*text.imports, *(part for part in text.parts if isinstance(part, Import)))))
+
+    def _unimportable(self, import_: Import) -> bool:
+        return (module := self.identity(import_)[0]) is not None and module.startswith(".")
 
 
 class TargetModule:
@@ -258,8 +291,7 @@ class TargetModule:
             case ModelHint():
                 hint: ModelHint | None = value
             case UnionType() if value.hint is None:
-                parts = (self.hint(member, static=static) for member in value.members)
-                return self.union(*parts, tag=None if static else value.tag)
+                return self.union(*(self.hint(member, static=static) for member in value.members))
             case _:
                 hint = value.hint
         assert hint is not None, "a type view without a hint is a union a target composed"
@@ -278,17 +310,14 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str, tag: str | None = None, key: str | None = None) -> str:
+    def _composed(self, kind: str, *parts: str, key: str | None = None) -> str:
         """Return a composite of spelled types this module writes, importing the names its text writes once.
 
         A union is of its parts, and any other kind is the type flag of a container of its one part.
         """
-        if (found := self.spelled.get(cache := (kind, tag, key, *parts))) is None:
+        if (found := self.spelled.get(cache := (kind, key, *parts))) is None:
             composer = self.names.composer
             match kind:
-                case "union" if tag is not None:
-                    text, imports = composer.compose(members=parts, preserve_union_member_order=True, discriminator=tag)
-                    imports = (*imports, _FIELD)
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
                 case _:
@@ -300,15 +329,10 @@ class TargetModule:
             found = self.spelled[cache] = text
         return found
 
-    def union(self, *parts: str, tag: str | None = None) -> str:
-        """Return the union of spelled types, each once in the order given, as the model generator writes unions.
-
-        A tag discriminates the members as the model's annotation does, which a union of one member keeps too.
-        """
+    def union(self, *parts: str) -> str:
+        """Return the union of spelled types, each once in the order given, as the model generator writes unions."""
         members = tuple(dict.fromkeys(parts))
-        if len(members) < 2 and tag is None:  # noqa: PLR2004
-            return "".join(members)
-        return self._composed("union", *members, tag=tag)
+        return "".join(members) if len(members) < 2 else self._composed("union", *members)  # noqa: PLR2004
 
     def optional(self, part: str) -> str:
         """Return a spelled type or None, as the model generator writes an optional type."""
