@@ -1,0 +1,4 @@
+create: exit=OK observed=True triggers=True verified=False
+update: exit=OK observed=True triggers=False verified=False
+verify: exit=OK observed=True triggers=True verified=True
+failing: exit=ERROR observed=True triggers=True verified=True
