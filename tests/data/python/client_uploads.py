@@ -1137,6 +1137,7 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
     for label, client_headers, call_headers in (
         ("start under a client idempotency header", {"Idempotency-Key": "fixed"}, None),
         ("start with a call idempotency header", None, {"idempotency-key": "fixed"}),
+        ("start removing a client idempotency header", {"Idempotency-Key": "fixed"}, {"idempotency-key": None}),
     ):
         with package.Client(http_client=native, default_headers=client_headers, **credentials) as keyed:
             call = harness.options.RequestOptions(extra_headers=call_headers)
