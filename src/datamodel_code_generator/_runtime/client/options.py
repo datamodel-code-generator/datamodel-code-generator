@@ -176,11 +176,9 @@ class NativeAuth(Protocol):
 
     def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
         """Authenticate a synchronous client's request, yielding each request to send."""
-        ...
 
     def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
         """Authenticate an asyncio client's request, yielding each request to send."""
-        ...
 
 
 def _auth_type(value: object) -> None:
