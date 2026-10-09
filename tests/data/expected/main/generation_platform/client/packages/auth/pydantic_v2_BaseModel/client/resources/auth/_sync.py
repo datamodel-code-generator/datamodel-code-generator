@@ -14,7 +14,7 @@ import models
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody, SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.auth import (
     AliasAuthResponse,
@@ -228,7 +228,7 @@ class AuthResource:
         theme: str,
         page: int,
         x_trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -355,7 +355,7 @@ class AuthResource:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -373,7 +373,7 @@ class AuthResource:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -419,7 +419,7 @@ class AuthResource:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -620,7 +620,7 @@ class AuthWithResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -747,7 +747,7 @@ class AuthWithResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -765,7 +765,7 @@ class AuthWithResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -811,7 +811,7 @@ class AuthWithResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1012,7 +1012,7 @@ class AuthWithRawResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1139,7 +1139,7 @@ class AuthWithRawResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1157,7 +1157,7 @@ class AuthWithRawResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1203,7 +1203,7 @@ class AuthWithRawResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1404,7 +1404,7 @@ class AuthWithStreamingResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1531,7 +1531,7 @@ class AuthWithStreamingResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1549,7 +1549,7 @@ class AuthWithStreamingResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1595,7 +1595,7 @@ class AuthWithStreamingResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,

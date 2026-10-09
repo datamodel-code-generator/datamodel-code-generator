@@ -13,7 +13,7 @@ import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.users import ListUsersResponse, SearchUsersResponse
 
@@ -43,9 +43,9 @@ class AsyncUsersResource:
     async def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
@@ -60,7 +60,7 @@ class AsyncUsersResource:
     async def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -87,9 +87,9 @@ class AsyncUsersWithResponse:
     async def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
@@ -104,7 +104,7 @@ class AsyncUsersWithResponse:
     async def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -131,9 +131,9 @@ class AsyncUsersWithRawResponse:
     async def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -148,7 +148,7 @@ class AsyncUsersWithRawResponse:
     async def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -175,9 +175,9 @@ class AsyncUsersWithStreamingResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -192,7 +192,7 @@ class AsyncUsersWithStreamingResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,

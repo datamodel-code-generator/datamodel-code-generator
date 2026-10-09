@@ -20,7 +20,7 @@ from .._runtime.protocols.pagination import (
     aiterate_pages,
     aresume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
 
@@ -89,7 +89,7 @@ class AsyncSearchAllPagination:
     async def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -107,7 +107,7 @@ class AsyncSearchAllPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -144,7 +144,7 @@ class AsyncSearchAllPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -171,7 +171,7 @@ class AsyncSearchFixedPagination:
     async def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -189,7 +189,7 @@ class AsyncSearchFixedPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -226,7 +226,7 @@ class AsyncSearchFixedPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -253,7 +253,7 @@ class AsyncSearchNextPagination:
     async def page(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -271,7 +271,7 @@ class AsyncSearchNextPagination:
     def iterate(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -308,7 +308,7 @@ class AsyncSearchNextPagination:
         self,
         state: JSONValue,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -335,7 +335,7 @@ class AsyncLookupAllPagination:
     async def page(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -353,7 +353,7 @@ class AsyncLookupAllPagination:
     def iterate(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -390,7 +390,7 @@ class AsyncLookupAllPagination:
         self,
         state: JSONValue,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
