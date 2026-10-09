@@ -1121,6 +1121,162 @@
         }
       },
       {
+        "name": "mixed",
+        "context": {
+          "docstring": "Endpoints of 日本 {braces}; regenerate them instead of editing.",
+          "imports": "from fastapi import APIRouter",
+          "api_router": "APIRouter",
+          "wiring": "Wiring",
+          "final": "Final",
+          "build": "build",
+          "routes": [
+            {
+              "adder": "_add_get_pet",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "'pets'",
+              "handler": "get_pet_handler",
+              "lookup": {
+                "function": "checked",
+                "method": "get_pet",
+                "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "asynchronous": false
+              },
+              "principal": null,
+              "endpoint": {
+                "name": "get_pet",
+                "asynchronous": false,
+                "parameters": [
+                  {
+                    "name": "pet_id",
+                    "annotation": "Annotated[int, Path(alias='petId')]",
+                    "default": null
+                  },
+                  {
+                    "name": "limit",
+                    "annotation": "Annotated[int, Query(alias='limit')]",
+                    "default": "20"
+                  }
+                ]
+              },
+              "call": {
+                "dispatch": "dispatch",
+                "arguments": [
+                  {
+                    "keyword": "pet_id",
+                    "value": "pet_id"
+                  },
+                  {
+                    "keyword": "limit",
+                    "value": "limit"
+                  }
+                ],
+                "responses": "contract.GetPet.RESPONSES"
+              },
+              "registration": {
+                "name": "'get_pet'",
+                "path": "'/pets/{petId}'",
+                "methods": "['GET']",
+                "status_code": "200",
+                "response_model": "models.Pet",
+                "response_class": "",
+                "keywords": [
+                  {
+                    "keyword": "operation_id",
+                    "value": "'getPet'"
+                  },
+                  {
+                    "keyword": "summary",
+                    "value": "'日本 {braces} \\\\ \"quotes\"'"
+                  }
+                ]
+              }
+            },
+            {
+              "adder": "_add_list_pets",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService",
+              "group": "'pets'",
+              "handler": "list_pets_handler",
+              "lookup": {
+                "function": "checked",
+                "method": "list_pets",
+                "label": "'The pets.list_pets method of GET /pets'",
+                "asynchronous": true
+              },
+              "principal": null,
+              "endpoint": {
+                "name": "list_pets",
+                "asynchronous": true,
+                "parameters": []
+              },
+              "call": {
+                "dispatch": "dispatch",
+                "arguments": [],
+                "responses": "contract.ListPets.RESPONSES"
+              },
+              "registration": {
+                "name": "'list_pets'",
+                "path": "'/pets'",
+                "methods": "['GET']",
+                "status_code": "204",
+                "response_model": "",
+                "response_class": "Response",
+                "keywords": []
+              }
+            }
+          ],
+          "literal": [
+            {
+              "name": "'list_pets'",
+              "adder": "_add_list_pets"
+            }
+          ],
+          "templated": [
+            {
+              "name": "'get_pet'",
+              "adder": "_add_get_pet"
+            }
+          ],
+          "builder": {
+            "name": "build_router",
+            "parameters": [
+              {
+                "name": "pets",
+                "annotation": "PetsService[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "authorize",
+                "annotation": "Authorize[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "dependencies",
+                "annotation": "Sequence[params.Depends]",
+                "default": "()"
+              },
+              {
+                "name": "prefix",
+                "annotation": "str",
+                "default": "\"\""
+              }
+            ],
+            "returns": "APIRouter"
+          },
+          "group": "the pets operations",
+          "services": "{'pets': pets}",
+          "settings": [
+            "authorize",
+            "dependencies"
+          ]
+        }
+      },
+      {
         "name": "empty",
         "context": {
           "docstring": "Endpoints of 日本 {braces}; regenerate them instead of editing.",

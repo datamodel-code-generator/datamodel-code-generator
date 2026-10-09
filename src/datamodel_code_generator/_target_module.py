@@ -215,18 +215,25 @@ class TargetModule:
 
     Every name is bound to one identity: a fixed name a model type spells keeps its name, and any other import takes
     the model generator's `Name_1` suffix when its name is already taken. A qualified module names each type by its
-    full path and records no imports, as digests and messages read it.
+    full path and records no imports, as digests and messages read it. A module that writes no model types, such as a
+    package initializer, reserves none of their names.
     """
 
     def __init__(
-        self, names: TypeNames, reserved: Iterable[str] = (), *, level: int = 0, qualified: bool = False
+        self,
+        names: TypeNames,
+        reserved: Iterable[str] = (),
+        *,
+        level: int = 0,
+        qualified: bool = False,
+        hints: bool = True,
     ) -> None:
         """Reserve the names the module defines, the builtins, and the names model types and compositions write."""
         self.names = names
         self.level = level
         self.qualified = qualified
         self.taken: dict[str, object] = dict.fromkeys((*reserved, *_BUILTINS), _LOCAL)
-        for identity in names.fixed:
+        for identity in names.fixed if hints else ():
             self.taken.setdefault(identity[1], identity)
         self.bound: dict[_Identity, str] = {}
         self.spelled: dict[object, str] = {}
