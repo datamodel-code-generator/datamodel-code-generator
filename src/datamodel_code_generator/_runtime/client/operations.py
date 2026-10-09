@@ -322,8 +322,8 @@ class RequestBody:
         )
         try:
             if selected.kind == "multipart":
-                content, media_type = selected.multipart(value)
-                return EncodedBody(media_type=media_type, content=content)
+                parts, multipart = selected.multipart(value)
+                return EncodedBody(media_type=multipart, content=parts)
             content = selected.encode(value, sent)
         except DecodeError as error:
             raise _unencodable(error.location, operation_id, error.cause) from None

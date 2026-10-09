@@ -201,7 +201,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `arguments.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `arguments.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `multipart_responses.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
 - `_runtime/protocols`: `__init__.py`, `errors.py`, `records.py`, `references.py`, `resume.py`, `sources.py`
 
@@ -279,10 +279,12 @@ files and paths that cannot be opened raise a request `DecodeError` with the rea
 async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
-all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
-read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
-loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+async files and async iterables cannot replay and are never buffered or spooled implicitly, except that HTTPX2, which
+encodes multipart bodies and reads their files synchronously, gets an async file part's bytes read into memory for its
+attempt. Multipart can replay when all its file parts can. Files are read at most 64 KiB at a time. In async calls a
+path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
+reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
+async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
 call running in a thread before it closes the file.
 
 ## Redirects and transport construction
