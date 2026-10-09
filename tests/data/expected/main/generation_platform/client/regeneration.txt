@@ -28,7 +28,7 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 27
+  runtime files 26
 # add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py
 # generate v2
   file api.yaml
@@ -66,7 +66,7 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 27
+  runtime files 26
   pets/extensions.py unchanged True
   pets/_client.py still edited False
   pets/resources/orders/__init__.py still foreign False
