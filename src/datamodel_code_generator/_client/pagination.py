@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
+from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
@@ -41,13 +42,16 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, HeaderSpec, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import (
+        Direction,
+        FieldUseBinding,
+        FinalPythonType,
+        TypeUseBinding,
+        TypeUseId,
+    )
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
-_MEMBERS: Final = ("anyOf", "oneOf")
-_NULL: Final = frozenset({"null"})
 _SETS: Final = frozenset({"set", "frozenset"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
@@ -210,13 +214,12 @@ def _sequence(value: FinalPythonType) -> bool:
 class _Pages:
     """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(
         self,
         protocols: Protocols,
         plan: ClientPlan,
         facts: ModelFacts,
         codecs: Container[TypeUseId],
-        wire: WirePlan,
         request: TargetRequest,
     ) -> None:
         """Keep the model facts and the uses with codecs, and index the documents by manifest pointer.
@@ -227,9 +230,9 @@ class _Pages:
         self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
         self.facts = facts
         self.codecs = codecs
-        self.wire = wire
         self.request = request
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
+        self.schemas = schema_uses(request.batch.type_uses)
 
     def walk(self, value: FinalPythonType, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
         """Follow a pointer through the fields of a page's models, or say why it names no field.
@@ -273,75 +276,45 @@ class _Pages:
                 value = root
         return value.arguments[0]
 
-    def members(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, object], list[SourceLocation]]:
-        """Return a schema's resolved location, its value, and the locations of its anyOf and oneOf members."""
-        resolved, schema = self.wire.schema(location)
-        members = [
-            _child(resolved, f"{keyword}/{index}")
-            for keyword in _MEMBERS
-            if isinstance(items := schema.get(keyword), tuple)
-            for index in range(len(items))
-        ]
-        return resolved, schema, members
+    def declared(self, value: FinalPythonType | None, pointer: str) -> _Types | Literal["absent"]:
+        """Return the JSON types of the property a pointer names through the fields of a value's models.
 
-    def types(self, location: SourceLocation) -> frozenset[str] | None:
-        """Return the JSON types a schema admits by its type, enum, const, or anyOf and oneOf members.
-
-        None means any value: a schema that says nothing of its type, or a member that does not.
+        An empty pointer names the value itself; a pointer through no field of a model is absent.
         """
-        _, schema, members = self.members(location)
-        kind = schema.get("type")
-        if isinstance(kind, str):
-            return frozenset({kind})
-        if isinstance(kind, tuple):
-            return frozenset(item for item in kind if isinstance(item, str))
-        if isinstance(values := schema.get("enum"), tuple):
-            return frozenset(map(_json_type, values))
-        if "const" in schema:
-            return frozenset({_json_type(schema["const"])})
-        found = [kinds for member in members if (kinds := self.types(member)) is not None]
-        return frozenset().union(*found) if members and len(found) == len(members) else None
+        if value is None or isinstance(reached := self.walk(value, pointer), str):
+            return "absent" if pointer else None
+        member = reached.member
+        return (
+            self.facts.json_types(value)
+            if member is None or member.model_facts is None
+            else self.facts.field_types(member.model_facts)
+        )
 
-    def nonnull(self, location: SourceLocation) -> SourceLocation:
-        """Return the location of a schema, through anyOf or oneOf members of which all but one are null."""
-        resolved, _, members = self.members(location)
-        others = [member for member in members if self.types(member) != _NULL]
-        return self.nonnull(others[0]) if len(others) == 1 else resolved
+    def item_type(self, reference: SchemaRef, direction: Direction) -> FinalPythonType | Literal["missing"] | None:
+        """Return the type a helper's item schema is read as in a direction, or say its document has no such pointer.
 
-    def properties(self, location: SourceLocation) -> dict[str, SourceLocation]:
-        """Return the schemas of an object schema's declared properties by name, its own before its allOf members'.
-
-        Nullable anyOf or oneOf members and references are followed, and allOf members merged.
+        None is a schema no model stands for.
         """
-        resolved, schema, _ = self.members(self.nonnull(location))
-        found: dict[str, SourceLocation] = {}
-        if isinstance(declared := schema.get("properties"), Mapping):
-            found = {
-                name: _child(_child(resolved, "properties"), name.replace("~", "~0").replace("/", "~1"))
-                for name in declared
-            }
-        if isinstance(parts := schema.get("allOf"), tuple):
-            for index in range(len(parts)):
-                for name, member in self.properties(_child(resolved, f"allOf/{index}")).items():
-                    found.setdefault(name, member)
-        return found
-
-    def declared(self, location: SourceLocation, pointer: str) -> SourceLocation | None:
-        """Return the schema of the property a pointer names through declared object properties, or None."""
-        for token in _tokens(pointer):
-            if (member := self.properties(location).get(token)) is None:
-                return None
-            location = member
-        return location
-
-    def item_schema(self, reference: SchemaRef) -> SourceLocation | None:
-        """Return the location of a helper's item schema, or None when its document has no such pointer."""
         location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
         try:
             self.request.lease.borrow(location)
         except BindingCaptureError:
-            return None
-        return self.wire.schema(location)[0]
+            return "missing"
+        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
+
+    def same(self, value: FinalPythonType | None, expected: FinalPythonType | None) -> bool:
+        """Return whether a type is the type an item schema is read as, through None and aliases."""
+        return value is not None and expected is not None and self.present(value) == self.present(expected)
+
+    def present(self, value: FinalPythonType) -> FinalPythonType:
+        """Return a type without None, through its aliases."""
+        value = self.facts.plain(value)
+        if (
+            isinstance(value, UnionType)
+            and len(members := [item for item in value.members if not isinstance(item, NoneType)]) == 1
+        ):
+            return self.facts.plain(members[0])
+        return value
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[PaginationSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operation, and plan it when every check passes."""
@@ -407,12 +380,11 @@ class _Pages:
         member = reached.member
         item = self.element(page.type if member is None or member.model_facts is None else member.model_facts.type)
         reference = helper.tree["item_schema"]
-        if (expected := self.item_schema(reference)) is None:
+        if (expected := self.item_type(reference, page.id.direction)) == "missing":
             message = f"The item_schema {reference.pointer!r} of {name!r} does not exist in its document"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.item_schema", message, spec))
             return None
-        array = page.schema if member is None else member.schema
-        if array is None or self.wire.schema(_child(self.nonnull(array), "items"))[0] != expected:
+        if not self.same(item, expected):
             message = (
                 f"The item_schema {reference.pointer!r} of {name!r} is not the item schema of the array its items "
                 "pointer selects"
@@ -447,10 +419,10 @@ class _Pages:
                         "supported yet"
                     )
                     return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
-                if isinstance(reached, str) or reached.member is None or reached.member.schema is None:
+                if isinstance(reached, str) or (member := reached.member) is None or member.model_facts is None:
                     message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {label} response"
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-                types = self.types(reached.member.schema)
+                types = self.facts.field_types(member.model_facts)
             case "header":
                 uses = {header.name.lower(): header.use for header in headers}
                 if (key := read["name"].lower()) not in uses:
@@ -460,7 +432,7 @@ class _Pages:
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = frozenset({"array" if read["occurrence"] == "all" else "string"})
                 if what in _EVIDENCE:
-                    types = None if (use := uses[key]) is None or use.schema is None else self.types(use.schema)
+                    types = None if (use := uses[key]) is None or use.type is None else self.facts.json_types(use.type)
         return types
 
     def accepted(
@@ -496,11 +468,10 @@ class _Pages:
             uses = [item.use for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key]
         schemas: list[_Types] = []
         for use in uses:
-            location = None if use is None or use.schema is None else self.declared(use.schema, pointer)
-            if location is None and pointer:
+            if (found := self.declared(None if use is None else use.type, pointer)) == "absent":
                 message = f"The {what} of {helper.name!r} writes {pointer!r}, which names no property of {place}"
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-            schemas.append(None if location is None else self.types(location))
+            schemas.append(found)
         return schemas, f"the property {pointer!r} of {place}" if pointer else place, carries
 
     def cursor(
@@ -771,16 +742,11 @@ def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     return media[0].use if media[0].kind == "json" else None
 
 
-def _child(location: SourceLocation, token: str) -> SourceLocation:
-    return SourceLocation(location.document, f"{location.pointer}/{token}", location.role)
-
-
-def plan_pagination(  # noqa: PLR0913, PLR0917
+def plan_pagination(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
@@ -789,7 +755,7 @@ def plan_pagination(  # noqa: PLR0913, PLR0917
     """
     if protocols is None:
         return (), {}
-    pages = _Pages(protocols, plan, facts, codecs, wire, request)
+    pages = _Pages(protocols, plan, facts, codecs, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

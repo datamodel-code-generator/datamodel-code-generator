@@ -571,6 +571,25 @@ def _mapping(value: object) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
+def _json_type(value: object) -> str:  # noqa: PLR0911
+    """Return the JSON type of an enum member's value."""
+    match value:
+        case None:
+            return "null"
+        case bool():
+            return "boolean"
+        case int():
+            return "integer"
+        case float() | Decimal():
+            return "number"
+        case str():
+            return "string"
+        case dict():
+            return "object"
+        case _:
+            return "array"
+
+
 def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
     if value is None:
         return LiteralScalar("none", None)
@@ -1867,6 +1886,9 @@ class _Models:
                         else (),
                         binder.source(model.reference),
                         self.reused_discriminator(model),
+                        tuple(_json_type(get_raw_enum_member_value(field.default)) for field in model.fields)
+                        if policy.kind == "enum"
+                        else (),
                     )
                 )
         return tuple(symbols), tuple(artifacts)
