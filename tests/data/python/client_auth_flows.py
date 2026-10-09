@@ -1153,6 +1153,14 @@ class _CallerKey(httpx2.Auth):
         yield request
 
 
+_REJECTED_ELSEWHERE: Final = "bearer rejected by another origin"
+
+
+def _answer(label: str) -> Callable[[Any], Any]:
+    """Return the reply after the redirect: the other origin rejects the token it never received on one row."""
+    return _rejected() if label == _REJECTED_ELSEWHERE else _ok()
+
+
 def _redirect(status: int, location: str) -> Callable[[Any], Any]:
     return lambda _: httpx2.Response(status, headers={"Location": location, "Content-Length": "0"})
 
@@ -1168,6 +1176,9 @@ def _redirect_cases(
     prefix = "Async" if asynchronous else ""
     token = getattr(auth, f"{prefix}StaticTokenProvider")(auth.AccessToken("token-secret"))
     key = getattr(auth, f"{prefix}StaticCredentialProvider")(auth.ApiKeyCredential("key-secret"))
+    refreshable = (_AsyncProvider if asynchronous else _Provider)(
+        _bearer(auth, "token-secret"), refreshed=_bearer(auth, "fresh-secret")
+    )
     signer = (_AsyncSigner if asynchronous else _Signer)(auth)
     follows = {"follow_redirects": True}
     keyed = options.ClientOptions(auth=auth.AuthConfig({"header_key": key}))
@@ -1218,6 +1229,14 @@ def _redirect_cases(
             "bearer redirected without Authorization",
             follows,
             options.ClientOptions(auth=auth.AuthConfig({"bearer": token})),
+            "bearer",
+            302,
+            f"{_OTHER}/bearer",
+        ),
+        (
+            _REJECTED_ELSEWHERE,
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"bearer": refreshable})),
             "bearer",
             302,
             f"{_OTHER}/bearer",
@@ -1280,7 +1299,7 @@ def _redirects(package: ModuleType, auth: ModuleType, options: ModuleType, lines
     ):
         for mode in _REDIRECT_MODES if label.startswith(("header key not", "plain request inherits")) else ("typed",):
             exchange = Exchange(lines)
-            exchange.respond(_redirect(status, location), _ok())
+            exchange.respond(_redirect(status, location), _answer(label))
             with (
                 exchange.client(**native_settings) as native,
                 package.Client(http_client=native, options=settings) as api,
@@ -1304,7 +1323,7 @@ async def _aredirects(package: ModuleType, auth: ModuleType, options: ModuleType
     for label, native_settings, settings, method, status, location in _redirect_cases(auth, options, asynchronous=True):
         for mode in _REDIRECT_MODES if label.startswith(("header key not", "plain request inherits")) else ("typed",):
             exchange = Exchange(lines)
-            exchange.respond(_redirect(status, location), _ok())
+            exchange.respond(_redirect(status, location), _answer(label))
             async with (
                 exchange.async_client(**native_settings) as native,
                 package.AsyncClient(http_client=native, options=settings) as api,

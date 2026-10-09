@@ -3391,7 +3391,8 @@ injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itse
 303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
 the native client is its limit, past which `TooManyRedirects` raises `APIConnectionError`. A bytes body, a seekable
 file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
-`Authorization` and the `Cookie` header on a redirect to another origin, and keeps every other header. Every hop
+`Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
+same-host `http` to `https` upgrade, and keeps every other header. Every hop
 consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
 sent again.
 
@@ -3401,6 +3402,8 @@ carry it, and every signed request. HTTPX2 would forward such a value to another
 response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
 anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
 request it sends, or read the `Location` and send a call of your own.
+The request event hooks of an injected client and an `httpx2.Auth` of your own are caller code that runs after the
+follow decision, so they can still add headers, such as an `X-API-Key`, to a request sent to another origin.
 
 ```python
 import httpx2
