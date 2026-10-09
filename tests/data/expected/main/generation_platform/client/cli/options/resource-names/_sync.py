@@ -9,7 +9,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import NewPet as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -59,7 +59,7 @@ class AnimalsResource:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -101,7 +101,7 @@ class AnimalsWithResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -143,7 +143,7 @@ class AnimalsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -185,7 +185,7 @@ class AnimalsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

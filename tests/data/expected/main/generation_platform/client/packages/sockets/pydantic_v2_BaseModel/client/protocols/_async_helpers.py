@@ -8,8 +8,7 @@ from __future__ import annotations
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
@@ -95,7 +94,7 @@ class AsyncRoomsChatWebsocket:
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]]:
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[models.ClientMessage, models.ServerMessage]]:
         """Open the WebSocket of GET /rooms/{room}/socket for an async with block once its handshake got a valid 101."""
         return aconnect_socket(
             self._core,

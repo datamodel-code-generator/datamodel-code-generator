@@ -575,6 +575,18 @@ def _answered(error: Exception, outgoing: httpx2.Request, hooks: list[Callable[.
     return failed is not outgoing
 
 
+def _failed_send(
+    error: Exception, outgoing: httpx2.Request, call: Call, hooks: dict[str, list[Callable[..., object]]]
+) -> APIConnectionError:
+    """Record how far a failed native send got and convert it; a failure a request hook raised is never sent again."""
+    if (request_hooks := hooks["request"]) and _in_hook(error, request_hooks):
+        call.retry_blocked = True
+    call.delivery_state = delivery(
+        error, send_started=True, response_started=_answered(error, outgoing, hooks["response"])
+    )
+    return native_error(error)
+
+
 def _redirects(response: httpx2.Response) -> int:
     """Count the redirects HTTPX2 followed, leaving out the responses an Auth flow answered, such as a challenge."""
     return sum(hop.has_redirect_location for hop in response.history)
@@ -1435,12 +1447,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                call.delivery_state = delivery(
-                    error,
-                    send_started=True,
-                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                )
-                raise native_error(error) from None
+                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
             call.delivery_state = Delivery.RESPONSE_STARTED
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
@@ -1904,12 +1911,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except SDKError:
                 raise
             except Exception as error:  # noqa: BLE001
-                call.delivery_state = delivery(
-                    error,
-                    send_started=True,
-                    response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
-                )
-                raise native_error(error) from None
+                raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
             call.delivery_state = Delivery.RESPONSE_STARTED
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001

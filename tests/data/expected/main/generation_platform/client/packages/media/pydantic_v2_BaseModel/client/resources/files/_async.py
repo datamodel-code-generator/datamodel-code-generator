@@ -9,8 +9,7 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import Address as _dcg_type_0
-from models import FieldFilesPostRequest2 as _dcg_type_1
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -46,7 +45,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -55,16 +54,16 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -73,7 +72,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -95,7 +94,7 @@ class AsyncFilesResource:
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
@@ -118,7 +117,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -127,16 +126,16 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -145,7 +144,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -153,7 +152,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -212,7 +211,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -221,16 +220,16 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -239,7 +238,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -261,7 +260,7 @@ class AsyncFilesWithResponse:
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
@@ -284,7 +283,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -293,16 +292,16 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -311,7 +310,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -319,7 +318,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -378,7 +377,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -396,7 +395,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -404,7 +403,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -463,7 +462,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -481,7 +480,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -489,7 +488,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,

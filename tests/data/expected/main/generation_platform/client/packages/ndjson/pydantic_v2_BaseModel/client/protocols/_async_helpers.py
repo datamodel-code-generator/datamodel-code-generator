@@ -8,10 +8,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import Created as _dcg_type_1
-from models import Deleted as _dcg_type_2
-from models import Record as _dcg_type_0
-from models import SearchQuery as _dcg_type_3
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
@@ -88,7 +85,7 @@ class AsyncRecordsAllNdjson:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_0]:
+    ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -114,7 +111,7 @@ class AsyncRecordsLenientNdjson:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_0]:
+    ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -140,7 +137,7 @@ class AsyncRecordsTaggedNdjson:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1 | _dcg_type_2 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -162,12 +159,12 @@ class AsyncSearchAllNdjson:
     async def open(
         self,
         *,
-        body: _dcg_type_3,
+        body: models.SearchQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_0]:
+    ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of POST /search, returning once its response is a declared success."""
         return await aopen_events(
             self._core,

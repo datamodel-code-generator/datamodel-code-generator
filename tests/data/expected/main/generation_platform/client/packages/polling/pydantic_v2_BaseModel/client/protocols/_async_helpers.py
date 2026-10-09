@@ -8,8 +8,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import JobRequest as _dcg_type_0
-from models import Report as _dcg_type_1
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -101,7 +100,7 @@ class AsyncJobsRunPolling:
     async def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -148,12 +147,12 @@ class AsyncJobsInlinePolling:
     async def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncLroHandle[_dcg_type_1, GetJobResponse]:
+    ) -> AsyncLroHandle[models.Report, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return await astart_operation(
             self._core,
@@ -173,7 +172,7 @@ class AsyncJobsInlinePolling:
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncLroHandle[_dcg_type_1, GetJobResponse]:
+    ) -> AsyncLroHandle[models.Report, GetJobResponse]:
         """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
         return aresume_operation(
             self._core,
@@ -195,7 +194,7 @@ class AsyncJobsReportPolling:
     async def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -340,7 +339,7 @@ class AsyncJobsTrackedPolling:
     async def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -379,7 +378,7 @@ class AsyncJobsTrackedPolling:
         )
 
 
-class AsyncJobsTrackedHandle(AsyncLroHandle[_dcg_type_1, GetJobResponse]):
+class AsyncJobsTrackedHandle(AsyncLroHandle[models.Report, GetJobResponse]):
     """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
 
     __slots__ = ()

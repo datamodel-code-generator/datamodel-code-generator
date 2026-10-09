@@ -8,13 +8,14 @@ tree
   models/server/__init__.py
   models/server/_generated/__init__.py
   models/server/_generated/contract.py
+  models/server/_generated/openapi.py
   models/server/application.py
   models/server/py.typed
   models/server/routers/__init__.py
   models/server/routers/store.py
   models/server/services.py
   models/store.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   unchanged models/__init__.py
   unchanged models/pets.py
@@ -25,7 +26,8 @@ render
   unchanged models/server/routers/store.py
   unchanged models/server/_generated/__init__.py
   unchanged models/server/_generated/contract.py
+  unchanged models/server/_generated/openapi.py
   unchanged models/server/services.py
   unchanged models/server/README.md
   unchanged models/server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']

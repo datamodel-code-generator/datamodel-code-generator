@@ -9,10 +9,11 @@ render
   new server/routers/store.py
   new server/_generated/__init__.py
   new server/_generated/contract.py
+  new server/_generated/openapi.py
   new server/services.py
   new server/README.md
   new server/py.typed
-  4 runtime modules ['new']
+  5 runtime modules ['new']
 generate
   returned None
 tree
@@ -23,12 +24,13 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/store.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   unchanged models/__init__.py
   unchanged models/pets.py
@@ -39,7 +41,8 @@ render
   unchanged server/routers/store.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   unchanged server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']

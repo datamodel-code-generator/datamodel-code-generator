@@ -145,13 +145,6 @@
       {"render": {}}
     ]
   },
-  "relative-failure": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {}}
-    ]
-  },
   "http": {
     "input": {"url": "api.json"},
     "model": {

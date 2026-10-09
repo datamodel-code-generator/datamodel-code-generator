@@ -7,13 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, overload
 
-from models import Error as _dcg_type_1
-from models import FieldPetsGetResponse as _dcg_type_0
-from models import FieldPetsGetResponse200XNextHeader as _dcg_type_2
-from models import FieldPetsGetResponse200XRateHeader as _dcg_type_3
-from models import FieldPetsPetIdGetResponse as _dcg_type_5
-from models import FieldPetsPetIdHeadResponse200ETagHeader as _dcg_type_6
-from models import Pet as _dcg_type_4
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import (
@@ -24,13 +18,13 @@ from ..._runtime.client.codecs import (
 )
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...bodies import MultipartData
-from ...options import UNSET
+from ...options import Unset
 from ...responses import ResponseInfo
 
-ListPetsResponse: TypeAlias = _dcg_type_0 | _dcg_type_1
+ListPetsResponse: TypeAlias = models.FieldPetsGetResponse | models.Error
 
 
-_LIST_PETS_HEADERS: Final[ResponseHeaders[_dcg_type_2 | _dcg_type_3, UNSET]] = ResponseHeaders(
+_LIST_PETS_HEADERS: Final[ResponseHeaders[models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader, Unset]] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
     (
@@ -79,28 +73,28 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_2 | UNSET: ...
+) -> models.FieldPetsGetResponse200XNextHeader | Unset: ...
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Rate'],
-) -> _dcg_type_3: ...
+) -> models.FieldPetsGetResponse200XRateHeader: ...
 
 
 def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next', 'X-Rate'],
-) -> _dcg_type_2 | _dcg_type_3 | UNSET:
+) -> models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader | Unset:
     """Decode one declared response header of list_pets from a response's metadata."""
     return _LIST_PETS_HEADERS.decode(info, name)
 
 
-CreatePetResponse: TypeAlias = _dcg_type_4
+CreatePetResponse: TypeAlias = models.Pet
 
 
-GetPetResponse: TypeAlias = _dcg_type_4 | _dcg_type_5
+GetPetResponse: TypeAlias = models.Pet | models.FieldPetsPetIdGetResponse
 
 
 DeletePetsByPetIdResponse: TypeAlias = None
@@ -109,7 +103,7 @@ DeletePetsByPetIdResponse: TypeAlias = None
 HeadPetResponse: TypeAlias = None
 
 
-_HEAD_PET_HEADERS: Final[ResponseHeaders[_dcg_type_6, UNSET]] = ResponseHeaders(
+_HEAD_PET_HEADERS: Final[ResponseHeaders[models.FieldPetsPetIdHeadResponse200ETagHeader, Unset]] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
     (
@@ -138,7 +132,7 @@ def decode_head_pet_header(
     info: ResponseInfo,
     *,
     name: Literal['ETag'],
-) -> _dcg_type_6 | UNSET:
+) -> models.FieldPetsPetIdHeadResponse200ETagHeader | Unset:
     """Decode one declared response header of head_pet from a response's metadata."""
     return _HEAD_PET_HEADERS.decode(info, name)
 

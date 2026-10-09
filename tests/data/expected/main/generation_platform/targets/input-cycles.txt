@@ -6,10 +6,12 @@ render
   new server/routers/untagged.py
   new server/_generated/__init__.py
   new server/_generated/contract.py
+  new server/_generated/openapi.py
   new server/services.py
   new server/README.md
   new server/py.typed
-  4 runtime modules ['new']
+  5 runtime modules ['new']
+  DocumentationAnnotationWarning: example/server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
 generate
   returned None
@@ -18,23 +20,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   unchanged server/__init__.py
   unchanged server/application.py
@@ -42,21 +47,24 @@ render
   unchanged server/routers/untagged.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   changed server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: example/server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -64,23 +72,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   changed server/__init__.py
   changed server/application.py
@@ -88,21 +99,24 @@ render
   changed server/routers/untagged.py
   changed server/_generated/__init__.py
   changed server/_generated/contract.py
+  changed server/_generated/openapi.py
   changed server/services.py
   changed server/README.md
   unchanged server/py.typed
-  4 runtime modules ['changed']
+  5 runtime modules ['changed']
+  DocumentationAnnotationWarning: example/server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -110,23 +124,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   unchanged server/__init__.py
   unchanged server/application.py
@@ -134,21 +151,24 @@ render
   unchanged server/routers/untagged.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   changed server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: example/server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -156,23 +176,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   changed server/__init__.py
   changed server/application.py
@@ -180,21 +203,24 @@ render
   changed server/routers/untagged.py
   changed server/_generated/__init__.py
   changed server/_generated/contract.py
+  changed server/_generated/openapi.py
   changed server/services.py
   changed server/README.md
   unchanged server/py.typed
-  4 runtime modules ['changed']
+  5 runtime modules ['changed']
+  DocumentationAnnotationWarning: example/server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -202,23 +228,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   unchanged server/__init__.py
   unchanged server/application.py
@@ -226,21 +255,24 @@ render
   unchanged server/routers/untagged.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   changed server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: example/server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -248,20 +280,23 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']

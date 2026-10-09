@@ -7,21 +7,18 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import FieldLabelSetsGetResponse200XNextHeader as _dcg_type_3
-from models import FieldLabelsGetResponse as _dcg_type_0
-from models import FieldLabelsGetResponse200XNextHeader as _dcg_type_1
-from models import LabelList as _dcg_type_2
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import UNSET
+from ...options import Unset
 from ...responses import ResponseInfo
 
-ListLabelsResponse: TypeAlias = _dcg_type_0
+ListLabelsResponse: TypeAlias = models.FieldLabelsGetResponse
 
 
-_LIST_LABELS_HEADERS: Final[ResponseHeaders[_dcg_type_1, UNSET]] = ResponseHeaders(
+_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, Unset]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
     (
@@ -50,15 +47,15 @@ def decode_list_labels_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | UNSET:
+) -> models.FieldLabelsGetResponse200XNextHeader | Unset:
     """Decode one declared response header of list_labels from a response's metadata."""
     return _LIST_LABELS_HEADERS.decode(info, name)
 
 
-ListLabelSetsResponse: TypeAlias = _dcg_type_2
+ListLabelSetsResponse: TypeAlias = models.LabelList
 
 
-_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[_dcg_type_3, UNSET]] = ResponseHeaders(
+_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, Unset]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
     (
@@ -87,6 +84,6 @@ def decode_list_label_sets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_3 | UNSET:
+) -> models.FieldLabelSetsGetResponse200XNextHeader | Unset:
     """Decode one declared response header of list_label_sets from a response's metadata."""
     return _LIST_LABEL_SETS_HEADERS.decode(info, name)

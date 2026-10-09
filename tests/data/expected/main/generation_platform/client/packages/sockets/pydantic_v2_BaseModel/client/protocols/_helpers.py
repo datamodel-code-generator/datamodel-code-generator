@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
@@ -94,7 +93,7 @@ class RoomsChatWebsocket:
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_0, _dcg_type_1]:
+    ) -> WebSocketSession[models.ClientMessage, models.ServerMessage]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,

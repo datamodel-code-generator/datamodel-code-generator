@@ -32,7 +32,7 @@ render pydantic_v2.BaseModel api-collapsed
   class Record(BaseModel):
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render pydantic_v2.BaseModel paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -66,7 +66,7 @@ render pydantic_v2.BaseModel schemas-collapsed
   class Record(BaseModel):
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render pydantic_v2.dataclass api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -105,7 +105,7 @@ render pydantic_v2.dataclass api-collapsed
   class Record:
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render pydantic_v2.dataclass paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -144,7 +144,7 @@ render pydantic_v2.dataclass schemas-collapsed
   class Record:
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render dataclasses.dataclass api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -182,7 +182,7 @@ render dataclasses.dataclass api-collapsed
   class Record:
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render dataclasses.dataclass paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -220,7 +220,7 @@ render dataclasses.dataclass schemas-collapsed
   class Record:
       bad: Optional[Any] = None
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render typing.TypedDict api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -254,7 +254,7 @@ render typing.TypedDict api-collapsed
   class Record(TypedDict):
       bad: NotRequired[Any]
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render typing.TypedDict paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -288,7 +288,7 @@ render typing.TypedDict schemas-collapsed
   class Record(TypedDict):
       bad: NotRequired[Any]
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render msgspec.Struct api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -324,7 +324,7 @@ render msgspec.Struct api-collapsed
   class Record(Struct):
       bad: Union[Any, UnsetType] = UNSET
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any
 render msgspec.Struct paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -360,4 +360,4 @@ render msgspec.Struct schemas-collapsed
   class Record(Struct):
       bad: Union[Any, UnsetType] = UNSET
   model_bindings.py
-  codec_0 typing.Any
+  codec_0 Any

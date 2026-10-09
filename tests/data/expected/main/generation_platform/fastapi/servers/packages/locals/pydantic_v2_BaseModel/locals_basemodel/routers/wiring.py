@@ -76,12 +76,13 @@ def _add_router(router_1: APIRouter, wiring_1: Wiring) -> None:
         operation_id='router',
         tags=['wiring'],
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
         dependencies=wiring_1.dependencies.get('router'),
     )
 
 
-LITERAL_ROUTES: Final = (('router', _add_router),)
+LITERAL_ROUTES: Final = (
+    ('router', _add_router),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

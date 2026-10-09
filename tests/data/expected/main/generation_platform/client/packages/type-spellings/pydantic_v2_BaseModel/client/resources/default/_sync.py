@@ -5,17 +5,15 @@
 
 from __future__ import annotations
 
-import typing
 from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import Cat as _dcg_type_0
-from models import Kind as _dcg_type_1
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions
+from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse as RawResponse_1
 from ...responses import Response
 from ...types.default import RawResponse
@@ -47,9 +45,9 @@ class DefaultResource:
     def raw(
         self,
         *,
-        body: _dcg_type_0,
-        kind: UNSET = UNSET,
-        name: UNSET = UNSET,
+        body: models.Cat,
+        kind: Unset = UNSET,
+        name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -57,18 +55,18 @@ class DefaultResource:
     def raw(
         self,
         *,
-        body: UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat],
-        name: str | UNSET = UNSET,
+        body: Unset = UNSET,
+        kind: Literal[models.Kind.cat],
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def raw(
         self,
         *,
-        body: _dcg_type_0 | UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat] | UNSET = UNSET,
-        name: str | UNSET = UNSET,
+        body: models.Cat | Unset = UNSET,
+        kind: Literal[models.Kind.cat] | Unset = UNSET,
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -94,9 +92,9 @@ class DefaultWithResponse:
     def raw(
         self,
         *,
-        body: _dcg_type_0,
-        kind: UNSET = UNSET,
-        name: UNSET = UNSET,
+        body: models.Cat,
+        kind: Unset = UNSET,
+        name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]: ...
@@ -104,18 +102,18 @@ class DefaultWithResponse:
     def raw(
         self,
         *,
-        body: UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat],
-        name: str | UNSET = UNSET,
+        body: Unset = UNSET,
+        kind: Literal[models.Kind.cat],
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]: ...
     def raw(
         self,
         *,
-        body: _dcg_type_0 | UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat] | UNSET = UNSET,
-        name: str | UNSET = UNSET,
+        body: models.Cat | Unset = UNSET,
+        kind: Literal[models.Kind.cat] | Unset = UNSET,
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]:
@@ -141,9 +139,9 @@ class DefaultWithRawResponse:
     def raw(
         self,
         *,
-        body: _dcg_type_0,
-        kind: UNSET = UNSET,
-        name: UNSET = UNSET,
+        body: models.Cat,
+        kind: Unset = UNSET,
+        name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1: ...
@@ -151,18 +149,18 @@ class DefaultWithRawResponse:
     def raw(
         self,
         *,
-        body: UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat],
-        name: str | UNSET = UNSET,
+        body: Unset = UNSET,
+        kind: Literal[models.Kind.cat],
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1: ...
     def raw(
         self,
         *,
-        body: _dcg_type_0 | UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat] | UNSET = UNSET,
-        name: str | UNSET = UNSET,
+        body: models.Cat | Unset = UNSET,
+        kind: Literal[models.Kind.cat] | Unset = UNSET,
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1:
@@ -188,9 +186,9 @@ class DefaultWithStreamingResponse:
     def raw(
         self,
         *,
-        body: _dcg_type_0,
-        kind: UNSET = UNSET,
-        name: UNSET = UNSET,
+        body: models.Cat,
+        kind: Unset = UNSET,
+        name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]: ...
@@ -198,18 +196,18 @@ class DefaultWithStreamingResponse:
     def raw(
         self,
         *,
-        body: UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat],
-        name: str | UNSET = UNSET,
+        body: Unset = UNSET,
+        kind: Literal[models.Kind.cat],
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]: ...
     def raw(
         self,
         *,
-        body: _dcg_type_0 | UNSET = UNSET,
-        kind: typing.Literal[_dcg_type_1.cat] | UNSET = UNSET,
-        name: str | UNSET = UNSET,
+        body: models.Cat | Unset = UNSET,
+        kind: Literal[models.Kind.cat] | Unset = UNSET,
+        name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]:

@@ -1,0 +1,7 @@
+post:
+  requestBody:
+    content:
+      application/json:
+        schema: {type: object, properties: {id: {type: string}}}
+  responses:
+    "200": {description: Received.}

@@ -18,7 +18,7 @@ build group pets: ok
 build options-unique-id: ok
 build options-unique-id-result: ok
 app default
-openapi info {"title": "Secured pets", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Pets team", "email": "pets@example.com"}, "license": {"name": "MIT", "identifier": "MIT"}, "version": "2.0"}
+openapi info {"title": "Secured pets", "version": "2.0", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Pets team", "email": "pets@example.com"}, "license": {"name": "MIT", "identifier": "MIT"}}
 openapi servers [{"url": "https://pets.example.com/v2"}]
 openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "public"}]
 > GET /pets
@@ -136,8 +136,8 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 401 application/json {"detail":"Not authenticated"}
 < www-authenticate: Digest, APIKey
 app async
-openapi info {"title": "Renamed pets", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}, "version": "2.0"}
-openapi servers null
+openapi info {"title": "Renamed pets", "version": "2.0", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}}
+openapi servers [{"url": "https://pets.example.com/v2"}]
 openapi tags [{"name": "pets", "description": "Renamed."}]
 > GET /api/pets
   app /api/pets

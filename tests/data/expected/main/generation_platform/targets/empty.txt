@@ -6,9 +6,10 @@ render
   new server/routers/untagged.py
   new server/_generated/__init__.py
   new server/_generated/contract.py
+  new server/_generated/openapi.py
   new server/services.py
   new server/README.md
   new server/py.typed
-  4 runtime modules ['new']
+  5 runtime modules ['new']
 render
   Error: --generate-server requires --openapi-scopes to include api

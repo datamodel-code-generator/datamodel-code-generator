@@ -13,8 +13,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Final, TypeVar
 
-from models import Customer as _dcg_type_1
-from models import Invoice as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.adapters import AdapterPlan, averify_adapted, verify_adapted
@@ -32,7 +31,7 @@ __all__ = ["verify", "verify_async"]
 K = TypeVar("K")
 
 
-_PLAN: Final[AdapterPlan[_dcg_type_0 | _dcg_type_1]] = AdapterPlan(
+_PLAN: Final[AdapterPlan[models.Invoice | models.Customer]] = AdapterPlan(
     helper_id='stripe.event',
     timestamp=True,
     delivery_id=False,
@@ -55,7 +54,7 @@ def verify(
     verifier: Verifier[K],
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate
@@ -84,7 +83,7 @@ async def verify_async(
     verifier: Verifier[K],
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate

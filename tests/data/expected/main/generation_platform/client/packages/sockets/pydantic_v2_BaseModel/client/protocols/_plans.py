@@ -7,19 +7,18 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
 from .. import _operations
 from .._generated import model_bindings
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.websocket import ChannelPlan
 
-SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
+SOCKET_0: Final[ChannelPlan[models.ClientMessage, models.ServerMessage]] = ChannelPlan(
     helper_id='rooms.chat',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,
-    fingerprint='8e3579adedfd28d2ed120cba25e62eed6d10946e9d86f081e213a5702d5f8e77',
+    fingerprint='2f356a109b6654cc65d6175f3cd5245db40d801b3dd5b4bcd9050617ca8d2cc7',
     encoder=model_bindings.codec_4,
     decoder=model_bindings.codec_5,
     subprotocols=('chat.v2', 'chat.v1'),

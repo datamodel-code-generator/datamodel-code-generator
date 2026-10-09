@@ -6,11 +6,10 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-import pydantic
 import strict_basemodel_models
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
-from pydantic import StringConstraints
+from pydantic import StrictStr, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -28,15 +27,10 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
 
     def get_values(
         *,
-        name: Annotated[pydantic.StrictStr | None, Query(alias='name')] = None,
-        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(
-            alias='label',
-        )] = None,
-        names: Annotated[list[pydantic.StrictStr] | None, Query(alias='names')] = None,
-        x_tag: Annotated[pydantic.StrictStr | None, Header(
-            alias='X-Tag',
-            convert_underscores=False,
-        )] = None,
+        name: Annotated[StrictStr | None, Query(alias='name')] = None,
+        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(alias='label')] = None,
+        names: Annotated[list[StrictStr] | None, Query(alias='names')] = None,
+        x_tag: Annotated[StrictStr | None, Header(alias='X-Tag', convert_underscores=False)] = None,
         blob: Annotated[bytes | None, Query(alias='blob')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
@@ -71,22 +65,6 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getValues',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'id', 'in': 'path', 'required': True},
-                {'name': 'count', 'in': 'query'},
-                {'name': 'bounded', 'in': 'query'},
-                {'name': 'score', 'in': 'query'},
-                {'name': 'flag', 'in': 'query'},
-                {'name': 'counts', 'in': 'query'},
-                {'name': 'page', 'in': 'query'},
-                {'name': 'size', 'in': 'query'},
-                {'name': 'maybe', 'in': 'query'},
-                {'name': 'X-Trace', 'in': 'header'},
-                {'name': 'visits', 'in': 'cookie'},
-            ],
-        },
         dependencies=wiring.dependencies.get('get_values'),
     )
 
@@ -102,7 +80,12 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[strict_basemodel_models.Form, Depends(contract.PostForm.BODY)],
     ) -> object:
-        return dispatch(post_form_handler(body=body), contract.PostForm.RESPONSES)
+        return dispatch(
+            post_form_handler(
+                body=body,
+            ),
+            contract.PostForm.RESPONSES,
+        )
 
     router.add_api_route(
         '/forms',
@@ -113,13 +96,6 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postForm',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'requestBody': {
-                'required': True,
-                'content': {'application/x-www-form-urlencoded': {}},
-            },
-        },
         dependencies=wiring.dependencies.get('post_form'),
     )
 
@@ -135,7 +111,12 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[strict_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
     ) -> object:
-        return dispatch(upload_handler(body=body), contract.Upload.RESPONSES)
+        return dispatch(
+            upload_handler(
+                body=body,
+            ),
+            contract.Upload.RESPONSES,
+        )
 
     router.add_api_route(
         '/uploads',
@@ -146,16 +127,17 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='upload',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'requestBody': {'required': True, 'content': {'multipart/form-data': {}}},
-        },
         dependencies=wiring.dependencies.get('upload'),
     )
 
 
-LITERAL_ROUTES: Final = (('post_form', _add_post_form), ('upload', _add_upload))
-TEMPLATED_ROUTES: Final = (('get_values', _add_get_values),)
+LITERAL_ROUTES: Final = (
+    ('post_form', _add_post_form),
+    ('upload', _add_upload),
+)
+TEMPLATED_ROUTES: Final = (
+    ('get_values', _add_get_values),
+)
 
 
 def build_router(

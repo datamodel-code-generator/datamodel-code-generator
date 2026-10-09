@@ -12,8 +12,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Customer as _dcg_type_1
-from models import Invoice as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.webhook_events import (
@@ -27,7 +26,7 @@ from ..._runtime.protocols.webhooks import WebhookOptions
 __all__ = ["decode_unverified"]
 
 
-_PLAN: Final[EventPlan[_dcg_type_0 | _dcg_type_1]] = EventPlan(
+_PLAN: Final[EventPlan[models.Invoice | models.Customer]] = EventPlan(
     helper_id='unsigned.event',
     event=MappedEventDecoder(
         '/meta/type',
@@ -43,7 +42,7 @@ def decode_unverified(
     raw_body: bytes,
     *,
     options: WebhookOptions | None = None,
-) -> _dcg_type_0 | _dcg_type_1:
+) -> models.Invoice | models.Customer:
     """Decode a delivery's event without authenticating it.
 
     Nothing verifies who sent the delivery, that its body is unchanged, or that it is

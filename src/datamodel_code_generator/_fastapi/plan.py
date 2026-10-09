@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.routes import (
     RouteError,
@@ -24,7 +23,6 @@ from datamodel_code_generator._fastapi.routes import (
     route_path,
     stem_conflicts,
 )
-from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
@@ -57,17 +55,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
-        FinalPythonType,
         FrozenLiteral,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
         OperationContract,
         SymbolId,
         TypeArgument,
         TypeUseBinding,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
@@ -120,24 +118,19 @@ _CONSTRAINTS: Final = frozenset({
     "multiple_of",
     "pattern",
 })
-_CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "bytes"): "conbytes",
-    ("decimal", "Decimal"): "condecimal",
-    (None, "float"): "confloat",
-    (None, "int"): "conint",
-    (None, "str"): "constr",
-    ("pydantic", "StrictFloat"): "confloat",
-    ("pydantic", "StrictInt"): "conint",
-    ("pydantic", "StrictStr"): "constr",
+_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]]] = {
+    (None, "bytes"): ("conbytes", None),
+    ("decimal", "Decimal"): ("condecimal", None),
+    (None, "float"): ("confloat", None),
+    (None, "int"): ("conint", None),
+    (None, "str"): ("constr", None),
+    ("pydantic", "StrictFloat"): ("confloat", BuiltinType("float")),
+    ("pydantic", "StrictInt"): ("conint", BuiltinType("int")),
+    ("pydantic", "StrictStr"): ("constr", BuiltinType("str")),
 }
 _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
-CONSTRAINED: Final = frozenset({
-    ("pydantic", "conbytes"),
-    ("pydantic", "condecimal"),
-    ("pydantic", "confloat"),
-    ("pydantic", "conint"),
-    ("pydantic", "constr"),
-})
+_CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
+_WRAPPERS: Final = frozenset({"root", "alias"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
 _FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
@@ -168,7 +161,7 @@ class Default(Enum):
 class RootDefault:
     """The default of a parameter whose type stays a root model: the model of a literal, or the model's own default."""
 
-    type: FinalPythonType
+    type: TypeView
     literal: LiteralScalar | LiteralSequence | None = None
 
 
@@ -176,7 +169,7 @@ class RootDefault:
 class MemberDefault:
     """The default of an enum parameter: the members of its enum type that a literal, or each item of one, names."""
 
-    type: FinalPythonType
+    type: TypeView
     literal: LiteralScalar | LiteralSequence
 
 
@@ -196,7 +189,7 @@ class NativeField:
 
     api: NativeApi
     alias: str
-    type: FinalPythonType
+    type: TypeView
     keywords: tuple[tuple[str, object], ...] = ()
     default: ParameterDefault = Default.REQUIRED
 
@@ -221,7 +214,7 @@ class ParameterSpec:
     use: TypeUseBinding | None
     plan: ParameterPlan | None
     decision: Decision
-    type: FinalPythonType | None = None
+    type: TypeView | None = None
     native: NativeField | None = None
     default: ParameterDefault = Default.ABSENT
 
@@ -464,14 +457,19 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
+        types: TypeNames,
     ) -> None:
-        """Index the batch, and resolve the per-operation settings to operation keys."""
+        """Index the batch, and resolve the per-operation settings to operation keys.
+
+        `types` says which types a generated module can import.
+        """
         self.request = request
         self.config = config
         self.wire = wire
+        self.types = types
+        self.unspelled: set[TypeUseId] = set()
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
-        self.imports = symbol_imports(request.batch)
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         for member in request.batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
@@ -506,7 +504,7 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
@@ -682,8 +680,25 @@ class Planner:  # noqa: PLR0904
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
-        """Return the first type use of a declaration."""
-        return next((self.uses[use] for use in uses if use in self.uses), None)
+        """Return the first type use of a declaration, reporting a type no generated module can import."""
+        use = next((self.uses[use] for use in uses if use in self.uses), None)
+        if (
+            use is not None
+            and use.type is not None
+            and use.id not in self.unspelled
+            and self.types.unspellable(use.type)
+        ):
+            self.unspelled.add(use.id)
+            self.problems.append(
+                Diagnostic(
+                    code="BND_TYPE_EXPRESSION_UNSUPPORTED",
+                    severity="error",
+                    stage="binding",
+                    message="The use's final type has no expression a generated module can import",
+                    source_pointer=use.id.use_site.pointer,
+                )
+            )
+        return use
 
     def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
         """Return a request use, reporting a schema the model generator gave no type."""
@@ -696,7 +711,6 @@ class Planner:  # noqa: PLR0904
                     severity="error",
                     stage="binding",
                     message="The use has no generated native type",
-                    source_uri=self.request.documents.root_uri,
                     source_pointer=use.id.use_site.pointer,
                 )
             )
@@ -743,7 +757,7 @@ class Planner:  # noqa: PLR0904
         )
         return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
 
-    def parameter_type(self, use: TypeUseBinding | None) -> tuple[FinalPythonType | None, ParameterDefault]:
+    def parameter_type(self, use: TypeUseBinding | None) -> tuple[TypeView | None, ParameterDefault]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
         The parameter schema's own default comes first when it is a boolean, number, or string, or a list of them,
@@ -758,7 +772,7 @@ class Planner:  # noqa: PLR0904
             return None, default
         value = use.type
         seen: set[SymbolId] = set()
-        factory: FinalPythonType | None = None
+        factory: TypeView | None = None
         while (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
@@ -788,7 +802,7 @@ class Planner:  # noqa: PLR0904
             return value, MemberDefault(member, default)
         return value, default
 
-    def member(self, value: FinalPythonType) -> GeneratedSymbolType | None:
+    def member(self, value: TypeView) -> GeneratedSymbolType | None:
         """Return the enum type whose members a default names: the type, its one member besides None, or its item."""
         match value:
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
@@ -801,7 +815,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return None
 
-    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
+    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> TypeView | None:
         """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
 
         A scalar that may be None is constrained the same way, so each spelling of the model gives one type. Its
@@ -814,14 +828,17 @@ class Planner:  # noqa: PLR0904
         if (
             any(setting.present for setting in settings)
             or any(name not in _PLAIN_KEYWORDS for name, _ in keywords)
-            or type_reason(facts.type, self.imports) is not None
+            or self.types.unspellable(facts.type)
         ):
             return None
         value = self.nested(facts.type, seen | {symbol})
         return _constrained(value, constraints) if constraints else value
 
-    def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
-        """Return a type with each alias among its members and arguments replaced by the type it validates as."""
+    def nested(self, value: TypeView, seen: frozenset[SymbolId]) -> TypeView:
+        """Return a type with each alias among its members and arguments replaced by the type it validates as.
+
+        A tuple keeps its members, as FastAPI reads none natively.
+        """
         match value:
             case GeneratedSymbolType() if (
                 value.symbol not in seen
@@ -831,14 +848,17 @@ class Planner:  # noqa: PLR0904
             ):
                 return plain
             case GenericType():
-                return replace(value, arguments=tuple(self.nested(item, seen) for item in value.arguments))
+                fixed = value.tuple_form == "fixed"
+                arguments = value.arguments if fixed else tuple(self.nested(item, seen) for item in value.arguments)
+                return value if arguments == value.arguments else replace(value, arguments=arguments, hint=None)
             case UnionType():
-                return replace(value, members=tuple(self.nested(item, seen) for item in value.members))
+                members = tuple(self.nested(item, seen) for item in value.members)
+                return value if members == value.members else replace(value, members=members, hint=None)
             case _:
                 pass
         return value
 
-    def kind(self, value: FinalPythonType) -> ValueKind | None:
+    def kind(self, value: TypeView) -> ValueKind | None:
         """Return whether FastAPI reads a parameter type as a scalar, as a sequence of scalars, or as neither."""
         kind: ValueKind | None = None
         match value:
@@ -853,7 +873,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return kind
 
-    def literal(self, value: FinalPythonType) -> bool:
+    def literal(self, value: TypeView) -> bool:
         """Return whether a type accepts only enum members or literals, which FastAPI matches against query text."""
         if isinstance(value, UnionType | GenericType):
             members = value.members if isinstance(value, UnionType) else value.arguments
@@ -862,7 +882,7 @@ class Planner:  # noqa: PLR0904
             return self.symbols[value.symbol].kind == "enum"
         return isinstance(value, LiteralType)
 
-    def strict_bytes(self, value: FinalPythonType | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
+    def strict_bytes(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
         """Return whether a type holds pydantic's StrictBytes, also inside its root models and aliases."""
         match value:
             case UnionType():
@@ -871,23 +891,25 @@ class Planner:  # noqa: PLR0904
                 return any(self.strict_bytes(item, seen) for item in value.arguments)
             case ImportedType():
                 return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
-            case GeneratedSymbolType() if value.symbol not in seen and value.symbol in self.facts:
+            case GeneratedSymbolType() if (
+                value.symbol not in seen and self.symbols[value.symbol].kind in _WRAPPERS and value.symbol in self.facts
+            ):
                 return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
             case _:
                 pass
         return False
 
-    def textless(self, value: FinalPythonType) -> bool:
+    def textless(self, value: TypeView) -> bool:
         """Return whether a type takes values FastAPI's text is not: enum members, literals, or strict scalars."""
         return self.literal(value) or _strict(value)
 
-    def scalar(self, value: FinalPythonType) -> bool:
+    def scalar(self, value: TypeView) -> bool:
         """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
         match value:
             case BuiltinType():
                 return value.name in _SCALAR_BUILTINS
             case ConstructorType():
-                return (value.callable.import_.from_, value.callable.import_.import_) in CONSTRAINED
+                return value.callable.import_.import_ in _CONSTRAINED
             case ImportedType():
                 return value.import_.from_ in _SCALAR_MODULES and value.import_.import_ not in _MODEL_IMPORTS
             case GeneratedSymbolType():
@@ -975,7 +997,7 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=Decision(transport="fastapi_native"))
         return replace(spec, form_fields=self.form_plans(use.type))
 
-    def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
+    def form_plans(self, value: TypeView | None) -> tuple[FieldPlan, ...]:
         """Return the members a form adapter reads as text: each model field by wire name, as the field's type says."""
         members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
         return tuple(
@@ -984,13 +1006,13 @@ class Planner:  # noqa: PLR0904
             if member.wire_name is not None and (facts := member.model_facts) is not None
         )
 
-    def form_field(self, name: str, value: FinalPythonType) -> FieldPlan:
+    def form_field(self, name: str, value: TypeView) -> FieldPlan:
         """Return a form member's plan: repeated for a list, in the kind the model's type gives its text or items."""
         repeated = self.kind(value) == "sequence"
         kind = self.wire.kinds.of(value, ("items",) if repeated else ()) or "string"
         return FieldPlan(name, kind, repeated=repeated)
 
-    def form_model(self, value: FinalPythonType | None) -> bool:
+    def form_model(self, value: TypeView | None) -> bool:
         """Return whether FastAPI reads a type as a form model: a BaseModel of fields FastAPI reads from text.
 
         A field FastAPI reads is a scalar or a list of scalars whose type accepts text, so neither a strict int, float,
@@ -1229,15 +1251,6 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
     return Decision(transport="fastapi_native" if native else "adapter")
 
 
-def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
-    """Return the `module:Name` import location of every emitted model symbol."""
-    return {
-        symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
-        for symbol in batch.symbols
-        if symbol.artifact is not None
-    }
-
-
 def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool) -> bool:
     """Return whether FastAPI reads a parameter's style and type natively, so no adapter reads it."""
     return (
@@ -1250,30 +1263,33 @@ def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | 
     )
 
 
-def _constrained(value: FinalPythonType, constraints: tuple[tuple[str, TypeArgument], ...]) -> FinalPythonType | None:
+def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], ...]) -> TypeView | None:
     """Return a scalar with its constraints as a constrained scalar, a pydantic Strict one as a strict constrained one.
 
     A union of one scalar and None constrains the scalar; any other type returns None.
     """
-    base: tuple[str | None, str] | None = None
+    scalar: BuiltinType | ImportedType | None = None
+    identity: tuple[str | None, str] = (None, "")
     match value:
         case UnionType() if len(scalars := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
-            if (scalar := _constrained(scalars[0], constraints)) is None:
+            if (constrained := _constrained(scalars[0], constraints)) is None:
                 return None
-            return replace(value, members=tuple(scalar if item is scalars[0] else item for item in value.members))
+            members = tuple(constrained if item is scalars[0] else item for item in value.members)
+            return replace(value, members=members, hint=None)
         case BuiltinType():
-            base = (None, value.name)
+            scalar, identity = value, (None, value.name)
         case ImportedType():
-            base = (value.import_.from_, value.import_.import_)
+            scalar, identity = value, (value.import_.from_, value.import_.import_)
         case _:
             pass
-    if base is None or (constructor := _CONSTRUCTORS.get(base)) is None:
+    if scalar is None or (found := _CONSTRUCTORS.get(identity)) is None:
         return None
-    keywords = (*constraints, _STRICT_KEYWORD) if base[0] == "pydantic" else constraints
-    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords)
+    constructor, strict = found
+    keywords = constraints if strict is None else (*constraints, _STRICT_KEYWORD)
+    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords, base=strict or scalar)
 
 
-def _strict(value: FinalPythonType) -> bool:
+def _strict(value: TypeView) -> bool:
     """Return whether a type holds a strict int, float, or bool: a pydantic Strict type or strict constrained one."""
     match value:
         case UnionType():

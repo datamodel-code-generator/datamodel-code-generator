@@ -301,6 +301,7 @@ ini_options.filterwarnings = [
   "ignore:^.*unclosed file.*",
   "ignore:^Black/isort will become optional.*:FutureWarning",
   "ignore:^Support for (Black|isort|DCG runtime Pydantic).*will end in a future release.*:FutureWarning",
+  "ignore:^Running datamodel-code-generator on Python 3.10 is deprecated.*:FutureWarning",
 ]
 ini_options.verbosity_assertions = 2
 ini_options.assert_helper_direct_assert_exempt_files = [

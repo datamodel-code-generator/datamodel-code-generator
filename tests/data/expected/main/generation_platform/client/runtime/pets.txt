@@ -26,6 +26,9 @@
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  header repeated ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -290,6 +293,9 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  header repeated ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets

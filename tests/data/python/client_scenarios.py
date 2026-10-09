@@ -192,6 +192,9 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             f"header {label}",
             lambda response=response: types.decode_list_pets_header(response.info, name="X-Rate"),
         )
+    exchange.respond(lambda _: httpx2.Response(200, headers=[("X-Rate", "1"), ("X-Rate", "2")], json=pets))
+    response = api.pets.with_response.list_pets(x_trace=trace)
+    record(lines, "header repeated", lambda: types.decode_list_pets_header(response.info, name="X-Rate"))
     for label, responder, attempts in (
         ("error", json_response(500, {"code": 7, "message": "boom"}), 3),
         ("error syntax", raw_response(500, b"{", "application/json"), 3),

@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import Note as _dcg_type_0
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -19,12 +19,12 @@ from .._runtime.protocols.streams import EventPlan
 from ..types.notes import ListNotesResponse
 
 
-def _items_0(data: ListNotesResponse) -> Sequence[_dcg_type_0] | None:
+def _items_0(data: ListNotesResponse) -> Sequence[models.Note] | None:
     """Return the items of one page of notes.all."""
     return data.data
 
 
-PLAN_0: Final[PaginationPlan[_dcg_type_0, ListNotesResponse]] = PaginationPlan(
+PLAN_0: Final[PaginationPlan[models.Note, ListNotesResponse]] = PaginationPlan(
     helper_id='notes.all',
     operation=OperationRef(pointer='/paths/~1notes/get'),
     call=_operations.OPERATION_0,
@@ -40,7 +40,7 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, ListNotesResponse]] = PaginationPlan(
 )
 
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Note]] = EventPlan(
     helper_id='notes.watch',
     operation=OperationRef(pointer='/paths/~1notes~1events/get'),
     call=_operations.OPERATION_1,

@@ -8,15 +8,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import Created as _dcg_type_3
-from models import FeedQuery as _dcg_type_0
-from models import FieldDeepMarksGetQueryScopeParameter as _dcg_type_8
-from models import FieldMarksGetQueryScopeParameter as _dcg_type_5
-from models import FieldNamedMarksGetQueryScopeParameter as _dcg_type_7
-from models import Mark as _dcg_type_6
-from models import Message as _dcg_type_2
-from models import Record as _dcg_type_4
-from models import Tick as _dcg_type_1
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -27,7 +19,7 @@ from .._runtime.protocols.streams import (
     aopen_events,
     aresume_events,
 )
-from ..options import UNSET, RequestOptions, SessionOptions
+from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
 
@@ -215,13 +207,13 @@ class AsyncSearchesTicksSse:
     async def open(
         self,
         *,
-        criteria: dict[str, str] | UNSET = UNSET,
-        body: _dcg_type_0,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1]:
+    ) -> AsyncEventStream[models.Tick]:
         """Open the event stream of POST /search-feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -238,13 +230,13 @@ class AsyncSearchesTicksSse:
         self,
         state: JSONValue,
         *,
-        criteria: dict[str, str] | UNSET = UNSET,
-        body: _dcg_type_0,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1]:
+    ) -> AsyncEventStream[models.Tick]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -269,13 +261,13 @@ class AsyncFeedLiveSse:
     async def open(
         self,
         *,
-        last_event_id: str | UNSET = UNSET,
-        body: _dcg_type_0,
+        last_event_id: str | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1]:
+    ) -> AsyncEventStream[models.Tick]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -292,13 +284,13 @@ class AsyncFeedLiveSse:
         self,
         state: JSONValue,
         *,
-        last_event_id: str | UNSET = UNSET,
-        body: _dcg_type_0,
+        last_event_id: str | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1]:
+    ) -> AsyncEventStream[models.Tick]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -323,13 +315,13 @@ class AsyncEventsLiveSse:
     async def open(
         self,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -344,13 +336,13 @@ class AsyncEventsLiveSse:
         self,
         state: JSONValue,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[models.Message]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -373,13 +365,13 @@ class AsyncEventsPlainSse:
     async def open(
         self,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -401,13 +393,13 @@ class AsyncEventsTrackedSse:
     async def open(
         self,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Created | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -425,7 +417,7 @@ class AsyncEventsTrackedSse:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Created | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -449,11 +441,11 @@ class AsyncRoomsLiveSse:
         *,
         room: str,
         shard: str,
-        last_event_id: str | UNSET = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[models.Message]:
         """Open the event stream of GET /rooms/{room}{shard}, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -470,11 +462,11 @@ class AsyncRoomsLiveSse:
         *,
         room: str,
         shard: str,
-        last_event_id: str | UNSET = UNSET,
+        last_event_id: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_2]:
+    ) -> AsyncEventStream[models.Message]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -497,11 +489,11 @@ class AsyncRecordsAllNdjson:
     async def open(
         self,
         *,
-        after: str | UNSET = UNSET,
+        after: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_4]:
+    ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -516,11 +508,11 @@ class AsyncRecordsAllNdjson:
         self,
         state: JSONValue,
         *,
-        after: str | UNSET = UNSET,
+        after: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_4]:
+    ) -> AsyncEventStream[models.Record]:
         """Reopen the NDJSON stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -543,13 +535,13 @@ class AsyncFeedTicksSse:
     async def open(
         self,
         *,
-        last_event_id: str | UNSET = UNSET,
-        body: _dcg_type_0,
+        last_event_id: str | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Tick | UnknownEvent]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -566,13 +558,13 @@ class AsyncFeedTicksSse:
         self,
         state: JSONValue,
         *,
-        last_event_id: str | UNSET = UNSET,
-        body: _dcg_type_0,
+        last_event_id: str | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_1 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Tick | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -597,13 +589,13 @@ class AsyncTopicsMarksSse:
     async def open(
         self,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Created | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -618,13 +610,13 @@ class AsyncTopicsMarksSse:
         self,
         state: JSONValue,
         *,
-        topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        session: str | UNSET = UNSET,
+        topic: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        session: str | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_3 | UnknownEvent]:
+    ) -> AsyncEventStream[models.Created | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -647,13 +639,13 @@ class AsyncMarksScopedSse:
     async def open(
         self,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_5 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -668,13 +660,13 @@ class AsyncMarksScopedSse:
         self,
         state: JSONValue,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_5 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -697,13 +689,13 @@ class AsyncMarksNamedSse:
     async def open(
         self,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_7 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldNamedMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of GET /named-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -718,13 +710,13 @@ class AsyncMarksNamedSse:
         self,
         state: JSONValue,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_7 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldNamedMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -747,13 +739,13 @@ class AsyncMarksDeepSse:
     async def open(
         self,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_8 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldDeepMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -768,13 +760,13 @@ class AsyncMarksDeepSse:
         self,
         state: JSONValue,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_8 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldDeepMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -797,13 +789,13 @@ class AsyncMarksBoundSse:
     async def open(
         self,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_5 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -818,13 +810,13 @@ class AsyncMarksBoundSse:
         self,
         state: JSONValue,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_5 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -847,13 +839,13 @@ class AsyncMarksDeepboundSse:
     async def open(
         self,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_8 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldDeepMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -868,13 +860,13 @@ class AsyncMarksDeepboundSse:
         self,
         state: JSONValue,
         *,
-        tag: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
-        scope: _dcg_type_8 | UNSET = UNSET,
+        tag: str | Unset = UNSET,
+        last_event_id: str | Unset = UNSET,
+        scope: models.FieldDeepMarksGetQueryScopeParameter | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
@@ -897,13 +889,13 @@ class AsyncSearchesKeyedSse:
     async def open(
         self,
         *,
-        criteria: dict[str, str] | UNSET = UNSET,
-        body: _dcg_type_0,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Open the event stream of POST /search-feed, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -920,13 +912,13 @@ class AsyncSearchesKeyedSse:
         self,
         state: JSONValue,
         *,
-        criteria: dict[str, str] | UNSET = UNSET,
-        body: _dcg_type_0,
+        criteria: dict[str, str] | Unset = UNSET,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_6]:
+    ) -> AsyncEventStream[models.Mark]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,

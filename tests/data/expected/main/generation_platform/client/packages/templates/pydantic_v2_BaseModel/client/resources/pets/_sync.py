@@ -9,11 +9,8 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
+import models
 from audit import AuditMixin
-from models import FieldPetsPetIdGetResponse as _dcg_type_3
-from models import FieldPetsPostRequest as _dcg_type_1
-from models import NewPet as _dcg_type_0
-from models import Pet as _dcg_type_2
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -76,7 +73,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -85,7 +82,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -93,7 +90,7 @@ class PetsResource(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -123,7 +120,7 @@ class PetsResource(AuditMixin):
         pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+    ) -> models.Pet: ...
     @overload
     def get_pet(
         self,
@@ -131,7 +128,7 @@ class PetsResource(AuditMixin):
         pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_3: ...
+    ) -> models.FieldPetsPetIdGetResponse: ...
     def get_pet(
         self,
         *,
@@ -254,7 +251,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -263,7 +260,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -271,7 +268,7 @@ class PetsWithResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -301,7 +298,7 @@ class PetsWithResponse(AuditMixin):
         pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_2]: ...
+    ) -> Response[models.Pet]: ...
     @overload
     def get_pet(
         self,
@@ -309,7 +306,7 @@ class PetsWithResponse(AuditMixin):
         pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_3]: ...
+    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
     def get_pet(
         self,
         *,
@@ -424,7 +421,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -433,7 +430,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -441,7 +438,7 @@ class PetsWithRawResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -578,7 +575,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -587,7 +584,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -595,7 +592,7 @@ class PetsWithStreamingResponse(AuditMixin):
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

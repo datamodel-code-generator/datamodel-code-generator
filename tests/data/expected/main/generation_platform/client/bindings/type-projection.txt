@@ -37,8 +37,8 @@ render pydantic_v2.BaseModel default
   model_bindings.py
   codec_0 models.Child
   codec_1 models.Child
-  codec_2 uuid.UUID
-  codec_3 uuid.UUID
+  codec_2 UUID
+  codec_3 UUID
 change pydantic_v2.BaseModel default literal-order
   @@ -32 +32 @@
   -    literal: Optional[Literal[True, 1, 'one']] = None
@@ -111,8 +111,8 @@ render msgspec.Struct default
   model_bindings.py
   codec_0 models.Child
   codec_1 models.Child
-  codec_2 uuid.UUID
-  codec_3 uuid.UUID
+  codec_2 UUID
+  codec_3 UUID
 change msgspec.Struct default builtin
   @@ -20 +20 @@
   -    flag: Union[bool, UnsetType] = UNSET
