@@ -144,9 +144,8 @@ RULE_FAILURE_MESSAGES = {
         "or verify_* function of their own. Extend a shared assert helper instead."
     ),
     PRIVATE_IMPORT: (
-        "Tests and their helpers reach generation through its public entry points, the command line, "
-        "datamodel_code_generator.generate, or datamodel_code_generator.fastapi, as the model tests reach model "
-        "generation.\n"
+        "Tests and their helpers reach generation through its public entry points, the command line and "
+        "datamodel_code_generator.generate, as the model tests reach model generation.\n"
         "They reach no private datamodel_code_generator module or name (an underscore segment at any depth) and no "
         "API scope internals (parser.openapi_scope*): not by import, attribute access, getattr, sys.modules, "
         "importlib.import_module, or __import__, and not through a test helper that re-exports them.\n"

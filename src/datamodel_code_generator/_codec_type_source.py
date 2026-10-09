@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
@@ -21,8 +21,6 @@ from datamodel_code_generator._target_contract import (
     UnsupportedBindingValueError,
 )
 
-LeafStep: TypeAlias = Literal["items", "values"]
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
 
@@ -31,6 +29,7 @@ if TYPE_CHECKING:
         FinalModelSymbol,
         FinalPythonType,
         GeneratedTypeContractBatch,
+        LeafStep,
         SourceLocation,
         TypeArgument,
         TypeProjectionReason,
@@ -154,8 +153,14 @@ class LexicalKinds:
         value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
         return _kind(set(self._leaves(value, frozenset())), mixed=True)
 
+    def of(self, value: FinalPythonType, steps: tuple[LeafStep, ...] = ()) -> LexicalKind | None:
+        """Return the kind of the leaf the steps reach from a final type, such as a model field's type."""
+        return _kind(set(self._leaves(self._stepped(value, steps), frozenset())), mixed=True)
+
     def _reached(self, location: SourceLocation, steps: tuple[LeafStep, ...]) -> FinalPythonType | None:
-        value = self._types.get((location.document, location.pointer))
+        return self._stepped(self._types.get((location.document, location.pointer)), steps)
+
+    def _stepped(self, value: FinalPythonType | None, steps: tuple[LeafStep, ...]) -> FinalPythonType | None:
         for step in steps:
             value = self._argument(value, *_ARGUMENTS[step])
         return value

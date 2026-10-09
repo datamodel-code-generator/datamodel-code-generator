@@ -72,7 +72,8 @@ service UntaggedService without its methods: TypeError
   post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
 < 204 - b''
 > POST /forms
-< 422 application/json [{"type": "media_invalid", "loc": ["body"]}]
+  post_form(FieldFormsPostRequest(name='b', count=1, tags=['x', 'x']))
+< 204 - b''
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms

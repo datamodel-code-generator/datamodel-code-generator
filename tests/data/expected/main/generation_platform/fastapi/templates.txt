@@ -1,20 +1,20 @@
 # templates
 render pydantic_v2.BaseModel
-  write models.py
-  write server/__init__.py
-  write server/application.py
-  write server/routers/__init__.py
-  write server/routers/pets.py
-  write server/routers/store.py
-  write server/_generated/__init__.py
-  write server/_generated/contract.py
-  write server/services.py
-  write server/README.md
-  write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/server/__init__.py (copied runtime)
-  write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/responses.py (copied runtime)
-  write server/py.typed
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed
   file server/README.md
     | # Pets
     |

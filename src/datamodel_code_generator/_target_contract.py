@@ -93,29 +93,6 @@ class TypeUseId:
 
 
 @dataclass(frozen=True, slots=True)
-class NoneDefaultProvenance:
-    """Keep accepted constructor defaults separate from wire-null provenance."""
-
-    emitted_default: Literal["absent", "none", "value", "factory", "missing", "opaque"]
-    origin: Literal[
-        "synthesized_optional_fallback",
-        "schema_default",
-        "explicit_model_default",
-        "explicit_nullable",
-        "runtime_or_opaque",
-        "not_applicable",
-    ]
-    annotation_null_origin: Literal[
-        "optional_fallback",
-        "schema",
-        "model_configuration",
-        "preexisting_type",
-        "none",
-        "opaque",
-    ]
-
-
-@dataclass(frozen=True, slots=True)
 class LiteralScalar:
     """Retain a builtin literal's exact type, including the bool/int distinction."""
 
@@ -311,22 +288,21 @@ class ModelArtifactAddress:
 
 @dataclass(frozen=True, slots=True)
 class ModelFieldFacts:
-    """Keep adopted model semantics separate from each original wire occurrence."""
+    """Keep adopted model semantics separate from each original wire occurrence.
+
+    `schema_null` says the None the field's annotation accepts comes from its schema's nullability or its own type,
+    rather than from an optional fallback or the model configuration.
+    """
 
     required: bool
     nullable: bool | None
     has_default: bool
-    explicit_default_factory: bool
     type_has_null: bool | None
     read_only: bool
     write_only: bool
-    alias: str | None
-    validation_aliases: tuple[str, ...] | None
-    serialization_alias: str | None
-    use_serialization_alias: bool
     type: FinalPythonType
     backend: BackendFieldFacts
-    none_default_provenance: NoneDefaultProvenance
+    schema_null: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -366,30 +342,9 @@ BindingReason: TypeAlias = Literal[
 
 
 @dataclass(frozen=True, slots=True)
-class BindingDiagnostic:
-    """Describe one finite binding failure using immutable identities and values."""
-
-    code: BindingReason
-    operation: OperationId | None = None
-    type_use: TypeUseId | None = None
-    source_locations: tuple[SourceLocation, ...] = ()
-    details: tuple[tuple[str, str | int | bool | None], ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class FieldSourceOrigin:
-    """Retain every producer's original occurrence without retaining schema nodes."""
-
-    location: SourceLocation
-    relation: str
-
-
-@dataclass(frozen=True, slots=True)
 class FieldUseBinding:
     """Join a consumer's wire member to its real declaring slot or explicit exclusion."""
 
-    origin_state: Literal["known", "unavailable", "ambiguous"]
-    origin_reason: str | None
     member_kind: Literal[
         "property",
         "required_only",
@@ -398,7 +353,6 @@ class FieldUseBinding:
         "root_value",
         "discriminator_synthetic",
     ]
-    occurrences: tuple[FieldSourceOrigin, ...]
     wire_name: str | None
     consumer: SymbolId
     slot: FieldSlot | None
@@ -409,18 +363,28 @@ class FieldUseBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class SchemaSite:
+    """A schema's location, and the location its whole-schema references lead to."""
+
+    location: SourceLocation
+    target: SourceLocation
+
+
+@dataclass(frozen=True, slots=True)
 class PartSchema:
     """How the schema of a multipart member encodes its parts, by the types and formats it declares.
 
     A member holds files when it is a binary string, or an array of them; it repeats as an array, one part for each
     item; and its values, or its items', are text when it declares only scalar types and structured when it declares
-    an object or an array.
+    an object or an array. `own` is where the member's schema is, and `items` where its items' is when it repeats.
     """
 
     file: bool
     repeated: bool
     text: bool
     structured: bool
+    own: SchemaSite | None = None
+    items: SchemaSite | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -436,12 +400,70 @@ class PartFacts:
     extra: PartSchema | Literal["closed"] | None
 
 
+LeafStep: TypeAlias = Literal["items", "values"]
+
+
+@dataclass(frozen=True, slots=True)
+class KindSite:
+    """Where the lexical kind of a text leaf is read: the places a type may be bound for it, and where none is reported.
+
+    A place is a schema's location and the steps from the type bound there to the leaf.
+    """
+
+    source: SourceLocation
+    leaves: tuple[tuple[SourceLocation, tuple[LeafStep, ...]], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MemberShape:
+    """One member of an object written as text: its name, where its kind is read, and whether it repeats.
+
+    A member without a kind site is any string.
+    """
+
+    name: str
+    kind: KindSite | None = None
+    repeated: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class TextShape:
+    """How a schema's values are written as parameter text or as URL-encoded members, by the JSON types it declares.
+
+    A scalar or an array has the kind of its value or items; an object has its properties' members, then any other
+    property's, none when it allows no others. `problem` is the location and message of why no builtin encoding
+    writes the values.
+    """
+
+    shape: Literal["scalar", "array", "object"]
+    kind: KindSite | None = None
+    members: tuple[MemberShape, ...] = ()
+    additional: MemberShape | None = None
+    problem: tuple[SourceLocation, str] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EncodingFacts:
+    """How the schema of a parameter, a header or a form is written as text, as the parser recorded on acquiring it.
+
+    `types` are the JSON types it declares, None when it declares none; `value` is its shape as one parameter value,
+    `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the location of the
+    property's schema.
+    """
+
+    types: frozenset[str] | None
+    value: TextShape
+    form: TextShape
+    members: tuple[tuple[SourceLocation, TextShape], ...] = ()
+
+
 @dataclass(frozen=True, slots=True)
 class TypeUseBinding:
     """Bind one actual source occurrence without inventing an unavailable type.
 
-    `default` is the JSON boolean, number, or string default a parameter's schema declares, and `parts` what the
-    schema of a multipart body says of its parts.
+    `default` is the JSON boolean, number, or string default a parameter's schema declares, `parts` what the
+    schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
+    text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
     """
 
     id: TypeUseId
@@ -449,10 +471,11 @@ class TypeUseBinding:
     type: FinalPythonType | None
     reason: BindingReason | None
     members: tuple[FieldUseBinding, ...] = ()
-    producers: tuple[FieldSlot, ...] = ()
     schema: SourceLocation | None = None
     default: LiteralScalar | None = None
     parts: PartFacts | None = None
+    encoding: EncodingFacts | None = None
+    keywords: tuple[tuple[str, FrozenLiteral], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -514,7 +537,10 @@ class OperationContract:
 
 @dataclass(frozen=True, slots=True)
 class GeneratedTypeContractBatch:
-    """Own one accepted attempt's immutable contracts, with no parser or source mappings."""
+    """Own one accepted attempt's immutable contracts, with no parser or source mappings.
+
+    `document_facts` are the OpenAPI version, info, tags and servers the root document declares.
+    """
 
     attempt: AttemptId
     root_selector_document: str
@@ -524,9 +550,15 @@ class GeneratedTypeContractBatch:
     symbols: tuple[FinalModelSymbol, ...]
     artifacts: tuple[ModelArtifactAddress, ...]
     fields: tuple[FieldUseBinding, ...]
-    diagnostics: tuple[BindingDiagnostic, ...]
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
+    document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
+
+    @property
+    def openapi(self) -> str:
+        """Return the OpenAPI version the root document declares, empty when it declares none."""
+        version = next((value for key, value in self.document_facts if key == "openapi"), None)
+        return str(version.value) if isinstance(version, LiteralScalar) else ""
 
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
@@ -536,31 +568,14 @@ DefaultKind: TypeAlias = Literal[
 
 
 @dataclass(frozen=True, slots=True)
-class MetaLayer:
-    """Locate emitted metadata on an already projected structural type node."""
-
-    node_path: tuple[int, ...]
-    ordinal: int
-    keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
-    line: int
-    column: int
-
-
-@dataclass(frozen=True, slots=True)
 class EmittedFieldFacts:
     """Observe constructor syntax without claiming arbitrary callable execution results."""
 
     emitted: bool
     emitted_default_kind: DefaultKind
     emitted_default_value: FrozenLiteral | SourceExpression | None
-    factory_present: bool
-    factory_expression: SourceExpression | None
-    unset_default: bool
-    unset_type_in_annotation: bool
-    null_type_in_annotation: bool
     qualifiers: tuple[str, ...]
     constructor_keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
-    meta_layers: tuple[MetaLayer, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -575,7 +590,7 @@ class KnownBackendValue:
 class RuntimeBackendValue:
     """Identify an effect that generation must never execute to discover."""
 
-    reason: Literal["factory_result", "fields_set", "expression"]
+    reason: Literal["expression"]
     state: Literal["runtime"] = "runtime"
 
 
@@ -595,13 +610,8 @@ class BackendFieldFacts:
     """Freeze builtin field declarations separately from their runtime effects."""
 
     backend: BackendName
-    declarations: tuple[tuple[str, BackendValue], ...]
     emitted: EmittedFieldFacts
     constructor_init: BackendValue
-    init_var: BackendValue
-    kw_only: BackendValue
-    factory_result: BackendValue
-    fields_set: BackendValue
 
 
 @dataclass(frozen=True, slots=True)
@@ -621,9 +631,6 @@ class BackendModelFacts:
     parameters: tuple[BackendSetting, ...]
     configuration: tuple[BackendSetting, ...]
     functional_typeddict: bool
-    extra_items_present: bool | None
-    extra_items: FinalPythonType | None
-    custom_base: bool = False
 
 
 @dataclass(frozen=True, slots=True)

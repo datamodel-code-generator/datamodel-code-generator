@@ -1,14 +1,13 @@
 # http
 render
-  target=fastapi schema_version=1
-  write model models.py
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/services.py
-  write target server/README.md
-  write target server/py.typed
-  4 runtime modules ['write']
+  new models.py
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  4 runtime modules ['new']

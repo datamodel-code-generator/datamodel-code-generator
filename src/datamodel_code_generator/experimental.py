@@ -28,8 +28,6 @@ ExperimentalFeatureId = Literal[
     "input-format.protobuf",
     "input-format.xmlschema",
     "formatter.builtin",
-    "python-api.client",
-    "python-api.fastapi-server",
 ]
 
 
@@ -266,38 +264,6 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         message="The internal formatter is experimental and may change as generated-output coverage is expanded.",
         since_version="0.59.0",
         note="The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
-    ),
-    "python-api.client": ExperimentalFeature(
-        id="python-api.client",
-        kind="python-api",
-        target="datamodel_code_generator.client and datamodel_code_generator.api_types",
-        message=(
-            "The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package "
-            "may change."
-        ),
-        since_version="0.84.0",
-        note=(
-            "generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI "
-            "document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, "
-            "both to run and as model_config.target_python_version."
-        ),
-    ),
-    "python-api.fastapi-server": ExperimentalFeature(
-        id="python-api.fastapi-server",
-        kind="python-api",
-        target="datamodel_code_generator.fastapi and datamodel_code_generator.api_types",
-        message=(
-            "The FastAPI server target is experimental; its entry points, settings, templates, generated package, "
-            "and served OpenAPI document may change."
-        ),
-        since_version="0.84.0",
-        note=(
-            "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
-            "document with the api scope. The package declares a service Protocol for each router group, builds "
-            "routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document "
-            "with the source document's metadata. They need Python 3.11 or later, both to run and as "
-            "model_config.target_python_version."
-        ),
     ),
 }
 

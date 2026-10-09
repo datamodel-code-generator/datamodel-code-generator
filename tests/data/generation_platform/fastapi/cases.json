@@ -19,12 +19,9 @@
   "bodies": {
     "input": "bodies.yaml",
     "config": {
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ]
+      "server_body_modes": {
+        "/paths/~1raw/post": "request"
+      }
     },
     "package_snapshots": []
   },
@@ -37,14 +34,11 @@
       ]
     },
     "config": {
-      "include_request": true,
-      "body_mode": "request",
-      "body_modes": [
-        [
-          "/paths/~1json/post",
-          "typed"
-        ]
-      ]
+      "server_include_request": true,
+      "server_body_mode": "request",
+      "server_body_modes": {
+        "/paths/~1json/post": "typed"
+      }
     },
     "package_snapshots": []
   },
@@ -55,45 +49,36 @@
       "pydantic_v2.dataclass"
     ],
     "config": {
-      "primary_responses": [
-        [
-          "/paths/~1created/post",
-          {
-            "status_code": 201,
-            "media_type": "application/vnd.thing+json"
-          }
-        ]
-      ]
+      "server_primary_responses": {
+        "/paths/~1created/post": {
+          "status_code": 201,
+          "media_type": "application/vnd.thing+json"
+        }
+      }
     },
     "package_snapshots": []
   },
   "names": {
     "input": "names.yaml",
     "config": {
-      "operation_names": [
-        [
-          "/paths/~1health/get",
-          "health_check"
-        ]
-      ],
-      "router_names": {
+      "server_operation_names": {
+        "/paths/~1health/get": "health_check"
+      },
+      "server_router_names": {
         "untagged": "misc"
       },
-      "parameter_names": [
-        [
-          "/paths/~1files~1{file.name}~1{dcg_p0}/get",
-          {
-            "query:limit": "page_size"
-          }
-        ]
-      ]
+      "server_parameter_names": {
+        "/paths/~1files~1{file.name}~1{dcg_p0}/get": {
+          "query:limit": "page_size"
+        }
+      }
     },
     "package_snapshots": []
   },
   "single": {
     "input": "pets.yaml",
     "config": {
-      "layout": "single"
+      "server_layout": "single"
     },
     "package_snapshots": []
   },
@@ -113,7 +98,7 @@
   "group-errors": {
     "input": "group-errors.yaml",
     "config": {
-      "router_names": {
+      "server_router_names": {
         "tag:four": "OPERATIONS"
       }
     }
@@ -136,55 +121,32 @@
   "selector-errors": {
     "input": "pets.yaml",
     "config": {
-      "operation_names": [
-        [
-          "/paths/~1missing/get",
-          "missing"
-        ],
-        [
-          "/paths/~1pets/get",
-          "all_pets"
-        ],
-        [
-          {
-            "pointer": "/paths/~1pets/get"
-          },
-          "every_pet"
-        ]
-      ],
-      "body_modes": [
-        [
-          "/paths/~1pets/delete",
-          "request"
-        ]
-      ]
+      "server_operation_names": {
+        "/paths/~1missing/get": "missing",
+        "/paths/~1pets/get": "all_pets",
+        "#/paths/~1pets/get": "every_pet"
+      },
+      "server_body_modes": {
+        "/paths/~1pets/delete": "request"
+      }
     }
   },
   "primary-errors": {
     "input": "responses.yaml",
     "config": {
-      "primary_responses": [
-        [
-          "/paths/~1created/post",
-          {
-            "status_code": 201,
-            "media_type": "application/xml"
-          }
-        ],
-        [
-          "/paths/~1download/get",
-          {
-            "status_code": 204
-          }
-        ],
-        [
-          "/paths/~1optional/get",
-          {
-            "status_code": 200,
-            "media_type": "not a media type"
-          }
-        ]
-      ]
+      "server_primary_responses": {
+        "/paths/~1created/post": {
+          "status_code": 201,
+          "media_type": "application/xml"
+        },
+        "/paths/~1download/get": {
+          "status_code": 204
+        },
+        "/paths/~1optional/get": {
+          "status_code": 200,
+          "media_type": "not a media type"
+        }
+      }
     }
   },
   "backend-errors": {
@@ -284,32 +246,23 @@
   "argument-errors": {
     "input": "argument-errors.yaml",
     "config": {
-      "include_request": true,
-      "parameter_names": [
-        [
-          "/paths/~1items/get",
-          {
-            "query:req": "request",
-            "query:page": "limit",
-            "header:size": "limit"
-          }
-        ]
-      ]
+      "server_include_request": true,
+      "server_parameter_names": {
+        "/paths/~1items/get": {
+          "query:req": "request",
+          "query:page": "limit",
+          "header:size": "limit"
+        }
+      }
     }
   },
   "security": {
     "input": "server-security.yaml",
     "config": {
-      "handler_modes": [
-        [
-          "/paths/~1maybe/get",
-          "async"
-        ],
-        [
-          "/paths/~1custom/get",
-          "async"
-        ]
-      ]
+      "server_handler_modes": {
+        "/paths/~1maybe/get": "async",
+        "/paths/~1custom/get": "async"
+      }
     },
     "package_snapshots": []
   },
@@ -323,7 +276,7 @@
       "references-metadata.yaml"
     ],
     "config": {
-      "layout": "single"
+      "server_layout": "single"
     }
   },
   "self-references": {
@@ -337,7 +290,7 @@
       "input_filename": "references.yaml"
     },
     "config": {
-      "layout": "single"
+      "server_layout": "single"
     }
   },
   "reference-errors": {
@@ -352,7 +305,7 @@
   "info": {
     "input": "info.yaml",
     "config": {
-      "layout": "single"
+      "server_layout": "single"
     },
     "package_snapshots": []
   },
@@ -366,12 +319,9 @@
   "services": {
     "input": "services.yaml",
     "config": {
-      "handler_modes": [
-        [
-          "/paths/~1health/get",
-          "async"
-        ]
-      ]
+      "server_handler_modes": {
+        "/paths/~1health/get": "async"
+      }
     },
     "package_snapshots": []
   },
