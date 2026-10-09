@@ -25,7 +25,10 @@ from ._runtime.server.security import (
 from .services import Service
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     list_pets_handler = checked(
         service.list_pets,
@@ -76,7 +79,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     create_pet_handler = checked(
         service.create_pet,
@@ -125,7 +131,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_owners(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service[object] = wiring.services['service']
     list_owners_handler = checked(
         service.list_owners,

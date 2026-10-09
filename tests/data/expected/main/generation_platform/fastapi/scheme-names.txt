@@ -81,6 +81,7 @@ render pydantic_v2.BaseModel
     | - `api-key`: an API key in the `X-Key` header
     | - `api_key`: an API key in the `key` query parameter
     | - `wiring`: HTTP Basic credentials, as `HTTPBasicCredentials`
+    | - `h"""o\N`: no FastAPI class reads it: override its dependency to return the credential
     |
     | `security.py` declares one FastAPI dependency for each scheme; replace one with `app.dependency_overrides`, for example to read a scheme no FastAPI class reads.
     | Each secured operation calls `authorize` once with its requirement sets whose every scheme presented a credential, in declaration order, and the credentials by scheme name, and receives the principal it returns.
