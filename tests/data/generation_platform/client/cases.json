@@ -923,6 +923,33 @@
       ]
     ]
   },
+  "references": {
+    "input": "references.yaml",
+    "references": [
+      "references-library.yaml"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "self-references": {
+    "input": "self-references.yaml",
+    "references": [
+      "references-library.yaml"
+    ],
+    "modules": false,
+    "model": {
+      "input_filename": "references.yaml"
+    }
+  },
   "paths": {
     "input": "paths.yaml"
   },
