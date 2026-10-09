@@ -59,7 +59,7 @@ class StreamSpec:
     """A stream helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
 
     `media` is the event stream or NDJSON media type the operation declares in `response`, which the helper requests.
-    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the manifest
+    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the source
     reference of every schema the helper decodes, in the order of its settings. A helper declaring resumption reopens
     its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
     """
@@ -138,7 +138,7 @@ class _Streams:
     """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
     def __init__(self, protocols: Protocols, request: TargetRequest) -> None:
-        """Index the documents by manifest pointer and the value use of each schema by its location and direction."""
+        """Index the documents by pointer and the value use of each schema by its location and direction."""
         self.protocols = protocols
         self.request = request
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}

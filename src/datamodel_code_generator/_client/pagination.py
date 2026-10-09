@@ -222,7 +222,7 @@ class _Pages:
         codecs: Container[TypeUseId],
         request: TargetRequest,
     ) -> None:
-        """Keep the model facts and the uses with codecs, and index the documents by manifest pointer.
+        """Keep the model facts and the uses with codecs, and index the documents by pointer.
 
         The positions of the package's security schemes, with the credential headers, are where no helper writes.
         """

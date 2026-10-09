@@ -465,8 +465,8 @@ def plan_wire(  # noqa: PLR0913
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
-    The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
-    so schema references match the manifest. The uses of URL-encoded bodies named in `forms`
+    The document pointers of the target, such as `/inputs/documents/<index>`, name the bundled resources,
+    so schema references match them. The uses of URL-encoded bodies named in `forms`
     get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
     named in `styles` get the query parameter plan of each member their encodings give a style.
     """

@@ -1,0 +1,6 @@
+# nested-mount-point
+mkdir server/routers
+generate
+  OSError: [Errno 18] Invalid cross-device link
+tree
+leftovers []

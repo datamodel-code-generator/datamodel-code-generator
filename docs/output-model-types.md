@@ -96,6 +96,7 @@ When the target is unset:
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
 | Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
+| `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 
@@ -104,6 +105,10 @@ When the target is unset:
 | `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
+
+With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
+constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime
+`populate_by_name=True` still accepts both.
 
 ---
 
