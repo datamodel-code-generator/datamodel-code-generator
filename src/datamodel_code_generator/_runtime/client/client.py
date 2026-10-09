@@ -209,7 +209,7 @@ def _headers(
         generated = _patched(generated, layer)
     if media_type is None:
         return HeadersView(generated)
-    label = media_type
+    label: str | None = media_type
     for name, value in () if call is None else call.items():
         if name.lower() == "content-type":
             label = _relabel(value, media_type)

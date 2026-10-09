@@ -31,8 +31,8 @@ mypy clients_negative.py: 63/63 marked lines with one error, 0 elsewhere, 0 in o
   108 arg-type
   109 assignment
   116 assignment
-  121 operator
-  122 operator
+  121 arg-type
+  122 arg-type
   123 arg-type
   124 call-arg
   125 call-arg
@@ -58,8 +58,8 @@ mypy clients_negative.py: 63/63 marked lines with one error, 0 elsewhere, 0 in o
   151 dict-item
   152 call-arg
   153 call-arg
-  154 operator
-  155 operator
+  154 arg-type
+  155 arg-type
   156 call-arg
   157 call-arg
   163 arg-type
@@ -98,8 +98,8 @@ pyright clients_negative.py: 60/63 marked lines with one error, 0 elsewhere, 0 i
   108 reportArgumentType
   109 reportAssignmentType
   116 reportAssignmentType
-  121 reportCallIssue
-  122 reportCallIssue
+  121 reportArgumentType
+  122 reportArgumentType
   123 reportArgumentType
   124 reportCallIssue
   125 reportCallIssue
@@ -125,8 +125,8 @@ pyright clients_negative.py: 60/63 marked lines with one error, 0 elsewhere, 0 i
   151 reportArgumentType
   152 reportCallIssue
   153 reportCallIssue
-  154 reportCallIssue
-  155 reportCallIssue
+  154 reportArgumentType
+  155 reportArgumentType
   156 reportCallIssue
   157 reportCallIssue
   163 reportArgumentType
@@ -162,8 +162,8 @@ ty clients_negative.py: 63/63 marked lines with one error, 0 elsewhere, 0 in oth
   108 invalid-argument-type
   109 invalid-assignment
   116 invalid-assignment
-  121 call-non-callable
-  122 call-non-callable
+  121 invalid-argument-type
+  122 invalid-argument-type
   123 invalid-argument-type
   124 unknown-argument
   125 unknown-argument
@@ -189,8 +189,8 @@ ty clients_negative.py: 63/63 marked lines with one error, 0 elsewhere, 0 in oth
   151 invalid-argument-type
   152 unknown-argument
   153 unknown-argument
-  154 call-non-callable
-  155 call-non-callable
+  154 invalid-argument-type
+  155 invalid-argument-type
   156 unknown-argument
   157 unknown-argument
   163 invalid-argument-type

@@ -55,8 +55,9 @@ checkpoints
   < closed
   open patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.last-event-id') [field_path=('options', 'extra_headers', 'last-event-id')] invalid_value
   open patching the cursor query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.after') [field_path=('options', 'extra_query', 'after')] invalid_value
-  open through a view patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.last-event-id') [field_path=('options', 'extra_headers', 'last-event-id')] invalid_value
-  open on a client patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.Last-Event-ID') [field_path=('options', 'extra_headers', 'Last-Event-ID')] invalid_value
+  open through a view patching the cursor query ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_query.after') [field_path=('default_query', 'after')] invalid_value
+  open through a view patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.last-event-id') [field_path=('default_headers', 'last-event-id')] invalid_value
+  open on a client patching the cursor header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.Last-Event-ID') [field_path=('default_headers', 'Last-Event-ID')] invalid_value
   open fixing an idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   > GET https://api.example.com/events?trace=1 last-event-id=None
   open patching other parameters
@@ -448,6 +449,31 @@ async stepped client clock
     end
   clock checkpoint saved {"bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1}
+reconnection waits through the client clock's sleep
+  > GET https://api.example.com/events last-event-id=None
+  reconnected twice
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='1'
+    2 message id='2' retry=2500 data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='2'
+    3 message id='3' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
+  < closed
+    end
+  waits [0.5, 2.5]
+  > GET https://api.example.com/events last-event-id=None
+  async reconnected twice
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='1'
+    2 message id='2' retry=2500 data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='2'
+    3 message id='3' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
+  < closed
+    end
+  async waits [0.5, 2.5]
 stream write guards
   > GET https://api.example.com/marks last-event-id=None
 credential reconnect scoped authenticated=False
@@ -524,73 +550,73 @@ active auth collision on open
   refused APIConnectionError condition=None path=() operation=None operation_id='streamMarks' cause=IndexError context=IndexError
   new sends=1
 query patch scoped scope client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped scope view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped scope call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
@@ -742,73 +768,73 @@ active auth collision on open
   refused APIConnectionError condition=None path=() operation=None operation_id='streamMarks' cause=IndexError context=IndexError
   new sends=1
 query patch scoped scope client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped scope view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped scope call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped after call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped page call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'page') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch scoped tag call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'tag') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'after') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[after] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[after]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[page] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[page]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] client
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] view
-  refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
+  refused ConfigurationError condition=None path=('default_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch deep scope[tag] call
   refused ConfigurationError condition=None path=('options', 'extra_query', 'scope[tag]') operation=None operation_id=None cause=NoneType context=NoneType

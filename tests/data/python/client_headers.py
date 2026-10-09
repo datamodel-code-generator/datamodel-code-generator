@@ -47,6 +47,8 @@ def headers(package: ModuleType, lines: list[str]) -> None:
     with package.Client(http_client=http, default_headers=defaults) as api:
         _layers(api, exchange, lines, options, package)
         _framing(api, exchange, lines, options, bodies, package)
+        with package.Client(http_client=http, default_headers={"Content-Type": "application/json"}) as labeled:
+            _parts(labeled, api, exchange, lines, options, bodies)
     http.close()
     _unsendable(package, lines, options)
     run(lambda: _async_headers(package, lines))
@@ -126,6 +128,14 @@ def _framing(  # noqa: PLR0913, PLR0917
         ),
     ):
         record(lines, label, call)
+    exchange.respond(created)
+    record(
+        lines,
+        "view Content-Type under the body's media type",
+        lambda: api.with_options(default_headers={"Content-Type": "text/plain"}).pets.create_pet(
+            body=fox, media_type="application/json"
+        ),
+    )
     exchange.respond(raw_response(200, b"ok", "text/plain"), raw_response(200, b"ok", "text/plain"))
     record(
         lines,
@@ -151,6 +161,30 @@ def _framing(  # noqa: PLR0913, PLR0917
             ).body_bytes
         ),
     )
+
+
+def _parts(  # noqa: PLR0913, PLR0917
+    labeled: Any, api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType
+) -> None:
+    """Keep the parts' media type and boundary over a client's or a view's Content-Type, which only a call replaces."""
+    parts = bodies.MultipartBody((bodies.FieldPart("a", "1"),))
+    for label, layer, call in (
+        ("raw parts under a client Content-Type", labeled, None),
+        ("raw parts under a view Content-Type", api.with_options(default_headers={"Content-Type": "text/plain"}), None),
+        ("raw parts under a view without Content-Type", api.with_options(default_headers={"Content-Type": None}), None),
+        (
+            "raw parts relabeled without a boundary",
+            labeled,
+            options.RequestOptions(extra_headers={"Content-Type": "multipart/mixed"}),
+        ),
+        ("raw parts unlabeled by the call", labeled, options.RequestOptions(extra_headers={"Content-Type": None})),
+    ):
+        exchange.respond(raw_response(200, b"ok", "text/plain"))
+        record(
+            lines,
+            label,
+            lambda layer=layer, call=call: layer.request_raw("POST", _RAW, body=parts, options=call).body_bytes,
+        )
 
 
 def _unsendable(package: ModuleType, lines: list[str], options: ModuleType) -> None:

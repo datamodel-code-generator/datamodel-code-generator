@@ -28,6 +28,12 @@ sync size error-default/65537 raw=False: InternalServerError bytes=65536 truncat
 sync size error-default/65537 raw=True: status=500 bytes=65537
 sync size error-default/65537 raw=True: InternalServerError bytes=65536 truncated=True
   arrivals=1
+  sync environment HTTPS_PROXY tunnel = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
+  sync environment HTTP_PROXY forward = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  sync environment NO_PROXY bypass = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync refused 127.0.0.1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   sync refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   sync refused localhost unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
@@ -176,6 +182,12 @@ async size error-default/65537 raw=False: InternalServerError bytes=65536 trunca
 async size error-default/65537 raw=True: status=500 bytes=65537
 async size error-default/65537 raw=True: InternalServerError bytes=65536 truncated=True
   arrivals=1
+  async environment HTTPS_PROXY tunnel = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
+  async environment HTTP_PROXY forward = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  async environment NO_PROXY bypass = 'Response status=200 attempts=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async refused 127.0.0.1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   async refused ::1 unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'
   async refused localhost unsafe = 'APIConnectionError retry_outcome=permitted status=None cause=ConnectError'

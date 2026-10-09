@@ -426,6 +426,42 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
         handle = helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         step(lines, "interval on a frozen clock", handle.status)
     run(lambda: _async_clocked(harness, lines))
+    _slept(harness, lines)
+
+
+def _slept(harness: Polling, lines: list[str]) -> None:
+    """Wait out intervals and server delays between polls through the clock's sleep, moving it as far as each wait."""
+    exchange = Exchange(lines)
+    clock, waits = _Clock(1000.0), []
+
+    def sleep(duration: float) -> None:
+        waits.append(duration)
+        clock.value += duration
+
+    async def asleep(duration: float) -> None:
+        sleep(duration)
+
+    delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "12"})
+    settings = harness.client_options(clock=harness.options.Clock(monotonic=clock, sleep=sleep, asleep=asleep))
+    polls = harness.polls(interval=5)
+    lines.append("waits through the client clock's sleep")
+    with exchange.client() as native, harness.package.Client(http_client=native, **settings) as api:
+        exchange.respond(job("queued", 202), job("queued"), delayed, job("done"), report(1))
+        step(lines, "wait", api.protocols.jobs.run.start(body=harness.body, poll_options=polls).wait)
+    lines.append(f"  waits {waits}")
+    waits.clear()
+
+    async def awaited() -> None:
+        async with (
+            exchange.async_client() as native,
+            harness.package.AsyncClient(http_client=native, **settings) as api,
+        ):
+            exchange.respond(job("queued", 202), job("queued"), delayed, job("done"), report(1))
+            handle = await api.protocols.jobs.run.start(body=harness.body, poll_options=polls)
+            await astep(lines, "async wait", handle.wait)
+
+    run(awaited)
+    lines.append(f"  async waits {waits}")
 
 
 async def _async_clocked(harness: Polling, lines: list[str]) -> None:

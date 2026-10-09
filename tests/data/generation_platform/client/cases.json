@@ -4759,7 +4759,17 @@
       "protocols/uploads-oauth.json"
     ],
     "config": {
-      "protocols": "protocols/uploads-oauth.json"
+      "protocols": "protocols/uploads-oauth.json",
+      "operations": [
+        {
+          "ref": "/paths/~1files/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        }
+      ]
     },
     "backends": [
       "pydantic_v2.BaseModel"

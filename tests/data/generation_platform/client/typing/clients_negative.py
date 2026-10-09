@@ -15,15 +15,15 @@ from pets.errors import (
     SDKError,
 )
 from pets.options import (
-    ClientOptions,
     Clock,
-    IdempotencyKey,
     RequestOptions,
     RetryOptions,
-    TimeoutOptions,
-    TransportOptions,
+    ServerSelection,
 )
-from pets.responses import RawResponse, ResponseInfo
+from pets.responses import (
+    RawResponse,
+    ResponseInfo,
+)
 from pets.types.pets import decode_list_pets_header
 from pets_models import (
     FieldPetsGetHeaderXTraceParameter,
@@ -118,8 +118,8 @@ def misuse_multipart_data(data: object) -> None:
 
 
 def misuse_timing(client: Client, options: RequestOptions) -> None:
-    TimeoutOptions(connect="slow")  # error
-    ClientOptions(timeout=30)  # error
+    RequestOptions(timeout="slow")  # error
+    ServerSelection(index="first")  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
@@ -151,8 +151,8 @@ def misuse_retry_options(client: Client, info: ResponseInfo, error: Configuratio
     Client(default_headers={"a": 1})  # error
     Client(options=RequestOptions())  # error
     Client(compression="gzip")  # error
-    TransportOptions(verify="strict")  # error
-    IdempotencyKey()  # error
+    RetryOptions(retry_on_pool_timeout="yes")  # error
+    RetryOptions(initial_delay="soon")  # error
     client.with_options(options=RequestOptions())  # error
     RequestOptions(default_headers={"X-Trace": "t"})  # error
     ResponseInfo(

@@ -39,6 +39,11 @@ def _values(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             )
             with package.Client(http_client=native) as api:
                 record(lines, f"view {field} bool", lambda field=field, api=api: api.with_options(**{field: True}))
+        negative = httpx2.Timeout(-1.0)
+        record(lines, "option timeout negative phases", lambda: options.RequestOptions(timeout=negative))
+        record(lines, "root timeout negative phases", lambda: package.Client(http_client=native, timeout=negative))
+        with package.Client(http_client=native) as api:
+            record(lines, "view timeout negative phases", lambda: api.with_options(timeout=negative))
     lines.extend(
         f"  public {label} exported={hasattr(options, name)}"
         for label, name in (("deadline", "Deadline"), ("timeout options", "TimeoutOptions"))
