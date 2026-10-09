@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import math
 import re
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
@@ -85,6 +85,7 @@ _SCHEMA_MAPS: Final = frozenset({"properties", "patternProperties", "$defs", "de
 _LITERALS: Final = frozenset({"example", "examples", "default", "enum", "const"})
 _KEPT: Final = "securitySchemes"
 _NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
+_URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 
 
 class SourceDocument:
@@ -97,7 +98,7 @@ class SourceDocument:
         `$id` declares a resource, and `$anchor` and `$dynamicAnchor` a name in the resource around them.
         """
         held = lease.documents()
-        self.uris = [location for location, _ in held]
+        self.uris = [_uri(location) for location, _ in held]
         self.documents = [document for _, document in held]
         root = self.documents[0]
         version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
@@ -421,6 +422,16 @@ class SourceDocument:
         for token in tokens:
             value = value[int(token)] if isinstance(value, list) else _member(_mapping(value), token)
         return value
+
+
+def _uri(location: str) -> str:
+    """Return the URI references resolve against: a URL as it is, an absolute file path as a `file:` URI.
+
+    A file path is no URI on every platform: `C:` would read as a scheme that relative references cannot join.
+    """
+    if _URL.match(location) or not (path := Path(location)).is_absolute():
+        return location.replace("\\", "/")
+    return path.as_uri()
 
 
 def _pointer(at: tuple[str, ...]) -> str:
