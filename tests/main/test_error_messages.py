@@ -517,6 +517,41 @@ def test_single_module_output_directory_is_a_clean_cli_error(
     )
 
 
+def test_modular_output_file_is_a_clean_cli_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Modular output rejects an existing file at the output path and leaves it untouched."""
+    existing_file = DATA_PATH / "expected" / "main" / "person.py"
+    output_path = tmp_path / "output"
+
+    run_main_and_assert(
+        input_path=DATA_PATH / "openapi" / "modular.yaml",
+        output_path=output_path,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Modular references require an output directory, not a file\n",
+        copy_files=[(existing_file, output_path)],
+    )
+    assert_output(output_path.read_text(encoding="utf-8"), existing_file)
+
+
+def test_modular_output_below_a_file_keeps_the_filesystem_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A file above the output path is a filesystem error, not the modular output refusal."""
+    occupied_path = tmp_path / "occupied"
+
+    run_main_and_assert(
+        input_path=DATA_PATH / "openapi" / "modular.yaml",
+        output_path=occupied_path / "output",
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=TRACEBACK_HEADER,
+        copy_files=[(DATA_PATH / "expected" / "main" / "person.py", occupied_path)],
+    )
+
+
 def test_model_metadata_directory_is_a_clean_cli_error(
     output_file: Path,
     tmp_path: Path,
