@@ -8,6 +8,6 @@ counts-invalid: ValidationError int_parsing@['a']
 words: native {'ab': 1} json={"ab":1}
 words-invalid: native {'AB': 1} json={"AB":1}
 holder: native Holder(pets=[Cat(kind='cat'), Dog(kind='dog')], label='abcd', mode='a') set=['label', 'mode', 'pets'] json={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"}
-holder-invalid: HTTP 422 {"detail":[{"type":"union_tag_invalid","loc":["body","pets",0],"msg":"Input tag 'cow' found using 'kind' does not match any of the expected tags: 'cat', 'dog'","input":{"kind":"cow"},"ctx":{"discriminator":"'kind'","tag":"cow","expected_tags":"'cat', 'dog'"}},{"type":"string_too_long","loc":["body","label"],"msg":"String should have at most 4 characters","input":"abcde","ctx":{"max_length":4}},{"type":"literal_error","loc":["body","mode"],"msg":"Input should be 'a' or 'b'","input":"c","ctx":{"expected":"'a' or 'b'"}}]}
+holder-invalid: HTTP 422 {"detail":[{"type":"union_tag_invalid","loc":["body","pets",0],"msg":"Input tag 'cow' found using 'kind' does not match any of the expected tags: 'cat', 'dog'"},{"type":"string_too_long","loc":["body","label"],"msg":"String should have at most 4 characters"},{"type":"literal_error","loc":["body","mode"],"msg":"Input should be 'a' or 'b'"}]}
 name-null: native None json=null
 name-text: native 'n' json="n"

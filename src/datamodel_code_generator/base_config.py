@@ -7,7 +7,7 @@ classes that are only needed once generation starts.
 
 from __future__ import annotations
 
-from collections.abc import Sequence  # noqa: TC003 - used at runtime by Pydantic
+from collections.abc import Mapping, Sequence  # noqa: TC003 - used at runtime by Pydantic
 from pathlib import Path  # noqa: TC003 - used at runtime by Pydantic
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -30,6 +30,9 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DataclassArguments,
@@ -43,6 +46,10 @@ from datamodel_code_generator.enums import (
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     TargetPydanticVersion,
     UnionMode,
     VersionMode,
@@ -70,6 +77,39 @@ def _validate_additional_import_paths(value: list[str] | None) -> list[str] | No
         raise Error(msg) from None
 
 
+_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
+_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
+
+
+def _option_list(flags: Sequence[str]) -> str:
+    """Name options as an English list."""
+    return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
+
+
+def _flag(field: str, *, negative: bool = False) -> str:
+    """Return the option of a config field, or its --no- form."""
+    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
+
+
+def _selected_target(config: Any) -> tuple[str, str] | None:
+    """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
+    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
+
+
+def _missing_target_options(config: Any, *, output: bool = True) -> str | None:
+    """Return why the target a config selects cannot run without the options it requires, or None when it can.
+
+    Without `output`, the package directory is not required: a run that writes nothing does not use it.
+    """
+    if (selected := _selected_target(config)) is None:
+        return None
+    selector, prefix = selected
+    required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
+    if missing := [_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
+        return f"{_flag(selector)} requires {_option_list(missing)}"
+    return None
+
+
 class BaseGenerateConfig(BaseModel):
     """Shared generation configuration fields."""
 
@@ -87,6 +127,7 @@ class BaseGenerateConfig(BaseModel):
     _logical_output: Path | None = PrivateAttr(default=None)
     _logical_model_metadata: Path | None = PrivateAttr(default=None)
     _directory_input_filter: DirectoryInputFilter | None = PrivateAttr(default=None)
+    _target_document_bases: dict[str, Path] | None = PrivateAttr(default=None)
 
     input_file_type: InputFileType = InputFileType.Auto
     output: Path | None = None
@@ -257,6 +298,31 @@ class BaseGenerateConfig(BaseModel):
     schema_version: str | None = None
     schema_version_mode: VersionMode | None = None
     external_ref_mapping: dict[str, str] | None = None
+    generate_server: ServerType | None = None
+    server_output: Path | None = None
+    server_package: str | None = None
+    server_model_package: str | None = None
+    server_layout: ServerLayout | None = None
+    server_handler_mode: ServerHandlerMode | None = None
+    server_handler_modes: Mapping[str, ServerHandlerMode] | None = None
+    server_include_request: bool | None = None
+    server_body_mode: ServerBodyMode | None = None
+    server_body_modes: Mapping[str, ServerBodyMode] | None = None
+    server_primary_responses: Mapping[str, Any] | None = None
+    server_operation_names: Mapping[str, str] | None = None
+    server_router_names: Mapping[str, str] | None = None
+    server_parameter_names: Mapping[str, Mapping[str, str]] | None = None
+    generate_client: ClientType | None = None
+    client_output: Path | None = None
+    client_package: str | None = None
+    client_model_package: str | None = None
+    client_signature_style: ClientSignatureStyle | None = None
+    client_body_arguments: ClientBodyArguments | None = None
+    client_resource_names: Mapping[str, str] | None = None
+    client_operations: Mapping[str, Mapping[str, Any]] | None = None
+    client_default_base_url: str | None = None
+    client_server_base_url: str | None = None
+    client_protocols: Mapping[str, Any] | None = None
 
     @field_validator("additional_imports")
     @classmethod
@@ -279,6 +345,16 @@ class BaseGenerateConfig(BaseModel):
         if self.update_lock and self.locked:
             msg = "--update-lock and --locked cannot be used together"
             raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_target_selection(self) -> Self:
+        """Validate that one run selects at most one generation target."""
+        if self.generate_server is not None and self.generate_client is not None:
+            from datamodel_code_generator import Error  # noqa: PLC0415
+
+            msg = "--generate-server and --generate-client cannot be used together"
+            raise Error(msg)
         return self
 
     @model_validator(mode="after")

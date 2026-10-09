@@ -14,12 +14,27 @@ from datamodel_code_generator._fastapi._compiled_templates import router as rout
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.naming import normalize
-from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
+from datamodel_code_generator._fastapi.plan import (
+    CONSTRAINED,
+    Default,
+    MemberDefault,
+    ParameterDefault,
+    RootDefault,
+    default_media,
+    fact,
+    symbol_imports,
+)
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
-from datamodel_code_generator._target_contract import ConstructorType, LiteralScalar, LiteralSequence
+from datamodel_code_generator._target_contract import (
+    ConstructorType,
+    LiteralScalar,
+    LiteralSequence,
+    NoneType,
+    UnionType,
+)
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role
 
@@ -64,12 +79,11 @@ _BASES: Final = {
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
-    ("_generated.contract", "OperationKey"),
-    ("_runtime.server.application", "Dependency"),
     ("_runtime.server.security", "AsyncAuthorize"),
     ("_runtime.server.security", "Authorize"),
     ("_runtime.server.security", "Credentials"),
     ("_runtime.server.security", "RequirementSets"),
+    ("_runtime.server.application", "validation_error_handler"),
 )
 _CREDENTIALS: Final[dict[SchemeKind, str]] = {
     "basic": "HTTP Basic credentials, as `HTTPBasicCredentials`",
@@ -116,14 +130,9 @@ _INPUT_RUNTIME: Final = ("model_codecs/parameters.py", "server/requests.py")
 
 
 def _reads_inputs(spec: OperationSpec) -> bool:
-    """Return whether an operation reads an input through an adapter or receives an absent one."""
-    if (body := spec.body) is not None and (
-        body.decision.transport == "adapter" or (body.decision.transport == "fastapi_native" and not body.required)
-    ):
-        return True
-    return any(
-        argument.kind == "adapter" or (argument.native is not None and argument.native.default is Default.ABSENT)
-        for argument in spec.arguments
+    """Return whether an operation reads an input through an adapter."""
+    return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
+        argument.kind == "adapter" for argument in spec.arguments
     )
 
 
@@ -140,6 +149,24 @@ def _unique(base: str, taken: Iterable[str]) -> str:
         count += 1
         name = f"{base}_{count}"
     return name
+
+
+def _route_names(spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
+    """Name what one route adder defines so that none equals the method, an argument, or another of its names."""
+    taken = {spec.python_name, *(argument.name for argument in spec.arguments)}
+    names: dict[str, str] = {}
+    for key, base in (
+        ("router", "router"),
+        ("wiring", "wiring"),
+        ("service", group.stem),
+        ("handler", f"{spec.python_name}_handler"),
+        ("principal", f"{spec.python_name}_principal"),
+        ("authorize", f"{spec.python_name}_authorize"),
+        ("record", "parameters"),
+    ):
+        taken.add(name := _unique(base, taken))
+        names[key] = name
+    return names
 
 
 def _items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
@@ -240,7 +267,6 @@ class ServerRenderer:  # noqa: PLR0904
         self.batch = batch
         self.wire = wire
         self.symbols = symbol_imports(batch)
-        self.services = {group.key: group.stem for group in plan.groups}
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:
@@ -261,7 +287,6 @@ class ServerRenderer:  # noqa: PLR0904
             *self.routers(),
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
-            self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             self.file(PurePosixPath("README.md"), "readme", self.readme()),
@@ -309,7 +334,7 @@ class ServerRenderer:  # noqa: PLR0904
         )
 
     def runtime(self) -> Iterator[RenderedFile]:
-        """Copy the server runtime, with the request adapters when an operation reads or omits an input through them."""
+        """Copy the server runtime, with the request adapters when an operation reads an input through them."""
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
         for path, text in runtime_sources((*_SERVER_RUNTIME, *inputs)):
             yield self.file(path, "runtime", text, verbatim=True)
@@ -357,6 +382,7 @@ class ServerRenderer:  # noqa: PLR0904
             ),
             arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
+            error_handlers=module.local("_runtime.server.application", "error_handlers"),
             exports=exports,
             imports=module.imports(),
         )
@@ -377,19 +403,24 @@ class ServerRenderer:  # noqa: PLR0904
         groups = () if group is None else (group,)
         services = [group.stem for group in groups]
         secured = any(group.secured for group in groups)
-        reserved = {"router", "wiring", *BUILDER_NAMES, *services}
-        for spec in operations:
+        reserved = {*BUILDER_NAMES, *services}
+        names = [] if group is None else [_route_names(spec, group) for spec in operations]
+        for spec, locals_ in zip(operations, names, strict=True):
             reserved.update((
                 spec.python_name,
                 f"_add_{spec.python_name}",
                 *(argument.name for argument in spec.arguments),
+                *locals_.values(),
             ))
         module = Module(reserved, self.symbols, level=level)
-        routes = [self.route(module, spec) for spec in operations]
-        contract = module.local("_generated", "contract")
+        routes = (
+            []
+            if group is None
+            else [self.route(module, spec, group, locals_) for spec, locals_ in zip(operations, names, strict=True)]
+        )
         pairs = {
             templated: [
-                Group("(", (("", f"{contract}.{spec.pascal}.OPERATION"), ("", f"_add_{spec.python_name}")), ")")
+                Group("(", (("", repr(spec.python_name)), ("", f"_add_{spec.python_name}")), ")")
                 for spec in operations
                 if spec.route.templated is templated
             ]
@@ -414,13 +445,23 @@ class ServerRenderer:  # noqa: PLR0904
             imports=module.imports(),
         )
 
-    def route(self, module: Module, spec: OperationSpec) -> dict[str, str]:
-        """Return the fragments of one operation's endpoint: decorator, signature, and handler call."""
+    def route(self, module: Module, spec: OperationSpec, group: GroupSpec, names: dict[str, str]) -> dict[str, str]:
+        """Return the fragments of one operation's endpoint: service method lookup, signature, and handler call."""
         plan = f"{module.local('_generated', 'contract')}.{spec.pascal}"
-        names = {argument.name for argument in spec.arguments}
-        handler = _unique(f"{spec.python_name}_handler", names)
-        principal = "" if spec.security is None else _unique(f"{spec.python_name}_principal", {*names, handler})
-        record = _unique("parameters", names)
+        service = module.local("services", group.service)
+        handler, record = names["handler"], names["record"]
+        principal = "" if spec.security is None else names["principal"]
+        asynchronous = spec.mode == "async"
+        label = f"The {group.stem}.{spec.python_name} method of {spec.contract.method.upper()} {spec.contract.path}"
+        lookup = Group(
+            f"{module.local('_runtime.server.application', 'checked')}(",
+            (
+                ("", f"{names['service']}.{spec.python_name}"),
+                ("", repr(label)),
+                *((("asynchronous=", "True"),) if asynchronous else ()),
+            ),
+            ")",
+        )
         parameters: list[Doc] = [
             self.parameter(module, spec, argument, plan, principal)
             for argument in spec.arguments
@@ -429,7 +470,6 @@ class ServerRenderer:  # noqa: PLR0904
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             parameters.append(f"{record}: {annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]")
-        asynchronous = spec.mode == "async"
         signature = Group(
             f"{'async def' if asynchronous else 'def'} {spec.python_name}(",
             _items(("*", *parameters)) if parameters else (),
@@ -437,25 +477,33 @@ class ServerRenderer:  # noqa: PLR0904
         )
         call = Group(
             f"{'await ' if asynchronous else ''}{handler}(",
-            tuple((f"{argument.name}=", _value(module, spec, argument, record)) for argument in spec.arguments),
+            tuple((f"{argument.name}=", _value(spec, argument, record)) for argument in spec.arguments),
             ")",
         )
         dispatch = module.local("_runtime.server.responses", "dispatch")
         body = Group(f"return {dispatch}(", (("", call), ("", f"{plan}.RESPONSES")), ")")
         return {
             "adder": f"_add_{spec.python_name}",
+            "router": names["router"],
+            "wiring": names["wiring"],
             "handler": handler,
-            "handlers": "async_handlers" if asynchronous else "handlers",
+            "service": names["service"],
+            "protocol": f"{service}[object]" if group.secured else service,
+            "group": repr(group.stem),
+            "lookup": layout(lookup, 4, len(f"{handler} = "), WIDTH),
             "name": repr(spec.python_name),
-            "principal": "" if not principal else self.principal(module, spec, principal),
+            "principal": "" if not principal else self.principal(module, spec, names),
             "key": repr(spec.key),
-            "registration": layout(self.registration(module, spec), 4, 0, WIDTH),
+            "registration": layout(self.registration(module, spec, names), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
 
-    def principal(self, module: Module, spec: OperationSpec, name: str) -> str:
-        """Return the dependency that authorizes an operation from the credentials of its schemes' dependencies."""
+    def principal(self, module: Module, spec: OperationSpec, locals_: dict[str, str]) -> str:
+        """Return the dependency that authorizes an operation from the credentials of its schemes' dependencies.
+
+        The authorize callback is taken from the wiring first, so a router without one fails as it registers.
+        """
         assert spec.security is not None
         requirements = spec.security.requirements
         scopes: dict[str, dict[str, None]] = {}
@@ -466,7 +514,8 @@ class ServerRenderer:  # noqa: PLR0904
         security = module.local("", "security")
         annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
         authenticate = module.local("_runtime.server.security", "authenticate")
-        taken = {"wiring", authenticate}
+        authorize = locals_["authorize"]
+        taken = {authorize, authenticate}
         names: dict[str, str] = {}
         parameters: list[Doc] = []
         for scheme, needed in scopes.items():
@@ -474,8 +523,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
             kind = _credential_type(module, schemes[scheme])
             parameters.append(f"{local}: {annotated}[{kind}, {depends}({arguments})]")
-        signature = Group(f"async def {name}(", _items(("*", *parameters)), ") -> object:")
-        credentials = Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")
+        signature = Group(f"async def {locals_['principal']}(", _items(("*", *parameters)), ") -> object:")
         challenge = ", ".join(
             dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
         )
@@ -483,13 +531,16 @@ class ServerRenderer:  # noqa: PLR0904
             f"return await {authenticate}(",
             (
                 ("", Group("(", _items(_requirement(item) for item in requirements), ")", ",")),
-                ("", credentials),
-                ("", "wiring.authorize"),
+                ("", Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")),
+                ("", authorize),
                 ("", repr(challenge)),
             ),
             ")",
         )
-        return f"{layout(signature, 4, 0, WIDTH)}\n        {layout(call, 8, 0, WIDTH)}"
+        return (
+            f"{authorize} = {locals_['wiring']}.authorizer()\n\n"
+            f"    {layout(signature, 4, 0, WIDTH)}\n        {layout(call, 8, 0, WIDTH)}"
+        )
 
     def security(self) -> str:
         """Return the security module: one overridable FastAPI dependency for each scheme the operations use."""
@@ -520,11 +571,10 @@ class ServerRenderer:  # noqa: PLR0904
         annotated = module.name("typing", "Annotated")
         if body.decision.transport == "fastapi_native":
             media = body.media[0]
-            keywords = [f"media_type={media.media_type!r}"]
-            if not body.required:
-                keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
             api = module.name("fastapi", "Form" if body.form else "Body")
-            return Group(f"{argument.name}: {annotated}[{_body(module, media)}, {api}(", _items(keywords), ")]")
+            head = f"{argument.name}: {annotated}[{_body(module, media, required=body.required)}, {api}("
+            keywords = _items((f"media_type={media.media_type!r}",))
+            return Group(head, keywords, ")]" if body.required else ")] = None")
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
@@ -532,19 +582,18 @@ class ServerRenderer:  # noqa: PLR0904
         return f"{argument.name}: {annotated}[{kind}, {depends}({plan}.BODY)]"
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for a body, with UNSET for an optional one."""
+        """Return the type the handler receives for a body, with None for an optional one."""
         kinds = dict.fromkeys(self.media_type(module, media) for media in body.media)
-        if not body.required:
-            kinds[module.local("_runtime.model_codecs.unset", "Unset")] = None
+        if not (body.required or any(_nullable(_payload(media)) for media in body.media)):
+            kinds["None"] = None
         return " | ".join(kinds)
 
     @staticmethod
     def media_type(module: Module, media: MediaSpec) -> str:
         """Return one media's payload type: the model's type, or the media surface without a schema."""
-        use = media.use
-        if media.kind == "binary" or use is None or use.type is None:
+        if (value := _payload(media)) is None:
             return module.name("typing", "Any") if media.kind == "json" else "str" if media.kind == "text" else "bytes"
-        return module.static(use.type)
+        return module.static(value)
 
     def services_module(self) -> str:
         """Return the services module: one Protocol per router group with an abstract method per operation."""
@@ -627,16 +676,12 @@ class ServerRenderer:  # noqa: PLR0904
         return [self.media_type(module, media)]
 
     def contract(self) -> str:
-        """Return the contract module: key types, schemes, and each operation's plans and request adapters."""
-        reserved = {"OperationKey", "OperationDependencies"}
-        module = Module({*reserved, *(spec.pascal for spec in self.plan.operations)}, self.symbols, level=2)
+        """Return the contract module: the dependency keys, and each operation's plans and request adapters."""
+        reserved = {"OperationDependencies", *(spec.pascal for spec in self.plan.operations)}
+        module = Module(reserved, self.symbols, level=2)
         sections = [self.operation_plan(module, spec) for spec in self.plan.operations]
-        alias = module.name("typing", "TypeAlias")
-        dependencies: Doc = (
-            Group("{", tuple((f"{spec.key!r}: ", _dependency_sequence(module)) for spec in self.plan.operations), "}")
-            if self.plan.operations
-            else "{}"
-        )
+        names = tuple((f"{spec.python_name!r}: ", _dependency_sequence(module)) for spec in self.plan.operations)
+        dependencies: Doc = Group("{", names, "}") if names else "{}"
         typed = Group(
             f"{module.name('typing', 'TypedDict')}(",
             (("", "'OperationDependencies'"), ("", dependencies), ("total=", "False")),
@@ -646,24 +691,19 @@ class ServerRenderer:  # noqa: PLR0904
             '"""Operation plans of this package; regenerate them instead of editing."""\n\n'
             "from __future__ import annotations\n\n"
         )
-        keys = [spec.key for spec in self.plan.operations]
-        definitions = (
-            f"OperationKey: {alias} = {_literal(module, keys, len(f'OperationKey: {alias} = '))}\n"
-            f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
-        )
+        definitions = f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
-    def registration(self, module: Module, spec: OperationSpec) -> Group:
+    def registration(self, module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
         """Return the route registration of one operation, with what FastAPI cannot derive from the route documented."""
         assert self.docs is not None
-        return _registration(module, spec, self.docs)
+        return _registration(module, spec, self.docs, names)
 
-    def operation_plan(self, module: Module, spec: OperationSpec) -> str:
+    @staticmethod
+    def operation_plan(module: Module, spec: OperationSpec) -> str:
         """Return one operation's plan class: adapter parameter record, request adapters, and responses."""
         final = module.name("typing", "Final")
         lines = [f"class {spec.pascal}:", f'    """Plans of the {spec.python_name} operation."""', ""]
-        operation = self.operation(module, spec)
-        lines.append(f"    OPERATION: {final} = {layout(operation, 4, len('OPERATION: Final = '), WIDTH)}")
         adapters = [argument for argument in spec.arguments if argument.kind == "adapter"]
         if adapters:
             lines.extend((
@@ -683,21 +723,6 @@ class ServerRenderer:  # noqa: PLR0904
         lines.append(f"    RESPONSES: {final} = {layout(responses, 4, len('RESPONSES: Final = '), WIDTH)}")
         return "\n".join(lines) + "\n"
 
-    def operation(self, module: Module, spec: OperationSpec) -> Group:
-        """Return the OperationPlan constructor of one operation: method, key, service, keywords, mode, and security."""
-        items: list[tuple[str, Doc]] = [
-            ("name=", repr(spec.python_name)),
-            ("key=", repr(spec.key)),
-            ("service=", repr(self.services[spec.group])),
-        ]
-        if spec.arguments:
-            items.append(("keywords=", _keywords(spec.arguments)))
-        if spec.mode == "async":
-            items.append(("asynchronous=", "True"))
-        if spec.security is not None:
-            items.append(("secured=", "True"))
-        return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
-
 
 def _responses_plan(module: Module, spec: OperationSpec) -> Group:
     """Return the OperationResponses constructor of one operation: each declared response's default media and model."""
@@ -707,7 +732,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> Group:
         if _body_status(spec, response.status) and (media := default_media(response)) is not None:
             entries.append(("media_type=", repr(media.media_type)))
             if media.kind != "binary" and media.use is not None and media.use.type is not None:
-                entries.append(("adapter=", _adapter(module, media.use.type)))
+                entries.append(("model=", module.annotation(media.use.type)))
         declared = Group(f"{module.local('_runtime.server.responses', 'Declared')}(", tuple(entries), ")")
         responses.append((f"{response.status!r}: ", declared))
     items: list[tuple[str, Doc]] = [("responses=", Group("{", tuple(responses), "}"))]
@@ -746,22 +771,36 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
     if field.api == "Header":
         keywords.append("convert_underscores=False")
     keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
-    default = ""
     if field.default is Default.ABSENT:
-        keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
-    elif not isinstance(field.default, Default):
-        default = f" = {_default(module, field.default)}"
-    base, metadata = module.types.parts(field.type)
-    head = ", ".join((base, *metadata, f"{module.name('fastapi', field.api)}("))
+        parts: tuple[str, ...] = (_none(module.annotation(field.type), field.type),)
+        default = " = None"
+    else:
+        base, metadata = module.types.parts(field.type)
+        parts = (base, *metadata)
+        default = "" if (value := _default_value(module, field.default)) is None else f" = {value}"
+    head = ", ".join((*parts, f"{module.name('fastapi', field.api)}("))
     return Group(f"{name}: {module.name('typing', 'Annotated')}[{head}", _items(keywords), f")]{default}")
 
 
-def _body(module: Module, media: MediaSpec) -> str:
-    return (
-        module.name("typing", "Any")
-        if media.use is None or media.use.type is None
-        else module.annotation(media.use.type)
-    )
+def _payload(media: MediaSpec) -> FinalPythonType | None:
+    """Return the model type of a media's payload, or None for binary media and media without a schema."""
+    return None if media.kind == "binary" or media.use is None else media.use.type
+
+
+def _nullable(value: FinalPythonType | None) -> bool:
+    """Return whether a type already takes None, so an optional input of it needs no None member."""
+    return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
+
+
+def _none(text: str, value: FinalPythonType | None) -> str:
+    """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
+    return text if _nullable(value) else f"{text} | None"
+
+
+def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
+    value = None if media.use is None else media.use.type
+    text = module.name("typing", "Any") if value is None else module.annotation(value)
+    return text if required else _none(text, value)
 
 
 def _adapter(module: Module, value: FinalPythonType) -> str:
@@ -774,8 +813,32 @@ def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     return f"[{', '.join(module.types.literal(item) for item in value.items if isinstance(item, LiteralScalar))}]"
 
 
+def _default_value(module: Module, default: ParameterDefault) -> str | None:
+    """Return the expression of a parameter's default, or None without one.
+
+    A root model takes the schema's default unvalidated, as pydantic leaves defaults, or its own; an enum type takes
+    the members the default names.
+    """
+    match default:
+        case LiteralScalar() | LiteralSequence():
+            return _default(module, default)
+        case RootDefault():
+            model = module.annotation(default.type)
+            literal = default.literal
+            return f"{model}()" if literal is None else f"{model}.model_construct({_default(module, literal)})"
+        case MemberDefault():
+            enum, literal = module.annotation(default.type), default.literal
+            if isinstance(literal, LiteralScalar):
+                return f"{enum}({module.types.literal(literal)})"
+            items = (item for item in literal.items if isinstance(item, LiteralScalar))
+            return f"[{', '.join(f'{enum}({module.types.literal(item)})' for item in items)}]"
+        case _:
+            pass
+    return None
+
+
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
-    """Return the type a method receives for a parameter: the model's type, or Any without one, with UNSET if absent."""
+    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
     assert parameter is not None
     if parameter.type is not None:
         text = module.static(parameter.type)
@@ -783,9 +846,9 @@ def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
         text = "str"
     else:
         text = module.name("typing", "Any")
-    if parameter.required or parameter.default is not Default.ABSENT:
+    if parameter.required or parameter.default is not Default.ABSENT or _nullable(parameter.type):
         return text
-    return f"{text} | {module.local('_runtime.model_codecs.unset', 'Unset')}"
+    return f"{text} | None"
 
 
 def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group:
@@ -801,8 +864,8 @@ def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argum
         ]
         if parameter.type is not None:
             entries.append(("adapter=", _adapter(module, parameter.type)))
-        if isinstance(parameter.default, (LiteralScalar, LiteralSequence)):
-            entries.append(("default=", _default(module, parameter.default)))
+        if (value := _default_value(module, parameter.default)) is not None:
+            entries.append(("default=", value))
         arguments.append(
             Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
         )
@@ -837,7 +900,7 @@ def _body_adapter(module: Module, body: BodySpec) -> Group:
     return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
-def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> Group:
+def _registration(module: Module, spec: OperationSpec, docs: Documentation, names: dict[str, str]) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     items: list[tuple[str, Doc]] = [
@@ -874,8 +937,8 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> G
         items.append(("responses=", _responses(module, spec, responses)))
     if extra := docs.openapi_extra(spec):
         items.append(("openapi_extra=", _json_literal(extra)))
-    items.append(("dependencies=", f"wiring.dependencies.get({spec.key!r})"))
-    return Group("router.add_api_route(", tuple(items), ")")
+    items.append(("dependencies=", f"{names['wiring']}.dependencies.get({spec.python_name!r})"))
+    return Group(f"{names['router']}.add_api_route(", tuple(items), ")")
 
 
 def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
@@ -920,22 +983,14 @@ def _response_description(spec: OperationSpec) -> object:
     return None if represented is None else fact(represented.declaration, "description")
 
 
-def _value(module: Module, spec: OperationSpec, argument: Argument, record: str) -> str:
+def _value(spec: OperationSpec, argument: Argument, record: str) -> str:
     if argument.kind == "adapter":
         return f"{record}.{argument.name}"
     if argument.kind == "media_type":
         return "body[0]"
     if argument.kind == "body" and spec.body is not None and len(spec.body.media) > 1:
         return "body[1]"
-    native = argument.native
-    body = spec.body
-    absent = (native is not None and native.default is Default.ABSENT) or (
-        argument.kind == "body"
-        and body is not None
-        and body.decision.transport == "fastapi_native"
-        and not body.required
-    )
-    return f"{module.local('_runtime.server.requests', 'present')}({argument.name})" if absent else argument.name
+    return argument.name
 
 
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group | None:
@@ -998,15 +1053,7 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
 
 
 def _dependency_sequence(module: Module) -> str:
-    return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
-
-
-def _literal(module: Module, values: list[str], used: int) -> str:
-    if not values:
-        return module.name("typing_extensions", "Never")
-    return layout(
-        Group(f"{module.name('typing', 'Literal')}[", _items(repr(value) for value in values), "]"), 0, used, WIDTH
-    )
+    return f"{module.name('collections.abc', 'Sequence')}[{module.name('fastapi', 'params')}.Depends]"
 
 
 def _credential_type(module: Module, scheme: SchemeSpec) -> str:
@@ -1058,10 +1105,6 @@ def _requirement(requirement: Requirement) -> Group:
     )
 
 
-def _keywords(arguments: tuple[Argument, ...]) -> Doc:
-    return Group("(", _items(repr(argument.name) for argument in arguments), ")", ",")
-
-
 def _frozenset(names: set[str]) -> str:
     return f"frozenset({{{', '.join(repr(name) for name in sorted(names))}}})"
 
@@ -1076,38 +1119,23 @@ from .application import (
     AsyncAuthorize,
     Authorize,
     Credentials,
-    Dependency,
     OperationDependencies,
-    OperationKey,
     RequirementSets,
     build_router,
     create_app,
+    validation_error_handler,
 )
-from .errors import AuthConfigurationError, HandlerConfigurationError
-from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.server.responses import HTTPResult
 
 __all__ = [
-    "UNSET",
     "AsyncAuthorize",
-    "AuthConfigurationError",
     "Authorize",
     "Credentials",
-    "Dependency",
     "HTTPResult",
-    "HandlerConfigurationError",
     "OperationDependencies",
-    "OperationKey",
     "RequirementSets",
-    "Unset",
     "build_router",
     "create_app",
+    "validation_error_handler",
 ]
-'''
-_ERRORS: Final = '''"""Errors a generated server raises while it builds routers and applications."""
-
-from ._runtime.server.application import HandlerConfigurationError
-from ._runtime.server.security import AuthConfigurationError
-
-__all__ = ["AuthConfigurationError", "HandlerConfigurationError"]
 '''

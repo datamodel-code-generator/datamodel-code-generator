@@ -21,9 +21,9 @@
     "id": "cli-option.generate-client",
     "kind": "cli-option",
     "message": "HTTPX2 client generation from the CLI is experimental; its options and generated package may change.",
-    "note": "--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. It needs Python 3.11 or later, both to run and as --target-python-version.",
+    "note": "--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.",
     "since_version": "0.84.0",
-    "target": "--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)",
+    "target": "--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)",
     "tracking_issue": null
   },
   {
@@ -39,9 +39,9 @@
     "id": "cli-option.generate-server",
     "kind": "cli-option",
     "message": "FastAPI server generation from the CLI is experimental; its options and generated package may change.",
-    "note": "--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.",
+    "note": "--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.",
     "since_version": "0.84.0",
-    "target": "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)",
+    "target": "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)",
     "tracking_issue": null
   },
   {

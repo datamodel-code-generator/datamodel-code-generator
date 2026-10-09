@@ -124,6 +124,15 @@
   "media-errors": {
     "input": "media-errors.yaml"
   },
+  "parameter-errors": {
+    "input": "parameter-errors.yaml",
+    "model": {
+      "strict_types": [
+        "bytes"
+      ],
+      "field_constraints": true
+    }
+  },
   "selector-errors": {
     "input": "pets.yaml",
     "config": {
@@ -211,6 +220,9 @@
   },
   "codec-errors": {
     "input": "codec-errors.yaml"
+  },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
   },
   "native": {
     "input": "native.yaml",

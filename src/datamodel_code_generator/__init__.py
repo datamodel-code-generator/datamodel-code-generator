@@ -71,6 +71,9 @@ from datamodel_code_generator.enums import (
     AllOfMergeMode,
     AsyncAPIVersion,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DataclassArguments,
@@ -90,6 +93,10 @@ from datamodel_code_generator.enums import (
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     TargetPydanticVersion,
     VersionMode,
     XMLSchemaVersion,
@@ -246,7 +253,7 @@ GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 """Type alias for multiple generated modules.
 
 Maps module path tuples (e.g., ("models", "user.py")) to generated code strings.
-Returned by generate() when output=None and multiple modules are generated.
+Returned by generate() when output=None and multiple modules are generated, or a server or client package.
 """
 
 
@@ -564,6 +571,10 @@ class SchemaResourceRefWarning(UserWarning):
 
 class DefaultValueTypeWarning(UserWarning):
     """Warn that a generated default is still serialized instead of its runtime type."""
+
+
+class DocumentationAnnotationWarning(UserWarning):
+    """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
 class InvalidClassNameError(Error):
@@ -1730,6 +1741,10 @@ def generate(
     that module is absent. Explicit choices and paired dependency errors do not fall back. File URL reference
     joining uses a dependency-free local fast path.
 
+    ``generate_server`` or ``generate_client`` also generates a server or client package with the models (experimental),
+    configured by the ``server_*`` or ``client_*`` options; they take the values of their command-line options, with
+    JSON options as mappings. Without the selector those options have no effect.
+
     Args:
         input_: The input source (Path file input, string content, URL, dict,
             list of file paths, or MCP tools list when input_file_type is
@@ -1742,6 +1757,8 @@ def generate(
         - When output is None and single module: str (generated code)
         - When output is None and multiple modules: GeneratedModules (dict mapping
           module path tuples to generated code strings)
+        - When output is None and a server or client is generated: GeneratedModules with every model and package
+          file, each under the path its import path implies
 
     Raises:
         ValueError: If both config and **options are provided.
@@ -1756,6 +1773,10 @@ def generate(
 
         _rebuild_generate_config()
         config = _GenerateConfig.model_validate(options)
+    if config.generate_server is not None or config.generate_client is not None:
+        from datamodel_code_generator._target_selection import generate_selected_target  # noqa: PLC0415
+
+        return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
 
     atomic_remote_update = (
@@ -2878,6 +2899,9 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientBodyArguments",
+    "ClientSignatureStyle",
+    "ClientType",
     "CollapseRootModelsNameStrategy",
     "CustomFileHeaderMode",
     "DanglingRefWarning",
@@ -2886,6 +2910,7 @@ __all__ = [
     "DefaultPutDict",
     "DefaultValueType",
     "DefaultValueTypeWarning",
+    "DocumentationAnnotationWarning",
     "Error",
     "FieldTypeCollisionStrategy",
     "GeneratedModules",
@@ -2909,6 +2934,10 @@ __all__ = [
     "SchemaParseError",
     "SchemaResourceRefWarning",
     "SchemaValidatorType",
+    "ServerBodyMode",
+    "ServerHandlerMode",
+    "ServerLayout",
+    "ServerType",
     "TargetPydanticVersion",
     "VersionMode",
     "XMLSchemaVersion",

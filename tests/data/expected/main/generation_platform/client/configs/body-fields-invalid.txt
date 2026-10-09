@@ -1,5 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].body_arguments: body_arguments must be 'body', 'both', or None
-  E_CONFIG_VALUE config operations[0].body_field_names: body_field_names must be a tuple of BodyFieldName
-  E_CONFIG_VALUE config operations[1].body_arguments: body_arguments must be 'body', 'both', or None
-  E_CONFIG_VALUE config body_arguments: body_arguments must be 'body' or 'both'
+Error: --client-operations[0].body_arguments: body_arguments must be 'body', 'both', or None; --client-operations[0].body_field_names: body_field_names must be a tuple of BodyFieldName; --client-operations[1].body_arguments: body_arguments must be 'body', 'both', or None; --client-body-arguments must be 'body' or 'both'

@@ -76,7 +76,7 @@ arguments of its fields, unless an operation's `body_arguments` is `body`.
 - `default.create_owner`: `POST /owners`, body arguments `both`
   - `application/json`: `body=` or the fields `email` (required), `nick_name`
 - `default.put_labels`: `PUT /pets/{petId}/labels`, body arguments `both`
-  - `application/json`: `body=` only, since its schema requires a property that no field of the model holds
+  - `application/json`: `body=` or the fields `size`
 - `default.put_photo`: `PUT /pets/{petId}/photo`, body arguments `both`
   - `multipart/form-data`: `body=` only, since only JSON and URL-encoded form bodies have field arguments
 - `default.replace_pet`: `PUT /pets/{petId}/records`, body arguments `both`

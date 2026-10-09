@@ -1,2 +1,2 @@
-animals-any-decode: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required","input":{"meow":true,"nick-name":"Tom"}},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required","input":{"meow":true,"nick-name":"Tom"}},{"type":"missing","loc":["body","Dog","bark"],"msg":"Field required","input":{"meow":true,"nick-name":"Tom"}}]}
+animals-any-decode: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required"},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required"},{"type":"missing","loc":["body","Dog","bark"],"msg":"Field required"}]}
 animals-any-convert: ValidationError missing@['Cat', 'id'],missing@['Dog', 'id'],missing@['Dog', 'bark']

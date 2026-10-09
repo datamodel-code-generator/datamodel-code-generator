@@ -74,10 +74,20 @@ class ParameterPlan:
     reserved_names: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        """Reject style, content, and shape combinations without a reversible builtin form."""
+        """Reject style, content, and shape combinations without a reversible builtin form.
+
+        A cookie sent as it is, a single value or one of the cookie style, needs a name that is a token.
+        """
         if not _reversible(self):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
+            raise ValueError(msg)
+        if (
+            self.location == "cookie"
+            and (self.style == "cookie" or self.shape == "scalar")
+            and not _TOKEN.fullmatch(self.name)
+        ):
+            msg = f"cookie parameter name {self.name!r} is not a token, which a cookie sent as it is needs"
             raise ValueError(msg)
 
 
@@ -271,10 +281,10 @@ def _encode_header(plan: ParameterPlan, entries: list[_Entry]) -> str:
 
 def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     pairs = [(plan.name if key is None else key, text) for key, text in entries]
-    if plan.style == "form":
+    if plan.style == "form" and plan.shape != "scalar":
         return [(quote(key, safe=""), quote(text, safe="")) for key, text in pairs]
     if not all(_TOKEN.fullmatch(key) and _COOKIE_OCTETS.fullmatch(text) for key, text in pairs):
-        msg = "A cookie-style name must be a token and its value unquoted cookie octets"
+        msg = "A cookie name must be a token and its value unquoted cookie octets"
         raise ParameterEncodingError(msg)
     return list(pairs)
 
@@ -585,7 +595,7 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> WireValue | Unset:
-    if plan.style == "form":
+    if plan.style == "form" and plan.shape != "scalar":
         pairs = [
             (percent_decode(item.name or b"", plus=False), percent_decode(item.value, plus=False)) for item in fragments
         ]

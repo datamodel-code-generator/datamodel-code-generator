@@ -7,23 +7,21 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas30_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1items/get']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1items/get': Sequence[Dependency]
+        'get__items': Sequence[params.Depends]
     },
     total=False,
 )
@@ -32,20 +30,14 @@ OperationDependencies = TypedDict(
 class GetItems:
     """Plans of the get__items operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__items',
-        key='/paths/~1items/get',
-        service='untagged',
-        keywords=('limit', 'q', 'flags', 'page', 'x_id', 'pref'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__items."""
 
-        flags: list[bool] | Unset
-        page: plan_oas30_models.FieldItemsGetQueryPageParameter | Unset
+        flags: list[bool] | None
+        page: plan_oas30_models.FieldItemsGetQueryPageParameter | None
         x_id: list[int]
-        pref: plan_oas30_models.FieldItemsGetCookiePrefParameter | Unset
+        pref: plan_oas30_models.FieldItemsGetCookiePrefParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -106,7 +98,7 @@ class GetItems:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(plan_oas30_models.Item),
+                model=plan_oas30_models.Item,
             ),
         },
     )

@@ -1,9 +1,9 @@
 # bodies
 serve pydantic_v2.BaseModel
-service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, upload
+service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_note, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, upload
 service UntaggedService without its methods: TypeError
 > POST /items
-  post_item(body=UNSET)
+  post_item(body=None)
 < 204 - b''
 > POST /items
   post_item(body=Item(name='a'))
@@ -37,7 +37,7 @@ service UntaggedService without its methods: TypeError
   post_profile(body=FieldProfilesPostRequest(a=2), media_type='application/json; profile=a')
 < 204 - b''
 > POST /profiles
-  post_profile(body=UNSET, media_type=None)
+  post_profile(body=None, media_type=None)
 < 204 - b''
 > POST /variants
   post_variant(body=FieldVariantsPostRequest1(c=True), media_type='application/json')
@@ -99,6 +99,18 @@ service UntaggedService without its methods: TypeError
 < 422 application/json [{"type": "greater_than_equal", "loc": ["body", "scores", 1]}]
 > POST /checks
 < 400 application/json {"detail":"There was an error parsing the body"}
+> POST /items
+  post_item(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=FieldNotesPostRequest(root=Item(name='a')))
+< 204 - b''
 > POST /raw
   post_raw(request=POST /raw, body=b'{"any":"thing"}')
 < 204 - b''

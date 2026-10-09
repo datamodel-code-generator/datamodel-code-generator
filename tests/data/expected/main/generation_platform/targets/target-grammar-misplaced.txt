@@ -1,4 +1,3 @@
 # target-grammar-misplaced
 render
   Error: application.py: The generated Python source is invalid: 'return' outside function
-  E_TARGET_SOURCE error target application.py: The generated Python source is invalid: 'return' outside function
