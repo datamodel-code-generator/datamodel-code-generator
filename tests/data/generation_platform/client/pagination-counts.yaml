@@ -119,6 +119,7 @@ components:
         floor: {type: number, minimum: 0}
         base_cursor: {$ref: '#/components/schemas/Cursor'}
     UserRef: {$ref: '#/components/schemas/User'}
+    CursorRef: {$ref: '#/components/schemas/Cursor'}
     Cursor:
       type: object
       properties:
