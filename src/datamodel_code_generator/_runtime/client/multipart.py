@@ -612,10 +612,11 @@ class MultipartBodies(BinaryBodies):
             return [part.content for part in body.parts if is_file_part(part)]
         return (body,)
 
-    def bind(self, content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BoundBody:
+    @staticmethod
+    def bind(content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BoundBody:
         """Bind a native input, or each file input of a multipart body's parts, without buffering native streams."""
         if not isinstance(content, FormParts):
-            return super().bind(content, entry, asynchronous=asynchronous)
+            return BinaryBodies.bind(content, entry, asynchronous=asynchronous)
         bindings = BodyBindings() if entry is None else cast("BodyBindings", entry)
         pieces: list[bytes | BinarySource] = [
             piece if type(piece) is bytes else bindings.bind(piece, asynchronous=asynchronous)
