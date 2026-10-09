@@ -183,7 +183,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         target="--use-missing-sentinel",
         message=(
             "Pydantic MISSING sentinel output is experimental because it depends on "
-            "pydantic.experimental.missing_sentinel."
+            "pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target."
         ),
         since_version="0.66.1",
         note=(

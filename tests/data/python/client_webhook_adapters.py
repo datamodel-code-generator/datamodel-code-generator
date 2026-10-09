@@ -51,10 +51,13 @@ sys.path[:0] = sys.argv[1:3]
 package, *names = sys.argv[3:]
 watched = ('webhook_events', 'adapters', 'verification', 'signatures', 'webhook_keys', 'public_keys')
 def binds_hmac():
-    # Pydantic 2.14 loads hmac itself, so look for a package module binding it rather than for the module.
+    # Pydantic 2.14 loads hmac itself, so look for a package module binding hmac or one of its functions.
     hmac = sys.modules.get('hmac')
     modules = [module for key, module in list(sys.modules.items()) if key.startswith(package + '.') and module]
-    return hmac is not None and any(vars(module).get('hmac') is hmac for module in modules)
+    if hmac is None:
+        return False
+    exported = {id(hmac), *(id(getattr(hmac, name)) for name in ('new', 'digest', 'compare_digest', 'HMAC'))}
+    return any(id(value) in exported for module in modules for value in vars(module).values())
 def loaded():
     runtime = [name for name in watched if f'{package}._runtime.protocols.{name}' in sys.modules]
     return runtime + ['hmac'] * binds_hmac() + [name for name in ('cryptography',) if name in sys.modules]

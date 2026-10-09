@@ -40,8 +40,9 @@
     ".coverage.pydantic20-ubuntu-24.04",
     ".coverage.pydantic200-ubuntu-24.04",
     ".coverage.pydantic213-ubuntu-24.04",
+    ".coverage.pydantic214-ubuntu-24.04",
     ".coverage.pydantic25-ubuntu-24.04"
   ],
   "stderr": "",
-  "stdout": "Validated 40 coverage artifacts\n"
+  "stdout": "Validated 41 coverage artifacts\n"
 }
