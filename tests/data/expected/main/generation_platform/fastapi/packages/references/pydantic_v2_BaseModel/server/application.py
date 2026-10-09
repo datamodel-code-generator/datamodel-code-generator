@@ -11,6 +11,7 @@ from fastapi import APIRouter, FastAPI, params
 from . import routes as routes_1
 from ._generated.contract import OperationDependencies
 from ._runtime.server.application import build, error_handlers, validation_error_handler
+from ._runtime.server.documentation import documented
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -69,6 +70,7 @@ def create_app(
             prefix=prefix,
         )
     )
+    documented(app)
     return app
 
 

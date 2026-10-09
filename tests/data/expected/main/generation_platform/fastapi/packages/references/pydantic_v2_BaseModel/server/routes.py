@@ -15,6 +15,7 @@ from . import security
 from ._generated import contract
 from ._generated.contract import OperationDependencies
 from ._runtime.server.application import Wiring, build, checked
+from ._runtime.server.documentation import OperationDocument, Schema
 from ._runtime.server.responses import dispatch
 from ._runtime.server.security import (
     AsyncAuthorize,
@@ -77,7 +78,18 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listPets',
         response_description='The pets.',
-        responses={'200': {'headers': {'X-Total': {}}}},
+        responses={'200': {'headers': {'X-Total': {'schema': {}}}}},
+        openapi_extra=OperationDocument(
+            {},
+            schemas=(
+                Schema(
+                    ('responses', '200', 'headers', 'X-Total'),
+                    models.PetsResponseXTotalHeader,
+                    'X-Total',
+                    mode='serialization',
+                ),
+            ),
+        ),
         dependencies=wiring.dependencies.get('list_pets'),
     )
 
@@ -141,21 +153,38 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
                 },
             },
         },
-        openapi_extra={
-            'callbacks': {
-                'created': {
-                    '{$request.body#/url}': {
-                        'post': {
-                            'requestBody': {
-                                'required': True,
-                                'content': {'application/json': {}},
+        openapi_extra=OperationDocument(
+            {
+                'callbacks': {
+                    'created': {
+                        '{$request.body#/url}': {
+                            'post': {
+                                'requestBody': {
+                                    'required': True,
+                                    'content': {'application/json': {'schema': {}}},
+                                },
+                                'responses': {'204': {'description': 'Received.'}},
                             },
-                            'responses': {'204': {'description': 'Received.'}},
                         },
                     },
                 },
             },
-        },
+            schemas=(
+                Schema(
+                    (
+                        'callbacks',
+                        'created',
+                        '{$request.body#/url}',
+                        'post',
+                        'requestBody',
+                        'content',
+                        'application/json',
+                    ),
+                    models.Pet,
+                    'body',
+                ),
+            ),
+        ),
         dependencies=wiring.dependencies.get('create_pet'),
     )
 

@@ -9,11 +9,12 @@ from typing import Annotated, Final
 import pydantic
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
-from pydantic import StringConstraints
+from pydantic import Field, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
+from .._runtime.server.documentation import OperationDocument, Schema
 from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
@@ -71,21 +72,44 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getValues',
         response_description='Done.',
         responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'id', 'in': 'path', 'required': True},
-                {'name': 'count', 'in': 'query'},
-                {'name': 'bounded', 'in': 'query'},
-                {'name': 'score', 'in': 'query'},
-                {'name': 'flag', 'in': 'query'},
-                {'name': 'counts', 'in': 'query'},
-                {'name': 'page', 'in': 'query'},
-                {'name': 'size', 'in': 'query'},
-                {'name': 'maybe', 'in': 'query'},
-                {'name': 'X-Trace', 'in': 'header'},
-                {'name': 'visits', 'in': 'cookie'},
-            ],
-        },
+        openapi_extra=OperationDocument(
+            {
+                'parameters': [
+                    {'name': 'id', 'in': 'path', 'required': True, 'schema': {}},
+                    {'name': 'count', 'in': 'query', 'schema': {}},
+                    {'name': 'bounded', 'in': 'query', 'schema': {}},
+                    {'name': 'score', 'in': 'query', 'schema': {}},
+                    {'name': 'flag', 'in': 'query', 'schema': {}},
+                    {'name': 'counts', 'in': 'query', 'schema': {}},
+                    {'name': 'page', 'in': 'query', 'schema': {}},
+                    {'name': 'size', 'in': 'query', 'schema': {}},
+                    {'name': 'maybe', 'in': 'query', 'schema': {}},
+                    {'name': 'X-Trace', 'in': 'header', 'schema': {}},
+                    {'name': 'visits', 'in': 'cookie', 'schema': {}},
+                ],
+            },
+            schemas=(
+                Schema((('path', 'id'),), pydantic.StrictInt, 'id'),
+                Schema((('query', 'count'),), pydantic.StrictInt, 'count'),
+                Schema(
+                    (('query', 'bounded'),),
+                    Annotated[int, Field(ge=0, strict=True)],
+                    'bounded',
+                ),
+                Schema((('query', 'score'),), pydantic.StrictFloat, 'score'),
+                Schema((('query', 'flag'),), pydantic.StrictBool, 'flag'),
+                Schema((('query', 'counts'),), list[pydantic.StrictInt], 'counts'),
+                Schema((('query', 'page'),), pydantic.StrictInt, 'page'),
+                Schema(
+                    (('query', 'size'),),
+                    Annotated[int, Field(ge=1, strict=True)],
+                    'size',
+                ),
+                Schema((('query', 'maybe'),), pydantic.StrictInt | None, 'maybe'),
+                Schema((('header', 'X-Trace'),), pydantic.StrictInt, 'X-Trace'),
+                Schema((('cookie', 'visits'),), pydantic.StrictInt, 'visits'),
+            ),
+        ),
         dependencies=wiring.dependencies.get('get_values'),
     )
 

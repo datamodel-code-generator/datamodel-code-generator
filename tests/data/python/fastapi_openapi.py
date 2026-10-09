@@ -153,6 +153,22 @@ def later_routes(packages: dict[str, Any]) -> list[str]:
     return [f"paths {list(app.openapi()['paths'])}"]
 
 
+@_scenario("items")
+def kept_documents(packages: dict[str, Any]) -> list[str]:
+    """Fill in the schemas of a document with a webhook and a later route, and keep it for the next request."""
+    app = _connected(packages["items"].create_app)
+    app.add_api_route("/health", lambda: None, methods=["GET"])
+    app.webhooks.add_api_route("ping", lambda: None, methods=["POST"])
+    document = app.openapi()
+    parameters = document["paths"]["/adapters"]["get"]["parameters"]
+    return [
+        f"paths {list(document['paths'])}",
+        f"webhooks {list(document['webhooks'])}",
+        f"filter {next(item['schema'] for item in parameters if item['name'] == 'filter')}",
+        f"kept {app.openapi() is document}",
+    ]
+
+
 def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Generate the scenario's packages, then report the documents and failures of its applications."""
     names, scenario = SCENARIOS[case_name]

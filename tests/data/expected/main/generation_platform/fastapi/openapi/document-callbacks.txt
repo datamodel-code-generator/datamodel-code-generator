@@ -49,8 +49,15 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "requestBody": {
                   "required": true,
                   "content": {
-                    "application/json": {},
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
                     "multipart/form-data": {
+                      "schema": {
+                        "$ref": "#/components/schemas/FieldSubscriptionsPostOnEventCallback1PostRequest"
+                      },
                       "encoding": {
                         "file": {
                           "contentType": "image/png"
@@ -86,12 +93,19 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "parameters": [
                   {
                     "name": "X-Trace",
-                    "in": "header"
+                    "in": "header",
+                    "schema": {
+                      "$ref": "#/components/schemas/FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter"
+                    }
                   }
                 ],
                 "requestBody": {
                   "content": {
-                    "application/json": {}
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Status"
+                      }
+                    }
                   }
                 },
                 "responses": {
@@ -131,13 +145,21 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
               }
             },
             "headers": {
-              "X-Map": {}
+              "X-Map": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldEventsGetResponse200XMapHeader"
+                }
+              }
             }
           },
           "500": {
             "description": "Failed.",
             "content": {
-              "application/xml": {},
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tree"
+                }
+              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Event"
@@ -153,12 +175,19 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "parameters": [
                   {
                     "name": "X-Trace",
-                    "in": "header"
+                    "in": "header",
+                    "schema": {
+                      "$ref": "#/components/schemas/FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter"
+                    }
                   }
                 ],
                 "requestBody": {
                   "content": {
-                    "application/json": {}
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Status"
+                      }
+                    }
                   }
                 },
                 "responses": {
@@ -222,7 +251,11 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           "401": {
             "description": "Denied.",
             "headers": {
-              "www-authenticate": {}
+              "www-authenticate": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldSecureGetResponse401wwwAuthenticateHeader"
+                }
+              }
             }
           },
           "403": {
@@ -350,6 +383,11 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
         "type": "array",
         "title": "FieldEventsGetResponse"
       },
+      "FieldEventsGetResponse200XMapHeader": {
+        "properties": {},
+        "type": "object",
+        "title": "FieldEventsGetResponse200XMapHeader"
+      },
       "FieldSecureGetResponse": {
         "anyOf": [
           {
@@ -360,6 +398,31 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           }
         ],
         "title": "FieldSecureGetResponse"
+      },
+      "FieldSecureGetResponse401wwwAuthenticateHeader": {
+        "type": "string",
+        "title": "FieldSecureGetResponse401wwwAuthenticateHeader"
+      },
+      "FieldSubscriptionsPostOnEventCallback1PostRequest": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "title": "FieldSubscriptionsPostOnEventCallback1PostRequest"
+      },
+      "FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter": {
+        "type": "string"
       },
       "State": {
         "type": "string",
@@ -396,6 +459,26 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           "callbackUrl"
         ],
         "title": "Subscription"
+      },
+      "Tree": {
+        "properties": {
+          "children": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tree"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "title": "Tree"
       }
     },
     "securitySchemes": {

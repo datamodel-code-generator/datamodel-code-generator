@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
-    from datamodel_code_generator._fastapi.documentation import Documentation
+    from datamodel_code_generator._fastapi.documentation import Documentation, OperationDocs
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -116,6 +116,7 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 
 _SERVER_RUNTIME: Final = ("server/application.py", "server/responses.py")
 _SECURITY_RUNTIME: Final = ("server/security.py",)
+_DOCUMENTATION_RUNTIME: Final = ("server/documentation.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
@@ -271,6 +272,11 @@ class ServerRenderer:  # noqa: PLR0904
             taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
             self.scheme_names[scheme.name] = name
 
+    @property
+    def documented(self) -> bool:
+        """Return whether the application fills in the schemas of places FastAPI does not document."""
+        return self.docs is not None and self.docs.documented
+
     @staticmethod
     def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one generated file of the package."""
@@ -335,7 +341,8 @@ class ServerRenderer:  # noqa: PLR0904
         """Copy the server runtime, with security for schemes and the request adapters when an operation uses them."""
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs)):
+        documented = _DOCUMENTATION_RUNTIME if self.documented else ()
+        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *documented)):
             yield self.file(path, "runtime", text, verbatim=True)
 
     def application(self) -> str:
@@ -382,6 +389,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
             error_handlers=module.local("_runtime.server.application", "error_handlers"),
+            documented=module.local("_runtime.server.documentation", "documented") if self.documented else None,
             exports=exports,
             imports=module.imports(),
         )
@@ -936,27 +944,24 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation, name
         items.append(("deprecated=", "True"))
     if isinstance(description := _response_description(spec), str):
         items.append(("response_description=", repr(description)))
-    if responses := docs.responses(spec):
-        items.append(("responses=", _responses(module, spec, responses)))
-    if extra := docs.openapi_extra(spec):
-        items.append(("openapi_extra=", _json_literal(extra)))
+    documented = docs.operation(spec)
+    if documented.responses:
+        items.append(("responses=", _responses(module, documented)))
+    if documented.places:
+        items.append(("openapi_extra=", _operation_document(module, documented)))
+    elif documented.extra:
+        items.append(("openapi_extra=", _json_literal(documented.extra)))
     items.append(("dependencies=", f"{names['wiring']}.dependencies.get({spec.python_name!r})"))
     return Group(f"{names['router']}.add_api_route(", tuple(items), ")")
 
 
-def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
+def _responses(module: Module, documented: OperationDocs) -> Group:
     """Return the responses a route documents; FastAPI documents a JSON body of a model from the model itself."""
-    models = {
-        response.status: (str(media.declaration.name), media.use.type)
-        for response in spec.responses
-        for media in response.media
-        if media.media_type == "application/json" and media.use is not None and media.use.type is not None
-    }
     entries: list[tuple[str, Doc]] = []
-    for status, response in documented.items():
+    for status, response in documented.responses.items():
         items: list[tuple[str, Doc]] = []
         content = response.get("content")
-        if (model := models.get(status)) is not None and isinstance(content, dict) and model[0] in content:
+        if (model := documented.models.get(status)) is not None and isinstance(content, dict) and model[0] in content:
             del content[model[0]]
             items.append(("'model': ", module.annotation(model[1])))
             if not content:
@@ -964,6 +969,29 @@ def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[s
         items.extend((f"{key!r}: ", _json_literal(item)) for key, item in response.items())
         entries.append((f"{status!r}: ", Group("{", tuple(items), "}")))
     return Group("{", tuple(entries), "}")
+
+
+def _operation_document(module: Module, documented: OperationDocs) -> Group:
+    """Return the OperationDocument of a route: its documentation, and the places its generated types describe."""
+    schema = module.local("_runtime.server.documentation", "Schema")
+    places: list[Doc] = []
+    for place in documented.places:
+        tokens = _items(
+            repr(token) if isinstance(token, str) else f"({token[0]!r}, {token[1]!r})" for token in place.at
+        )
+        entries: list[tuple[str, Doc]] = [
+            ("", Group("(", tokens, ")", ",")),
+            ("", module.annotation(place.type)),
+            ("", repr(place.name)),
+        ]
+        if place.mode == "serialization":
+            entries.append(("mode=", repr(place.mode)))
+        places.append(Group(f"{schema}(", tuple(entries), ")"))
+    return Group(
+        f"{module.local('_runtime.server.documentation', 'OperationDocument')}(",
+        (("", _json_literal(documented.extra)), ("schemas=", Group("(", _items(places), ")", ","))),
+        ")",
+    )
 
 
 def _json_literal(value: JSONValue) -> Doc:

@@ -18,6 +18,7 @@ render pydantic_v2.BaseModel
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/documentation.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)

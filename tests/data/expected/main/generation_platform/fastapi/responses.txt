@@ -13,6 +13,7 @@ render pydantic_v2.BaseModel
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/documentation.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/py.typed
   file server/README.md
@@ -126,6 +127,7 @@ render pydantic_v2.dataclass
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/documentation.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/py.typed
   file server/README.md

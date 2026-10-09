@@ -31,6 +31,9 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 {%- endfor %}
         )
     )
+{%- if documented %}
+    {{ documented }}(app)
+{%- endif %}
     return app
 
 

@@ -10,6 +10,7 @@ from fastapi import APIRouter, FastAPI, params
 
 from ._generated.contract import OperationDependencies
 from ._runtime.server.application import build, error_handlers, validation_error_handler
+from ._runtime.server.documentation import documented
 from .routers import untagged
 from .services import UntaggedService
 
@@ -54,6 +55,7 @@ def create_app(
             prefix=prefix,
         )
     )
+    documented(app)
     return app
 
 

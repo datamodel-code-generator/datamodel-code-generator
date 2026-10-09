@@ -120,27 +120,51 @@
             "name": "filter",
             "in": "query",
             "style": "deepObject",
-            "explode": true
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Filter"
+            }
           },
           {
             "name": "ids",
             "in": "query",
-            "explode": false
+            "explode": false,
+            "schema": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array",
+              "title": "Ids"
+            }
           },
           {
             "name": "X-Ids",
-            "in": "header"
+            "in": "header",
+            "schema": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array",
+              "title": "X-Ids"
+            }
           },
           {
             "name": "blob",
             "in": "query",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldAdaptersGetQueryBlobParameter"
+                }
+              }
             }
           },
           {
             "name": "point",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Point"
+            }
           }
         ],
         "responses": {
@@ -345,11 +369,19 @@
           },
           {
             "name": "tags",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryTagsParameter"
+            }
           },
           {
             "name": "level",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "const": 3,
+              "title": "Level"
+            }
           }
         ],
         "responses": {
@@ -392,12 +424,20 @@
           {
             "name": "dcg_p0",
             "in": "path",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dcg P0"
+            }
           },
           {
             "name": "dcg_p1",
             "in": "path",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dcg P1"
+            }
           }
         ]
       }
@@ -405,6 +445,11 @@
   },
   "components": {
     "schemas": {
+      "FieldAdaptersGetQueryBlobParameter": {
+        "properties": {},
+        "type": "object",
+        "title": "FieldAdaptersGetQueryBlobParameter"
+      },
       "FieldItemsItemIdPartsPartGetQueryModeParameter": {
         "type": "string",
         "enum": [
@@ -413,9 +458,41 @@
         ],
         "title": "FieldItemsItemIdPartsPartGetQueryModeParameter"
       },
+      "FieldItemsItemIdPartsPartGetQueryTagsParameter": {
+        "items": {
+          "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryTagsParameterItem"
+        },
+        "type": "array",
+        "minItems": 1,
+        "default": [
+          "a"
+        ]
+      },
+      "FieldItemsItemIdPartsPartGetQueryTagsParameterItem": {
+        "type": "string",
+        "maxLength": 4
+      },
       "FieldItemsItemIdPartsPartGetResponse": {
         "type": "string",
         "title": "FieldItemsItemIdPartsPartGetResponse"
+      },
+      "Filter": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Filter"
       },
       "HTTPValidationError": {
         "properties": {
@@ -429,6 +506,20 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Point": {
+        "properties": {
+          "x": {
+            "type": "integer",
+            "title": "X"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x"
+        ],
+        "title": "Point"
       },
       "ValidationError": {
         "properties": {

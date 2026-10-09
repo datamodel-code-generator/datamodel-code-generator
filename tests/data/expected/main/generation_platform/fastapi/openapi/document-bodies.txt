@@ -158,8 +158,16 @@
         "operationId": "postMany",
         "requestBody": {
           "content": {
-            "application/json": {},
-            "application/vnd.item+json": {}
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            },
+            "application/vnd.item+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
           },
           "required": true
         },
@@ -179,7 +187,11 @@
         "operationId": "postText",
         "requestBody": {
           "content": {
-            "text/plain": {}
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldTextPostRequest"
+              }
+            }
           },
           "required": true
         },
@@ -219,7 +231,11 @@
         "requestBody": {
           "description": "The server passes this body to its handler as the request, without validating it.",
           "content": {
-            "application/json": {}
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldRawPostRequest"
+              }
+            }
           },
           "required": true
         },
@@ -273,7 +289,11 @@
         "operationId": "postOptionalForm",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {}
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormOptionalPostRequest"
+              }
+            }
           }
         },
         "responses": {
@@ -326,7 +346,11 @@
         "operationId": "postNestedForm",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {}
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormNestedPostRequest"
+              }
+            }
           },
           "required": true
         },
@@ -414,7 +438,11 @@
         "operationId": "upload",
         "requestBody": {
           "content": {
-            "multipart/form-data": {}
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldUploadPostRequest"
+              }
+            }
           },
           "required": true
         },
@@ -515,6 +543,67 @@
         "type": "object",
         "title": "FieldFormEitherPostRequest"
       },
+      "FieldFormNestedPostRequest": {
+        "properties": {
+          "point": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Point"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object",
+        "title": "FieldFormNestedPostRequest"
+      },
+      "FieldFormOptionalPostRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "flags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "boolean"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flags"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          }
+        },
+        "type": "object",
+        "title": "FieldFormOptionalPostRequest"
+      },
       "FieldFormPostRequest": {
         "properties": {
           "name": {
@@ -568,6 +657,56 @@
         ],
         "title": "FieldJsonNullablePostRequest"
       },
+      "FieldRawPostRequest": {
+        "properties": {},
+        "type": "object",
+        "title": "FieldRawPostRequest"
+      },
+      "FieldTextPostRequest": {
+        "type": "string",
+        "maxLength": 10,
+        "title": "FieldTextPostRequest"
+      },
+      "FieldUploadPostRequest": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "FieldUploadPostRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -593,6 +732,23 @@
           "name"
         ],
         "title": "Item"
+      },
+      "Point": {
+        "properties": {
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X"
+          }
+        },
+        "type": "object",
+        "title": "Point"
       },
       "ValidationError": {
         "properties": {
