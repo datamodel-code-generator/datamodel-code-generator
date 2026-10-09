@@ -42,6 +42,9 @@ FieldCreatedPostResponse201XRateHeader = TypeAliasType(
 )
 
 
+FieldCreatedPostResponse201XNoteHeader = TypeAliasType("FieldCreatedPostResponse201XNoteHeader", str)
+
+
 FieldRangesGetResponse = TypeAliasType("FieldRangesGetResponse", str)
 
 
