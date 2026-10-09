@@ -336,9 +336,11 @@ class _Raw(Generic[SourceT, HandleT]):
 
 def _cleanup_failure(failure: Exception) -> SDKError:
     """Return the failure of releasing a response, which a release that already classified it keeps."""
-    if isinstance(failure, SDKError) and failure.reason == "cleanup_failed":
-        return failure
-    return SDKError(reason="cleanup_failed", cause=failure)
+    return (
+        failure
+        if isinstance(failure, SDKError) and failure.reason == "cleanup_failed"
+        else SDKError(reason="cleanup_failed", cause=failure)
+    )
 
 
 def checked(response: _Raw[SourceT, HandleT]) -> None:

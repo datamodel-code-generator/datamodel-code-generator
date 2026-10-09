@@ -93,6 +93,21 @@ def _failing_close(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_FailingClose())
 
 
+class _BrokenFailingClose(_FailingClose):
+    """A body whose read breaks off, and whose close then fails too."""
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield b'{"id":3,'
+        msg = "body broke off"
+        raise httpx2.ReadError(msg)
+
+
+@Injected
+def _broken_failing_close(request: httpx2.Request) -> httpx2.Response:
+    del request
+    return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_BrokenFailingClose())
+
+
 class _Hooks:
     """The HTTP client's own request and response hooks: report each one HTTPX2 runs, and raise when armed to."""
 
@@ -176,6 +191,7 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
         _streams(api, exchange, lines, pet)
         _raw(api, exchange, lines, pet)
     http.close()
+    _unread_close(package, lines, pet)
     run(lambda: _async_hooks(package, lines))
 
 
@@ -224,6 +240,22 @@ def _faults(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None
     exchange.respond(_failing_close, _failing_close)
     record(lines, "get whose response close fails", lambda: api.pets.get_pet(pet_id=pet))
     record(lines, "raw get whose response close fails", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
+    exchange.respond(_broken_failing_close)
+    record(lines, "get whose read breaks off and close fails", lambda: api.pets.get_pet(pet_id=pet))
+
+
+def _unread_close(package: ModuleType, lines: list[str], pet: object) -> None:
+    """Close a stream before reading it, as the HTTP client hands it over, while its body's close fails."""
+
+    def answer(request: httpx2.Request) -> httpx2.Response:
+        del request
+        return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_FailingClose())
+
+    with httpx2.Client(transport=httpx2.MockTransport(answer)) as http, package.Client(http_client=http) as api:
+        manager = api.pets.with_streaming_response.get_pet(pet_id=pet)
+        closing = manager.__enter__()
+        record(lines, "stream closed unread whose close fails", closing.close)
+        record(lines, "its block left after it", lambda: manager.__exit__(None, None, None))
 
 
 def _streams(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
