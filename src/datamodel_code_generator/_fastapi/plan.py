@@ -172,10 +172,19 @@ class Default(Enum):
 class RootDefault:
     """The default of a parameter whose type stays a root model: the model of a literal, or the model's own default."""
 
+    type: FinalPythonType
     literal: LiteralScalar | LiteralSequence | None = None
 
 
-ParameterDefault: TypeAlias = Default | LiteralScalar | LiteralSequence | RootDefault
+@dataclass(frozen=True, slots=True)
+class MemberDefault:
+    """The default of an enum parameter: the members of its enum type that a literal, or each item of one, names."""
+
+    type: FinalPythonType
+    literal: LiteralScalar | LiteralSequence
+
+
+ParameterDefault: TypeAlias = Default | LiteralScalar | LiteralSequence | RootDefault | MemberDefault
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -193,7 +202,7 @@ class NativeField:
     alias: str
     type: FinalPythonType
     keywords: tuple[tuple[str, object], ...] = ()
-    default: Default | LiteralScalar | LiteralSequence = Default.REQUIRED
+    default: ParameterDefault = Default.REQUIRED
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -712,7 +721,7 @@ class Planner:  # noqa: PLR0904
             alias=plan.name,
             type=value,
             keywords=tuple(self.documentation(declaration, use)),
-            default=Default.REQUIRED if plan.required or isinstance(default, RootDefault) else default,
+            default=Default.REQUIRED if plan.required else default,
         )
         return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
 
@@ -720,10 +729,11 @@ class Planner:  # noqa: PLR0904
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
         The parameter schema's own default comes first when it is a boolean, number, or string, or a list of them,
-        since an alias may carry none and a referenced root model's is not the parameter's; one of an enum stays
-        the model's. A declared default does not depend on how the model spells the type: a type that stays a root
-        model takes that model, of the schema's default or with its own, and any other type the schema's. A default
-        factory without such a literal stays the model's, so its root model or alias is not unwrapped.
+        since an alias may carry none and a referenced root model's is not the parameter's, and a declared null
+        leaves the parameter without one. A declared default does not depend on how the model spells the type: a type
+        that stays a root model takes that model, of the schema's default or with its own, an enum type its members,
+        and any other type the schema's. A default factory without such a literal stays the model's, so its root model
+        or alias is not unwrapped.
         """
         default: ParameterDefault = Default.ABSENT
         if use is None or use.type is None:
@@ -743,15 +753,35 @@ class Planner:  # noqa: PLR0904
                 factory = value
             value = plain
             default = _default(facts) if default is Default.ABSENT else default
-        literal = None if use.schema is None else _literal(self.wire.schema(use.schema)[1].get("default"))
+        schema = {} if use.schema is None else self.wire.schema(use.schema)[1]
+        literal = _literal(declared := schema.get("default"))
+        null = declared is None and "default" in schema
+        if null:
+            default = Default.ABSENT
         if factory is not None and literal is None and default is Default.ABSENT:
             value = factory
         if isinstance(value, GeneratedSymbolType) and self.symbols[value.symbol].kind == "root":
             wrapped = self.facts.get(value.symbol)
-            return value, RootDefault(literal) if wrapped is not None and wrapped.has_default else default
-        if literal is not None and (isinstance(value, LiteralType) or not self.literal(value)):
-            default = literal
+            return value, RootDefault(
+                value, literal
+            ) if not null and wrapped is not None and wrapped.has_default else default
+        default = default if literal is None else literal
+        if isinstance(default, LiteralScalar | LiteralSequence) and (member := self.member(value)) is not None:
+            return value, MemberDefault(member, default)
         return value, default
+
+    def member(self, value: FinalPythonType) -> GeneratedSymbolType | None:
+        """Return the enum type whose members a default names: the type, its one member besides None, or its item."""
+        match value:
+            case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
+                return value
+            case UnionType() if len(members := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+                return self.member(members[0])
+            case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
+                return self.member(value.arguments[0])
+            case _:
+                pass
+        return None
 
     def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
         """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.

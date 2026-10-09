@@ -33,4 +33,10 @@ class UntaggedService(Protocol):
         marks: defaults_basemodel_models.Tags,
         notes: defaults_basemodel_models.Notes,
         extras: defaults_basemodel_models.FieldValuesGetQueryExtrasParameter | None,
+        color: defaults_basemodel_models.Color,
+        tone: defaults_basemodel_models.FieldValuesGetQueryToneParameter,
+        shade: defaults_basemodel_models.Shade,
+        colors: list[defaults_basemodel_models.Color],
+        sized: int | None,
+        x_colors: list[defaults_basemodel_models.Color],
     ) -> None | HTTPResult[None] | Response: ...
