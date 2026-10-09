@@ -2,27 +2,51 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from fastapi import FastAPI
 
+_INFO: Final = {
+    "title": "title",
+    "version": "version",
+    "summary": "summary",
+    "description": "description",
+    "terms_of_service": "termsOfService",
+    "contact": "contact",
+    "license_info": "license",
+}
+_ROOT: Final = {"servers": "servers", "openapi_tags": "tags", "openapi_external_docs": "externalDocs"}
 
-def serve_openapi(app: FastAPI, load: Callable[[], dict[str, Any]], *, prefix: str = "") -> None:
+
+def serve_openapi(
+    app: FastAPI,
+    load: Callable[[], dict[str, Any]],
+    *,
+    prefix: str = "",
+    metadata: Mapping[str, Any] | None = None,
+) -> None:
     """Make the application's document the one `load` returns, loaded on its first request and kept.
 
-    Its paths take the prefix the routes were included under, as in FastAPI's own document. FastAPI's documentation
-    endpoints serve it as they serve FastAPI's own, the root path's server included.
+    Its paths take the prefix the routes were included under, as in FastAPI's own document, and the FastAPI settings
+    in `metadata` that describe the application, such as `title` or `servers`, replace the document's. FastAPI's
+    documentation endpoints serve it as they serve FastAPI's own, the root path's server included. A document the
+    application built before is dropped.
     """
+    given = metadata or {}
 
     def openapi() -> dict[str, Any]:
         if not app.openapi_schema:
             document = load()
             if prefix:
                 document["paths"] = {f"{prefix}{path}": item for path, item in document.get("paths", {}).items()}
+            if info := {key: given[name] for name, key in _INFO.items() if name in given}:
+                document["info"] = {**document.get("info", {}), **info}
+            document.update({key: given[name] for name, key in _ROOT.items() if name in given})
             app.openapi_schema = document
         return app.openapi_schema
 
+    app.openapi_schema = None
     setattr(app, "openapi", openapi)  # noqa: B010 - FastAPI's documented way to replace the document.

@@ -953,15 +953,20 @@ def _openapi_module(document: str) -> str:
         "from typing import TYPE_CHECKING, Any\n\n"
         "from .._runtime.server.openapi import serve_openapi\n\n"
         "if TYPE_CHECKING:\n"
+        "    from collections.abc import Mapping\n\n"
         "    from fastapi import FastAPI\n\n"
         f"_TEXT = (\n{lines})\n\n\n"
         "def document() -> dict[str, Any]:\n"
         '    """Return a new copy of the source document."""\n'
         "    loaded: dict[str, Any] = json.loads(_TEXT)\n"
         "    return loaded\n\n\n"
-        'def serve_source_openapi(app: FastAPI, *, prefix: str = "") -> None:\n'
-        '    """Serve the source document, paths under prefix, instead of FastAPI\'s; read on first request."""\n'
-        "    serve_openapi(app, document, prefix=prefix)\n"
+        "def serve_source_openapi(\n"
+        '    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None\n'
+        ") -> None:\n"
+        '    """Serve the source document instead of FastAPI\'s, read on its first request.\n\n'
+        "    Its paths take `prefix`, and the FastAPI settings in `metadata`, such as `title`, replace its own.\n"
+        '    """\n'
+        "    serve_openapi(app, document, prefix=prefix, metadata=metadata)\n"
     )
 
 

@@ -18,9 +18,10 @@ paths:
         - {name: body, in: query, schema: {type: string}}
         - {name: media_type, in: header, schema: {type: string}}
         - {name: dcg_p0, in: query, schema: {type: string, examples: [a, .inf]}}
-        - {name: parameters, in: query, schema: {type: string}}
+        - {name: parameters, in: query, schema: &text {type: string}}
+        - {name: tag, in: query, schema: {$ref: "#tag"}}
         - {name: session, in: cookie, schema: {type: string}}
-        - {name: get_user_by_id_handler, in: query, schema: {type: string}}
+        - {name: get_user_by_id_handler, in: query, schema: *text}
       deprecated: true
       responses:
         "204": {description: Done.}
@@ -54,3 +55,6 @@ paths:
     get:
       responses:
         "204": {description: Done.}
+components:
+  schemas:
+    Tag: {$anchor: tag, type: string}

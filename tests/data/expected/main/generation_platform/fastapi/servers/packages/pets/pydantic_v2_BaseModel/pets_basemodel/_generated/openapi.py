@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any
 from .._runtime.server.openapi import serve_openapi
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from fastapi import FastAPI
 
 _TEXT = (
@@ -323,6 +325,11 @@ def document() -> dict[str, Any]:
     return loaded
 
 
-def serve_source_openapi(app: FastAPI, *, prefix: str = "") -> None:
-    """Serve the source document, paths under prefix, instead of FastAPI's; read on first request."""
-    serve_openapi(app, document, prefix=prefix)
+def serve_source_openapi(
+    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None
+) -> None:
+    """Serve the source document instead of FastAPI's, read on its first request.
+
+    Its paths take `prefix`, and the FastAPI settings in `metadata`, such as `title`, replace its own.
+    """
+    serve_openapi(app, document, prefix=prefix, metadata=metadata)

@@ -1,15 +1,18 @@
 """Write the part of the source OpenAPI document the selected operations use, which the generated server serves.
 
 The document keeps the source's own spelling: its OpenAPI version, info, servers, tags, security schemes, webhooks,
-and the selected operations with their callbacks. Components stay when something kept references them, and what a
-reference names in another loaded document joins the components, so the served document stands alone. It is
-documentation: the generated models stay the contract the server validates with.
+and the selected paths with their callbacks. Components stay when something kept references them, or when they are
+subtypes of a kept discriminator base. What a reference names in another loaded document, or in a path that is left
+out, joins the components of the kind its position holds, so the served document stands alone; a kind the version
+has no component for is copied in place. It is documentation: the generated models stay the contract the server
+validates with.
 """
 
 from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
@@ -17,7 +20,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from datamodel_code_generator._runtime.model_codecs.wire import escape_pointer_token, pointer_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._source import YamlValue
@@ -25,25 +28,70 @@ if TYPE_CHECKING:
 
 JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | None"
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
+Child: TypeAlias = "tuple[str, str]"
 
-_SCHEMA: Final = "schemas"
-_CONTAINERS: Final = {
-    "parameters": "parameters",
-    "responses": "responses",
-    "headers": "headers",
-    "examples": "examples",
-    "links": "links",
-    "callbacks": "callbacks",
+_METHODS: Final = ("get", "put", "post", "delete", "options", "head", "patch", "trace", "query")
+_MEDIA: Final[dict[str, Child]] = {
+    "schema": ("one", "schema"),
+    "itemSchema": ("one", "schema"),
+    "examples": ("map", "example"),
+    "encoding": ("map", "encoding"),
+    "prefixEncoding": ("list", "encoding"),
+    "itemEncoding": ("one", "encoding"),
 }
-_SINGLE: Final = {"schema": _SCHEMA, "requestBody": "requestBodies"}
+_PARAMETER: Final[dict[str, Child]] = {
+    "schema": ("one", "schema"),
+    "content": ("map", "mediaType"),
+    "examples": ("map", "example"),
+}
+_CHILDREN: Final[dict[str, dict[str, Child]]] = {
+    "pathItem": {
+        **dict.fromkeys(_METHODS, ("one", "operation")),
+        "additionalOperations": ("map", "operation"),
+        "parameters": ("list", "parameter"),
+    },
+    "operation": {
+        "parameters": ("list", "parameter"),
+        "requestBody": ("one", "requestBody"),
+        "responses": ("map", "response"),
+        "callbacks": ("map", "callback"),
+    },
+    "parameter": _PARAMETER,
+    "header": _PARAMETER,
+    "mediaType": _MEDIA,
+    "encoding": {
+        "headers": ("map", "header"),
+        **{key: _MEDIA[key] for key in ("encoding", "prefixEncoding", "itemEncoding")},
+    },
+    "requestBody": {"content": ("map", "mediaType")},
+    "response": {"headers": ("map", "header"), "content": ("map", "mediaType"), "links": ("map", "link")},
+}
+_KINDS: Final = {
+    "pathItem": "pathItems",
+    "parameter": "parameters",
+    "header": "headers",
+    "mediaType": "mediaTypes",
+    "requestBody": "requestBodies",
+    "response": "responses",
+    "callback": "callbacks",
+    "example": "examples",
+    "link": "links",
+    "schema": "schemas",
+    "securityScheme": "securitySchemes",
+}
+_ROLES: Final = {kind: role for role, kind in _KINDS.items()}
+_SINCE: Final = {"pathItems": (3, 1), "mediaTypes": (3, 2)}
+_SCHEMA_MAPS: Final = frozenset({"properties", "patternProperties", "$defs", "definitions", "dependentSchemas"})
+_LITERALS: Final = frozenset({"example", "examples", "default", "enum", "const"})
 _KEPT: Final = "securitySchemes"
+_NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
 
 
 class SourceDocument:
     """Copy the selected operations' part of the loaded documents into one JSON document."""
 
     def __init__(self, batch: GeneratedTypeContractBatch, lease: SourceLease) -> None:
-        """Index the loaded documents by the URI the parser loaded each from."""
+        """Index the loaded documents by the URI the parser loaded each from, and by their `$self`."""
         self.uris = [document.uri for document in batch.documents]
         self.documents = [lease.document(document.id) for document in batch.documents]
         self.bases = [
@@ -53,11 +101,16 @@ class SourceDocument:
         self.ids = {uri: index for index, uri in enumerate(self.uris)} | {
             base: index for index, base in enumerate(self.bases)
         }
+        root = self.documents[0]
+        version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
+        self.version = (int(version[1]), int(version[2])) if version else (3, 1)
+        self.schemas = _mapping(_mapping(root.get("components")).get("schemas"))
         self.problems: dict[str, None] = {}
         self.wanted: dict[tuple[str, str], None] = {}
         self.bundled: dict[Key, str] = {}
         self.extra: dict[str, dict[str, JSON]] = {}
         self.stack: set[int] = set()
+        self.selected: frozenset[str] = frozenset()
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
@@ -68,45 +121,43 @@ class SourceDocument:
 
         Selection keeps or leaves out a whole path, so a kept path item keeps every operation it declares.
         """
-        selected = {operation.path for operation in operations}
+        self.selected = frozenset(operation.path for operation in operations)
         root = self.documents[0]
+        base = self.bases[0]
         document: dict[str, JSON] = {}
         for key, value in root.items():
             name = str(key)
             if name == "paths":
                 document[name] = {
-                    str(path): self.path_item(str(path), item)
+                    str(path): self.copy(item, 0, base, ("paths", str(path)), "pathItem")
                     for path, item in _mapping(value).items()
-                    if str(path) in selected
+                    if str(path) in self.selected
                 }
+            elif name == "webhooks":
+                document[name] = self.members(value, 0, base, (name,), ("map", "pathItem"))
             elif name != "components" and self.json(value, (name,)):
-                document[name] = self.copy(value, 0, (name,), None)
+                document[name] = self.copy(value, 0, base, (name,), "any")
         if components := self.components(_mapping(root.get("components"))):
             document["components"] = components
         return document
 
-    def path_item(self, path: str, item: YamlValue) -> JSON:
-        """Return a path item, the one its reference chain ends at in place of the reference."""
-        document, at, value = self.resolve(0, ("paths", path), _mapping(item))
-        return self.copy({key: child for key, child in value.items() if key != "$ref"}, document, at, None)
-
     def components(self, source: Mapping[str, YamlValue]) -> dict[str, JSON]:
         """Return the components something kept references, in source order, then those bundled from elsewhere."""
+        base = self.bases[0]
         copied: dict[tuple[str, str], JSON] = {}
         while todo := [
-            (kind, name, value)
+            (str(kind), str(name), value)
             for kind, items in source.items()
             for name, value in _mapping(items).items()
-            if (str(kind), str(name)) in self.wanted and (str(kind), str(name)) not in copied
+            if (str(kind), str(name)) in self.subtyped() and (str(kind), str(name)) not in copied
         ]:
             for kind, name, value in todo:
-                at = ("components", str(kind), str(name))
-                copied[at[1:]] = self.copy(value, 0, at, str(kind))
+                copied[kind, name] = self.copy(value, 0, base, ("components", kind, name), _ROLES.get(kind, "any"))
         components: dict[str, JSON] = {}
         for key, value in source.items():
             kind = str(key)
             if kind == _KEPT:
-                components[kind] = self.copy(value, 0, ("components", kind), None)
+                components[kind] = self.members(value, 0, base, ("components", kind), ("map", "securityScheme"))
             elif found := {
                 str(name): copied[kind, str(name)] for name in _mapping(value) if (kind, str(name)) in copied
             }:
@@ -117,62 +168,111 @@ class SourceDocument:
             target.update(items)
         return components
 
-    def copy(self, value: YamlValue, document: int, at: tuple[str, ...], kind: str | None) -> JSON:
-        """Return a JSON copy of a value with its references rewritten into the document, leaving out non-JSON values.
+    def subtyped(self) -> dict[tuple[str, str], None]:
+        """Return the wanted components, with the schemas whose allOf extends a wanted discriminator base."""
+        bases = {
+            f"#/components/schemas/{escape_pointer_token(name)}"
+            for kind, name in self.wanted
+            if kind == "schemas" and isinstance(_mapping(self.schemas.get(name)).get("discriminator"), dict)
+        }
+        for name, schema in self.schemas.items():
+            parts = _mapping(schema).get("allOf")
+            if isinstance(parts, list) and any(_mapping(part).get("$ref") in bases for part in parts):
+                self.wanted.setdefault(("schemas", str(name)), None)
+        return self.wanted
 
-        `kind` names the component a reference of this value would be: a schema below any schema.
+    def copy(self, value: YamlValue, document: int, base: str, at: tuple[str, ...], role: str) -> JSON:
+        """Return a JSON copy of an object of one role, its references rewritten into the document.
+
+        A value without a JSON form is left out. A reference to a kind the version has no component for is copied
+        in place.
         """
         if not isinstance(value, dict | list):
             assert value is None or isinstance(value, str | int | float)
             return value
         self.stack.add(id(value))
         try:
-            return self.container(value, document, at, kind)
+            if isinstance(value, list):
+                return [
+                    self.copy(item, document, base, (*at, str(index)), role)
+                    for index, item in enumerate(value)
+                    if self.json(item, (*at, str(index)))
+                ]
+            if (inline := self.inline(value, document, base, role)) is not None:
+                return self.copy(inline[2], inline[0], inline[1], at, role)
+            return self.mapping(value, document, base, at, role)
         finally:
             self.stack.discard(id(value))
 
-    def container(
-        self, value: dict[str, YamlValue] | list[YamlValue], document: int, at: tuple[str, ...], kind: str | None
-    ) -> JSON:
-        """Return a JSON copy of a mapping or list, which `copy` keeps on its stack meanwhile."""
-        if isinstance(value, dict):
-            copied: dict[str, JSON] = {}
-            for key, child in value.items():
-                name = str(key)
-                if name == "$ref" and isinstance(child, str):
-                    copied[name] = self.reference(child, document, kind or _SCHEMA)
-                elif kind == _SCHEMA and name == "discriminator" and isinstance(child, dict):
-                    copied[name] = self.discriminator(child, document, (*at, name))
-                elif (container := _CONTAINERS.get(name)) is not None and kind != _SCHEMA:
-                    copied[name] = self.members(child, document, (*at, name), container)
-                elif self.json(child, (*at, name)):
-                    child_kind = kind if kind == _SCHEMA else _SINGLE.get(name, kind)
-                    copied[name] = self.copy(child, document, (*at, name), child_kind)
-            return copied
-        return [
-            self.copy(item, document, (*at, str(index)), kind)
-            for index, item in enumerate(value)
-            if self.json(item, (*at, str(index)))
-        ]
+    def mapping(
+        self, value: dict[str, YamlValue], document: int, base: str, at: tuple[str, ...], role: str
+    ) -> dict[str, JSON]:
+        """Return a JSON copy of a mapping of one role.
 
-    def members(self, value: YamlValue, document: int, at: tuple[str, ...], kind: str) -> JSON:
-        """Return a list or map of objects of one component kind, such as an operation's parameters."""
-        if isinstance(value, dict):
+        A schema's `$id` only sets the base its references resolve against, which the copy has applied to them, so the
+        copy leaves it out: every reference in the document is relative to the document itself.
+        """
+        if role == "schema" and isinstance(own := value.get("$id"), str) and self.version >= (3, 1):
+            base = urljoin(base, own)
+        children = _CHILDREN.get(role, {})
+        copied: dict[str, JSON] = {}
+        for key, child in value.items():
+            name, place = str(key), (*at, str(key))
+            if not self.json(child, place) or (role == "schema" and name == "$id" and isinstance(child, str)):
+                continue
+            if name == "$ref" and isinstance(child, str) and role in _KINDS:
+                copied[name] = self.reference(child, document, base, role)
+            elif role == "schema":
+                copied[name] = self.schema_member(name, child, document, base, place)
+            elif role == "callback":
+                copied[name] = self.copy(child, document, base, place, "pathItem")
+            elif (shape := children.get(name)) is not None:
+                copied[name] = self.members(child, document, base, place, shape)
+            else:
+                copied[name] = self.copy(child, document, base, place, "any")
+        return copied
+
+    def schema_member(self, name: str, value: YamlValue, document: int, base: str, at: tuple[str, ...]) -> JSON:
+        """Return one member of a schema: a subschema, a map of them, a discriminator, or literal data."""
+        if name == "discriminator" and isinstance(value, dict):
+            return self.discriminator(value, document, base, at)
+        if name in _SCHEMA_MAPS and isinstance(value, dict):
             return {
-                str(key): self.copy(child, document, (*at, str(key)), kind)
-                for key, child in value.items()
-                if self.json(child, (*at, str(key)))
+                str(key): self.copy(item, document, base, (*at, str(key)), "schema")
+                for key, item in value.items()
+                if self.json(item, (*at, str(key)))
             }
-        return self.copy(value, document, at, kind)
+        return self.copy(value, document, base, at, "any" if name in _LITERALS or name.startswith("x-") else "schema")
 
-    def discriminator(self, value: dict[str, YamlValue], document: int, at: tuple[str, ...]) -> JSON:
+    def members(self, value: YamlValue, document: int, base: str, at: tuple[str, ...], shape: Child) -> JSON:
+        """Return one object, or a list or map of objects, of a role, leaving out links to operations not served."""
+        form, role = shape
+        if form != "map" or not isinstance(value, dict):
+            return self.copy(value, document, base, at, role)
+        return {
+            str(key): self.copy(child, document, base, (*at, str(key)), role)
+            for key, child in value.items()
+            if self.json(child, (*at, str(key))) and (role != "link" or self.served(child, (*at, str(key))))
+        }
+
+    def served(self, link: YamlValue, at: tuple[str, ...]) -> bool:
+        """Return whether a link's operationRef names an operation the document keeps, reporting one it leaves out."""
+        ref = _mapping(link).get("operationRef")
+        if not isinstance(ref, str) or not ref.startswith("#/paths/") or (tokens := _fragment(ref)) is None:
+            return True
+        if tokens[1:2] and tokens[1] in self.selected:
+            return True
+        self.problems[f"{_pointer(at)}: The served document leaves out the link, whose operation it leaves out"] = None
+        return False
+
+    def discriminator(self, value: dict[str, YamlValue], document: int, base: str, at: tuple[str, ...]) -> JSON:
         """Return a discriminator, keeping the schema each mapping value names, by reference or by component name."""
-        copied = _object(self.copy({key: item for key, item in value.items() if key != "mapping"}, document, at, None))
+        copied = self.mapping({key: item for key, item in value.items() if key != "mapping"}, document, base, at, "any")
         if isinstance(mapping := value.get("mapping"), dict):
             copied["mapping"] = {
-                str(key): self.reference(item, document, _SCHEMA)
+                str(key): self.reference(item, document, base, "schema")
                 if "/" in item or "#" in item
-                else self.reference(f"#/components/schemas/{item}", document, _SCHEMA).rpartition("/")[2]
+                else self.reference(f"#/components/schemas/{item}", document, base, "schema").rpartition("/")[2]
                 for key, item in mapping.items()
                 if isinstance(item, str)
             }
@@ -189,26 +289,48 @@ class SourceDocument:
             or (isinstance(value, float) and math.isfinite(value))
         ):
             return True
-        pointer = "/" + "/".join(escape_pointer_token(token) for token in at)
-        self.problems[f"{pointer}: The served document leaves out {at[-1]}, which has no JSON form"] = None
+        self.problems[f"{_pointer(at)}: The served document leaves out {at[-1]}, which has no JSON form"] = None
         return False
 
-    def reference(self, ref: str, document: int, kind: str) -> str:
-        """Return a reference rewritten into the served document, bundling what it names in another document."""
-        target = self.locate(document, ref)
-        if target is None or (tokens := _fragment(ref)) is None:
-            return ref
+    def inline(
+        self, value: dict[str, YamlValue], document: int, base: str, role: str
+    ) -> tuple[int, str, dict[str, YamlValue]] | None:
+        """Return the object a reference names when the version has no component kind for it, else None."""
+        since = _SINCE.get(_KINDS.get(role, ""))
+        if (
+            since is None
+            or self.version >= since
+            or not isinstance(ref := value.get("$ref"), str)
+            or (target := self.locate(document, base, ref)) is None
+            or (tokens := _fragment(ref)) is None
+        ):
+            return None
+        found = self.node(target, tokens)
+        return (target, self.bases[target], found) if isinstance(found, dict) and id(found) not in self.stack else None
+
+    def reference(self, ref: str, document: int, base: str, role: str) -> str:
+        """Return a reference rewritten into the served document, bundling what it names outside the kept part."""
+        if (target := self.locate(document, base, ref)) is None or (tokens := self.pointer(target, ref)) is None:
+            return ref  # pragma: no cover - The parser refuses a reference it cannot resolve before this runs.
+        local = "#" + "".join(f"/{escape_pointer_token(token)}" for token in tokens)
         if target == 0:
             if tokens[:1] == ("components",) and len(tokens) >= 3:  # ruff: ignore[magic-value-comparison] - components, kind, name.
                 self.wanted.setdefault((tokens[1], tokens[2]), None)
-            return "#" + "".join(f"/{escape_pointer_token(token)}" for token in tokens)
+                return local
+            if tokens[:1] != ("paths",) or tokens[1:2] == () or tokens[1] in self.selected:
+                return local
         key = (target, tokens)
         if (found := self.bundled.get(key)) is not None:
             return found
+        kind = _KINDS[role]
+        node = self.node(target, tokens)
         if len(tokens) == 3 and tokens[0] == "components":  # ruff: ignore[magic-value-comparison] - components, kind, name.
-            kind, name = tokens[1], tokens[2]
+            name = tokens[2]
+        elif isinstance(own := _mapping(node).get("name"), str) and own:
+            name = own
         else:
             name = tokens[-1] if tokens else PurePosixPath(urlsplit(self.uris[target]).path).stem or kind
+        name = _NAME.sub("_", name)
         items = self.extra.setdefault(kind, {})
         root = _mapping(_mapping(self.documents[0].get("components")).get(kind))
         unique, count = name, 1
@@ -217,38 +339,42 @@ class SourceDocument:
             unique = f"{name}_{count}"
         self.bundled[key] = bundled = f"#/components/{escape_pointer_token(kind)}/{escape_pointer_token(unique)}"
         items[unique] = None
-        node = self.node(target, tokens)
-        items[unique] = self.copy(node, target, tokens, kind)
+        items[unique] = self.copy(node, target, self.bases[target], tokens, role)
         return bundled
 
-    def locate(self, document: int, ref: str) -> int | None:
-        """Return the loaded document a reference names: against the document's `$self`, then where it was read."""
+    def pointer(self, document: int, ref: str) -> tuple[str, ...] | None:
+        """Return the pointer tokens a reference's fragment names in its document: a JSON pointer or an `$anchor`."""
+        return (
+            tokens
+            if (tokens := _fragment(ref)) is not None
+            else next(self.anchored(document, unquote(ref.partition("#")[2])), None)
+        )
+
+    def anchored(self, document: int, name: str) -> Iterator[tuple[str, ...]]:
+        """Yield the pointer tokens of each schema whose `$anchor` is the name, in document order."""
+        pending: list[tuple[tuple[str, ...], YamlValue]] = [((), self.documents[document])]
+        seen: set[int] = set()
+        while pending:  # pragma: no branch - The parser refuses an anchor no schema declares.
+            at, value = pending.pop()
+            if not isinstance(value, dict | list) or id(value) in seen:
+                continue
+            seen.add(id(value))
+            if isinstance(value, list):
+                pending.extend(((*at, str(index)), child) for index, child in reversed(list(enumerate(value))))
+                continue
+            if value.get("$anchor") == name:
+                yield at
+            pending.extend(((*at, str(key)), child) for key, child in reversed(value.items()))
+
+    def locate(self, document: int, base: str, ref: str) -> int | None:
+        """Return the loaded document a reference names: against its base, then where its document was read."""
         if ref.startswith("#"):
             return document
         target = ref.partition("#")[0]
         return next(
-            (
-                self.ids[uri]
-                for uri in (urljoin(self.bases[document], target), urljoin(self.uris[document], target))
-                if uri in self.ids
-            ),
+            (self.ids[uri] for uri in (urljoin(base, target), urljoin(self.uris[document], target)) if uri in self.ids),
             None,
         )
-
-    def resolve(
-        self, document: int, at: tuple[str, ...], value: dict[str, YamlValue]
-    ) -> tuple[int, tuple[str, ...], dict[str, YamlValue]]:
-        """Follow a path item's reference chain through the loaded documents."""
-        seen = {(document, at)}
-        while (
-            isinstance(ref := value.get("$ref"), str)
-            and (target := self.locate(document, ref)) is not None
-            and (tokens := _fragment(ref)) is not None
-            and (target, tokens) not in seen
-        ):
-            seen.add((target, tokens))
-            document, at, value = target, tokens, _mapping(self.node(target, tokens))
-        return document, at, value
 
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
         """Return the node a pointer names in a loaded document."""
@@ -265,6 +391,10 @@ def _fragment(ref: str) -> tuple[str, ...] | None:
     return tuple(pointer_tokens(fragment)) if fragment.startswith("/") else None
 
 
+def _pointer(at: tuple[str, ...]) -> str:
+    return "/" + "/".join(escape_pointer_token(token) for token in at)
+
+
 def _member(mapping: dict[str, YamlValue], token: str) -> YamlValue:
     """Return a mapping's member by key, by its integer YAML key when no string key matches."""
     return (
@@ -278,8 +408,3 @@ def _member(mapping: dict[str, YamlValue], token: str) -> YamlValue:
 
 def _mapping(value: YamlValue) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}
-
-
-def _object(value: JSON) -> dict[str, JSON]:
-    assert isinstance(value, dict)
-    return value

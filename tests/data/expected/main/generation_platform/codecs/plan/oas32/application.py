@@ -58,7 +58,7 @@ def create_app(
         )
     )
     if source_openapi:
-        serve_source_openapi(app, prefix=prefix)
+        serve_source_openapi(app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 

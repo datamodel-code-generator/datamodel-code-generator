@@ -463,23 +463,30 @@ operation as a separate alternative, since FastAPI cannot document a requirement
 ## Served OpenAPI document
 
 `create_app` serves the source document, not one FastAPI builds: generation writes the part of it the selected
-operations use into `server/_generated/openapi.py`, and the application reads it on the first request for
+paths use into `server/_generated/openapi.py`, and the application reads it on the first request for
 `/openapi.json` and keeps it. The document keeps the source's OpenAPI version, `info`, `servers`, `tags`, security
-schemes, webhooks, and the selected operations as they are declared, callbacks included. Paths without a selected
-operation, operations that are not selected, and components nothing kept references are left out, and what a
-reference names in another loaded document joins the components, under its own name or a numbered one when the
-name is taken, so the document stands alone. FastAPI's `/docs` and `/redoc` show it, and behind a root path
-FastAPI adds that path as the first server, as it does for its own document. A value without a JSON form, such as
-a YAML timestamp, is left out with a `DocumentationAnnotationWarning`. The document is documentation only: the
-generated models are what the server validates with, and routes added to the application later do not appear in it.
+schemes, webhooks, and the selected paths with all their operations as they are declared, callbacks included.
+Components stay when something kept references them, and so do the `allOf` subtypes of a kept discriminator base.
+What a reference names in another loaded document, or in a path that is left out, joins the components of the
+kind the reference's position holds, under its own name or a numbered one when the name is taken; an OpenAPI 3.0
+path item, or a media type before 3.2, has no component kind and is copied in place. References are rewritten
+relative to the document, so a schema's `$id` is left out. A link whose `operationRef` names a path that is left
+out is left out, and so is a value without a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias
+that contains itself. Each of them is reported as a `DocumentationAnnotationWarning`.
+
+FastAPI's `/docs` and `/redoc` show the document, and behind a root path FastAPI adds that path as the first
+server, as it does for its own document. `create_app`'s `prefix` leads every path, and the description settings
+you pass to `create_app`, `title`, `version`, `summary`, `description`, `terms_of_service`, `contact`,
+`license_info`, `servers`, `openapi_tags`, and `openapi_external_docs`, replace the document's, as they do in
+FastAPI's own. The document is documentation only: the generated models are what the server validates with, and
+routes added to the application later do not appear in it.
 
 `create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the
 models they declare. It describes what FastAPI derives: a parameter, header, or body that only an adapter reads
 does not appear in it. An application of your own that includes `build_router(...)` serves FastAPI's document
-too, unless it calls `serve_source_openapi(app, prefix=...)`, imported from the generated package, with the
-prefix the router is included under. `create_app`'s `prefix` likewise leads every path of the served document, as
-in FastAPI's own. Path placeholders that are not Python identifiers, or that repeat, appear in FastAPI's document
-under the route's own placeholder names.
+too, unless it calls `serve_source_openapi(app, prefix=..., metadata=...)`, imported from the generated package,
+with the prefix the router is included under and the description settings to replace. Path placeholders that are
+not Python identifiers, or that repeat, appear in FastAPI's document under the route's own placeholder names.
 
 ## Production settings
 

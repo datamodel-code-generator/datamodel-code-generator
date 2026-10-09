@@ -3,3 +3,4 @@ fastapi 3.1.0 ['/adapters', '/items/{dcg_p0}/parts/{part}', '/repeat/{dcg_p0}/ag
 source 3.1.0 ['/items/{item-id}/parts/{part}', '/adapters', '/repeat/{id}/again/{id}']
 servers [{'url': '/api'}]
 kept True
+metadata {'title': 'Mine', 'version': '2'} [{'url': 'https://prod.example.com'}]

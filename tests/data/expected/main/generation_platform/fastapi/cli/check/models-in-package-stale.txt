@@ -60,7 +60,7 @@
 -    )
 --- server/_generated/openapi.py
 +++ server/_generated/openapi.py (expected)
-@@ -139,117 +139,6 @@
+@@ -141,117 +141,6 @@
      '     }\n'
      '    }\n'
      '   }\n'

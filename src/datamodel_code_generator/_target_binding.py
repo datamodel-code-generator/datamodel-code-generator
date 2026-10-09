@@ -3097,8 +3097,22 @@ def bind_operations(
             api_scope=True,
             document_facts=parser.document_facts.get(next(iter(schemas.ids), ""), ()),
         ),
-        tuple(schemas.documents.items()),
+        _pristine(parser, schemas.documents),
     )
+
+
+def _pristine(
+    parser: TargetApiOpenAPIParser, documents: dict[str, dict[str, YamlValue]]
+) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
+    """Return the documents as loaded, before the parser rebased the references of their embedded schema resources.
+
+    The parser walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
+    """
+    loaded = {
+        id(prepared): raw
+        for raw, prepared in parser._schema_resource_cache.values()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    }
+    return tuple((uri, loaded.get(id(document), document)) for uri, document in documents.items())
 
 
 if TYPE_CHECKING:

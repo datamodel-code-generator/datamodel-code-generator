@@ -5,8 +5,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 from typing_extensions import TypeAliasType
+
+
+class Tag(RootModel[str]):
+    root: str
+
 
 FieldUsersIdGetPathIdParameter = TypeAliasType("FieldUsersIdGetPathIdParameter", int)
 

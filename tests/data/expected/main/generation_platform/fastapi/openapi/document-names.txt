@@ -85,6 +85,13 @@ DocumentationAnnotationWarning: <root>/docs_names: /paths/~1users~1{id}/get/para
             }
           },
           {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          {
             "name": "session",
             "in": "cookie",
             "schema": {
@@ -195,6 +202,14 @@ DocumentationAnnotationWarning: <root>/docs_names: /paths/~1users~1{id}/get/para
             "description": "Done."
           }
         }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Tag": {
+        "$anchor": "tag",
+        "type": "string"
       }
     }
   }

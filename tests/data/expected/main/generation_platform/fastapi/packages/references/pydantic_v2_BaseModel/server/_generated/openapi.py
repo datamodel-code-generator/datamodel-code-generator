@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any
 from .._runtime.server.openapi import serve_openapi
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from fastapi import FastAPI
 
 _TEXT = (
@@ -95,34 +97,7 @@ _TEXT = (
     '   }\n'
     '  },\n'
     '  "/owners": {\n'
-    '   "get": {\n'
-    '    "operationId": "listOwners",\n'
-    '    "security": [\n'
-    '     {\n'
-    '      "metadata_key": []\n'
-    '     }\n'
-    '    ],\n'
-    '    "parameters": [\n'
-    '     {\n'
-    '      "$ref": "#/components/parameters/Limit"\n'
-    '     }\n'
-    '    ],\n'
-    '    "responses": {\n'
-    '     "200": {\n'
-    '      "description": "The owners.",\n'
-    '      "content": {\n'
-    '       "application/json": {\n'
-    '        "schema": {\n'
-    '         "type": "array",\n'
-    '         "items": {\n'
-    '          "type": "string"\n'
-    '         }\n'
-    '        }\n'
-    '       }\n'
-    '      }\n'
-    '     }\n'
-    '    }\n'
-    '   }\n'
+    '   "$ref": "#/components/pathItems/Owners"\n'
     '  }\n'
     ' },\n'
     ' "components": {\n'
@@ -254,6 +229,38 @@ _TEXT = (
     '    }\n'
     '   }\n'
     '  },\n'
+    '  "pathItems": {\n'
+    '   "Owners": {\n'
+    '    "get": {\n'
+    '     "operationId": "listOwners",\n'
+    '     "security": [\n'
+    '      {\n'
+    '       "metadata_key": []\n'
+    '      }\n'
+    '     ],\n'
+    '     "parameters": [\n'
+    '      {\n'
+    '       "$ref": "#/components/parameters/Limit"\n'
+    '      }\n'
+    '     ],\n'
+    '     "responses": {\n'
+    '      "200": {\n'
+    '       "description": "The owners.",\n'
+    '       "content": {\n'
+    '        "application/json": {\n'
+    '         "schema": {\n'
+    '          "type": "array",\n'
+    '          "items": {\n'
+    '           "type": "string"\n'
+    '          }\n'
+    '         }\n'
+    '        }\n'
+    '       }\n'
+    '      }\n'
+    '     }\n'
+    '    }\n'
+    '   }\n'
+    '  },\n'
     '  "schemas": {\n'
     '   "Pet": {\n'
     '    "type": "object",\n'
@@ -282,6 +289,11 @@ def document() -> dict[str, Any]:
     return loaded
 
 
-def serve_source_openapi(app: FastAPI, *, prefix: str = "") -> None:
-    """Serve the source document, paths under prefix, instead of FastAPI's; read on first request."""
-    serve_openapi(app, document, prefix=prefix)
+def serve_source_openapi(
+    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None
+) -> None:
+    """Serve the source document instead of FastAPI's, read on its first request.
+
+    Its paths take `prefix`, and the FastAPI settings in `metadata`, such as `title`, replace its own.
+    """
+    serve_openapi(app, document, prefix=prefix, metadata=metadata)
