@@ -1,61 +1,31 @@
 # session-encoding-3.0.3
 render pydantic_v2.BaseModel schemas
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render pydantic_v2.BaseModel paths
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render pydantic_v2.BaseModel api
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render pydantic_v2.dataclass schemas
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render pydantic_v2.dataclass paths
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render pydantic_v2.dataclass api
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render dataclasses.dataclass schemas
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render dataclasses.dataclass paths
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render dataclasses.dataclass api
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render typing.TypedDict schemas
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render typing.TypedDict paths
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render typing.TypedDict api
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render msgspec.Struct schemas
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render msgspec.Struct paths
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
 render msgspec.Struct api
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content has no builtin encoding
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
