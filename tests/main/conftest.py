@@ -348,7 +348,16 @@ def _assert_python_module_importable(path: Path, module_name: str, attribute: st
         if attribute is not None and not hasattr(module, attribute):  # pragma: no cover
             pytest.fail(f"Expected generated module {module_name!r} to define {attribute!r}")
     finally:
-        sys.modules.pop(module_name, None)
+        _forget_generated_package(module_name)
+
+
+def _forget_generated_package(package_name: str) -> dict[str, Any]:
+    """Remove a generated package and every module below it from the module cache, returning what it removed."""
+    module_prefix = f"{package_name}."
+    return {
+        name: sys.modules.pop(name)
+        for name in [name for name in sys.modules if name == package_name or name.startswith(module_prefix)]
+    }
 
 
 @contextmanager
@@ -356,13 +365,7 @@ def _generated_package_module(output_path: Path, module_path: str) -> Generator[
     """Temporarily import a generated package module without leaking module cache state."""
     package_name = output_path.name
     module_name = f"{package_name}.{module_path}" if module_path else package_name
-    module_prefix = f"{package_name}."
-    previous_modules = {
-        name: module for name, module in sys.modules.items() if name == package_name or name.startswith(module_prefix)
-    }
-    for name in list(sys.modules):
-        if name == package_name or name.startswith(module_prefix):
-            sys.modules.pop(name, None)
+    previous_modules = _forget_generated_package(package_name)
 
     parent_directory = str(output_path.parent)
     sys.path.insert(0, parent_directory)
@@ -371,8 +374,7 @@ def _generated_package_module(output_path: Path, module_path: str) -> Generator[
         yield importlib.import_module(module_name)
     finally:
         sys.path.remove(parent_directory)
-        for name in [name for name in sys.modules if name == package_name or name.startswith(module_prefix)]:
-            sys.modules.pop(name, None)
+        _forget_generated_package(package_name)
         sys.modules.update(previous_modules)
 
 
@@ -1248,6 +1250,8 @@ def _generated_output_import_code(output_path: Path) -> str:
         import sys
         from pathlib import Path
 
+        imported_packages = []
+
 
         def _import_file(path, module_name):
             parent_directory = str(path.parent)
@@ -1269,6 +1273,7 @@ def _generated_output_import_code(output_path: Path) -> str:
             package_path = parent_directory / package_name
             parent_directory_value = str(parent_directory)
             imported_modules = []
+            imported_packages.append(package_name)
             sys.path.insert(0, parent_directory_value)
             try:
                 spec = importlib.util.spec_from_file_location(
@@ -1368,7 +1373,12 @@ def _import_generated_output(output_path: Path) -> None:
     start_time = time.perf_counter()
     try:
         if not _try_import_generated_output_in_subinterpreter(output_path):
-            exec(_generated_output_import_code(output_path), {})
+            namespace: dict[str, Any] = {}
+            try:
+                exec(_generated_output_import_code(output_path), namespace)
+            finally:
+                for package_name in namespace.get("imported_packages", ()):
+                    _forget_generated_package(package_name)
         _validation_stats.record_exec(time.perf_counter() - start_time)
     except Exception as exception:  # pragma: no cover
         _validation_stats.record_error(str(output_path), f"{type(exception).__name__}: {exception}")

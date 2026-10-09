@@ -252,6 +252,19 @@
       {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
     ]
   },
+  "nested-models-symlink": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "alias/models.py"},
+    "config": {"model_package": "example.server.models"},
+    "steps": [
+      {"mkdir": "server"},
+      {"symlink": ["alias", "server"]},
+      {"chmod": ["server", "0555"]},
+      {"render": {}},
+      {"chmod": ["server", "0755"]},
+      {"leftovers": null}
+    ]
+  },
   "nested-package": {
     "input": {"path": "modular.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "models"},

@@ -214,6 +214,11 @@ class _Scenario:
         (self.root / path).chmod(int(mode, 8))
         self.lines.append(f"chmod {path} {mode}")
 
+    def symlink(self, value: list[str]) -> None:
+        link, target = value
+        (self.root / link).symlink_to(target, target_is_directory=True)
+        self.lines.append(f"symlink {link} -> {target}")
+
     def file_modes(self, paths: list[str]) -> None:
         for path in paths:
             self.lines.append(f"mode {path}: {(self.root / path).stat().st_mode & 0o777:04o}")
