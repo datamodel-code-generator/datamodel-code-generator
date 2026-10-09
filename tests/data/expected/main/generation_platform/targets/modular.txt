@@ -1,21 +1,20 @@
 # modular
-render
-  new models/__init__.py
-  new models/pets.py
-  new models/store.py
-  new server/__init__.py
-  new server/application.py
-  new server/routers/__init__.py
-  new server/routers/store.py
-  new server/_generated/__init__.py
-  new server/_generated/contract.py
-  new server/_generated/openapi.py
-  new server/services.py
-  new server/README.md
-  new server/py.typed
-  5 runtime modules ['new']
+check
+  MISSING: models/__init__.py (should be generated)
+  MISSING: models/pets.py (should be generated)
+  MISSING: models/store.py (should be generated)
+  MISSING: server/__init__.py (should be generated)
+  MISSING: server/_generated/__init__.py (should be generated)
+  MISSING: server/_generated/contract.py (should be generated)
+  MISSING: server/_generated/openapi.py (should be generated)
+  MISSING: server/application.py (should be generated)
+  MISSING: server/routers/__init__.py (should be generated)
+  MISSING: server/routers/store.py (should be generated)
+  MISSING: server/services.py (should be generated)
+  MISSING: server/README.md (file does not exist but should be generated)
+  MISSING: server/py.typed (file does not exist but should be generated)
+  5 runtime modules ['MISSING']
 generate
-  returned None
 tree
   models/__init__.py
   models/pets.py
@@ -31,18 +30,4 @@ tree
   server/routers/store.py
   server/services.py
   5 runtime modules ['present']
-render
-  unchanged models/__init__.py
-  unchanged models/pets.py
-  unchanged models/store.py
-  unchanged server/__init__.py
-  unchanged server/application.py
-  unchanged server/routers/__init__.py
-  unchanged server/routers/store.py
-  unchanged server/_generated/__init__.py
-  unchanged server/_generated/contract.py
-  unchanged server/_generated/openapi.py
-  unchanged server/services.py
-  unchanged server/README.md
-  unchanged server/py.typed
-  5 runtime modules ['unchanged']
+check

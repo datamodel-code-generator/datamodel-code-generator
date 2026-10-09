@@ -1,4 +1,4 @@
-"""Generate the FastAPI target through the public entry points: settings, models, and written files."""
+"""Generate the FastAPI target from the command line: check, publish, and overwrite models and the package."""
 
 from __future__ import annotations
 
@@ -58,30 +58,39 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "python-floor",
     ],
 )
-def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Generate models once, plan target files, and write them like model output: overwrite, never delete."""
     expected = f"{case}.txt"
     if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / expected)
 
 
 @pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
-def test_target_render_python_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_python_runtime(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Refuse to render a target on a Python older than every target supports."""
     monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
-    assert_output(target_render_report("python-runtime", tmp_path, monkeypatch), EXPECTED / "python-runtime.txt")
+    assert_output(
+        target_render_report("python-runtime", tmp_path, monkeypatch, capsys), EXPECTED / "python-runtime.txt"
+    )
 
 
-def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_timestamp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Head every Python file with the configured lines and one batch timestamp, then encode it."""
     with freeze_time("2026-09-25 12:00:00"):
-        assert_output(target_render_report("format", tmp_path, monkeypatch), EXPECTED / "format.txt")
+        assert_output(target_render_report("format", tmp_path, monkeypatch, capsys), EXPECTED / "format.txt")
 
 
 def test_target_render_http(
     local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Record URL documents by origin and content, merging equal documents read from one origin."""
@@ -90,14 +99,18 @@ def test_target_render_http(
     for route, path in routes.items():
         _SchemaHandler.routes[route] = (200, {"content-type": "application/json"}, path.read_bytes())
     try:
-        assert_output(target_render_report("http", tmp_path, monkeypatch, local_http_server), EXPECTED / "http.txt")
+        assert_output(
+            target_render_report("http", tmp_path, monkeypatch, capsys, local_http_server), EXPECTED / "http.txt"
+        )
     finally:
         for route in routes:
             del _SchemaHandler.routes[route]
 
 
 @pytest.mark.abnormal_path("staging the remote reference lock fails only on an I/O error")
-def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_lock_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Propagate a failure to stage the remote lock update after releasing the accepted sources."""
 
     def fail(*_args: object) -> None:
@@ -105,7 +118,7 @@ def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         raise OSError(msg)
 
     monkeypatch.setattr(RemoteReferenceLock, "stage", fail)
-    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch), EXPECTED / "lock-failure.txt")
+    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch, capsys), EXPECTED / "lock-failure.txt")
 
 
 def _failing(original: Callable[..., None], failures: dict[int, OSError], destination: str) -> Callable[..., None]:
@@ -120,7 +133,9 @@ def _failing(original: Callable[..., None], failures: dict[int, OSError], destin
 
 
 @pytest.mark.abnormal_path("publishing fails only on an I/O error such as a full disk")
-def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_generate_rollback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Undo the models, the package, the metadata and the lock together, and discard the staged lock update."""
     discarded: list[bool] = []
     discard, failure = RemoteReferenceLock.discard_stage, OSError("No space left on device")
@@ -135,7 +150,7 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         "_replace_source",
         _failing(_failing(_publication._replace_source, {0: failure}, "remote.lock"), {2: failure}, "models.json"),
     )
-    report = target_render_report("publish-failure", tmp_path, monkeypatch)
+    report = target_render_report("publish-failure", tmp_path, monkeypatch, capsys)
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
 
 
@@ -144,7 +159,7 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 )
 @pytest.mark.abnormal_path("a rename fails with EXDEV only between filesystems, which needs a mounted output")
 def test_target_generate_mount_points(
-    case: str, mounted: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    case: str, mounted: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write into output directories that are mount points: each file is staged inside the directory it goes to.
 
@@ -162,7 +177,7 @@ def test_target_generate_mount_points(
         replace(file, *args)
 
     monkeypatch.setattr(_publication, "_replace_source", replaced)
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
 
 
 @pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")
@@ -199,23 +214,28 @@ def test_target_jobs_rollback(
 
 
 @pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
-def test_target_render_nested_models_symlink(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_nested_models_symlink(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Render models written through a symlink to the target directory without staging anything inside it.
 
     The target directory is read-only, so a private directory created there would fail the render.
     """
     assert_output(
-        target_render_report("nested-models-symlink", tmp_path, monkeypatch), EXPECTED / "nested-models-symlink.txt"
+        target_render_report("nested-models-symlink", tmp_path, monkeypatch, capsys),
+        EXPECTED / "nested-models-symlink.txt",
     )
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
-def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_generate_modes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Create new files with the umask default, as model output does, while preserving replacement permissions."""
     mask = os.umask(0o027)
     try:
         assert_output(
-            target_render_report("publication-modes", tmp_path, monkeypatch), EXPECTED / "publication-modes.txt"
+            target_render_report("publication-modes", tmp_path, monkeypatch, capsys), EXPECTED / "publication-modes.txt"
         )
     finally:
         os.umask(mask)

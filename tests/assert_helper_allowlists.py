@@ -101,12 +101,7 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "abnormal-e2e": (
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
     ),
-    "disguised-asserts": (
-        "disguised-assert:tests/data/python/target_generation.py::_Scenario.current",
-        "disguised-assert:tests/data/python/target_generation.py::_Scenario.generate",
-        "disguised-assert:tests/data/python/target_generation.py::_Scenario.relocate",
-        "disguised-assert:tests/data/python/target_generation.py::_Scenario.render",
-    ),
+    "disguised-asserts": (),
     "platform-helpers": (
         "data-logic:tests/data/python/client_allowreserved.py",
         "data-logic:tests/data/python/client_auth_errors.py",

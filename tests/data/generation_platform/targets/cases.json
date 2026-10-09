@@ -2,12 +2,7 @@
   "first-run": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {}},
-      {"generate": {}},
-      {"render": {}},
-      {"relocate": "elsewhere"}
-    ]
+    "steps": [{"check": {"exit": "DIFF"}}, {"generate": {}}, {"check": {}}, {"relocate": "elsewhere"}]
   },
   "overwrite": {
     "input": {"path": "api.yaml"},
@@ -15,16 +10,16 @@
     "steps": [
       {"write": ["server/routers/pets.py", "# Someone else's module.\n"]},
       {"write": ["server/.dcg-target-manifest.json", "{\"format\": 1}\n"]},
-      {"render": {}},
+      {"check": {"exit": "DIFF"}},
       {"generate": {}},
       {"write": ["server/extensions.py", "# User module.\n"]},
       {"write": ["server/services.py", "# Edited.\n"]},
       {"remove": "server/routers/store.py"},
-      {"render": {}},
+      {"check": {"exit": "DIFF"}},
       {"generate": {}},
       {"show": "server/extensions.py"},
       {"show": "server/.dcg-target-manifest.json"},
-      {"render": {}}
+      {"check": {"exit": "DIFF"}}
     ]
   },
   "stale": {
@@ -33,154 +28,176 @@
     "steps": [
       {"generate": {}},
       {"generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}},
-      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
+      {"check": {"exit": "DIFF", "model": {"openapi_include_paths": ["/pets", "/health"]}}}
     ]
   },
   "include-paths": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "openapi_include_paths": ["/pets"]},
     "steps": [
-      {"render": {}},
+      {"check": {"exit": "DIFF"}},
       {"generate": {}},
       {"show": "models.py"},
-      {"render": {"config": {"server_operation_names": {"/paths/~1store~1orders/get": "orders"}}}},
-      {"render": {"config": {"server_operation_names": {"/paths/~1pets/get": "pets"}}}},
-      {"remember": "shorthand"},
-      {"render": {"config": {"server_operation_names": {"spec/api.yaml#/paths/~1pets/get": "pets"}}}},
-      {"compare": "shorthand"},
-      {
-        "render": {
-          "config": {"server_operation_names": {"{root}/spec/api.yaml#/paths/~1pets/get": "pets"}}
-        }
-      },
-      {"compare": "shorthand"},
-      {"render": {"config": {"server_operation_names": {"spec/other.yaml#/paths/~1pets/get": "pets"}}}}
+      {"check": {"exit": "ERROR", "config": {"server_operation_names": {"/paths/~1store~1orders/get": "orders"}}}},
+      {"generate": {"config": {"server_operation_names": {"/paths/~1pets/get": "pets"}}}},
+      {"check": {"config": {"server_operation_names": {"spec/api.yaml#/paths/~1pets/get": "pets"}}}},
+      {"check": {"config": {"server_operation_names": {"{root}/spec/api.yaml#/paths/~1pets/get": "pets"}}}},
+      {"check": {"exit": "ERROR", "config": {"server_operation_names": {"spec/other.yaml#/paths/~1pets/get": "pets"}}}}
     ]
   },
   "path-items": {
     "input": {"path": "path-items.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {}},
-      {"render": {"model": {"openapi_include_paths": ["/store"]}}},
-      {"render": {"model": {"openapi_include_paths": ["/pets"]}}},
+      {"check": {"exit": "DIFF"}},
+      {"check": {"exit": "DIFF", "model": {"openapi_include_paths": ["/store"]}}},
+      {"check": {"exit": "DIFF", "model": {"openapi_include_paths": ["/pets"]}}},
       {"generate": {"model": {"openapi_include_paths": ["/pets"]}}},
       {"show": "server/routers/pets.py"}
     ]
   },
   "inputs": {
     "input": {"text": "inline.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
     "steps": [
+      {"check": {"exit": "DIFF", "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}}},
       {
-        "render": {
-          "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}
-        }
-      },
-      {"render": {"input": {"mapping": "inline.yaml"}, "model": {"input_file_type": "openapi"}}},
-      {
-        "render": {
+        "check": {
+          "exit": "ERROR",
           "input": {"path": "inline.yaml"},
           "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}
         }
       },
-      {"render": {"input": {"list": ["inline.yaml"]}}},
-      {"render": {"input": {"directory": "."}}},
-      {"render": {"model": {"input_file_type": "jsonschema"}}}
+      {"check": {"exit": "ERROR", "input": {"directory": "."}}},
+      {"check": {"exit": "ERROR", "model": {"input_file_type": "jsonschema"}}}
     ]
   },
   "validation": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
     "steps": [
-      {"render": {"model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
-      {"render": {"model": {"output_model_type": "pydantic_v2.dataclass"}}}
+      {"check": {"exit": "ERROR", "model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
+      {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass"}}}
     ]
   },
   "empty": {
     "input": {"path": "empty.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {}},
-      {"render": {"model": {"openapi_scopes": ["schemas"]}}}
-    ]
+    "steps": [{"check": {"exit": "DIFF"}}, {"check": {"exit": "ERROR", "model": {"openapi_scopes": ["schemas"]}}}]
   },
   "modular": {
     "input": {"path": "modular.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "models"},
-    "steps": [
-      {"render": {}},
-      {"generate": {}},
-      {"render": {}}
-    ]
+    "steps": [{"check": {"exit": "DIFF"}}, {"generate": {}}, {"check": {}}]
   },
   "references": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"server_primary_responses": {"#/paths/~1nope/get": {"status_code": 200}}}}},
+      {"check": {"exit": "ERROR", "config": {"server_primary_responses": {"#/paths/~1nope/get": {"status_code": 200}}}}},
       {
-        "render": {
-          "config": {
-            "server_primary_responses": {"spec/other.yaml#/paths/~1pets/get": {"status_code": 200}}
-          }
+        "check": {
+          "exit": "ERROR",
+          "config": {"server_primary_responses": {"spec/other.yaml#/paths/~1pets/get": {"status_code": 200}}}
         }
       },
-      {"render": {"config": {"server_operation_names": {"/paths/~1pets/get": "create_pet"}}}}
+      {"check": {"exit": "ERROR", "config": {"server_operation_names": {"/paths/~1pets/get": "create_pet"}}}}
     ]
   },
   "locks": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"generate": {"model": {"resolved_lock": "update"}}},
-      {"render": {"model": {"resolved_lock": "update"}}},
-      {"render": {"model": {"resolved_lock": "readonly"}}}
+      {"check": {"exit": "ERROR", "model": {"locked": true}}},
+      {"generate": {"model": {"update_lock": true}}},
+      {"check": {"model": {"locked": true}}},
+      {"check": {"model": {"update_lock": true}}}
     ]
   },
   "lock-failure": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
-    "steps": [
-      {"render": {}}
-    ]
+    "steps": [{"check": {"exit": "ERROR"}}]
   },
   "http": {
     "input": {"url": "api.json"},
     "model": {
       "openapi_scopes": ["api"],
       "input_file_type": "openapi",
-      "input_filename": "api.json",
       "allow_private_network": true,
       "allow_remote_refs": true
     },
-    "steps": [
-      {"render": {}}
-    ]
+    "steps": [{"check": {"exit": "DIFF"}}]
   },
   "publish": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"generate": {}},
-      {"tree": null},
-      {"generate": {}},
-      {"render": {}}
-    ]
+    "steps": [{"generate": {}}, {"tree": null}, {"generate": {}}, {"check": {}}]
   },
   "newlines": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]},
-      {"render": {}},
-      {"rewrite": ["\r\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]]},
+      {
+        "newlines": [
+          "models.py",
+          "server/__init__.py",
+          "server/services.py",
+          "server/README.md",
+          "server/py.typed",
+          "server/_runtime/server/__init__.py"
+        ]
+      },
+      {"check": {}},
+      {
+        "rewrite": [
+          "\r\n",
+          [
+            "models.py",
+            "server/__init__.py",
+            "server/services.py",
+            "server/README.md",
+            "server/py.typed",
+            "server/_runtime/server/__init__.py"
+          ]
+        ]
+      },
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]},
-      {"rewrite": ["\n", ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]]},
+      {
+        "newlines": [
+          "models.py",
+          "server/__init__.py",
+          "server/services.py",
+          "server/README.md",
+          "server/py.typed",
+          "server/_runtime/server/__init__.py"
+        ]
+      },
+      {
+        "rewrite": [
+          "\n",
+          [
+            "models.py",
+            "server/__init__.py",
+            "server/services.py",
+            "server/README.md",
+            "server/py.typed",
+            "server/_runtime/server/__init__.py"
+          ]
+        ]
+      },
       {"generate": {}},
-      {"newlines": ["models.py", "server/__init__.py", "server/services.py", "server/README.md", "server/py.typed", "server/_runtime/server/__init__.py"]}
+      {
+        "newlines": [
+          "models.py",
+          "server/__init__.py",
+          "server/services.py",
+          "server/README.md",
+          "server/py.typed",
+          "server/_runtime/server/__init__.py"
+        ]
+      }
     ]
   },
   "mount-points": {
@@ -195,39 +212,30 @@
       {"write": ["models/pets.py", "# Edited.\n"]},
       {"generate": {}},
       {"leftovers": null},
-      {"render": {}}
+      {"check": {}}
     ]
   },
   "nested-mount-point": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"mkdir": "server/routers"},
-      {"generate": {}},
-      {"tree": null},
-      {"leftovers": null}
-    ]
+    "steps": [{"mkdir": "server/routers"}, {"generate": {"exit": "ERROR"}}, {"tree": null}, {"leftovers": null}]
   },
   "publish-lock": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "lockfile": "locks/remote.lock", "update_lock": true},
-    "steps": [
-      {"generate": {}},
-      {"tree": null},
-      {"generate": {}}
-    ]
+    "steps": [{"generate": {}}, {"tree": null}, {"generate": {}}]
   },
   "collision": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"generate": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
-      {"generate": {"model": {"output": "server/__init__.py"}}},
-      {"generate": {"model": {"output": "server/routers"}}},
-      {"generate": {"model": {"output": "server/services.py/models.py"}}},
-      {"generate": {"model": {"output": "server/routers.py"}}},
-      {"generate": {"model": {"output": "server/services/models.py"}}},
-      {"generate": {"model": {"output": "server.py"}}}
+      {"generate": {"exit": "ERROR", "model": {"emit_model_metadata": "server/__INIT__.py"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server/__init__.py"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server/routers"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server/services.py/models.py"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server/routers.py"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server/services/models.py"}}},
+      {"generate": {"exit": "ERROR", "model": {"output": "server.py"}}}
     ]
   },
   "nested-models": {
@@ -235,11 +243,11 @@
     "model": {"openapi_scopes": ["api"], "output": "server/models.py"},
     "config": {"server_model_package": "example.server.models"},
     "steps": [
-      {"render": {}},
+      {"check": {"exit": "DIFF"}},
       {"generate": {}},
-      {"render": {}},
+      {"check": {}},
       {"generate": {"model": {"openapi_include_paths": ["/pets", "/health"]}}},
-      {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
+      {"check": {"exit": "DIFF", "model": {"openapi_include_paths": ["/pets", "/health"]}}}
     ]
   },
   "nested-models-symlink": {
@@ -250,7 +258,7 @@
       {"mkdir": "server"},
       {"symlink": ["alias", "server"]},
       {"chmod": ["server", "0555"]},
-      {"render": {}},
+      {"check": {"exit": "DIFF"}},
       {"chmod": ["server", "0755"]},
       {"leftovers": null}
     ]
@@ -258,20 +266,17 @@
   "nested-package": {
     "input": {"path": "modular.yaml"},
     "model": {"openapi_scopes": ["api"], "output": "models"},
-    "config": {"server_output": "models/server", "server_package": "example.models.server", "server_model_package": "example.models"},
-    "steps": [
-      {"generate": {}},
-      {"render": {}}
-    ]
+    "config": {
+      "server_output": "models/server",
+      "server_package": "example.models.server",
+      "server_model_package": "example.models"
+    },
+    "steps": [{"generate": {}}, {"check": {}}]
   },
   "directory": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"mkdir": "server/routers/pets.py"},
-      {"generate": {}},
-      {"tree": null}
-    ]
+    "steps": [{"mkdir": "server/routers/pets.py"}, {"generate": {"exit": "ERROR"}}, {"tree": null}]
   },
   "publish-failure": {
     "input": {"path": "api.yaml"},
@@ -282,29 +287,24 @@
       "update_lock": true
     },
     "steps": [
-      {"generate": {}},
+      {"generate": {"exit": "ERROR"}},
       {"tree": null},
       {"generate": {}},
-      {"generate": {"input": {"path": "contacts.yaml"}}},
+      {"generate": {"exit": "ERROR", "input": {"path": "contacts.yaml"}}},
       {"tree": null},
       {"leftovers": null},
-      {"render": {}}
+      {"check": {"exit": "ERROR"}}
     ]
   },
   "layout-embedded": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"generate": {}},
-      {"show": "server/routers/pets.py"}
-    ]
+    "steps": [{"generate": {}}, {"show": "server/routers/pets.py"}]
   },
   "model-dependencies": {
     "input": {"path": "contacts.yaml"},
     "model": {"openapi_scopes": ["schemas", "api"], "use_pendulum": true},
-    "steps": [
-      {"render": {}}
-    ]
+    "steps": [{"check": {"exit": "DIFF"}}]
   },
   "format": {
     "input": {"path": "api.yaml"},
@@ -329,337 +329,187 @@
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"model": {"custom_file_header": "# Café 漢", "encoding": "latin-1"}}},
-      {"render": {"model": {"custom_template_dir": "templates/broken"}}},
-      {"render": {"model": {"custom_template_dir": "templates/misplaced"}}},
-      {"render": {"model": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
+      {"check": {"exit": "ERROR", "model": {"custom_file_header": "# Café 漢", "encoding": "latin-1"}}},
+      {"check": {"exit": "DIFF", "model": {"custom_template_dir": "templates/broken"}}},
+      {"check": {"exit": "DIFF", "model": {"custom_template_dir": "templates/misplaced"}}},
+      {"check": {"exit": "DIFF", "model": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
   "python-floor": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.10"}}}
-    ]
+    "steps": [{"check": {"exit": "ERROR", "model": {"target_python_version": "3.10"}}}]
   },
   "python-runtime": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.11"}}}
-    ]
+    "steps": [{"check": {"exit": "ERROR", "model": {"target_python_version": "3.11"}}}]
   },
   "target-grammar-modern": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/modern"},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.12"}}}
-    ]
+    "steps": [{"check": {"exit": "DIFF", "model": {"target_python_version": "3.12"}}}]
   },
   "target-grammar-misplaced": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "custom_template_dir": "templates/misplaced"},
-    "steps": [
-      {"render": {"model": {"target_python_version": "3.12"}}}
-    ]
+    "steps": [{"check": {"exit": "DIFF", "model": {"target_python_version": "3.12"}}}]
   },
   "input-cycles": {
-    "input": {
-      "path": "input-cycle-dict.yaml"
-    },
-    "model": {
-      "openapi_scopes": [
-        "api"
-      ]
-    },
+    "input": {"path": "input-cycle-dict.yaml"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {
-        "render": {
-          "input": {
-            "path": "input-cycle-dict.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-dict.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-dict.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-dict.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-dict.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-dict.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-dict.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-dict.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-list.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-list.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-list.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-list.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-list.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-list.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-list.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-list.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-mutual.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-mutual.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-mutual.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-mutual.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-mutual.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-mutual.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-mutual.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-mutual.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      }
+      {"tree": null}
     ]
   },
   "input-aliases": {
-    "input": {
-      "path": "input-aliases.yaml"
-    },
-    "model": {
-      "openapi_scopes": [
-        "api"
-      ]
-    },
-    "steps": [
-      {
-        "render": {}
-      },
-      {
-        "generate": {}
-      },
-      {
-        "tree": null
-      }
-    ]
+    "input": {"path": "input-aliases.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [{"check": {"exit": "DIFF"}}, {"generate": {}}, {"tree": null}]
   },
   "input-cycle-reference": {
-    "input": {
-      "path": "input-cycle-reference.yaml"
-    },
-    "model": {
-      "openapi_scopes": [
-        "api"
-      ]
-    },
+    "input": {"path": "input-cycle-reference.yaml"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {
-        "render": {
-          "input": {
-            "path": "input-cycle-reference.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-reference.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-reference.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.BaseModel"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-reference.yaml"},
+          "model": {"output_model_type": "pydantic_v2.BaseModel"}
         }
       },
+      {"tree": null},
       {
-        "tree": null
-      },
-      {
-        "render": {
-          "input": {
-            "path": "input-cycle-reference.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+        "check": {
+          "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-reference.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      },
+      {"tree": null},
       {
         "generate": {
-          "input": {
-            "path": "input-cycle-reference.yaml"
-          },
-          "model": {
-            "output_model_type": "pydantic_v2.dataclass"
-          }
+          "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
+          "input": {"path": "input-cycle-reference.yaml"},
+          "model": {"output_model_type": "pydantic_v2.dataclass"}
         }
       },
-      {
-        "tree": null
-      }
+      {"tree": null}
     ]
   },
   "publication-modes": {
-    "input": {
-      "path": "api.yaml"
-    },
-    "model": {
-      "openapi_scopes": [
-        "api"
-      ]
-    },
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {
-        "chmod": [
-          ".",
-          "0750"
-        ]
-      },
-      {
-        "generate": {}
-      },
-      {
-        "file_modes": [
-          "models.py",
-          "server/__init__.py",
-          "server/README.md"
-        ]
-      },
-      {
-        "chmod": [
-          "models.py",
-          "0604"
-        ]
-      },
-      {
-        "generate": {
-          "input": {
-            "path": "contacts.yaml"
-          }
-        }
-      },
-      {
-        "file_modes": [
-          "models.py"
-        ]
-      }
+      {"chmod": [".", "0750"]},
+      {"generate": {}},
+      {"file_modes": ["models.py", "server/__init__.py", "server/README.md"]},
+      {"chmod": ["models.py", "0604"]},
+      {"generate": {"input": {"path": "contacts.yaml"}}},
+      {"file_modes": ["models.py"]}
     ]
   }
 }
