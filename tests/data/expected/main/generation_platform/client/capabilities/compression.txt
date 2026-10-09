@@ -11,7 +11,7 @@ copied runtime
   client/body_sources.py: 137
   client/client.py: 2160
   client/compression.py: 102
-  client/content.py: 101
+  client/content.py: 102
   client/errors.py: 317
   client/logical.py: 190
   client/media.py: 77
@@ -48,7 +48,7 @@ copied runtime
   protocols/streams.py: 1498
   protocols/values.py: 157
   protocols/writes.py: 288
-total 43 modules, 13807 lines
+total 43 modules, 13808 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

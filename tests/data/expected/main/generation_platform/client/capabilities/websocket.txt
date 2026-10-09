@@ -9,7 +9,7 @@ copied runtime
   client/__init__.py: 4
   client/auth.py: 320
   client/client.py: 2160
-  client/content.py: 101
+  client/content.py: 102
   client/errors.py: 317
   client/logical.py: 190
   client/media.py: 77
@@ -41,7 +41,7 @@ copied runtime
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/websocket.py: 942
-total 36 modules, 9907 lines
+total 36 modules, 9908 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

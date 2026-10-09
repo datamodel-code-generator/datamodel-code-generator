@@ -8,7 +8,7 @@ copied runtime
   __init__.py: 2
   client/__init__.py: 4
   client/client.py: 2160
-  client/content.py: 101
+  client/content.py: 102
   client/errors.py: 317
   client/logical.py: 190
   client/media.py: 77
@@ -38,7 +38,7 @@ copied runtime
   protocols/webhook_events.py: 280
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 106
-total 33 modules, 8146 lines
+total 33 modules, 8147 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

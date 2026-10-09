@@ -9,7 +9,7 @@ copied runtime
   client/__init__.py: 4
   client/auth.py: 320
   client/client.py: 2160
-  client/content.py: 101
+  client/content.py: 102
   client/errors.py: 317
   client/logical.py: 190
   client/media.py: 77
@@ -30,7 +30,7 @@ copied runtime
   model_codecs/native.py: 172
   model_codecs/parameters.py: 306
   model_codecs/unset.py: 26
-total 25 modules, 7230 lines
+total 25 modules, 7231 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py
