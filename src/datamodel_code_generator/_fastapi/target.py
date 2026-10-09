@@ -73,7 +73,7 @@ class FastAPITarget:
         )
         files = renderer.files()
         for problem in docs.problems:
-            output = shown(config.output, request.cwd).as_posix()
+            output = shown(config.output, request.shown_root).as_posix()
             warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
         return TargetRender(files=files, dependencies=_dependencies(plan, request.model_imports))
 

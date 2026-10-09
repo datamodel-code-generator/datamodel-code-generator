@@ -1109,10 +1109,13 @@ def test_perf_openapi_large_pydantic_v2_builtin(tmp_path: Path) -> None:
 
 
 @pytest.fixture(params=["client", "fastapi"])
-def target_render(request: pytest.FixtureRequest, tmp_path: Path, target_size: str) -> Callable[[], Any]:
-    """Prepare source and target configurations before benchmark timing."""
+def target_render(
+    request: pytest.FixtureRequest, tmp_path: Path, target_size: str, monkeypatch: pytest.MonkeyPatch
+) -> Callable[[], Any]:
+    """Prepare source and target configurations before benchmark timing, rendering from the temporary directory."""
     from tests.data.python.target_performance import target_render_call
 
+    monkeypatch.chdir(tmp_path)
     return target_render_call(request.param, target_size, tmp_path)
 
 

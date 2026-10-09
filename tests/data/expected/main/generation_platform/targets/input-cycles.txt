@@ -1,16 +1,15 @@
 # input-cycles
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/services.py
-  write target server/README.md
-  write target server/py.typed
-  4 runtime modules ['write']
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  4 runtime modules ['new']
 tree
 generate
   returned None
@@ -37,16 +36,15 @@ tree
   server/services.py
   4 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/untagged.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/services.py
-  write target server/README.md
-  unchanged target server/py.typed
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/untagged.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/services.py
+  changed server/README.md
+  unchanged server/py.typed
   4 runtime modules ['unchanged']
 tree
   server/README.md
@@ -84,17 +82,16 @@ tree
   server/services.py
   4 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/services.py
-  write target server/README.md
-  unchanged target server/py.typed
-  4 runtime modules ['write']
+  changed server/__init__.py
+  changed server/application.py
+  changed server/routers/__init__.py
+  changed server/routers/untagged.py
+  changed server/_generated/__init__.py
+  changed server/_generated/contract.py
+  changed server/services.py
+  changed server/README.md
+  unchanged server/py.typed
+  4 runtime modules ['changed']
 tree
   server/README.md
   server/__init__.py
@@ -131,16 +128,15 @@ tree
   server/services.py
   4 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/untagged.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/services.py
-  write target server/README.md
-  unchanged target server/py.typed
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/untagged.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/services.py
+  changed server/README.md
+  unchanged server/py.typed
   4 runtime modules ['unchanged']
 tree
   server/README.md
@@ -178,17 +174,16 @@ tree
   server/services.py
   4 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/services.py
-  write target server/README.md
-  unchanged target server/py.typed
-  4 runtime modules ['write']
+  changed server/__init__.py
+  changed server/application.py
+  changed server/routers/__init__.py
+  changed server/routers/untagged.py
+  changed server/_generated/__init__.py
+  changed server/_generated/contract.py
+  changed server/services.py
+  changed server/README.md
+  unchanged server/py.typed
+  4 runtime modules ['changed']
 tree
   server/README.md
   server/__init__.py
@@ -225,16 +220,15 @@ tree
   server/services.py
   4 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/untagged.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/services.py
-  write target server/README.md
-  unchanged target server/py.typed
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/untagged.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/services.py
+  changed server/README.md
+  unchanged server/py.typed
   4 runtime modules ['unchanged']
 tree
   server/README.md

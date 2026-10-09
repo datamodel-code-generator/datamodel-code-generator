@@ -180,7 +180,7 @@ The `server` response header belongs to the ASGI server, not to the application:
 
 ## Regenerating
 
-Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
 Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
 When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
 Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
@@ -260,7 +260,7 @@ The `server` response header belongs to the ASGI server, not to the application:
 
 ## Regenerating
 
-Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
 Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
 When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
 Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;

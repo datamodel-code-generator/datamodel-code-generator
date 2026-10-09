@@ -1,4 +1,4 @@
-"""Render FastAPI server targets from OpenAPI fixtures and report their files, diagnostics, and failures."""
+"""Generate FastAPI server targets from OpenAPI fixtures through generate() and report their files and failures."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ import shutil
 import warnings
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
-from typing import Any, TypeAlias, get_type_hints
+from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.fastapi import (
     FastAPIConfig,
@@ -22,7 +22,9 @@ from datamodel_code_generator.fastapi import (
     render_fastapi,
 )
 from datamodel_code_generator.format import Formatter
-from tests.data.python.client_generation import artifact_text
+
+if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
@@ -79,11 +81,27 @@ def _setting(value: object, root: Path) -> str:
             return repr(value)
 
 
+def server_options(case: dict[str, Any], package: str = PACKAGE, models: str = "models") -> dict[str, Any]:
+    """Return the generate() options that select the FastAPI server of a case, with its own server settings."""
+    return {
+        "generate_server": "fastapi",
+        "server_package": package,
+        "server_model_package": models,
+        **case.get("config", {}),
+    }
+
+
+def in_directory(root: Path) -> AbstractContextManager[object]:
+    """Run from root, importing `contextlib.chdir` only then, since it needs Python 3.11."""
+    from contextlib import chdir
+
+    return chdir(root)
+
+
 def _render(
     case: dict[str, Any], backend: str, root: Path, modules: Modules, *, builtin_sources: bool = False
 ) -> list[str]:
     model = {
-        "output": root / "models.py",
         "input_file_type": "openapi",
         "target_python_version": "3.11",
         "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
@@ -102,35 +120,31 @@ def _render(
     for name in case.get("files", ()):
         shutil.copy2(SOURCE / name, root / name)
     try:
-        project = render_fastapi(
-            source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
-        )
+        with in_directory(root):
+            files = generate(source, **model, **server_options(case))
     except Error as error:
         return [f"  Error: {error}"]
-    encoding = case.get("model", {}).get("encoding", "utf-8")
     lines: list[str] = []
-    files: list[str] = []
-    for artifact in project.artifacts:
-        path, content = artifact.path.relative_to(root), artifact.content or b""
-        line = f"  {artifact.action} {path.as_posix()}"
-        match path.suffix, path.parts:
+    shown: list[str] = []
+    for parts, text in files.items():
+        line = f"  {'/'.join(parts)}"
+        match Path(*parts).suffix, parts:
             case _, parts if "_runtime" in parts:
-                source = RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_bytes()
-                copied = content.replace(b"\r\n", b"\n").endswith(source.replace(b"\r\n", b"\n"))
-                line += f" ({'copied' if copied else 'changed'} runtime)"
+                source = RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_text(encoding="utf-8")
+                line += f" ({'copied' if text.endswith(source) else 'changed'} runtime)"
                 if backend in case.get("runtime", ()):
-                    modules[parts] = artifact_text(artifact, encoding)
+                    modules[parts] = text
             case ".py", parts:
                 if parts[0] != PACKAGE or backend in case.get(
                     "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
                 ):
-                    modules[parts] = artifact_text(artifact, encoding)
+                    modules[parts] = text
             case _:
-                files.append(f"  file {path.as_posix()}")
-                shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', artifact_text(artifact)))
-                files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
+                shown.append(f"  file {'/'.join(parts)}")
+                masked = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', text))
+                shown.extend(f"    | {item}" if item else "    |" for item in masked.splitlines())
         lines.append(line)
-    return [*lines, *files]
+    return [*lines, *shown]
 
 
 def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:

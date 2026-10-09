@@ -1,20 +1,20 @@
 # responses
 render pydantic_v2.BaseModel
-  write models.py
-  write server/__init__.py
-  write server/application.py
-  write server/routers/__init__.py
-  write server/routers/results.py
-  write server/routers/files.py
-  write server/_generated/__init__.py
-  write server/_generated/contract.py
-  write server/services.py
-  write server/README.md
-  write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/server/__init__.py (copied runtime)
-  write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/responses.py (copied runtime)
-  write server/py.typed
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/results.py
+  server/routers/files.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed
   file server/README.md
     | # Responses
     |
@@ -106,28 +106,28 @@ render pydantic_v2.BaseModel
     |
     | ## Regenerating
     |
-    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
     | Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
     | run it again when a new version of datamodel-code-generator changes them.
   file server/py.typed
 render pydantic_v2.dataclass
-  write models.py
-  write server/__init__.py
-  write server/application.py
-  write server/routers/__init__.py
-  write server/routers/results.py
-  write server/routers/files.py
-  write server/_generated/__init__.py
-  write server/_generated/contract.py
-  write server/services.py
-  write server/README.md
-  write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/server/__init__.py (copied runtime)
-  write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/responses.py (copied runtime)
-  write server/py.typed
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/results.py
+  server/routers/files.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed
   file server/README.md
     | # Responses
     |
@@ -219,7 +219,7 @@ render pydantic_v2.dataclass
     |
     | ## Regenerating
     |
-    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
     | Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
