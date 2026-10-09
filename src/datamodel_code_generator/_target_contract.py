@@ -409,8 +409,40 @@ class FieldUseBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class PartSchema:
+    """How the schema of a multipart member encodes its parts, by the types and formats it declares.
+
+    A member holds files when it is a binary string, or an array of them; it repeats as an array, one part for each
+    item; and its values, or its items', are text when it declares only scalar types and structured when it declares
+    an object or an array.
+    """
+
+    file: bool
+    repeated: bool
+    text: bool
+    structured: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PartFacts:
+    """How the schema of a multipart body encodes its parts, which its model's types do not say.
+
+    `object` says the schema declares an object, or no type; `members` gives each property's encoding by wire name,
+    and `extra` that of any other property: none when the schema allows no others, None when any value.
+    """
+
+    object: bool
+    members: tuple[tuple[str, PartSchema], ...]
+    extra: PartSchema | Literal["closed"] | None
+
+
+@dataclass(frozen=True, slots=True)
 class TypeUseBinding:
-    """Bind one actual source occurrence without inventing an unavailable type."""
+    """Bind one actual source occurrence without inventing an unavailable type.
+
+    `default` is the JSON boolean, number, or string default a parameter's schema declares, and `parts` what the
+    schema of a multipart body says of its parts.
+    """
 
     id: TypeUseId
     state: Literal["bound", "not_generated", "invalid"]
@@ -419,6 +451,8 @@ class TypeUseBinding:
     members: tuple[FieldUseBinding, ...] = ()
     producers: tuple[FieldSlot, ...] = ()
     schema: SourceLocation | None = None
+    default: LiteralScalar | None = None
+    parts: PartFacts | None = None
 
 
 @dataclass(frozen=True, slots=True)
