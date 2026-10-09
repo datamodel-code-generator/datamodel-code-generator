@@ -34,8 +34,6 @@ from tests.data.python.client_evolution import evolution
 from tests.data.python.client_fields import fields, optional_models
 from tests.data.python.client_headers import headers, native_boundaries
 from tests.data.python.client_hooks import hooks
-from tests.data.python.client_limiter_faults import limiter_faults
-from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_codec_backends, native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
@@ -876,8 +874,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
-    "limiters": ("pets", ("pydantic_v2.BaseModel",), limiters),
-    "limiter-faults": ("pets", ("pydantic_v2.BaseModel",), limiter_faults),
     "webhook-contracts": ("pets-protocols", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), webhook_errors),
     "protocol-contracts": ("pets-protocols", BACKENDS, protocol_contracts),

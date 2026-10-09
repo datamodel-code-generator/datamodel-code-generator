@@ -35,7 +35,6 @@
   phase pool overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
   option total_timeout overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
   option timeout type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='timeout') [field_path=('timeout',)] invalid_type
-  option limiter type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='limiter') [field_path=('limiter',)] invalid_type
   option clock type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock') [field_path=('clock',)] invalid_type
   timeout unset = TimeoutOptions(connect=UNSET, read=UNSET, write=UNSET, pool=UNSET)
   timeout zero = TimeoutOptions(connect=0.0, read=0.0, write=0.0, pool=0.0)
@@ -45,8 +44,7 @@
   removed option stream_idle_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_idle_timeout' []
   removed option stream_total_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_total_timeout' []
   seconds 0.0
-  limiter context fields=('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout') readonly=FrozenInstanceError notes []
-  slotted (False, False, False)
+  slotted (False, False)
   error SDKError() reason=None attempts=1 elapsed=2 request=None
   with response SDKError() safe=True
   error APITimeoutError(reason='phase_timeout') reason=phase_timeout attempts=0 elapsed=0.0 request=None
@@ -56,17 +54,12 @@
   response measurements attempts=3 elapsed=0.5
   hierarchy timeout=True
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
-  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
-  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'return')
+  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'timeout', 'total_timeout', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
+  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'timeout', 'total_timeout', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'return')
   hints Clock ('monotonic', 'time', 'random', 'return')
-  hints LimiterContext ('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout', 'return')
   hints SDKError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
   hints APIConnectionError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
   hints APITimeoutError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
-  hints Limiter.acquire ('context', 'return')
-  hints AsyncLimiter.acquire ('context', 'return')
-  hints Permit.release ('return',)
-  hints AsyncPermit.release ('return',)
   native timeout {'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}
   > GET https://example.com/default
     [host: example.com, accept-encoding: gzip, deflate] b''
