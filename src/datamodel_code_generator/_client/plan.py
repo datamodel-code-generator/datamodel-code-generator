@@ -24,7 +24,7 @@ from datamodel_code_generator._client.naming import (
     pascal,
     snake,
 )
-from datamodel_code_generator._client.security import SecurityPlanner
+from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._codec_type_source import static_scalar
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
@@ -283,6 +283,7 @@ class ClientPlan:
     operations: tuple[OperationSpec, ...]
     resources: tuple[ResourceSpec, ...]
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
+    credentials: tuple[CredentialSpec, ...] = ()
 
     @property
     def roots(self) -> tuple[ResourceSpec, ...]:
@@ -411,8 +412,11 @@ class Planner:
         specs = tuple(starmap(self.operation, enumerate(self.request.operations)))
         self.raise_problems()
         resources = self.resources(specs)
+        credentials = self.security.credentials(spec.security for spec in specs)
         self.raise_problems()
-        return ClientPlan(operations=specs, resources=resources, security_schemes=self.security.root)
+        return ClientPlan(
+            operations=specs, resources=resources, security_schemes=self.security.root, credentials=credentials
+        )
 
     def operation(self, index: int, operation: OperationContract) -> OperationSpec:
         """Plan one operation's names, arguments, media, responses, and servers."""

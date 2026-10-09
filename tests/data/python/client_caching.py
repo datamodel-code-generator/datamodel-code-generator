@@ -145,8 +145,8 @@ class Caching:
     def __init__(self, package: ModuleType) -> None:
         """Import the modules the scenarios use."""
         self.package = package
-        self.options, self.protocols, self.errors, self.auth = (
-            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors", "auth")
+        self.options, self.protocols, self.errors = (
+            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors")
         )
 
     def user_id(self, value: int) -> object:
@@ -581,14 +581,15 @@ class AsyncEvents(Events):
         Events.on_event(self, event)
 
 
-class _Signer:
-    def __init__(self, auth: ModuleType) -> None:
-        self.capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), ())
-        self.fields = auth.SignatureFields((("X-Signature", "signed"),), ())
+class _Bearer(httpx2.Auth):
+    """A caller's own native Auth placing a bearer token."""
 
-    def sign(self, request: object) -> object:
-        del request
-        return self.fields
+    def __init__(self, token: str) -> None:
+        self.token = token
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        request.headers["Authorization"] = f"Bearer {self.token}"
+        yield request
 
 
 def cache_stores(package: ModuleType, lines: list[str]) -> None:
@@ -864,21 +865,21 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
 
 def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
     """Key entries by credential partition and auth, refusing authenticated use without a partition or a match."""
-    package, protocols, options, auth = cache.package, cache.protocols, cache.options, cache.auth
+    package, protocols, options = cache.package, cache.protocols, cache.options
     store = protocols.MemoryCacheStore()
-    token = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("token"))})
+    token = {"bearer": "token"}
 
-    def client(partition: str | None, config: object = token, **stores: object) -> Any:
+    def client(partition: str | None, credentials: dict[str, object] = token, **stores: object) -> Any:
         security = None if partition is None else protocols.ProtocolSecurityContext(credential_partition=partition)
         protocol = options.ProtocolClientOptions(
             security=security, cache_stores=stores or {"secure.profile": store, "users.profile": store}
         )
-        return package.Client(http_client=native, options=options.ClientOptions(auth=config, protocols=protocol))
+        return package.Client(http_client=native, options=options.ClientOptions(protocols=protocol), **credentials)
 
     secure_user = argument(package, "getSecureUser", "path", "userId", 1)
     with client(None) as anonymous:
         fetched(lines, "no partition", lambda: anonymous.protocols.secure.profile.fetch(user_id=secure_user))
-    with client("tenant-a", None) as unauthenticated:
+    with client("tenant-a", {}) as unauthenticated:
         fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=secure_user))
     exchange.respond(
         user(1, etag='"t"', **{"cache-control": "max-age=60"}),
@@ -900,9 +901,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         )
         fetched(lines, "anonymous helper same tenant", lambda: same.protocols.users.profile.fetch(user_id=public))
         fetched(lines, "anonymous helper other tenant", lambda: other.protocols.users.profile.fetch(user_id=public))
-    alice, bob = (
-        auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob")
-    )
+    alice, bob = ({"bearer": name} for name in ("alice", "bob"))
     two = argument(package, "getSecureUser", "path", "userId", 2)
     varying = {"cache-control": "max-age=60", "vary": "Authorization"}
     exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
@@ -910,7 +909,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "alice varying on authorization", lambda: first.protocols.secure.profile.fetch(user_id=two))
         fetched(lines, "bob in the same partition", lambda: second.protocols.secure.profile.fetch(user_id=two))
         fetched(lines, "alice again", lambda: first.protocols.secure.profile.fetch(user_id=two))
-        other_auth = options.RequestOptions(auth=bob)
+        other_auth = options.RequestOptions(auth=_Bearer("bob"))
         view = first.with_options(other_auth)
         fetched(lines, "view with other auth", lambda: view.protocols.secure.profile.fetch(user_id=two))
         fetched(
@@ -938,31 +937,22 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         forged = service.with_options(cache.headers(Authorization="Bearer mallory")).protocols.secure.profile
         fetched(lines, "view patching the bound authorization", lambda: forged.fetch(user_id=four))
     exchange.respond(user(44, "alice", **fresh), user(44, "bob", **fresh))
-    with client("tenant-a", None, **{"carts.current": store}) as shopper:
+    with client("tenant-a", {}, **{"carts.current": store}) as shopper:
         carts = shopper.protocols.carts.current
         for label, cart in (("alice cart", "alice"), ("bob cart", "bob"), ("alice cart again", "alice")):
             fetched(lines, label, lambda cart=cart: carts.fetch(cart=cache.cart(cart)))
-    signed_vary = {"cache-control": "max-age=60", "vary": "X-Signature"}
-    exchange.respond(user(3, "first", **signed_vary), user(3, "second", **signed_vary))
-    three = argument(package, "getSecureUser", "path", "userId", 3)
-    signing = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("alice"))}, signers=(_Signer(auth),))
-    with client("tenant-a", signing) as signer:
-        fetched(lines, "vary on a signed header", lambda: signer.protocols.secure.profile.fetch(user_id=three))
-        fetched(lines, "vary on a signed header again", lambda: signer.protocols.secure.profile.fetch(user_id=three))
     failing = Recording(protocols.MemoryCacheStore(), lines)
-    secret = auth.StaticCredentialProvider(_runtime(package, "client.auth").ApiKeyCredential("secret"))
-    with _runtime(package, "client.grants").ClientCredentialsProvider(
-        "https://auth.example.com/token", client_id="c", client_secret=secret, audience="api"
-    ) as oauth:
-        signed = auth.AuthConfig({"bearer": oauth}, signers=(_Signer(auth),))
-        with client("tenant-a", signed, **{"secure.profile": failing}) as granted:
-            failing.faults["get"] = OSError("down")
-            fetched(lines, "granted and signed", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
+    oauth = importlib.import_module(f"{package.__name__}.auth").OauthClientCredentials(
+        client_id="c", client_secret="secret", audience="api"
+    )
+    with client("tenant-a", {"bearer": oauth}, **{"secure.profile": failing}) as granted:
+        failing.faults["get"] = OSError("down")
+        fetched(lines, "granted", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
 
 
 async def _async_stores(cache: Caching, lines: list[str]) -> None:
     """Map an asynchronous store's failures and results as the synchronous ones are mapped."""
-    package, protocols, options, auth = cache.package, cache.protocols, cache.options, cache.auth
+    package, protocols, options = cache.package, cache.protocols, cache.options
     exchange = Exchange(lines)
     store = AsyncRecording(protocols.MemoryCacheStore(), lines)
     settings = options.ClientOptions(
@@ -1002,7 +992,6 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async delete result", lambda: helper.fetch(user_id=twenty))
     fresh = {"cache-control": "max-age=60"}
     secure_user = argument(package, "getSecureUser", "path", "userId", 1)
-    token = auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(auth.AccessToken("token"))})
     partitioned = options.ProtocolClientOptions(
         security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
         cache_stores={"secure.profile": protocols.AsyncMemoryCacheStore()},
@@ -1011,7 +1000,7 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     async with (
         exchange.async_client() as native,
         package.AsyncClient(
-            http_client=native, options=options.ClientOptions(auth=token, protocols=partitioned)
+            http_client=native, options=options.ClientOptions(protocols=partitioned), bearer="token"
         ) as service,
     ):
         delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
@@ -1020,18 +1009,19 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=secure_user))
     failing = AsyncRecording(protocols.MemoryCacheStore(), lines)
     failing.faults["get"] = OSError("down")
-    secret = auth.AsyncStaticCredentialProvider(_runtime(package, "client.auth").ApiKeyCredential("secret"))
-    oauth = _runtime(package, "client.grants").AsyncClientCredentialsProvider(
-        "https://auth.example.com/token", client_id="c", client_secret=secret
+    oauth = importlib.import_module(f"{package.__name__}.auth").OauthClientCredentials(
+        client_id="c", client_secret="secret"
     )
     protocol = options.ProtocolClientOptions(
         security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
         cache_stores={"secure.profile": failing},
     )
-    config = options.ClientOptions(auth=auth.AuthConfig({"bearer": oauth}), protocols=protocol)
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as granted:
+    config = options.ClientOptions(protocols=protocol)
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, options=config, bearer=oauth) as granted,
+    ):
         await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
-    await oauth.aclose()
 
 
 def cache_backends(package: ModuleType, lines: list[str]) -> None:

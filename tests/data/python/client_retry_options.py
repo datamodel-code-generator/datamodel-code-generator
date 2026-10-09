@@ -469,16 +469,6 @@ def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) 
             )
 
 
-class _KeySigner:
-    """A signer that claims the idempotency key header, which the call refuses before signing."""
-
-    def __init__(self, auth: ModuleType) -> None:
-        self.capabilities = auth.SignerCapabilities((), ("Idempotency-Key",), ())
-
-    def sign(self, request: object) -> object:
-        return request
-
-
 def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     observed: list[str | None] = []
 
@@ -505,9 +495,6 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
                 options=options.RequestOptions(idempotency_key=options.IdempotencyKey("unbound"))
             ),
         )
-        auth = importlib.import_module(f"{package.__name__}.auth")
-        signing = options.RequestOptions(auth=auth.AuthConfig({}, send_on_anonymous=True, signers=(_KeySigner(auth),)))
-        record(lines, "signer claiming the key header", lambda: api.retry.post_keyed(options=signing))
     lines.append(
         f"  automatic keys count={len(observed)} same retry={observed[0] == observed[1]}"
         f" fresh call={observed[1] != observed[2]} suppressed={observed[3] is None}"

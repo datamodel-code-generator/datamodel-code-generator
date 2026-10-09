@@ -117,8 +117,7 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  supplied URL without the signer checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
-  supplied URL under its signer checkpoint='https://api.example.com/v1/users?cursor=a' sig kept=False
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -294,8 +293,7 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  supplied URL without the signer checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
-  supplied URL under its signer checkpoint='https://api.example.com/v1/users?cursor=a' sig kept=False
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -471,8 +469,7 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  supplied URL without the signer checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
-  supplied URL under its signer checkpoint='https://api.example.com/v1/users?cursor=a' sig kept=False
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -648,8 +645,7 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  supplied URL without the signer checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
-  supplied URL under its signer checkpoint='https://api.example.com/v1/users?cursor=a' sig kept=False
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'
@@ -825,8 +821,7 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  supplied URL without the signer checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
-  supplied URL under its signer checkpoint='https://api.example.com/v1/users?cursor=a' sig kept=False
+  supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"query":"original","cursor":"start"}'

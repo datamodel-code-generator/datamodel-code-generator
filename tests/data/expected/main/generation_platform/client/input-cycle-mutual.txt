@@ -5,37 +5,37 @@ render pydantic_v2.BaseModel
   runtime files 0
 generate pydantic_v2.BaseModel
   accepted
-  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 38
+  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 34
 render pydantic_v2.dataclass
   accepted
   files []
   runtime files 0
 generate pydantic_v2.dataclass
   accepted
-  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 38
+  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 34
 render dataclasses.dataclass
   accepted
   files []
   runtime files 0
 generate dataclasses.dataclass
   accepted
-  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 38
+  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 34
 render typing.TypedDict
   accepted
   files []
   runtime files 0
 generate typing.TypedDict
   accepted
-  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 38
+  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 34
 render msgspec.Struct
   accepted
   files []
   runtime files 0
 generate msgspec.Struct
   accepted
-  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 38
+  files ['client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 34

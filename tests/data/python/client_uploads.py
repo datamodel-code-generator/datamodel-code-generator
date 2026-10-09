@@ -306,14 +306,18 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_file_terminal(harness, lines))
 
 
-def _file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None) -> None:
+def _file_terminal(
+    harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None, credentials: Any = None
+) -> None:
     """Keep a source whose size changed terminal even after its content is restored."""
     lines.append("file source change remains terminal")
     exchange, server = Exchange(lines), _Server()
     with (
         exchange.client() as native,
         harness.package.Client(
-            http_client=native, options=harness.client_options() if settings is None else settings
+            http_client=native,
+            options=harness.client_options() if settings is None else settings,
+            **(credentials or {}),
         ) as api,
     ):
         source = io.BytesIO(_CONTENT)
@@ -339,14 +343,18 @@ def _file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None,
         lines.append(f"  {server.stored('u1')}")
 
 
-async def _async_file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None) -> None:
+async def _async_file_terminal(
+    harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None, credentials: Any = None
+) -> None:
     """Keep an asyncio upload whose source's size changed terminal even after its content is restored."""
     lines.append("async file source change remains terminal")
     exchange, server = Exchange(lines), _Server()
     async with (
         exchange.async_client() as native,
         harness.package.AsyncClient(
-            http_client=native, options=harness.client_options() if settings is None else settings
+            http_client=native,
+            options=harness.client_options() if settings is None else settings,
+            **(credentials or {}),
         ) as api,
     ):
         source = io.BytesIO(_CONTENT)
@@ -1134,18 +1142,16 @@ class _CompletionTransport(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
 
 
 def _completion_provider(harness: _Uploads, token: _CompletionTransport, *, asynchronous: bool = False) -> Any:
+    """Return the credentials of a client whose OAuth tokens come through the token transport."""
     import importlib
 
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    kind = auth.AsyncClientCredentialsProvider if asynchronous else auth.ClientCredentialsProvider
-    secret = auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
-    provider = kind(
-        "https://auth.example.com/token",
+    provider = auth.OauthClientCredentials(
         client_id="upload-control",
-        client_secret=secret(auth.ApiKeyCredential("control")),
+        client_secret="control",
         http_client=(httpx2.AsyncClient if asynchronous else httpx2.Client)(transport=token),
     )
-    return provider, harness.options.ClientOptions(auth=auth.AuthConfig({"oauth": provider}))
+    return {"oauth": provider}
 
 
 def _closed(*transports: _CompletionTransport) -> bool:
@@ -1158,9 +1164,9 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
 
     harness = _Uploads(package)
     token, resource = _CompletionTransport(token=True), _CompletionTransport()
-    provider, settings = _completion_provider(harness, token)
+    credentials = _completion_provider(harness, token)
     native = httpx2.Client(transport=resource)
-    api = package.Client(http_client=native, options=settings)
+    api = package.Client(http_client=native, **credentials)
     source = b""
     handle = api.protocols.files.finish.start(source, tus_resumable=harness.tus)
     with ThreadPoolExecutor(max_workers=1) as executor:
@@ -1173,27 +1179,21 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
         record(lines, "sync run outlasting the close", lambda: work.result(timeout=30))
     lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")
     record(lines, "start after the close", lambda: api.protocols.files.finish.start(source, tus_resumable=harness.tus))
-    with package.Client(http_client=native, options=settings) as fresh:
+    with package.Client(http_client=native, **credentials) as fresh:
         result = fresh.protocols.files.finish.start(source, tus_resumable=harness.tus).run()
         lines.append(f"  fresh size={result.size} token={len(token.methods)} resource={resource.methods}")
     lines.append(f"  responses closed={_closed(token, resource)} borrowed closed={native.is_closed}")
     handle.close()
-    provider.close()
     native.close()
     run(lambda: _async_completion_oauth(harness, lines))
     token = _CompletionTransport(token=True)
     token.release.set()
-    provider, settings = _completion_provider(harness, token)
     settings = harness.client_options(
-        auth=settings.auth,
         protocols=harness.options.ProtocolClientOptions(
             security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
         ),
     )
-    try:
-        _file_terminal(harness, lines, settings=settings, token=token)
-    finally:
-        provider.close()
+    _file_terminal(harness, lines, settings=settings, token=token, credentials=_completion_provider(harness, token))
     run(lambda: _async_file_terminal_oauth(harness, lines))
 
 
@@ -1201,25 +1201,21 @@ async def _async_file_terminal_oauth(harness: _Uploads, lines: list[str]) -> Non
     """Stop resource and completion credential sends after a terminal file change."""
     token = _CompletionTransport(token=True, asynchronous=True)
     token.release.set()
-    provider, settings = _completion_provider(harness, token, asynchronous=True)
     settings = harness.client_options(
-        auth=settings.auth,
         protocols=harness.options.ProtocolClientOptions(
             security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
         ),
     )
-    try:
-        await _async_file_terminal(harness, lines, settings=settings, token=token)
-    finally:
-        await provider.aclose()
+    credentials = _completion_provider(harness, token, asynchronous=True)
+    await _async_file_terminal(harness, lines, settings=settings, token=token, credentials=credentials)
 
 
 async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
     token = _CompletionTransport(token=True, asynchronous=True)
     resource = _CompletionTransport(asynchronous=True)
-    provider, settings = _completion_provider(harness, token, asynchronous=True)
+    credentials = _completion_provider(harness, token, asynchronous=True)
     native = httpx2.AsyncClient(transport=resource)
-    api = harness.package.AsyncClient(http_client=native, options=settings)
+    api = harness.package.AsyncClient(http_client=native, **credentials)
     source = b""
     handle = await api.protocols.files.finish.start(source, tus_resumable=harness.tus)
     work = asyncio.create_task(handle.run())
@@ -1230,13 +1226,12 @@ async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
     lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")
     finish = api.protocols.files.finish
     await arecord(lines, "async start after the close", lambda: finish.start(source, tus_resumable=harness.tus))
-    async with harness.package.AsyncClient(http_client=native, options=settings) as fresh:
+    async with harness.package.AsyncClient(http_client=native, **credentials) as fresh:
         result = await (await fresh.protocols.files.finish.start(source, tus_resumable=harness.tus)).run()
         lines.append(f"  fresh size={result.size} token={len(token.methods)} resource={resource.methods}")
         await _async_completion_end_control(harness, fresh, resource, lines)
     lines.append(f"  responses closed={_closed(token, resource)} borrowed closed={native.is_closed}")
     await handle.aclose()
-    await provider.aclose()
     await native.aclose()
 
 

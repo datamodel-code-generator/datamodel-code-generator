@@ -209,7 +209,6 @@ class _Raw(Generic[SourceT, HandleT]):
         "_retry_stop_reason",
         "_source",
         "_state",
-        "_status_secondary_errors",
     )
 
     def __init__(  # noqa: PLR0913
@@ -226,7 +225,6 @@ class _Raw(Generic[SourceT, HandleT]):
         events: CallEvents | None,
         call: LogicalCallContext,
         retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
         """Keep response metadata, status classification, limits, the decoded and raw body sources, and release.
 
@@ -235,7 +233,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._events = events
         self._call = call
         self._retry_stop_reason: RetryStopReason | None = retry_stop_reason
-        self._status_secondary_errors = status_secondary_errors
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -283,8 +280,6 @@ class _Raw(Generic[SourceT, HandleT]):
     def _failure(self, error: Exception) -> BaseException:
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
-            for secondary in self._status_secondary_errors:
-                add_secondary(error, secondary)
         failure = self._classify(error)
         failure.info = self._info
         return failure
@@ -330,8 +325,6 @@ class _Raw(Generic[SourceT, HandleT]):
         error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
-            for secondary in self._status_secondary_errors:
-                add_secondary(error, secondary)
         return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
@@ -429,7 +422,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         call: LogicalCallContext,
         events: CallEvents | None = None,
         retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -444,7 +436,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
-            status_secondary_errors=status_secondary_errors,
         )
         self._close: Callable[[], None] | None = close
 
@@ -679,7 +670,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         call: LogicalCallContext,
         events: CallEvents | None = None,
         retry_stop_reason: RetryStopReason | None = None,
-        status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -694,7 +684,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
-            status_secondary_errors=status_secondary_errors,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
 

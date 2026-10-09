@@ -855,9 +855,8 @@ scheme, host, and port, or an origin `ProtocolSecurityContext.allowed_origins` l
 whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
 `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
 package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
-put them there; its other headers, the call's and the operation's, are sent as usual. The client's authentication sends
-credentials and signatures there only when its `AuthConfig.allowed_origins` lists that origin too; otherwise the page
-fails with `ConfigurationError(reason="origin_denied")` before sending. A query credential the URL repeats is
+put them there; its other headers, the call's and the operation's, are sent as usual. The client's credentials are
+placed only at the server's origin, so such a page is sent without them. A query credential the URL repeats is
 removed before the client places its own. `Page.continuation` is the resolved server URL, and a URL an earlier
 page of the session gave, or the URL of the first page itself, ends the traversal with `PaginationCycleError` after the
 repeating page; URLs compare once resolved and without the authentication's query fields, with the host's case, the
@@ -2102,15 +2101,14 @@ as to any call. Only a 101 response whose subprotocol the helper offered opens t
 of it, as its own WebSocket client does. Any other response is read up to `max_error_body_bytes` and raises the
 `APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an undeclared
 status, so 101 need not be declared. Received refusals are terminal, including redirects, which a handshake never
-follows, and 401s; a refused upgrade never invalidates or refreshes credentials. Only an initial transport failure
+follows, and 401s; a refused upgrade never renews a token. Only an initial transport failure
 proven `NOT_SENT` before session handover may use the call's existing retry policy. A handshake that may have reached
 the server is never sent again.
 
 The handshake's limiter permit is held for the whole session and released when it closes or fails. When the helper
 offers subprotocols, the server must select one of them, or `connect` raises `WebSocketHandshakeError` with the
 condition `negotiation`; `session.subprotocol` is the selected one and `session.response` the 101 response.
-Credentials are sent as the operation's security declares, only to the server's origin or the security context's
-allowed origins. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
+Credentials are sent as the operation's security declares, only to the server's origin. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
 request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent. The
 handshake's hooks end with the call outcome `handed_off`, and the session's end emits `stream_end`.
 
@@ -2315,12 +2313,12 @@ Entries hold the body after content decoding and the headers without `Content-En
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
-auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
-A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ConfigurationError`. A response whose
-`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
-cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
+credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
+declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
+declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
+`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
+permission set: credentials the client cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
 `CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
@@ -2332,14 +2330,14 @@ Concurrent custom-store writes use last-completing replacement.
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 
 !!! warning "Credentials the cache cannot see"
-    The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
-    call's auth manages, such as `Authorization`, a cookie, a declared scheme's header, or a signer's managed header, is
-    never stored. Within one partition, all calls are taken to share one permission set: a provider whose token or
+    The client places its credentials after the cache looks a request up, so a response whose `Vary` names a
+    credential header, such as `Authorization`, a cookie, or a declared scheme's header, is never stored. Within one
+    partition, all calls are taken to share one permission set: a credential callable or OAuth provider whose token or
     identity changes from call to call needs a client per partition. A view's or a call's own `auth` therefore fails
     an authenticated fetch with `ConfigurationError(field_path=('options', 'auth'),
-    reason='security_partition')`; `auth=None` stays allowed for anonymous fetches. Credentials the SDK never sees,
-    such as a client certificate, or a borrowed HTTP client's own headers or authenticating transport, make
-    a call look anonymous: give each such identity its own `credential_partition`, or its own store.
+    reason='security_partition')`. Credentials the SDK never sees, such as a client certificate, or a borrowed HTTP
+    client's own headers, Auth, or authenticating transport, make a call look anonymous: give each such identity its
+    own `credential_partition`, or its own store.
 
 ### Stores
 
@@ -2963,9 +2961,8 @@ cannot change it. Each of the three sources is a function that takes no argument
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
-and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
-A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
-as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
+keep their own time through their `clock=` argument, since one provider can serve several clients. A client and the
+providers it uses must agree on wall time, because a `TokenSet`'s `expires_at` passes between them as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
 
 A private request budget uses its client's monotonic source. Retry and polling waits pass the remaining duration
 to ordinary sleeps, and I/O timeouts use the duration measured before the operation. A frozen test clock therefore
@@ -3380,7 +3377,7 @@ sent again, as is a failure an injected client's response event hook raises.
 
 A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
 never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
-carry it, and every signed request. HTTPX2 would forward such a value to another origin. Its 3xx is the final
+carry it. HTTPX2 would forward such a value to another origin. Its 3xx is the final
 response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
 anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
 request it sends, or read the `Location` and send a call of your own.
@@ -3451,128 +3448,62 @@ Views share their root's core and its ownership. A borrowed client's cookies, he
 merged into SDK requests; its `Accept-Encoding` is. Its native auth, event hooks, and redirect setting retain HTTPX2
 semantics, and the SDK's bounded retries resend from the original request.
 
-## Explicit authentication and request signing
+## Authentication
 
-Generated clients compile root security inheritance and operation overrides from OpenAPI. An AND requirement needs
-all its schemes; an OR list selects its first fully available alternative, or the index given by `AuthConfig.selection`.
-The index applies only to operations that declare more than one alternative, so one client-wide configuration also
-serves anonymous and single-requirement operations. Selection stays fixed for the logical call, including retries and
-401 recovery. Required credentials that are missing,
-unknown, unavailable, or of the wrong material kind fail before a provider callback or send. Unused unsupported or
-unresolved scheme declarations do not prevent generation, but configuring one does not make it usable.
+Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
+take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
+whose operations require none takes no credentials. A scheme whose argument would be empty, `options`, `http_client`,
+or another scheme's fails generation with `E_RESERVED_NAME`.
 
-The generated `auth` module exports `AuthConfig`, provider Protocols, static/environment providers, and signer
-Protocols, with the credential values and providers of the schemes the API declares: `ApiKeyCredential` for an API key,
-`BasicCredential` for HTTP basic, `BearerCredential`, `AccessToken`, and the token providers for a bearer, OAuth 2, or
-OpenID Connect scheme, the client credentials providers for an OAuth 2 `clientCredentials` flow, and the refresh-token
-providers for its other flows and for OpenID Connect. `ClientOptions.auth` and `RequestOptions.auth` default to `UNSET`; an `AuthConfig` replaces the
-inherited configuration as a whole and preserves provider identity. `auth=None` disables inherited credentials and
-signers; it cannot make a required operation anonymous. No environment variables or credentials are discovered by default.
-
-These examples assume a generated API with a `bearer` scheme, a `header_key` scheme, and an `auth` resource containing
-`bearer`, `api_key_header`, and `signed_body` operations. The calling application supplies tokens, keys, and clients.
+These examples assume a generated API with a `bearer` scheme, a `header_key` API key scheme, and an `oauth` OAuth 2
+scheme with client credentials and authorization code flows, and an `auth` resource containing `bearer` and
+`signed_body` operations. The calling application supplies tokens, keys, and clients.
 
 ```python
 from pets import Client
-from pets.auth import AccessToken, AuthConfig, StaticTokenProvider
-from pets.options import RequestOptions
 
 
-def authenticated_get(client: Client, token: str) -> bytes:
-    provider = StaticTokenProvider(AccessToken(token, scopes=None))
-    view = client.with_options(RequestOptions(auth=AuthConfig({"bearer": provider})))
-    return view.auth.bearer()
+def authenticated_get(token: str, key: str) -> bytes:
+    with Client(bearer=token, header_key=key) as client:
+        return client.auth.bearer()
 ```
 
-`AccessToken.scopes` records token metadata: `None` means unknown grants and `()` means known empty grants.
-Known grants and requested scopes are deduplicated and ASCII-sorted. The client sends empty, narrow, hierarchical,
-and unknown grants to the permitted resource origin and leaves authorization to the server. A 403 is terminal: the
-SDK never broadens scopes or refreshes a token to recover from it. Expired material raises `AuthError` with the reason
-`token_expired` and cannot justify an endless refresh.
-`BearerCredential` pairs a token with an opaque `TokenVersion()` whose identity belongs to that provider's publication.
-
-Async clients require async providers. Matching static and environment variants are available; a custom provider's
-async `get` is awaited once. There is no implicit thread offload or sync/async conversion.
-
-```python
-from pets import AsyncClient
-from pets.auth import AccessToken, AsyncStaticTokenProvider, AuthConfig
-from pets.options import RequestOptions
-
-
-def async_credentials(token: str) -> AuthConfig:
-    return AuthConfig({"bearer": AsyncStaticTokenProvider(AccessToken(token))})
-
-
-async def authenticated_get_async(client: AsyncClient, token: str) -> bytes:
-    view = client.with_options(RequestOptions(auth=async_credentials(token)))
-    return await view.auth.bearer()
-```
-
-`ApiKeyCredential(value)` uses its declared header, query, or cookie name. `BasicCredential(username, password)` uses
-UTF-8 Basic encoding. HTTP bearer, OAuth2, and OpenID Connect declarations accept explicitly supplied bearer material;
-this layer neither discovers endpoints nor starts an OAuth flow. `CredentialContext` carries the selected scheme,
-canonical requirements, current resource origin, and deadline. Its audience is currently `None`.
-
-An environment provider reads only when selected and called. It rereads its named variable for each `get`; construction
-and package imports do not read the environment. Choose `kind="bearer"` for an environment token.
-
-```python
-from pets import Client
-from pets.auth import AuthConfig, EnvironmentCredentialProvider
-from pets.options import RequestOptions
-
-
-def environment_get(client: Client, variable_name: str) -> bytes:
-    provider = EnvironmentCredentialProvider(variable_name, kind="api_key")
-    view = client.with_options(RequestOptions(auth=AuthConfig({"header_key": provider})))
-    return view.auth.api_key_header()
-```
-
-Custom providers implement the public structural Protocol. Callback failures retain their cause in an `AuthError` with
-the reason `provider_failed` and are not transport-retried. The callback must cooperate with its supplied deadline
-and with native task cancellation; a synchronous callback cannot be forcibly terminated at the deadline.
+An API key or bearer argument takes a string, and an HTTP Basic one a `(username, password)` tuple, which is encoded
+as UTF-8. Each also takes a callable returning its value, which the client calls for each request, so a rotating
+token or a key read from a secret store stays current; a bearer argument also takes an OAuth provider. A callable's
+failure raises `AuthError` with the reason `provider_failed` before the request is sent, and a value of the wrong type
+`ConfigurationError` with the reason `invalid_type`. No environment variables or credentials are discovered by
+default.
 
 ```python
 from collections.abc import Callable
 
-from pets.auth import ApiKeyCredential, CredentialContext
+from pets import AsyncClient
 
 
-class ApplicationKeyProvider:
-    def __init__(self, resolve: Callable[[], str]) -> None:
-        self._resolve = resolve
-
-    def get(self, context: CredentialContext) -> ApiKeyCredential:
-        return ApiKeyCredential(self._resolve())
+async def rotated_get(read_token: Callable[[], str]) -> bytes:
+    async with AsyncClient(bearer=read_token) as client:
+        return await client.auth.bearer()
 ```
 
-Providers retain their caller's lifetime. Close a stateful provider explicitly after every root and view using it has
-finished. Client close never transfers or closes a provider.
+A call sends the credentials of its operation's first security alternative they all satisfy: an AND alternative
+needs all its schemes, and an OR list is tried in declared order. Each credential goes to the header, query field, or
+cookie its scheme declares, replacing a value a header patch or a parameter put there, and only to the server's
+origin: a page a server links at another origin, and `request_raw`, carry none of them. Absent security, explicit
+`[]`, and an empty alternative are anonymous choices, so an operation whose first satisfied alternative is anonymous
+sends none. A required operation that no credential satisfies raises `ConfigurationError` with the reason
+`missing_credentials` before sending, unless the HTTP client has an Auth of its own, which it then uses. The client
+authorizes no scopes: the resource server decides, and a 403 is terminal.
 
-### Anonymous calls, origins, and recovery
-
-Absent security, explicit `[]`, and an empty AND alternative are anonymous choices. Configuring credentials alone does
-not send them on those operations or on `request_raw`. Sending selected credentials requires both
-`send_on_anonymous=True` and explicit `anonymous_schemes=("bearer",)` (or the applicable declared names). Signer-only
-anonymous calls also require `send_on_anonymous=True`. A true opt-in with neither a selected credential nor a signer
-is invalid. Ordered mixed anonymous/authenticated alternatives retain their declared selection indices.
-
-An empty authentication `allowed_origins` permits only the selected server's origin. An origin includes scheme, host,
-and effective port. Arbitrary `request_raw` destinations require explicit allowed origins as well as anonymous opt-in.
-Each attempt places credentials and signatures for its destination; a request carrying a key or a signature is never
-redirected, so they never reach another origin. Generic header/query patches cannot override or delete credential/signature owners.
-
-A static provider does not refresh. A custom refresh provider explicitly implements `get`, `invalidate(version)`, and
-`refresh(context)`; the async Protocol makes all three methods async. At most one eligible 401 recovery invalidates the
-exact used token version and refreshes without switching the selected OR alternative. It requires an appropriate
-Bearer invalid-token challenge, or the explicit operation declaration below, and still obeys retry safety, body
-replayability, retry count, and the original deadline. `max_retries=0` prevents that resend, while initial
-credential acquisition is still allowed. These callbacks add no implicit token HTTP traffic.
+`auth` on `ClientOptions`, or on a view's or a call's `RequestOptions`, takes any `httpx2.Auth`, which replaces the
+credentials for those calls, and `auth=None` sends without an Auth; it cannot make a required operation anonymous.
+Unset, the credentials apply, or else the HTTP client's own `auth`. Credentials given beside `ClientOptions(auth=...)`
+or an injected HTTP client with an `auth` raise `ConfigurationError` with the reason `conflicting_auth`, since one
+request runs one Auth flow.
 
 Declare an API-specific challenge-less 401 contract in the operation's `runtime` setting. It is false unless
 explicitly set and is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation.
-It allows token-expired recovery after a 401 without a challenge, subject to the retry rules above.
+It lets an OAuth provider renew its token after a 401 without a `WWW-Authenticate` challenge.
 It is not a client option or an inferred response behavior.
 
 ```toml
@@ -3589,178 +3520,115 @@ operation = ClientOperationConfig(
 )
 ```
 
-### Sign the finalized request
+### Sign requests with an HTTPX2 Auth
 
-Signers declare their allowed origins and managed header/query names.
-They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
-hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe the attempt's
-unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
-callbacks or sends; arbitrary signer exceptions raise `AuthError` with the reason `signing_failed` and do not retry.
+Request signing is an `httpx2.Auth` of your own, given as `auth`. Its flow sees the final request, body included,
+after the client framed it; set `requires_request_body = True` to read a streamed body first. HTTPX2 runs it once per
+send, and every retry sends the original request through it again.
 
 ```python
+import hashlib
 import hmac
+from collections.abc import Generator
+
+import httpx2
 
 from pets import Client
-from pets.auth import AuthConfig, SignatureFields, SignerCapabilities, SigningInput
 from pets.options import RequestOptions
 
 
-class RequestSigner:
-    def __init__(self, key: bytes, origin: str) -> None:
-        self._key = key
-        self._capabilities = SignerCapabilities(
-            allowed_origins=(origin,),
-            managed_headers=("X-Request-Signature",),
-            managed_query=(),
-        )
+class BodySigner(httpx2.Auth):
+    requires_request_body = True
 
-    @property
-    def capabilities(self) -> SignerCapabilities:
-        return self._capabilities
+    def __init__(self, key: bytes) -> None:
+        self.key = key
 
-    def sign(self, request: SigningInput) -> SignatureFields:
-        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8")
-        signature = hmac.digest(self._key, message, "sha256").hex()
-        return SignatureFields(headers=(("X-Request-Signature", signature),), query=())
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        digest = hmac.digest(self.key, request.method.encode() + b"\n" + request.content, hashlib.sha256)
+        request.headers["X-Request-Signature"] = digest.hex()
+        yield request
 
 
-def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> bytes:
-    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(RequestSigner(key, origin),))
-    view = client.with_options(RequestOptions(auth=auth))
+def signed_upload(client: Client, key: bytes, payload: bytes) -> bytes:
+    view = client.with_options(RequestOptions(auth=BodySigner(key)))
     return view.auth.signed_body(body=payload)
 ```
 
-This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
-are rebuilt for every attempt. Unsigned calls do not invoke signer/provider callbacks.
-A signer does not receive the body or a digest of it: the SDK never pre-reads or hashes a body for signing.
+A signature header other than `Authorization` is copied to a redirect HTTPX2 follows; set `follow_redirects=False`
+for signed calls whose redirects may leave the server's origin.
 
-Credential values, signing inputs, and returned signature values are omitted from their representations and from
-hook events. A credential or signature placed in the query is part of the request URL, which HTTPX2 logs at INFO level
-on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay private. Errors retain safe metadata,
-common send/attempt counters, and causes without automatically formatting secret-bearing callback messages.
-Applications must apply their own policy before explicitly inspecting those causes.
+Credential values do not appear in repr or hook events. A credential placed in the query is part of the request URL,
+which HTTPX2 logs at INFO level on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay
+private. Errors retain safe metadata and their causes, which can hold an exception a credential callable raised;
+apply your own policy before logging causes.
 
-### Acquire client credentials
+### OAuth providers
 
-`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
-confidential client acting on its own behalf. Each is a refreshable token provider for an OAuth scheme of `AuthConfig`:
-the first call that needs a token acquires it, later calls share it, and the call that finds a tenth of its lifetime,
-at most thirty seconds, left acquires a new one. A token without `expires_in` is kept until a resource rejects it, when
-401 recovery invalidates that exact version and acquires another.
+A package whose operations require an OAuth 2 or OpenID Connect scheme exports `ClientCredentials`, `RefreshToken`,
+and `TokenSet` from its `auth` module, and one subclass for each declared flow whose token URL the API declares, such
+as `OauthClientCredentials` for the `oauth` scheme's client credentials flow. A subclass requests tokens from its
+declared URL unless `token_url` names another; the base classes need `token_url`. A provider is a bearer credential:
+the call that needs a token requests it inline while holding the provider's lock, a `threading.Lock` or an
+`asyncio.Lock` on the event loop the provider is used on, concurrent calls wait for that token, and nothing runs in
+the background or is persisted.
 
 ```python
 from pets import Client
-from pets.auth import AuthConfig, ClientCredentialsProvider, CredentialProvider
-from pets.options import ClientOptions
+from pets.auth import OauthClientCredentials
 
 
-def list_pets(secret: CredentialProvider) -> None:
-    with (
-        ClientCredentialsProvider(
-            "https://auth.example.com/token",
-            client_id="pets-service",
-            client_secret=secret,
-            scopes=("pets.read",),
-        ) as provider,
-        Client(options=ClientOptions(auth=AuthConfig({"oauth": provider}))) as client,
-    ):
+def list_pets(secret: str) -> None:
+    provider = OauthClientCredentials(client_id="pets-service", client_secret=secret, scopes=("pets.read",))
+    with Client(oauth=provider) as client:
         client.pets.list_pets()
 ```
 
-The token request sends the configured `scopes` in canonical order, and `audience` when one is configured. The client
-authenticates with `client_secret_basic` (the default) or `client_secret_post`; `none` is refused, since a public
-client has no credentials of its own. The configured scopes become the token's scopes when the response omits its
-`scope` member, and a caller whose context requires another audience than the configured one fails with
-`ConfigurationError` with the reason `audience_mismatch` before any request.
+`ClientCredentials` requests a confidential client's own token. Its request sends the `scopes` in order and the
+`audience` when one is given, and authenticates the client with `client_secret_basic` (the default) or
+`client_secret_post`; the `client_secret` is a string or a callable returning one, called for each token request.
 
-The call that needs a token requests it inline, while holding the provider's lock: a `threading.Lock`, or an
-`asyncio.Lock` for the async provider. Concurrent callers wait for that lock, a synchronous one no longer than its
-deadline, and then use the token it obtained, so one token request serves them all; the provider starts no thread or
-task of its own. A token request ends within `refresh_timeout`, and at the calling request's deadline at the latest;
-cancelling an asyncio caller cancels its token request. A failed request leaves nothing behind, and the next call
-acquires again. When an early renewal fails, the call keeps using the current token until it expires; a failure raises
-once the token expired, or when a resource's rejection forced the request. A rejection, an unexpected status, an
-unusable response, or a transport failure raises `AuthError` with the reason `oauth_error`, a rejection keeping its
-`status_code` and standard `oauth_error` code, or with the reason `timeout` when a time limit ran out, with the
-`delivery_state` the request reached.
-
-`get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
-replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that
-version. Closing the provider closes an owned token transport, and later calls raise `AuthError` with the reason
-`provider_closed`; close the provider explicitly when its users have finished. The async provider belongs to
-the event loop it was created on or first used from.
-
-`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
-`ApiKeyCredential` of visible ASCII; it is called once per token request with a context naming the token endpoint's
-origin and the scheme `oauth_client_secret`. The token endpoint must be HTTPS; plain HTTP to a loopback host requires
-`OAuthProviderOptions(allow_insecure_loopback=True)`.
-
-Token requests use an HTTPX2 client separate from every API client: one the provider creates at the first token
-request from `OAuthProviderOptions.transport`, or a mode-correct one passed as `http_client`, which stays borrowed.
-Its settings must verify certificates and host names. Token requests never follow redirects or retry, and closing the
-provider, or leaving its `with` block, closes only a client it created. `refresh_timeout` (30 seconds by default)
-bounds each token request, the client secret lookup included; `phase_timeout` caps connecting, reading, writing, and
-pool waits at 5, 15, 15, and 5 seconds unless overridden. Responses are read up to 64 KiB and must be UTF-8 JSON
-objects. A failed token request is `NOT_SENT` only for a native connect or pool failure. Errors keep
-no response body or error description, but a transport failure's cause is the native exception, which can hold the
-token request and its client authentication, so apply your own policy before logging causes.
-
-### Refresh a token set
-
-`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep an access token current with the OAuth refresh token grant,
-starting from the `TokenSet` an authorization produced. The provider alone refreshes it: no other provider, process,
-or event loop may send the same refresh token. It serves the access token while it lasts, and the call that finds a
-tenth of its lifetime, at most thirty seconds, left, or that follows a resource's rejection, refreshes it inline under
-the provider's lock, as the client credentials provider acquires.
+`RefreshToken` keeps an access token current with the refresh token grant, starting from the `TokenSet` an
+authorization produced. The provider alone refreshes it: no other provider, process, or event loop may send the same
+refresh token. Its client authentication defaults to `none`, which sends the `client_id` of a public client.
 
 ```python
 from pets import Client
-from pets.auth import AuthConfig, RefreshTokenProvider, TokenSet
-from pets.options import ClientOptions
+from pets.auth import OauthRefreshToken, TokenSet
 
 
 def save(tokens: TokenSet) -> None: ...
 
 
 def list_pets(tokens: TokenSet) -> None:
-    with (
-        RefreshTokenProvider(
-            "https://auth.example.com/token",
-            client_id="pets-app",
-            token_set=tokens,
-            on_token_refreshed=save,
-            client_auth_method="none",
-        ) as provider,
-        Client(options=ClientOptions(auth=AuthConfig({"oauth": provider}))) as client,
-    ):
+    provider = OauthRefreshToken(tokens, client_id="pets-app", on_token_refreshed=save)
+    with Client(oauth=provider) as client:
         client.pets.list_pets()
 ```
 
-The refresh request sends the refresh token with the client authentication, never the configured `scopes` or `audience`:
-`none` sends the `client_id` of a public client, and `client_secret_basic` (the default) and `client_secret_post` need a
-`client_secret`. A caller whose context requires another audience than the configured one fails with
-`ConfigurationError` with the reason `audience_mismatch`, and so does a token set whose access token names another
-audience. A token set needs the
-Bearer type, and a timezone-aware `expires_at` when its access token expires.
+Each successful refresh makes a new `TokenSet` current, keeping the refresh token sent when the response gives none,
+and then passes it to `on_token_refreshed` while the provider still holds its lock, so an application can persist each
+token set in order; for an async client the callback may return an awaitable, which is awaited. An exception the
+callback raises reaches the caller, and the refreshed token set stays current. The callback must not call its own
+provider. A `TokenSet` needs a timezone-aware `expires_at` when its access token expires, and its repr omits both
+tokens. `invalid_grant` raises `AuthError` with the reason `reauthorization_required`, and the application starts a
+new authorization; a token set without a refresh token serves its access token until it expires or a resource rejects
+it, and then raises the same error without a request.
 
-Each successful refresh makes a new `TokenSet` current. The response's refresh token replaces the one sent, and a
-response without one keeps it; a response without `scope` keeps the grants of the access token it replaces, known or
-unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the server, and its 403
-remains terminal. The provider then passes the new token set to `on_token_refreshed`, a coroutine function for the async
-provider, while still holding its lock, so an application can persist each token set in order; the SDK itself
-persists nothing. An exception the callback raises reaches the caller, and the refreshed token set stays current, as it
-does when an asyncio caller is cancelled while the callback runs, which may then not finish. The callback must not call
-its own provider, which holds its lock until the callback returns.
+A provider serves its token until a tenth of its lifetime, at most thirty seconds, remains, and then the call that
+finds it due requests another; a token without `expires_in` is kept until a resource rejects it. When an early renewal
+fails, the call keeps using the current token until it expires. A 401 whose `WWW-Authenticate` has a Bearer
+`invalid_token` error, or a 401 without a challenge on an operation declaring `auth_challenge_less_401`, renews the
+token once, unless another call already replaced it, and sends the request again when its body can be sent again.
+A 401 after a redirect, and a WebSocket handshake's, renews nothing.
 
-`invalid_grant` raises `AuthError` with the reason `reauthorization_required`, and the application starts a new
-authorization. Any other failure raises as for client credentials and leaves the token set as it was, so the next call
-sends the same refresh token again. A token set without a refresh token serves its access token until it expires or a
-resource rejects it, and then raises `AuthError` with the reason `reauthorization_required` without a request, as a
-forced `refresh` does at once. Token requests, client authentication, and closing otherwise follow the client
-credentials provider.
-
-Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not available yet;
-applications construct providers explicitly.
+Token requests go through the client's HTTP client without its Auth and without following redirects, with the calling
+request's timeouts, or through the provider's own `http_client` when one is given, which keeps its own settings. Used
+as an `httpx2.Auth` elsewhere, a provider needs its own `http_client`. The token URL must be HTTPS, or HTTP to a
+loopback host. A rejection, an unexpected status, or a response that is not a JSON object with a Bearer
+`access_token` raises `AuthError` with the reason `oauth_error`, a rejection keeping its `status_code` and standard
+`oauth_error` code, and an `expires_in` that is not a positive number the reason `invalid_expiry`. A transport failure
+raises `AuthError` with the reason `oauth_error`, or `timeout`, and the native exception as its cause, which can hold
+the token request and its client authentication. A provider's `clock=Clock(...)` times its token expiry.
 
 ## Webhook verification helpers
 

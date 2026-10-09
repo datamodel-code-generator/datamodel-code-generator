@@ -242,7 +242,7 @@
     get key=32
   hit without events = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
-  no credentials ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  no credentials ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   tenant a stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
@@ -284,7 +284,9 @@
   > GET https://api.example.com/secure/users/5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   on behalf of u after the service = network 5:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
-  view patching the bound authorization ! ConfigurationError: ConfigurationError(operation_id='getSecureUser', call_id='<call>', reason='managed_field', field_path='auth') [operation_id='getSecureUser', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] managed_field
+  > GET https://api.example.com/secure/users/4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  view patching the bound authorization ! APIConnectionError: APIConnectionError(operation_id='getSecureUser', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getSecureUser', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
   > GET https://api.example.com/carts/current
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=alice] b''
   alice cart = network 44:alice status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
@@ -292,14 +294,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=bob] b''
   bob cart = network 44:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   alice cart again = fresh_cache 44:alice status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
-  > GET https://api.example.com/secure/users/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
-  vary on a signed header = network 3:first status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '23'), ('content-type', 'application/json')]
-  > GET https://api.example.com/secure/users/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
-  vary on a signed header again = network 3:second status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '24'), ('content-type', 'application/json')]
     get key=32
-  granted and signed ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('down')] cache_store_error
+  granted ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('down')] cache_store_error
     get key=32
     event call_start status=None
     event attempt_start status=None

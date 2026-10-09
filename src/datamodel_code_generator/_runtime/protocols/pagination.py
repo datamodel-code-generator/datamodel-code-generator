@@ -1018,7 +1018,7 @@ def _restored(
         if not isinstance(state, str):
             raise _invalid(plan, ("state",))
         walk.origins = core.follow_origins(plan.call, limits.options)
-        stripped = core.follow_query(plan.call, limits.options)
+        stripped = core.follow_query()
         state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
         digest = sha256(canonical_json(state)).digest()

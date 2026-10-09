@@ -10,7 +10,7 @@ from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from ssl import SSLContext
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, final
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -18,7 +18,6 @@ from typing_extensions import TypeIs
 
 from ..model_codecs.media import json_bytes
 from ..model_codecs.unset import UNSET, Unset
-from .auth import AuthConfig, checked_type
 from .errors import ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
@@ -28,12 +27,13 @@ from .timing import (
     SessionOptions,
     checked_count,
     checked_instance,
-    finite_number,
     seconds,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncGenerator, Callable, Generator
+
+    import httpx2
 
 __all__ = (
     "UNSET",
@@ -171,8 +171,23 @@ def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callab
         raise ConfigurationError(field_path=(field,), reason="set_and_removed")
 
 
+class NativeAuth(Protocol):
+    """An HTTPX2 Auth: the flows HTTPX2 runs around each request it sends, such as `httpx2.BasicAuth`."""
+
+    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Authenticate a synchronous client's request, yielding each request to send."""
+
+    def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
+        """Authenticate an asyncio client's request, yielding each request to send."""
+
+
 def _auth_type(value: object) -> None:
-    if not isinstance(value, (AuthConfig, Unset, type(None))):
+    """Refuse an auth that is not an HTTPX2 Auth, UNSET, or None, importing HTTPX2 only for a given one."""
+    if value is None or isinstance(value, Unset):
+        return
+    import httpx2  # noqa: PLC0415 - Options without an Auth stay importable without the HTTP client.
+
+    if not isinstance(value, httpx2.Auth):
         raise ConfigurationError(field_path=("auth",), reason="invalid_type")
 
 
@@ -488,7 +503,7 @@ class _Options:
     retry: RetryOptions | Unset = UNSET
     follow_redirects: bool | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
-    auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
+    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
@@ -580,46 +595,6 @@ class Settings:
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     follow_redirects: bool | None = None
     idempotency_key: IdempotencyKey | Unset | None = UNSET
-    auth: AuthConfig | None = field(default=None, repr=False)
+    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
     compression: str | None = "gzip"
-
-
-_PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
-
-
-def _oauth_seconds(value: object, path: tuple[str, ...]) -> float:
-    if (number := finite_number(value)) is None or number <= 0:
-        raise ConfigurationError(field_path=path, reason="invalid_value")
-    return number
-
-
-@final
-@dataclass(frozen=True, slots=True, kw_only=True)
-class OAuthProviderOptions:
-    """Fixed session limits, token transport settings, and clock of an OAuth provider.
-
-    Every value is finite and explicit: omitted phase timeouts take the OAuth defaults, and None is never accepted.
-    """
-
-    refresh_timeout: float = 30.0
-    phase_timeout: TimeoutOptions = field(default_factory=lambda: TimeoutOptions(**_PHASE_DEFAULTS))
-    allow_insecure_loopback: bool = False
-    transport: TransportOptions = field(default_factory=TransportOptions)
-    clock: Clock = SYSTEM_CLOCK
-
-    def __post_init__(self) -> None:
-        """Validate every limit and resolve omitted phase timeouts before any provider uses them."""
-        object.__setattr__(self, "refresh_timeout", _oauth_seconds(self.refresh_timeout, ("refresh_timeout",)))
-        checked_type(self.phase_timeout, (TimeoutOptions,), ("phase_timeout",))
-        phases = {
-            name: _oauth_seconds(
-                default if isinstance(value := getattr(self.phase_timeout, name), Unset) else value,
-                ("phase_timeout", name),
-            )
-            for name, default in _PHASE_DEFAULTS.items()
-        }
-        object.__setattr__(self, "phase_timeout", TimeoutOptions(**phases))
-        checked_type(self.allow_insecure_loopback, (bool,), ("allow_insecure_loopback",))
-        checked_type(self.transport, (TransportOptions,), ("transport",))
-        checked_type(self.clock, (Clock,), ("clock",))

@@ -258,7 +258,6 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   automatic key suppressed = FieldKeyedPostResponse(root='accepted')
   explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  signer claiming the key header ! ConfigurationError: ConfigurationError(operation_id='postKeyed', call_id='<call>', reason='name_collision', field_path='auth') [operation_id='postKeyed', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] name_collision
   automatic keys count=4 same retry=True fresh call=True suppressed=True
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
