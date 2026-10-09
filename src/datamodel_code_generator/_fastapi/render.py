@@ -14,7 +14,16 @@ from datamodel_code_generator._fastapi._compiled_templates import router as rout
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.naming import normalize
-from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
+from datamodel_code_generator._fastapi.plan import (
+    CONSTRAINED,
+    Default,
+    MemberDefault,
+    ParameterDefault,
+    RootDefault,
+    default_media,
+    fact,
+    symbol_imports,
+)
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -768,7 +777,7 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
     else:
         base, metadata = module.types.parts(field.type)
         parts = (base, *metadata)
-        default = "" if isinstance(field.default, Default) else f" = {_default(module, field.default)}"
+        default = "" if (value := _default_value(module, field.default)) is None else f" = {value}"
     head = ", ".join((*parts, f"{module.name('fastapi', field.api)}("))
     return Group(f"{name}: {module.name('typing', 'Annotated')}[{head}", _items(keywords), f")]{default}")
 
@@ -804,6 +813,30 @@ def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     return f"[{', '.join(module.types.literal(item) for item in value.items if isinstance(item, LiteralScalar))}]"
 
 
+def _default_value(module: Module, default: ParameterDefault) -> str | None:
+    """Return the expression of a parameter's default, or None without one.
+
+    A root model takes the schema's default unvalidated, as pydantic leaves defaults, or its own; an enum type takes
+    the members the default names.
+    """
+    match default:
+        case LiteralScalar() | LiteralSequence():
+            return _default(module, default)
+        case RootDefault():
+            model = module.annotation(default.type)
+            literal = default.literal
+            return f"{model}()" if literal is None else f"{model}.model_construct({_default(module, literal)})"
+        case MemberDefault():
+            enum, literal = module.annotation(default.type), default.literal
+            if isinstance(literal, LiteralScalar):
+                return f"{enum}({module.types.literal(literal)})"
+            items = (item for item in literal.items if isinstance(item, LiteralScalar))
+            return f"[{', '.join(f'{enum}({module.types.literal(item)})' for item in items)}]"
+        case _:
+            pass
+    return None
+
+
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
     """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
     assert parameter is not None
@@ -831,8 +864,8 @@ def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argum
         ]
         if parameter.type is not None:
             entries.append(("adapter=", _adapter(module, parameter.type)))
-        if isinstance(parameter.default, (LiteralScalar, LiteralSequence)):
-            entries.append(("default=", _default(module, parameter.default)))
+        if (value := _default_value(module, parameter.default)) is not None:
+            entries.append(("default=", value))
         arguments.append(
             Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
         )

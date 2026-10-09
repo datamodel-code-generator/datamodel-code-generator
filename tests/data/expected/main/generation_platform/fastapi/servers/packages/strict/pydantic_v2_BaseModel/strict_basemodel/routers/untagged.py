@@ -36,6 +36,7 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
             alias='X-Tag',
             convert_underscores=False,
         )] = None,
+        blob: Annotated[bytes | None, Query(alias='blob')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -54,6 +55,7 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 maybe=parameters.maybe,
                 x_trace=parameters.x_trace,
                 x_tag=x_tag,
+                blob=blob,
             ),
             contract.GetValues.RESPONSES,
         )

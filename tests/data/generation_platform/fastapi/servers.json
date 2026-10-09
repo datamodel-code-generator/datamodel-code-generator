@@ -816,7 +816,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "\u00ff",
+        "content": "ÿ",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }
@@ -2196,11 +2196,290 @@
         "headers": {
           "X-Trace": "x"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?blob=abc&size=3"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "strict-annotated": {
+    "input": "server-strict.yaml",
+    "services": "strict",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool",
+        "str"
+      ],
+      "use_annotated": true,
+      "field_constraints": true
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4",
+        "headers": {
+          "X-Trace": "7",
+          "X-Tag": "t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=1.5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?score=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?flag=maybe"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?label=a"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?counts=1&counts=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?page=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?size=0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?maybe=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "X-Trace": "x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?blob=abc&size=3"
+      }
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": []
+  },
+  "strict-preset": {
+    "input": "server-strict.yaml",
+    "services": "strict",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool",
+        "str"
+      ],
+      "preset": "standard-py312-20260909",
+      "target_python_version": "3.12"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4",
+        "headers": {
+          "X-Trace": "7",
+          "X-Tag": "t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=1.5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?score=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?flag=maybe"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?label=a"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?counts=1&counts=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?page=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?size=0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?maybe=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "X-Trace": "x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?blob=abc&size=3"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "defaults": {
+    "input": "server-defaults.yaml",
+    "services": "defaults",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values"
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
+        "headers": {
+          "X-Level": "6",
+          "X-Colors": "red,blue"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=-1&size=0&bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values?words=&tags="
       }
     ],
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "defaults-annotated": {
+    "input": "server-defaults.yaml",
+    "services": "defaults",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "use_annotated": true,
+      "field_constraints": true
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values"
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
+        "headers": {
+          "X-Level": "6",
+          "X-Colors": "red,blue"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=-1&size=0&bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values?words=&tags="
+      }
+    ],
+    "package_snapshots": []
+  },
+  "defaults-preset": {
+    "input": "server-defaults.yaml",
+    "services": "defaults",
+    "model": {
+      "preset": "standard-py312-20260909",
+      "target_python_version": "3.12"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values"
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4",
+        "headers": {
+          "X-Level": "6",
+          "X-Colors": "red,blue"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values?depth=-1&size=0&bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values?words=&tags="
+      }
+    ],
+    "package_snapshots": []
   },
   "locals": {
     "input": "server-locals.yaml",
