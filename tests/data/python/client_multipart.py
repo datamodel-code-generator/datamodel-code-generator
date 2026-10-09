@@ -366,6 +366,13 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     avatar = (field("caption", "me"), file("avatar", b"a"), field("style", {"k": [1]}))
     record(lines, "avatar", lambda: api.forms.submit_avatar(body=body(avatar), media_type="multipart/form-data"))
     exchange.respond(raw_response(204))
+    profiled = (field("caption", "me"), file("avatar", [b"a"]))
+    record(
+        lines,
+        "avatar of a media type with a profile",
+        lambda: api.forms.submit_avatar(body=body(profiled), media_type="multipart/form-data; profile=v1"),
+    )
+    exchange.respond(raw_response(204))
     scans = (field("note", "n"), file("scan-1", b"1"), file("scan-2", b"2"))
     record(lines, "scans", lambda: api.forms.submit_scans(body=body(scans)))
     record(

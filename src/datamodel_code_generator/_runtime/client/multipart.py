@@ -3,9 +3,9 @@
 A field part carries a value, a file part a binary body that is read synchronously: bytes, a synchronous file
 object, a path, or an iterable of bytes. HTTPX2 encodes a multipart body and reads its files synchronously, so an async
 file or async iterable is refused before anything is sent, rather than buffered, in either mode. A body whose parts
-are all bytes is encoded once; one with streamed file parts is encoded at each attempt under the boundary of its
-first, each file part read from the position it had when the call began, so it can be sent again when all of its file
-parts can.
+are all bytes is encoded once; one with streamed file parts is encoded at each attempt under the boundary its media
+type names, each file part read from the position it had when the call began, so it can be sent again when all of its
+file parts can.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import UnsupportedOperation
-from os import SEEK_END, SEEK_SET
+from os import SEEK_END, SEEK_SET, urandom
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeAliasType, TypeIs
@@ -29,7 +29,7 @@ from .logical import in_thread
 from .media import encode_text, most_specific, normalized, with_charset
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
+    from collections.abc import AsyncIterator, Iterable, Iterator
     from typing import Any, Protocol
 
     from ..model_codecs.media import JSONValue
@@ -245,10 +245,12 @@ _ANY: Final = PartPlan("")
 class FormParts:
     """The parts of a form-data body with streamed file parts, as `files=` takes them, each file input as given.
 
-    The call binds each file input and opens it for each attempt, which HTTPX2 encodes.
+    The call binds each file input and opens it for each attempt, which HTTPX2 encodes under the boundary the media
+    type names.
     """
 
     entries: tuple[Entry, ...]
+    media_type: str
 
 
 def _malformed(name: object, cause: BaseException) -> DecodeError:
@@ -319,36 +321,40 @@ def native_files(entries: Iterable[Entry], contents: Iterable[object] | None = N
     ]
 
 
-def _encoded(entries: list[Entry]) -> tuple[bytes | FormParts, str | None]:
-    """Return a body's bytes and media type when every part is bytes, or else its parts and multipart/form-data.
+def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str | None]:
+    """Return a body's bytes, or else its streamed parts, and its media type with a new boundary.
 
-    A body without parts has no media type, as HTTPX2 sends none, and each attempt of streamed parts names its
-    boundary. A part header naming Content-Disposition is refused, as HTTPX2 writes it itself, and HTTPX2 checks every
-    part's name and headers before any file input is opened.
+    The media type is the one the call sends, multipart/form-data without one, its other parameters kept. A body
+    without parts has no media type, as HTTPX2 sends none. A part header naming Content-Disposition is refused, as
+    HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is opened.
     """
     import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
 
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
         raise _malformed(None, ValueError(_DISPOSITION))
     try:
+        if not entries:
+            return b"", None
+        sent = f"{media_type or _FORM_DATA}; boundary={urandom(16).hex()}"
         if all(type(content) is bytes for _, _, content, _, _ in entries):
-            native = httpx2.Request("POST", "/", files=native_files(entries))
-            return native.read(), native.headers.get("Content-Type")
+            return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
         httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
     except (TypeError, ValueError) as error:
         raise _malformed(None, error) from None
-    return FormParts(tuple(entries)), _FORM_DATA
+    return FormParts(tuple(entries), sent), sent
 
 
 def encode_multipart(
     value: JSONValue,
     content_types: Mapping[str, str] | None = None,
     styled: Mapping[str, ParameterPlan] | None = None,
+    sent: str | None = None,
 ) -> tuple[bytes | FormParts, str | None]:
     """Encode an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
-    A member with an encoding's media type is written in it. A member in `styled` writes a part for each name and
-    value its query style gives, without percent-encoding, and no two members may then write parts of the same name.
+    The body is sent in the media type `sent` names. A member with an encoding's media type is written in it. A member
+    in `styled` writes a part for each name and value its query style gives, without percent-encoding, and no two
+    members may then write parts of the same name.
     """
     if not isinstance(value, Mapping):
         msg = "A multipart form value must be an object"
@@ -368,7 +374,7 @@ def encode_multipart(
         for member in item if isinstance(item, list) else (item,):
             content, media_type = multipart_member(member, declared)
             entries.append(_entry(name, content, media_type))
-    return _encoded(entries)
+    return _encoded(entries, sent)
 
 
 def _refused(part: object) -> NoReturn:
@@ -441,11 +447,14 @@ def is_multipart(value: object) -> TypeIs[MultipartBody[object] | AsyncMultipart
 
 
 def encode_parts(
-    body: object, plans: tuple[PartPlan, ...] | None = None, additional: PartPlan | None = None
+    body: object,
+    plans: tuple[PartPlan, ...] | None = None,
+    additional: PartPlan | None = None,
+    sent: str | None = None,
 ) -> tuple[bytes | FormParts, str | None]:
     """Encode the parts a call gives in their order, each by the plan of its member when the schema has them.
 
-    A file part without a media type is sent as application/octet-stream.
+    A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
     """
     if not is_multipart(body):
         raise _malformed(None, TypeError(_MULTIPART))
@@ -459,7 +468,7 @@ def encode_parts(
             entries.extend(_field(part, plan))
         else:
             entries.append(_file(part, plan))
-    return _encoded(entries)
+    return _encoded(entries, sent)
 
 
 class PartFile:
@@ -498,9 +507,9 @@ class MultipartAttempt:
     __slots__ = ("_stream", "_threaded", "content_length", "content_type")
 
     def __init__(
-        self, entries: tuple[Entry, ...], contents: list[object], content_type: str | None, *, threaded: bool = False
+        self, entries: tuple[Entry, ...], contents: list[object], content_type: str, *, threaded: bool = False
     ) -> None:
-        """Encode the parts with the attempt's contents, under a new boundary when no media type names one.
+        """Encode the parts with the attempt's contents, under the boundary of the body's media type.
 
         A threaded attempt, one with a file the call opened from a path, is read in a thread in async mode.
         """
@@ -510,11 +519,11 @@ class MultipartAttempt:
         native = httpx2.Request(
             "POST",
             "/",
-            headers=None if content_type is None else {"Content-Type": content_type},
+            headers={"Content-Type": content_type},
             files=native_files(entries, contents),
         )
         self._stream = native.stream
-        self.content_type: str | None = native.headers["Content-Type"]
+        self.content_type: str | None = content_type
         length = native.headers.get("Content-Length")
         self.content_length = None if length is None else int(length)
 
@@ -526,7 +535,7 @@ class MultipartAttempt:
         """Yield the encoded parts in async mode, one chunk at a time in a thread when the call opened a file."""
         if self._threaded:
             return _in_thread(self.iter_bytes())
-        return aiter(cast("AsyncIterable[bytes]", self._stream))
+        return aiter(cast("AsyncIterator[bytes]", self._stream))
 
 
 async def _in_thread(chunks: Iterator[bytes]) -> AsyncIterator[bytes]:

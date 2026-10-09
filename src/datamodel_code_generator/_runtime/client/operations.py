@@ -263,14 +263,18 @@ class BodyMedia:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
         return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
 
-    def multipart(self, value: object) -> tuple[bytes | FormParts, str | None]:
-        """Return a form-data body and its media type: an object's members as parts, or the parts a call gives."""
+    def multipart(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+        """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts.
+
+        The sent media type keeps its parameters beside the boundary.
+        """
         if self.codec is None:
-            return encode_parts(value, self.parts, self.additional_part)
+            return encode_parts(value, self.parts, self.additional_part, sent)
         return encode_multipart(
             cast("JSONValue", self.codec.dump(value)),
             dict(self.content_types) if self.content_types else None,
             {plan.name: plan for plan in self.encoded} if self.encoded else None,
+            sent,
         )
 
 
@@ -322,7 +326,7 @@ class RequestBody:
         )
         try:
             if selected.kind == "multipart":
-                parts, multipart = selected.multipart(value)
+                parts, multipart = selected.multipart(value, sent)
                 return EncodedBody(media_type=multipart, content=parts)
             content = selected.encode(value, sent)
         except DecodeError as error:

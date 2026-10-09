@@ -83,16 +83,15 @@ def capture_body(body: object) -> BodyBindings | None:
 class BodySource:
     """A call's native input, or the parts of a multipart body with streamed file parts, and any coding.
 
-    Each attempt of a multipart body is encoded under the boundary of its first.
+    Each attempt of a multipart body is encoded under the boundary its media type names.
     """
 
-    __slots__ = ("_aencode", "_bindings", "_content_type", "_encode", "_parts", "_pieces")
+    __slots__ = ("_aencode", "_bindings", "_encode", "_parts", "_pieces")
 
     def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, parts: FormParts | None) -> None:
         self._pieces = pieces
         self._bindings = bindings
         self._parts = parts
-        self._content_type: str | None = None
         self._encode: Callable[[SyncContent], SyncContent] | None = None
         self._aencode: Callable[[AsyncContent], AsyncContent] | None = None
 
@@ -108,18 +107,15 @@ class BodySource:
         self._encode, self._aencode = encode, aencode
         return self
 
-    def _multipart(self, parts: FormParts, contents: list[object], *, threaded: bool = False) -> MultipartAttempt:
-        attempt = MultipartAttempt(parts.entries, contents, self._content_type, threaded=threaded)
-        self._content_type = attempt.content_type
-        return attempt
-
     def open(self) -> SyncContent:
         """Prepare one synchronous native stream."""
         if (parts := self._parts) is None:
             attempt: SyncContent = cast("BinarySource", self._pieces[0]).open()
         else:
-            attempt = self._multipart(
-                parts, [piece if isinstance(piece, bytes) else PartFile(piece.open()) for piece in self._pieces]
+            attempt = MultipartAttempt(
+                parts.entries,
+                [piece if isinstance(piece, bytes) else PartFile(piece.open()) for piece in self._pieces],
+                parts.media_type,
             )
         return self._encode(attempt) if self._encode is not None else attempt
 
@@ -128,9 +124,10 @@ class BodySource:
         if (parts := self._parts) is None:
             attempt: AsyncContent = await cast("BinarySource", self._pieces[0]).aopen()
         else:
-            attempt = self._multipart(
-                parts,
+            attempt = MultipartAttempt(
+                parts.entries,
                 [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+                parts.media_type,
                 threaded=any(not isinstance(piece, bytes) and piece.owned for piece in self._pieces),
             )
         return self._aencode(attempt) if self._aencode is not None else attempt

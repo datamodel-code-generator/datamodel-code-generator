@@ -40,20 +40,16 @@ if TYPE_CHECKING:
 
         def decode(self, content: bytes) -> T_co:
             """Return the value of received JSON bytes."""
-            ...
 
         def text(self, value: object) -> T_co:
             """Return the value of a parsed text value."""
-            ...
 
         @property
         def errors(self) -> tuple[type[Exception], ...]:
             """Return the failures of the codec's backend."""
-            ...
 
         def malformed(self, error: Exception) -> bool:
             """Return whether a failure of the codec's backend is received bytes that are not JSON."""
-            ...
 
 
 _PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
