@@ -10,7 +10,7 @@ from fastapi import APIRouter, FastAPI, params
 
 from . import routes as routes_1
 from ._generated.contract import OperationDependencies
-from ._runtime.server.application import build
+from ._runtime.server.application import build, error_handlers, validation_error_handler
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -55,7 +55,11 @@ def create_app(
     prefix: str = "",
     **fastapi_kwargs: Any,
 ) -> FastAPI:
-    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    """Create the application with every operation, passing the other keyword arguments to FastAPI.
+
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    """
+    fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
@@ -76,4 +80,5 @@ __all__ = [
     'RequirementSets',
     'build_router',
     'create_app',
+    'validation_error_handler',
 ]

@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
 
 from fastapi import APIRouter
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
+from starlette.responses import JSONResponse
 from typing_extensions import TypeIs
 
 from .security import awaitable, coroutine_function
 
+if TYPE_CHECKING:
+    from starlette.requests import Request
+
 MethodT = TypeVar("MethodT")
+_REQUEST_VALUES: Final = frozenset({"input", "ctx", "url"})
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -32,6 +39,23 @@ class Wiring:
 
 
 Route: TypeAlias = tuple[str, Callable[[APIRouter, Wiring], None]]
+
+
+async def validation_error_handler(  # noqa: RUF029 - Starlette runs a synchronous handler in the threadpool.
+    _: Request, error: Exception
+) -> JSONResponse:
+    """Answer 422 with the type, location, and message of each of FastAPI's records, without its input and context.
+
+    The error is the RequestValidationError the handler is registered for; Starlette types every handler's as Exception.
+    """
+    errors = cast("RequestValidationError", error).errors()
+    records = [{key: value for key, value in record.items() if key not in _REQUEST_VALUES} for record in errors]
+    return JSONResponse({"detail": jsonable_encoder(records)}, status_code=422)
+
+
+def error_handlers(exception_handlers: Mapping[Any, Any] | None) -> dict[Any, Any]:
+    """Return an application's exception handlers: validation_error_handler, under the caller's own handlers."""
+    return {RequestValidationError: validation_error_handler, **(exception_handlers or {})}
 
 
 def checked(method: MethodT, label: str, *, asynchronous: bool = False) -> MethodT:

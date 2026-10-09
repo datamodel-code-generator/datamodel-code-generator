@@ -32,6 +32,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "kinds-annotated",
         "kinds-decimal",
         "kinds-literal",
+        "errors",
         "bodies",
         "results",
         "security",

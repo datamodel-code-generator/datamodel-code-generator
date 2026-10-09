@@ -625,6 +625,7 @@
           ],
           "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
           "fastapi": "FastAPI",
+          "error_handlers": "error_handlers",
           "arguments": [
             "pets",
             "authorize",
@@ -650,6 +651,7 @@
           "settings": [],
           "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
           "fastapi": "FastAPI",
+          "error_handlers": "error_handlers",
           "arguments": [],
           "exports": []
         }

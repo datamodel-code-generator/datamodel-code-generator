@@ -74,6 +74,7 @@ _EXPORTS: Final = (
     ("_runtime.server.security", "Authorize"),
     ("_runtime.server.security", "Credentials"),
     ("_runtime.server.security", "RequirementSets"),
+    ("_runtime.server.application", "validation_error_handler"),
 )
 _CREDENTIALS: Final[dict[SchemeKind, str]] = {
     "basic": "HTTP Basic credentials, as `HTTPBasicCredentials`",
@@ -372,6 +373,7 @@ class ServerRenderer:  # noqa: PLR0904
             ),
             arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
+            error_handlers=module.local("_runtime.server.application", "error_handlers"),
             exports=exports,
             imports=module.imports(),
         )
@@ -1088,6 +1090,7 @@ from .application import (
     RequirementSets,
     build_router,
     create_app,
+    validation_error_handler,
 )
 from ._runtime.server.responses import HTTPResult
 
@@ -1100,5 +1103,6 @@ __all__ = [
     "RequirementSets",
     "build_router",
     "create_app",
+    "validation_error_handler",
 ]
 '''

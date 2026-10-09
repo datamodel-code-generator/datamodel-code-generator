@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, FastAPI, Request, params
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 from secured_models import FieldPetsGetResponse
@@ -20,6 +21,7 @@ from secured import (
     RequirementSets,
     build_router,
     create_app,
+    validation_error_handler,
 )
 from secured.routers import pets, public
 from secured.services import PetsService, UntaggedService
@@ -118,3 +120,6 @@ router: APIRouter = build_router(
 )
 pets_router: APIRouter = pets.build_router(pets=Pets(), authorize=authorizer)
 public_router: APIRouter = public.build_router(public=Public())
+included = FastAPI(exception_handlers={RequestValidationError: validation_error_handler})
+included.add_exception_handler(RequestValidationError, validation_error_handler)
+included.include_router(router)

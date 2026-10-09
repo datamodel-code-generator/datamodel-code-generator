@@ -98,6 +98,17 @@ render pydantic_v2.BaseModel
     | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
     | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
+    | ## Production settings
+    |
+    | A request that fails validation answers `422` with FastAPI's `{"detail": [...]}` records.
+    | `create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, and pydantic's `url`, so the response does not return the rejected value as such.
+    | `loc` and `msg` are pydantic's and can still hold text the client chose: a mapping key or an unexpected field name, a discriminator tag, or the message of a validator of your own.
+    | An application of your own that includes `build_router(...)` keeps FastAPI's records; register the same handler with `app.add_exception_handler(RequestValidationError, validation_error_handler)`, importing `validation_error_handler` from `server`.
+    | To send other error bodies, pass FastAPI's `exception_handlers` to `create_app`; its entry for `RequestValidationError` replaces the package's.
+    | A result that fails its response model answers `500` without details, and the error, with the values, goes to the server log, as in any FastAPI application.
+    | `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and `/openapi.json`.
+    | The `server` response header belongs to the ASGI server, not to the application: uvicorn leaves it out with `--no-server-header`.
+    |
     | ## Regenerating
     |
     | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
@@ -204,6 +215,17 @@ render pydantic_v2.dataclass
     | Parameter styles, parameter types, and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, strict integers, numbers, and booleans, text and binary bodies, and multipart forms, pass through generated adapters.
     | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
     | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
+    |
+    | ## Production settings
+    |
+    | A request that fails validation answers `422` with FastAPI's `{"detail": [...]}` records.
+    | `create_app` keeps the `type`, `loc`, and `msg` of each record and leaves out the `input` and `ctx` FastAPI adds, and pydantic's `url`, so the response does not return the rejected value as such.
+    | `loc` and `msg` are pydantic's and can still hold text the client chose: a mapping key or an unexpected field name, a discriminator tag, or the message of a validator of your own.
+    | An application of your own that includes `build_router(...)` keeps FastAPI's records; register the same handler with `app.add_exception_handler(RequestValidationError, validation_error_handler)`, importing `validation_error_handler` from `server`.
+    | To send other error bodies, pass FastAPI's `exception_handlers` to `create_app`; its entry for `RequestValidationError` replaces the package's.
+    | A result that fails its response model answers `500` without details, and the error, with the values, goes to the server log, as in any FastAPI application.
+    | `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and `/openapi.json`.
+    | The `server` response header belongs to the ASGI server, not to the application: uvicorn leaves it out with `--no-server-header`.
     |
     | ## Regenerating
     |

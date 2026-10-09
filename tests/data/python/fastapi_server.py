@@ -136,8 +136,10 @@ def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lin
 
 
 def _errors(response: Any) -> str:
-    """Show each validation error by its type and location; the messages follow the installed pydantic-core."""
-    return json.dumps([{key: error[key] for key in ("type", "loc")} for error in response.json()["detail"]])
+    """Show each validation error without its message, which follows the installed pydantic-core."""
+    return json.dumps([
+        {key: value for key, value in error.items() if key != "msg"} for error in response.json()["detail"]
+    ])
 
 
 def _interfaces(server: ModuleType) -> Iterator[str]:

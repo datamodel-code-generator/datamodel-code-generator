@@ -109,7 +109,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      **fastapi_kwargs: Any,
-@@ -59,7 +52,6 @@
+@@ -63,7 +56,6 @@
      app.include_router(
          build_router(
              pets=pets,
