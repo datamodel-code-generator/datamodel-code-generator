@@ -285,6 +285,7 @@ def _keep_model_order_field_references_expected_file(
 
 
 def _install_test_my_app(base_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make a `my_app` package importable for one test; the module cache gets its earlier entry back afterwards."""
     package_dir = base_dir / "my_app"
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text(
@@ -303,6 +304,8 @@ class B(BaseModel):
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(base_dir))
+    monkeypatch.setitem(sys.modules, "my_app", None)
+    monkeypatch.delitem(sys.modules, "my_app")
 
 
 def _run_jsonschema_dict(
