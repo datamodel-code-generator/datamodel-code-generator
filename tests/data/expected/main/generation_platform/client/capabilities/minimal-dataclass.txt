@@ -34,11 +34,11 @@ copied runtime
   model_codecs/errors.py: 55
   model_codecs/media.py: 406
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 676
+  model_codecs/parameters.py: 686
   model_codecs/stdlib.py: 256
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
-total 34 modules, 11509 lines
+total 34 modules, 11519 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
