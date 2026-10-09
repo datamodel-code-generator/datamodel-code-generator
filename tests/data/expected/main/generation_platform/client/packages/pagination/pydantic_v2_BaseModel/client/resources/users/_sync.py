@@ -13,7 +13,7 @@ import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.users import ListUsersResponse, SearchUsersResponse
 
@@ -43,9 +43,9 @@ class UsersResource:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
@@ -60,7 +60,7 @@ class UsersResource:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -87,9 +87,9 @@ class UsersWithResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
@@ -104,7 +104,7 @@ class UsersWithResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -131,9 +131,9 @@ class UsersWithRawResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -148,7 +148,7 @@ class UsersWithRawResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
@@ -175,9 +175,9 @@ class UsersWithStreamingResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -192,7 +192,7 @@ class UsersWithStreamingResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,

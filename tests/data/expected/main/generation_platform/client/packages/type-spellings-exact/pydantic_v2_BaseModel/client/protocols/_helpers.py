@@ -21,7 +21,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.default import ListPetsResponse
 from . import PaginationOptions, _plans
 
@@ -62,8 +62,8 @@ class PetsAllPagination:
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -81,8 +81,8 @@ class PetsAllPagination:
     def iterate(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -119,8 +119,8 @@ class PetsAllPagination:
         self,
         state: JSONValue,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
