@@ -6,7 +6,7 @@
 from collections.abc import Sequence
 from decimal import Decimal
 from re import compile
-from typing import Annotated, Final
+from typing import Annotated, Final, Optional
 
 from annotated_types import MultipleOf
 from fastapi import APIRouter, Depends, Path, Query, params
@@ -33,7 +33,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
 
     def list_pets(
         *,
-        invalid: Annotated[bool | None, Query(alias='invalid')] = None,
+        invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(invalid=invalid),
@@ -64,7 +64,7 @@ def _add_list_counts(router: APIRouter, wiring: Wiring) -> None:
 
     def list_counts(
         *,
-        invalid: Annotated[bool | None, Query(alias='invalid')] = None,
+        invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
         return dispatch(
             list_counts_handler(invalid=invalid),
@@ -92,7 +92,7 @@ def _add_get_code(router: APIRouter, wiring: Wiring) -> None:
 
     def get_code(
         *,
-        invalid: Annotated[bool | None, Query(alias='invalid')] = None,
+        invalid: Annotated[Optional[bool], Query(alias='invalid')] = None,
     ) -> object:
         return dispatch(get_code_handler(invalid=invalid), contract.GetCode.RESPONSES)
 
@@ -122,17 +122,17 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         *,
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit')] = 10,
-        code: Annotated[Annotated[str, StringConstraints(min_length=2, max_length=5)] | None, Query(
+        code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(
             alias='code',
         )] = None,
-        codes: Annotated[list[Annotated[str, StringConstraints(min_length=2, max_length=5)]] | None, Query(
+        codes: Annotated[Optional[list[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(
             alias='codes',
         )] = None,
-        step: Annotated[Annotated[Decimal, MultipleOf(Decimal('0.5'))] | None, Query(
+        step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(
             alias='step',
         )] = None,
-        raw: Annotated[bytes | None, Query(alias='raw')] = None,
-        label: Annotated[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))] | None, Query(
+        raw: Annotated[Optional[bytes], Query(alias='raw')] = None,
+        label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(
             alias='label',
         )] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
@@ -150,6 +150,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
                 pair=parameters.pair,
                 label=label,
                 pet=parameters.pet,
+                tag=parameters.tag,
             ),
             contract.GetPet.RESPONSES,
         )
@@ -181,7 +182,7 @@ def build_router(
     *,
     pets: PetsService,
     dependencies: Sequence[params.Depends] = (),
-    operation_dependencies: OperationDependencies | None = None,
+    operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:
     """Register the pets operations on a new router, literal paths first."""

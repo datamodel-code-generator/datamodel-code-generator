@@ -11,8 +11,11 @@ from typing import Protocol
 
 import spellings_basemodel_models
 from fastapi.responses import Response
+from typing_extensions import TypeVar
 
 from ._runtime.server.responses import HTTPResult
+
+PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
 
 class PetsService(Protocol):
@@ -66,6 +69,7 @@ class PetsService(Protocol):
         pair: spellings_basemodel_models.Pair | None,
         label: str | None,
         pet: spellings_basemodel_models.Pet | None,
+        tag: spellings_basemodel_models.Tag | None,
     ) -> (
         spellings_basemodel_models.Pet
         | HTTPResult[spellings_basemodel_models.Pet]
@@ -88,13 +92,14 @@ class FieldsService(Protocol):
     ): ...
 
 
-class DaysService(Protocol):
+class DaysService(Protocol[PrincipalT_contra]):
     """Implement the days operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
     def post_day(
         self,
         *,
+        principal: PrincipalT_contra | None,
         body: spellings_basemodel_models.Day,
     ) -> (
         spellings_basemodel_models.Day

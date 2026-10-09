@@ -84,6 +84,7 @@ class GetPet:
         filter: spellings_basemodel_models.Query | None
         pair: spellings_basemodel_models.Pair | None
         pet: spellings_basemodel_models.Pet | None
+        tag: spellings_basemodel_models.Tag | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -95,7 +96,7 @@ class GetPet:
                     style='form',
                     explode=True,
                     shape='array',
-                    reserved_names=('code', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(list[spellings_basemodel_models.Code]),
             ),
@@ -106,7 +107,7 @@ class GetPet:
                     name='day',
                     style='form',
                     explode=True,
-                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(date),
             ),
@@ -120,7 +121,7 @@ class GetPet:
                     shape='object',
                     fields=(FieldPlan('term', 'string'),),
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(spellings_basemodel_models.Query),
             ),
@@ -131,7 +132,7 @@ class GetPet:
                     name='pair',
                     style='form',
                     shape='array',
-                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(spellings_basemodel_models.Pair),
             ),
@@ -143,6 +144,17 @@ class GetPet:
                     content_media_type='application/json',
                 ),
                 adapter=TypeAdapter(spellings_basemodel_models.Pet),
+            ),
+            ParameterArgument(
+                name='tag',
+                plan=ParameterPlan(
+                    location='query',
+                    name='tag',
+                    style='form',
+                    explode=True,
+                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                ),
+                adapter=TypeAdapter(spellings_basemodel_models.Tag),
             ),
         ),
         record=Parameters,

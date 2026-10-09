@@ -3189,6 +3189,22 @@
       {
         "method": "GET",
         "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=xa"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-03",
+        "headers": {
+          "Authorization": "Bearer t"
+        }
       }
     ],
     "package_snapshots": [
@@ -3205,7 +3221,8 @@
       "import_overrides": {
         "conint": "pydantic.types",
         "constr": "pydantic.types"
-      }
+      },
+      "use_union_operator": false
     },
     "requests": [
       {
@@ -3296,6 +3313,22 @@
       {
         "method": "GET",
         "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=xa"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-03",
+        "headers": {
+          "Authorization": "Bearer t"
+        }
       }
     ],
     "package_snapshots": [

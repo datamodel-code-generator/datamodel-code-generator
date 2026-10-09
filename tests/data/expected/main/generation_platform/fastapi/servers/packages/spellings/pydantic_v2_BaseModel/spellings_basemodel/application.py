@@ -11,6 +11,13 @@ from fastapi import APIRouter, FastAPI, params
 from ._generated.contract import OperationDependencies
 from ._generated.openapi import serve_source_openapi
 from ._runtime.server.application import build, error_handlers, validation_error_handler
+from ._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
+    PrincipalT,
+    RequirementSets,
+)
 from .routers import days, fields, pets
 from .services import DaysService, FieldsService, PetsService
 
@@ -29,7 +36,8 @@ def build_router(
     *,
     pets: PetsService,
     fields: FieldsService,
-    days: DaysService,
+    days: DaysService[PrincipalT],
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -38,6 +46,7 @@ def build_router(
     return build(
         ROUTES,
         services={'pets': pets, 'fields': fields, 'days': days},
+        authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,
@@ -48,7 +57,8 @@ def create_app(
     *,
     pets: PetsService,
     fields: FieldsService,
-    days: DaysService,
+    days: DaysService[PrincipalT],
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
     source_openapi: bool = True,
@@ -66,6 +76,7 @@ def create_app(
             pets=pets,
             fields=fields,
             days=days,
+            authorize=authorize,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
         )
@@ -76,7 +87,11 @@ def create_app(
 
 
 __all__ = [
+    'AsyncAuthorize',
+    'Authorize',
+    'Credentials',
     'OperationDependencies',
+    'RequirementSets',
     'build_router',
     'create_app',
     'serve_source_openapi',

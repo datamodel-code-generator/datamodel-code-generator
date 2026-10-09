@@ -202,6 +202,7 @@ _PYDANTIC_CONFIGURATION: Final = (
     "validate_by_alias",
     "frozen",
     "alias_generator",
+    "regex_engine",
 )
 _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
     list: "list",

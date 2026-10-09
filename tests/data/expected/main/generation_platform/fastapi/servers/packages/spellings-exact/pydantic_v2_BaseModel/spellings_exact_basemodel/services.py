@@ -8,10 +8,11 @@ from __future__ import annotations
 from abc import abstractmethod
 from datetime import date
 from decimal import Decimal
-from typing import Protocol
+from typing import Optional, Protocol, Union
 
 from fastapi.responses import Response
 from spellings_exact_basemodel_models import Response as Response_1
+from spellings_exact_basemodel_models import Tag
 from spellings_exact_basemodel_models import (
     Day,
     FieldCountsGetResponse,
@@ -21,8 +22,11 @@ from spellings_exact_basemodel_models import (
     Pet,
     Query,
 )
+from typing_extensions import TypeVar
 
 from ._runtime.server.responses import HTTPResult
+
+PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
 
 class PetsService(Protocol):
@@ -32,22 +36,22 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        invalid: bool | None,
-    ) -> FieldPetsGetResponse | HTTPResult[FieldPetsGetResponse] | Response: ...
+        invalid: Optional[bool],
+    ) -> Union[FieldPetsGetResponse, HTTPResult[FieldPetsGetResponse], Response]: ...
 
     @abstractmethod
     def list_counts(
         self,
         *,
-        invalid: bool | None,
-    ) -> FieldCountsGetResponse | HTTPResult[FieldCountsGetResponse] | Response: ...
+        invalid: Optional[bool],
+    ) -> Union[FieldCountsGetResponse, HTTPResult[FieldCountsGetResponse], Response]: ...
 
     @abstractmethod
     def get_code(
         self,
         *,
-        invalid: bool | None,
-    ) -> str | HTTPResult[str] | Response: ...
+        invalid: Optional[bool],
+    ) -> Union[str, HTTPResult[str], Response]: ...
 
     @abstractmethod
     def get_pet(
@@ -55,16 +59,17 @@ class PetsService(Protocol):
         *,
         pet_id: int,
         limit: int,
-        code: str | None,
-        codes: list[str] | None,
-        step: Decimal | None,
-        raw: bytes | None,
-        day: date | None,
-        filter: Query | None,
-        pair: Pair | None,
-        label: str | None,
-        pet: Pet | None,
-    ) -> Pet | HTTPResult[Pet] | Response: ...
+        code: Optional[str],
+        codes: Optional[list[str]],
+        step: Optional[Decimal],
+        raw: Optional[bytes],
+        day: Optional[date],
+        filter: Optional[Query],
+        pair: Optional[Pair],
+        label: Optional[str],
+        pet: Optional[Pet],
+        tag: Optional[Tag],
+    ) -> Union[Pet, HTTPResult[Pet], Response]: ...
 
 
 class FieldsService(Protocol):
@@ -75,11 +80,16 @@ class FieldsService(Protocol):
         self,
         *,
         body: FieldModel,
-    ) -> Response_1 | HTTPResult[Response_1] | Response: ...
+    ) -> Union[Response_1, HTTPResult[Response_1], Response]: ...
 
 
-class DaysService(Protocol):
+class DaysService(Protocol[PrincipalT_contra]):
     """Implement the days operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
-    def post_day(self, *, body: Day) -> Day | HTTPResult[Day] | Response: ...
+    def post_day(
+        self,
+        *,
+        principal: Optional[PrincipalT_contra],
+        body: Day,
+    ) -> Union[Day, HTTPResult[Day], Response]: ...

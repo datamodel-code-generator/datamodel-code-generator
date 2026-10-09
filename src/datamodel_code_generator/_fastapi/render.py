@@ -149,6 +149,13 @@ def _constrained(value: TypeView) -> bool:
     return False
 
 
+def _chain(module: Module, members: Iterable[str]) -> Doc:
+    """Return a union of support types as the model generator writes it, laid out member by member as an operator."""
+    parts = tuple(dict.fromkeys(members))
+    text = module.union(*parts)
+    return Chain("|", parts) if text == " | ".join(parts) else text
+
+
 def _reads_inputs(spec: OperationSpec) -> bool:
     """Return whether an operation reads an input through an adapter."""
     return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
@@ -626,7 +633,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
-            return f"{argument.name}: {annotated}[tuple[str | None, {kind}], {depends}({plan}.BODY.receive)]"
+            media_type = module.optional("str")
+            return f"{argument.name}: {annotated}[tuple[{media_type}, {kind}], {depends}({plan}.BODY.receive)]"
         return f"{argument.name}: {annotated}[{kind}, {depends}({plan}.BODY)]"
 
     def body_type(self, module: Module, body: BodySpec) -> str:
@@ -690,20 +698,21 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             case "request":
                 return module.name("fastapi", "Request")
             case "principal":
-                return f"{principal} | None" if spec.security is not None and spec.security.anonymous else principal
+                anonymous = spec.security is not None and spec.security.anonymous
+                return module.optional(principal) if anonymous else principal
             case "native" | "adapter" if argument.parameter is not None:
                 return _parameter_type(module, argument.parameter)
             case "media_type":
-                return "str | None"
+                return module.optional("str")
             case _:
                 pass
         body = spec.body
         assert body is not None
         return self.body_type(module, body)
 
-    def returns(self, module: Module, spec: OperationSpec) -> Chain:
+    def returns(self, module: Module, spec: OperationSpec) -> Doc:
         """Return a method's result type: the bare primary payload, an HTTPResult of any payload, or a Response."""
-        return Chain("|", tuple(self.results(module, spec)))
+        return _chain(module, self.results(module, spec))
 
     def results(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the members of a method's result type, in the order the result type spells them."""
@@ -1076,7 +1085,11 @@ def _builder(  # ruff: ignore[too-many-arguments]
         *((group.stem, _service(module, group), "") for group in groups),
         *(_security(module) if secured else ()),
         *((("dependencies", _dependency_sequence(module), " = ()"),) if dependencies else ()),
-        ("operation_dependencies", f"{module.local('_generated.contract', 'OperationDependencies')} | None", " = None"),
+        (
+            "operation_dependencies",
+            module.optional(module.local("_generated.contract", "OperationDependencies")),
+            " = None",
+        ),
         ("prefix", "str", ' = ""'),
         *extra,
     )
@@ -1098,7 +1111,7 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
         module.local("_runtime.server.security", "Authorize"),
         module.local("_runtime.server.security", "AsyncAuthorize"),
     )
-    return (("authorize", Chain("|", tuple(f"{item}[{principal}]" for item in authorizers)), ""),)
+    return (("authorize", _chain(module, [f"{item}[{principal}]" for item in authorizers]), ""),)
 
 
 def _dependency_sequence(module: Module) -> str:
@@ -1109,14 +1122,14 @@ def _credential_type(module: Module, scheme: SchemeSpec) -> str:
     """Return the type of the credential a scheme's FastAPI dependency returns."""
     match scheme.kind:
         case "basic":
-            return f"{module.name('fastapi.security', 'HTTPBasicCredentials')} | None"
+            return module.optional(module.name("fastapi.security", "HTTPBasicCredentials"))
         case "bearer" | "digest":
-            return f"{module.name('fastapi.security', 'HTTPAuthorizationCredentials')} | None"
+            return module.optional(module.name("fastapi.security", "HTTPAuthorizationCredentials"))
         case "custom":
             return "object"
         case _:
             pass
-    return "str | None"
+    return module.optional("str")
 
 
 def _scheme_dependency(module: Module, scheme: SchemeSpec, name: str) -> str:

@@ -7,26 +7,52 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import spellings_basemodel_models
-from fastapi import APIRouter, Body, params
+from fastapi import APIRouter, Body, Depends, Security, params
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBasicCredentials
 
+from .. import security
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
+from .._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    PrincipalT,
+    authenticate,
+)
 from ..services import DaysService
 
 
 def _add_post_day(router: APIRouter, wiring: Wiring) -> None:
-    days: DaysService = wiring.services['days']
+    days: DaysService[object] = wiring.services['days']
     post_day_handler = checked(days.post_day, 'The days.post_day method of POST /days')
+
+    post_day_authorize = wiring.authorizer()
+
+    async def post_day_principal(
+        *,
+        bearer: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer)],
+        basic: Annotated[HTTPBasicCredentials | None, Security(security.basic)],
+    ) -> object:
+        return await authenticate(
+            ((), (('bearer', ()),), (('basic', ()),)),
+            {'bearer': bearer, 'basic': basic},
+            post_day_authorize,
+            'Bearer, Basic',
+        )
 
     def post_day(
         *,
+        principal: Annotated[object, Depends(post_day_principal)],
         body: Annotated[spellings_basemodel_models.Day, Body(
             media_type='application/json',
         )],
     ) -> object:
-        return dispatch(post_day_handler(body=body), contract.PostDay.RESPONSES)
+        return dispatch(
+            post_day_handler(principal=principal, body=body),
+            contract.PostDay.RESPONSES,
+        )
 
     router.add_api_route(
         '/days',
@@ -49,7 +75,8 @@ TEMPLATED_ROUTES: Final = ()
 
 def build_router(
     *,
-    days: DaysService,
+    days: DaysService[PrincipalT],
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -58,6 +85,7 @@ def build_router(
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'days': days},
+        authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,

@@ -6,10 +6,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from re import compile
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional, Union
 
 from annotated_types import MultipleOf
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
@@ -18,8 +18,15 @@ class PetId(RootModel[conint(ge=1)]):
     root: conint(ge=1)
 
 
-class Pair(RootModel[list[constr(min_length=1) | conint(ge=0)]]):
-    root: list[constr(min_length=1) | conint(ge=0)] = Field(..., max_length=2)
+class Tag(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^(?!x)')
+
+
+class Pair(RootModel[list[Union[constr(min_length=1), conint(ge=0)]]]):
+    root: list[Union[constr(min_length=1), conint(ge=0)]] = Field(..., max_length=2)
 
 
 class Day(RootModel[date]):
@@ -37,24 +44,24 @@ class Dog(BaseModel):
 
 
 class Query(BaseModel):
-    term: str | None = None
+    term: Optional[str] = None
 
 
 class FieldModel(BaseModel):
-    name: str | None = None
+    name: Optional[str] = None
 
 
 class Response(BaseModel):
-    echo: str | None = None
+    echo: Optional[str] = None
 
 
 FieldPetsGetQueryInvalidParameter = TypeAliasType("FieldPetsGetQueryInvalidParameter", bool)
 
 
 class FieldPetsGetResponse(
-    RootModel[list[Annotated[Cat | Dog, Field(discriminator='petType')]]]
+    RootModel[list[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]]
 ):
-    root: list[Annotated[Cat | Dog, Field(discriminator='petType')]]
+    root: list[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]
 
 
 FieldCountsGetQueryInvalidParameter = TypeAliasType("FieldCountsGetQueryInvalidParameter", bool)
@@ -96,5 +103,5 @@ FieldPetsPetIdGetQueryLabelParameter = TypeAliasType(
 )
 
 
-class Pet(RootModel[Cat | Dog]):
-    root: Cat | Dog = Field(..., discriminator='petType')
+class Pet(RootModel[Union[Cat, Dog]]):
+    root: Union[Cat, Dog] = Field(..., discriminator='petType')

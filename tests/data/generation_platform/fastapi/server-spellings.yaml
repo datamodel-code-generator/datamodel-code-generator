@@ -61,6 +61,7 @@ paths:
         - {name: pair, in: query, explode: false, schema: {$ref: "#/components/schemas/Pair"}}
         - {name: label, in: query, schema: {type: string, pattern: "^(?!x)"}}
         - {name: pet, in: query, content: {application/json: {schema: {$ref: "#/components/schemas/Pet"}}}}
+        - {name: tag, in: query, schema: {$ref: "#/components/schemas/Tag"}}
       responses:
         "200":
           description: The pet.
@@ -86,6 +87,7 @@ paths:
     post:
       operationId: postDay
       tags: [days]
+      security: [{}, {bearer: []}, {basic: []}]
       requestBody:
         required: true
         content:
@@ -98,9 +100,13 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/Day"}
 components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer}
+    basic: {type: http, scheme: basic}
   schemas:
     PetId: {type: integer, minimum: 1}
     Code: {type: string, minLength: 2, maxLength: 5}
+    Tag: {type: string, pattern: "^(?!x)"}
     Pair: {type: array, items: [{type: string, minLength: 1}, {type: integer, minimum: 0}], additionalItems: false}
     Day: {type: string, x-python-type: "datetime.date"}
     Pet:

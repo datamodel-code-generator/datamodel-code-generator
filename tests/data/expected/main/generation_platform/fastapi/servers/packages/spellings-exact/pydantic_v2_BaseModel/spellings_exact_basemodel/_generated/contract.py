@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Annotated, Final, TypedDict
+from typing import Annotated, Final, Optional, TypedDict
 
 from fastapi import params
 from pydantic import StringConstraints, TypeAdapter
@@ -20,6 +20,7 @@ from spellings_exact_basemodel_models import (
     Pet,
     Query,
     Response,
+    Tag,
 )
 
 from .._runtime.model_codecs.media import FieldPlan
@@ -84,10 +85,11 @@ class GetPet:
     class Parameters:
         """The adapter parameters of get_pet."""
 
-        day: date | None
-        filter: Query | None
-        pair: Pair | None
-        pet: Pet | None
+        day: Optional[date]
+        filter: Optional[Query]
+        pair: Optional[Pair]
+        pet: Optional[Pet]
+        tag: Optional[Tag]
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -98,7 +100,7 @@ class GetPet:
                     name='day',
                     style='form',
                     explode=True,
-                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(date),
             ),
@@ -112,7 +114,7 @@ class GetPet:
                     shape='object',
                     fields=(FieldPlan('term', 'string'),),
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(Query),
             ),
@@ -123,7 +125,7 @@ class GetPet:
                     name='pair',
                     style='form',
                     shape='array',
-                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step', 'tag'),
                 ),
                 adapter=TypeAdapter(Pair),
             ),
@@ -135,6 +137,17 @@ class GetPet:
                     content_media_type='application/json',
                 ),
                 adapter=TypeAdapter(Pet),
+            ),
+            ParameterArgument(
+                name='tag',
+                plan=ParameterPlan(
+                    location='query',
+                    name='tag',
+                    style='form',
+                    explode=True,
+                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
+                ),
+                adapter=TypeAdapter(Tag),
             ),
         ),
         record=Parameters,

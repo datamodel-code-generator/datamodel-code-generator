@@ -7,7 +7,7 @@ from datetime import date
 from re import compile
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
@@ -18,6 +18,13 @@ class PetId(RootModel[conint(ge=1)]):
 
 class Code(RootModel[constr(min_length=2, max_length=5)]):
     root: constr(min_length=2, max_length=5)
+
+
+class Tag(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^(?!x)')
 
 
 class Pair(RootModel[list[constr(min_length=1) | conint(ge=0)]]):

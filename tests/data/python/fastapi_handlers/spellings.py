@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -46,9 +46,20 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append(f"post_field(body={_plain(body)!r})")
             return {"echo": "x"}
 
-    class Days(server.services.DaysService):
-        def post_day(self, *, body: object) -> object:
-            calls.append(f"post_day(body={body!r})")
+    class Days(server.services.DaysService[object]):
+        def post_day(self, *, principal: object, body: object) -> object:
+            calls.append(f"post_day(principal={principal!r}, body={body!r})")
             return body
 
     return {"default": {"pets": Pets(), "fields": Fields(), "days": Days()}}
+
+
+def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
+    """Return the authorize callback, which names the schemes that presented a credential."""
+    del server, models
+
+    def authorize(requirement_sets: tuple[Any, ...], credentials: dict[str, Any]) -> str:
+        calls.append(f"authorize {sorted(credentials)}")
+        return "-".join(sorted(credentials)) or "anonymous"
+
+    return {"default": {"authorize": authorize}}

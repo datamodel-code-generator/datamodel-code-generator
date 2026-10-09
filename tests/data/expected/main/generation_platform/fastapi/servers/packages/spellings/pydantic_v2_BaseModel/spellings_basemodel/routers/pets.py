@@ -141,6 +141,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
                 pair=parameters.pair,
                 label=label,
                 pet=parameters.pet,
+                tag=parameters.tag,
             ),
             contract.GetPet.RESPONSES,
         )

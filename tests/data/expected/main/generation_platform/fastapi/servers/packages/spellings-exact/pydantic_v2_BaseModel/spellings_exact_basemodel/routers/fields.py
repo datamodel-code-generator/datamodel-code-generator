@@ -4,7 +4,7 @@
 """Endpoints of the fields operations; regenerate them instead of editing."""
 
 from collections.abc import Sequence
-from typing import Annotated, Final
+from typing import Annotated, Final, Optional
 
 from fastapi import APIRouter, Body, params
 from spellings_exact_basemodel_models import FieldModel, Response
@@ -52,7 +52,7 @@ def build_router(
     *,
     fields: FieldsService,
     dependencies: Sequence[params.Depends] = (),
-    operation_dependencies: OperationDependencies | None = None,
+    operation_dependencies: Optional[OperationDependencies] = None,
     prefix: str = "",
 ) -> APIRouter:
     """Register the fields operations on a new router, literal paths first."""
