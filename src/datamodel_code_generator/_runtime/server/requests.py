@@ -13,10 +13,9 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 
-from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type
+from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type, plain
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import UNSET, Unset
-from ..model_codecs.wire import thaw_wire
 from .errors import REQUEST_ERRORS, invalid, malformed_request, missing, model_records, unsupported_media, wire_records
 
 if TYPE_CHECKING:
@@ -136,7 +135,7 @@ class ParameterAdapter:
                     values[argument.name] = deepcopy(argument.default)
                 continue
             try:
-                values[argument.name] = _validated(argument.adapter, thaw_wire(wire))
+                values[argument.name] = _validated(argument.adapter, plain(wire))
             except ValidationError as error:
                 records.extend(model_records(error, location))
         if records:
@@ -240,7 +239,7 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
         case "text":
             return _validated(adapter, decode_text(body, charset(media_type)))
         case "form":
-            return _validated(adapter, thaw_wire(decode_form(body, media.fields, _TEXT)))
+            return _validated(adapter, plain(decode_form(body, media.fields, _TEXT)))
         case "multipart":
             return _validated(adapter, await _parts(request, media.fields))
         case _:

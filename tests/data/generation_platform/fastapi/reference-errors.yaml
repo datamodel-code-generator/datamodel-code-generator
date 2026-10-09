@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info: {title: Reference errors, version: "1.0"}
+paths:
+  /unobserved:
+    get:
+      operationId: unobserved
+      security:
+        - unobserved: []
+      responses:
+        "204": {description: Done.}
+  /missing:
+    get:
+      operationId: missing
+      security:
+        - missing: []
+      responses:
+        "204": {description: Done.}
+  /refused:
+    get:
+      operationId: refused
+      security:
+        - refused: []
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    unobserved: {$ref: "reference-errors-library.yaml#/components/securitySchemes/key"}
+    missing: {$ref: "#/components/securitySchemes/absent"}
+    refused: {$ref: "urn:example:schemes#/key"}
+    unused: {$ref: "#/components/securitySchemes/absent"}

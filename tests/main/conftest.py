@@ -1302,7 +1302,7 @@ def _generated_output_import_code(output_path: Path) -> str:
                     sys.modules.pop(module_name, None)
 
 
-        output_path = Path({str(output_path)!r})
+        output_path = Path({str(output_path.absolute())!r})
         if output_path.is_file():
             _import_file(output_path, "_datamodel_codegen_generated_output")
         elif (output_path / "__init__.py").exists():

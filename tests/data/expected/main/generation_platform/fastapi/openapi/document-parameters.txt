@@ -44,14 +44,6 @@
             }
           },
           {
-            "name": "none",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/FieldAdaptersGetQueryNoneParameter"
-            }
-          },
-          {
             "name": "count",
             "in": "query",
             "required": false,
@@ -390,12 +382,6 @@
   },
   "components": {
     "schemas": {
-      "FieldAdaptersGetQueryNoneParameter": {
-        "enum": [
-          null
-        ],
-        "title": "FieldAdaptersGetQueryNoneParameter"
-      },
       "FieldItemsItemIdPartsPartGetQueryModeParameter": {
         "type": "string",
         "enum": [
