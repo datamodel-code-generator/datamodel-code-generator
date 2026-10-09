@@ -1,0 +1,739 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Pets with protocol helpers",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{region}.example.com/v1",
+      "variables": {
+        "region": {
+          "default": "api",
+          "enum": [
+            "api",
+            "eu"
+          ]
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "tags": [
+          "pets"
+        ],
+        "summary": "List every pet.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "X-Trace",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "cookie",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pets.",
+            "headers": {
+              "X-Next": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Rate": {
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pet"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPet",
+        "tags": [
+          "pets"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPet"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "parameters": [
+        {
+          "name": "petId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPet",
+        "tags": [
+          "pets"
+        ],
+        "description": "Show one pet.\nThe second line stays out of the docstring.\n",
+        "responses": {
+          "200": {
+            "description": "The pet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pets"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          }
+        }
+      },
+      "head": {
+        "operationId": "headPet",
+        "tags": [
+          "pets"
+        ],
+        "responses": {
+          "200": {
+            "description": "Present.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/{petId}/photo": {
+      "put": {
+        "operationId": "uploadPhoto",
+        "tags": [
+          "pets",
+          "photos"
+        ],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored photo.",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/{petId}/files": {
+      "post": {
+        "operationId": "attachFiles",
+        "tags": [
+          "pets"
+        ],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "note": {
+                    "type": "string"
+                  },
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Attached."
+          }
+        }
+      },
+      "get": {
+        "operationId": "readFiles",
+        "tags": [
+          "pets"
+        ],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The attached files.",
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "file"
+                  ],
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "file": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/pages": {
+      "get": {
+        "operationId": "listPetPages",
+        "tags": [
+          "pages"
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of pets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "post": {
+        "operationId": "startJob",
+        "tags": [
+          "jobs"
+        ],
+        "responses": {
+          "202": {
+            "description": "The job started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "tags": [
+          "jobs"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/events": {
+      "get": {
+        "operationId": "watchPets",
+        "tags": [
+          "events"
+        ],
+        "responses": {
+          "200": {
+            "description": "The pet events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/socket": {
+      "get": {
+        "operationId": "petSocket",
+        "tags": [
+          "sockets"
+        ],
+        "responses": {
+          "101": {
+            "description": "The pet channel."
+          },
+          "204": {
+            "description": "The channel is closed."
+          }
+        }
+      }
+    },
+    "/files": {
+      "post": {
+        "operationId": "createFile",
+        "tags": [
+          "files"
+        ],
+        "parameters": [
+          {
+            "name": "Upload-Length",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The upload was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upload"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{fileId}": {
+      "head": {
+        "operationId": "probeFile",
+        "tags": [
+          "files"
+        ],
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The offset the server holds.",
+            "headers": {
+              "Upload-Offset": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "appendFile",
+        "tags": [
+          "files"
+        ],
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Upload-Offset",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/offset+octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "The chunk was appended.",
+            "headers": {
+              "Upload-Offset": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pets/records": {
+      "get": {
+        "operationId": "streamRecords",
+        "tags": [
+          "pets"
+        ],
+        "responses": {
+          "200": {
+            "description": "Records",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "petCreated": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": {
+              "read": "Read access"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://auth.example.com/authorize",
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": {
+              "read": "Read access"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "NewPet": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PetPage": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pet"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/Pet"
+          }
+        }
+      },
+      "Upload": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

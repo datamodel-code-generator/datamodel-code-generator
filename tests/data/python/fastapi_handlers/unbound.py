@@ -12,9 +12,9 @@ def services(_server: ModuleType, models: ModuleType, calls: list[str]) -> dict[
     """Return the service for the unbound parameter operation."""
 
     class Untagged:
-        def get_value(self, *, id: int, at: object, tags: object, x_label: object) -> object:  # ruff: ignore[builtin-argument-shadowing]
-            """Record the path, query, and header values and return their Value response."""
-            calls.append(f"get_value(id={id!r}, at={at!r}, tags={tags!r}, x_label={x_label!r})")
+        def get_value(self, *, id: int, at: object, tags: object) -> object:  # ruff: ignore[builtin-argument-shadowing]
+            """Record the path and query values and return their Value response."""
+            calls.append(f"get_value(id={id!r}, at={at!r}, tags={tags!r})")
             return models.Value(id=id)
 
     return {"default": {"untagged": Untagged()}}

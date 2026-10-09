@@ -453,7 +453,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.get_data_str_type(types, **kwargs)
         if types in {Types.int32, Types.int64, Types.integer}:
             return self.get_data_int_type(types, **kwargs)
-        if types in {Types.float, Types.double, Types.number, Types.time}:
+        if types in {Types.float, Types.double, Types.number, Types.time} and not kwargs.get("string_format"):
             return self.get_data_float_type(types, **kwargs)
         if types == Types.decimal:
             return self.get_data_decimal_type(types, **kwargs)

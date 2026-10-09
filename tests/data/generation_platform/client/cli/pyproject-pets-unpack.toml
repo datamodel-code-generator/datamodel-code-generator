@@ -1,0 +1,21 @@
+[tool.datamodel-codegen]
+input = "pets.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-signature-style = "unpack"
+client-resource-names = { photos = "photos" }
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1pets/get" = { parameter_names = { "query:tags" = "labels" }, runtime = { request_id_header = "X-Request-Id" } }
+"#/paths/~1pets/post" = { description = "Create a pet \"quoted\" \\ escaped." }
+"/paths/~1pets~1{petId}/get" = { response_media_type = "application/json" }
+"/paths/~1pets~1{petId}~1photo/put" = { resource = "pets.photos", name = "upload" }
