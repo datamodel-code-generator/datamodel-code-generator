@@ -205,6 +205,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         ("error syntax", raw_response(500, b"{", "application/json"), 3),
         ("error media", raw_response(503, b"down", "text/plain"), 3),
         ("error bare", raw_response(502, b"down"), 3),
+        ("error long", raw_response(500, b"y" * 600, "text/plain"), 3),
         ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com"), 1),
         ("success default", json_response(201, {"code": 1}), 1),
         ("success media", raw_response(200, b"[]"), 1),
