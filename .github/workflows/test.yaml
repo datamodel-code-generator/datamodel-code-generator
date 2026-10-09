@@ -46,6 +46,9 @@ jobs:
           - tox_env: pydantic214
             name: pydantic214
             coverage_name: pydantic214
+          - tox_env: graphqlcore33
+            name: graphqlcore33
+            coverage_name: graphqlcore33
     runs-on: ubuntu-24.04
     env:
       OS: ubuntu-24.04

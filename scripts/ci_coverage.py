@@ -22,6 +22,7 @@ COVERAGE_ENVS = (
     "pydantic25",
     "pydantic213",
     "pydantic214",
+    "graphqlcore33",
     "py312-black-latest",
     "py312-black22",
     "httpx-e2e",

@@ -6,6 +6,7 @@
     ".coverage.client-e2e-shard3-ubuntu-24.04",
     ".coverage.client-py311-e2e-ubuntu-24.04",
     ".coverage.fastapi-e2e-ubuntu-24.04",
+    ".coverage.graphqlcore33-ubuntu-24.04",
     ".coverage.httpx-e2e-ubuntu-24.04",
     ".coverage.httpx2-min-e2e-ubuntu-24.04",
     ".coverage.migration-boundary-ubuntu-24.04",
@@ -44,5 +45,5 @@
     ".coverage.pydantic25-ubuntu-24.04"
   ],
   "stderr": "",
-  "stdout": "Validated 41 coverage artifacts\n"
+  "stdout": "Validated 42 coverage artifacts\n"
 }

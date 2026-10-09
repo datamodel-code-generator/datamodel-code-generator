@@ -48077,6 +48077,7 @@ This page lists deprecations and scheduled breaking changes.
 | `python-api.python-version-has-type-alias` | active | python-api | `PythonVersion.has_type_alias` | 0.52.1 | TBD | - |
 | `schema.jsonschema-items-array` | active | schema | `JSON Schema Draft 2020-12 items array tuple validation` | 0.53.0 | TBD | Use prefixItems. |
 | `schema.openapi-nullable` | active | schema | `OpenAPI 3.1 nullable keyword` | 0.53.0 | TBD | Use type arrays such as type: ["string", "null"]. |
+| `dependency.python-310-runtime` | active | dependency | `Running datamodel-code-generator on Python 3.10` | 0.84.0 | 0.85.0 | Run datamodel-code-generator on Python 3.11 or newer. |
 
 ## Details
 
@@ -48285,6 +48286,20 @@ items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems 
 
 nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] instead.
 
+### `dependency.python-310-runtime`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Running datamodel-code-generator on Python 3.10`
+- **Since:** 0.84.0
+- **Planned removal:** 0.85.0
+- **Warning category:** `FutureWarning`
+- **Replacement:** Run datamodel-code-generator on Python 3.11 or newer.
+
+Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.
+
+Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.
+
 ---
 
 # Dependency migration notices
@@ -48333,9 +48348,11 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
+| Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
 Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the new notices are recorded for the planned 0.78.0 release. The registry contains the
+original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
+and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
 [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
@@ -48421,6 +48438,13 @@ Future work should distinguish a minimum **producer** test running DCG from **co
 saved output in another Pydantic environment. First preserve alias, metadata, regex, recursive RootModel,
 discriminator/Union, additional-properties and payload behavior; then identify which internal-only branches can
 actually be removed. Changing target-version semantics would require a separate, explicit decision.
+
+## Running on Python 3.10
+
+Running datamodel-code-generator on Python 3.10 is deprecated in 0.84.0 and will be removed in 0.85.0, because
+Python 3.10 reached end of life in October 2026. Generation on Python 3.10 emits a `FutureWarning`; run DCG on
+Python 3.11 or newer to prepare. This concerns only the interpreter running DCG: generating code for Python 3.10
+with `--target-python-version 3.10` is unchanged.
 
 ## Follow-up changes remain separate
 

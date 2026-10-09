@@ -84,10 +84,10 @@
 -    )
 --- server/application.py
 +++ server/application.py (expected)
-@@ -16,22 +16,16 @@
-     Credentials,
-     RequirementSets,
- )
+@@ -10,22 +10,16 @@
+ 
+ from ._generated.contract import OperationDependencies
+ from ._runtime.server.application import build, error_handlers, validation_error_handler
 -from .routers import pets, store
 -from .services import PetsService, StoreService
 +from .routers import pets
@@ -110,7 +110,7 @@
      dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-@@ -39,7 +33,7 @@
+@@ -33,7 +27,7 @@
      """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
@@ -119,7 +119,7 @@
          dependencies=dependencies,
          operation_dependencies=operation_dependencies,
          prefix=prefix,
-@@ -49,7 +43,6 @@
+@@ -43,7 +37,6 @@
  def create_app(
      *,
      pets: PetsService,
@@ -127,7 +127,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      **fastapi_kwargs: Any,
-@@ -63,7 +56,6 @@
+@@ -57,7 +50,6 @@
      app.include_router(
          build_router(
              pets=pets,
