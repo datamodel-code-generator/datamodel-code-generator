@@ -13847,6 +13847,63 @@ def test_main_jsonschema_serialization_aliases_with_use_serialization_alias_pyda
     )
 
 
+@pytest.mark.parametrize(
+    ("field_names", "field_name_args"),
+    [
+        ("schema_names", []),
+        ("snake_case_field", ["--snake-case-field"]),
+        ("multiple_aliases", ["--aliases", '{"foo_bar": ["foo_bar", "fooBar"]}']),
+    ],
+    ids=["schema_names", "snake_case_field", "multiple_aliases"],
+)
+@pytest.mark.parametrize("alias_generator", ["to_camel", "to_pascal", "to_snake"])
+def test_main_jsonschema_use_serialization_alias_alias_generator(
+    output_file: Path, alias_generator: str, field_names: str, field_name_args: list[str]
+) -> None:
+    """Keep the schema name on output for a field the alias generator would rename."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"alias_generator_serialization_alias/{alias_generator}_{field_names}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            alias_generator,
+            "--use-serialization-alias",
+            *field_name_args,
+        ],
+    )
+    payload = (JSON_DATA_PATH / "alias_generator_serialization_alias" / f"{field_names}.json").read_text(
+        encoding="utf-8"
+    )
+    with _generated_model(output_file, "alias_generator_serialization_alias", "AliasGeneratorModel") as model:
+        assert_output(
+            model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_serialization_alias" / "round_trip.txt",
+        )
+
+
+def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_dataclass(output_file: Path) -> None:
+    """Leave dataclass fields without a redundant alias when template data names a generator the template ignores."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_serialization_alias/template_data_dataclass.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-serialization-alias",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
+        ],
+    )
+
+
 def test_main_jsonschema_serialization_aliases_invalid(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test invalid serialization_aliases mapping exits with an error."""
     run_main_and_assert(
