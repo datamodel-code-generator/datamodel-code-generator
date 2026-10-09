@@ -52,7 +52,7 @@
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'x'
   > GET https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip] gzip b''
   redirect drops the body = 200
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'keptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkept'

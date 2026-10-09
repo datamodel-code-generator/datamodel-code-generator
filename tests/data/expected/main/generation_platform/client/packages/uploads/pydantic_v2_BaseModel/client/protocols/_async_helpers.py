@@ -8,8 +8,8 @@ from __future__ import annotations
 from functools import cached_property
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import AsyncClientCore
-from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.uploads import (
     AsyncUploadHandle,
     aresume_upload,
@@ -87,7 +87,7 @@ class AsyncFilesUploadResumableUpload:
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
@@ -136,7 +136,7 @@ class AsyncFilesFinishResumableUpload:
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
@@ -186,7 +186,7 @@ class AsyncFilesPutResumableUpload:
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,

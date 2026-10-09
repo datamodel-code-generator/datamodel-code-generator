@@ -4966,5 +4966,62 @@
       ]
     ],
     "expected": "caching"
+  },
+  "discriminator-copies": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-variants": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-reuse": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    },
+    "model": {
+      "reuse_model": true
+    }
   }
 }
