@@ -404,38 +404,14 @@ def _decoding(harness: _Harness, api: Any, feed: _Feed) -> None:
 
 
 def _limits(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Refuse lines and event data over their limits, from the call's options or the helper's defaults."""
+    """Refuse an event over HTTPX2's event size limit and options of another type."""
     lines, protocols, options = harness.lines, api.protocols, harness.options
-    limited = harness.protocols.StreamOptions(max_line_bytes=12, max_event_bytes=20)
     feed.replies.extend((
-        harness.reply((b'data: {"text": "a"}', b"\n\n")),
-        harness.reply((b'data: {"text":\ndata: "abcdefghijk"}\n\n',)),
-        harness.reply((b'data: {"text":\ndata: "abc"}\n\n',)),
-        harness.reply((b": a comment over the line limit\n",)),
+        harness.reply((b'data: {"text": "a"}\n\n', b"data: " + b"x" * 1048576 + b"\n\n")),
+        harness.reply((b": " + b"x" * 1048576 + b"\n", b'data: {"text": "after a long comment"}\n\n')),
     ))
-    _drained(lines, "line over the limit", protocols.events.messages.open(stream_options=limited))
-    wide = harness.protocols.StreamOptions(max_line_bytes=64, max_event_bytes=20)
-    _drained(lines, "event over the limit", protocols.events.messages.open(stream_options=wide))
-    _drained(lines, "event at the limit", protocols.events.messages.open(stream_options=wide))
-    defaults = harness.protocols.ProtocolDefaults(options=limited)
-    client_options = options.ClientOptions(
-        protocols=options.ProtocolClientOptions(defaults={"events.messages": defaults})
-    )
-    with feed.client() as http, harness.package.Client(http_client=http, options=client_options) as limiting:
-        _drained(lines, "comment over the default limit", limiting.protocols.events.messages.open())
-    drip = b":" + b"x" * 62 + b"\n" + b'data: {"text": "drip"}\n\n'
-    feed.replies.extend((
-        harness.reply((b"data: {", b'"text": "a"}\n\n')),
-        harness.reply((b"data: {", b'"text"')),
-        harness.reply(_pieces(drip, 1)),
-    ))
-    for label in ("line a later chunk ends over the limit", "line a later chunk extends over the limit"):
-        _drained(lines, label, protocols.events.messages.open(stream_options=limited))
-    _drained(
-        lines,
-        "line just under the limit, one byte at a time",
-        protocols.events.messages.open(stream_options=harness.protocols.StreamOptions(max_line_bytes=64)),
-    )
+    _drained(lines, "event over the native size limit", protocols.events.messages.open())
+    _drained(lines, "comment longer than the native size limit", protocols.events.messages.open())
     for label, call in (
         (
             "stream options of another type",
@@ -512,6 +488,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             harness.reply((b'data: {"text": "a"}\n\n', b"data: cut")),
             harness.reply((b'data: {"text": "a"}\n\n', harness.interrupted())),
             harness.reply((b'data: {"text": "a"}\n\n' * 2,)),
+            harness.reply((b"data: " + b"x" * 1048576 + b"\n\n",)),
         ))
         async with await protocols.events.messages.open() as stream:
             await _adrained(lines, "async one byte at a time", stream)
@@ -525,6 +502,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async after the end", lambda: anext(stream))
         await stream.aclose()
         await arecord(lines, "async options of another type", lambda: protocols.events.messages.open(options=1))
+        await _adrained(lines, "async event over the native size limit", await protocols.events.messages.open())
         feed.replies.append(harness.reply((b'data: {"text": "a"}\n\n' * 2,)))
         async with await protocols.events.messages.open() as stream:
             lines.append(f"  async left early {_event(await anext(stream))}")
@@ -712,14 +690,13 @@ def _decode_failure(lines: list[str], label: str, stream: Any) -> None:
 
 
 def ndjson(package: ModuleType, lines: list[str]) -> None:
-    """Split, decode, route, end, and limit NDJSON streams of exact chunks through the synchronous and asyncio clients."""
+    """Split, decode, route, and end NDJSON streams of exact chunks through the synchronous and asyncio clients."""
     harness = _Harness(package, lines)
     feed = _Feed(lines)
     with feed.client() as http, package.Client(http_client=http) as api:
         _ndjson_framing(harness, api, feed)
         _ndjson_endings(harness, api, feed)
         _ndjson_routing(harness, api, feed)
-        _ndjson_limits(harness, api, feed)
         _ndjson_states(harness, api, feed)
     run(lambda: _async_ndjson(harness))
 
@@ -810,35 +787,6 @@ def _ndjson_routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     record(lines, "after the error", lambda: next(stream))
     _drained(lines, "missing discriminator", helper.open())
     _drained(lines, "mapped record failing its type", helper.open())
-
-
-def _ndjson_limits(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Refuse a line over the smaller of the line and record limits, before it is kept or once it is found."""
-    lines, helper = harness.lines, api.protocols.records.all
-    narrow = harness.protocols.StreamOptions(max_line_bytes=16)
-    feed.replies.extend((
-        _lines(harness, (b'{"text": "a"}\n{"text": "abcdef"}\n',)),
-        _lines(harness, (b'{"text": ', b'"abcdefgh"}\n')),
-        _lines(harness, (b'{"text": "a"}\n{"text": "abcdefghij"',)),
-        _lines(harness, (b'{"text": "abcd"}\n',)),
-        _lines(harness, (b'{"text": "abcd"}\r\n{"text": "efgh"}\r', b"\n")),
-        _lines(harness, (b'{"text": "abcd"}\r', b'{"text": "e"}\n')),
-    ))
-    for label in (
-        "line over the limit in one chunk",
-        "line a later chunk extends over the limit",
-        "unended line after a line end over the limit",
-        "line at the limit",
-        "CRLF line at the limit",
-        "CR inside a line counted",
-    ):
-        _drained(lines, label, helper.open(stream_options=narrow))
-    feed.replies.append(_lines(harness, (b'{"text": "abcde"}\n',)))
-    _drained(
-        lines,
-        "record over a record limit under the line limit",
-        helper.open(stream_options=harness.protocols.StreamOptions(max_line_bytes=64, max_event_bytes=16)),
-    )
 
 
 def _ndjson_states(harness: _Harness, api: Any, feed: _Feed) -> None:

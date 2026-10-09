@@ -35,7 +35,7 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 from datamodel_code_generator._target_templates import builtin_role
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.codec_render import RenderedBindings, UseAccessors
@@ -335,7 +335,7 @@ _PROTOCOL_ERROR_NAMES: Final = (
 _ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
 _SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
-    "pagination": ("PaginationCycleError", "ResumeStateError", *_SESSION_ERRORS),
+    "pagination": ("PaginationCycleError", *_SESSION_ERRORS),
     "polling": (
         "OperationCancelledError",
         "OperationFailedError",
@@ -437,7 +437,6 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
             "StatusSelector",
         ),
         "references": ("OperationRef",),
-        "resume": ("ResumeState", "import_state"),
     },
     "pagination": {"options": ("PaginationOptions",), "pagination": ("AsyncPager", "Page", "Pager")},
     "polling": {
@@ -2066,21 +2065,21 @@ _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None 
 _RESUMED: Final = """
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the bindings' values, the server's
-expiry, and the caller's first request when the reopen repeats it, never events, counts, responses, the session, or
-the call's options. A call given a cookie or credential argument cannot be checkpointed: `checkpoint()` raises
-`ConfigurationError` with the reason `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
-request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of its own, writing
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's
+expiry, never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that
+failed, ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing
 the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
-reconnections afresh; it refuses another helper's state, an expired one, and one that does not fit with
-`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
-client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError` and an expired one with
+`ResumeStateError` before sending, and a cursor written where a credential goes with `ConfigurationError` with the
+reason `wrong_capability`. No options, the client's, a view's, or the call's, may patch a header or query parameter a
+reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
-`StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+`StreamResumeExhaustedError`; a wait whose backoff cap or `retry` time is
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.
@@ -2853,7 +2852,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
             ("media=", repr(spec.media)),
-            ("fingerprint=", repr(self.fingerprints[helper.name])),
         ]
         if not isinstance(schema := tree["event_schema"], dict):
             entries.append(("event=", self.codec(module, spec.events[0][1])))
@@ -2945,30 +2943,34 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ))
         ]
         if spec.reopen is not None:
-            methods.append(self.stream_resume(module, index, spec, (options, returns), asynchronous=asynchronous))
+            if not spec.own:
+                signature = tuple(argument.parameter(module) for argument in options)
+                passed = [*passed[:2], *passed[-len(_STREAM_OPTIONS) :]]
+            methods.append(self.stream_resume(module, spec, (signature, returns), passed, wait))
         return methods
 
     @staticmethod
     def stream_resume(
-        module: Module, index: int, spec: StreamSpec, signature: tuple[list[_Argument], str], *, asynchronous: bool
+        module: Module,
+        spec: StreamSpec,
+        signature: tuple[tuple[str, ...], str],
+        passed: Sequence[tuple[str, Doc]],
+        wait: str,
     ) -> str:
-        """Return a stream helper's resume method, which takes a checkpoint and the open method's options."""
-        options, returns = signature
-        resume = module.local(_STREAMS, "aresume_events" if asynchronous else "resume_events")
-        state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
-        passed = [
-            ("", "self._core"),
-            ("", f"{module.namespace.name('.', '_plans')}.STREAM_{index}"),
-            ("", "state"),
-            *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
-        ]
-        wait = "await " if asynchronous else ""
+        """Return a stream helper's resume method, which takes a checkpoint and the open method's options.
+
+        A reopen of the helper's own operation also takes the open method's arguments and body, which it sends again.
+        """
+        given, returns = signature
+        resume = module.local(_STREAMS, "aresume_events" if wait else "resume_events")
+        state = f"state: {module.local('_runtime.model_codecs.media', 'JSONValue')}"
+        passed = [*passed[:2], ("", "state"), *passed[2:]]
         what = f"Reopen the {_STREAM_KINDS[spec.helper.kind]} after a checkpoint's cursor"
         return "\n".join((
             layout(
                 Group(
-                    f"    {'async ' if asynchronous else ''}def resume(",
-                    items(("self", state, "*", *(argument.parameter(module) for argument in options))),
+                    f"    {'async ' if wait else ''}def resume(",
+                    items(("self", state, "*", *given)),
                     f") -> {returns}:",
                 ),
                 4,
@@ -3628,10 +3630,10 @@ session, the first page's own included, ends it with `PaginationCycleError` afte
         lines = (
             """
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record, without its LF or the CR of a CRLF,
-counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
-the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
-event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. Bytes after the last line end raise
+`IncompleteFrameError` unless the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record
+has the empty string as its event type and no event ID, and a declared error record raises `StreamRemoteError` with
+the event type None.
 """
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""
@@ -3653,15 +3655,16 @@ from:
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| line size | 256 KiB |
-| event data size | 1 MiB |
 | session total timeout | None |
 {_RECONNECT_LIMITS if resumed else ""}
-The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
-discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
-`StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
-completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
-connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
+The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
+UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the native
+`SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator maps it to; data that does not
+decode raises `StreamDecodeError`, and a declared error event raises `StreamRemoteError`. The stream ends at its
+declared completion; an end before it raises `StreamInterruptedError`, and a broken connection
+`StreamInterruptedError` with its transport failure as the cause. A frame an SSE body ends in the middle of is
+discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
 active streams; each stream releases its own response and limiter permit.

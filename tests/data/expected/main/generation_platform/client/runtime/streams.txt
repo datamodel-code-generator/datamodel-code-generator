@@ -26,7 +26,7 @@
   > GET https://api.example.com/events accept=text/event-stream
   byte order mark prefix at the end
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=0, buffered_bytes=1) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    end
   > GET https://api.example.com/events accept=text/event-stream
   empty body
   < closed
@@ -35,12 +35,12 @@
   cut line at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    end
   > GET https://api.example.com/events accept=text/event-stream
   cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=20) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    end
   > GET https://api.example.com/events accept=text/event-stream
   comment before EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -137,33 +137,13 @@ text
   < closed
   invalid mapped event cause ValidationError prefix b'{"type": "created"}'
   > GET https://api.example.com/events accept=text/event-stream
-  line over the limit
+  event over the native size limit
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=19] protocol_size_error
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', call_id='<call>', condition='malformed') [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SSEError('Server-sent event exceeded the 1048576 byte limit.')] protocol_data_error
   > GET https://api.example.com/events accept=text/event-stream
-  event over the limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='event', limit=20, observed=23) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='event', unit='bytes', limit=20, observed=23] protocol_size_error
-  > GET https://api.example.com/events accept=text/event-stream
-  event at the limit
-    1 message id=None retry=None data=Message{'text': 'abc'} raw='{"text":\n"abc"}'
-  < closed
-    end
-  > GET https://api.example.com/events accept=text/event-stream
-  comment over the default limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=31) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=31] protocol_size_error
-  > GET https://api.example.com/events accept=text/event-stream
-  line a later chunk ends over the limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=19] protocol_size_error
-  > GET https://api.example.com/events accept=text/event-stream
-  line a later chunk extends over the limit
-  < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=13) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=13] protocol_size_error
-  > GET https://api.example.com/events accept=text/event-stream
-  line just under the limit, one byte at a time
-    1 message id=None retry=None data=Message{'text': 'drip'} raw='{"text": "drip"}'
+  comment longer than the native size limit
+    1 message id=None retry=None data=Message{'text': 'after a long comment'} raw='{"text": "after a long comment"}'
   < closed
     end
   stream options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='stream_options') [field_path=('stream_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -230,8 +210,8 @@ text
   hooked cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    hook stream_end outcome=success
+    end
   > POST https://api.example.com/feed accept=text/event-stream
   hooked EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -278,7 +258,7 @@ text
   async cut frame
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=9) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    end
   > GET https://api.example.com/events accept=text/event-stream
   async broken connection
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -289,6 +269,10 @@ text
   async data [{'text': 'a'}, {'text': 'a'}]
   async after the end ! StopAsyncIteration:  []
   async options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  > GET https://api.example.com/events accept=text/event-stream
+  async event over the native size limit
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', call_id='<call>', condition='malformed') [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SSEError('Server-sent event exceeded the 1048576 byte limit.')] protocol_data_error
   > GET https://api.example.com/events accept=text/event-stream
   async left early 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -308,8 +292,8 @@ text
   async hooked cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=error
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
+    hook stream_end outcome=success
+    end
   > POST https://api.example.com/feed accept=text/event-stream
   async hooked EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'

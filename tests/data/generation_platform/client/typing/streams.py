@@ -23,7 +23,7 @@ from typing_extensions import assert_type
 def events(client: Client, query: FeedQuery) -> None:
     """Yield typed events and their data, keep unknown events in the union, and read error events as object."""
     stream = client.protocols.events.messages.open(
-        stream_options=StreamOptions(idle_timeout=5, max_event_bytes=1024),
+        stream_options=StreamOptions(idle_timeout=5),
         options=RequestOptions(),
         session_options=SessionOptions(total_timeout=30),
     )

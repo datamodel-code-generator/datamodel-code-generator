@@ -16,27 +16,25 @@
     str=ProtocolStateError(operation_id='protocol', call_id='call-1', state='receiving', action='receive') repr=ProtocolStateError() secret=False progress shown=False
   SessionLimitError: base=ProtocolError sdk=True reason=session_limit_error
     chain=['SessionLimitError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,progress,reason,resume_state,secondary_errors
+    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,progress,reason,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=SessionLimitError(operation_id='protocol', call_id='call-1', kind='pages', limit=3) repr=SessionLimitError() secret=False progress shown=False
-    resume hint=True identity=True
   StreamResumeExhaustedError: base=SessionLimitError sdk=True reason=stream_resume_exhausted_error
     chain=['StreamResumeExhaustedError', 'SessionLimitError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,progress,reason,resume_state,secondary_errors
+    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,progress,reason,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=StreamResumeExhaustedError(operation_id='protocol', call_id='call-1', kind='reconnects', limit=5) repr=StreamResumeExhaustedError() secret=False progress shown=False
-    resume hint=True identity=True
   ResumeStateError: base=ProtocolError sdk=True reason=resume_state_error
     chain=['ResumeStateError', 'ProtocolError', 'SDKError']
     fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
-    str=ResumeStateError(operation_id='protocol', call_id='call-1', condition='fingerprint') repr=ResumeStateError() secret=False progress shown=False
+    str=ResumeStateError(operation_id='protocol', call_id='call-1', condition='expired') repr=ResumeStateError() secret=False progress shown=False
   PaginationCycleError: base=ProtocolDataError sdk=True reason=pagination_cycle_error
     chain=['PaginationCycleError', 'ProtocolDataError', 'ProtocolError', 'SDKError']
     fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,first_seen_page_index,helper_id,info,location,operation,operation_id,page_index,parent_session_id,reason,secondary_errors
@@ -84,20 +82,18 @@
     location hint=True identity=True
   StreamInterruptedError: base=ProtocolError sdk=True reason=stream_interrupted_error
     chain=['StreamInterruptedError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,resume_state,secondary_errors,sequence
+    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors,sequence
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=StreamInterruptedError(operation_id='protocol', call_id='call-1', condition='transport', sequence=3) repr=StreamInterruptedError() secret=False progress shown=False
-    resume hint=True identity=True
   IncompleteFrameError: base=StreamInterruptedError sdk=True reason=incomplete_frame_error
     chain=['IncompleteFrameError', 'StreamInterruptedError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,buffered_bytes,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,resume_state,secondary_errors,sequence
+    fields=attempt_count,buffered_bytes,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors,sequence
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=IncompleteFrameError(operation_id='protocol', call_id='call-1', condition='eof', sequence=3, buffered_bytes=12) repr=IncompleteFrameError() secret=False progress shown=False
-    resume hint=True identity=True
   StreamRemoteError: base=ProtocolError sdk=True reason=stream_remote_error
     chain=['StreamRemoteError', 'ProtocolError', 'SDKError']
     fields=_data,attempt_count,call_id,cause,completed_result,delivery_state,elapsed,event_type,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors,sequence
@@ -142,12 +138,11 @@
     str=HandshakeResponse(operation_id='protocol', call_id='call-1', status_code=503) repr=HandshakeResponse() secret=False progress shown=False
   DeliveryUnknownError: base=ProtocolError sdk=True reason=delivery_unknown_error
     chain=['DeliveryUnknownError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,message_id,operation,operation_id,parent_session_id,reason,resume_state,secondary_errors
+    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,message_id,operation,operation_id,parent_session_id,reason,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=DeliveryUnknownError(operation_id='protocol', call_id='call-1', delivery_state='MAYBE_SENT') repr=DeliveryUnknownError() secret=False progress shown=False
-    resume hint=True identity=True
   progress copy={'pages': 1, 'items': 0, 'polls': 2} type=mappingproxy hint=True
   progress mutation ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   every progress key = 8
@@ -160,24 +155,24 @@
   OperationFailedError covariance=True default=<class 'object'> subscripted=True property hint=True
   OperationCancelledError covariance=True default=<class 'object'> subscripted=True property hint=True
   StreamRemoteError covariance=True default=<class 'object'> subscripted=True property hint=True
-  data defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) ProtocolDataError(condition='value')
-  state defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ProtocolStateError(state='finished', action='wait')
-  session limit defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) SessionLimitError(kind='pages', limit=0)
-  resume exhausted defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) StreamResumeExhaustedError(kind='reconnects', limit=16)
-  resume defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ResumeStateError(condition='malformed')
-  cycle defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
-  polling defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PollingStateError(condition='value')
-  wait defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
-  failed defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) OperationFailedError()
-  cancelled defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) OperationCancelledError()
-  decode defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) StreamDecodeError(condition='malformed', sequence=0, truncated=False)
-  interrupted defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) StreamInterruptedError(condition='eof', sequence=0)
-  incomplete defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) IncompleteFrameError(condition='eof', sequence=0, buffered_bytes=0)
-  remote defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) StreamRemoteError(sequence=0)
+  data defaults: (None, None, None, None, None, None, None, (), None, 0, None) ProtocolDataError(condition='value')
+  state defaults: (None, None, None, None, None, None, None, (), '-', 0, None) ProtocolStateError(state='finished', action='wait')
+  session limit defaults: (None, None, None, None, None, None, None, (), '-', 0, None) SessionLimitError(kind='pages', limit=0)
+  resume exhausted defaults: (None, None, None, None, None, None, None, (), '-', 0, None) StreamResumeExhaustedError(kind='reconnects', limit=16)
+  resume defaults: (None, None, None, None, None, None, None, (), '-', 0, None) ResumeStateError(condition='expired')
+  cycle defaults: (None, None, None, None, None, None, None, (), None, 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
+  polling defaults: (None, None, None, None, None, None, None, (), None, 0, None) PollingStateError(condition='value')
+  wait defaults: (None, None, None, None, None, None, None, (), '-', 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
+  failed defaults: (None, None, None, None, None, None, None, (), '-', 0, None) OperationFailedError()
+  cancelled defaults: (None, None, None, None, None, None, None, (), '-', 0, None) OperationCancelledError()
+  decode defaults: (None, None, None, None, None, None, None, (), None, 0, None) StreamDecodeError(condition='malformed', sequence=0, truncated=False)
+  interrupted defaults: (None, None, None, None, None, None, None, (), '-', 0, None) StreamInterruptedError(condition='eof', sequence=0)
+  incomplete defaults: (None, None, None, None, None, None, None, (), '-', 0, None) IncompleteFrameError(condition='eof', sequence=0, buffered_bytes=0)
+  remote defaults: (None, None, None, None, None, None, None, (), '-', 0, None) StreamRemoteError(sequence=0)
   ProtocolDataError condition: ['missing', 'null', 'type', 'value', 'malformed', 'inconsistent']
   SessionLimitError kind: ['pages', 'items', 'polls', 'reconnects', 'parts']
   StreamResumeExhaustedError kind: ['reconnects']
-  ResumeStateError condition: ['version', 'fingerprint', 'expired', 'malformed']
+  ResumeStateError condition: ['expired']
   PollingStateError condition: ['type', 'value']
   PollWaitLimitError kind: ['wait', 'deadline']
   StreamDecodeError condition: ['missing', 'null', 'type', 'value', 'malformed', 'inconsistent']
@@ -201,14 +196,12 @@
   progress bool ! ValueError: progress must be a nonnegative integer []
   progress list ! ValueError: progress must map progress keys to nonnegative integers []
   progress None ! ValueError: progress must map progress keys to nonnegative integers []
-  resume state bytes ! ValueError: resume_state must be a ResumeState or None []
   exhausted kind pages ! ValueError: kind must be one of its declared values []
   resume condition unknown ! ValueError: condition must be one of its declared values []
   resume missing condition ! TypeError: ResumeStateError.__init__() missing 1 required keyword-only argument: 'condition' []
   cycle fixed condition ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'condition' []
   cycle negative ! ValueError: page_index must be a nonnegative integer []
   cycle cursor field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'continuation' []
-  cycle resume field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'resume_state' []
   polling condition missing ! ValueError: condition must be one of its declared values []
   wait kind unknown ! ValueError: kind must be one of its declared values []
   wait nan ! ValueError: required_wait must be a finite number in its permitted range []
