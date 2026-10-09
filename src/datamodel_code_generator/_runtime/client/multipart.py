@@ -395,6 +395,10 @@ def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> E
     return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
 
 
+def _named(part: object) -> bool:
+    return isinstance(getattr(part, "name", None), str) and isinstance(part, FieldPart | FilePart)
+
+
 def is_file_part(value: object) -> TypeIs[FilePart[SyncBinaryBody | AsyncBinaryBody]]:
     return isinstance(value, FilePart)
 
@@ -416,7 +420,7 @@ def encode_parts(
     declared = {} if plans is None else {plan.name: plan for plan in plans}
     entries: list[Entry] = []
     for part in body.parts:
-        if not isinstance(part, FieldPart | FilePart) or not isinstance(part.name, str):
+        if not _named(part):
             _refused(part)
         plan = declared.get(part.name, additional) or _ANY
         if isinstance(part, FieldPart):
