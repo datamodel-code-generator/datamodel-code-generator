@@ -1118,7 +1118,9 @@ class OutputComparisonOptions(NamedTuple):
     directory_display_path: str | None = None
 
     def directory_file_path(self, path: Path) -> str:
-        """Qualify a directory entry when comparing several output roots."""
+        """Qualify a directory entry when comparing several output roots; a single-module output keeps its own name."""
+        if not path.parts and self.single_file_display_path is not None:
+            return self.single_file_display_path
         return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
@@ -1206,7 +1208,10 @@ def _compare_directories(
     encoding: str,
     comparison: OutputComparisonOptions,
 ) -> tuple[list[DirectoryChangedFile], list[str], list[str]]:
-    """Compare generated directory with existing directory."""
+    """Compare generated directory with existing directory.
+
+    Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
+    """
     changed_files: list[DirectoryChangedFile] = []
 
     generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
@@ -1216,6 +1221,11 @@ def _compare_directories(
         for path in actual_dir.rglob("*.py"):
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
+
+    if comparison.input_diff:
+        for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
+            if not files and output.is_file():
+                files.add(Path())
 
     missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
@@ -1501,13 +1511,15 @@ def _structured_output_json_schema() -> str:
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
     if is_directory_output:
-        for generated_file in sorted(generated_output.rglob("*")):
+        generated_files = sorted(generated_output.rglob("*"))
+        for generated_file in generated_files:
             if not generated_file.is_file():
                 continue
             target = actual_output / generated_file.relative_to(generated_output)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(generated_file, target)
-        return
+        if generated_files or not generated_output.is_file():
+            return
 
     if not generated_output.exists():
         return
