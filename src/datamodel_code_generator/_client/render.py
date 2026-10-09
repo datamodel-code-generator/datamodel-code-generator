@@ -335,7 +335,7 @@ _PROTOCOL_ERROR_NAMES: Final = (
 _ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
 _SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
-    "pagination": ("PaginationCycleError", "ResumeStateError", *_SESSION_ERRORS),
+    "pagination": ("PaginationCycleError", *_SESSION_ERRORS),
     "polling": (
         "OperationCancelledError",
         "OperationFailedError",

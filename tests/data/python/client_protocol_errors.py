@@ -288,9 +288,6 @@ def _rejections(
         ("progress bool", lambda: errors.SessionLimitError(kind="pages", limit=1, progress={"pages": True})),
         ("progress list", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=[("pages", 1)])),
         ("progress None", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=None)),
-        ("resume state field", lambda: errors.SessionLimitError(
-            kind="pages", limit=1, progress={}, resume_state=secret.encode()
-        )),
         ("exhausted kind pages", lambda: errors.StreamResumeExhaustedError(kind="pages", limit=1, progress={})),
         ("resume condition unknown", lambda: errors.ResumeStateError(condition="malformed")),
         ("resume missing condition", lambda: errors.ResumeStateError()),
@@ -300,9 +297,6 @@ def _rejections(
         ("cycle negative", lambda: errors.PaginationCycleError(page_index=-1, first_seen_page_index=0)),
         ("cycle cursor field", lambda: errors.PaginationCycleError(
             page_index=1, first_seen_page_index=0, continuation=secret
-        )),
-        ("cycle resume field", lambda: errors.PaginationCycleError(
-            page_index=1, first_seen_page_index=0, resume_state=secret
         )),
         ("polling condition missing", lambda: errors.PollingStateError(condition="missing")),
         ("wait kind unknown", lambda: errors.PollWaitLimitError(kind="interval", required_wait=1, limit=0)),

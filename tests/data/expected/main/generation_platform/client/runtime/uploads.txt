@@ -19,7 +19,6 @@ upload errors
   refuse changed size ! ValueError: expected_size must be a nonnegative integer []
   refuse changed negative size ! ValueError: actual_size must be a nonnegative integer []
   refuse offset negative ! ValueError: confirmed_offset must be a nonnegative integer []
-  refuse offset state ! TypeError: UploadOffsetError.__init__() got an unexpected keyword argument 'resume_state' []
   refuse expired naive ! ValueError: expires_at must be a timezone-aware datetime []
   refuse expired condition ! TypeError: UploadExpiredError.__init__() got an unexpected keyword argument 'condition' []
   refuse source kind ! ValueError: source_kind must be one of its declared values []
@@ -515,6 +514,10 @@ the client's clock
   > PATCH https://api.example.com/files/u45
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-length: 2] b'89'
   default upload completes = None
+refused size
+  start ! DecodeError: DecodeError(operation_id='createFile', reason='unencodable', location='header.Upload-Length') [operation_id='createFile', location=('header', 'Upload-Length'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=1 validation error for constrained-int
+  Input should be less than or equal to 10 [type=less_than_equal, input_value=11, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/less_than_equal] unencodable
 refused options
   start with options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='upload_options') [field_path=('upload_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   start with a fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value

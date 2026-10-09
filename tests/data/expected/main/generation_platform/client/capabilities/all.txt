@@ -63,8 +63,8 @@ copied runtime
   protocols/resume.py: 110
   protocols/signatures.py: 99
   protocols/sources.py: 43
-  protocols/streams.py: 1527
-  protocols/uploads.py: 1262
+  protocols/streams.py: 1529
+  protocols/uploads.py: 1268
   protocols/values.py: 158
   protocols/verification.py: 203
   protocols/webhook_events.py: 293
@@ -75,7 +75,7 @@ copied runtime
   protocols/websocket_native.py: 507
   protocols/websocket_types.py: 220
   protocols/writes.py: 288
-total 68 modules, 26558 lines
+total 68 modules, 26566 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

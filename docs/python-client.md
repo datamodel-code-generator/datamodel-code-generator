@@ -945,7 +945,7 @@ between pages. `resume(None, ...)` starts at the caller's own first request, as 
 available after a pager fails or is closed, and a pager fetching a page raises `ProtocolStateError`.
 
 A pager stopped by `SessionLimitError` or `PaginationCycleError` is resumed from its `checkpoint()` like any other;
-the errors themselves carry no continuation, and a pager's `SessionLimitError.resume_state` is None. A page fetched with
+the errors themselves carry no continuation. A page fetched with
 `page` or `next_page` continues from its own `continuation`. An item limit that stops inside a page leaves the
 continuation before that page, None inside the first one, so resuming with a `max_items` below the page size delivers
 the same items again; raise the limit, or limit pages instead.
@@ -1699,7 +1699,7 @@ The stream ends as its `completion` declares: at the end of the body for `eof`, 
 `sentinel` value or whose SSE type is the `event_type` value; neither terminal event is decoded or yielded, and the
 response is released. A body that ends before a sentinel or terminal type raises `StreamInterruptedError` with the
 condition `eof`; an event the body ends in the middle of is discarded, as the event-stream interpretation discards it,
-so under `eof` the stream simply ends. A connection that breaks while the body is read raises `StreamInterruptedError`
+so under `eof` the stream simply ends and `incomplete_eof` cannot trigger a reconnect there. A connection that breaks while the body is read raises `StreamInterruptedError`
 with the condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
 
 ### Stream limits and sessions

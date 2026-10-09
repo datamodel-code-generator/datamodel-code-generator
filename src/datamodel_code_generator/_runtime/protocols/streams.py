@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import threading
 from collections.abc import Mapping
+from contextlib import aclosing
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from functools import partial
@@ -1168,9 +1169,10 @@ class AsyncEventStream(_Events[T]):
         self._frames = self._sse(response, chunks) if self._plan.kind == "sse" else self._ndjson(chunks)
 
     async def _sse(self, response: AsyncRawResponse, chunks: AsyncIterator[bytes]) -> AsyncGenerator[_Frame, None]:
-        async for event in httpx2.EventSource(_view(response, _AsyncHeld(chunks))):
-            if (frame := self._dispatched(event)) is not None:
-                yield frame
+        async with aclosing(aiter(httpx2.EventSource(_view(response, _AsyncHeld(chunks))))) as events:
+            async for event in events:
+                if (frame := self._dispatched(event)) is not None:
+                    yield frame  # ruff: ignore[yield-in-context-manager-in-async-generator] - aclose() of the generator closes the events.
 
     async def _ndjson(self, chunks: AsyncIterator[bytes]) -> AsyncGenerator[_Frame, None]:
         lines = _Lines()

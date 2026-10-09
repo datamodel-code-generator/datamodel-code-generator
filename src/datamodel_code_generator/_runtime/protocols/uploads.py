@@ -17,7 +17,9 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
+from ..client.client import request_decode_error
 from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
+from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.unset import UNSET
@@ -1063,7 +1065,11 @@ def _sized(plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int) -> 
     """Return the create arguments with the content's size where the helper declares it, built as a caller's value."""
     if (position := plan.size_position) is None:
         return arguments
-    value = plan.create.parameters[position].restored(size)
+    spec = plan.create.parameters[position]
+    try:
+        value = spec.restored(size)
+    except request_errors(spec.codec) as error:
+        raise request_decode_error(plan.create, (spec.plan.location, spec.plan.name), error) from None
     return (*arguments[:position], value, *arguments[position:])
 
 

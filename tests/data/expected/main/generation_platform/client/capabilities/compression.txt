@@ -54,11 +54,11 @@ copied runtime
   protocols/references.py: 16
   protocols/resume.py: 110
   protocols/sources.py: 43
-  protocols/streams.py: 1527
+  protocols/streams.py: 1529
   protocols/values.py: 158
   protocols/websocket_types.py: 220
   protocols/writes.py: 288
-total 53 modules, 20523 lines
+total 53 modules, 20525 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
