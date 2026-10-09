@@ -13,7 +13,7 @@ client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, codecs
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .errors, .logical, .media, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions
 client/multipart_responses.py: ..model_codecs.errors, ..model_codecs.media, .media, .multipart, .operations, .responses, __future__, collections.abc, email.message, email.parser, email.policy, functools, re, typing, typing_extensions
 client/native.py: .errors, .logical, .options, .responses, .timing, __future__, collections.abc, httpx2, typing
-client/oauth.py: .auth, .errors, .security, .timing, .urls, __future__, asyncio, base64, collections.abc, dataclasses, datetime, httpx2, inspect, threading, typing, typing_extensions, urllib.parse, weakref
+client/oauth.py: .auth, .errors, .security, .timing, .urls, __future__, asyncio, base64, collections.abc, contextlib, dataclasses, datetime, httpx2, inspect, threading, typing, typing_extensions, urllib.parse, weakref
 client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .media, .multipart, .responses, .retry, .security, __future__, collections.abc, dataclasses, functools, typing, typing_extensions
 client/options.py: ..model_codecs.unset, .errors, .timing, __future__, collections.abc, dataclasses, httpx2, math, re, ssl, types, typing, typing_extensions, urllib.parse, uuid
 client/paths.py: __future__, collections.abc, re, typing

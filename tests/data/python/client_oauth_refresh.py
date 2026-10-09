@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 _OK: Final = raw_response(200, b"ok", "application/octet-stream")
 _INVALID: Final = raw_response(401, b"", None, **{"www-authenticate": 'Bearer error="invalid_token"'})
+_BASIC_INVALID: Final = raw_response(
+    401, b"", None, **{"www-authenticate": 'Basic realm="api", error="invalid_token", Bearer realm="api"'}
+)
 _EPOCH: Final = 1_700_000_000
 
 
@@ -61,6 +64,10 @@ def _rejection(package: ModuleType, auth: ModuleType, exchange: Exchange, lines:
         record(lines, "rejection refreshes", api.auth.oauth_read)
         exchange.respond(_INVALID, issued("access-2", expires_in=None), _OK)
         record(lines, "refresh without a new refresh token", api.auth.oauth_read)
+        exchange.respond(_BASIC_INVALID)
+        _outcome(lines, "invalid_token of a Basic challenge refreshes nothing", api.auth.oauth_read)
+        exchange.respond(_INVALID, issued("access-3", expires_in=1e300))
+        _outcome(lines, "refresh past the last date", api.auth.oauth_read)
         exchange.respond(_INVALID, json_response(400, {"error": "invalid_grant"}))
         _outcome(lines, "invalid grant", api.auth.oauth_read)
     lines.append(f"  saved {saved}")
