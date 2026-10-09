@@ -1,7 +1,3 @@
 # protocols-ndjson-checks
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
-  E_CONFIG_VALUE config protocols['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
-  E_CONFIG_VALUE config protocols['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
-  E_CONFIG_VALUE config protocols['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+  Error: --client-protocols['checks.media'].media: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson; --client-protocols['checks.response'].operation: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'; --client-protocols['checks.other_media'].operation: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'; --client-protocols['checks.discriminator_absent'].event_schema.discriminator.pointer: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'

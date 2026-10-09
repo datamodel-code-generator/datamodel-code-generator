@@ -13,8 +13,6 @@ from typing import Any, TypeAlias, get_type_hints
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.fastapi import (
-    APIGenerationError,
-    Diagnostic,
     FastAPIConfig,
     GeneratedProject,
     GenerationInput,
@@ -81,12 +79,6 @@ def _setting(value: object, root: Path) -> str:
             return repr(value)
 
 
-def _diagnostic(item: Diagnostic) -> str:
-    fields = (item.stage, item.option_path, item.source_pointer, item.artifact_path)
-    location = " ".join(str(field) for field in fields if field is not None)
-    return f"  {item.code} {location}: {item.message}"
-
-
 def _render(
     case: dict[str, Any], backend: str, root: Path, modules: Modules, *, builtin_sources: bool = False
 ) -> list[str]:
@@ -113,8 +105,6 @@ def _render(
         project = render_fastapi(
             source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
         )
-    except APIGenerationError as error:
-        return [f"  Error: {error}", *(_diagnostic(item) for item in error.diagnostics)]
     except Error as error:
         return [f"  Error: {error}"]
     encoding = case.get("model", {}).get("encoding", "utf-8")
@@ -177,8 +167,8 @@ def fastapi_config_report(case_name: str, root: Path) -> str:
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         config = fastapi_config(case, root)
-    except APIGenerationError as error:
-        return "\n".join((f"Error: {error}", *(_diagnostic(item).lstrip() for item in error.diagnostics))) + "\n"
+    except Error as error:
+        return f"Error: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
 
 
