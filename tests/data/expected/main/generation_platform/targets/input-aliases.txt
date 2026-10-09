@@ -7,10 +7,21 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
 generate
   returned None
 tree
@@ -18,20 +29,32 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']

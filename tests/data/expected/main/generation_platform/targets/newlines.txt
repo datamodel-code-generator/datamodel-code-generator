@@ -7,6 +7,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -14,7 +15,9 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
@@ -32,10 +35,13 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
   returned None
@@ -45,6 +51,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -52,7 +59,9 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
@@ -68,6 +77,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -75,7 +85,9 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True

@@ -66,7 +66,6 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
         operation_id='authenticate',
         tags=['security'],
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('authenticate'),
     )
 

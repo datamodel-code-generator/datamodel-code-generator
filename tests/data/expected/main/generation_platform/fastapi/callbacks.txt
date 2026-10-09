@@ -7,12 +7,14 @@ render pydantic_v2.BaseModel
   write server/routers/untagged.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
+  write server/_generated/openapi.py
   write server/security.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
@@ -91,9 +93,9 @@ render pydantic_v2.BaseModel
     |
     | ## Served OpenAPI document
     |
-    | The application serves FastAPI's own document, built from the routes and the models they declare.
-    | An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
-    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
+    | `create_app` serves the part of the source document the selected operations use, which generation writes into `_generated/openapi.py`; the application reads it on the first request for it.
+    | `create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the models they declare, in which an optional parameter or request body is `anyOf` of its type and `null`.
+    | An application of your own that includes `build_router(...)` serves FastAPI's document unless it calls `serve_source_openapi(app)`, imported from `server`.
     |
     | ## Validation
     |
@@ -123,5 +125,3 @@ render pydantic_v2.BaseModel
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
     | run it again when a new version of datamodel-code-generator changes them.
   file server/py.typed
-  DocumentationAnnotationWarning: <root>/pydantic_v2_BaseModel/server: /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
-  DocumentationAnnotationWarning: <root>/pydantic_v2_BaseModel/server: /paths/~1events/get: The served document leaves out servers, which has no JSON form

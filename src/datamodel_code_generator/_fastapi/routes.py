@@ -26,6 +26,7 @@ BUILDER_NAMES: Final = frozenset({
     "app",
     "build_router",
     "create_app",
+    "source_openapi",
     "authorize",
     "dependencies",
     "operation_dependencies",
@@ -68,7 +69,7 @@ BUILDER_NAMES: Final = frozenset({
     "version",
     "webhooks",
 })
-_EXPORTED_NAMES: Final = frozenset({"validation_error_handler"})
+_EXPORTED_NAMES: Final = frozenset({"serve_source_openapi", "validation_error_handler"})
 
 
 class RouteError(ValueError):

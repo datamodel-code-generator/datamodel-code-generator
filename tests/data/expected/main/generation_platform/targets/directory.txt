@@ -2,4 +2,6 @@
 mkdir server/routers/pets.py
 generate
   IsADirectoryError: [Errno 21] Is a directory: '<root>/server/routers/pets.py'
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 tree

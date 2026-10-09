@@ -3551,8 +3551,23 @@ def bind_operations(
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
         ),
-        tuple(documents.documents.items()),
+        _pristine(parser, documents.documents),
     )
+
+
+def _pristine(
+    parser: TargetApiOpenAPIParser, documents: dict[str, dict[str, YamlValue]]
+) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
+    """Return every document the attempt loaded as it was read, by the location it was read from.
+
+    The walked documents come first, in contract order, then the others the models' references loaded. The parser
+    walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
+    """
+    cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    located = {id(prepared): (location, raw) for location, (raw, prepared) in cache.items()}
+    walked = [located.get(id(document), (uri, document)) for uri, document in documents.items()]
+    seen = {id(document) for _, document in walked}
+    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen))
 
 
 if TYPE_CHECKING:

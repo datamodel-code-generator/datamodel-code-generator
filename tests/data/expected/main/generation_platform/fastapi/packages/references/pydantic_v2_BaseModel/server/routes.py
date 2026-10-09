@@ -77,7 +77,6 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listPets',
         response_description='The pets.',
-        responses={'200': {'headers': {'X-Total': {}}}},
         dependencies=wiring.dependencies.get('list_pets'),
     )
 
@@ -126,36 +125,6 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='createPet',
         response_description='Created.',
-        responses={
-            '201': {
-                'links': {
-                    'pets': {'operationId': 'listPets', 'description': 'The pets.'},
-                    'owners': {
-                        'operationId': 'listOwners',
-                        'description': 'The owners.',
-                    },
-                    'metadata': {
-                        'operationId': 'listPets',
-                        'description': 'The pets of a document that only this link loads.',
-                    },
-                },
-            },
-        },
-        openapi_extra={
-            'callbacks': {
-                'created': {
-                    '{$request.body#/url}': {
-                        'post': {
-                            'requestBody': {
-                                'required': True,
-                                'content': {'application/json': {}},
-                            },
-                            'responses': {'204': {'description': 'Received.'}},
-                        },
-                    },
-                },
-            },
-        },
         dependencies=wiring.dependencies.get('create_pet'),
     )
 

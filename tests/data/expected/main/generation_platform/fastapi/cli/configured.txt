@@ -9,6 +9,7 @@ from .application import (
     OperationDependencies,
     build_router,
     create_app,
+    serve_source_openapi,
     validation_error_handler,
 )
 
@@ -17,6 +18,7 @@ __all__ = [
     "OperationDependencies",
     "build_router",
     "create_app",
+    "serve_source_openapi",
     "validation_error_handler",
 ]
 # server/application.py
@@ -31,6 +33,7 @@ from typing import Any, Final
 from fastapi import APIRouter, FastAPI, params
 
 from ._generated.contract import OperationDependencies
+from ._generated.openapi import serve_source_openapi
 from ._runtime.server.application import build, error_handlers, validation_error_handler
 from .routers import animals, store
 from .services import AnimalsService, StoreService
@@ -68,6 +71,7 @@ def create_app(
     store: StoreService,
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
+    source_openapi: bool = True,
     **fastapi_kwargs: Any,
 ) -> FastAPI:
     """Create the application with every operation."""
@@ -87,6 +91,7 @@ __all__ = [
     'OperationDependencies',
     'build_router',
     'create_app',
+    'serve_source_openapi',
     'validation_error_handler',
 ]
 # server/routers/__init__.py
@@ -166,7 +171,6 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='The pets.',
-        responses={'default': {'model': models.Error, 'description': 'An error.'}},
         dependencies=wiring.dependencies.get('list_all'),
     )
 
@@ -262,7 +266,6 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getPet',
         tags=['pets'],
         response_description='The pet.',
-        responses={'404': {'model': models.Error, 'description': 'Missing.'}},
         dependencies=wiring.dependencies.get('get_pet'),
     )
 
@@ -295,7 +298,6 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='deletePet',
         tags=['pets'],
         response_description='Deleted.',
-        responses={'204': {'description': 'Deleted.'}},
         dependencies=wiring.dependencies.get('delete_pet'),
     )
 

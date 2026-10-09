@@ -1,0 +1,8 @@
+$defs:
+  Event:
+    $id: events/event.yaml
+    type: object
+    properties:
+      at: {$ref: stamp.yaml}
+  EventsMedia:
+    schema: {type: array, items: {type: string}}

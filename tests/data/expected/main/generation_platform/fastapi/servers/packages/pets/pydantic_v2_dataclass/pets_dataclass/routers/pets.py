@@ -67,12 +67,6 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='The pets.',
-        responses={
-            'default': {
-                'model': pets_dataclass_models.Error,
-                'description': 'An error.',
-            },
-        },
         dependencies=wiring.dependencies.get('list_pets'),
     )
 
@@ -153,9 +147,6 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getPet',
         tags=['pets'],
         response_description='The pet.',
-        responses={
-            '404': {'model': pets_dataclass_models.Error, 'description': 'Missing.'},
-        },
         dependencies=wiring.dependencies.get('get_pet'),
     )
 
@@ -186,7 +177,6 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='deletePet',
         tags=['pets'],
         response_description='Deleted.',
-        responses={'204': {'description': 'Deleted.'}},
         dependencies=wiring.dependencies.get('delete_pet'),
     )
 

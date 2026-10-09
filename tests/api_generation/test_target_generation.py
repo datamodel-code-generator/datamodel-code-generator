@@ -246,6 +246,7 @@ def test_target_config(case: str) -> None:
     assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
 
 
+@pytest.mark.filterwarnings("ignore::datamodel_code_generator.DocumentationAnnotationWarning")
 def test_target_pyproject_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
