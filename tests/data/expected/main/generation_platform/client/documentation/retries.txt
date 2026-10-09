@@ -212,9 +212,9 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
-- `_runtime/protocols`: `__init__.py`, `caches.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket_types.py`
+- `_runtime/protocols`: `__init__.py`, `errors.py`, `records.py`, `references.py`, `resume.py`, `sources.py`
 
 
 # artifact client/_generated_docs/runtime.md
@@ -228,29 +228,30 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
+removes the optional budget across attempts.
+The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
 |---|---|
-| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
-| total timeout | 60 seconds from logical-call entry |
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
 | retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
-phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
-Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-`Deadline.after(seconds, clock=...)` creates a deadline
-on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
+retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
+cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
+Native cancellation remains the original exception.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+
 
 ## Retry decisions and delays
 
@@ -269,8 +270,8 @@ an options value cannot invent that declaration, and explicit None disables an i
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
 still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
-phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
@@ -282,16 +283,19 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
-their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
-check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
-One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
-
-`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
-The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
-ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
-changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
-resources remain caller-owned; close explicitly created async file adapters to release their worker.
+A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
+`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
+`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
+files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
+async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
+Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
+The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
+async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
+all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
+read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
+loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+call running in a thread before it closes the file.
 
 ## Redirects and transport construction
 
@@ -347,14 +351,10 @@ Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration
 retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
-final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
-hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
-reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
-signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
-seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
-implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
+sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
+`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting

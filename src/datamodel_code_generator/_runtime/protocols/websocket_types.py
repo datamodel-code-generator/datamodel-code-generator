@@ -15,7 +15,7 @@ from ..client.responses import HeadersView  # noqa: TC001 - Public annotations s
 if TYPE_CHECKING:
     from ssl import SSLContext
 
-    from ..client.timing import Deadline
+    from ..client.timing import Budget
 
 __all__ = (
     "AsyncWebSocketConnection",
@@ -121,17 +121,17 @@ class WebSocketConnection(Protocol):
         """Return the subprotocol the server selected, or None."""
         ...
 
-    def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
+    def send(self, data: bytes, *, text: bool, deadline: Budget | None) -> None:
         """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
 
         Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
         """
 
-    def receive(self, *, deadline: Deadline | None) -> WSFrame:
+    def receive(self, *, deadline: Budget | None) -> WSFrame:
         """Return the next whole message."""
         ...
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
+    def ping(self, payload: bytes, *, deadline: Budget | None) -> float:
         """Send a ping and return the seconds until its pong arrived.
 
         An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
@@ -158,17 +158,17 @@ class AsyncWebSocketConnection(Protocol):
         """Return the subprotocol the server selected, or None."""
         ...
 
-    async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
+    async def send(self, data: bytes, *, text: bool, deadline: Budget | None) -> None:
         """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
 
         Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
         """
 
-    async def receive(self, *, deadline: Deadline | None) -> WSFrame:
+    async def receive(self, *, deadline: Budget | None) -> WSFrame:
         """Return the next whole message."""
         ...
 
-    async def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
+    async def ping(self, payload: bytes, *, deadline: Budget | None) -> float:
         """Send a ping and return the seconds until its pong arrived.
 
         An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
@@ -194,7 +194,7 @@ class WebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        deadline: Deadline | None,
+        deadline: Budget | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> WebSocketConnection:
@@ -209,7 +209,7 @@ class AsyncWebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        deadline: Deadline | None,
+        deadline: Budget | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> AsyncWebSocketConnection:

@@ -16,7 +16,6 @@ from pets.errors import (
 )
 from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
 from pets.protocols import (
-    Continuation,
     HeaderSelector,
     Origin,
     PaginationOptions,
@@ -36,14 +35,11 @@ from pets.protocols import (
 from pets_models import Pet
 
 
-def wrong_records(snapshot: PollSnapshot[Pet], continuation: Continuation, origin: Origin, pet: Pet) -> None:
+def wrong_records(snapshot: PollSnapshot[Pet], origin: Origin, pet: Pet) -> None:
     """Reject other payload types, mutation, undeclared literals, and positional records."""
     other: PollSnapshot[int] = snapshot  # error
     snapshot.data = pet  # error
-    continuation.kind = "page"  # error
     origin.port = 8443  # error
-    Continuation(kind="token", value="cursor")  # error
-    Continuation(kind="cursor", value=object())  # error
     HeaderSelector(name="X-Cursor", occurrence="many")  # error
     ParameterTarget(location="body", name="cursor")  # error
     StatusSelector("status")  # error
@@ -55,7 +51,7 @@ def wrong_records(snapshot: PollSnapshot[Pet], continuation: Continuation, origi
 
 def wrong_options(security: ProtocolSecurityContext) -> None:
     """Reject None or other types where a limit cannot be disabled, and protocol settings outside a client."""
-    PaginationOptions(max_page_bytes=None)  # error
+    PaginationOptions(max_pages="2")  # error
     PaginationOptions(interval=1)  # error
     PollOptions(interval=None)  # error
     StreamOptions(reconnect=1)  # error
@@ -80,6 +76,7 @@ def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet]
     SessionLimitError(kind="pages", limit=1, progress={"bytes": 1})  # error
     StreamResumeExhaustedError(kind="pages", limit=1, progress={})  # error
     PaginationCycleError(page_index=1, first_seen_page_index=0, condition="inconsistent")  # error
+    PaginationCycleError(page_index=1, first_seen_page_index=0, resume_state=state)  # error
     IncompleteFrameError(buffered_bytes=1, sequence=0, condition="eof")  # error
     PollWaitLimitError(kind="interval", required_wait=1, limit=0)  # error
     StreamInterruptedError(condition="closed", sequence=0, resume_state=state)  # error

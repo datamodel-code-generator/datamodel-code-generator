@@ -134,6 +134,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
                         'operationId': 'listOwners',
                         'description': 'The owners.',
                     },
+                    'metadata': {
+                        'operationId': 'listPets',
+                        'description': 'The pets of a document that only this link loads.',
+                    },
                 },
             },
         },
@@ -178,13 +182,13 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
 
     async def list_owners_principal(
         *,
-        bearer_alias: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer_alias)],
+        metadata_key: Annotated[str | None, Security(security.metadata_key)],
     ) -> object:
         return await authenticate(
-            ((('bearer_alias', ()),),),
-            {'bearer_alias': bearer_alias},
+            ((('metadata_key', ()),),),
+            {'metadata_key': metadata_key},
             list_owners_authorize,
-            'Bearer',
+            'APIKey',
         )
 
     def list_owners(

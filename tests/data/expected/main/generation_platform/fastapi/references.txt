@@ -86,6 +86,7 @@ render pydantic_v2.BaseModel
     |
     | - `bearer_alias`: a bearer token, as `HTTPAuthorizationCredentials`
     | - `library_key`: an API key in the `X-Library-Key` header
+    | - `metadata_key`: an API key in the `metadata_key` query parameter
     |
     | `security.py` declares one FastAPI dependency for each scheme; replace one with `app.dependency_overrides`, for example to read a scheme no FastAPI class reads.
     | Each secured operation calls `authorize` once with its requirement sets whose every scheme presented a credential, in declaration order, and the credentials by scheme name, and receives the principal it returns.

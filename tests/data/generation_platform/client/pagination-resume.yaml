@@ -28,6 +28,9 @@ paths:
         - name: page
           in: query
           schema: {type: integer}
+        - name: since
+          in: query
+          schema: {type: string, format: date}
       responses:
         '200':
           description: One page of users.
@@ -158,6 +161,8 @@ components:
         next_cursor: {type: [string, 'null']}
         next: {type: string}
         has_more: {type: boolean}
+        since: {type: string, format: date}
+        total: {type: integer}
     SearchQuery:
       type: object
       required: [query]

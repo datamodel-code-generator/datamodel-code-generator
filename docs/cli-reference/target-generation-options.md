@@ -1933,7 +1933,9 @@ references name resolve against the directory of the JSON file that holds them, 
 
     from models import Pet as _dcg_type_0
 
-    from .._runtime.client.client import ClientCore
+    from .._runtime.client.client import ClientCore as ClientCore_1
+    from .._runtime.model_codecs.media import JSONValue
+    from .._runtime.protocols.client import ClientCore
     from .._runtime.protocols.pagination import (
         Page,
         Pager,
@@ -1942,7 +1944,6 @@ references name resolve against the directory of the JSON file that holds them, 
         iterate_pages,
         resume_pages,
     )
-    from .._runtime.protocols.resume import ResumeState
     from ..options import UNSET, RequestOptions, SessionOptions, Unset
     from ..types.pets import ListPetsResponse
     from . import PaginationOptions, _plans
@@ -1951,9 +1952,9 @@ references name resolve against the directory of the JSON file that holds them, 
     class ProtocolHelpers:
         """The protocol helpers of this API."""
 
-        def __init__(self, core: ClientCore) -> None:
+        def __init__(self, core: ClientCore_1) -> None:
             """Keep the client core its helpers send through."""
-            self._core = core
+            self._core = ClientCore.from_client(core)
 
         @cached_property
         def pets(self) -> PetsProtocols:
@@ -2039,8 +2040,10 @@ references name resolve against the directory of the JSON file that holds them, 
 
         def resume(
             self,
-            state: ResumeState,
+            state: JSONValue,
             *,
+            limit: int | Unset = UNSET,
+            cursor: str | Unset = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
             session_options: SessionOptions | None = None,
@@ -2050,6 +2053,7 @@ references name resolve against the directory of the JSON file that holds them, 
                 self._core,
                 _plans.PLAN_0,
                 state,
+                (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
                 session_options=session_options,

@@ -7,7 +7,9 @@ import importlib
 import json
 import re
 import zlib
+from dataclasses import fields as dataclass_fields
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -20,13 +22,11 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
-from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_compression import compression
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
-from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
 from tests.data.python.client_deadline_races import deadline_races
 from tests.data.python.client_deadline_streams import deadline_streams
@@ -87,7 +87,7 @@ from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
-from tests.data.python.client_stream_resume import stream_resume
+from tests.data.python.client_stream_resume import stream_checkpoint_bodies, stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_unions import split_unions, unions
@@ -105,7 +105,6 @@ from tests.data.python.client_webhooks import webhook_backends, webhook_verifica
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from pathlib import Path
     from types import ModuleType
 
 
@@ -374,8 +373,15 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
-    exchange = Exchange(lines)
+    runtime = Path(package.__file__).parent / "_runtime" / "protocols"
+    optional = ("client", "client_options", "caches", "names", "options", "origins", "websocket_types")
     (options,) = _modules(package, "options")
+    option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
+    lines.extend((
+        f"  helper modules copied={[name for name in optional if (runtime / f'{name}.py').is_file()]}",
+        f"  helper options field={'protocols' in option_fields}",
+    ))
+    exchange = Exchange(lines)
     with (
         exchange.client() as http,
         package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api,
@@ -838,10 +844,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "auth-challenges": ("auth", ("pydantic_v2.BaseModel",), auth_challenges),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
     "auth-options": ("auth", ("pydantic_v2.BaseModel",), auth_options),
-    "body-digest": ("auth", ("pydantic_v2.BaseModel",), body_digest),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
-    "deadline-files": ("pets", ("pydantic_v2.BaseModel",), deadline_files),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
     "deadline-streams": ("pets", ("pydantic_v2.BaseModel",), deadline_streams),
     "retry-errors": ("pets", ("pydantic_v2.BaseModel",), retry_errors),
@@ -899,7 +903,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
-    "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
+    "pagination-resume": ("pagination-resume", BACKENDS, pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),
@@ -913,6 +917,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
+    "stream-checkpoint-bodies": ("stream-resume", ("msgspec.Struct",), stream_checkpoint_bodies),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),

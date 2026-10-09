@@ -392,24 +392,40 @@ def _problem(
     )
 
 
-def _unresolved(declaration: WireDeclaration) -> str | None:
-    """Return the reference of a declaration that reaches no object of the loaded documents."""
-    return next((item.reference for item in declaration.references if item.state != "resolved"), None)
-
-
-def unresolved_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, ...]:
-    """Return the problems of the operations' response links whose references reach no loaded link."""
-    return tuple(
-        _problem(
-            "F_LINK_INVALID",
-            f"The link {link.name!r} references {reference!r}, which reaches no loaded link",
-            link.use_site,
-        )
-        for operation in operations
-        for response in operation.responses
-        for link in response.children
-        if link.kind == "link" and (reference := _unresolved(link)) is not None
+def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnostic | None:
+    """Return the problem of a declaration whose reference reaches no object, or whose document does not load."""
+    if (item := next((item for item in declaration.references if item.state != "resolved"), None)) is None:
+        return None
+    reason = (
+        "whose document could not be loaded" if item.state == "document_not_observed" else f"which reaches no {kind}"
     )
+    message = f"The {kind} {declaration.name!r} references {item.reference!r}, {reason}"
+    return _problem(code, message, declaration.use_site)
+
+
+def _link_operation_problem(link: WireDeclaration) -> str | None:
+    """Return why a link does not name its operation with exactly one string operationRef or operationId."""
+    named = [(key, value) for key, value in link.facts if key in {"operationRef", "operationId"}]
+    if not named:
+        return f"The link {link.name!r} names no operation with operationRef or operationId"
+    if len(named) > 1:
+        return f"The link {link.name!r} names its operation with both operationRef and operationId"
+    key, value = named[0]
+    if isinstance(value, LiteralScalar) and isinstance(value.value, str):
+        return None
+    return f"The link {link.name!r} has an {key} that is not a string"
+
+
+def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, ...]:
+    """Return the problems of the operations' response links that reach no link naming an operation."""
+    problems: list[Diagnostic] = []
+    for operation in operations:
+        for link in (child for response in operation.responses for child in response.children if child.kind == "link"):
+            if (unresolved := _unresolved("F_LINK_INVALID", "link", link)) is not None:
+                problems.append(unresolved)
+            elif (message := _link_operation_problem(link)) is not None:
+                problems.append(_problem("F_LINK_INVALID", message, link.use_site))
+    return tuple(problems)
 
 
 def _label(operation: OperationContract) -> str:
@@ -616,11 +632,15 @@ class Planner:  # noqa: PLR0904
         if (declaration := self.scheme_declarations.get((operation.id.use_site.document, name))) is None:
             message = f"{_label(operation)} requires the undeclared security scheme {name!r}"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
-        elif (reference := _unresolved(declaration)) is not None:
-            message = f"The security scheme {name!r} references {reference!r}, which reaches no loaded security scheme"
-            self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
+        elif (unresolved := _unresolved("F_SECURITY_INVALID", "security scheme", declaration)) is not None:
+            self.problems.append(unresolved)
         elif (scheme := _scheme(name, declaration)) is None:
-            message = f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
+            message = (
+                f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
+                if fact(declaration, "type") == "apiKey"
+                else f"The security scheme {name!r} needs a type of apiKey, http with a scheme, mutualTLS, oauth2, "
+                "or openIdConnect"
+            )
             self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
         else:
             self.schemes[name] = scheme
@@ -1127,15 +1147,15 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
             return SchemeSpec(
                 name=name, kind="api_key", declaration=declaration, location=location, parameter=parameter
             )
-        case "apiKey", _, _, _:
-            return None
-        case "http", _, _, str() as scheme if (kind := _HTTP_SCHEMES.get(scheme.lower())) is not None:
-            return SchemeSpec(name=name, kind=kind, declaration=declaration)
+        case "http", _, _, str() as scheme if scheme:
+            return SchemeSpec(name=name, kind=_HTTP_SCHEMES.get(scheme.lower(), "custom"), declaration=declaration)
+        case "mutualTLS", _, _, _:
+            return SchemeSpec(name=name, kind="custom", declaration=declaration)
         case kind, _, _, _ if kind in _FLOWS:
             return SchemeSpec(name=name, kind=_FLOWS[kind], declaration=declaration)
         case _:
             pass
-    return SchemeSpec(name=name, kind="custom", declaration=declaration)
+    return None
 
 
 def _member(source: object, key: str) -> WireValue | None:

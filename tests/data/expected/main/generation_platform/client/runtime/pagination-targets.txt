@@ -19,7 +19,7 @@
   query patch of the cursor page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.cursor') [field_path=('options', 'query', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users?extra=1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page with another query = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page with another query = [1] continuation='a' status=200 attempts=1
   next page with a header patch of the cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Cursor') [field_path=('options', 'headers', 'X-Cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a, x-other: kept] b''
@@ -53,10 +53,10 @@
   missing values of the last page ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  bound page = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  bound page = [1] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
-  bound next page = [2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  bound next page = [2] continuation='b' status=200 attempts=1
   > GET https://api.example.com/users?cursor=b&limit=5&code=200&tags=t2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
   bound last page = [3] continuation=None status=200 attempts=1
@@ -89,7 +89,7 @@
   async bound values ['1', '2']
   > POST https://api.example.com/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
-  async body page = [1] continuation=Continuation(kind='cursor') status=200 attempts=1
+  async body page = [1] continuation='n1' status=200 attempts=1
   > POST https://api.example.com/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 108] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"n1"}}'
   async body next page = [2] continuation=None status=200 attempts=1

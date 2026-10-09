@@ -6,7 +6,7 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1,2] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next page = [3] continuation=None status=200 attempts=1
@@ -60,7 +60,7 @@ data
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1,2] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next page = [3] continuation=None status=200 attempts=1
@@ -114,7 +114,7 @@ data
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1,2] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next page = [3] continuation=None status=200 attempts=1
@@ -162,7 +162,7 @@ data
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1,2] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next page = [3] continuation=None status=200 attempts=1
@@ -210,7 +210,7 @@ data
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
+  page = [1,2] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   next page = [3] continuation=None status=200 attempts=1

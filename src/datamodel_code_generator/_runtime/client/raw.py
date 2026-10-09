@@ -10,7 +10,6 @@ import errno
 import os
 import threading
 from contextlib import aclosing
-from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
@@ -31,6 +30,7 @@ from .errors import (
     response_failure,
     too_large,
 )
+from .logical import in_thread
 from .media import charset
 
 if TYPE_CHECKING:
@@ -38,7 +38,6 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..model_codecs.media import JSONValue
-    from .disk import DiskWorker
     from .events import CallEvents
     from .logical import LogicalCallContext
     from .operations import ResponseDecoder
@@ -165,16 +164,15 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
 
 
 class _Download:
-    """One temporary download whose file operations finish sequentially."""
+    """One temporary download, kept where its thread created it, and the chunks waiting for its next write."""
 
-    def __init__(self, worker: DiskWorker) -> None:
-        self.worker = worker
+    def __init__(self) -> None:
         self.created: tuple[BinaryIO, Path] | None = None
         self.parts: list[bytes] = []
         self.size = 0
 
-    async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
-        self.created = created = await self.worker.run(_created, path, overwrite, discard=_discarded)
+    def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
+        self.created = created = _created(path, overwrite)
         return created
 
     def add(self, chunk: bytes) -> bytes | None:
@@ -188,7 +186,7 @@ class _Download:
 
     async def discard(self) -> None:
         if self.created is not None:
-            await self.worker.run(_discarded, self.created, cleanup=True)
+            await in_thread(_discarded, self.created)
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -299,12 +297,12 @@ class _Raw(Generic[SourceT, HandleT]):
     def _budget(self, limit: int | None) -> _Budget:
         return _Budget(limit, self._info, self._operation_id)
 
-    def _check(self, started: float | None = None) -> None:
-        """Observe the active acquisition or stream deadline, and the idle limit of a read that began at `started`."""
+    def _check(self) -> None:
+        """Check an optional helper session before its next read."""
+        if self._call.session is None:
+            return
         try:
-            self._call.check("stream" if self._call.streaming else "send", DeliveryState.RESPONSE_STARTED)
-            if started is not None:
-                self._call.idle(started)
+            self._call.check("stream", DeliveryState.RESPONSE_STARTED)
         except SDKError as error:
             error.info = self._info
             raise
@@ -561,19 +559,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         self._end("buffered")
 
     def _chunks(self) -> Iterator[bytes]:
-        """Check both sides of every native read before yielding its bytes to the decoder."""
+        """Read bytes with native I/O timeouts."""
         self._check()
-        source = self._source()
-        while True:
-            self._check()
-            started = self._call.monotonic()
-            try:
-                chunk = next(source)
-            except StopIteration:
-                self._check()
-                return
-            self._check(started)
-            yield chunk
+        yield from self._source()
 
     def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
@@ -732,8 +720,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
         """Write the decoded body to a file object, or to a path through a temporary file moved there on success.
 
-        A file object is written on the event loop. A path's file is created, written about CHUNK bytes at a time, and
-        moved in a thread, one file operation after another.
+        A file object is written on the event loop. A path's file is created, written about CHUNK bytes at a time,
+        and moved in a thread, one file call after another.
         """
         if isinstance(target, (str, PathLike)):
             await self._download(Path(target), overwrite=overwrite)
@@ -753,48 +741,29 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._end("failed", error)
 
     async def _download(self, path: Path, *, overwrite: bool) -> None:
-        """Write the body to a path through a temporary file, one file operation at a time in a thread.
+        """Write the body to a path through a temporary file, one file call at a time in a thread.
 
-        Opening the file and each write count against the stream's total limit and the call's deadline, but never
-        against its idle or read limits; the final write and move run to their end. A failure ends the stream and
-        removes the unfinished file before it propagates.
+        A cancelled caller waits for the running file call. A failure ends the stream and removes the unfinished file
+        before it propagates.
         """
         self._downloadable()
 
-        from .disk import DiskWorker  # noqa: PLC0415 - Only a download to a path starts a disk thread.
-
-        worker = DiskWorker()
-        worker.acquire()
-        download = _Download(worker)
+        download = _Download()
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
-            created = await self._disk(partial(download.create, path, overwrite))
+            created = await in_thread(download.create, path, overwrite)
             chunks = self._iterate(action="stream_to", decoded=True)
             async with aclosing(chunks):
                 async for chunk in chunks:
                     if (data := download.add(chunk)) is not None:
-                        await worker.run(created[0].write, data)
-            await worker.run(_committed, created, b"".join(download.parts), path, overwrite)
+                        await in_thread(created[0].write, data)
+            await in_thread(_committed, created, b"".join(download.parts), path, overwrite)
         except BaseException as error:
             try:
                 if chunks is not None:
                     await self._write_failed(error)
             finally:
                 await self._call.cleanup(download.discard, error=error)
-            raise
-        finally:
-            worker.close()
-
-    async def _disk(self, operation: Callable[[], Awaitable[T]]) -> T:
-        """Await disk work under the stream limits and deadline; buffered bodies need no deadline."""
-        if self._state == "buffered":
-            return await operation()
-        try:
-            return await self._call.bounded(
-                operation, phase="stream", delivery_state=DeliveryState.RESPONSE_STARTED, idle=False
-            )
-        except SDKError as error:
-            error.info = self._info
             raise
 
     async def raise_for_status(self) -> None:
@@ -874,11 +843,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         source = self._source()
         while True:
             try:
-                chunk = await self._call.bounded(
-                    source.__anext__,
-                    phase="stream" if self._call.streaming else "send",
-                    delivery_state=DeliveryState.RESPONSE_STARTED,
-                )
+                chunk = await anext(source)
             except StopAsyncIteration:
                 return
             yield chunk
