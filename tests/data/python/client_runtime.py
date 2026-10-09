@@ -159,7 +159,8 @@ def form_part(
 ) -> object:
     """Return the native value a form-data member's wire value builds: a declared member's, or another part's."""
     media = _operation(package, operation_id).body.select(operation_id, media_type)
-    return next((plan for plan in media.parts if plan.name == name), media.additional_part).codec.convert(wire)
+    form = media.form
+    return next((plan for plan in form.parts if plan.name == name), form.additional).codec.convert(wire)
 
 
 def describe(value: object) -> str:

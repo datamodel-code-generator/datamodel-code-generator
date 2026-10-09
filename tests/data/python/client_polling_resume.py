@@ -80,7 +80,7 @@ class _Clock:
 
 
 def _clocked(harness: Polling, lines: list[str]) -> None:
-    """Read a server's expiry and refuse an expired token on the client's wall clock."""
+    """Read a server's expiry, a two-digit year as RFC 5322 reads it, and refuse an expired token on the client's wall clock."""
     exchange = Exchange(lines)
     wall = _Clock(datetime(2060, 1, 1, tzinfo=timezone.utc).timestamp())
     settings = harness.client_options(clock=harness.options.Clock(time=wall))
@@ -91,7 +91,7 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
         exchange.respond(_tracked("queued", 202, expires="Thursday, 01-Jan-99 00:00:00 GMT"))
         state = tracked.start(body=body).checkpoint()
         expires_at = state["expires_at"]
-        lines.append(f"  two-digit year by the client's wall clock expires_at={expires_at}")
+        lines.append(f"  two-digit year as RFC 5322 reads it expires_at={expires_at}")
         exchange.respond(_tracked("queued", 202, expires="2000-01-01T00:00:00Z"))
         state = tracked.start(body=body).checkpoint()
         for label, now in (("before", _PAST.timestamp() - 1), ("at", _PAST.timestamp())):

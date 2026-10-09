@@ -242,7 +242,7 @@ server expiries
 checkpoints on the client clock
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  two-digit year by the client's wall clock expires_at=2099-01-01T00:00:00+00:00
+  two-digit year as RFC 5322 reads it expires_at=1999-01-01T00:00:00+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   expiry before the client's wall clock = mappingproxy({'polls': 0})
