@@ -19,8 +19,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "pattern": "^[A-Z]+$",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Code"
             }
           },
@@ -29,8 +36,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "email",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "email"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Mail"
             }
           },
@@ -39,7 +53,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Other"
             }
           },
@@ -58,8 +79,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "date-time",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Stamp"
             }
           },
@@ -75,8 +103,17 @@
           {
             "name": "session",
             "in": "cookie",
+            "required": false,
             "schema": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session"
             }
           },
           {
@@ -216,8 +253,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "multipleOf": 0.5,
+              "anyOf": [
+                {
+                  "type": "number",
+                  "multipleOf": 0.5
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Ratio"
             }
           },
@@ -236,8 +280,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "date",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "deprecated": true,
               "examples": [
                 "2024-01-01"
@@ -251,8 +302,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Ref"
             }
           },
@@ -261,7 +319,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter",
+              "default": "fast"
             }
           },
           {
@@ -269,7 +328,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Request"
             }
           },
@@ -278,7 +344,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Part"
             }
           },
@@ -287,7 +360,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "2Fa"
             }
           },
@@ -296,7 +376,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "X-Trace"
             }
           },

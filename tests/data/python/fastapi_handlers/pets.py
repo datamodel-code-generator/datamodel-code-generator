@@ -1,4 +1,4 @@
-"""Services of the pets server: native values, HTTP results, and service mistakes."""
+"""Services of the pets server: native values, HTTP results, and a service without a method."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return the default services and the broken ones the router builder rejects."""
+    """Return the default services, and a set whose store has no method to register."""
     pets = {1: models.Pet(id=1, name="Mimi", tag="cat"), 2: models.Pet(id=2, name="Rex", tag=None)}
 
     def record(name: str, **arguments: object) -> None:
@@ -47,30 +47,5 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             record("get_inventory")
             return {"available": 2}
 
-    class AsyncStore:
-        async def get_inventory(self) -> object:
-            return {}
-
-    class Awaitable:
-        async def __call__(self) -> object:
-            return {}
-
-    class AwaitableStore:
-        get_inventory = Awaitable()
-
-    class NoStore:
-        get_inventory = "inventory"
-
-    class WrongPets(Pets):
-        def get_pet(self, *, pet: int) -> object:
-            return pet
-
     default = {"pets": Pets(), "store": Store()}
-    return {
-        "default": default,
-        "missing": {**default, "store": object()},
-        "not-callable": {**default, "store": NoStore()},
-        "async": {**default, "store": AsyncStore()},
-        "async-object": {**default, "store": AwaitableStore()},
-        "signature": {**default, "pets": WrongPets()},
-    }
+    return {"default": default, "missing": {**default, "store": object()}}

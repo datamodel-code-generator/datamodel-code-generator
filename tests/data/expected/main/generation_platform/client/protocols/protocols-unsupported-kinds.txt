@@ -1,4 +1,3 @@
 # protocols-unsupported-kinds
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CLIENT_UNSUPPORTED target protocols['files.upload'].profile: The parts profile of the resumable_upload helper 'files.upload' is not supported yet
+  Error: --client-protocols['files.upload'].profile: The parts profile of the resumable_upload helper 'files.upload' is not supported yet

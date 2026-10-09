@@ -1,21 +1,16 @@
 # session-missing-inherited-array
 render pydantic_v2.BaseModel default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
 render pydantic_v2.dataclass default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
 render dataclasses.dataclass default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
 render typing.TypedDict default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
 render msgspec.Struct default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  diagnostic Error: /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist

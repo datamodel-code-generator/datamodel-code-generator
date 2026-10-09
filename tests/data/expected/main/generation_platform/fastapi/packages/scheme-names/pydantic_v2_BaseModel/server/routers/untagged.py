@@ -6,14 +6,14 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, params
 from fastapi.responses import Response
 from fastapi.security import HTTPBasicCredentials
 
 from .. import security
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from .._runtime.server.security import (
     AsyncAuthorize,
@@ -25,18 +25,24 @@ from ..services import UntaggedService
 
 
 def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
-    get_keys_handler = wiring.handlers['get_keys']
+    untagged: UntaggedService[object] = wiring.services['untagged']
+    get_keys_handler = checked(
+        untagged.get_keys,
+        'The untagged.get_keys method of GET /keys',
+    )
+
+    get_keys_authorize = wiring.authorizer()
 
     async def get_keys_principal(
         *,
         api_key: Annotated[str | None, Security(security.api_key)],
         api_key_1: Annotated[str | None, Security(security.api_key_1)],
-        wiring_1: Annotated[HTTPBasicCredentials | None, Security(security.wiring)],
+        wiring: Annotated[HTTPBasicCredentials | None, Security(security.wiring)],
     ) -> object:
         return await authenticate(
             ((('api-key', ()),), (('api_key', ()),), (('wiring', ()),)),
-            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring_1},
-            wiring.authorize,
+            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring},
+            get_keys_authorize,
             'APIKey, Basic',
         )
 
@@ -59,11 +65,11 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getKeys',
         response_description='Done.',
         responses={'204': {'description': 'Done.'}},
-        dependencies=wiring.dependencies.get('/paths/~1keys/get'),
+        dependencies=wiring.dependencies.get('get_keys'),
     )
 
 
-LITERAL_ROUTES: Final = ((contract.GetKeys.OPERATION, _add_get_keys),)
+LITERAL_ROUTES: Final = (('get_keys', _add_get_keys),)
 TEMPLATED_ROUTES: Final = ()
 
 
@@ -71,11 +77,11 @@ def build_router(
     *,
     untagged: UntaggedService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the service and settings, then register the untagged operations on a new router, literal paths first."""
+    """Register the untagged operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'untagged': untagged},

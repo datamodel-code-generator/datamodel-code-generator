@@ -6,19 +6,17 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_directions_accepted_models
-from pydantic import TypeAdapter
+from fastapi import params
 
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1items/post']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1items/post': Sequence[Dependency]
+        'post__items': Sequence[params.Depends]
     },
     total=False,
 )
@@ -27,17 +25,11 @@ OperationDependencies = TypedDict(
 class PostItems:
     """Plans of the post__items operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='post__items',
-        key='/paths/~1items/post',
-        service='untagged',
-        keywords=('body',),
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(plan_directions_accepted_models.Item),
+                model=plan_directions_accepted_models.Item,
             ),
         },
     )

@@ -231,15 +231,23 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
 
 
 def _remote_lock(
-    input_: _GenerationInput, config: GenerateConfig, cwd: Path
+    input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
+    """Resolve the remote lock of the models; an update must not overlap the package, as it must not the models."""
     from datamodel_code_generator import (  # noqa: PLC0415
         _prepare_atomic_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
         _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
     )
 
     if config.update_lock and not config.remote_lock_resolved:
-        config, _, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
+        config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
+        package = Path(os.path.abspath(cwd / target.output.expanduser()))  # noqa: PTH100
+        if any(lockfile.is_relative_to(root) or root.is_relative_to(lockfile) for root in (package, package.resolve())):
+            from datamodel_code_generator import Error  # noqa: PLC0415
+
+            label = (target._option_prefix or "target").capitalize()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            msg = f"{label} output and Remote lock paths must not overlap: {package}"
+            raise Error(msg)
         return config, lock
     return _resolve_generation_remote_lock(input_, config, cwd), None
 
@@ -285,7 +293,7 @@ def _generate_models(
     source = _root_input(input_, cwd)
     output = config.output
     assert output is not None
-    prepared, lock = _remote_lock(input_, config, cwd)
+    prepared, lock = _remote_lock(input_, config, target, cwd)
     output = prepared.output
     assert output is not None
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
@@ -311,19 +319,17 @@ def _generate_models(
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._api_manifest import persistent_uri  # noqa: PLC0415
+            from datamodel_code_generator._api_manifest import named_document, persistent_uri  # noqa: PLC0415
 
+            identity = document_identity(error.document, source.base)
+            named = "" if identity == source.identity else named_document(identity, identity)
             raise APIGenerationError((
                 Diagnostic(
                     code="E_INPUT_CYCLE",
                     severity="error",
                     stage="input",
-                    message=str(error),
-                    source_uri=persistent_uri(
-                        document_identity(error.document, source.base),
-                        (cwd / target.output.expanduser()).resolve(),
-                        "input",
-                    ),
+                    message=f"{error}{named}",
+                    source_uri=persistent_uri(identity, (cwd / target.output.expanduser()).resolve(), "input"),
                     source_pointer=error.pointer,
                 ),
             )) from error
@@ -390,9 +396,16 @@ def _collision_key(path: Path) -> str:
 
 class _Planner:
     def __init__(
-        self, models: _Models, effective: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+        self,
+        models: _Models,
+        effective: GenerateConfig,
+        config: TargetConfig,
+        generator: TargetGenerator,
+        *,
+        models_module: bool = False,
     ) -> None:
         self.models = models
+        self.models_module = models_module
         self.effective = effective
         self.config = config
         self.generator = generator
@@ -411,7 +424,9 @@ class _Planner:
     def model_path(self, artifact: ModelArtifact) -> Path:
         output = self.effective.output
         assert output is not None
-        return output if self.models.single else output.joinpath(*artifact.path)
+        if not self.models.single:
+            return output.joinpath(*artifact.path)
+        return output.with_name(f"{output.name}.py") if self.models_module else output
 
     def artifact(self, path: Path, kind: ArtifactKind, content: bytes) -> GeneratedArtifact:
         """Plan one file: written unless the path already holds the same bytes, whoever wrote them."""
@@ -774,10 +789,12 @@ def _plan(  # noqa: PLR0913
     *,
     publish: bool,
     timestamp: str | None = None,
+    models_module: bool = False,
 ) -> PlannedTarget:
     """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
 
-    The files carry `timestamp` as their generation timestamp, or the current time without one.
+    The files carry `timestamp` as their generation timestamp, or the current time without one. With
+    `models_module`, models generated as one file are planned as the module that the suffixless output names.
     """
     effective = prepare_target(input_, model_config, generator)
     if publish and effective.remote_lock_resolved and getattr(effective.remote_lock, "update", False):
@@ -793,7 +810,7 @@ def _plan(  # noqa: PLR0913
         )
     models = _run_models(input_, effective, config)
     try:
-        return _Planner(models, effective, config, generator).planned()
+        return _Planner(models, effective, config, generator, models_module=models_module).planned()
     finally:
         models.product.close()
 
@@ -813,14 +830,17 @@ def plan_target(  # noqa: PLR0913
     generator: TargetGenerator,
     publish: bool = False,
     timestamp: str | None = None,
+    models_module: bool = False,
 ) -> PlannedTarget:
     """Render one target like `render_target` for a caller that publishes it later, alone or with other files.
 
     A caller that publishes it with other files owns the remote lock the models record into, so the target leaves
     the lock out. Targets published together pass on the `timestamp` of the first, so the models they share carry
-    one generation timestamp.
+    one generation timestamp. `models_module` plans models generated as one file as the module `<output>.py`.
     """
-    return _plan(input_, model_config, config, generator, publish=publish, timestamp=timestamp)
+    return _plan(
+        input_, model_config, config, generator, publish=publish, timestamp=timestamp, models_module=models_module
+    )
 
 
 def generate_target(

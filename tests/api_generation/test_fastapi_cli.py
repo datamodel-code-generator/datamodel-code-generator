@@ -9,8 +9,21 @@ from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator import get_version
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    OpenAPIScope,
+    PythonVersion,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
+    generate,
+    get_version,
+    load_pyproject_config,
+)
 from datamodel_code_generator.__main__ import Exit
+from datamodel_code_generator.format import Formatter
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
@@ -1431,27 +1444,70 @@ def test_fastapi_cli_config_errors(
     )
 
 
-@pytest.mark.parametrize(
-    ("server", "pyproject"),
-    [([], ["pyproject-configured.toml"]), ([*SERVER, *CONFIGURED], [])],
-    ids=["pyproject", "options"],
-)
-def test_fastapi_cli_config_values(
-    server: list[str], pyproject: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Write the same package from every server setting in pyproject.toml as from the same options.
+@pytest.mark.parametrize("form", ["pyproject", "options", "python", "loaded"])
+def test_fastapi_cli_config_values(form: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the same package from every server setting in pyproject.toml as from the same options or generate().
 
-    The server templates come from the custom template directory.
+    generate() takes the options as keywords, or loads the pyproject.toml keys from another directory, where the
+    paths and documents of the keys still resolve against the pyproject.toml directory. The server templates come
+    from the custom template directory.
     """
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "templates" / "roles", tmp_path / "templates")
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=[*OPTIONS, "--custom-template-dir", "templates", *server],
-        copy_files=[*_inputs(tmp_path, *pyproject), (CLI / "primary-responses.json", tmp_path / "responses.json")],
-    )
+    pyproject = ["pyproject-configured.toml"] if form in {"pyproject", "loaded"} else []
+    for source, destination in [
+        *_inputs(tmp_path, *pyproject),
+        (CLI / "primary-responses.json", tmp_path / "responses.json"),
+    ]:
+        shutil.copy2(source, destination)
+    models = {
+        "input_file_type": InputFileType.OpenAPI,
+        "output": tmp_path / "models.py",
+        "target_python_version": PythonVersion.PY_311,
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "formatters": [Formatter.BUILTIN],
+        "disable_timestamp": True,
+        "custom_template_dir": tmp_path / "templates",
+    }
+    match form:
+        case "python":
+            generate(
+                Path("pets.yaml"),
+                **models,
+                generate_server=ServerType.FastAPI,
+                server_output=Path("server"),
+                server_package="server",
+                server_model_package="models",
+                server_layout=ServerLayout.Routers,
+                server_handler_mode=ServerHandlerMode.Async,
+                server_include_request=True,
+                server_body_mode=ServerBodyMode.Request,
+                server_router_names={"tag:pets": "animals"},
+                server_body_modes={"/paths/~1pets/post": ServerBodyMode.Typed},
+                server_primary_responses=json.loads((tmp_path / "responses.json").read_text(encoding="utf-8")),
+                server_operation_names={"/paths/~1pets/get": "list_all"},
+                server_parameter_names={
+                    "/paths/~1pets/get": {"query:limit": "page_size", "header:X-Request-Id": "trace"}
+                },
+                server_handler_modes={"/paths/~1pets/get": "sync"},
+            )
+        case "loaded":
+            (elsewhere := tmp_path / "elsewhere").mkdir()
+            monkeypatch.chdir(elsewhere)
+            generate(tmp_path / "pets.yaml", config=load_pyproject_config(tmp_path, overrides=models))
+        case _:
+            run_main_and_assert(
+                input_path=Path("pets.yaml"),
+                output_path=Path("models.py"),
+                input_file_type="openapi",
+                extra_args=[
+                    *OPTIONS,
+                    "--custom-template-dir",
+                    "templates",
+                    *([] if pyproject else [*SERVER, *CONFIGURED]),
+                ],
+            )
     sources = sorted(
         path for path in (tmp_path / "server").rglob("*.py") if not {"_runtime", "_generated"} & set(path.parts)
     )
