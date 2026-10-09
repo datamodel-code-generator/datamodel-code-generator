@@ -46,15 +46,17 @@ copied runtime
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
   protocols/client.py: 994
+  protocols/client_options.py: 34
   protocols/errors.py: 1235
-  protocols/options.py: 491
+  protocols/names.py: 29
+  protocols/options.py: 479
   protocols/origins.py: 45
   protocols/records.py: 311
   protocols/references.py: 16
   protocols/resume.py: 176
   protocols/sources.py: 43
   protocols/websocket_types.py: 220
-total 49 modules, 18676 lines
+total 51 modules, 18727 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

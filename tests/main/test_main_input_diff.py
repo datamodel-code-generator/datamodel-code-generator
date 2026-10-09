@@ -183,6 +183,68 @@ def test_diff_against_reports_changed_single_file_without_writing_virtual_output
     )
 
 
+@pytest.mark.parametrize(
+    ("baseline", "current", "extra_args", "expected_exit", "expected_stdout"),
+    [
+        pytest.param("same_old.json", "same_new.json", (), Exit.OK, "identical.txt", id="identical"),
+        pytest.param("old.json", "new.json", (), Exit.DIFF, "different_suffixless_file.txt", id="different"),
+        pytest.param(
+            "old.json",
+            "new.json",
+            ("--output-format", "json"),
+            Exit.DIFF,
+            "different_suffixless_file_json.txt",
+            id="different-json",
+        ),
+    ],
+)
+def test_diff_against_compares_single_file_results_at_a_suffixless_output(
+    baseline: str,
+    current: str,
+    extra_args: tuple[str, ...],
+    expected_exit: Exit,
+    expected_stdout: str,
+    output_dir: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Single-module results at a virtual output without a suffix are compared as that file."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_INPUT_DIFF_PATH / current,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--diff-against", str(JSON_SCHEMA_INPUT_DIFF_PATH / baseline), "--disable-timestamp", *extra_args],
+        expected_exit=expected_exit,
+        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / expected_stdout,
+        assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("baseline", "current", "expected_stdout"),
+    [
+        pytest.param("api.yaml", "input_diff/new.yaml", "single_file_to_directory.txt", id="single-file-to-directory"),
+        pytest.param("input_diff/new.yaml", "api.yaml", "directory_to_single_file.txt", id="directory-to-single-file"),
+    ],
+)
+def test_diff_against_reports_single_file_and_directory_results_by_path(
+    baseline: str, current: str, expected_stdout: str, output_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A single-module file and the modules of a directory at the same virtual output are different paths."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "openapi" / current,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--diff-against", str(DATA_PATH / "openapi" / baseline), "--disable-timestamp"],
+        expected_exit=Exit.DIFF,
+        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / expected_stdout,
+        assert_no_stderr=True,
+    )
+
+
 def test_diff_against_single_file_comparison_reports_added_when_old_output_is_missing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

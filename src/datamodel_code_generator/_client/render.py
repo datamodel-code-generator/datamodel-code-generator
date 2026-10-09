@@ -133,17 +133,17 @@ _OPTION_NAMES: Final = (
 _PROTOCOL_OPTIONS: Final = """
 
 if TYPE_CHECKING:
-    from ._runtime.protocols.options import ClientOptions, ProtocolClientOptions
+    from ._runtime.protocols.options import ProtocolClientOptions
 """
 _PROTOCOL_OPTIONS_LOADER: Final = '''
 
 def __getattr__(name: str) -> object:
     """Load the protocol helper settings only when their class is requested."""
-    if name in {"ClientOptions", "ProtocolClientOptions"}:
-        from ._runtime.protocols import options
+    if name == "ProtocolClientOptions":
+        from ._runtime.protocols.options import ProtocolClientOptions
 
-        globals()[name] = value = getattr(options, name)
-        return value
+        globals()[name] = ProtocolClientOptions
+        return ProtocolClientOptions
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 
@@ -171,6 +171,7 @@ def _options(capabilities: Capabilities) -> str:
         "from ._runtime.client.options import (\n",
         *(f"    {name},\n" for name in sorted(names) if not protocols or name != "ClientOptions"),
         ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
+        "from ._runtime.protocols.client_options import ClientOptions\n" if protocols else "",
         _PROTOCOL_OPTIONS if protocols else "",
         "\n__all__ = [\n",
         *(f'    "{name}",\n' for name in exported),
