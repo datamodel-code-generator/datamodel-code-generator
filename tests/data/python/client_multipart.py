@@ -21,6 +21,19 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
+
+class _AsyncFile:
+    """An async file object: its `read` is a coroutine function."""
+
+    async def read(self, size: int = -1) -> bytes:
+        return b""
+
+
+async def _chunks() -> Any:
+    for chunk in (b"s1", b"s2"):
+        yield chunk
+
+
 _BOUNDARY: Final = re.compile(r"\b[0-9a-f]{32}\b")
 _PROFILE: Final = {
     "name": "Ada",
@@ -156,7 +169,10 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for label, parts in (
         ("stored id read", ((_NAMED % b"id", b"4"),)),
         ("stored id read of an extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"))),
-        ("stored id read of a repeated extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"), (_NAMED % b"x", b"2"))),
+        (
+            "stored id read of a repeated extra part",
+            ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"), (_NAMED % b"x", b"2")),
+        ),
     ):
         exchange.respond(raw_response(202, _form(*parts), form))
         record(lines, label, api.forms.read_parts)
@@ -275,6 +291,8 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         ("part that is no part", body(("text",))),
         ("field of an object", body((field("a", object()),))),
         ("file with invalid native input", body((file("f", object()),))),
+        ("file of an async file", body((file("f", _AsyncFile()),))),
+        ("file of an async iterable", body((file("f", _chunks()),))),
         ("body that is no multipart body", b"a=1"),
     ):
         record(lines, label, lambda value=value: api.forms.submit_parts(body=value))
@@ -493,10 +511,6 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
     http = exchange.async_client()
     body, field, file = bodies.AsyncMultipartBody, bodies.FieldPart, bodies.FilePart
 
-    async def chunks() -> Any:
-        for chunk in (b"s1", b"s2"):
-            yield chunk
-
     async with package.AsyncClient(http_client=http) as api:
         exchange.respond(raw_response(204))
         await arecord(
@@ -508,7 +522,7 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         parts = body((
             field("title", "Notes"),
             file("doc", file_body, filename="doc.txt"),
-            file("stream", chunks()),
+            file("stream", [b"s1", b"s2"]),
             file("image", b"\x00", content_type="image/png"),
         ))
         exchange.respond(raw_response(204))
@@ -525,6 +539,12 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
             "async file with invalid native input",
             lambda: api.forms.submit_parts(body=body((file("f", object()),))),
         )
+        for label, content in (("async file", _AsyncFile()), ("async iterable", _chunks())):
+            await arecord(
+                lines,
+                f"async file part of an {label}",
+                lambda content=content: api.forms.submit_parts(body=body((file("f", content),))),
+            )
         exchange.respond(raw_response(200, b"ok", "text/plain"))
         raw = body((field("meta", {"k": 1}), file("f", b"raw")))
 
@@ -535,7 +555,7 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         upload = body((
             field("title", "Notes"),
             file("photo", io.BytesIO(b"png"), filename="a.png"),
-            file("pages", chunks()),
+            file("pages", [b"p1", b"p2"]),
         ))
         exchange.respond(raw_response(204))
         await arecord(lines, "async upload", lambda: api.forms.submit_upload(body=upload))

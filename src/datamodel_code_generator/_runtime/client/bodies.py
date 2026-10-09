@@ -198,11 +198,6 @@ class BinarySource:
         return None
 
     @property
-    def blocking(self) -> bool:
-        """Report whether the opened input reads synchronously: a file, a path's file, or an iterable."""
-        return self._aread is None and (self._file is not None or isinstance(self._input, Iterable))
-
-    @property
     def owned(self) -> bool:
         """Report whether this call opened the file from a path and has yet to close it."""
         return self._owned

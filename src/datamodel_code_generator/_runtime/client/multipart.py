@@ -1,8 +1,11 @@
 """Multipart bodies: form-data field and file parts that HTTPX2 encodes as `files=`.
 
-A field part carries a value, a file part any binary body of the client's mode. A body whose parts are all bytes is
-encoded once; one with streamed file parts is encoded at each attempt under the boundary of its first, each file part
-read from the position it had when the call began, so it can be sent again when all of its file parts can.
+A field part carries a value, a file part a binary body that is read synchronously: bytes, a synchronous file
+object, a path, or an iterable of bytes. HTTPX2 encodes a multipart body and reads its files synchronously, so an async
+file or async iterable is refused before anything is sent, rather than buffered, in either mode. A body whose parts
+are all bytes is encoded once; one with streamed file parts is encoded at each attempt under the boundary of its
+first, each file part read from the position it had when the call began, so it can be sent again when all of its file
+parts can.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
-from .bodies import AsyncBinaryBody, SyncBinaryBody  # noqa: TC001 - The body aliases resolve them at runtime.
+from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input
 from .errors import DecodeError
 from .media import encode_text, most_specific, normalized, with_charset
 
@@ -53,6 +56,9 @@ Entry: TypeAlias = tuple[str, str | None, object, str | None, tuple[tuple[str, s
 
 _MULTIPART: Final = "A multipart body must be a MultipartBody or an AsyncMultipartBody"
 _PART: Final = "A multipart part must be a FieldPart or a FilePart named by a string"
+_SYNC: Final = (
+    "A multipart file part must be read synchronously: bytes, a binary file object, a path, or an iterable of bytes"
+)
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
@@ -386,6 +392,8 @@ def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
 
 
 def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> Entry:
+    if not is_binary_input(part.content):
+        raise _malformed(part.name, TypeError(_SYNC))
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:

@@ -124,24 +124,14 @@ class BodySource:
         return self._encode(attempt) if self._encode is not None else attempt
 
     async def aopen(self) -> AsyncContent:
-        """Prepare one asynchronous native stream.
-
-        HTTPX2 reads a multipart body's files synchronously, so a part of an async file or async iterable is read
-        into memory for its attempt.
-        """
+        """Prepare one asynchronous native stream."""
         if (parts := self._parts) is None:
             attempt: AsyncContent = await cast("BinarySource", self._pieces[0]).aopen()
         else:
-            contents: list[object] = []
-            for piece in self._pieces:
-                if isinstance(piece, bytes):
-                    contents.append(piece)
-                    continue
-                content = await piece.aopen()
-                contents.append(
-                    PartFile(content) if piece.blocking else b"".join([chunk async for chunk in content.aiter_bytes()])
-                )
-            attempt = self._multipart(parts, contents)
+            attempt = self._multipart(
+                parts,
+                [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+            )
         return self._aencode(attempt) if self._aencode is not None else attempt
 
     def close(self) -> list[OSError]:

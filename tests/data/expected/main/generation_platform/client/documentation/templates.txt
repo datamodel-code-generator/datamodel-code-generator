@@ -111,15 +111,16 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
 `bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
+raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
+files, including paths, are sent with `Content-Length` for the bytes measured at call
 entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
 files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
 async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled implicitly, except that HTTPX2, which
-encodes multipart bodies and reads their files synchronously, gets an async file part's bytes read into memory for its
-attempt. Multipart can replay when all its file parts can. Files are read at most 64 KiB at a time. In async calls a
+async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
+file parts can. Files are read at most 64 KiB at a time. In async calls a
 path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
 reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
 async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
