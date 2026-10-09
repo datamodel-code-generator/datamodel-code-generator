@@ -137,10 +137,12 @@
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
     client debug records True with secrets 0
   received before the client closed 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
-  client close with a session open = None
+  client close with two sessions open = None
   client close again = None
   send after the client closed ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='invalid_state', field_path='send.closed') [operation_id='roomSocket', field_path=('send', 'closed')] invalid_state
+  other session after the client closed WebSocketSession(helper_id='feed.text', state='closed', subprotocol=None)
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+    server GET /feed/socket [] | closed 1000 ''
   borrowed client closed WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
     socketless 1 binary bytesb'hi' raw=b'hi'
   socketless end ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='WebSocketNetworkError') [operation_id='feedSocket', cause=WebSocketNetworkError]

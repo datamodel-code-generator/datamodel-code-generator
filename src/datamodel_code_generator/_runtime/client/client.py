@@ -10,6 +10,7 @@ import re
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
+    ExitStack,
     asynccontextmanager,
     contextmanager,
 )
@@ -1914,7 +1915,8 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
     def close(self) -> None:
         """Close only the native client this root created, at most once even if close fails.
 
-        The WebSocket sessions open on it close first, so that none of their readers outlives its connection.
+        The WebSocket sessions open on it close first, so that none of their readers outlives its connection; a failing
+        close still closes the other sessions and the native client.
         """
         shared = self._shared
         if shared.closed:
@@ -1922,9 +1924,10 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         shared.closed = True
         if shared.created:
             try:
-                for close in tuple(shared.sockets):
-                    close()
-                shared.http_client.close()
+                with ExitStack() as closing:
+                    closing.callback(shared.http_client.close)
+                    for close in tuple(shared.sockets):
+                        closing.callback(close)
             except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None
 

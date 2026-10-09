@@ -46,7 +46,8 @@ datamodel-codegen \
 
 Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
 project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
-emits the model generation and check payloads, as with `--generate-server`.
+emits the model generation and check payloads, as with `--generate-server`. `--diff-against` and `--watch` also work
+as they do with `--generate-server`.
 
 As for models, every generation overwrites every generated file of the package, also one you edited, and never
 deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
@@ -122,8 +123,9 @@ no client is selected.
 
 A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the client generates it as a single run
 does, under the rules of [server jobs](fastapi-server.md#batch-jobs): `client-output` must not overlap the outputs of
-other jobs or contain the remote lock file, and client jobs refuse `--watch`. Jobs that each select a server or a
-client may name the same models `output`, which the batch writes once; they must generate the same models for it.
+other jobs or contain the remote lock file, and `--all-jobs --watch` regenerates client jobs too. Jobs that each
+select a server or a client may name the same models `output`, which the batch writes once; they must generate the
+same models for it.
 
 ## Python API
 
@@ -1822,9 +1824,10 @@ with Client() as client, client.protocols.events.live.resume(json.loads(load()))
 
 The cursor is that of the last event the stream returned, never of a terminal, error, refused, or cut event: an SSE
 event without an `id` keeps the ID before, an empty `id` clears it, and a body cursor follows its `missing` and `null`
-settings, raising `DecodeError` with the reason `missing` or `null` before the event under `error`. An
-unknown event kept raw gives its body cursor from its data when the data is JSON. A cursor is never limited apart from
-its event.
+settings, raising `DecodeError` with the reason `missing` or `null` before the event under `error`. HTTPX2
+reports an empty `id` and no `id` alike until a response sets one, so a reopened response's events keep the ID it
+reopened after until the response sends a nonempty one. An unknown event kept raw gives its body cursor from its data
+when the data is JSON. A cursor is never limited apart from its event.
 
 `checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
 that, and while another step runs, it raises `ConfigurationError` with the reason `invalid_state`, and on a stream of a

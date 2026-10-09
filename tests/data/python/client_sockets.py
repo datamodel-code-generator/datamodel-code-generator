@@ -687,16 +687,18 @@ def _logged(harness: _Harness) -> None:
 
 
 def _client_close(harness: _Harness) -> None:
-    """Close a client with a session open: the session closes first, as its own close does, then the HTTP client."""
+    """Close a client with sessions open: each session closes first, as its own close does, then the HTTP client."""
     lines, server = harness.lines, harness.server
-    (play,) = server.play(Play(talk=_sending(_JOINED)))
+    plays = server.play(Play(talk=_sending(_JOINED)), Play())
     api = harness.package.Client(options=harness.client())
     session = api.protocols.rooms.chat.connect(room=harness.room())
+    other = api.protocols.feed.text.connect()
     lines.append(f"  received before the client closed {_message(session.receive())}")
-    record(lines, "client close with a session open", api.close)
+    record(lines, "client close with two sessions open", api.close)
     record(lines, "client close again", api.close)
     record(lines, "send after the client closed", lambda: session.send(harness.text("late")))
-    harness.report(play)
+    lines.append(f"  other session after the client closed {other!r}")
+    harness.report(*plays)
     _borrowed(harness)
 
 

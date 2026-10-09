@@ -10,16 +10,9 @@ render pydantic_v2.BaseModel
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/errors.py (copied runtime)
-  write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
-  write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   file server/README.md
     | # Native settings
