@@ -43,7 +43,7 @@ from ..model_codecs.unset import UNSET, Unset
 from .client_options import ClientOptions
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Sequence
+    from collections.abc import Callable, Sequence
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
@@ -192,8 +192,8 @@ class _SessionCall(Call):
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
-    The cap is the least of the open timeout and the connect, read, and write timeouts, bounded by the deadline, so a
-    cap the deadline binds ends the call with its deadline APITimeoutError. WebSockets have no pool.
+    The cap is the least of the open timeout and the connect, read, write, and pool timeouts, bounded by the deadline,
+    so a cap the deadline binds ends the call with its deadline APITimeoutError. A handshake is never redirected.
     """
 
     handshake = True
@@ -215,11 +215,22 @@ class _SocketCall(_SessionCall):
         configured = self.settings.timeout
         limits = [
             value
-            for value in (self.open_timeout, configured.connect, configured.read, configured.write, self.remaining())
+            for value in (
+                self.open_timeout,
+                configured.connect,
+                configured.read,
+                configured.write,
+                configured.pool,
+                self.remaining(),
+            )
             if value is not None
         ]
         cap = min(limits) if limits else None
-        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=None)
+        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=cap)
+
+    def follow(self, outgoing: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool:  # noqa: ARG002, PLR6301
+        """Never follow a redirect of the handshake: a refused upgrade is terminal."""
+        return False
 
     def retry(
         self,
@@ -326,12 +337,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if options is None or not isinstance(options, ClientOptions) or isinstance(options.protocols, Unset):
             return None
         return options.protocols
-
-    def owned_connector(self, native: Callable[[], object]) -> object:
-        """Return the WebSocket connector shared by the root and its views, creating it only on use."""
-        if (connector := self._shared.socket_connector) is None:
-            connector = self._shared.socket_connector = native()
-        return connector
 
     def cache_store(self, name: str) -> object:
         """Return the cache store the client's protocol settings lend a helper, or None without one."""
@@ -494,6 +499,11 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
         return core.helper_view(cls)
 
+    @property
+    def sockets(self) -> set[Callable[[], None]]:
+        """Return the closes of the WebSocket sessions open on the HTTP client, which closing its creator runs first."""
+        return self._shared.sockets
+
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[T],
@@ -595,27 +605,29 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
-        opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response],
+        upgrade: Mapping[str, str],
         *,
         options: RequestOptions | None,
         session: OperationSession,
         open_timeout: float | None,
         check: Callable[[HeadersView], None],
-    ) -> tuple[RawResponse, LogicalCallContext]:
-        """Open a WebSocket helper's handshake through its adapter, as one child call of the helper's session.
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[RawResponse, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session.
 
-        The headers prepared pass the check before anything is sent. The 101 is handed over as a streaming handle,
-        whose close closes the connection, with the call whose deadline bounds it; any other response raises the call's
-        typed failure.
+        The headers prepared pass the check before the upgrade headers join them and anything is sent. A 101 the accept
+        check passes is handed over as a streaming handle, with the call whose deadline bounds it and the native
+        response whose network stream the session takes; any other response raises the call's typed failure.
         """
         settings = self._call_settings(options, operation.operation_id)
         call = _SocketCall(settings, operation, session, open_timeout)
         events = call.events = self._started(call, operation.path)
         call.decoder = operation.responses
         result: RawResponse | None = None
+        opened: list[httpx2.Response] = []
 
         def prepare() -> tuple[httpx2.Request, object]:
-            return self._prepare(
+            request, deferred = self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -626,15 +638,19 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                 narrowed=False,
                 checked=check,
             )
+            request.headers.update(upgrade)
+            return request, deferred
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
+            opened.append(response)
             return self._raw_response(response, info, call, stream=True)
 
         try:
-            result = self._run(call, UNSET, prepare, receive, opener)
+            result = self._run(call, UNSET, prepare, receive)
 
             if result.info.status_code != _SWITCHING:
                 refused(result)
+            accept(result.info)
             if events is not None:
                 events.finish(UNSET, handed_off=True)
 
@@ -647,7 +663,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                 events.ended(failure)
             raise failure from None
         else:
-            return result, call
+            return result, call, opened[-1]
 
 
 class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], NativeAsyncClientCore):
@@ -761,22 +777,24 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
-        opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]],
+        upgrade: Mapping[str, str],
         *,
         options: RequestOptions | None,
         session: OperationSession,
         open_timeout: float | None,
         check: Callable[[HeadersView], None],
-    ) -> tuple[AsyncRawResponse, LogicalCallContext]:
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[AsyncRawResponse, LogicalCallContext, httpx2.Response]:
         """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
         settings = self._call_settings(options, operation.operation_id)
         call = _SocketCall(settings, operation, session, open_timeout)
         events = call.events = await self._started(call, operation.path)
         call.decoder = operation.responses
         result: AsyncRawResponse | None = None
+        opened: list[httpx2.Response] = []
 
         def prepare() -> tuple[httpx2.Request, object]:
-            return self._prepare(
+            request, deferred = self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -787,15 +805,19 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                 narrowed=False,
                 checked=check,
             )
+            request.headers.update(upgrade)
+            return request, deferred
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
+            opened.append(response)
             return await self._raw_response(response, info, call, stream=True)
 
         try:
-            result = await self._run(call, UNSET, prepare, receive, opener)
+            result = await self._run(call, UNSET, prepare, receive)
 
             if result.info.status_code != _SWITCHING:
                 await arefused(result)
+            accept(result.info)
             if events is not None:
                 await events.afinish(UNSET, handed_off=True)
 
@@ -808,4 +830,4 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                 await events.aended(failure)
             raise failure from None
         else:
-            return result, call
+            return result, call, opened[-1]

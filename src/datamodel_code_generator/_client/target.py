@@ -72,7 +72,8 @@ if TYPE_CHECKING:
         TypeUseId,
     )
 
-DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
+HTTPX2: Final = "httpx2>=2.13.0"
+DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
@@ -173,8 +174,8 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
+            WEBSOCKETS if sockets else HTTPX2,
             *DEPENDENCIES,
-            *((WEBSOCKETS,) if sockets else ()),
             *BACKEND_DEPENDENCIES.get(backend, ()),
             *webhook_dependencies(webhooks),
             *model_dependencies(request.models),

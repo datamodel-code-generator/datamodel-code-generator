@@ -1,9 +1,8 @@
 # all
 backend pydantic_v2.BaseModel
 dependencies
-  httpx2>=2.13.0
+  httpx2[ws]>=2.13.0
   typing-extensions>=4.16
-  websockets>=17.1
   pydantic>=2.13.5
   cryptography>=50.0.0
 copied runtime
@@ -14,7 +13,7 @@ copied runtime
   client/auth_policy.py: 660
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2881
+  client/client.py: 2869
   client/codecs.py: 95
   client/compression.py: 104
   client/errors.py: 723
@@ -49,12 +48,12 @@ copied runtime
   protocols/cache.py: 638
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 814
+  protocols/client.py: 836
   protocols/client_options.py: 34
-  protocols/errors.py: 1205
+  protocols/errors.py: 1097
   protocols/links.py: 75
   protocols/names.py: 29
-  protocols/options.py: 465
+  protocols/options.py: 339
   protocols/origins.py: 45
   protocols/pagination.py: 1509
   protocols/polling.py: 1279
@@ -71,12 +70,9 @@ copied runtime
   protocols/webhook_events.py: 293
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-  protocols/websocket.py: 1196
-  protocols/websocket_connectors.py: 30
-  protocols/websocket_native.py: 507
-  protocols/websocket_types.py: 220
+  protocols/websocket.py: 976
   protocols/writes.py: 288
-total 69 modules, 26519 lines
+total 66 modules, 25318 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

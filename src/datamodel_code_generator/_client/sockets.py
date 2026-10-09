@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
-DEPENDENCY: Final = "websockets>=17.1"
+DEPENDENCY: Final = "httpx2[ws]>=2.13.0"
 _JSON: Final = "application/json"
 _DIRECTIONS: Final = ("send", "receive")
 

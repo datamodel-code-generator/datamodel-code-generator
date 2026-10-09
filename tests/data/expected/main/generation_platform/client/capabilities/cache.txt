@@ -12,7 +12,7 @@ copied runtime
   client/auth_policy.py: 660
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2881
+  client/client.py: 2869
   client/codecs.py: 95
   client/errors.py: 723
   client/events.py: 515
@@ -42,18 +42,17 @@ copied runtime
   protocols/cache.py: 638
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 814
+  protocols/client.py: 836
   protocols/client_options.py: 34
-  protocols/errors.py: 1205
+  protocols/errors.py: 1097
   protocols/names.py: 29
-  protocols/options.py: 465
+  protocols/options.py: 339
   protocols/origins.py: 45
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/resume.py: 110
   protocols/sources.py: 43
-  protocols/websocket_types.py: 220
-total 48 modules, 15851 lines
+total 47 modules, 15407 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

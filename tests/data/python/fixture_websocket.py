@@ -159,6 +159,7 @@ class _RawHandler(BaseRequestHandler):
                 )
                 accept = base64.b64encode(hashlib.sha1(key + _GUID).digest())  # noqa: S324
                 stream.sendall(reply.replace(b"{accept}", accept))
+                socket.socket.sendall(stream, self.server.garbled)
             threading.Thread(target=self._released, args=(stream,), daemon=True).start()
             while stream.recv(65536):
                 self.server.arrived()
@@ -183,18 +184,19 @@ class RawPeer(ThreadingTCPServer):
     """A TLS peer that reads a handshake request and sends a raw reply, then reads until the client leaves.
 
     Without a reply it never answers, and with an empty one it closes at once; `{accept}` in a reply becomes the
-    request key's accept value. The peer never answers a frame, not even a ping; it counts the records the client
-    sends, and hangs up every connection once released.
+    request key's accept value, and garbled bytes follow the reply outside TLS. The peer never answers a frame, not even
+    a ping; it counts the records the client sends, and hangs up every connection once released.
     """
 
     daemon_threads = True
 
-    def __init__(self, reply: bytes | None, *, hangup: bool = False) -> None:
+    def __init__(self, reply: bytes | None, *, hangup: bool = False, garbled: bytes = b"") -> None:
         """Bind a free local port and serve in a daemon thread; with `hangup`, close once the client sends anything."""
         super().__init__(("127.0.0.1", 0), _RawHandler)
         self.context = _contexts()[0]
         self.reply = reply
         self.hangup = hangup
+        self.garbled = garbled
         self.release = threading.Event()
         self.records = 0
         self._arrival = threading.Condition()

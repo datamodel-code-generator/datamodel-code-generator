@@ -68,7 +68,6 @@ _PROTOCOLS: Final = (
     "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
-    "protocols/websocket_types.py",
 )
 _OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
 _PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
@@ -78,7 +77,7 @@ _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "streams": (*_PAGES, "protocols/streams.py"),
     "uploads": (*_PAGES, "protocols/uploads.py"),
     "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
-    "websocket": ("protocols/websocket.py", "protocols/websocket_connectors.py", "protocols/websocket_native.py"),
+    "websocket": ("protocols/websocket.py",),
     "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }
@@ -140,12 +139,7 @@ class Capabilities:
         if self.protocols:
             modules.update(_PROTOCOLS)
         if "webhooks" in self.helpers:
-            modules.update((
-                "protocols/caches.py",
-                "protocols/options.py",
-                "protocols/origins.py",
-                "protocols/websocket_types.py",
-            ))
+            modules.update(("protocols/caches.py", "protocols/options.py", "protocols/origins.py"))
         if self.oauth:
             modules.update(_OAUTH)
         if self.keywords:

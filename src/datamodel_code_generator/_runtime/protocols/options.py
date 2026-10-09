@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -10,7 +9,7 @@ from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import Final, cast
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -19,14 +18,6 @@ from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
 from .origins import Origin
-from .websocket_types import (
-    AsyncWebSocketConnector,
-    ResolvedWebSocketTransportOptions,
-    WebSocketConnector,
-)
-
-if TYPE_CHECKING:
-    from ssl import SSLContext
 
 V = TypeVar("V")
 
@@ -50,13 +41,9 @@ _WS: Final = (
     ("open_timeout", True, True, False),
     ("idle_timeout", True, True, False),
     ("max_message_bytes", False, False, False),
-    ("max_queue", False, False, False),
-    ("send_timeout", True, True, False),
     ("ping_interval", True, True, False),
     ("pong_timeout", True, True, False),
-    ("close_timeout", True, False, False),
 )
-_PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
 _CACHE_METHODS: Final = ("get", "set", "delete")
 WEBHOOK_LIMITS: Final = (
@@ -184,109 +171,18 @@ class UploadOptions:
 class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
-    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. Compression is
-    `deflate` only where the helper permits it.
+    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout.
     """
 
     open_timeout: float | Unset | None = UNSET
     idle_timeout: float | Unset | None = UNSET
     max_message_bytes: int | Unset = UNSET
-    max_queue: int | Unset = UNSET
-    send_timeout: float | Unset | None = UNSET
     ping_interval: float | Unset | None = UNSET
     pong_timeout: float | Unset | None = UNSET
-    close_timeout: float | Unset = UNSET
-    compression: Literal["deflate"] | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Reject booleans as limits, other compressions, and forbidden None or zero."""
+        """Reject booleans as limits, and forbidden None or zero."""
         check_limits(self, _WS)
-        if not isinstance(self.compression, Unset) and self.compression not in {None, "deflate"}:
-            raise ConfigurationError(field_path=("compression",), reason="invalid_value")
-
-
-def _context(value: object, name: str) -> None:
-    if value is None or isinstance(value, Unset):
-        return
-    from ssl import SSLContext  # ruff: ignore[import-outside-top-level] - Only a given context loads the TLS module.
-
-    _instance(value, (SSLContext,), name)
-
-
-def valid_proxy(value: object) -> bool:
-    """Return whether a value is a proxy URL the WebSocket library accepts, of the HTTP or HTTPS scheme.
-
-    It has a host and a nonzero port, a path of at most a slash, no query or fragment, and a password with any user.
-    """
-    from urllib.parse import urlparse  # ruff: ignore[import-outside-top-level] - Only a given proxy is parsed.
-
-    try:
-        parts = urlparse(value) if isinstance(value, str) else None
-        return (
-            parts is not None
-            and parts.scheme in _PROXY_SCHEMES
-            and bool(parts.hostname)
-            and parts.port != 0
-            and parts.path in {"", "/"}
-            and not parts.query
-            and not parts.fragment
-            and (parts.username is None or parts.password is not None)
-        )
-    except ValueError:
-        return False
-
-
-def _proxy(value: object) -> None:
-    if value is not None and not isinstance(value, Unset) and not valid_proxy(value):
-        raise ConfigurationError(field_path=("proxy",), reason="invalid_value")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class WebSocketTransportOptions:
-    """How WebSocket connections reach their servers: TLS contexts, an HTTP or HTTPS proxy, and environment proxies.
-
-    None as a TLS context is the standard verifying one. An explicit proxy wins; environment proxies apply only with
-    `trust_env`. The proxy URL, which may hold credentials, never appears in the representation.
-    """
-
-    ssl_context: SSLContext | Unset | None = UNSET
-    proxy: str | Unset | None = field(default=UNSET, repr=False)
-    proxy_ssl_context: SSLContext | Unset | None = UNSET
-    trust_env: bool | Unset = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse other TLS context types, a proxy that is not an http or https URL, and a nonboolean switch.
-
-        A proxy TLS context needs an explicit HTTPS proxy.
-        """
-        _context(self.ssl_context, "ssl_context")
-        _context(self.proxy_ssl_context, "proxy_ssl_context")
-        _proxy(self.proxy)
-        _instance(self.trust_env, (bool, Unset), "trust_env")
-        context, proxy = self.proxy_ssl_context, self.proxy
-        if (
-            context is not None
-            and not isinstance(context, Unset)
-            and not (isinstance(proxy, str) and proxy.lower().startswith("https:"))
-        ):
-            raise ConfigurationError(field_path=("proxy_ssl_context",), reason="invalid_value")
-
-
-def resolved_transport(options: WebSocketTransportOptions | Unset) -> ResolvedWebSocketTransportOptions:
-    """Return the effective transport settings of a client's WebSocket options."""
-    if isinstance(options, Unset):
-        return _NO_TRANSPORT
-    return ResolvedWebSocketTransportOptions(
-        ssl_context=None if isinstance(context := options.ssl_context, Unset) else context,
-        proxy=None if isinstance(proxy := options.proxy, Unset) else proxy,
-        proxy_ssl_context=None if isinstance(context := options.proxy_ssl_context, Unset) else context,
-        trust_env=options.trust_env is True,
-    )
-
-
-_NO_TRANSPORT: Final = ResolvedWebSocketTransportOptions(
-    ssl_context=None, proxy=None, proxy_ssl_context=None, trust_env=False
-)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -365,43 +261,23 @@ class ProtocolDefaults:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolClientOptions:
-    """Protocol helper settings of one client: its security context, helper defaults, stores, and WebSockets.
+    """Protocol helper settings of one client: its security context, helper defaults, and stores.
 
     None as the security context means anonymous use. The defaults and the borrowed cache stores are keyed by
-    dotted helper names; each mapping is copied into a read-only one that keeps each value's identity. A WebSocket
-    connector is borrowed and never closed; without one, the client opens its WebSocket connections itself.
+    dotted helper names; each mapping is copied into a read-only one that keeps each value's identity.
     """
 
     security: ProtocolSecurityContext | Unset | None = UNSET
     defaults: Mapping[str, ProtocolDefaults] | Unset = UNSET
     cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
-    websocket_connector: WebSocketConnector | AsyncWebSocketConnector | Unset | None = UNSET
-    websocket_transport: WebSocketTransportOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
-        """Refuse another security value, helper names that are not dotted identifiers, and other default values.
-
-        A connector needs an `open` method, and the transport settings their own type.
-        """
+        """Refuse another security value, helper names that are not dotted identifiers, and other default values."""
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
         if not isinstance(self.cache_stores, Unset):
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
-        connector = self.websocket_connector
-        if (
-            connector is not None
-            and not isinstance(connector, Unset)
-            and not callable(getattr(connector, "open", None))
-        ):
-            raise ConfigurationError(field_path=("websocket_connector",), reason="wrong_capability")
-        _instance(self.websocket_transport, (WebSocketTransportOptions, Unset), "websocket_transport")
-
-
-def checked_connector(connector: WebSocketConnector | AsyncWebSocketConnector, *, asynchronous: bool) -> None:
-    """Refuse a WebSocket connector whose `open` is a coroutine function for a synchronous client, or the reverse."""
-    if inspect.iscoroutinefunction(connector.open) is not asynchronous:
-        raise ConfigurationError(field_path=("protocols", "websocket_connector"), reason="wrong_capability")
 
 
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
@@ -453,10 +329,8 @@ def checked_stores(
 def check_helpers(
     protocols: ProtocolClientOptions, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool
 ) -> None:
-    """Check helper names, stores and connector mode before creating the native client."""
+    """Check helper names and stores before creating the native client."""
     if not isinstance(defaults := protocols.defaults, Unset) and defaults:
         checked_defaults(defaults, helpers)
     if not isinstance(stores := protocols.cache_stores, Unset) and stores:
         checked_stores(stores, helpers, asynchronous=asynchronous)
-    if (connector := protocols.websocket_connector) is not None and not isinstance(connector, Unset):
-        checked_connector(connector, asynchronous=asynchronous)
