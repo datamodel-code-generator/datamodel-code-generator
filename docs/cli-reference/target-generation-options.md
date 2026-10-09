@@ -4086,7 +4086,10 @@ Choose how the server package lays out its routes (experimental).
     from .services import Service
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         list_pets_handler = checked(
             service.list_pets,
@@ -4119,7 +4122,10 @@ Choose how the server package lays out its routes (experimental).
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         create_pet_handler = checked(
             service.create_pet,
@@ -4152,7 +4158,10 @@ Choose how the server package lays out its routes (experimental).
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         replace_pet_handler = checked(
             service.replace_pet,
@@ -5025,7 +5034,10 @@ without a file against the working directory, and against the pyproject.toml dir
     from ..services import PetsService
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         list_pets_handler = checked(
             pets.list_pets,
@@ -5058,7 +5070,10 @@ without a file against the working directory, and against the pyproject.toml dir
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         create_pet_handler = checked(
             pets.create_pet,
@@ -5091,7 +5106,10 @@ without a file against the working directory, and against the pyproject.toml dir
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         replace_pet_handler = checked(
             pets.replace_pet,
