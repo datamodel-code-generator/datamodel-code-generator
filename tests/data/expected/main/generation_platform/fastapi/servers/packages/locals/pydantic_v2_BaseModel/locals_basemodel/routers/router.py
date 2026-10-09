@@ -53,7 +53,6 @@ def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
         operation_id='wiring',
         tags=['router'],
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
         dependencies=wiring_1.dependencies.get('wiring'),
     )
 

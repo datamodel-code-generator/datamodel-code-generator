@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
 
 from tests.data.python.fastapi_server import _generate, _import
 from tests.data.python.generated_packages import forget_generated
@@ -27,6 +28,12 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "calls": {"input": "callbacks.yaml"},
     "methods": {"input": "methods.yaml"},
     "names": {"input": "names.yaml"},
+    "references": {
+        "input": "references.yaml",
+        "files": ["references-library.yaml", "references-metadata.yaml"],
+        "config": {"layout": "single"},
+    },
+    "selected": {"input": "pets.yaml", "model": {"openapi_include_paths": ["/pets/{petId}"]}},
 }
 Scenario: TypeAlias = Callable[[dict[str, Any]], list[str]]
 SCENARIOS: dict[str, tuple[tuple[str, ...], Scenario]] = {}
@@ -153,20 +160,42 @@ def later_routes(packages: dict[str, Any]) -> list[str]:
     return [f"paths {list(app.openapi()['paths'])}"]
 
 
+@_scenario("references")
+def document_references(packages: dict[str, Any]) -> list[str]:
+    """Serve a document whose references into other documents the package bundles into its components."""
+    return [json.dumps(_connected(packages["references"].create_app).openapi(), indent=2)]
+
+
+@_scenario("selected")
+def document_selection(packages: dict[str, Any]) -> list[str]:
+    """Serve only the selected operations' paths, with only the components they reference."""
+    return [json.dumps(_connected(packages["selected"].create_app).openapi(), indent=2)]
+
+
+@_scenario("bodies")
+def fastapi_document(packages: dict[str, Any]) -> list[str]:
+    """Serve FastAPI's own document instead of the source document."""
+    return [json.dumps(_connected(packages["bodies"].create_app, source_openapi=False).openapi(), indent=2)]
+
+
 @_scenario("items")
-def kept_documents(packages: dict[str, Any]) -> list[str]:
-    """Fill in the schemas of a document with a webhook and a later route, and keep it for the next request."""
-    app = _connected(packages["items"].create_app)
-    app.add_api_route("/health", lambda: None, methods=["GET"])
-    app.webhooks.add_api_route("ping", lambda: None, methods=["POST"])
-    document = app.openapi()
-    parameters = document["paths"]["/adapters"]["get"]["parameters"]
-    return [
-        f"paths {list(document['paths'])}",
-        f"webhooks {list(document['webhooks'])}",
-        f"filter {next(item['schema'] for item in parameters if item['name'] == 'filter')}",
-        f"kept {app.openapi() is document}",
-    ]
+def own_applications(packages: dict[str, Any]) -> list[str]:
+    """Serve FastAPI's document in an application of your own, then the source document behind a root path."""
+    items = packages["items"]
+    app = FastAPI()
+    app.include_router(_connected(items.build_router))
+    lines = [f"fastapi {app.openapi()['openapi']} {list(app.openapi()['paths'])}"]
+    app = FastAPI(root_path="/api")
+    app.include_router(_connected(items.build_router))
+    items.serve_source_openapi(app)
+    served = TestClient(app).get("/openapi.json").json()
+    first = app.openapi()
+    lines.extend((
+        f"source {served['openapi']} {list(served['paths'])}",
+        f"servers {served.get('servers')}",
+        f"kept {app.openapi() is first}",
+    ))
+    return lines
 
 
 def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:

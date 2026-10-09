@@ -1,0 +1,260 @@
+# document-references
+{
+  "openapi": "3.2.0",
+  "$self": "https://example.com/apis/v1/openapi.yaml",
+  "info": {
+    "title": "References",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "security": [
+    {
+      "bearer_alias": []
+    }
+  ],
+  "paths": {
+    "/pets": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Trace"
+        }
+      ],
+      "get": {
+        "operationId": "listPets",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Pets"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPet",
+        "security": [
+          {
+            "library_key": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Pet"
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            },
+            "links": {
+              "pets": {
+                "$ref": "#/components/links/Pets"
+              },
+              "owners": {
+                "$ref": "#/components/links/Alias"
+              },
+              "metadata": {
+                "$ref": "#/components/links/Pets_2"
+              }
+            }
+          }
+        },
+        "callbacks": {
+          "created": {
+            "$ref": "#/components/callbacks/Created"
+          }
+        }
+      }
+    },
+    "/owners": {
+      "get": {
+        "operationId": "listOwners",
+        "security": [
+          {
+            "metadata_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The owners.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "bearer_alias": {
+        "$ref": "#/components/securitySchemes/bearer"
+      },
+      "library_key": {
+        "$ref": "#/components/securitySchemes/alias"
+      },
+      "metadata_key": {
+        "$ref": "#/components/securitySchemes/key_2"
+      },
+      "alias": {
+        "$ref": "#/components/securitySchemes/key"
+      },
+      "key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Library-Key"
+      },
+      "key_2": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "metadata_key"
+      }
+    },
+    "parameters": {
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "Trace": {
+        "name": "X-Trace",
+        "in": "header",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Page": {
+        "$ref": "#/components/parameters/RealPage"
+      },
+      "RealPage": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "requestBodies": {
+      "Pet": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Pet"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Pets": {
+        "description": "The pets.",
+        "headers": {
+          "X-Total": {
+            "$ref": "#/components/headers/Total"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Pet"
+              }
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "Total": {
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "links": {
+      "Pets": {
+        "operationId": "listPets",
+        "description": "The pets."
+      },
+      "Alias": {
+        "$ref": "#/components/links/Owners"
+      },
+      "Owners": {
+        "operationId": "listOwners",
+        "description": "The owners."
+      },
+      "Pets_2": {
+        "operationId": "listPets",
+        "description": "The pets of a document that only this link loads."
+      }
+    },
+    "callbacks": {
+      "Created": {
+        "{$request.body#/url}": {
+          "post": {
+            "requestBody": {
+              "$ref": "#/components/requestBodies/Pet"
+            },
+            "responses": {
+              "204": {
+                "description": "Received."
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

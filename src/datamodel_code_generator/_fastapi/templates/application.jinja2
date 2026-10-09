@@ -20,7 +20,8 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 {{ app_signature }}
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = {{ error_handlers }}(fastapi_kwargs.get("exception_handlers"))
     app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
@@ -31,9 +32,8 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 {%- endfor %}
         )
     )
-{%- if documented %}
-    {{ documented }}(app)
-{%- endif %}
+    if source_openapi:
+        {{ serve_source_openapi }}(app)
     return app
 
 

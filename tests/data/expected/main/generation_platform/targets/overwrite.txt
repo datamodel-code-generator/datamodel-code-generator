@@ -12,10 +12,12 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
   returned None
 tree
@@ -25,6 +27,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -32,7 +35,8 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 write server/extensions.py
 write server/services.py
 remove server/routers/store.py
@@ -47,10 +51,12 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   write target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
   returned None
 tree
@@ -60,6 +66,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/extensions.py
   server/py.typed
@@ -68,7 +75,8 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 show server/extensions.py
   | # User module.
 show server/.dcg-target-manifest.json
@@ -84,7 +92,9 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

@@ -58,8 +58,8 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
 `pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
-The routes declare such an input as FastAPI applications do, `T | None = None`, so the served document shows its
-schema as `anyOf` of the type and `null`.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
+its schema as `anyOf` of the type and `null`.
 For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 
@@ -462,15 +462,22 @@ operation as a separate alternative, since FastAPI cannot document a requirement
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare, so routes
-added later and other routers appear in it as usual. The generated models own every schema in it: FastAPI documents
-the models it validates parameters and bodies with, a route's response model, and the model of each declared JSON
-response. Each generated route adds the HTTP metadata FastAPI cannot derive from it, taken from the source document
-at generation time: `responses=` documents every declared response with its description, headers, media, and
-links, and `openapi_extra` documents the parameters, request bodies, and callbacks that adapters read, with their
-descriptions, styles, examples, and encodings. These annotations copy no source schema, so a parameter, header,
-or medium that only an adapter reads appears without one. Path placeholders that are not Python identifiers, or
-that repeat, appear under the route's own placeholder names.
+`create_app` serves the source document, not one FastAPI builds: generation writes the part of it the selected
+operations use into `server/_generated/openapi.py`, and the application reads it on the first request for
+`/openapi.json` and keeps it. The document keeps the source's OpenAPI version, `info`, `servers`, `tags`, security
+schemes, webhooks, and the selected operations as they are declared, callbacks included. Paths without a selected
+operation, operations that are not selected, and components nothing kept references are left out, and what a
+reference names in another loaded document joins the components, under its own name or a numbered one when the
+name is taken, so the document stands alone. FastAPI's `/docs` and `/redoc` show it, and behind a root path
+FastAPI adds that path as the first server, as it does for its own document. A value without a JSON form, such as
+a YAML timestamp, is left out with a `DocumentationAnnotationWarning`. The document is documentation only: the
+generated models are what the server validates with, and routes added to the application later do not appear in it.
+
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the
+models they declare. It describes what FastAPI derives: a parameter, header, or body that only an adapter reads
+does not appear in it. An application of your own that includes `build_router(...)` serves FastAPI's document
+too, unless it calls `serve_source_openapi(app)`, imported from the generated package. Path placeholders that are
+not Python identifiers, or that repeat, appear in FastAPI's document under the route's own placeholder names.
 
 ## Production settings
 
@@ -491,8 +498,9 @@ bodies that adapters read answer with the same three keys.
 - Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
   result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
   adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
-- The served document describes validation errors with FastAPI's own `ValidationError` schema, in which `loc`,
-  `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies conform to it.
+- FastAPI's own document (`source_openapi=False`) describes validation errors with FastAPI's `ValidationError`
+  schema, in which `loc`, `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies
+  conform to it; the source document describes the responses the source declares.
 - `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and
   `/openapi.json`.
 - The `server` response header is the ASGI server's, not the application's; uvicorn leaves it out with
@@ -556,6 +564,6 @@ messages in order, without codes, severity or stage labels. Model generation err
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
 Python `UserWarning` subclasses from `datamodel_code_generator`: `DocumentationAnnotationWarning` reports
-a documentation value the served document cannot carry. Each message starts with the output path, spelled relative
+a source value the served document cannot carry. Each message starts with the output path, spelled relative
 to the working directory when it lies inside it, so every generated package reports its own files. They respect
 `--disable-warnings` and Python warning filters, and are not returned as diagnostic records.

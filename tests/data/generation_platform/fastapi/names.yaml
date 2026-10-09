@@ -1,5 +1,7 @@
 openapi: 3.1.0
 info: {title: Names, version: "1.0"}
+x-anchored: {$ref: "#users"}
+tags: [{name: Users, x-codes: {200: ok}}]
 paths:
   /users/me:
     get:
@@ -15,7 +17,7 @@ paths:
         - {name: id, in: query, schema: {type: integer}}
         - {name: body, in: query, schema: {type: string}}
         - {name: media_type, in: header, schema: {type: string}}
-        - {name: dcg_p0, in: query, schema: {type: string}}
+        - {name: dcg_p0, in: query, schema: {type: string, examples: [a, .inf]}}
         - {name: parameters, in: query, schema: {type: string}}
         - {name: session, in: cookie, schema: {type: string}}
         - {name: get_user_by_id_handler, in: query, schema: {type: string}}

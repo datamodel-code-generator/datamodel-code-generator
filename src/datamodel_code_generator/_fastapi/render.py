@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
-    from datamodel_code_generator._fastapi.documentation import Documentation, OperationDocs
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -80,6 +79,7 @@ _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
     ("_runtime.server.application", "validation_error_handler"),
+    ("_generated.openapi", "serve_source_openapi"),
 )
 _SECURITY_NAMES: Final = ("AsyncAuthorize", "Authorize", "Credentials", "RequirementSets")
 _SECURITY_EXPORTS: Final = tuple(("_runtime.server.security", name) for name in _SECURITY_NAMES)
@@ -114,9 +114,8 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 }
 
 
-_SERVER_RUNTIME: Final = ("server/application.py", "server/responses.py")
+_SERVER_RUNTIME: Final = ("server/application.py", "server/openapi.py", "server/responses.py")
 _SECURITY_RUNTIME: Final = ("server/security.py",)
-_DOCUMENTATION_RUNTIME: Final = ("server/documentation.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
@@ -251,18 +250,18 @@ class ServerRenderer:  # noqa: PLR0904
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         templates: TemplateOverlay | None = None,
-        docs: Documentation | None = None,
+        document: str = "{}",
     ) -> None:
         """Keep the plans.
 
-        The overrides of a custom template directory replace builtin roles. The documentation adds what FastAPI cannot
-        derive from the routes to its own document.
+        The overrides of a custom template directory replace builtin roles. `document` is the JSON text of the source
+        document the application serves.
         """
         self.config = config
         self.backend = backend
         self.plan = plan
         self.role: Role = builtin_role if templates is None else templates.role
-        self.docs = docs
+        self.document = document
         self.batch = batch
         self.wire = wire
         self.symbols = symbol_imports(batch)
@@ -271,11 +270,6 @@ class ServerRenderer:  # noqa: PLR0904
         for scheme in plan.schemes:
             taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
             self.scheme_names[scheme.name] = name
-
-    @property
-    def documented(self) -> bool:
-        """Return whether the application fills in the schemas of places FastAPI does not document."""
-        return self.docs is not None and self.docs.documented
 
     @staticmethod
     def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
@@ -291,6 +285,7 @@ class ServerRenderer:  # noqa: PLR0904
             *self.routers(),
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
+            self.file(generated / "openapi.py", "openapi", _openapi_module(self.document)),
             *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             self.file(PurePosixPath("README.md"), "readme", self.readme()),
@@ -341,8 +336,7 @@ class ServerRenderer:  # noqa: PLR0904
         """Copy the server runtime, with security for schemes and the request adapters when an operation uses them."""
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        documented = _DOCUMENTATION_RUNTIME if self.documented else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *documented)):
+        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs)):
             yield self.file(path, "runtime", text, verbatim=True)
 
     def application(self) -> str:
@@ -382,6 +376,7 @@ class ServerRenderer:  # noqa: PLR0904
                 "create_app",
                 fastapi,
                 groups,
+                ("source_openapi", "bool", " = True"),
                 ("**fastapi_kwargs", module.name("typing", "Any"), ""),
                 secured=secured,
                 dependencies=False,
@@ -389,7 +384,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
             error_handlers=module.local("_runtime.server.application", "error_handlers"),
-            documented=module.local("_runtime.server.documentation", "documented") if self.documented else None,
+            serve_source_openapi=module.local("_generated.openapi", "serve_source_openapi"),
             exports=exports,
             imports=module.imports(),
         )
@@ -701,10 +696,10 @@ class ServerRenderer:  # noqa: PLR0904
         definitions = f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
-    def registration(self, module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
-        """Return the route registration of one operation, with what FastAPI cannot derive from the route documented."""
-        assert self.docs is not None
-        return _registration(module, spec, self.docs, names)
+    @staticmethod
+    def registration(module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
+        """Return the route registration of one operation."""
+        return _registration(module, spec, names)
 
     @staticmethod
     def operation_plan(module: Module, spec: OperationSpec) -> str:
@@ -911,7 +906,7 @@ def _body_adapter(module: Module, body: BodySpec) -> Group:
     return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
-def _registration(module: Module, spec: OperationSpec, docs: Documentation, names: dict[str, str]) -> Group:
+def _registration(module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     items: list[tuple[str, Doc]] = [
@@ -944,65 +939,36 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation, name
         items.append(("deprecated=", "True"))
     if isinstance(description := _response_description(spec), str):
         items.append(("response_description=", repr(description)))
-    documented = docs.operation(spec)
-    if documented.responses:
-        items.append(("responses=", _responses(module, documented)))
-    if documented.places:
-        items.append(("openapi_extra=", _operation_document(module, documented)))
-    elif documented.extra:
-        items.append(("openapi_extra=", _json_literal(documented.extra)))
     items.append(("dependencies=", f"{names['wiring']}.dependencies.get({spec.python_name!r})"))
     return Group(f"{names['router']}.add_api_route(", tuple(items), ")")
 
 
-def _responses(module: Module, documented: OperationDocs) -> Group:
-    """Return the responses a route documents; FastAPI documents a JSON body of a model from the model itself."""
-    entries: list[tuple[str, Doc]] = []
-    for status, response in documented.responses.items():
-        items: list[tuple[str, Doc]] = []
-        content = response.get("content")
-        if (model := documented.models.get(status)) is not None and isinstance(content, dict) and model[0] in content:
-            del content[model[0]]
-            items.append(("'model': ", module.annotation(model[1])))
-            if not content:
-                del response["content"]
-        items.extend((f"{key!r}: ", _json_literal(item)) for key, item in response.items())
-        entries.append((f"{status!r}: ", Group("{", tuple(items), "}")))
-    return Group("{", tuple(entries), "}")
-
-
-def _operation_document(module: Module, documented: OperationDocs) -> Group:
-    """Return the OperationDocument of a route: its documentation, and the places its generated types describe."""
-    schema = module.local("_runtime.server.documentation", "Schema")
-    places: list[Doc] = []
-    for place in documented.places:
-        tokens = _items(
-            repr(token) if isinstance(token, str) else f"({token[0]!r}, {token[1]!r})" for token in place.at
-        )
-        entries: list[tuple[str, Doc]] = [
-            ("", Group("(", tokens, ")", ",")),
-            ("", module.annotation(place.type)),
-            ("", repr(place.name)),
-        ]
-        if place.mode == "serialization":
-            entries.append(("mode=", repr(place.mode)))
-        places.append(Group(f"{schema}(", tuple(entries), ")"))
-    return Group(
-        f"{module.local('_runtime.server.documentation', 'OperationDocument')}(",
-        (("", _json_literal(documented.extra)), ("schemas=", Group("(", _items(places), ")", ","))),
-        ")",
+def _openapi_module(document: str) -> str:
+    """Return the module of the served document: its JSON text, one string literal per line, read on first use."""
+    lines = "".join(f"    {line!r}\n" for line in document.splitlines(keepends=True))
+    return (
+        '"""The source OpenAPI document of the selected operations, which the application serves; regenerate it."""\n\n'
+        "from __future__ import annotations\n\n"
+        "import json\n"
+        "from typing import TYPE_CHECKING, Any\n\n"
+        "from .._runtime.server.openapi import serve_openapi\n\n"
+        "if TYPE_CHECKING:\n"
+        "    from fastapi import FastAPI\n\n"
+        f"_TEXT = (\n{lines})\n\n\n"
+        "def document() -> dict[str, Any]:\n"
+        '    """Return a new copy of the source document."""\n'
+        "    loaded: dict[str, Any] = json.loads(_TEXT)\n"
+        "    return loaded\n\n\n"
+        "def serve_source_openapi(app: FastAPI) -> None:\n"
+        '    """Serve the source document instead of FastAPI\'s; it is read on its first request."""\n'
+        "    serve_openapi(app, document)\n"
     )
 
 
 def _json_literal(value: JSONValue) -> Doc:
     """Return the Python literal of a JSON value, laid out like the rest of the module."""
-    match value:
-        case dict():
-            return Group("{", tuple((f"{key!r}: ", _json_literal(item)) for key, item in value.items()), "}")
-        case list():
-            return Group("[", _items(_json_literal(item) for item in value), "]")
-        case _:
-            pass
+    if isinstance(value, dict):
+        return Group("{", tuple((f"{key!r}: ", _json_literal(item)) for key, item in value.items()), "}")
     return repr(value)
 
 
@@ -1148,7 +1114,14 @@ def _request_kind(media: MediaSpec) -> str:
 def _package(*, secured: bool) -> str:
     """Return the package initializer, which exports the security aliases only when a scheme is used."""
     security = _SECURITY_NAMES if secured else ()
-    names = sorted(("OperationDependencies", "build_router", "create_app", "validation_error_handler", *security))
+    names = sorted((
+        "OperationDependencies",
+        "build_router",
+        "create_app",
+        "serve_source_openapi",
+        "validation_error_handler",
+        *security,
+    ))
     imported = "".join(f"    {name},\n" for name in names)
     exported = "".join(f'    "{name}",\n' for name in sorted((*names, "HTTPResult")))
     return (

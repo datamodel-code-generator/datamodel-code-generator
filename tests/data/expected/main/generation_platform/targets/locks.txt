@@ -12,10 +12,12 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 render
   target=fastapi schema_version=1
   write model models.py
@@ -27,7 +29,9 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

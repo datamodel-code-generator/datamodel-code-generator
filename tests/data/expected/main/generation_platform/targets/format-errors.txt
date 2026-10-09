@@ -3,7 +3,10 @@ render
   UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 7: ordinal not in range(256)
 render
   Error: application.py: The generated Python source is invalid: invalid syntax
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 render
   Error: application.py: The generated Python source is invalid: 'return' outside function
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 render
-  Error: __init__.py: The generated Python source is invalid: invalid syntax; application.py: The generated Python source is invalid: invalid syntax; routers/__init__.py: The generated Python source is invalid: invalid syntax; routers/pets.py: The generated Python source is invalid: invalid syntax; routers/store.py: The generated Python source is invalid: invalid syntax; routers/untagged.py: The generated Python source is invalid: invalid syntax; _generated/__init__.py: The generated Python source is invalid: invalid syntax; _generated/contract.py: The generated Python source is invalid: invalid syntax; services.py: The generated Python source is invalid: invalid syntax
+  Error: __init__.py: The generated Python source is invalid: invalid syntax; application.py: The generated Python source is invalid: invalid syntax; routers/__init__.py: The generated Python source is invalid: invalid syntax; routers/pets.py: The generated Python source is invalid: invalid syntax; routers/store.py: The generated Python source is invalid: invalid syntax; routers/untagged.py: The generated Python source is invalid: invalid syntax; _generated/__init__.py: The generated Python source is invalid: invalid syntax; _generated/contract.py: The generated Python source is invalid: invalid syntax; _generated/openapi.py: The generated Python source is invalid: invalid syntax; services.py: The generated Python source is invalid: invalid syntax
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

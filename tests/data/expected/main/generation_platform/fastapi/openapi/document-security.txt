@@ -3,6 +3,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Secured pets",
+    "version": "2.0",
     "summary": "Pets behind every builtin credential helper.",
     "description": "Each operation names its own alternatives.",
     "termsOfService": "https://example.com/terms",
@@ -13,48 +14,58 @@
     "license": {
       "name": "MIT",
       "identifier": "MIT"
-    },
-    "version": "2.0"
+    }
   },
+  "tags": [
+    {
+      "name": "pets",
+      "description": "Pet operations."
+    },
+    {
+      "name": "public"
+    }
+  ],
   "servers": [
     {
       "url": "https://pets.example.com/v2"
     }
   ],
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
   "paths": {
     "/pets": {
       "get": {
+        "operationId": "listPets",
         "tags": [
           "pets"
         ],
-        "summary": "List Pets",
-        "operationId": "listPets",
         "responses": {
           "200": {
             "description": "Names.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldPetsGetResponse"
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
+        }
       }
     },
     "/public": {
       "get": {
+        "operationId": "getPublic",
         "tags": [
           "public"
         ],
-        "summary": "Get Public",
-        "operationId": "getPublic",
+        "security": [],
         "responses": {
           "204": {
             "description": "Done."
@@ -64,9 +75,9 @@
     },
     "/maybe": {
       "get": {
-        "summary": "Get Maybe",
         "operationId": "getMaybe",
         "security": [
+          {},
           {
             "bearer": []
           }
@@ -75,46 +86,53 @@
           {
             "name": "principal",
             "in": "query",
-            "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Principal"
+              "type": "string"
             }
           }
         ],
         "responses": {
           "204": {
             "description": "Done."
+          }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "put": {
+        "operationId": "putPet",
+        "security": [
+          {
+            "oauth": [
+              "write:pets",
+              "read:pets"
+            ]
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
+          {
+            "query_key": [],
+            "basic": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
             }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
           }
         }
       }
     },
     "/session": {
       "get": {
-        "summary": "Get Session",
         "operationId": "getSession",
-        "responses": {
-          "204": {
-            "description": "Done."
-          }
-        },
         "security": [
           {
             "cookie_key": []
@@ -127,154 +145,74 @@
           {
             "api_key": []
           }
-        ]
-      }
-    },
-    "/custom": {
-      "get": {
-        "summary": "Get Custom",
-        "operationId": "getCustom",
+        ],
         "responses": {
           "204": {
             "description": "Done."
           }
-        },
+        }
+      }
+    },
+    "/custom": {
+      "get": {
+        "operationId": "getCustom",
         "security": [
           {
             "digest": []
           },
           {
-            "query_key": []
-          }
-        ]
-      }
-    },
-    "/pets/{petId}": {
-      "put": {
-        "summary": "Put Pet",
-        "operationId": "putPet",
-        "security": [
-          {
-            "oauth": [
-              "write:pets",
-              "read:pets"
-            ]
+            "mtls": []
           },
           {
             "query_key": []
-          },
-          {
-            "basic": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "petId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Petid"
-            }
           }
         ],
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "FieldPetsGetResponse": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array",
-        "title": "FieldPetsGetResponse"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
-      }
-    },
     "securitySchemes": {
       "api_key": {
         "type": "apiKey",
-        "description": "The caller's key.",
         "in": "header",
-        "name": "X-API-Key"
+        "name": "X-API-Key",
+        "description": "The caller's key."
+      },
+      "query_key": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key"
+      },
+      "cookie_key": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "basic": {
+        "type": "http",
+        "scheme": "Basic"
       },
       "bearer": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       },
-      "cookie_key": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "session"
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://example.com/token",
+            "scopes": {
+              "write:pets": "Write pets.",
+              "read:pets": "Read pets."
+            }
+          }
+        }
       },
       "oidc": {
         "type": "openIdConnect",
@@ -284,36 +222,9 @@
         "type": "http",
         "scheme": "digest"
       },
-      "query_key": {
-        "type": "apiKey",
-        "in": "query",
-        "name": "key"
-      },
-      "oauth": {
-        "type": "oauth2",
-        "flows": {
-          "clientCredentials": {
-            "scopes": {
-              "write:pets": "Write pets.",
-              "read:pets": "Read pets."
-            },
-            "tokenUrl": "https://example.com/token"
-          }
-        }
-      },
-      "basic": {
-        "type": "http",
-        "scheme": "basic"
+      "mtls": {
+        "type": "mutualTLS"
       }
     }
-  },
-  "tags": [
-    {
-      "name": "pets",
-      "description": "Pet operations."
-    },
-    {
-      "name": "public"
-    }
-  ]
+  }
 }

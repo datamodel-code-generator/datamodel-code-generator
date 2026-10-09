@@ -24,9 +24,10 @@ def _member(value: YamlValue, key: str) -> YamlValue:
 class SourceLease:
     """Hold the documents the model engine obtained until planning finishes, to check the pointers settings name.
 
-    Consumers learn only whether a pointer names a node, never the node: what a target reads of a schema comes from
-    the contract batch. This object never loads, validates, copies, or resolves a document, and it is deliberately
-    excluded from immutable contract batches.
+    Consumers learn whether a pointer names a node, never the node: what a target reads of a schema comes from the
+    contract batch. The one exception is a document a target serves as documentation, such as the source document a
+    generated server serves, which it copies from `document`. This object never loads, validates, copies, or resolves a
+    document, and it is deliberately excluded from immutable contract batches.
     """
 
     def __init__(self) -> None:
@@ -46,6 +47,10 @@ class SourceLease:
         except (KeyError, IndexError, TypeError):
             return False
         return True
+
+    def document(self, document: SourceDocumentId) -> dict[str, YamlValue]:
+        """Return a held document, for a target that copies it into documentation it serves; never modify it."""
+        return self._raw[document]
 
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""
@@ -152,7 +157,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import OpenAPIParserFactory
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_binding import BoundAttempt, TargetApiOpenAPIParser
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, ModelArtifact, SourceLocation
+    from datamodel_code_generator._target_contract import (
+        GeneratedTypeContractBatch,
+        ModelArtifact,
+        SourceDocumentId,
+        SourceLocation,
+    )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser

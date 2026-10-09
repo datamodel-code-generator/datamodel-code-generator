@@ -6,114 +6,172 @@
     "version": "1.0"
   },
   "paths": {
-    "/adapters": {
+    "/items/{item-id}/parts/{part}": {
       "get": {
+        "operationId": "getPart",
         "tags": [
-          "adapters"
+          "items"
         ],
-        "summary": "List Adapters",
-        "operationId": "listAdapters",
         "parameters": [
           {
-            "name": "code",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^[A-Z]+$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code"
-            }
-          },
-          {
-            "name": "mail",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "email"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Mail"
-            }
-          },
-          {
-            "name": "other",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Other"
-            }
-          },
-          {
-            "name": "count",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": "ten",
-              "title": "Count"
-            }
-          },
-          {
-            "name": "stamp",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Stamp"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
+            "name": "item-id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Page"
+              "format": "int64",
+              "minimum": -10,
+              "exclusiveMaximum": 100
             }
           },
           {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": -3000000000,
+              "maximum": 50,
+              "default": 10
+            }
+          },
+          {
+            "name": "ratio",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "multipleOf": 0.5,
+              "title": "Ratio"
+            }
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 4
+              },
+              "minItems": 1,
+              "default": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "deprecated": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "examples": [
+                "2024-01-01"
+              ]
+            }
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fast",
+                "slow"
+              ],
+              "default": "fast"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "const": 3
+            }
+          },
+          {
+            "name": "X-Trace",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "request",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "2fa",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The part.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/adapters": {
+      "get": {
+        "operationId": "listAdapters",
+        "tags": [
+          "adapters"
+        ],
+        "parameters": [
+          {
             "name": "session",
             "in": "cookie",
-            "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Session"
+              "type": "string"
             }
           },
           {
@@ -130,22 +188,20 @@
             "in": "query",
             "explode": false,
             "schema": {
+              "type": "array",
               "items": {
                 "type": "integer"
-              },
-              "type": "array",
-              "title": "Ids"
+              }
             }
           },
           {
             "name": "X-Ids",
             "in": "header",
             "schema": {
+              "type": "array",
               "items": {
                 "type": "integer"
-              },
-              "type": "array",
-              "title": "X-Ids"
+              }
             }
           },
           {
@@ -154,9 +210,43 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldAdaptersGetQueryBlobParameter"
+                  "type": "object"
                 }
               }
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]+$"
+            }
+          },
+          {
+            "name": "mail",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          {
+            "name": "other",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "not": {
+                "const": "x"
+              }
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": "ten"
             }
           },
           {
@@ -165,401 +255,86 @@
             "schema": {
               "$ref": "#/components/schemas/Point"
             }
+          },
+          {
+            "name": "stamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "x-note": "kept"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           }
         ],
         "responses": {
           "204": {
             "description": "Nothing."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/items/{dcg_p0}/parts/{part}": {
+    "/repeat/{id}/again/{id}": {
       "get": {
-        "tags": [
-          "items"
-        ],
-        "summary": "Get Part",
-        "operationId": "getPart",
-        "parameters": [
-          {
-            "name": "dcg_p0",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": -10,
-              "exclusiveMaximum": 100,
-              "title": "Dcg P0"
-            }
-          },
-          {
-            "name": "part",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 8,
-              "title": "Part"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 50,
-              "minimum": -3000000000,
-              "description": "Page size.",
-              "default": 10,
-              "title": "Limit"
-            },
-            "description": "Page size."
-          },
-          {
-            "name": "ratio",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "number",
-                  "multipleOf": 0.5
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Ratio"
-            }
-          },
-          {
-            "name": "flag",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Flag"
-            }
-          },
-          {
-            "name": "day",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "deprecated": true,
-              "examples": [
-                "2024-01-01"
-              ],
-              "title": "Day"
-            },
-            "deprecated": true
-          },
-          {
-            "name": "ref",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Ref"
-            }
-          },
-          {
-            "name": "mode",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter",
-              "default": "fast"
-            }
-          },
-          {
-            "name": "request",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Request"
-            }
-          },
-          {
-            "name": "part",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Part"
-            }
-          },
-          {
-            "name": "2fa",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "2Fa"
-            }
-          },
-          {
-            "name": "X-Trace",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Trace"
-            }
-          },
-          {
-            "name": "tags",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryTagsParameter"
-            }
-          },
-          {
-            "name": "level",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "const": 3,
-              "title": "Level"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The part.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repeat/{dcg_p0}/again/{dcg_p1}": {
-      "get": {
+        "operationId": "getRepeated",
         "tags": [
           "adapters"
         ],
-        "summary": "Get Repeated",
-        "operationId": "getRepeated",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "Nothing."
           }
-        },
-        "parameters": [
-          {
-            "name": "dcg_p0",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Dcg P0"
-            }
-          },
-          {
-            "name": "dcg_p1",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Dcg P1"
-            }
-          }
-        ]
+        }
       }
     }
   },
   "components": {
     "schemas": {
-      "FieldAdaptersGetQueryBlobParameter": {
-        "properties": {},
-        "type": "object",
-        "title": "FieldAdaptersGetQueryBlobParameter"
-      },
-      "FieldItemsItemIdPartsPartGetQueryModeParameter": {
-        "type": "string",
-        "enum": [
-          "fast",
-          "slow"
-        ],
-        "title": "FieldItemsItemIdPartsPartGetQueryModeParameter"
-      },
-      "FieldItemsItemIdPartsPartGetQueryTagsParameter": {
-        "items": {
-          "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryTagsParameterItem"
-        },
-        "type": "array",
-        "minItems": 1,
-        "default": [
-          "a"
-        ]
-      },
-      "FieldItemsItemIdPartsPartGetQueryTagsParameterItem": {
-        "type": "string",
-        "maxLength": 4
-      },
-      "FieldItemsItemIdPartsPartGetResponse": {
-        "type": "string",
-        "title": "FieldItemsItemIdPartsPartGetResponse"
-      },
       "Filter": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
         "type": "object",
         "required": [
           "id",
           "name"
         ],
-        "title": "Filter"
-      },
-      "HTTPValidationError": {
         "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
+        }
       },
       "Point": {
-        "properties": {
-          "x": {
-            "type": "integer",
-            "title": "X"
-          }
-        },
-        "additionalProperties": false,
         "type": "object",
+        "additionalProperties": false,
         "required": [
           "x"
         ],
-        "title": "Point"
-      },
-      "ValidationError": {
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "x": {
+            "type": "integer"
           }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
+        }
       }
     }
   }

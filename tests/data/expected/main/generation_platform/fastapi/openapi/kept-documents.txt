@@ -1,5 +1,0 @@
-# kept-documents
-paths ['/adapters', '/items/{dcg_p0}/parts/{part}', '/repeat/{dcg_p0}/again/{dcg_p1}', '/health']
-webhooks ['ping']
-filter {'$ref': '#/components/schemas/Filter'}
-kept True

@@ -14,7 +14,6 @@ from pydantic import Field, StringConstraints
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
-from .._runtime.server.documentation import OperationDocument, Schema
 from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
@@ -89,45 +88,6 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getValues',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra=OperationDocument(
-            {
-                'parameters': [
-                    {'name': 'tags', 'in': 'query', 'schema': {}},
-                    {'name': 'labels', 'in': 'query', 'schema': {}},
-                    {'name': 'rows', 'in': 'query', 'schema': {}},
-                    {'name': 'marks', 'in': 'query', 'schema': {}},
-                    {'name': 'notes', 'in': 'query', 'schema': {}},
-                    {'name': 'extras', 'in': 'query', 'schema': {}},
-                    {'name': 'X-Colors', 'in': 'header', 'schema': {}},
-                ],
-            },
-            schemas=(
-                Schema((('query', 'tags'),), defaults_basemodel_models.Tags, 'tags'),
-                Schema(
-                    (('query', 'labels'),),
-                    defaults_basemodel_models.FieldValuesGetQueryLabelsParameter,
-                    'labels',
-                ),
-                Schema(
-                    (('query', 'rows'),),
-                    defaults_basemodel_models.FieldValuesGetQueryRowsParameter,
-                    'rows',
-                ),
-                Schema((('query', 'marks'),), defaults_basemodel_models.Tags, 'marks'),
-                Schema((('query', 'notes'),), defaults_basemodel_models.Notes, 'notes'),
-                Schema(
-                    (('query', 'extras'),),
-                    defaults_basemodel_models.FieldValuesGetQueryExtrasParameter,
-                    'extras',
-                ),
-                Schema(
-                    (('header', 'X-Colors'),),
-                    list[defaults_basemodel_models.Color],
-                    'X-Colors',
-                ),
-            ),
-        ),
         dependencies=wiring.dependencies.get('get_values'),
     )
 

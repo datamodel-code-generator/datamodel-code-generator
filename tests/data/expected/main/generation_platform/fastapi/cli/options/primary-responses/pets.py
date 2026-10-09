@@ -66,7 +66,6 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='createPet',
         tags=['pets'],
         response_description='Created.',
-        responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
         dependencies=wiring.dependencies.get('create_pet'),
     )
 
@@ -98,7 +97,6 @@ def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='replacePet',
         tags=['pets'],
         response_description='Replaced.',
-        responses={'204': {'description': 'Replaced.'}},
         dependencies=wiring.dependencies.get('replace_pet'),
     )
 

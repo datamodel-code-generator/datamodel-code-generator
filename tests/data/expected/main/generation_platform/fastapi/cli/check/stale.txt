@@ -82,11 +82,131 @@
 -            ),
 -        },
 -    )
+--- server/_generated/openapi.py
++++ server/_generated/openapi.py (expected)
+@@ -139,117 +139,6 @@
+     '     }\n'
+     '    }\n'
+     '   }\n'
+-    '  },\n'
+-    '  "/pets/mine": {\n'
+-    '   "get": {\n'
+-    '    "operationId": "listMyPets",\n'
+-    '    "tags": [\n'
+-    '     "pets"\n'
+-    '    ],\n'
+-    '    "responses": {\n'
+-    '     "200": {\n'
+-    '      "description": "The caller\'s pets.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "type": "array",\n'
+-    '         "items": {\n'
+-    '          "$ref": "#/components/schemas/Pet"\n'
+-    '         }\n'
+-    '        }\n'
+-    '       }\n'
+-    '      }\n'
+-    '     }\n'
+-    '    }\n'
+-    '   }\n'
+-    '  },\n'
+-    '  "/pets/{petId}": {\n'
+-    '   "get": {\n'
+-    '    "operationId": "getPet",\n'
+-    '    "tags": [\n'
+-    '     "pets"\n'
+-    '    ],\n'
+-    '    "parameters": [\n'
+-    '     {\n'
+-    '      "name": "petId",\n'
+-    '      "in": "path",\n'
+-    '      "required": true,\n'
+-    '      "schema": {\n'
+-    '       "type": "integer",\n'
+-    '       "format": "int64",\n'
+-    '       "minimum": 1\n'
+-    '      }\n'
+-    '     }\n'
+-    '    ],\n'
+-    '    "responses": {\n'
+-    '     "200": {\n'
+-    '      "description": "The pet.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "$ref": "#/components/schemas/Pet"\n'
+-    '        }\n'
+-    '       }\n'
+-    '      }\n'
+-    '     },\n'
+-    '     "404": {\n'
+-    '      "description": "Missing.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "$ref": "#/components/schemas/Error"\n'
+-    '        }\n'
+-    '       }\n'
+-    '      }\n'
+-    '     }\n'
+-    '    }\n'
+-    '   },\n'
+-    '   "delete": {\n'
+-    '    "operationId": "deletePet",\n'
+-    '    "tags": [\n'
+-    '     "pets"\n'
+-    '    ],\n'
+-    '    "parameters": [\n'
+-    '     {\n'
+-    '      "name": "petId",\n'
+-    '      "in": "path",\n'
+-    '      "required": true,\n'
+-    '      "schema": {\n'
+-    '       "type": "integer",\n'
+-    '       "format": "int64",\n'
+-    '       "minimum": 1\n'
+-    '      }\n'
+-    '     }\n'
+-    '    ],\n'
+-    '    "responses": {\n'
+-    '     "204": {\n'
+-    '      "description": "Deleted."\n'
+-    '     }\n'
+-    '    }\n'
+-    '   }\n'
+-    '  },\n'
+-    '  "/store/inventory": {\n'
+-    '   "get": {\n'
+-    '    "operationId": "getInventory",\n'
+-    '    "tags": [\n'
+-    '     "store"\n'
+-    '    ],\n'
+-    '    "responses": {\n'
+-    '     "200": {\n'
+-    '      "description": "Counts by status.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "type": "object",\n'
+-    '         "additionalProperties": {\n'
+-    '          "type": "integer"\n'
+-    '         }\n'
+-    '        }\n'
+-    '       }\n'
+-    '      }\n'
+-    '     }\n'
+-    '    }\n'
+-    '   }\n'
+     '  }\n'
+     ' },\n'
+     ' "components": {\n'
 --- server/application.py
 +++ server/application.py (expected)
-@@ -10,22 +10,16 @@
- 
+@@ -11,22 +11,16 @@
  from ._generated.contract import OperationDependencies
+ from ._generated.openapi import serve_source_openapi
  from ._runtime.server.application import build, error_handlers, validation_error_handler
 -from .routers import pets, store
 -from .services import PetsService, StoreService
@@ -110,7 +230,7 @@
      dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-@@ -33,7 +27,7 @@
+@@ -34,7 +28,7 @@
      """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
@@ -119,15 +239,15 @@
          dependencies=dependencies,
          operation_dependencies=operation_dependencies,
          prefix=prefix,
-@@ -43,7 +37,6 @@
+@@ -44,7 +38,6 @@
  def create_app(
      *,
      pets: PetsService,
 -    store: StoreService,
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-     **fastapi_kwargs: Any,
-@@ -57,7 +50,6 @@
+     source_openapi: bool = True,
+@@ -60,7 +53,6 @@
      app.include_router(
          build_router(
              pets=pets,
@@ -147,7 +267,7 @@
  from pydantic import Field
  
  from .._generated import contract
-@@ -100,94 +99,11 @@
+@@ -99,92 +98,11 @@
      )
  
  
@@ -197,7 +317,6 @@
 -        operation_id='getPet',
 -        tags=['pets'],
 -        response_description='The pet.',
--        responses={'404': {'model': models.Error, 'description': 'Missing.'}},
 -        dependencies=wiring.dependencies.get('get_pet'),
 -    )
 -
@@ -228,7 +347,6 @@
 -        operation_id='deletePet',
 -        tags=['pets'],
 -        response_description='Deleted.',
--        responses={'204': {'description': 'Deleted.'}},
 -        dependencies=wiring.dependencies.get('delete_pet'),
 -    )
 -

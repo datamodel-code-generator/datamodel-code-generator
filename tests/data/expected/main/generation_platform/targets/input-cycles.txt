@@ -7,10 +7,12 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
 generate
   returned None
@@ -19,23 +21,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   target=fastapi schema_version=1
   unchanged target server/__init__.py
@@ -44,21 +49,24 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -66,23 +74,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/self: The served document leaves out self, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   target=fastapi schema_version=1
   write target server/__init__.py
@@ -91,21 +102,24 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -113,23 +127,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   target=fastapi schema_version=1
   unchanged target server/__init__.py
@@ -138,21 +155,24 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -160,23 +180,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-cycle/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   target=fastapi schema_version=1
   write target server/__init__.py
@@ -185,21 +208,24 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
+  write target server/_generated/openapi.py
   write target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['write']
+  5 runtime modules ['write']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -207,23 +233,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 render
   target=fastapi schema_version=1
   unchanged target server/__init__.py
@@ -232,21 +261,24 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -254,20 +286,23 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-outer/nested/child/back~1to~0outer/0: The served document leaves out 0, which has no JSON form
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']

@@ -7,6 +7,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -14,13 +15,15 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 tree
   models.py
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -28,7 +31,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 generate
   returned None
 tree
@@ -37,6 +40,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -44,7 +48,8 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -56,7 +61,9 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
+  unchanged target server/_generated/openapi.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

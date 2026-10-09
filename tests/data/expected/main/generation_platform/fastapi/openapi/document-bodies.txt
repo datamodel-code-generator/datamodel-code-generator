@@ -8,11 +8,33 @@
   "paths": {
     "/json": {
       "post": {
+        "operationId": "postJson",
         "tags": [
           "json"
         ],
-        "summary": "Post Json",
-        "operationId": "postJson",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/json/optional": {
+      "post": {
+        "operationId": "postOptional",
+        "tags": [
+          "json"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -20,143 +42,80 @@
                 "$ref": "#/components/schemas/Item"
               }
             }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/json/optional": {
-      "post": {
-        "tags": [
-          "json"
-        ],
-        "summary": "Post Optional",
-        "operationId": "postOptional",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/Item"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Body"
-              }
-            }
           }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/json/nullable": {
       "post": {
+        "operationId": "postNullable",
         "tags": [
           "json"
         ],
-        "summary": "Post Nullable",
-        "operationId": "postNullable",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FieldJsonNullablePostRequest"
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/json/envelope": {
       "post": {
+        "operationId": "postEnvelope",
         "tags": [
           "json"
         ],
-        "summary": "Post Envelope",
-        "operationId": "postEnvelope",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Account"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/json/many": {
       "post": {
+        "operationId": "postMany",
         "tags": [
           "json"
         ],
-        "summary": "Post Many",
-        "operationId": "postMany",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -168,8 +127,7 @@
                 "$ref": "#/components/schemas/Item"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -180,20 +138,20 @@
     },
     "/text": {
       "post": {
+        "operationId": "postText",
         "tags": [
           "raw"
         ],
-        "summary": "Post Text",
-        "operationId": "postText",
         "requestBody": {
+          "required": true,
           "content": {
             "text/plain": {
               "schema": {
-                "$ref": "#/components/schemas/FieldTextPostRequest"
+                "type": "string",
+                "maxLength": 10
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -204,11 +162,10 @@
     },
     "/binary": {
       "put": {
+        "operationId": "putBinary",
         "tags": [
           "raw"
         ],
-        "summary": "Put Binary",
-        "operationId": "putBinary",
         "requestBody": {
           "content": {
             "application/octet-stream": {}
@@ -223,21 +180,19 @@
     },
     "/raw": {
       "post": {
+        "operationId": "postRaw",
         "tags": [
           "raw"
         ],
-        "summary": "Post Raw",
-        "operationId": "postRaw",
         "requestBody": {
-          "description": "The server passes this body to its handler as the request, without validating it.",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FieldRawPostRequest"
+                "type": "object"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -248,50 +203,71 @@
     },
     "/form": {
       "post": {
+        "operationId": "postForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Form",
-        "operationId": "postForm",
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormPostRequest"
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "count": {
+                    "type": "integer",
+                    "default": 1
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/form/optional": {
       "post": {
+        "operationId": "postOptionalForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Optional Form",
-        "operationId": "postOptionalForm",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormOptionalPostRequest"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "flags": {
+                    "type": "array",
+                    "items": {
+                      "type": "boolean"
+                    }
+                  },
+                  "ratio": {
+                    "type": "number"
+                  }
+                }
               }
             }
           }
@@ -305,54 +281,69 @@
     },
     "/form/either": {
       "post": {
+        "operationId": "postEitherForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Either Form",
-        "operationId": "postEitherForm",
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormEitherPostRequest"
+                "type": "object",
+                "properties": {
+                  "either": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/form/nested": {
       "post": {
+        "operationId": "postNestedForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Nested Form",
-        "operationId": "postNestedForm",
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormNestedPostRequest"
+                "type": "object",
+                "properties": {
+                  "point": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "additionalProperties": {
+                  "type": "integer"
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -363,88 +354,96 @@
     },
     "/form/closed": {
       "post": {
+        "operationId": "postClosedForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Closed Form",
-        "operationId": "postClosedForm",
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormClosedPostRequest"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/form/choice": {
       "post": {
+        "operationId": "postChoiceForm",
         "tags": [
           "form"
         ],
-        "summary": "Post Choice Form",
-        "operationId": "postChoiceForm",
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormChoicePostRequest"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "minProperties": 1
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/upload": {
       "post": {
+        "operationId": "upload",
         "tags": [
           "form"
         ],
-        "summary": "Upload",
-        "operationId": "upload",
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/FieldUploadPostRequest"
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "extra": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -456,339 +455,32 @@
   },
   "components": {
     "schemas": {
-      "Account": {
+      "Item": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
         "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
           "name": {
-            "type": "string",
-            "title": "Name"
+            "type": "string"
           }
-        },
+        }
+      },
+      "Account": {
         "type": "object",
         "required": [
           "id",
           "name"
         ],
-        "title": "Account"
-      },
-      "FieldFormChoicePostRequest": {
         "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
           "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "FieldFormChoicePostRequest"
-      },
-      "FieldFormClosedPostRequest": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "FieldFormClosedPostRequest"
-      },
-      "FieldFormEitherPostRequest": {
-        "properties": {
-          "either": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Either"
-          },
-          "items": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Items"
-          }
-        },
-        "type": "object",
-        "title": "FieldFormEitherPostRequest"
-      },
-      "FieldFormNestedPostRequest": {
-        "properties": {
-          "point": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Point"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": {
-          "type": "integer"
-        },
-        "type": "object",
-        "title": "FieldFormNestedPostRequest"
-      },
-      "FieldFormOptionalPostRequest": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "flags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "boolean"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Flags"
-          },
-          "ratio": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ratio"
-          }
-        },
-        "type": "object",
-        "title": "FieldFormOptionalPostRequest"
-      },
-      "FieldFormPostRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 20,
-            "title": "Name"
-          },
-          "count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Count",
-            "default": 1
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "FieldFormPostRequest"
-      },
-      "FieldJsonNullablePostRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "FieldJsonNullablePostRequest"
-      },
-      "FieldRawPostRequest": {
-        "properties": {},
-        "type": "object",
-        "title": "FieldRawPostRequest"
-      },
-      "FieldTextPostRequest": {
-        "type": "string",
-        "maxLength": 10,
-        "title": "FieldTextPostRequest"
-      },
-      "FieldUploadPostRequest": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "File"
-          },
-          "extra": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "contentMediaType": "application/octet-stream"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Extra"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "FieldUploadPostRequest"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "Item": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "Item"
-      },
-      "Point": {
-        "properties": {
-          "x": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "X"
-          }
-        },
-        "type": "object",
-        "title": "Point"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
+        }
       }
     }
   }
