@@ -1,145 +1,98 @@
 # auth pydantic_v2.BaseModel
-  missing token set = TypeError
-  token set type = ConfigurationError reason=invalid_type field_path=('token_set',)
-  naive expiry = ConfigurationError reason=invalid_value field_path=('token_set', 'access_token', 'expires_at')
-  token type other than Bearer = ConfigurationError reason=unsupported_token_type field_path=('token_set', 'access_token', 'token_type')
-  token for another audience = ConfigurationError reason=audience_mismatch field_path=('audience',)
-  token for an audience without one configured = ConfigurationError reason=audience_mismatch field_path=('audience',)
-  callback that cannot be called = ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
-  coroutine callback of a sync provider = ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
-  sync callback of an async provider = ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
-  public client with a secret = ConfigurationError reason=forbidden_value field_path=('client_secret',)
-  missing secret = ConfigurationError reason=missing_value field_path=('client_secret',)
-  async secret = ConfigurationError reason=invalid_mode field_path=('client_secret',)
-  sync secret of an async provider = ConfigurationError reason=invalid_mode field_path=('client_secret',)
-  sync client of an async provider = ConfigurationError reason=invalid_mode field_path=('http_client',)
-  lone scope string = ConfigurationError reason=invalid_scope field_path=('scopes',)
-  empty audience = ConfigurationError reason=invalid_value field_path=('audience',)
-  options type = ConfigurationError reason=invalid_type field_path=('options',)
-  context type = ConfigurationError reason=invalid_type field_path=('context',)
-  audience of another resource = ConfigurationError reason=audience_mismatch field_path=('audience',)
-  invalidate with another type = ConfigurationError reason=invalid_type field_path=('version',)
-  get = access-1 scopes=None expires_in_minutes=60
-  sends before close = 0
-  get after close = AuthError reason=provider_closed
-  close again = None
-    borrowed client closed = False
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  basic = access-2 scopes=('read', 'write') expires_in_minutes=60
-    cached for the configured audience = True
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-2'
-    refresh keeping the refresh token = access-3 scopes=('read',) expires_in_minutes=60
-    stale invalidation keeps the token = True
-    token sets handed to the callback = ['TokenSet() access=access-2 refresh=refresh-2', 'TokenSet() access=access-3 refresh=refresh-2']
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 93] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=client+id&client_secret=se%3Acr+et'
-  post = lasting scopes=None expires_in_minutes=None
-    cached without expiry = True
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 68] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=client+id'
-  public client keeping its refresh token = public scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  invalid grant = AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  rejected scope = AuthError reason=oauth_error status_code=400 oauth_error=invalid_scope
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  rejected client = AuthError reason=oauth_error status_code=401 oauth_error=invalid_client
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  unauthorized without invalid_client = AuthError reason=oauth_error status_code=401
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  unavailable = AuthError reason=oauth_error status_code=503
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  success without JSON = AuthError reason=oauth_error status_code=200 cause=ValueError
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  missing access token = AuthError reason=oauth_error status_code=200 cause=InvalidTokenResponseError
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-    later get = access-2 scopes=None expires_in_minutes=60
+rejection
+  declared refresh url https://auth.example.com/refresh
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  initial access token = b'ok'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
-  generated call = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
+  rejection refreshes = b'ok'
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  rejected token refreshed = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
-  > GET https://api.example.com/oauth/scopes
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  refreshed narrow grant refused by resource ! PermissionDeniedError: Error code: 403 - forbidden [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False]
-  > GET https://api.example.com/oauth/scopes
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  403 leaves the refreshed grant unchanged ! PermissionDeniedError: Error code: 403 - forbidden [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False]
-  > POST https://localhost:<port>/token
-    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  refresh without a new refresh token = b'ok'
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  expired narrow grant refreshed and accepted = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
-  > GET https://api.example.com/oauth/scopes
+  invalid_token of a Basic challenge refreshes nothing ! AuthenticationError status_code=401 cause=DecodeError
+  > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  write operation refused by resource ! PermissionDeniedError: Error code: 403 - forbidden [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False]
-    token_requests=2 resource_arrivals=7 refreshed_grants=('read',)
-  lifetime 100s with refresh token refresh-1 after 95s = access-2 scopes=None expires_in_minutes=60 same=None
-    after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
-  lifetime 100s with refresh token None after 95s = access-1 scopes=None expires_in_minutes=2 same=True
-    after 101s = AuthError reason=reauthorization_required sent=[]
-  connect failure proven unsent = AuthError reason=oauth_error cause=APIConnectionError
-    later get = access-2 scopes=None expires_in_minutes=60
-    refresh tokens sent = ['refresh-1', 'refresh-1']
-  phase timeout after sending = AuthError reason=timeout cause=APITimeoutError reason=phase_timeout
-    later get = access-2 scopes=None expires_in_minutes=60
-    refresh tokens sent = ['refresh-1', 'refresh-1']
-  transport failure = AuthError reason=oauth_error cause=APIConnectionError
-    later get = access-2 scopes=None expires_in_minutes=60
-    refresh tokens sent = ['refresh-1', 'refresh-1']
-  secret failure = AuthError reason=provider_failed cause=RuntimeError
-    later get = access-2 scopes=None expires_in_minutes=60
-    refresh tokens sent = ['refresh-1']
-  interrupted send = KeyboardInterrupt
-    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1', 'refresh-1']
-  callback failure = RuntimeError
-    refreshed token stays current = access-2 scopes=None expires_in_minutes=60
-    next refresh = access-2 scopes=None expires_in_minutes=60
-    callback calls = ['TokenSet() access=access-2 refresh=refresh-2', 'TokenSet() access=access-2 refresh=refresh-3'] sent=['refresh-1', 'refresh-2']
-  one refresh for concurrent callers = access-2 scopes=None expires_in_minutes=60 / access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
-  generated caller expires while waiting for refresh ! AuthError: AuthError(operation_id='oauth_read', reason='timeout') [operation_id='oauth_read'] timeout
-    original refresh = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
-  without a refresh token = access-1 scopes=None expires_in_minutes=60
-    get once invalidated = AuthError reason=reauthorization_required sends=0
-  forced refresh without a refresh token = AuthError reason=reauthorization_required
-  token for the configured audience = access-1 scopes=None expires_in_minutes=60
-  async refresh = access-2 scopes=None expires_in_minutes=60
-    cached = True
-    invalid grant = AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
-    callback calls = ['TokenSet() access=access-2 refresh=refresh-2'] sends=2
-    get after close = AuthError reason=provider_closed
-  async callback failure = RuntimeError
-    refreshed token stays current = access-2 scopes=None expires_in_minutes=60
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
+  refresh past the last date ! AuthError reason=invalid_expiry
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
+  invalid grant ! AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
+  saved ['access-1/refresh-1 expires=3600', 'access-2/refresh-1 expires=None']
+expiry
+  > GET https://api.example.com/openid/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  token before its renewal = b'ok'
+  > POST https://id.example.com/token
+    [host: id.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, authorization: Basic cGV0cy1hcHA6c2UlM0FjcitldA==, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-0'
+  > GET https://api.example.com/openid/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  due token refreshes first = b'ok'
+  saved ['access-1/refresh-1 expires=195']
+  > GET https://api.example.com/openid/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  unrenewable token until its expiry = b'ok'
+  unrenewable token after its expiry ! AuthError reason=reauthorization_required
+  > GET https://api.example.com/openid/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  rejected token without a refresh token ! AuthError reason=reauthorization_required
+callbacks
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  failing callback ! AuthError reason=provider_failed cause=OSError
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  failing callback keeps the refreshed token = b'ok'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  coroutine callback in a synchronous call ! ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  coroutine callback in a synchronous call keeps the refreshed token = b'ok'
+  naive expiry ! ConfigurationError reason=invalid_value field_path=('expires_at',)
+  empty access token ! ConfigurationError reason=invalid_value field_path=('access_token',)
+  empty refresh token ! ConfigurationError reason=invalid_value field_path=('refresh_token',)
+  token set of another type ! ConfigurationError reason=invalid_type field_path=('token_set',)
+  callback of another type ! ConfigurationError reason=invalid_type field_path=('on_token_refreshed',)
+  secret without a method ! ConfigurationError reason=forbidden_value field_path=('client_secret',)
+  method without a secret ! ConfigurationError reason=missing_value field_path=('client_secret',)
+  empty client id ! ConfigurationError reason=invalid_value field_path=('client_id',)
+  unknown method ! ConfigurationError reason=invalid_value field_path=('client_auth_method',)
+  clock of another type ! ConfigurationError reason=invalid_type field_path=('clock',)
+  token set repr TokenSet(expires_at=None)
+async
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  async rejection refreshes = b'ok'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
+  async invalid grant ! AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
+  async saved ['access-1/refresh-1 expires=3600']
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  async failing callback ! AuthError reason=provider_failed cause=OSError

@@ -148,8 +148,8 @@ class _Harness:
         self.package = package
         self.lines = lines
         self.server = server
-        self.options, self.protocols, self.errors, self.auth = (
-            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors", "auth")
+        self.options, self.protocols, self.errors = (
+            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors")
         )
         self.models = importlib.import_module(f"{package.__name__}_models")
 
@@ -213,7 +213,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _limits(harness, api)
             _closing_sessions(harness, api)
         _clocked(harness)
-        with harness.package.Client(options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))) as api:
+        with harness.package.Client(options=harness.client(), bearer=_Tokens()) as api:
             _sends(harness, api)
         _hooked(harness)
         _authenticated(harness)
@@ -558,52 +558,25 @@ async def _async_hooked(harness: _Harness) -> None:
 
 
 class _Tokens:
-    """A bearer provider that replaces its token once the server rejects the first."""
+    """A bearer credential callable that gives a new token each time it is called."""
 
-    def __init__(self, auth: ModuleType) -> None:
-        self.auth = auth
-        self.tokens = iter(("first", "second"))
-        self.current = self.next()
+    def __init__(self) -> None:
+        self.tokens = iter(("first", "second", "third"))
         self.calls: list[str] = []
 
-    def next(self) -> Any:
-        return self.auth.BearerCredential(self.auth.AccessToken(f"{next(self.tokens)}-material"), self.auth.TokenVersion())
-
-    def get(self, context: object) -> Any:
-        del context
+    def __call__(self) -> str:
         self.calls.append("get")
-        return self.current
-
-    def invalidate(self, version: object) -> None:
-        self.calls.append(f"invalidate current={version is self.current.version}")
-
-    def refresh(self, context: object) -> Any:
-        del context
-        self.calls.append("refresh")
-        self.current = self.next()
-        return self.current
-
-
-class _AsyncTokens(_Tokens):
-    async def get(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().get(context)
-
-    async def invalidate(self, version: object) -> None:  # ty: ignore[invalid-method-override]
-        super().invalidate(version)
-
-    async def refresh(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().refresh(context)
+        return f"{next(self.tokens)}-material"
 
 
 def _authenticated(harness: _Harness) -> None:
     """Authenticate each handshake, never refreshing a rejected token, and send a header parameter."""
     lines, server, options = harness.lines, harness.server, harness.options
     for label, retry in (("rejected token not refreshed", None), ("no refresh without retries", 0)):
-        tokens = _Tokens(harness.auth)
+        tokens = _Tokens()
         settings = {} if retry is None else {"retry": options.RetryOptions(max_retries=retry)}
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
         plays = server.play(Play(refuse=(401, _INVALID, b"")))
-        with harness.package.Client(options=client_options) as api:
+        with harness.package.Client(options=harness.client(), bearer=tokens) as api:
             session = record(
                 lines,
                 label,
@@ -663,8 +636,7 @@ def _logged(harness: _Harness) -> None:
     root.setLevel(logging.DEBUG)
     try:
         (play,) = server.play(Play(talk=_replying))
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))
-        with harness.package.Client(options=client_options) as api:
+        with harness.package.Client(options=harness.client(), bearer=_Tokens()) as api:
             session = api.protocols.secure.chat.connect()
             session.send(b"secret-payload")
             lines.append(f"  received with debug logging {_message(session.receive())}")

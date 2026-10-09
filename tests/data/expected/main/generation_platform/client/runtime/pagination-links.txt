@@ -244,12 +244,9 @@
   same origin bearer ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  bearer the auth keeps from another origin ['1'] ! ConfigurationError: ConfigurationError(operation_id='listSecureUsers', reason='origin_denied', field_path='auth.allowed_origins') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins')] origin_denied
-  > GET https://api.example.com/v1/secure/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://other.example.com/secure/users?page=2
-    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  bearer the auth allows at another origin ['1', '2']
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bearer kept from another origin ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://api.example.com/v1/secure/users?page=2
@@ -317,12 +314,9 @@
   async same origin bearer ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  async bearer the auth keeps from another origin ['1'] ! ConfigurationError: ConfigurationError(operation_id='listSecureUsers', reason='origin_denied', field_path='auth.allowed_origins') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins')] origin_denied
-  > GET https://api.example.com/v1/secure/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://other.example.com/secure/users?page=2
-    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  async bearer the auth allows at another origin ['1', '2']
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async bearer kept from another origin ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://api.example.com/v1/secure/users?page=2

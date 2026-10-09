@@ -195,6 +195,8 @@ def _raw(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pe
     exchange.respond(json_response(200, _PET))
     kept = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "f", ("call_end",)),)))
     record(lines, "streamed get whose hook fails", lambda: kept.pets.with_streaming_response.get_pet(pet_id=pet).__enter__())
+    exchange.respond(raw_response(200, b"ok", "text/plain"))
+    record(lines, "raw request whose hook fails", lambda: kept.request_raw("GET", _RAW))
     exchange.respond(json_response(200, _PET))
     record(lines, "raw get after it", lambda: api.pets.with_raw_response.get_pet(pet_id=pet).info.status_code)
     _streams(api, exchange, lines, options, pet)

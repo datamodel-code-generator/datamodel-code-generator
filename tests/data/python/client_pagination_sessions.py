@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
     import httpx2
 
-_TOKEN: Final = "https://auth.example.com/token"
 
 
 def _foreign(package: ModuleType) -> ModuleType:
@@ -502,14 +501,9 @@ def pagination_auth(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
         script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
-        provider = auth.ClientCredentialsProvider(
-            _TOKEN,
-            client_id="c",
-            client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("s")),
-            http_client=script.client(),
-        )
-        settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
-        with provider, exchange.client() as native, package.Client(http_client=native, options=settings) as api:
+        provider = auth.OauthClientCredentials(client_id="c", client_secret="s", http_client=script.client())
+        settings = harness.client_options()
+        with exchange.client() as native, package.Client(http_client=native, options=settings, oauth=provider) as api:
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             drained(lines, label, pager)
@@ -521,17 +515,11 @@ async def _async_auth(harness: Harness, auth: ModuleType, lines: list[str]) -> N
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
         script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
-        provider = auth.AsyncClientCredentialsProvider(
-            _TOKEN,
-            client_id="c",
-            client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-            http_client=script.async_client(),
-        )
-        settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
+        provider = auth.OauthClientCredentials(client_id="c", client_secret="s", http_client=script.async_client())
+        settings = harness.client_options()
         async with (
-            provider,
             exchange.async_client() as native,
-            harness.package.AsyncClient(http_client=native, options=settings) as api,
+            harness.package.AsyncClient(http_client=native, options=settings, oauth=provider) as api,
         ):
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())

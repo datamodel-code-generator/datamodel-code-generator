@@ -16,10 +16,8 @@ import httpx2
 
 from datamodel_code_generator import Error
 from tests.data.python.client_allowreserved import reserved_paths
-from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
-from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_replay import body_replay, multipart_replay
@@ -38,7 +36,6 @@ from tests.data.python.client_limiter_faults import limiter_faults
 from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_codec_backends, native_faults, native_wire
-from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_client_credentials import oauth_client_credentials
 from tests.data.python.client_oauth_refresh import oauth_refresh
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
@@ -833,10 +830,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), auth_errors),
-    "auth-values": ("auth", BACKENDS, auth_values),
-    "auth-challenges": ("auth", ("pydantic_v2.BaseModel",), auth_challenges),
+    "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
-    "auth-options": ("auth", ("pydantic_v2.BaseModel",), auth_options),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
@@ -851,7 +846,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "native-codec-backends": ("pets", BACKENDS, native_codec_backends),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
-    "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
     "oauth-client-credentials": ("auth", ("pydantic_v2.BaseModel",), oauth_client_credentials),
     "oauth-refresh": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),

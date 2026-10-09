@@ -54,7 +54,8 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
-    from datamodel_code_generator._client.runtime import Helper, Security
+    from datamodel_code_generator._client.runtime import Helper
+    from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
@@ -179,100 +180,68 @@ def _options(capabilities: Capabilities) -> str:
     ))
 
 
-_AUTH_NAMES: Final = (
-    "AsyncCredentialProvider",
-    "AsyncEnvironmentCredentialProvider",
-    "AsyncRequestSigner",
-    "AsyncStaticCredentialProvider",
-    "AuthConfig",
-    "CredentialContext",
-    "CredentialMaterial",
-    "CredentialProvider",
-    "CredentialProviderInput",
-    "EnvironmentCredentialProvider",
-    "RequestSigner",
-    "SignatureFields",
-    "SignerCapabilities",
-    "SigningInput",
-    "StaticCredentialProvider",
-    "TokenVersion",
-)
-_CREDENTIAL_NAMES: Final[dict[Security, tuple[str, ...]]] = {
-    "api_key": ("ApiKeyCredential",),
-    "basic": ("BasicCredential",),
-    "bearer": (
-        "AccessToken",
-        "AsyncRefreshableTokenProvider",
-        "AsyncStaticTokenProvider",
-        "BearerCredential",
-        "RefreshableTokenProvider",
-        "StaticTokenProvider",
-    ),
-    "client_credentials": ("ApiKeyCredential",),
-    "refresh_token": ("ApiKeyCredential",),
+_KIND_LABELS: Final = {"api_key": "API key", "basic": "HTTP Basic", "bearer": "bearer token"}
+_CREDENTIAL_EXAMPLES: Final = {
+    "api_key": ("key", "key: str"),
+    "basic": ("(username, password)", "username: str, password: str"),
+    "bearer": ("token", "token: str"),
 }
-_SIGNERS_ONLY: Final = "This API declares no security scheme, so an `AuthConfig` carries only signers."
-_SCHEME_NAME: Final = (
-    "Use the API's declared scheme name in place of `{}`, and pass the options to an operation requiring it."
+_CREDENTIALS: Final = (
+    "A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called "
+    "for each request; a bearer argument also takes an OAuth provider. A call sends the credentials of its operation's "
+    "first security alternative they all satisfy, at the positions its schemes declare, and only to its server's "
+    "origin. An anonymous alternative applies only when no other alternative is satisfied, so an optional operation "
+    "sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none. "
+    "A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` "
+    "before sending, unless the HTTP client has an Auth of its own. A callable's failure raises `AuthError` with the "
+    "reason `provider_failed`. Credentials beside an Auth of the client's options or of an injected HTTP client raise "
+    "`ConfigurationError` with the reason `conflicting_auth`."
 )
-_ENVIRONMENT: Final = (
-    '`EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its async '
-    "counterpart has the same explicit selection. Imports and constructors do not discover environment secrets."
+_NATIVE_AUTH: Final = (
+    "`auth` on `ClientOptions`, a view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the "
+    "credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP "
+    "client's own Auth. Sign requests with an `httpx2.Auth` of your own, which reads the body natively. Credential "
+    "values do not appear in repr or hook events; a query credential is part of the request URL, which the `httpx2` "
+    "logger records at INFO level."
 )
-_UNAVAILABLE: Final = (
-    "Basic charset overrides, resource audience metadata, and generated OAuth factories are not available yet. "
-    "Providers are explicit."
+_OAUTH_REQUESTS: Final = (
+    "The call needing a token requests it inline under the provider's lock, which concurrent calls wait for, through "
+    "the client's HTTP client without its Auth and without redirects, or through the provider's own `http_client`. "
+    "A token is renewed once a tenth of its lifetime, at most thirty seconds, remains; a 401 with a Bearer "
+    "`invalid_token` challenge, or without a challenge on an operation declaring `auth_challenge_less_401`, renews it "
+    "once and sends a replayable request again. A rejected token request raises `AuthError` with the reason "
+    "`oauth_error`, and `invalid_grant` on a refresh the reason `reauthorization_required`. A `TokenSet` omits its "
+    "tokens from repr, and the SDK persists nothing."
 )
-_CLIENT_CREDENTIALS: Final = (
-    "`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a client's own token when a call first "
-    "needs it."
-)
-_REFRESH_TOKENS: Final = (
-    "`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a `TokenSet` current with its refresh token, and hand "
-    "each refreshed token set to `on_token_refreshed`."
-)
-_AUTH_EXAMPLES: Final[dict[Security, tuple[str, str, str]]] = {
-    "bearer": (
-        "AccessToken, AuthConfig, StaticTokenProvider",
-        "bearer_options(token: str)",
-        "StaticTokenProvider(AccessToken(token, scopes=None))",
-    ),
-    "api_key": (
-        "ApiKeyCredential, AuthConfig, StaticCredentialProvider",
-        "key_options(key: str)",
-        "StaticCredentialProvider(ApiKeyCredential(key))",
-    ),
-    "basic": (
-        "AuthConfig, BasicCredential, StaticCredentialProvider",
-        "basic_options(username: str, password: str)",
-        "StaticCredentialProvider(BasicCredential(username, password))",
-    ),
-}
-_OAUTH_NAMES: Final[dict[Security, tuple[str, ...]]] = {
-    "client_credentials": ("AsyncClientCredentialsProvider", "ClientCredentialsProvider"),
-    "refresh_token": ("AsyncRefreshTokenProvider", "RefreshTokenProvider"),
+_FLOW_CLASSES: Final = {
+    "client_credentials": ("ClientCredentials", "client credentials"),
+    "refresh_token": ("RefreshToken", "refresh token"),
 }
 
 
-def _auth(capabilities: Capabilities) -> str:
-    """Return the auth module: request signers, and the credentials and OAuth flows of the declared schemes."""
-    security = capabilities.security
-    names = sorted({*_AUTH_NAMES, *(name for kind in security for name in _CREDENTIAL_NAMES[kind])})
-    flows = sorted({
-        *(("OAuthProviderOptions", "TokenSet") if capabilities.oauth else ()),
-        *(name for kind in security for name in _OAUTH_NAMES.get(kind, ())),
-    })
-    grants = ("from ._runtime.client.grants import (\n", *(f"    {name},\n" for name in flows), ")\n")
+def _auth(credentials: tuple[CredentialSpec, ...]) -> str | None:
+    """Return the auth module: the OAuth providers, and one per declared flow whose token URL is declared, or None."""
+    if not any(credential.flows for credential in credentials):
+        return None
+    classes = [
+        (f"{pascal(credential.name)}{base}", base, label, credential.name, url)
+        for credential in credentials
+        for flow, url in credential.flows
+        if url is not None
+        for base, label in (_FLOW_CLASSES[flow],)
+    ]
+    exported = sorted({"ClientCredentials", "RefreshToken", "TokenSet", *(name for name, *_ in classes)})
     return "".join((
-        '"""Explicit credential providers, request signers, and OAuth flows for this package."""\n\n'
-        if flows
-        else '"""Explicit credential providers and request signers for this package."""\n\n',
-        "from ._runtime.client.auth import (\n",
-        *(f"    {name},\n" for name in names),
-        ")\n",
-        *(grants if flows else ()),
-        "\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*names, *flows))),
+        '"""The OAuth token providers of this package\'s declared flows."""\n\n',
+        "from ._runtime.client.oauth import ClientCredentials, RefreshToken, TokenSet\n",
+        *(
+            f"\n\nclass {name}({base}):\n"
+            f'    """The {label} provider of the `{argument}` credential, at its declared token URL by default."""\n\n'
+            f"    token_url = {url!r}\n"
+            for name, base, label, argument, url in classes
+        ),
+        "\n\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in exported),
         "]\n",
     ))
 
@@ -1087,6 +1056,28 @@ class _Resources(_Typing):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
+    def _create(self, module: Module, core: str) -> str:
+        """Return the root's core creation, passing the credential arguments by scheme name when there are any."""
+        if not (credentials := self.plan.credentials):
+            return f"{core}.create(_DEFAULTS, options=options, http_client=http_client)"
+        schemes = Group("{", tuple((f"{json.dumps(item.scheme.name)}: ", item.name) for item in credentials), "}")
+        entries = (
+            ("", "_DEFAULTS"),
+            ("options=", "options"),
+            ("http_client=", "http_client"),
+            ("credentials=", _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))),
+        )
+        return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
+
+    @staticmethod
+    def _credential_annotation(module: Module, kind: str) -> str:
+        """Return the type of a credential argument of the scheme kind."""
+        runtime = "_runtime.client.auth"
+        if kind == "basic":
+            return module.local(runtime, "UserPassword")
+        secret = module.local(runtime, "Secret")
+        return f"{secret} | {module.local(runtime, 'TokenSource')}" if kind == "bearer" else secret
+
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
         prefix = "Async" if asynchronous else ""
@@ -1108,13 +1099,19 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
+        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         values = {
+            "credentials": [
+                {"name": item.name, "annotation": self._credential_annotation(module, item.scheme.kind)}
+                for item in self.plan.credentials
+            ],
+            "create": self._create(module, core),
             "defaults": self.defaults(module),
             "options": module.local("_runtime.client.options" if protocols else "options", "ClientOptions"),
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
-            "core": module.local("_runtime.client.client", f"{prefix}ClientCore"),
+            "core": core,
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
@@ -3079,68 +3076,52 @@ class ClientRenderer:
             if spec.accepted_content_encodings
         }
 
-    def _credentials_runtime(self, capabilities: Capabilities) -> str:
-        """Show how to pass a credential of the first declared scheme kind, and name each declared kind's values."""
-        security = capabilities.security
-        package = self.config.package
-        sentences = [
-            text
-            for kind, text in (
-                ("bearer", "Async clients use `AsyncStaticTokenProvider` or another async provider."),
-                ("api_key", "API keys use `ApiKeyCredential`."),
-                ("basic", "Basic uses `BasicCredential` with UTF-8."),
+    def _credentials_runtime(self) -> str:
+        """Show how to pass the first credential, and name the credential arguments the clients take."""
+        credentials = self.plan.credentials
+        if not credentials:
+            return _paragraph(
+                "No operation of this API requires a security scheme, so its clients take no credentials.",
+                _NATIVE_AUTH,
             )
-            if kind in security
-        ]
-        if "bearer" in security:
-            sentences.append(
-                "OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery or token HTTP."
-            )
-        elif security:
-            sentences.insert(0, "Async clients use `AsyncStaticCredentialProvider` or another async provider.")
-        sentences.append(_ENVIRONMENT)
-        if (example := next((kind for kind in _AUTH_EXAMPLES if kind in security), None)) is None:
-            return "\n" + _paragraph(_SIGNERS_ONLY, *sentences)
-        imports, signature, provider = _AUTH_EXAMPLES[example]
-        return f"""
-```python
-from {package}.auth import {imports}
-from {package}.options import RequestOptions
+        first = credentials[0]
+        value, annotation = _CREDENTIAL_EXAMPLES[first.scheme.kind]
+        listed = ", ".join(
+            f"`{credential.name}` ({_KIND_LABELS[credential.scheme.kind]})" for credential in credentials
+        )
+        text = _paragraph(
+            "`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: "
+            f"{listed}.",
+            _CREDENTIALS,
+            _NATIVE_AUTH,
+        )
+        return f"""```python
+from {self.config.package} import Client
 
 
-def {signature} -> RequestOptions:
-    return RequestOptions(auth=AuthConfig({{"{example}": {provider}}}))
+def authenticated_client({annotation}) -> Client:
+    return Client({first.name}={value})
 ```
 
-{_paragraph(_SCHEME_NAME.format(example), *sentences)}"""
+{text}"""
 
-    @staticmethod
-    def _oauth_runtime(capabilities: Capabilities) -> str:
-        """Describe the token exchanges of the declared OAuth flows, or nothing without one."""
-        security = capabilities.security
-        if not capabilities.oauth:
-            return _paragraph(_UNAVAILABLE)
-        flows = [
-            text
-            for kind, text in (
-                ("client_credentials", _CLIENT_CREDENTIALS),
-                ("refresh_token", _REFRESH_TOKENS),
-            )
-            if kind in security
-        ]
-        return _paragraph(
-            "OAuth providers exchange tokens without redirects or retries, through a token transport of their own that "
-            "must verify TLS; a `TokenSet` omits its tokens from repr.",
-            *flows,
-            "The call needing a new token requests it inline under the provider's lock, which concurrent callers wait "
-            "for, and the SDK persists nothing.",
-            _UNAVAILABLE,
+    def _oauth_runtime(self) -> str:
+        """Describe the token requests of the declared OAuth flows, or nothing without one."""
+        flows = {flow for credential in self.plan.credentials for flow, _ in credential.flows}
+        if not flows:
+            return ""
+        return "\n\n" + _paragraph(
+            f"`{self.config.package}.auth` exports `ClientCredentials` and `RefreshToken`, and a subclass of "
+            "either for each declared flow whose token URL is declared, which `token_url=` overrides. They are bearer "
+            "credentials: `ClientCredentials(client_id=..., client_secret=..., scopes=..., audience=...)` requests a "
+            "client's own token, and `RefreshToken(token_set, client_id=..., on_token_refreshed=...)` renews a "
+            "`TokenSet` with its refresh token and hands each refreshed set to the callback.",
+            _OAUTH_REQUESTS,
         )
 
     def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
-        oauth = capabilities.oauth
-        clock = "A provider uses `OAuthProviderOptions(clock=...)` for its own time sources." if oauth else ""
+        clock = "An OAuth provider takes `clock=Clock(...)` for its own token expiry." if capabilities.oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3228,9 +3209,9 @@ Requests are sent through the native client, with its own `auth`, event hooks, r
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
-that carries a credential at a position a declared security scheme names other than `Authorization`, or a signature, is
-never redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query,
-or cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+that carries a credential at a position a declared security scheme names other than `Authorization` is never
+redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
 `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
 does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
 yields the body as it arrived; a buffered one keeps only its decoded body.
@@ -3250,43 +3231,9 @@ HTTP/2 is explicit and requires its dependency. Injected native clients retain t
 incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
 closes only the native client the SDK created. Request views share that root and have no close method.
 
-## Explicit authentication and signing
+## Authentication
 
-Import `AuthConfig`, credential values, providers, and signers from `{self.config.package}.auth`.
-`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
-Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
-alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
-That choice stays fixed through a call and its retries.
-{self._credentials_runtime(capabilities)}
-
-Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/requirements, and audience is currently None.
-Providers retain their caller's lifetime. Views share the root's native HTTP client.
-Provider and signer callbacks consume the call deadline; synchronous callbacks are
-cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
-
-Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
-explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
-Authentication and signer origin permissions are independent. Every attempt reconstructs credentials and signatures.
-Generic patches cannot change managed credential/signature names.
-
-Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
-the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
-Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
-retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
-acquisition remains allowed. These callbacks start no builtin token exchange.
-
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive the final method/URL/raw query/headers after credential and body framing, before attempt hooks and
-sending. Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
-`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
-
-Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
-request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
-their potentially sensitive messages.
-
-{self._oauth_runtime(capabilities)}
+{self._credentials_runtime()}{self._oauth_runtime()}
 
 ## Errors and cleanup
 
@@ -3304,7 +3251,7 @@ A limiter permit is acquired before opening a body and released when its respons
 finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
 and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
 cancellation propagates unchanged, and user callbacks are not shielded.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""
@@ -3514,17 +3461,17 @@ stores.
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
-auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
-A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ConfigurationError`. A response whose
-`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
-cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
-only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`ProtocolDataError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
-`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `SDKError` with the reason `store_failed` and never resend a
-request.
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
+credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
+declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
+declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
+`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
+permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
+and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
+`store_failed` and never resend a request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
@@ -3543,8 +3490,8 @@ call's headers and header and cookie parameters but not its query. A relative UR
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
 and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
 else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
-headers or query fields the package's security schemes name, and authenticates only at an origin
-`AuthConfig.allowed_origins` lists. A Link header's values must parse as RFC 8288 links and give the relation at most
+headers or query fields the package's security schemes name, and the client's credentials are placed only at the
+server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
 session, the first page's own included, ends it with `ProtocolDataError` with the reason `pagination_cycle` after the
 repeating page.
@@ -3691,7 +3638,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         registry = _Registry(self.plan, self.codecs, self.accessors, self.role)
         webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
         capabilities = Capabilities(
-            security=declared_security(self.plan, self.batch),
+            security=declared_security(self.plan),
             helpers=declared_helpers(
                 (
                     *(spec.helper.kind for spec in (*self.helpers, *self.streams, *self.sockets)),
@@ -3717,7 +3664,11 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
-            self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
+            *(
+                (self.file(PurePosixPath("auth.py"), "auth", auth),)
+                if (auth := _auth(self.plan.credentials)) is not None
+                else ()
+            ),
             self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),

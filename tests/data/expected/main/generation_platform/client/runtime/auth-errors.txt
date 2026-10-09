@@ -1,10 +1,10 @@
 # pets-protocols pydantic_v2.BaseModel
   family AuthError bases=('SDKError',)
   signature AuthError keyword-only=True required=('reason',)
-  hints AuthError ('reason', 'status_code', 'oauth_error', 'expires_at', 'operation_id', 'cause', 'return')
-  defaults AuthError fields=(('reason', 'provider_failed'), ('status_code', None), ('oauth_error', None), ('expires_at', None)) common=(None, None, None, 0, 0.0, None)
+  hints AuthError ('reason', 'status_code', 'oauth_error', 'operation_id', 'cause', 'return')
+  defaults AuthError fields=(('reason', 'provider_failed'), ('status_code', None), ('oauth_error', None)) common=(None, None, None, 0, 0.0, None)
   metadata AuthError operation=auth_operation info=None cause=True measurements=(0, 0.0, None)
-  supplied AuthError (('reason', 'provider_failed'), ('status_code', 400), ('oauth_error', None), ('expires_at', None))
+  supplied AuthError (('reason', 'provider_failed'), ('status_code', 400), ('oauth_error', None))
   safe AuthError True text="AuthError(operation_id='auth_operation', reason='provider_failed', status_code=400)"
   positional AuthError TypeError notes []
   family ConfigurationError bases=('SDKError',)
@@ -18,6 +18,4 @@
   missing required AuthError TypeError notes []
   oauth values {'reason': 'oauth_error', 'status_code': 400, 'oauth_error': 'invalid_client'} returned "AuthError(reason='oauth_error', status_code=400, oauth_error='invalid_client')"
   oauth values {'reason': 'reauthorization_required', 'oauth_error': 'invalid_grant'} returned "AuthError(reason='reauthorization_required', oauth_error='invalid_grant')"
-  reasons ('provider_failed', 'provider_closed', 'token_expired', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required', 'signing_failed')
-  expiry token_expired None same=True
-  expiry token_expired datetime.datetime(2020, 1, 2, 0, 0, tzinfo=datetime.timezone.utc) same=True
+  reasons ('provider_failed', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required')

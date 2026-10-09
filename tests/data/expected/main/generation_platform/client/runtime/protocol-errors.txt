@@ -3,7 +3,7 @@
   APIStatusError: APIStatusError < SDKError
   APITimeoutError: APITimeoutError < APIConnectionError < SDKError
   AuthError: AuthError < SDKError
-  AuthReason: typing.Literal['provider_failed', 'provider_closed', 'token_expired', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required', 'signing_failed']
+  AuthReason: typing.Literal['provider_failed', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required']
   AuthenticationError: AuthenticationError < APIStatusError < SDKError
   BadRequestError: BadRequestError < APIStatusError < SDKError
   ConfigurationError: ConfigurationError < SDKError

@@ -137,6 +137,14 @@
     f: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     f: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
   streamed get whose hook fails ! SDKError: SDKError(operation_id='getPet', reason='hook_failed') [operation_id='getPet', cause=RuntimeError('f failed on call_end')] hook_failed
+    f: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
+    f: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=None origin=https://raw.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://raw.example.com/items?a=1
+    [host: raw.example.com, accept-encoding: gzip, deflate] b''
+    f: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com attempts=1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    f: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    f: call_end attempt=0 sent=True status=200 outcome=success phase=None path=None origin=https://raw.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw request whose hook fails ! SDKError: SDKError(reason='hook_failed') [cause=RuntimeError('f failed on call_end')] hook_failed
     a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
   > GET https://api.example.com/v1/pets/3

@@ -24,7 +24,6 @@ from .errors import (
     DecodeError,
     SDKError,
     add_secondary,
-    is_http_error,
     response_failure,
     too_large,
 )
@@ -205,7 +204,6 @@ class _Raw(Generic[SourceT, HandleT]):
         "_raw_source",
         "_source",
         "_state",
-        "_status_failures",
     )
 
     def __init__(  # noqa: PLR0913
@@ -221,7 +219,6 @@ class _Raw(Generic[SourceT, HandleT]):
         native: httpx2.Response,
         events: CallEvents | None,
         call: LogicalCallContext,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep response metadata, status classification, limits, the decoded and raw body sources, and release.
 
@@ -229,7 +226,6 @@ class _Raw(Generic[SourceT, HandleT]):
         """
         self._events = events
         self._call = call
-        self._status_failures = status_failures
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -274,8 +270,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._state = "streaming"
 
     def _failure(self, error: Exception) -> BaseException:
-        if is_http_error(error):
-            add_secondary(error, *self._status_failures)
         failure = self._classify(error)
         failure.info = self._info
         return failure
@@ -319,8 +313,6 @@ class _Raw(Generic[SourceT, HandleT]):
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
         error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
-        if is_http_error(error):
-            add_secondary(error, *self._status_failures)
         return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
@@ -417,7 +409,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         close: Callable[[], None],
         call: LogicalCallContext,
         events: CallEvents | None = None,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -431,7 +422,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             native=native,
             events=events,
             call=call,
-            status_failures=status_failures,
         )
         self._close: Callable[[], None] | None = close
 
@@ -665,7 +655,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
         events: CallEvents | None = None,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -679,7 +668,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             native=native,
             events=events,
             call=call,
-            status_failures=status_failures,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
 

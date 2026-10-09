@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import itertools
 from contextlib import asynccontextmanager, contextmanager
@@ -13,7 +12,6 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_caching import _Signer
 from tests.data.python.client_runtime import arecord, argument, describe, record, run
 from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Feed, _Harness
 
@@ -100,17 +98,18 @@ class _Resumes:
         self.feed.replies.append(self.harness.reply(chunks, **settings))
 
     @contextmanager
-    def client(self, options: Any = None) -> Iterator[Any]:
+    def client(self, options: Any = None, **credentials: str) -> Iterator[Any]:
         """Yield a client of the package sending through the reporting transport."""
-        with self.feed.client() as http, self.harness.package.Client(http_client=http, options=options) as api:
+        package = self.harness.package
+        with self.feed.client() as http, package.Client(http_client=http, options=options, **credentials) as api:
             yield api
 
     @asynccontextmanager
-    async def async_client(self, options: Any = None) -> AsyncIterator[Any]:
+    async def async_client(self, options: Any = None, **credentials: str) -> AsyncIterator[Any]:
         """Yield an asyncio client of the package sending through the reporting transport."""
         async with (
             self.feed.async_client() as http,
-            self.harness.package.AsyncClient(http_client=http, options=options) as api,
+            self.harness.package.AsyncClient(http_client=http, options=options, **credentials) as api,
         ):
             yield api
 
@@ -627,15 +626,9 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     query.topic = "t"
     tick = ticks.checkpoint()
     ticks.close()
-    auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signer = _Signer(auth)
-    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
-    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
     for label, client, criteria in (
         ("ordinary querystring", api, {"term": "news"}),
         ("credential querystring", api, {"api_key": "secret"}),
-        ("ordinary querystring with a signer", signed, {"term": "news"}),
-        ("signer querystring field", signed, {"sig": "echoed"}),
     ):
         resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))
         value = resumes.argument("querystring", "criteria", criteria, "searchFeed")
@@ -769,19 +762,14 @@ def _query_patches(resumes: _Resumes) -> Iterable[tuple[str, str, str, Any]]:
                 yield helper, name, origin, kind(query=((name, "STALE"), ("tag", "kept")))
 
 
-def _guard_auth(resumes: _Resumes, *, asynchronous: bool, authenticated: bool) -> Any:
-    """Configure the active query scheme explicitly when exercising the authenticated control."""
+def _guard_auth(resumes: _Resumes) -> Any:
+    """Return client options whose reconnection waits for nothing; an authenticated client also takes its key."""
     options = resumes.harness.options
-    settings = {"retry": options.RetryOptions(initial_delay=0, max_delay=0)}
-    if authenticated:
-        auth = importlib.import_module(f"{resumes.harness.package.__name__}.auth")
-        kind = auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
-        settings["auth"] = auth.AuthConfig(
-            credentials={"query_key": kind(auth.ApiKeyCredential("CLIENT_KEY"))},
-            send_on_anonymous=True,
-            anonymous_schemes=("query_key",),
-        )
-    return options.ClientOptions(**settings)
+    return options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_delay=0))
+
+
+def _guard_key(*, authenticated: bool) -> dict[str, str]:
+    return {"query_key": "CLIENT_KEY"} if authenticated else {}
 
 
 def _write_guards(package: ModuleType, lines: list[str]) -> None:
@@ -790,7 +778,7 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
     options = resumes.harness.options
     lines.append("stream write guards")
     for authenticated in (False, True):
-        with resumes.client(_guard_auth(resumes, asynchronous=False, authenticated=authenticated)) as api:
+        with resumes.client(_guard_auth(resumes), **_guard_key(authenticated=authenticated)) as api:
             for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
@@ -900,7 +888,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
     options = resumes.harness.options
     lines.append("async stream write guards")
     for authenticated in (False, True):
-        async with resumes.async_client(_guard_auth(resumes, asynchronous=True, authenticated=authenticated)) as api:
+        async with resumes.async_client(_guard_auth(resumes), **_guard_key(authenticated=authenticated)) as api:
             for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = await getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)

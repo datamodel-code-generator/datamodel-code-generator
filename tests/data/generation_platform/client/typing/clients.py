@@ -13,7 +13,6 @@ import httpx2
 from typing_extensions import assert_type
 
 from pets import AsyncClient, AsyncClientView, Client, ClientView
-from pets.auth import OAuthProviderOptions
 from pets.bodies import (
     AsyncBinaryBody,
     AsyncMultipartBody,
@@ -237,7 +236,6 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
 
 def timing_options(client: Client) -> None:
     clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
-    assert_type(OAuthProviderOptions(clock=clock).clock, Clock)
     phases = TimeoutOptions(connect=1, read=None, write=UNSET, pool=0)
     assert_type(phases.read, float | Unset | None)
     configured = ClientOptions(

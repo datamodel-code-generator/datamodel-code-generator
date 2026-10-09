@@ -37,7 +37,18 @@
           "options": "ClientOptions",
           "http_client": "HTTPClient",
           "lifecycle": "    def close(self) -> None:\n        self._core.close()",
-          "manager": "AbstractContextManager"
+          "manager": "AbstractContextManager",
+          "credentials": [
+            {
+              "name": "api_key",
+              "annotation": "Secret"
+            },
+            {
+              "name": "oauth",
+              "annotation": "Secret | TokenSource"
+            }
+          ],
+          "create": "SyncCore.create(\n            _DEFAULTS,\n            options=options,\n            http_client=http_client,\n            credentials=SchemeCredentials({\"api_key\": api_key, \"oauth\": oauth}),\n        )"
         }
       },
       {
@@ -63,7 +74,9 @@
           "options": "ClientOptions",
           "http_client": "HTTPClient",
           "lifecycle": "    def close(self) -> None:\n        self._core.close()",
-          "manager": "AbstractContextManager"
+          "manager": "AbstractContextManager",
+          "credentials": [],
+          "create": "SyncCore.create(_DEFAULTS, options=options, http_client=http_client)"
         }
       },
       {
@@ -102,7 +115,14 @@
           "options": "ClientOptions",
           "http_client": "HTTPClient",
           "lifecycle": "    async def aclose(self) -> None:\n        await self._core.aclose()",
-          "manager": "AbstractAsyncContextManager"
+          "manager": "AbstractAsyncContextManager",
+          "credentials": [
+            {
+              "name": "token",
+              "annotation": "Secret | TokenSource"
+            }
+          ],
+          "create": "AsyncCore.create(_DEFAULTS, options=options, http_client=http_client, credentials=SchemeCredentials({\"bearer\": token}))"
         }
       }
     ],

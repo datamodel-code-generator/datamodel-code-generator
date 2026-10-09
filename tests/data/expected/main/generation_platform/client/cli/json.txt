@@ -8,7 +8,6 @@ file client/_generated/model_bindings.py; matches published True
 file client/_generated_docs/README.md; matches published True
 file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
-file client/auth.py; matches published True
 file client/bodies.py; matches published True
 file client/errors.py; matches published True
 file client/hooks.py; matches published True
@@ -50,7 +49,6 @@ file client/_generated/model_bindings.py; matches published True
 file client/_generated_docs/README.md; matches published True
 file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
-file client/auth.py; matches published True
 file client/bodies.py; matches published True
 file client/errors.py; matches published True
 file client/hooks.py; matches published True

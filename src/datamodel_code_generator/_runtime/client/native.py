@@ -1,4 +1,4 @@
-"""Native HTTP client construction, request cloning and conservative failure classification."""
+"""Native HTTP client construction and conservative failure classification."""
 
 from __future__ import annotations
 
@@ -75,19 +75,6 @@ def request_fields(request: httpx2.Request) -> list[tuple[str, str]]:
 def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
     """Encode header fields as UTF-8, so non-ASCII values are sent as they are given."""
     return [(name.encode(), value.encode()) for name, value in fields]
-
-
-def cloned(
-    request: httpx2.Request, *, url: str | None = None, headers: Iterable[tuple[str, str]] | None = None
-) -> httpx2.Request:
-    """Clone one native request while retaining its mode-correct stream and fixed timeout."""
-    return httpx2.Request(
-        request.method,
-        request.url if url is None else url,
-        headers=request.headers.raw if headers is None else wire_fields(headers),
-        stream=request.stream,
-        extensions=dict(request.extensions),
-    )
 
 
 def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:

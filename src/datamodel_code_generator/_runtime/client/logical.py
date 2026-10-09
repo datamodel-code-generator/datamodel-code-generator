@@ -89,7 +89,6 @@ class LogicalCallContext:
         self.streaming = self.retry_blocked = self.handing_off = False
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
-        self.token_unreceived = False
 
     @property
     def parent_session_id(self) -> str | None:

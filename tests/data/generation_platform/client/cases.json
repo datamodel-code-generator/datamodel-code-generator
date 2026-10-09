@@ -1978,6 +1978,9 @@
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },
+  "credential-name-errors": {
+    "input": "credential-name-errors.yaml"
+  },
   "auth-context": {
     "input": "auth-context.yaml",
     "modules": [

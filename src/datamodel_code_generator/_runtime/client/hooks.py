@@ -29,9 +29,6 @@ __all__ = (
 IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
 EventName: TypeAlias = Literal[
     "call_start",
-    "auth_start",
-    "auth_end",
-    "auth_wait",
     "limiter_wait",
     "limiter_acquired",
     "attempt_start",
@@ -52,7 +49,6 @@ RetryReason: TypeAlias = Literal[
     "write_timeout",
     "write_error",
     "remote_protocol",
-    "auth_invalid_token",
 ]
 CallOutcome: TypeAlias = Literal["success", "error", "cancel", "handed_off"]
 JSONScalar: TypeAlias = bool | int | float | str | None
