@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart import MultipartForm, PartPlan
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
@@ -32,11 +32,13 @@ OPERATION_0: Final[OperationPlan[UploadFilesResponse]] = OperationPlan(
             BodyMedia(
                 media_type='multipart/form-data',
                 kind='multipart',
-                parts=(
-                    PartPlan('files', repeated=True),
-                    PartPlan('tags', repeated=True, codec=model_bindings.codec_0),
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('files', repeated=True),
+                        PartPlan('tags', repeated=True, codec=model_bindings.codec_0),
+                    ),
+                    additional=PartPlan(''),
                 ),
-                additional_part=PartPlan(''),
             ),
         ),
         default='multipart/form-data',

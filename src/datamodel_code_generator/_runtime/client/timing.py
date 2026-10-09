@@ -6,8 +6,10 @@ import math
 import time as _time
 from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
+from sys import float_info
 from typing import Final, final
 
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
@@ -42,6 +44,32 @@ def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ..
     """Refuse an option value of another type."""
     if not isinstance(value, kinds):
         raise ConfigurationError(field_path=path, reason="invalid_type")
+
+
+def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
+    """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
+    if type(value) is not int or value < (0 if allow_zero else 1):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
+
+
+def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
+    """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
+    match value:
+        case bool():
+            pass
+        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
+            return
+        case _:
+            pass
+    raise ConfigurationError(field_path=(name,), reason="invalid_value")
+
+
+def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
+    """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
+    for name, duration, nullable, allow_zero in rules:
+        if (value := getattr(options, name)) is UNSET or (nullable and value is None):
+            continue
+        (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
 
 
 def _random() -> float:

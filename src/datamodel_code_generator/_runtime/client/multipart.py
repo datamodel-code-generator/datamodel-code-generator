@@ -24,6 +24,7 @@ from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import UNSET
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
+from .body_sources import BinaryBodies, BodyBindings, BoundBody
 from .errors import DecodeError
 from .logical import in_thread
 from .media import encode_text, most_specific, normalized, with_charset
@@ -33,7 +34,8 @@ if TYPE_CHECKING:
     from typing import Any, Protocol
 
     from ..model_codecs.media import JSONValue
-    from .bodies import BinaryContent
+    from .bodies import BinaryContent, BinarySource
+    from .content import AsyncContent, BodyEntry, SyncContent
 
     class PartCodec(Protocol):
         """The codec of a sent member's values, as the generated operation registry binds it."""
@@ -541,3 +543,91 @@ class MultipartAttempt:
 async def _in_thread(chunks: Iterator[bytes]) -> AsyncIterator[bytes]:
     while (chunk := await in_thread(next_chunk, chunks)) is not None:
         yield chunk
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MultipartForm:
+    """How a form-data body is written: the parts a call gives, checked by its members' plans, or an object's members.
+
+    An object's members are written in the media types of their encodings, and a member in `encoded` writes a part for
+    each name and value its query style gives.
+    """
+
+    parts: tuple[PartPlan, ...] | None = None
+    additional: PartPlan | None = None
+    members: bool = False
+    content_types: tuple[tuple[str, str], ...] = ()
+    encoded: tuple[ParameterPlan, ...] = ()
+
+    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+        """Return the body and its media type, which keeps the sent type's parameters beside its boundary."""
+        if not self.members:
+            return encode_parts(value, self.parts, self.additional, sent)
+        return encode_multipart(
+            cast("JSONValue", value),
+            dict(self.content_types) if self.content_types else None,
+            {plan.name: plan for plan in self.encoded} if self.encoded else None,
+            sent,
+        )
+
+
+class BoundParts(BoundBody):
+    """The parts of a form-data body with streamed file parts, each attempt encoded under the boundary it names."""
+
+    __slots__ = ("_parts",)
+
+    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, parts: FormParts) -> None:
+        super().__init__(pieces, bindings)
+        self._parts = parts
+
+    def attempt(self) -> SyncContent:
+        """Encode the parts for one synchronous attempt, each file part opened from its captured position."""
+        parts = self._parts
+        return MultipartAttempt(
+            parts.entries,
+            [piece if isinstance(piece, bytes) else PartFile(piece.open()) for piece in self._pieces],
+            parts.media_type,
+        )
+
+    async def aattempt(self) -> AsyncContent:
+        """Encode the parts for one asynchronous attempt, read in a thread when the call opened a path."""
+        parts = self._parts
+        return MultipartAttempt(
+            parts.entries,
+            [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+            parts.media_type,
+            threaded=any(not isinstance(piece, bytes) and piece.owned for piece in self._pieces),
+        )
+
+
+class MultipartBodies(BinaryBodies):
+    """Bind the binary and the multipart bodies of a package, and encode a raw call's multipart body."""
+
+    __slots__ = ()
+
+    @staticmethod
+    def inputs(body: object) -> Iterable[object]:
+        """Return a body's native input, or the file inputs of a multipart body's parts."""
+        if is_multipart(body):
+            return [part.content for part in body.parts if is_file_part(part)]
+        return (body,)
+
+    @staticmethod
+    def bind(content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BoundBody:
+        """Bind a native input, or each file input of a multipart body's parts, without buffering native streams."""
+        if not isinstance(content, FormParts):
+            return BinaryBodies.bind(content, entry, asynchronous=asynchronous)
+        bindings = BodyBindings() if entry is None else cast("BodyBindings", entry)
+        pieces: list[bytes | BinarySource] = [
+            piece if type(piece) is bytes else bindings.bind(piece, asynchronous=asynchronous)
+            for _, _, piece, _, _ in content.entries
+        ]
+        return BoundParts(pieces, bindings, content)
+
+    @staticmethod
+    def raw(body: object) -> tuple[object, str | None]:
+        """Return a raw call's body as it is sent: a multipart body's parts encoded, any other body as it is given."""
+        return encode_parts(body) if is_multipart(body) else (body, None)
+
+
+MULTIPART_BODIES: Final = MultipartBodies()

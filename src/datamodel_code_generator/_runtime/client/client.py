@@ -26,8 +26,7 @@ from typing_extensions import Self
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
 from ..model_codecs.unset import UNSET
-from .bodies import EncodedAttempt, is_file_input
-from .body_sources import RequestCoding, bind_body, capture_body
+from .content import EncodedAttempt
 from .errors import (
     APIConnectionError,
     ConfigurationError,
@@ -39,7 +38,6 @@ from .errors import (
 )
 from .logical import Delivery, LogicalCallContext
 from .media import normalized
-from .multipart import encode_parts, is_multipart
 from .native import (
     async_decoded_bytes,
     async_response_bytes,
@@ -57,6 +55,7 @@ from .native import (
 from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
+from .positions import positional, protected_positions, secret_names
 from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -70,7 +69,6 @@ from .retry import (
     should_retry,
     status_retry_reason,
 )
-from .security import positional, protected_positions, secret_names
 from .timing import SYSTEM_CLOCK
 from .urls import URLValidationError, absolute_target, request_origin, strip_query
 
@@ -86,18 +84,44 @@ if TYPE_CHECKING:
         Iterator,
         Mapping,
     )
+    from typing import Protocol, TypeAlias
 
-    from ..model_codecs.media import JSONValue
     from ..model_codecs.parameters import ParameterPlan
-    from .bodies import AsyncContent, SyncContent
-    from .body_sources import BodyBindings, BodySource
-    from .multipart import AsyncBodyInput, BodyInput
+    from .content import AsyncContent, BodyBinder, BodyEntry, BodySource, RequestCoding, SyncContent
     from .operations import OperationPlan, ServerPlan
     from .options import NativeAuth, Pairs, RetryOptions, ServerSelection
+    from .positions import CredentialPosition, Placement
     from .retry import RetryDelay
-    from .security import AsyncSend, Credentials, Placement, SecuritySchemeEntry, Send
     from .timing import Clock
     from .urls import Origin
+
+    Send: TypeAlias = Callable[[httpx2.Request], httpx2.Response]
+    AsyncSend: TypeAlias = Callable[[httpx2.Request], Awaitable[httpx2.Response]]
+
+    class Credentials(Protocol):
+        """The credentials a generated client was given, by scheme name, which the package's auth module places."""
+
+        @property
+        def values(self) -> Mapping[str, object]:
+            """Return the credentials given, by scheme name."""
+            ...
+
+        def selected(self, binding: Any) -> tuple[Placement, ...] | None:
+            """Return the placements of an operation's first alternative the credentials satisfy, or None."""
+            ...
+
+        def auth(  # noqa: PLR0913
+            self,
+            placements: Any,
+            *,
+            origin: Origin | None,
+            replayable: Callable[[httpx2.Request], bool],
+            challenge_less: bool,
+            send: Send | None = None,
+            async_send: AsyncSend | None = None,
+        ) -> httpx2.Auth:
+            """Return the HTTPX2 Auth that places a call's credentials on its requests."""
+            ...
 
     class _HelperSettings:
         """The protocol settings of a client whose package declares helpers."""
@@ -121,15 +145,20 @@ _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _BODY: Final = "datamodel_code_generator.body"
 _SWITCHING: Final = 101
+_BYTES: Final = "A raw body must be bytes, since this package declares no binary or multipart request body"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientDefaults:
-    """The generated defaults of one client package, its helpers' kinds by name, and its request content coding."""
+    """The generated defaults of one client package: its schemes, helpers' kinds by name, and request bodies.
 
-    security_schemes: tuple[SecuritySchemeEntry, ...] = ()
+    `bodies` binds the binary and multipart bodies the package declares, and `request_coding` is its content coding.
+    """
+
+    security_schemes: tuple[CredentialPosition, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
     request_coding: RequestCoding | None = None
+    bodies: BodyBinder | None = None
 
 
 def _root_settings(  # noqa: PLR0913
@@ -443,13 +472,20 @@ def _compressed(
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
 
 
-def _close_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+def _bound(bodies: BodyBinder | None, content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BodySource:
+    """Bind a body that builds its own attempts, which only a package that declares binary or multipart bodies takes."""
+    if bodies is None:
+        raise DecodeError(reason="unencodable", direction="request", location=("body",), cause=TypeError(_BYTES))
+    return bodies.bind(content, entry, asynchronous=asynchronous)
+
+
+def _close_body(owner: BodyEntry | None, call: Call, error: BaseException | None = None) -> None:
     """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
     if owner is not None:
         _close_failed(owner.close(), call, error)
 
 
-async def _aclose_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+async def _aclose_body(owner: BodyEntry | None, call: Call, error: BaseException | None = None) -> None:
     """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
     if owner is not None:
         _close_failed(await owner.aclose(), call, error)
@@ -584,7 +620,7 @@ def _redirects(response: httpx2.Response) -> int:
     return sum(hop.has_redirect_location for hop in response.history)
 
 
-def _credentialed(request: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool:
+def _credentialed(request: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:
     """Return whether a request carries a value at a declared scheme's header, query, or cookie, Authorization aside."""
     headers, query, cookies = protected_positions(schemes)
     sent = request.headers
@@ -596,7 +632,7 @@ def _credentialed(request: httpx2.Request, schemes: tuple[SecuritySchemeEntry, .
 
 
 def strip_credentials(
-    headers: Iterable[tuple[str, str]], url: str, schemes: tuple[SecuritySchemeEntry, ...]
+    headers: Iterable[tuple[str, str]], url: str, schemes: tuple[CredentialPosition, ...]
 ) -> tuple[tuple[tuple[str, str], ...], str]:
     """Return the headers and URL of a request to another origin without the credentials of the original origin's.
 
@@ -790,7 +826,7 @@ class Call(LogicalCallContext):
         self.attempt_index += 1
         self.current_origin = self.initial_origin
 
-    def follow(self, outgoing: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool | None:
+    def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool | None:
         """Return whether HTTPX2 follows a redirect of the outgoing request, or None for the HTTP client's own choice.
 
         A request carrying a credential at a position a declared security scheme names, other than Authorization,
@@ -836,6 +872,7 @@ class _Shared(Generic[AdapterT]):
         self.closed = False
         self.security_schemes = defaults.security_schemes
         self.request_coding = defaults.request_coding
+        self.bodies = defaults.bodies
         coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.protocols: object = None
@@ -914,8 +951,8 @@ class Core(Generic[AdapterT, HandleT]):
             query = _query(self._settings.query, [explicit], None if options is None else options.extra_query)
             target = f"{base}?{query}" if query else base
         media_type = None
-        if is_multipart(body):
-            body, media_type = encode_parts(body)
+        if (bodies := self._shared.bodies) is not None:
+            body, media_type = bodies.raw(body)
         fixed = self._shared.fixed
         call = None if options is None else options.extra_headers
         if self._settings.headers or call:
@@ -1265,7 +1302,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: object = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -1294,7 +1331,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | UNSET = UNSET,
+        body: object = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -1308,10 +1345,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], T],
     ) -> T:
         """Own entry capture, the single encode, every hop, and closing the files opened from paths."""
-        entry: BodyBindings | None = None
+        entry: BodyEntry | None = None
         source: BodySource | None = None
+        bodies = self._shared.bodies
         try:
-            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
+            entry = None if bodies is None else bodies.capture(body)
 
             call.bind()
             if call.operation is not None and call.operation.security is not None:
@@ -1322,7 +1360,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
             if deferred is not UNSET:
-                source = bind_body(deferred, entry=entry)
+                source = _bound(bodies, deferred, entry, asynchronous=False)
                 if coding is not None:
                     source = coding.source(source)
 
@@ -1727,7 +1765,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
+        body: object = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -1756,7 +1794,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
+        body: object = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -1770,10 +1808,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
     ) -> T:
         """Own entry capture, the single encode, every hop, and closing the files opened from paths."""
-        entry: BodyBindings | None = None
+        entry: BodyEntry | None = None
         source: BodySource | None = None
+        bodies = self._shared.bodies
         try:
-            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
+            entry = None if bodies is None else bodies.capture(body)
 
             call.bind()
             if call.operation is not None and call.operation.security is not None:
@@ -1784,7 +1823,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
             if deferred is not UNSET:
-                source = bind_body(deferred, entry=entry, asynchronous=True)
+                source = _bound(bodies, deferred, entry, asynchronous=True)
                 if coding is not None:
                     source = coding.source(source)
 

@@ -12,6 +12,7 @@ from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
     decode_form,
     encode_form,
+    finite,
     form_encode,
     json_value,
     percent_decode,
@@ -22,7 +23,6 @@ from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
 from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
 from .media import charset, encode_text, essence, most_specific, normalized, with_charset
-from .multipart import PartPlan, encode_multipart, encode_parts
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
@@ -30,10 +30,24 @@ if TYPE_CHECKING:
 
     from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
-    from .multipart import FormParts
     from .responses import ResponseInfo
     from .retry import IdempotencyPlan
-    from .security import SecurityBinding
+
+    class FormEncoder(Protocol):
+        """How a package that declares form-data bodies writes them."""
+
+        def encode(self, value: object, sent: str) -> tuple[object, str | None]:
+            """Return a form-data body and the media type it is sent in."""
+            ...
+
+    class SecurityAlternatives(Protocol):
+        """An operation's declared security: its OR alternatives of AND requirements."""
+
+        @property
+        def alternatives(self) -> tuple[tuple[object, ...], ...]:
+            """Return the alternatives in their order; an empty one is anonymous."""
+            ...
+
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -136,7 +150,8 @@ class ParameterSpec:
     converts: bool = False
 
     def dump(self, value: object) -> JSONValue:
-        """Return the wire value of a present argument."""
+        """Return the wire value of a present argument, refusing a non-finite number before its codec dumps it."""
+        finite(value)
         if (codec := self.codec) is None:
             return cast("JSONValue", value)
         return cast("JSONValue", codec.dump(codec.convert(value) if self.converts else value))
@@ -212,7 +227,7 @@ class FieldArguments:
 class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
-    A form-data schema with file parts takes parts, which the plans of its members check.
+    A form-data body is written by the package's form encoder, from a call's parts or an object's members.
     """
 
     media_type: str
@@ -220,10 +235,8 @@ class BodyMedia:
     codec: OutboundModelCodec | None = None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
-    parts: tuple[PartPlan, ...] | None = None
-    additional_part: PartPlan | None = None
     encoded: tuple[ParameterPlan, ...] = ()
-    content_types: tuple[tuple[str, str], ...] = ()
+    form: FormEncoder | None = None
 
     def encode(self, value: object, sent: str) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
@@ -263,19 +276,10 @@ class BodyMedia:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
         return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
 
-    def multipart(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
-        """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts.
-
-        The sent media type keeps its parameters beside the boundary.
-        """
-        if self.codec is None:
-            return encode_parts(value, self.parts, self.additional_part, sent)
-        return encode_multipart(
-            cast("JSONValue", self.codec.dump(value)),
-            dict(self.content_types) if self.content_types else None,
-            {plan.name: plan for plan in self.encoded} if self.encoded else None,
-            sent,
-        )
+    def multipart(self, value: object, sent: str) -> tuple[object, str | None]:
+        """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts."""
+        form = cast("FormEncoder", self.form)
+        return form.encode(value if self.codec is None else self.codec.dump(value), sent)
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
@@ -795,7 +799,7 @@ class OperationPlan(Generic[T_co]):
     idempotency: IdempotencyPlan | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
-    security: SecurityBinding | None = None
+    security: SecurityAlternatives | None = None
     auth_challenge_less_401: bool = False
     accepted_content_encodings: tuple[str, ...] = ()
 

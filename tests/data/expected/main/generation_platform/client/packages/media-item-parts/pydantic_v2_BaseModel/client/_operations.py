@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart import MultipartForm, PartPlan
 from ._runtime.client.multipart_responses import object_branch
 from ._runtime.client.operations import (
     BodyMedia,
@@ -43,6 +43,7 @@ OPERATION_0: Final[OperationPlan[SendPartsResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_0,
+                form=MultipartForm(members=True),
             ),
         ),
         default='multipart/form-data',

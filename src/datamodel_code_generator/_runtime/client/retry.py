@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.unset import UNSET
@@ -35,22 +36,8 @@ _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
 _AUTH_STATUSES: Final = frozenset({401, 403, 407})
 _ERROR_STATUS_MIN: Final = 400
 _ERROR_STATUS_MAX: Final = 599
-_MONTHS: Final = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-_DAY_NAME: Final = r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)"
-_LONG_DAY_NAME: Final = r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
-_MONTH: Final = r"(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
-_TIME: Final = r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
-_HTTP_DATES: Final = tuple(
-    re.compile(pattern)
-    for pattern in (
-        rf"{_DAY_NAME}, (?P<day>[0-9]{{2}}) {_MONTH} (?P<year>[0-9]{{4}}) {_TIME} GMT",
-        rf"{_LONG_DAY_NAME}, (?P<day>[0-9]{{2}})-{_MONTH}-(?P<year>[0-9]{{2}}) {_TIME} GMT",
-        rf"{_DAY_NAME} {_MONTH} (?P<day>[0-9]{{2}}| [0-9]) {_TIME} (?P<year>[0-9]{{4}})",
-    )
-)
+_RFC850_YEAR: Final = re.compile(r"[A-Za-z]+, *[0-9]{1,2}-[A-Za-z]+-(?P<year>[0-9]{2})[ \t]")
 _YEAR_WINDOW: Final = 50
-_SHORT_YEAR_LENGTH: Final = 2
-_LEAP_SECOND: Final = 60
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,41 +202,32 @@ def _integer(value: str) -> float | None:
 
 
 def http_date(value: str, received_wall_time: float) -> datetime | None:
-    """Return the UTC time an HTTP date gives, a leap second being the second after it, or None for another value.
+    """Return the UTC time of an HTTP date, read as the standard library reads RFC 5322 dates, or None for another one.
 
-    A two-digit year is the latest that is at most 50 years after the receipt wall time. An impossible date raises
-    ValueError, and one past the last representable time OverflowError.
+    A date without a zone, or with an unknown one, is UTC. The two-digit year of an RFC 850 date is the one within the
+    50 years after the receipt wall time, or else the most recent past one, as RFC 9110 reads it.
     """
-    matched = next((matched for pattern in _HTTP_DATES if (matched := pattern.fullmatch(value)) is not None), None)
-    if matched is None:
-        return None
-    year = int(matched["year"])
-    month, day = _MONTHS.index(matched["month"]) + 1, int(matched["day"])
-    hour, minute, second = int(matched["hour"]), int(matched["minute"]), int(matched["second"])
-    if second > _LEAP_SECOND:
-        return None
-    if len(matched["year"]) == _SHORT_YEAR_LENGTH:
+    try:
+        parsed = parsedate_to_datetime(value)
+        date = parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+        if (matched := _RFC850_YEAR.match(value)) is None:
+            return date
         received = datetime.fromtimestamp(received_wall_time, timezone.utc)
-        year += received.year // 100 * 100
-        if (year, month, day, hour, minute, second) > (
-            received.year + _YEAR_WINDOW,
-            received.month,
-            received.day,
-            received.hour,
-            received.minute,
-            received.second,
-        ):
+        limit = (received.year + _YEAR_WINDOW, *received.utctimetuple()[1:6])
+        rest = date.utctimetuple()[1:6]
+        year = received.year // 100 * 100 + int(matched["year"])
+        if (year, *rest) > limit:
             year -= 100
-    date = datetime(year, month, day, hour, minute, min(second, _LEAP_SECOND - 1), tzinfo=timezone.utc)
-    return date + timedelta(seconds=second == _LEAP_SECOND)
+        elif (year + 100, *rest) <= limit:
+            year += 100
+        return date.replace(year=year)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
 
 
 def http_timestamp(value: str, received_wall_time: float) -> float | None:
     """Return the POSIX time of an HTTP date within ASCII whitespace, or None for no date or an impossible one."""
-    try:
-        date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
-    except (ValueError, OverflowError, OSError):
-        return None
+    date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
     return None if date is None else date.timestamp()
 
 

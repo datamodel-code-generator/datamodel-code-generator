@@ -5,7 +5,6 @@
   write client/options.py
   write client/errors.py
   write client/responses.py
-  write client/bodies.py
   write client/model_codecs.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
@@ -39,7 +38,7 @@
 # artifact client/_generated_docs/README.md
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+This generated package exposes `Client` and `AsyncClient`. Import options, errors, and response types from
 its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
 explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
 
@@ -185,7 +184,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `client.py`, `content.py`, `errors.py`, `logical.py`, `media.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `positions.py`, `raw.py`, `responses.py`, `retry.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`
 - `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `errors.py`, `links.py`, `options.py`, `origins.py`, `pagination.py`, `records.py`, `references.py`, `resume.py`, `streams.py`, `values.py`, `writes.py`
 
@@ -225,110 +224,43 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | follow redirects | the native client's: False for an SDK-created client |
 | error body prefix | 64 KiB; response and stream bodies are not capped |
 
-Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
-retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
-cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
-Native cancellation remains the original exception.
 `Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
 sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 
+## Retries and replayable input
 
-## Retry decisions and delays
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
 
-GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
-from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt of the
-call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
-resend. All candidates still need replayable input. Pool timeouts need `RetryOptions(retry_on_pool_timeout=True)`.
-Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
+No operation of this package sends a binary or multipart body, so `request_raw` takes `bytes`.
 
-Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
-is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
-explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
-a `RetryOptions` value cannot invent that declaration, and explicit None disables an inherited vendor control.
+## Transport
 
-Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
-including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
-failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response.
-
-## Idempotency and replayable input
-
-A call's `RequestOptions(idempotency_key="...")` supplies a caller's stable key, sent unchanged, and
-`idempotency_key=None` disables the automatic one; unset, an operation with a declared key header gets a UUID4 key.
-A header of that name among the call's extra headers or the client's or a view's default headers is the call's key
-instead; a protocol helper refuses one, as it refuses a call's key.
-The key is created once per logical call and reused across eligible retries.
-A caller key on an operation without a declared header fails before sending.
-One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
-
-
-Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
-`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
-raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
-files, including paths, are sent with `Content-Length` for the bytes measured at call
-entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
-files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
-async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
-Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
-The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
-file parts can. Files are read at most 64 KiB at a time. In async calls a
-path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
-reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
-async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
-call running in a thread before it closes the file.
-
-## Redirects and transport construction
-
-Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
-Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
-attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
-as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
-`follow_redirects` of the client, a view, or a call overrides the native client's choice per call; unset, an
-SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
-`Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
-that carries a credential at a position a declared security scheme names other than `Authorization` is never
-redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
-cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
-`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
-does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
-yields the body as it arrived; a buffered one keeps only its decoded body.
-
-An SDK-created HTTP client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect. Configure proxies,
-TLS, connection pools, HTTP/2, and environment settings on the `httpx2.Client` or `httpx2.AsyncClient` passed as
-`http_client`, which keeps them, its timeout unless `timeout` is given, and its owner.
-Typed errors and exception bodies keep at most a 64 KiB prefix of an error body; buffered raw responses and streams
-are not capped, and of a buffered raw response only `raise_for_status()` applies the error prefix.
-Borrowed clients stay caller owned. Root close is idempotent and closes only the native client the SDK created.
-Request views share that root and have no close method.
-
-## Authentication
-
-No operation of this API requires a security scheme, so its clients take no credentials. `auth` of the client, a view,
-or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None`
-sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth. Sign requests with an
-`httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr; a query credential is
-part of the request URL, which the `httpx2` logger records at INFO level.
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content
+decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.  An SDK-created
+client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2
+client passed as `http_client` keeps its own construction and stays caller owned. `auth` of the client, a view, or a
+call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth
+applies.
 
 ## Errors and cleanup
 
 Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
 `attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
-failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
-(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
-subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
-decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
-start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
-key, header, or body values.
-
-Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
-new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
-caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. `DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
 
 ## NDJSON streams
 
@@ -362,7 +294,3 @@ blank line or one that is not UTF-8 or JSON raises `DecodeError`. Bytes after th
 `StreamInterruptedError` with the reason `eof` unless the helper's `final_line` is `allow_eof`, which decodes them as
 the last record. A record has the empty string as its event type and no event ID, and a declared error record raises
 `ProtocolDataError` with the reason `error_event`.
-
-## Request compression
-
-No operation of this package declares request compression, so every request is sent without SDK compression.

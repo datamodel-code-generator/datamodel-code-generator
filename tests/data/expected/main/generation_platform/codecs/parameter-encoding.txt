@@ -122,3 +122,8 @@ python query i form* scalar/integer: ?i=2 => 2
 python query n form* scalar/number: ?n=1.5 => 1.5
 python query n form* scalar/number: ?n=1e-07 => 1e-07
 python query i form* scalar/integer: ParameterEncodingError An integer exceeds the interpreter's decimal conversion limit
+python query n form* scalar/number: ParameterEncodingError A value must be a finite JSON number
+python query i form* scalar/integer: ParameterEncodingError A value must be a finite JSON number
+python query n form* scalar/number: ParameterEncodingError A value must be a finite JSON number
+python query n form* scalar/number: ParameterEncodingError A value must be a finite JSON number
+python query i form* scalar/integer: ParameterEncodingError A value must be a finite JSON number

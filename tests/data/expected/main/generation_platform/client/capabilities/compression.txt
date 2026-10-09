@@ -7,37 +7,36 @@ dependencies
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/bodies.py: 226
-  client/body_sources.py: 156
-  client/client.py: 2008
-  client/codecs.py: 101
-  client/compression.py: 104
-  client/errors.py: 350
+  client/bodies.py: 189
+  client/body_sources.py: 137
+  client/client.py: 2047
+  client/compression.py: 102
+  client/content.py: 102
+  client/errors.py: 306
   client/logical.py: 189
   client/media.py: 77
-  client/multipart.py: 546
   client/native.py: 146
-  client/operations.py: 835
+  client/operations.py: 839
   client/options.py: 300
   client/paths.py: 40
+  client/positions.py: 79
   client/raw.py: 836
   client/responses.py: 87
-  client/retry.py: 338
-  client/security.py: 136
-  client/timing.py: 116
+  client/retry.py: 316
+  client/timing.py: 144
   client/urls.py: 80
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
-  model_codecs/media.py: 280
+  model_codecs/media.py: 300
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 603
+  model_codecs/parameters.py: 312
   model_codecs/unset.py: 11
   protocols/__init__.py: 4
   protocols/caches.py: 139
-  protocols/client.py: 833
+  protocols/client.py: 830
   protocols/errors.py: 163
   protocols/links.py: 75
-  protocols/options.py: 254
+  protocols/options.py: 220
   protocols/origins.py: 45
   protocols/pagination.py: 1475
   protocols/polling.py: 1238
@@ -47,7 +46,7 @@ copied runtime
   protocols/streams.py: 1492
   protocols/values.py: 154
   protocols/writes.py: 288
-total 42 modules, 14251 lines
+total 41 modules, 13288 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

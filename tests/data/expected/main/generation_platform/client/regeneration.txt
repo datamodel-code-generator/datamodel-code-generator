@@ -8,11 +8,9 @@
   file pets/_generated_docs/README.md
   file pets/_generated_docs/runtime.md
   file pets/_operations.py
-  file pets/bodies.py
   file pets/errors.py
   file pets/model_codecs.py
   file pets/options.py
-  file pets/protocols/__init__.py
   file pets/py.typed
   file pets/resources/__init__.py
   file pets/resources/archive/__init__.py
@@ -28,7 +26,7 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 26
+  runtime files 23
 # add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py
 # generate v2
   file api.yaml
@@ -40,12 +38,10 @@
   file pets/_generated_docs/README.md
   file pets/_generated_docs/runtime.md
   file pets/_operations.py
-  file pets/bodies.py
   file pets/errors.py
   file pets/extensions.py
   file pets/model_codecs.py
   file pets/options.py
-  file pets/protocols/__init__.py
   file pets/py.typed
   file pets/resources/__init__.py
   file pets/resources/archive/__init__.py
@@ -66,7 +62,7 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 26
+  runtime files 23
   pets/extensions.py unchanged True
   pets/_client.py still edited False
   pets/resources/orders/__init__.py still foreign False

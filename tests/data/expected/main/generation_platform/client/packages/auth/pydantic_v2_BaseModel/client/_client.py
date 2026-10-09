@@ -18,6 +18,7 @@ from ._generated import security
 from ._runtime.client.auth import SchemeCredentials, Secret, TokenSource, UserPassword
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
+from ._runtime.client.multipart import MULTIPART_BODIES
 from ._runtime.model_codecs.unset import UNSET
 from .bodies import BodyInput
 from .model_codecs import JSONValue
@@ -27,7 +28,10 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.auth._sync import AuthResource
 
-_DEFAULTS = ClientDefaults(security_schemes=security.ROOT_SCHEMES)
+_DEFAULTS = ClientDefaults(
+    security_schemes=security.ROOT_SCHEMES,
+    bodies=MULTIPART_BODIES,
+)
 
 
 class ClientView:

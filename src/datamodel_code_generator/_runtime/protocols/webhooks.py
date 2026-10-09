@@ -4,15 +4,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
-from typing import Generic, Protocol
+from typing import Final, Generic, Protocol
 
 from typing_extensions import TypeVar
 
+from ..client.timing import check_limits
 from ..model_codecs.unset import UNSET
-from .options import WEBHOOK_LIMITS, check_limits
 
 K = TypeVar("K")
 T_co = TypeVar("T_co", covariant=True)
+
+_LIMITS: Final = (
+    ("max_body_bytes", False, False, False),
+    ("max_header_bytes", False, False, False),
+    ("max_keys", False, False, False),
+    ("max_signatures", False, False, False),
+    ("past_tolerance", True, False, True),
+    ("future_tolerance", True, False, True),
+)
 
 
 def _key_tuple(value: object) -> None:
@@ -64,7 +73,7 @@ class WebhookOptions:
 
     def __post_init__(self) -> None:
         """Reject invalid counts and durations without accepting bool or disabled limits."""
-        check_limits(self, WEBHOOK_LIMITS)
+        check_limits(self, _LIMITS)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

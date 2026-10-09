@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 from pets import AsyncClient, Client
 from pets.options import RequestOptions
 from pets.protocols import Page, Pager
@@ -30,3 +32,8 @@ async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[Use
     resumed: Pager[object, ListUsersResponse] = client.protocols.users.all.resume(state)  # error
     client.protocols.users.all.resume(page)  # error
     del items, pages, resumed, exported
+
+
+def wrong_raw_bodies(client: Client, path: PathLike[str]) -> None:
+    """Reject a raw body other than bytes in a package that declares no binary or multipart request body."""
+    client.request_raw("POST", "https://example.com/upload", body=path)  # error
