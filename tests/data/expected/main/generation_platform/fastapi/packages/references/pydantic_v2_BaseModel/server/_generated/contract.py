@@ -28,9 +28,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(media_type='application/json', model=models.PetsResponse),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.PetsResponse)},
     )
 
 
@@ -46,10 +44,5 @@ class ListOwners:
     """Plans of the list_owners operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=models.FieldOwnersGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.FieldOwnersGetResponse)},
     )

@@ -3240,18 +3240,20 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3259,7 +3261,10 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3376,18 +3381,20 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             request: Request,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3395,7 +3402,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3513,18 +3523,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3532,7 +3544,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3648,18 +3663,20 @@ methods. `--server-handler-modes` overrides it for single operations.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         async def replace_pet(
@@ -3667,7 +3684,10 @@ methods. `--server-handler-modes` overrides it for single operations.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3787,18 +3807,20 @@ table.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3806,7 +3828,10 @@ table.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3924,11 +3949,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
@@ -3936,7 +3960,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3945,7 +3972,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             request: Request,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4063,8 +4093,16 @@ Choose how the server package lays out its routes (experimental).
             'The service.list_pets method of GET /pets',
         )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4092,7 +4130,12 @@ Choose how the server package lays out its routes (experimental).
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4105,7 +4148,6 @@ Choose how the server package lays out its routes (experimental).
             operation_id='createPet',
             tags=['pets'],
             response_description='Already there.',
-            responses={'201': {'model': models.Pet, 'description': 'Created.'}},
             dependencies=wiring.dependencies.get('create_pet'),
         )
 
@@ -4123,7 +4165,10 @@ Choose how the server package lays out its routes (experimental).
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -4137,7 +4182,6 @@ Choose how the server package lays out its routes (experimental).
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
             dependencies=wiring.dependencies.get('replace_pet'),
         )
 
@@ -4146,7 +4190,9 @@ Choose how the server package lays out its routes (experimental).
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
@@ -4279,18 +4325,20 @@ generates.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4298,7 +4346,10 @@ generates.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4415,18 +4466,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4434,7 +4487,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4551,18 +4607,20 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4570,7 +4628,10 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4686,18 +4747,20 @@ generation prints name the package by it; the package imports its own modules re
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4705,7 +4768,10 @@ generation prints name the package by it; the package imports its own modules re
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4822,18 +4888,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             page_size: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4841,7 +4909,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4961,8 +5032,16 @@ without a file against the working directory, and against the pyproject.toml dir
             'The pets.list_pets method of GET /pets',
         )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4990,7 +5069,12 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -5003,7 +5087,6 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='createPet',
             tags=['pets'],
             response_description='Created.',
-            responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
             dependencies=wiring.dependencies.get('create_pet'),
         )
 
@@ -5021,7 +5104,10 @@ without a file against the working directory, and against the pyproject.toml dir
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -5035,7 +5121,6 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
             dependencies=wiring.dependencies.get('replace_pet'),
         )
 
@@ -5044,7 +5129,9 @@ without a file against the working directory, and against the pyproject.toml dir
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
@@ -5177,18 +5264,20 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -5196,7 +5285,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->

@@ -633,27 +633,75 @@
         "context": {
           "imports": "from typing import Final\nfrom fastapi import FastAPI",
           "final": "Final",
-          "routes": "(route_a, route_b)",
-          "options": "AppOptions",
-          "info": "AppOptions(title=\"日本 {braces}\")",
-          "build_signature": "def build_router(*, pets: Pets, authorize: Authorize):",
+          "options": "dict[str, Any]",
           "build": "build",
-          "services": "{\"pets\": pets}",
+          "fastapi": "FastAPI",
+          "error_handlers": "error_handlers",
+          "serve_source_openapi": "serve_source_openapi",
+          "routes": [
+            "*pets.LITERAL_ROUTES",
+            "*pets.TEMPLATED_ROUTES"
+          ],
+          "info": "{'title': '日本 {braces}', 'version': '1.0'}",
+          "build_router": {
+            "name": "build_router",
+            "parameters": [
+              {
+                "name": "pets",
+                "annotation": "PetsService[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "authorize",
+                "annotation": "Authorize[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "dependencies",
+                "annotation": "Sequence[params.Depends]",
+                "default": "()"
+              },
+              {
+                "name": "prefix",
+                "annotation": "str",
+                "default": "\"\""
+              }
+            ],
+            "returns": "APIRouter"
+          },
+          "create_app": {
+            "name": "create_app",
+            "parameters": [
+              {
+                "name": "pets",
+                "annotation": "PetsService",
+                "default": null
+              },
+              {
+                "name": "source_openapi",
+                "annotation": "bool",
+                "default": "True"
+              },
+              {
+                "name": "**fastapi_kwargs",
+                "annotation": "Any",
+                "default": null
+              }
+            ],
+            "returns": "FastAPI"
+          },
+          "services": "{'pets': pets}",
           "settings": [
             "authorize",
             "dependencies"
           ],
-          "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
-          "fastapi": "FastAPI",
-          "error_handlers": "error_handlers",
           "arguments": [
             "pets",
-            "authorize",
-            "dependencies"
+            "authorize"
           ],
           "exports": [
-            "\"create_app\"",
-            "\"build_router\""
+            "'build_router'",
+            "'create_app'"
           ]
         }
       },
@@ -662,143 +710,165 @@
         "context": {
           "imports": "from typing import Final\nfrom fastapi import FastAPI",
           "final": "Final",
-          "routes": "()",
-          "options": "AppOptions",
-          "info": "AppOptions()",
-          "build_signature": "def build_router(*, pets: Pets, authorize: Authorize):",
+          "options": "dict[str, Any]",
           "build": "build",
-          "services": "{}",
-          "settings": [],
-          "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
           "fastapi": "FastAPI",
           "error_handlers": "error_handlers",
+          "serve_source_openapi": "serve_source_openapi",
+          "routes": [],
+          "info": "{}",
+          "build_router": {
+            "name": "build_router",
+            "parameters": [],
+            "returns": "APIRouter"
+          },
+          "create_app": {
+            "name": "create_app",
+            "parameters": [],
+            "returns": "FastAPI"
+          },
+          "services": "{}",
+          "settings": [],
           "arguments": [],
           "exports": []
         }
       }
     ],
-    "router.jinja2": [
+    "contract.jinja2": [
       {
         "name": "populated",
         "context": {
-          "docstring": "Routes 日本 {braces}",
-          "imports": "from fastapi import APIRouter",
-          "api_router": "APIRouter",
-          "wiring": "Wiring",
-          "routes": [
+          "imports": "from typing import Final, TypedDict",
+          "typed_dict": "TypedDict",
+          "dependencies": [
             {
-              "adder": "add_get",
-              "handler": "handle_get",
-              "router": "router",
-              "wiring": "wiring",
-              "service": "pets",
-              "protocol": "PetsService[object]",
-              "group": "\"pets\"",
-              "lookup": "checked(pets.get, \"The pets.get method of GET /pets/{pet_id}\", asynchronous=True)",
-              "name": "\"get\"",
-              "principal": "async def principal() -> str:\n        return \"principal\"",
-              "signature": "async def get(*, pet_id: int) -> Pet:",
-              "body": "return await handle_get(pet_id=pet_id)",
-              "registration": "router.add_api_route(\"/pets/{pet_id}\", get, methods=[\"GET\"])"
+              "name": "'get_pet'",
+              "annotation": "Sequence[params.Depends]",
+              "default": null
             },
             {
-              "adder": "add_list",
-              "handler": "handle_get",
-              "router": "router",
-              "wiring": "wiring",
-              "service": "pets",
-              "protocol": "PetsService[object]",
-              "group": "\"pets\"",
-              "lookup": "checked(pets.get, \"The pets.get method of GET /pets/{pet_id}\", asynchronous=True)",
-              "name": "\"get\"",
-              "principal": null,
-              "signature": "async def get(*, pet_id: int) -> Pet:",
-              "body": "return await handle_get(pet_id=pet_id)",
-              "registration": "router.add_api_route(\"/pets/{pet_id}\", get, methods=[\"GET\"])"
+              "name": "'list_pets'",
+              "annotation": "Sequence[params.Depends]",
+              "default": null
             }
           ],
           "final": "Final",
-          "literal": "(add_list,)",
-          "templated": "(add_get,)",
-          "signature": "def build_router(*, pets: Pets):",
-          "group": "pets",
-          "build": "build",
-          "services": "{\"pets\": pets}",
-          "settings": [
-            "authorize",
-            "dependencies"
+          "dataclass": "dataclass",
+          "parameter_adapter": "ParameterAdapter",
+          "body_adapter": "BodyAdapter",
+          "operation_responses": "OperationResponses",
+          "plans": [
+            {
+              "class_name": "GetPet",
+              "operation": "get_pet",
+              "parameters": [
+                {
+                  "name": "pet_id",
+                  "annotation": "int",
+                  "default": null
+                },
+                {
+                  "name": "tags",
+                  "annotation": "list[str] | None",
+                  "default": null
+                }
+              ],
+              "arguments": "(ParameterArgument(name='pet_id', plan=PathPlan(location='path', name='petId')),)",
+              "path": "RawPath(template='/pets/{petId}', names=frozenset({'petId'}))",
+              "body": {
+                "media": "(BodyMedia(media_type='text/plain', kind='text'),)",
+                "optional": true
+              },
+              "responses": {
+                "responses": "{'200': Declared(media_type='application/json', model=models.Pet)}",
+                "primary": "200",
+                "head": true
+              }
+            },
+            {
+              "class_name": "ListPets",
+              "operation": "list_pets",
+              "parameters": [],
+              "arguments": "",
+              "path": "",
+              "body": {
+                "media": "(BodyMedia(media_type='application/json', kind='json'),)",
+                "optional": false
+              },
+              "responses": {
+                "responses": "{'204': Declared()}",
+                "primary": "",
+                "head": false
+              }
+            },
+            {
+              "class_name": "DeletePet",
+              "operation": "delete_pet",
+              "parameters": [
+                {
+                  "name": "pet_id",
+                  "annotation": "int",
+                  "default": null
+                }
+              ],
+              "arguments": "(ParameterArgument(name='pet_id', plan=PathPlan(location='path', name='petId')),)",
+              "path": "",
+              "body": null,
+              "responses": {
+                "responses": "{'204': Declared()}",
+                "primary": "",
+                "head": false
+              }
+            }
           ]
         }
       },
       {
         "name": "empty",
         "context": {
-          "docstring": "Routes 日本 {braces}",
-          "imports": "from fastapi import APIRouter",
-          "api_router": "APIRouter",
-          "wiring": "Wiring",
-          "routes": [],
-          "final": "Final",
-          "literal": "()",
-          "templated": "()",
-          "signature": "def build_router(*, pets: Pets):",
-          "group": "pets",
-          "build": "build",
-          "services": "{\"pets\": pets}",
-          "settings": []
+          "imports": "from typing import TypedDict",
+          "typed_dict": "TypedDict",
+          "dependencies": [],
+          "final": "",
+          "dataclass": "",
+          "parameter_adapter": "",
+          "body_adapter": "",
+          "operation_responses": "",
+          "plans": []
         }
       }
     ],
-    "services.jinja2": [
+    "facade.jinja2": [
       {
         "name": "populated",
         "context": {
-          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
-          "typevar": "TypeVar",
-          "abstract": "abstractmethod",
-          "protocols": [
-            {
-              "name": "Pets",
-              "base": "Protocol[PrincipalT_contra]",
-              "docstring": "Pets 日本 {braces}",
-              "methods": [
-                "async def get(self, *, pet_id: int) -> Pet: ...",
-                "async def list(self) -> list[Pet]: ..."
-              ]
-            },
-            {
-              "name": "Other",
-              "base": "Protocol",
-              "docstring": "Other",
-              "methods": []
-            }
+          "module": "",
+          "docstring": "FastAPI server 日本 {braces}.",
+          "imports": "from .application import build_router, create_app",
+          "exports": [
+            "build_router",
+            "create_app"
           ]
         }
       },
       {
         "name": "empty",
         "context": {
-          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
-          "typevar": null,
-          "abstract": "abstractmethod",
-          "protocols": []
+          "module": "routers",
+          "docstring": "Router groups of this package.",
+          "imports": "",
+          "exports": []
         }
-      },
+      }
+    ],
+    "openapi.jinja2": [
       {
-        "name": "no_typevar",
+        "name": "populated",
         "context": {
-          "imports": "from typing import Protocol, TypeVar\nfrom abc import abstractmethod",
-          "typevar": null,
-          "abstract": "abstractmethod",
-          "protocols": [
-            {
-              "name": "Other",
-              "base": "Protocol",
-              "docstring": "Other",
-              "methods": [
-                "def get(self) -> str: ..."
-              ]
-            }
+          "lines": [
+            "'{\\n'",
+            "'  \"title\": \"日本 {braces} \\\\\\\\\"\\n'",
+            "'}'"
           ]
         }
       }
@@ -871,6 +941,305 @@
           "arguments": "",
           "forms": false,
           "raw_request": false
+        }
+      }
+    ],
+    "router.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Endpoints of 日本 {braces}; regenerate them instead of editing.",
+          "imports": "from fastapi import APIRouter",
+          "api_router": "APIRouter",
+          "wiring": "Wiring",
+          "final": "Final",
+          "build": "build",
+          "routes": [
+            {
+              "adder": "_add_get_pet",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "'pets'",
+              "handler": "get_pet_handler",
+              "lookup": {
+                "function": "checked",
+                "method": "get_pet",
+                "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "asynchronous": true
+              },
+              "principal": {
+                "name": "get_pet_principal",
+                "authorize": "get_pet_authorize",
+                "authenticate": "authenticate",
+                "parameters": [
+                  {
+                    "name": "api_key",
+                    "annotation": "Annotated[str | None, Security(security.api_key)]",
+                    "default": null
+                  }
+                ],
+                "requirements": "((('api_key', ()),),)",
+                "credentials": "{'api_key': api_key}",
+                "challenge": "'APIKey'"
+              },
+              "endpoint": {
+                "name": "get_pet",
+                "asynchronous": true,
+                "parameters": [
+                  {
+                    "name": "pet_id",
+                    "annotation": "Annotated[int, Path(alias='petId')]",
+                    "default": null
+                  },
+                  {
+                    "name": "limit",
+                    "annotation": "Annotated[int, Query(alias='limit')]",
+                    "default": "20"
+                  },
+                  {
+                    "name": "principal",
+                    "annotation": "Annotated[object, Depends(get_pet_principal)]",
+                    "default": null
+                  }
+                ]
+              },
+              "call": {
+                "dispatch": "dispatch",
+                "arguments": [
+                  {
+                    "keyword": "pet_id",
+                    "value": "pet_id"
+                  },
+                  {
+                    "keyword": "limit",
+                    "value": "limit"
+                  }
+                ],
+                "responses": "contract.GetPet.RESPONSES"
+              },
+              "registration": {
+                "name": "'get_pet'",
+                "path": "'/pets/{petId}'",
+                "methods": "['GET']",
+                "status_code": "200",
+                "response_model": "models.Pet",
+                "response_class": "",
+                "keywords": [
+                  {
+                    "keyword": "operation_id",
+                    "value": "'getPet'"
+                  },
+                  {
+                    "keyword": "summary",
+                    "value": "'日本 {braces} \\\\ \"quotes\"'"
+                  }
+                ]
+              }
+            },
+            {
+              "adder": "_add_list_pets",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService",
+              "group": "'pets'",
+              "handler": "list_pets_handler",
+              "lookup": {
+                "function": "checked",
+                "method": "list_pets",
+                "label": "'The pets.list_pets method of GET /pets'",
+                "asynchronous": false
+              },
+              "principal": null,
+              "endpoint": {
+                "name": "list_pets",
+                "asynchronous": false,
+                "parameters": []
+              },
+              "call": {
+                "dispatch": "dispatch",
+                "arguments": [],
+                "responses": "contract.ListPets.RESPONSES"
+              },
+              "registration": {
+                "name": "'list_pets'",
+                "path": "'/pets'",
+                "methods": "['GET']",
+                "status_code": "204",
+                "response_model": "",
+                "response_class": "Response",
+                "keywords": []
+              }
+            }
+          ],
+          "literal": [
+            {
+              "name": "'list_pets'",
+              "adder": "_add_list_pets"
+            }
+          ],
+          "templated": [
+            {
+              "name": "'get_pet'",
+              "adder": "_add_get_pet"
+            }
+          ],
+          "builder": {
+            "name": "build_router",
+            "parameters": [
+              {
+                "name": "pets",
+                "annotation": "PetsService[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "authorize",
+                "annotation": "Authorize[PrincipalT]",
+                "default": null
+              },
+              {
+                "name": "dependencies",
+                "annotation": "Sequence[params.Depends]",
+                "default": "()"
+              },
+              {
+                "name": "prefix",
+                "annotation": "str",
+                "default": "\"\""
+              }
+            ],
+            "returns": "APIRouter"
+          },
+          "group": "the pets operations",
+          "services": "{'pets': pets}",
+          "settings": [
+            "authorize",
+            "dependencies"
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Endpoints of 日本 {braces}; regenerate them instead of editing.",
+          "imports": "from fastapi import APIRouter",
+          "api_router": "APIRouter",
+          "wiring": "Wiring",
+          "final": "Final",
+          "build": "build",
+          "routes": [],
+          "literal": [],
+          "templated": [],
+          "builder": {
+            "name": "build_router",
+            "parameters": [],
+            "returns": "APIRouter"
+          },
+          "group": "every operation",
+          "services": "{}",
+          "settings": []
+        }
+      }
+    ],
+    "security.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "imports": "from fastapi.security import APIKeyHeader",
+          "schemes": [
+            {
+              "name": "api_key",
+              "scheme": "api-key",
+              "class_name": "APIKeyHeader",
+              "keywords": [
+                {
+                  "keyword": "name",
+                  "value": "'X-Key'"
+                },
+                {
+                  "keyword": "description",
+                  "value": "'日本 {braces}'"
+                },
+                {
+                  "keyword": "auto_error",
+                  "value": "False"
+                }
+              ]
+            },
+            {
+              "name": "custom",
+              "scheme": "custom 日本",
+              "class_name": "",
+              "keywords": []
+            }
+          ],
+          "exports": [
+            "'api_key'",
+            "'custom'"
+          ]
+        }
+      }
+    ],
+    "services.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "imports": "from typing import Protocol\nfrom typing_extensions import TypeVar",
+          "typevar": "TypeVar",
+          "abstract": "abstractmethod",
+          "protocol_type": "Protocol",
+          "protocols": [
+            {
+              "name": "PetsService",
+              "base": "Protocol[PrincipalT_contra]",
+              "docstring": "Pets 日本 {braces}",
+              "methods": [
+                {
+                  "name": "get_pet",
+                  "asynchronous": true,
+                  "parameters": [
+                    {
+                      "name": "pet_id",
+                      "annotation": "int",
+                      "default": null
+                    },
+                    {
+                      "name": "principal",
+                      "annotation": "PrincipalT_contra | None",
+                      "default": null
+                    }
+                  ],
+                  "returns": "models.Pet | HTTPResult[models.Pet] | Response",
+                  "docstring": "\"\"\"\n        Show a pet 日本 {braces} \\\\ \\\"quotes\\\".\n        \"\"\""
+                },
+                {
+                  "name": "list_pets",
+                  "asynchronous": false,
+                  "parameters": [],
+                  "returns": "None | HTTPResult[None] | Response",
+                  "docstring": "\"\"\"Handle GET /pets.\"\"\""
+                }
+              ]
+            },
+            {
+              "name": "OtherService",
+              "base": "Protocol",
+              "docstring": "Other",
+              "methods": []
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "imports": "from typing import Protocol",
+          "typevar": "",
+          "abstract": "abstractmethod",
+          "protocol_type": "Protocol",
+          "protocols": []
         }
       }
     ]

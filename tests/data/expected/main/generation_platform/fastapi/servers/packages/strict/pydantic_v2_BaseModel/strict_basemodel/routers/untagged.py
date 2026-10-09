@@ -28,14 +28,9 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
     def get_values(
         *,
         name: Annotated[StrictStr | None, Query(alias='name')] = None,
-        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(
-            alias='label',
-        )] = None,
+        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(alias='label')] = None,
         names: Annotated[list[StrictStr] | None, Query(alias='names')] = None,
-        x_tag: Annotated[StrictStr | None, Header(
-            alias='X-Tag',
-            convert_underscores=False,
-        )] = None,
+        x_tag: Annotated[StrictStr | None, Header(alias='X-Tag', convert_underscores=False)] = None,
         blob: Annotated[bytes | None, Query(alias='blob')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
@@ -85,7 +80,12 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[strict_basemodel_models.Form, Depends(contract.PostForm.BODY)],
     ) -> object:
-        return dispatch(post_form_handler(body=body), contract.PostForm.RESPONSES)
+        return dispatch(
+            post_form_handler(
+                body=body,
+            ),
+            contract.PostForm.RESPONSES,
+        )
 
     router.add_api_route(
         '/forms',
@@ -111,7 +111,12 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[strict_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
     ) -> object:
-        return dispatch(upload_handler(body=body), contract.Upload.RESPONSES)
+        return dispatch(
+            upload_handler(
+                body=body,
+            ),
+            contract.Upload.RESPONSES,
+        )
 
     router.add_api_route(
         '/uploads',
@@ -126,8 +131,13 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('post_form', _add_post_form), ('upload', _add_upload))
-TEMPLATED_ROUTES: Final = (('get_values', _add_get_values),)
+LITERAL_ROUTES: Final = (
+    ('post_form', _add_post_form),
+    ('upload', _add_upload),
+)
+TEMPLATED_ROUTES: Final = (
+    ('get_values', _add_get_values),
+)
 
 
 def build_router(

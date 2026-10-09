@@ -19,6 +19,11 @@ from .._runtime.server.responses import dispatch
 from ..services import StoreService
 
 
+def _registered(endpoint):
+    """Return an endpoint unchanged: the decorator every endpoint of this template takes."""
+    return endpoint
+
+
 def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
     store: StoreService = wiring.services['store']
     get_inventory_handler = checked(
@@ -26,8 +31,12 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
         'The store.get_inventory method of GET /store/inventory',
     )
 
+    @_registered
     def get_inventory() -> object:
-        return dispatch(get_inventory_handler(), contract.GetInventory.RESPONSES)
+        return dispatch(
+            get_inventory_handler(),
+            contract.GetInventory.RESPONSES,
+        )
 
     router.add_api_route(
         '/store/inventory',
@@ -41,10 +50,13 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
         tags=['store'],
         response_description='Counts by status.',
         dependencies=wiring.dependencies.get('get_inventory'),
+        name='get_inventory',
     )
 
 
-LITERAL_ROUTES: Final = (('get_inventory', _add_get_inventory),)
+LITERAL_ROUTES: Final = (
+    ('get_inventory', _add_get_inventory),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

@@ -41,21 +41,30 @@ class PetsService(Protocol):
         self,
         *,
         invalid: Optional[bool],
-    ) -> Union[FieldPetsGetResponse, HTTPResult[FieldPetsGetResponse], Response]: ...
+    ) -> Union[FieldPetsGetResponse, HTTPResult[FieldPetsGetResponse], Response]:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def list_counts(
         self,
         *,
         invalid: Optional[bool],
-    ) -> Union[FieldCountsGetResponse, HTTPResult[FieldCountsGetResponse], Response]: ...
+    ) -> Union[FieldCountsGetResponse, HTTPResult[FieldCountsGetResponse], Response]:
+        """
+        Handle GET /counts.
+        """
 
     @abstractmethod
     def get_code(
         self,
         *,
         invalid: Optional[bool],
-    ) -> Union[str, HTTPResult[str], Response]: ...
+    ) -> Union[str, HTTPResult[str], Response]:
+        """
+        Handle GET /code.
+        """
 
     @abstractmethod
     def literal(
@@ -64,7 +73,10 @@ class PetsService(Protocol):
         modes: Optional[List[Literal['a']]],
         named: Optional[Annotated_1],
         listed: Optional[List_1],
-    ) -> Union[None, HTTPResult[None], Response]: ...
+    ) -> Union[None, HTTPResult[None], Response]:
+        """
+        Handle GET /literal.
+        """
 
     @abstractmethod
     def get_pet(
@@ -82,7 +94,10 @@ class PetsService(Protocol):
         label: Optional[str],
         pet: Optional[Pet],
         tag: Optional[Tag],
-    ) -> Union[Pet, HTTPResult[Pet], Response]: ...
+    ) -> Union[Pet, HTTPResult[Pet], Response]:
+        """
+        Handle GET /pets/{petId}.
+        """
 
 
 class FieldsService(Protocol):
@@ -93,14 +108,20 @@ class FieldsService(Protocol):
         self,
         *,
         body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-    ) -> Union[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]], Response]: ...
+    ) -> Union[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]], Response]:
+        """
+        Handle POST /things.
+        """
 
     @abstractmethod
     def post_field(
         self,
         *,
         body: FieldModel,
-    ) -> Union[Response_1, HTTPResult[Response_1], Response]: ...
+    ) -> Union[Response_1, HTTPResult[Response_1], Response]:
+        """
+        Handle POST /fields.
+        """
 
 
 class DaysService(Protocol[PrincipalT_contra]):
@@ -112,4 +133,7 @@ class DaysService(Protocol[PrincipalT_contra]):
         *,
         principal: Optional[PrincipalT_contra],
         body: Day,
-    ) -> Union[Day, HTTPResult[Day], Response]: ...
+    ) -> Union[Day, HTTPResult[Day], Response]:
+        """
+        Handle POST /days.
+        """

@@ -11,7 +11,7 @@
      },
      total=False,
  )
-@@ -47,46 +43,3 @@
+@@ -41,36 +37,3 @@
      RESPONSES: Final = OperationResponses(
          responses={'201': Declared(media_type='application/json', model=models.Pet)},
      )
@@ -21,12 +21,7 @@
 -    """Plans of the list_my_pets operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={
--            '200': Declared(
--                media_type='application/json',
--                model=models.FieldPetsMineGetResponse,
--            ),
--        },
+-        responses={'200': Declared(media_type='application/json', model=models.FieldPetsMineGetResponse)},
 -    )
 -
 -
@@ -34,29 +29,24 @@
 -    """Plans of the get_pet operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={
--            '200': Declared(media_type='application/json', model=models.Pet),
--            '404': Declared(media_type='application/json', model=models.Error),
--        },
+-        responses={'200': Declared(media_type='application/json', model=models.Pet), '404': Declared(media_type='application/json', model=models.Error)},
 -    )
 -
 -
 -class DeletePet:
 -    """Plans of the delete_pet operation."""
 -
--    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+-    RESPONSES: Final = OperationResponses(
+-        responses={'204': Declared()},
+-        primary=204,
+-    )
 -
 -
 -class GetInventory:
 -    """Plans of the get_inventory operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={
--            '200': Declared(
--                media_type='application/json',
--                model=models.FieldStoreInventoryGetResponse,
--            ),
--        },
+-        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
 -    )
 --- server/_generated/openapi.py
 +++ server/_generated/openapi.py (expected)
@@ -180,7 +170,7 @@
      ' "components": {\n'
 --- server/application.py
 +++ server/application.py (expected)
-@@ -11,22 +11,16 @@
+@@ -11,14 +11,12 @@
  from ._generated.contract import OperationDependencies
  from ._generated.openapi import serve_source_openapi
  from ._runtime.server.application import build, error_handlers, validation_error_handler
@@ -189,16 +179,15 @@
 +from .routers import pets
 +from .services import PetsService
  
--ROUTES: Final = (
--    *pets.LITERAL_ROUTES,
+ ROUTES: Final = (
+     *pets.LITERAL_ROUTES,
 -    *store.LITERAL_ROUTES,
--    *pets.TEMPLATED_ROUTES,
+     *pets.TEMPLATED_ROUTES,
 -    *store.TEMPLATED_ROUTES,
--)
-+ROUTES: Final = (*pets.LITERAL_ROUTES, *pets.TEMPLATED_ROUTES)
+ )
  INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
  
- 
+@@ -26,7 +24,6 @@
  def build_router(
      *,
      pets: PetsService,
@@ -206,7 +195,7 @@
      dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-@@ -34,7 +28,7 @@
+@@ -34,7 +31,7 @@
      """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
@@ -215,7 +204,7 @@
          dependencies=dependencies,
          operation_dependencies=operation_dependencies,
          prefix=prefix,
-@@ -44,7 +38,6 @@
+@@ -44,7 +41,6 @@
  def create_app(
      *,
      pets: PetsService,
@@ -223,7 +212,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      source_openapi: bool = True,
-@@ -60,7 +53,6 @@
+@@ -60,7 +56,6 @@
      app.include_router(
          build_router(
              pets=pets,
@@ -267,7 +256,7 @@
  from pydantic import AwareDatetime, Field
  from server import models
  
-@@ -98,92 +97,11 @@
+@@ -95,108 +94,11 @@
      )
  
  
@@ -279,7 +268,10 @@
 -    )
 -
 -    def list_my_pets() -> object:
--        return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
+-        return dispatch(
+-            list_my_pets_handler(),
+-            contract.ListMyPets.RESPONSES,
+-        )
 -
 -    router.add_api_route(
 -        '/pets/mine',
@@ -303,8 +295,16 @@
 -        'The pets.get_pet method of GET /pets/{petId}',
 -    )
 -
--    def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
--        return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
+-    def get_pet(
+-        *,
+-        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+-    ) -> object:
+-        return dispatch(
+-            get_pet_handler(
+-                pet_id=pet_id,
+-            ),
+-            contract.GetPet.RESPONSES,
+-        )
 -
 -    router.add_api_route(
 -        '/pets/{petId}',
@@ -333,7 +333,9 @@
 -        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
 -    ) -> object:
 -        return dispatch(
--            delete_pet_handler(pet_id=pet_id),
+-            delete_pet_handler(
+-                pet_id=pet_id,
+-            ),
 -            contract.DeletePet.RESPONSES,
 -        )
 -
@@ -356,36 +358,48 @@
      ('create_pet', _add_create_pet),
 -    ('list_my_pets', _add_list_my_pets),
  )
--TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet), ('delete_pet', _add_delete_pet))
+-TEMPLATED_ROUTES: Final = (
+-    ('get_pet', _add_get_pet),
+-    ('delete_pet', _add_delete_pet),
+-)
 +TEMPLATED_ROUTES: Final = ()
  
  
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -41,35 +41,3 @@
-         *,
-         body: models.NewPet,
-     ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+@@ -43,43 +43,3 @@
+         """
+         Handle POST /pets.
+         """
 -
 -    @abstractmethod
 -    def list_my_pets(
 -        self,
--    ) -> (
--        models.FieldPetsMineGetResponse
--        | HTTPResult[models.FieldPetsMineGetResponse]
--        | Response
--    ): ...
+-    ) -> models.FieldPetsMineGetResponse | HTTPResult[models.FieldPetsMineGetResponse] | Response:
+-        """
+-        Handle GET /pets/mine.
+-        """
 -
 -    @abstractmethod
 -    def get_pet(
 -        self,
 -        *,
 -        pet_id: int,
--    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
+-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+-        """
+-        Handle GET /pets/{petId}.
+-        """
 -
 -    @abstractmethod
--    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
+-    def delete_pet(
+-        self,
+-        *,
+-        pet_id: int,
+-    ) -> None | HTTPResult[None] | Response:
+-        """
+-        Handle DELETE /pets/{petId}.
+-        """
 -
 -
 -class StoreService(Protocol):
@@ -394,11 +408,10 @@
 -    @abstractmethod
 -    def get_inventory(
 -        self,
--    ) -> (
--        models.FieldStoreInventoryGetResponse
--        | HTTPResult[models.FieldStoreInventoryGetResponse]
--        | Response
--    ): ...
+-    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+-        """
+-        Handle GET /store/inventory.
+-        """
 EXTRA: server/routers/store.py (no longer generated)
 --- server/README.md
 +++ server/README.md (expected)

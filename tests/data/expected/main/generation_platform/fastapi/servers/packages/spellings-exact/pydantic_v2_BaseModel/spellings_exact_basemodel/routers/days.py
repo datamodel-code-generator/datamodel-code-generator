@@ -26,7 +26,10 @@ from ..services import DaysService
 
 def _add_post_day(router: APIRouter, wiring: Wiring) -> None:
     days: DaysService[object] = wiring.services['days']
-    post_day_handler = checked(days.post_day, 'The days.post_day method of POST /days')
+    post_day_handler = checked(
+        days.post_day,
+        'The days.post_day method of POST /days',
+    )
 
     post_day_authorize = wiring.authorizer()
 
@@ -48,7 +51,10 @@ def _add_post_day(router: APIRouter, wiring: Wiring) -> None:
         body: Annotated[Day, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
-            post_day_handler(principal=principal, body=body),
+            post_day_handler(
+                principal=principal,
+                body=body,
+            ),
             contract.PostDay.RESPONSES,
         )
 
@@ -67,7 +73,9 @@ def _add_post_day(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('post_day', _add_post_day),)
+LITERAL_ROUTES: Final = (
+    ('post_day', _add_post_day),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

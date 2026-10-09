@@ -78,6 +78,8 @@ class FastAPITarget:
             types=types,
             templates=FastAPITemplates.custom(request.model_config, request.cwd),
             document=document,
+            use_schema_description=request.model_config.use_schema_description,
+            use_single_line_docstring=request.model_config.use_single_line_docstring,
         )
         files = renderer.files()
         for problem in source.problems:

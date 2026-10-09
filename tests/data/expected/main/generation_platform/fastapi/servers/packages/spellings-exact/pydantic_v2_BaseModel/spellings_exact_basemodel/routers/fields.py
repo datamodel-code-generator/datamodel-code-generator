@@ -27,11 +27,14 @@ def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
 
     def post_thing(
         *,
-        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(
-            media_type='application/json',
-        )],
+        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(media_type='application/json')],
     ) -> object:
-        return dispatch(post_thing_handler(body=body), contract.PostThing.RESPONSES)
+        return dispatch(
+            post_thing_handler(
+                body=body,
+            ),
+            contract.PostThing.RESPONSES,
+        )
 
     router.add_api_route(
         '/things',
@@ -59,7 +62,12 @@ def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
         *,
         body: Annotated[FieldModel, Body(media_type='application/json')],
     ) -> object:
-        return dispatch(post_field_handler(body=body), contract.PostField.RESPONSES)
+        return dispatch(
+            post_field_handler(
+                body=body,
+            ),
+            contract.PostField.RESPONSES,
+        )
 
     router.add_api_route(
         '/fields',

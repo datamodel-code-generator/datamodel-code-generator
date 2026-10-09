@@ -43,9 +43,7 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
         *,
         principal: Annotated[object, Depends(authenticate_principal)],
         security: Annotated[str | None, Query(alias='security')] = None,
-        authenticate_handler: Annotated[str | None, Query(
-            alias='authenticate_handler',
-        )] = None,
+        authenticate_handler: Annotated[str | None, Query(alias='authenticate_handler')] = None,
     ) -> object:
         return dispatch(
             authenticate_handler_1(
@@ -70,7 +68,9 @@ def _add_authenticate(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (('authenticate', _add_authenticate),)
+LITERAL_ROUTES: Final = (
+    ('authenticate', _add_authenticate),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

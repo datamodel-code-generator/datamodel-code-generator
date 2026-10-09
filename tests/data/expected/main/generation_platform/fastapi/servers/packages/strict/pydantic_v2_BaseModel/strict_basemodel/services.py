@@ -38,18 +38,27 @@ class UntaggedService(Protocol):
         x_tag: StrictStr | None,
         blob: bytes | None,
         visits: StrictInt | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /values/{id}.
+        """
 
     @abstractmethod
     def post_form(
         self,
         *,
         body: strict_basemodel_models.Form,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /forms.
+        """
 
     @abstractmethod
     def upload(
         self,
         *,
         body: strict_basemodel_models.FieldUploadsPostRequest,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /uploads.
+        """
