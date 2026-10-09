@@ -4,7 +4,6 @@ generate
 tree
   locks/remote.lock
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -21,7 +20,6 @@ tree
 tree
   locks/remote.lock
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -40,7 +38,6 @@ generate
 tree
   locks/remote.lock
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py

@@ -1,49 +1,20 @@
 # input-aliases
 render
   target=fastapi schema_version=1
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:cbd4f0c1ca25bf6d0e3c700bdfd74537d543e91ebe5e51dbd7a6e7036ae2e7f1",
-    "__init__.py": "sha256:7575a4e405ab637fab912f7b1370ee9b5a24f1271e337c4da037500835135d31",
-    "_generated/__init__.py": "sha256:b862532d1a75f58e094c71836cf6bc843e3cae82e84cbe5689300496f51fbc20",
-    "_generated/contract.py": "sha256:1aa389265fedb50bb791902bcce421e41457dff282af72ed85dc31086a175cdd",
-    "application.py": "sha256:ef5b3883a2aee12f240e3c7d2a248af6ff17471e3fe92ff08f0649c58233645f",
-    "errors.py": "sha256:3148fd3548fc580bc8d276c6f769656c55ecf215bfe52e6c437e4b70c9117cb1",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:21a06f88c6ae67e83cb21b7f4c68f4de3778cc237661e105203d986f9c8e6f9e",
-    "routers/untagged.py": "sha256:f42960292fbff995cb0b8948a7c3de90dec15abc5ed5868198f6565581093538",
-    "services.py": "sha256:fc331f02ac0ed1cfadf27ffd6d89c344174b457e7733055f40cdf1183ae86751"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
 generate
   returned None
 tree
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -56,7 +27,6 @@ tree
   server/services.py
   11 runtime modules ['present']
 tree
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py

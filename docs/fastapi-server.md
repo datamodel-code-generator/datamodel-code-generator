@@ -123,7 +123,9 @@ object with the right methods works, and type checkers check it where you pass i
   server files, because FastAPI reads their annotations at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
-- `--output` names the model file or package, and `--server-model-package` is its import path.
+- `--output` names the model file or package, and `--server-model-package` is its import path. The models can
+  live inside the server package, and the server package inside a models directory; see
+  [The generated package](#the-generated-package).
 - The generated package needs FastAPI 0.141 and the other requirements it lists.
 
 ## Python API
@@ -155,7 +157,7 @@ generate_fastapi(
 `generate_fastapi` publishes the files and returns `None`, like model generation.
 The rendered project lists the package's runtime requirement specifiers in `dependencies`, which the command line
 prints as a `uv add` command. Neither public result contains diagnostic records.
-Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, a subclass of
+Invalid settings and bindings raise `APIGenerationError`, a subclass of
 `datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
 model generation errors keep their own types and messages. The records, errors, warnings, and codec
 registrations are also available from `datamodel_code_generator.api_types`.
@@ -266,52 +268,74 @@ job cannot share its `output`. The server jobs of a batch write one generation t
 `--disable-timestamp` leaves it out.
 
 The batch publishes the server packages together with the models of every job once all jobs succeed, and publishes
-nothing when a job fails, when jobs generate different models for a shared `output`, or when a file that a server job
-planned changed in the meantime; the `uv add` notice of each package follows the publication on stderr. `--check`
-compares every job as a single run does and exits with 1 when any of them would change. With `--output-format json`,
-a server job adds the generation or check payload of a single server run to the batch document, with file paths
-relative to that job's model output directory. Server jobs refuse `--watch`, as a single server run does.
+nothing when a job fails or when jobs generate different models for a shared `output`; the `uv add` notice of each
+package follows the publication on stderr. `--check` compares every job as a single run does and exits with 1 when
+any of them would change. With `--output-format json`, a server job adds the generation or check payload of a single
+server run to the batch document, with file paths relative to that job's model output directory. Server jobs refuse
+`--watch`, as a single server run does.
 
 ## The generated package
 
-| Path | Owner | Contents |
-| --- | --- | --- |
-| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
-| `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
-| `routers/` or `routes.py` | generator | Route registrations |
-| `errors.py`, `security.py` | generator | Errors, and one FastAPI security dependency for each scheme |
-| `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
-| `README.md`, `py.typed` | generator | Documentation and typing marker |
-| `.dcg-target-manifest.json` | generator | What the last generation wrote, to regenerate and check safely |
+| Path | Contents |
+| --- | --- |
+| `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
+| `services.py` | One service Protocol per router group, with an abstract method per operation |
+| `routers/` or `routes.py` | Route registrations |
+| `errors.py`, `security.py` | Errors, and one FastAPI security dependency for each scheme |
+| `_generated/`, `_runtime/` | Plans and the runtime the package imports |
+| `README.md`, `py.typed` | Documentation and typing marker |
 
-The generator owns every file of the package and rewrites them on every generation, as it does the models,
-restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
-own modules; a file the generator never wrote at a path it needs stops the run with an error.
+Every generation overwrites every generated file of the package, as it does the models, restoring any you edited
+or deleted. A file that is no longer generated, such as the router module of a removed tag, stays until you delete
+it, and `--check` lists it as an extra file. Keep the service implementations, the `authorize` callback, and the
+application in modules outside the package: `--check` treats every `.py` file under `--server-output` as generated,
+and a file at a path the package needs is overwritten.
+
+The models can be part of the package. Name a model file or directory inside `--server-output` and its import path:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.nested-models.command -->
+<!-- fmt: off -->
+
+```bash
+datamodel-codegen \
+  --input api.yaml \
+  --input-file-type openapi \
+  --output app/server/models.py \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --openapi-scopes schemas api \
+  --generate-server fastapi \
+  --server-output app/server \
+  --server-package app.server \
+  --server-model-package app.server.models
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.nested-models.command -->
+
+The server package can also sit inside a models directory. Either way `--check` compares the outer directory once,
+so it reports each file once. A model file and a server file that would take the same path stop the run with an
+error, and so does a module with the name of a generated package directory beside it, such as `server/routers.py`
+beside `server/routers/`, which Python would import instead of the module. A job can nest its own `output` and
+`server-output` in the same way.
 
 ## Regenerating and checking
 
-Generation stages file changes and rolls back earlier changes if publication fails.
-Before publishing, it rechecks planned file hashes and reports an error
-when they differ. Run generators that share output files one at a time.
-
-The manifest records the generator version, the target kind and package, the model output and one hash of the model
-files, and the hash of every file the target owns. Generation overwrites the owned files, deletes the ones it no longer
-plans, and emits a `TargetEditWarning` about an owned file edited since the last generation; `--check` reports it
-as a difference. A manifest of an older or unknown format owns nothing: generation emits a `TargetStateWarning`
-and deletes no file. `--disable-warnings` and Python warning filters suppress these warnings as for model
-generation.
+Generation stages the changed files and rolls back earlier changes if publication fails. A file that already holds
+its generated bytes is not rewritten. Like the models, every file of the package is written as text with the line
+ending of the platform, CRLF on Windows and LF elsewhere.
 
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
-lacks a new method; your own modules are never touched. `--check` renders everything without writing it and exits
-with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
-for an error; `render_fastapi` returns the same artifacts, each with its action.
+lacks a new method; modules outside the package are never touched. `--check` renders everything without writing it
+and exits with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or
+deleted or a file that is no longer generated, and 2 for an error; `render_fastapi` returns the same artifacts, each
+with its action.
 
 `--check` uses the model output comparison: it prints unified diffs and missing or extra file messages to stdout.
 It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
 the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
-`--check --output-format json` uses the same check payload as model generation. Checking publishes nothing and
-does not warn that it would overwrite an edited owned file.
+`--check --output-format json` uses the same check payload as model generation. Checking publishes nothing.
 
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
 stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
@@ -319,8 +343,8 @@ the model payload, a file path is relative to the model output directory, which 
 and its parent for a single model file, so `output` and the path give the file on disk. A file outside that
 directory, such as a server package beside a model directory, has an absolute path. Paths use forward slashes.
 `--check --output-format json` names the files the same way in `differences[].path`, while the diff labels stay
-relative to the working directory. The target manifest, model metadata, and remote lock are outside the payload.
-The dependency notice goes to stderr, along with errors and Python warnings.
+relative to the working directory. Model metadata and the remote lock are outside the payload, as for model
+generation. The dependency notice goes to stderr, along with errors and Python warnings.
 
 The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
 leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
@@ -437,8 +461,7 @@ The command line prints failures to stderr as `Error: message` and exits with 2.
 messages in order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
-Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `TargetEditWarning`,
-`TargetStateWarning`, and `DocumentationAnnotationWarning` for a documentation value the served document cannot
-carry. Each message starts with the output path, spelled relative to the working directory when it lies inside
-it, so every generated package reports its own files. They respect `--disable-warnings` and Python warning
-filters, and are not returned as diagnostic records.
+Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `DocumentationAnnotationWarning` reports
+a documentation value the served document cannot carry. Each message starts with the output path, spelled relative
+to the working directory when it lies inside it, so every generated package reports its own files. They respect
+`--disable-warnings` and Python warning filters, and are not returned as diagnostic records.

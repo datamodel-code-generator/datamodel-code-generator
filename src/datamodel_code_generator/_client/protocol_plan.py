@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Protocols:
-    """A client target's valid helpers, and the operation or manifest document each of their references names."""
+    """A client target's valid helpers, and the operation or document each of their references names."""
 
     helpers: tuple[Helper, ...]
     operations: Mapping[OperationRef, OperationContract]

@@ -2,42 +2,14 @@
 render
   target=fastapi schema_version=1
   write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:933e9c1a2a1b79dbd79218988d05bb95cc3727469fe92ab5147d327109106bca",
-    "__init__.py": "sha256:ea8aacc0c3937e4865da74b69d910a66f4bf893daba1623b3a35d1fb8bd58f7a",
-    "_generated/__init__.py": "sha256:3fec1103944fed2c08f453800e2a0dda9f763ed54071037907baa4c26434acb4",
-    "_generated/contract.py": "sha256:79dadfcffd059bd91e7fe9e61947e8d91e093ea3e3481aeb2d409126c191d864",
-    "application.py": "sha256:e360478586fafcd39b928c05ad240504e6d914dbc73b2473ac727856648ac218",
-    "errors.py": "sha256:87e577a8fce96e8a334a359fa09e2efe18a502459682dff5d718c87b9b981830",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:b68cc18916196a38faad29c7cb956c012bba38235e22d5122054ff7cb0c63ef8",
-    "routers/untagged.py": "sha256:de8189359e131f700e2ab54bf6e5c51ac19b7037b80b4d0e098f27c8d34000d5",
-    "services.py": "sha256:b0bb5a689dc10e35ce47052baf9b3be7166bde0f0eb207123f46f419b7db04c7"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
