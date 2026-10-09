@@ -25,7 +25,6 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     BackendFieldFacts,
     BackendModelFacts,
     BackendSetting,
@@ -54,7 +53,6 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     LiteralType,
     MemberShape,
-    MetadataCall,
     ModelArtifactAddress,
     ModelFieldFacts,
     ModelHint,
@@ -210,6 +208,7 @@ _PYDANTIC_CONFIGURATION: Final = (
     "validate_by_alias",
     "frozen",
     "alias_generator",
+    "regex_engine",
 )
 _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
     list: "list",
@@ -946,10 +945,11 @@ def _ordered_union(
     hint: Callable[[tuple[TypeView, ...]], ModelHint],
     discriminator: UnionDiscriminator | None = None,
 ) -> TypeView:
-    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself."""
-    flattened = tuple(
-        member for value in members for member in (value.members if isinstance(value, UnionType) else (value,))
-    )
+    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself.
+
+    A union the model's annotation discriminates stays one member, as its annotation wraps it.
+    """
+    flattened = tuple(member for value in members for member in _members(value))
     unique = tuple(dict.fromkeys(flattened))
     discriminator = discriminator or next(
         (value.discriminator for value in members if isinstance(value, UnionType) and value.discriminator is not None),
@@ -958,6 +958,19 @@ def _ordered_union(
     if len(unique) == 1:
         return unique[0]
     return UnionType(unique, preserve_order, discriminator, hint(unique))
+
+
+def _constrained_base(data_type: DataType) -> BuiltinType | ImportedType | None:
+    """Return the scalar a constrained scalar constrains, as the model generator reads it, or None for any other."""
+    if getattr(data_type, "annotated_string", False):
+        return BuiltinType("str")
+    base = None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+    return ImportedType(IMPORT_DECIMAL) if base == "Decimal" else None if base is None else _BUILTINS[base]
+
+
+def _members(value: TypeView) -> tuple[TypeView, ...]:
+    """Return the members a union merges into an enclosing one: its own, or the type itself."""
+    return value.members if isinstance(value, UnionType) and value.tag is None else (value,)
 
 
 def _has_null(value: TypeView) -> bool:
@@ -1263,6 +1276,8 @@ class _Hints:
         Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
         type and a constrained string is str.
         """
+        if (python_type := data_type.python_type) is not None:
+            return self.hint(self.bound(python_type))
         update: dict[str, object] = {**_ALONE, "data_types": [], "children": []}
         slotted: set[tuple[str | None, str]] = set()
         if (import_ := data_type.import_) is not None and import_.from_ is not None:
@@ -1290,6 +1305,44 @@ class _Hints:
             )
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
         return self.hint(annotation, static)
+
+    def bound(self, binding: BoundPythonType) -> tuple[str, tuple[Import, ...]]:
+        """Render a bound Python type with each name it imports, and each module it names, as a slot.
+
+        The model generator's own aliases of those names stay out of the text, so a target module names them itself.
+        """
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeBoundName,
+            PythonTypeRuntimeSymbol,
+            render_python_type_expr,
+            rewrite_python_type_expr,
+        )
+
+        slots: dict[str, str] = {}
+
+        def placeholder(import_: Import) -> str:
+            slot = self.slot(import_)
+            name = f"__dcg_slot_{slot.strip(_SLOT)}__"
+            slots[name] = slot
+            return name
+
+        def leaf(expression: PythonTypeExpr) -> PythonTypeExpr:
+            match expression:
+                case PythonTypeBoundName():
+                    name = placeholder(Import(import_=expression.import_name, from_=expression.import_from))
+                    return PythonTypeBoundName(name, expression.import_from, expression.import_name)
+                case PythonTypeRuntimeSymbol() if expression.module:
+                    return PythonTypeRuntimeSymbol(
+                        placeholder(Import(import_=expression.module)), expression.qualname_parts
+                    )
+                case _:
+                    pass
+            return expression
+
+        text = render_python_type_expr(rewrite_python_type_expr(binding.expression, leaf))
+        for name, slot in slots.items():
+            text = text.replace(name, slot)
+        return text, ()
 
     def expression(self, value: object, slotted: set[tuple[str | None, str]]) -> object:
         if not isinstance(value, PythonRuntimeExpression):
@@ -1397,12 +1450,7 @@ class _Projector:
             imported = ImportedType(import_)
             if data_type.is_func and data_type.kwargs:
                 keywords = tuple((name, _freeze_argument(value)) for name, value in data_type.kwargs.items())
-                hint = self.hints.leaf(data_type)
-                return (
-                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),), hint)
-                    if getattr(data_type, "annotated_string", False)
-                    else ConstructorType(imported, keywords, hint)
-                )
+                return ConstructorType(imported, keywords, self.hints.leaf(data_type), _constrained_base(data_type))
             return imported
         if data_type.type is None:
             return None
@@ -1447,9 +1495,7 @@ class _Projector:
             return self._project(data_type.data_types[0]), False
         preserve_order = data_type.preserve_union_member_order
         projected = tuple(self._project(child) for child in data_type.data_types)
-        flattened = tuple(
-            member for value in projected for member in (value.members if isinstance(value, UnionType) else (value,))
-        )
+        flattened = tuple(member for value in projected for member in _members(value))
         members = (
             projected if preserve_order else tuple(member for member in flattened if not isinstance(member, NoneType))
         )
@@ -1476,14 +1522,8 @@ class _Projector:
             annotation = wrapped.annotation
             hint = ModelHint(HintText(annotation.parts, (*annotation.imports, _PYDANTIC_FIELD)), hints.of(union).static)
             hints.fixed[_PYDANTIC_FIELD] = None
-            return (
-                AnnotatedType(
-                    union,
-                    (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),),
-                    hint,
-                ),
-                inferred_optional,
-            )
+            schema = union.discriminator if isinstance(union, UnionType) else None
+            return UnionType(parts, preserve_order, schema, hint, discriminator), inferred_optional
         return union, inferred_optional
 
     def selector(self, data_type: DataType) -> UnionDiscriminator | None:
@@ -1598,18 +1638,9 @@ class _Projector:
                     value,
                     callable=ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
                     keywords=tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
-                )
-            case AnnotatedType():
-                return replace(
-                    value,
-                    base=self._imports(value.base),
-                    metadata=tuple(
-                        MetadataCall(
-                            resolve(call.import_),
-                            tuple((name, _argument_import(item, resolve)) for name, item in call.keywords),
-                        )
-                        for call in value.metadata
-                    ),
+                    base=ImportedType(resolve(value.base.import_))
+                    if isinstance(value.base, ImportedType)
+                    else value.base,
                 )
             case _:
                 pass
@@ -1648,7 +1679,11 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
             actual := names.get((expression.import_from, expression.import_name, expression.value))
         ):
             return PythonTypeBoundName(actual.binding_name, actual.from_, actual.import_)
-        if isinstance(expression, PythonTypeRuntimeSymbol) and (actual := modules.get(expression.module)):
+        if (
+            isinstance(expression, PythonTypeRuntimeSymbol)
+            and (actual := modules.get(expression.module))
+            and not (actual.from_ or "").startswith(".")
+        ):
             return PythonTypeRuntimeSymbol(
                 f"{actual.from_}.{actual.import_}" if actual.from_ else actual.import_, expression.qualname_parts
             )
@@ -2726,7 +2761,7 @@ class _Models:
                     pending.extend(item.members)
                 case GeneratedSymbolType() if self.binder.models[item.symbol].IS_ALIAS:
                     references.append(item.symbol)
-                case AnnotatedType() | BoundType():
+                case BoundType():
                     unknown = True
                 case _:
                     pass

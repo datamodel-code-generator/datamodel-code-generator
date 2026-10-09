@@ -15,6 +15,7 @@ from datamodel_code_generator._fastapi.source_document import SourceDocument
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._target_documents import shown
+from datamodel_code_generator._target_module import TypeNames
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -50,8 +51,13 @@ class FastAPITarget:
             [use for operation in request.operations for use in operation_uses(operation)],
             operations=frozenset(operation.id for operation in request.operations),
         )
+        types = TypeNames(
+            request.batch,
+            exact=bool(request.model_config.use_exact_imports),
+            overrides=request.model_config.import_overrides,
+        )
         try:
-            plan = Planner(request, config, wire).plan()
+            plan = Planner(request, config, wire, types).plan()
         except PlanError as error:
             raise APIGenerationError(
                 error.diagnostics,
@@ -69,6 +75,7 @@ class FastAPITarget:
             plan=plan,
             batch=request.batch,
             wire=wire,
+            types=types,
             templates=FastAPITemplates.custom(request.model_config, request.cwd),
             document=document,
         )

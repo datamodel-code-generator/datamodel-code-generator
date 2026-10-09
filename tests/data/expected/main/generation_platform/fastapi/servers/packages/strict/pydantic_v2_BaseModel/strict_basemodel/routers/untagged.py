@@ -6,11 +6,10 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-import pydantic
 import strict_basemodel_models
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
-from pydantic import StringConstraints
+from pydantic import StrictStr, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -28,12 +27,12 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
 
     def get_values(
         *,
-        name: Annotated[pydantic.StrictStr | None, Query(alias='name')] = None,
+        name: Annotated[StrictStr | None, Query(alias='name')] = None,
         label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(
             alias='label',
         )] = None,
-        names: Annotated[list[pydantic.StrictStr] | None, Query(alias='names')] = None,
-        x_tag: Annotated[pydantic.StrictStr | None, Header(
+        names: Annotated[list[StrictStr] | None, Query(alias='names')] = None,
+        x_tag: Annotated[StrictStr | None, Header(
             alias='X-Tag',
             convert_underscores=False,
         )] = None,

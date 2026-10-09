@@ -11,9 +11,9 @@
      },
      total=False,
  )
-@@ -52,46 +48,3 @@
-             '201': Declared(media_type='application/json', model=server_models.Pet),
-         },
+@@ -47,46 +43,3 @@
+     RESPONSES: Final = OperationResponses(
+         responses={'201': Declared(media_type='application/json', model=models.Pet)},
      )
 -
 -
@@ -24,7 +24,7 @@
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                model=server_models.FieldPetsMineGetResponse,
+-                model=models.FieldPetsMineGetResponse,
 -            ),
 -        },
 -    )
@@ -35,8 +35,8 @@
 -
 -    RESPONSES: Final = OperationResponses(
 -        responses={
--            '200': Declared(media_type='application/json', model=server_models.Pet),
--            '404': Declared(media_type='application/json', model=server_models.Error),
+-            '200': Declared(media_type='application/json', model=models.Pet),
+-            '404': Declared(media_type='application/json', model=models.Error),
 -        },
 -    )
 -
@@ -54,7 +54,7 @@
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                model=server_models.FieldStoreInventoryGetResponse,
+-                model=models.FieldStoreInventoryGetResponse,
 -            ),
 -        },
 -    )
@@ -257,17 +257,17 @@
 -    root: dict[str, int]
 --- server/routers/pets.py
 +++ server/routers/pets.py (expected)
-@@ -9,8 +9,7 @@
+@@ -7,8 +7,7 @@
+ from typing import Annotated, Final
+ from uuid import UUID
  
- import pydantic
- import server.models as server_models
 -from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 -from fastapi.responses import Response
 +from fastapi import APIRouter, Body, Cookie, Header, Query, params
- from pydantic import Field
+ from pydantic import AwareDatetime, Field
+ from server import models
  
- from .._generated import contract
-@@ -99,92 +98,11 @@
+@@ -98,92 +97,11 @@
      )
  
  
@@ -286,7 +286,7 @@
 -        list_my_pets,
 -        methods=['GET'],
 -        status_code=200,
--        response_model=server_models.FieldPetsMineGetResponse,
+-        response_model=models.FieldPetsMineGetResponse,
 -        response_model_by_alias=True,
 -        response_model_exclude_unset=True,
 -        operation_id='listMyPets',
@@ -311,7 +311,7 @@
 -        get_pet,
 -        methods=['GET'],
 -        status_code=200,
--        response_model=server_models.Pet,
+-        response_model=models.Pet,
 -        response_model_by_alias=True,
 -        response_model_exclude_unset=True,
 -        operation_id='getPet',
@@ -363,17 +363,17 @@
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -41,39 +41,3 @@
+@@ -41,35 +41,3 @@
          *,
-         body: server_models.NewPet,
-     ) -> server_models.Pet | HTTPResult[server_models.Pet] | Response: ...
+         body: models.NewPet,
+     ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
 -
 -    @abstractmethod
 -    def list_my_pets(
 -        self,
 -    ) -> (
--        server_models.FieldPetsMineGetResponse
--        | HTTPResult[server_models.FieldPetsMineGetResponse]
+-        models.FieldPetsMineGetResponse
+-        | HTTPResult[models.FieldPetsMineGetResponse]
 -        | Response
 -    ): ...
 -
@@ -382,11 +382,7 @@
 -        self,
 -        *,
 -        pet_id: int,
--    ) -> (
--        server_models.Pet
--        | HTTPResult[server_models.Pet | server_models.Error]
--        | Response
--    ): ...
+-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
 -
 -    @abstractmethod
 -    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
@@ -399,8 +395,8 @@
 -    def get_inventory(
 -        self,
 -    ) -> (
--        server_models.FieldStoreInventoryGetResponse
--        | HTTPResult[server_models.FieldStoreInventoryGetResponse]
+-        models.FieldStoreInventoryGetResponse
+-        | HTTPResult[models.FieldStoreInventoryGetResponse]
 -        | Response
 -    ): ...
 EXTRA: server/routers/store.py (no longer generated)

@@ -3090,5 +3090,302 @@
       "routers/store.py"
     ],
     "package_snapshots": []
+  },
+  "spellings": {
+    "input": "server-spellings.yaml",
+    "services": "spellings",
+    "model": {
+      "import_overrides": {
+        "conint": "pydantic.types",
+        "constr": "pydantic.types"
+      }
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/code"
+      },
+      {
+        "method": "GET",
+        "url": "/code?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/counts"
+      },
+      {
+        "method": "GET",
+        "url": "/counts?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?code=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?codes=abcdef"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?step=1.2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?day=tomorrow"
+      },
+      {
+        "method": "POST",
+        "url": "/fields",
+        "json": {
+          "name": "x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-02"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "never"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pair=,1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?label=xa"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=xa"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-03",
+        "headers": {
+          "Authorization": "Bearer t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=a,a&named=x&listed=y"
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=b"
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": 2
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": "no"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/literal-model?modes=b,b"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "spellings-exact": {
+    "input": "server-spellings.yaml",
+    "services": "spellings",
+    "model": {
+      "use_exact_imports": true,
+      "collapse_root_models": true,
+      "use_decimal_for_multiple_of": true,
+      "import_overrides": {
+        "conint": "pydantic.types",
+        "constr": "pydantic.types"
+      },
+      "use_union_operator": false,
+      "use_standard_collections": false
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/code"
+      },
+      {
+        "method": "GET",
+        "url": "/code?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/counts"
+      },
+      {
+        "method": "GET",
+        "url": "/counts?invalid=true"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?code=a"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?codes=abcdef"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?step=1.2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?day=tomorrow"
+      },
+      {
+        "method": "POST",
+        "url": "/fields",
+        "json": {
+          "name": "x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-02"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "never"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pair=,1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?label=xa"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1?tag=xa"
+      },
+      {
+        "method": "POST",
+        "url": "/days",
+        "json": "2024-01-03",
+        "headers": {
+          "Authorization": "Bearer t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=a,a&named=x&listed=y"
+      },
+      {
+        "method": "GET",
+        "url": "/literal?modes=b"
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": 2
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/things",
+        "json": {
+          "w": "no"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/literal-model?modes=b,b"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

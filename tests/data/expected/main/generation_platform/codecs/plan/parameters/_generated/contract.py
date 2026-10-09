@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
-import decimal
-import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, TypedDict
+from decimal import Decimal
+from typing import Any, Final, TypedDict
 
 import plan_parameters_models
 from fastapi import params
@@ -130,9 +129,9 @@ class GetHeaders:
 
         flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | None
         ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | None
-        shaped: typing.Any | None
+        shaped: Any | None
         counts: dict[str, int] | None
-        any_map: dict[str, typing.Any] | None
+        any_map: dict[str, Any] | None
         plain: str | None
 
     PARAMETERS: Final = ParameterAdapter(
@@ -169,7 +168,7 @@ class GetHeaders:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio'),
                 ),
-                adapter=TypeAdapter(typing.Any),
+                adapter=TypeAdapter(Any),
             ),
             ParameterArgument(
                 name='counts',
@@ -195,7 +194,7 @@ class GetHeaders:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
-                adapter=TypeAdapter(dict[str, typing.Any]),
+                adapter=TypeAdapter(dict[str, Any]),
             ),
             ParameterArgument(
                 name='plain',
@@ -218,16 +217,16 @@ class GetKinds:
     class Parameters:
         """The adapter parameters of get__kinds."""
 
-        amounts: list[decimal.Decimal] | None
+        amounts: list[Decimal] | None
         scales: list[int | float] | None
-        anything: typing.Any | None
-        no_items: list[typing.Any] | None
-        any_items: list[typing.Any] | None
-        loose: str | typing.Any | None
+        anything: Any | None
+        no_items: list[Any] | None
+        any_items: list[Any] | None
+        loose: str | Any | None
         composed: list[int] | None
         only: list[int] | None
         maybe: list[int] | None
-        whatever: typing.Any | None
+        whatever: Any | None
         prices: plan_parameters_models.FieldKindsGetHeaderPricesParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
@@ -241,7 +240,7 @@ class GetKinds:
                     shape='array',
                     reserved_names=('amount', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(list[decimal.Decimal]),
+                adapter=TypeAdapter(list[Decimal]),
             ),
             ParameterArgument(
                 name='scales',
@@ -263,7 +262,7 @@ class GetKinds:
                     style='simple',
                     reserved_names=('amount', 'amounts', 'anyItems', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(typing.Any),
+                adapter=TypeAdapter(Any),
             ),
             ParameterArgument(
                 name='no_items',
@@ -274,7 +273,7 @@ class GetKinds:
                     shape='array',
                     reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(list[typing.Any]),
+                adapter=TypeAdapter(list[Any]),
             ),
             ParameterArgument(
                 name='any_items',
@@ -285,7 +284,7 @@ class GetKinds:
                     shape='array',
                     reserved_names=('amount', 'amounts', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(list[typing.Any]),
+                adapter=TypeAdapter(list[Any]),
             ),
             ParameterArgument(
                 name='loose',
@@ -295,7 +294,7 @@ class GetKinds:
                     style='simple',
                     reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever'),
                 ),
-                adapter=TypeAdapter(str | typing.Any),
+                adapter=TypeAdapter(str | Any),
             ),
             ParameterArgument(
                 name='composed',
@@ -341,7 +340,7 @@ class GetKinds:
                     style='simple',
                     reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales'),
                 ),
-                adapter=TypeAdapter(typing.Any),
+                adapter=TypeAdapter(Any),
             ),
             ParameterArgument(
                 name='prices',

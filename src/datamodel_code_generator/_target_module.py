@@ -8,6 +8,7 @@ with the model generator's configured type class, so its union and collection op
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from datamodel_code_generator._openapi_codec_plan import artifact_module
@@ -24,7 +25,7 @@ from datamodel_code_generator.imports import Import
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, SymbolId, TypeView
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, HintText, SymbolId, TypeView
     from datamodel_code_generator.types import DataType
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
@@ -44,8 +45,36 @@ _BUILTINS: Final = (
     "tuple",
 )
 _LOCAL: Final = (None, "")
+_FLAGS: Final[tuple[dict[str, Any], ...]] = tuple({flag: True} for flag in ("is_list", "is_set", "is_frozen_set"))
 _PART: Final = "\x01"
 _Identity: TypeAlias = tuple[str | None, str]
+
+
+@lru_cache(maxsize=16)
+def _renderings(
+    hint_type: type[DataType],
+) -> tuple[
+    dict[tuple[object, ...], tuple[list[str], tuple[Import, ...]]],
+    dict[tuple[object, ...], tuple[str, tuple[Import, ...]]],
+]:
+    """Return the renderings of each composite shape and each composite of a type class, which its composers share."""
+    del hint_type
+    return {}, {}
+
+
+@lru_cache(maxsize=16)
+def _written(hint_type: type[DataType]) -> tuple[Import, ...]:
+    """Return the names a type class writes as they are for its unions, optionals and containers."""
+    composer = TypeComposer(hint_type)
+    written = (
+        composer.compose(members=("T", "U"), preserve_union_member_order=True),
+        composer.compose(base="T", is_optional=True),
+        composer.compose(base="T", is_sequence=True),
+        *(composer.compose(base="T", **flags) for flags in _FLAGS),
+        composer.compose(base="T", key="K", is_dict=True),
+        composer.compose(base="T", key="K", is_mapping=True),
+    )
+    return tuple(item for _, found in written for item in found)
 
 
 class TypeComposer:
@@ -58,8 +87,7 @@ class TypeComposer:
     def __init__(self, hint_type: type[DataType]) -> None:
         """Keep the type class and the renderings of each composite shape."""
         self.hint_type = hint_type
-        self.templates: dict[tuple[object, ...], tuple[list[str], tuple[Import, ...]]] = {}
-        self.composed: dict[tuple[object, ...], tuple[str, tuple[Import, ...]]] = {}
+        self.templates, self.composed = _renderings(hint_type)
 
     def render(
         self,
@@ -136,17 +164,18 @@ class TypeNames:
         }
         self.exact = exact
         self.overrides = overrides or {}
-        assert batch.hint_type is not None
-        self.composer = composer = TypeComposer(batch.hint_type)
-        written = (
-            composer.compose(members=("T", "U"), preserve_union_member_order=True),
-            composer.compose(base="T", is_optional=True),
-            composer.compose(base="T", is_sequence=True),
+        address = next(iter(batch.artifacts), None)
+        self.package = (
+            None
+            if address is None
+            else address.model_package.rpartition(".")[0]
+            if address.result_key == "single"
+            else address.model_package
         )
+        assert batch.hint_type is not None
+        self.composer = TypeComposer(batch.hint_type)
         self.fixed = tuple(
-            dict.fromkeys(
-                self.identity(item) for item in (*batch.hint_imports, *(item for _, found in written for item in found))
-            )
+            dict.fromkeys(self.identity(item) for item in (*batch.hint_imports, *_written(batch.hint_type)))
         )
 
     def identity(self, import_: Import) -> _Identity:
@@ -154,9 +183,31 @@ class TypeNames:
         return self.resolve(import_.from_, import_.import_)
 
     def resolve(self, module: str | None, name: str) -> _Identity:
-        """Return the module and name a name imported from a module binds, after the import overrides."""
+        """Return the module and name a name imported from a module binds, after the import overrides.
+
+        An override to a relative module is relative to the model package, as the model modules import it; without a
+        package to resolve it against, it stays relative and no target module can import the name.
+        """
         override = self.overrides.get(name) if module != "__future__" else None
-        return override or module, name
+        if override is None or not override.startswith("."):
+            return override or module, name
+        level = len(override) - len(rest := override.lstrip("."))
+        parts = self.package.split(".") if self.package else []
+        if not parts or level > len(parts):
+            return override, name
+        return ".".join((*parts[: len(parts) - level + 1], *filter(None, (rest,)))), name
+
+    def unspellable(self, value: TypeView) -> bool:
+        """Return whether a type names a library name no target module can import: one from a relative module."""
+        if (hint := getattr(value, "hint", None)) is not None:
+            return any(self._relative(text) for text in (hint.annotation, hint.static))
+        return isinstance(value, ImportedType) and self._unimportable(value.import_)
+
+    def _relative(self, text: HintText) -> bool:
+        return any(map(self._unimportable, (*text.imports, *(part for part in text.parts if isinstance(part, Import)))))
+
+    def _unimportable(self, import_: Import) -> bool:
+        return (module := self.identity(import_)[0]) is not None and module.startswith(".")
 
 
 class TargetModule:
@@ -176,8 +227,7 @@ class TargetModule:
         self.qualified = qualified
         self.taken: dict[str, object] = dict.fromkeys((*reserved, *_BUILTINS), _LOCAL)
         for identity in names.fixed:
-            if identity[0] is not None:
-                self.taken.setdefault(identity[1], identity)
+            self.taken.setdefault(identity[1], identity)
         self.bound: dict[_Identity, str] = {}
         self.spelled: dict[object, str] = {}
 
@@ -276,21 +326,23 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str) -> str:
-        """Return a composite of spelled types this module writes, importing the names its text writes once."""
-        if (found := self.spelled.get(key := (kind, *parts))) is None:
+    def _composed(self, kind: str, *parts: str, key: str | None = None) -> str:
+        """Return a composite of spelled types this module writes, importing the names its text writes once.
+
+        A union is of its parts, and any other kind is the type flag of a container of its one part.
+        """
+        if (found := self.spelled.get(cache := (kind, key, *parts))) is None:
             composer = self.names.composer
             match kind:
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
-                case "optional":
-                    text, imports = composer.compose(base=parts[0], is_optional=True)
                 case _:
-                    text, imports = composer.compose(base=parts[0], is_sequence=True)
+                    flags: dict[str, Any] = {kind: True}
+                    text, imports = composer.compose(base=parts[0], key=key, **flags)
             if not self.qualified:
                 for item in imports:
                     self.imported(item)
-            found = self.spelled[key] = text
+            found = self.spelled[cache] = text
         return found
 
     def union(self, *parts: str) -> str:
@@ -300,11 +352,15 @@ class TargetModule:
 
     def optional(self, part: str) -> str:
         """Return a spelled type or None, as the model generator writes an optional type."""
-        return self._composed("optional", part)
+        return self._composed("is_optional", part)
 
     def sequence(self, part: str) -> str:
         """Return a read-only sequence of a spelled type, as the model generator writes one."""
-        return self._composed("sequence", part)
+        return self._composed("is_sequence", part)
+
+    def container(self, flag: str, part: str, *, key: str | None = None) -> str:
+        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type."""
+        return self._composed(flag, part, key=key)
 
     def imports(self) -> str:
         """Return the module's import statements: whole modules in path order, then names by module."""

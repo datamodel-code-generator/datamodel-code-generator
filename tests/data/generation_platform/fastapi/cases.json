@@ -368,5 +368,14 @@
       "custom_template_dir": "templates/missing"
     },
     "expected": "pets"
+  },
+  "relative-override": {
+    "input": "relative-override.yaml",
+    "model": {
+      "collapse_root_models": true,
+      "import_overrides": {
+        "date": ".local"
+      }
+    }
   }
 }

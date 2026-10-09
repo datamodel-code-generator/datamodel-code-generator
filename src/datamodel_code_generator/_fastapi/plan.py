@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.routes import (
     RouteError,
@@ -24,7 +23,6 @@ from datamodel_code_generator._fastapi.routes import (
     route_path,
     stem_conflicts,
 )
-from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
@@ -58,7 +56,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FrozenLiteral,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
         OperationContract,
         SymbolId,
@@ -68,6 +65,7 @@ if TYPE_CHECKING:
         TypeView,
         WireDeclaration,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
@@ -120,24 +118,19 @@ _CONSTRAINTS: Final = frozenset({
     "multiple_of",
     "pattern",
 })
-_CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "bytes"): "conbytes",
-    ("decimal", "Decimal"): "condecimal",
-    (None, "float"): "confloat",
-    (None, "int"): "conint",
-    (None, "str"): "constr",
-    ("pydantic", "StrictFloat"): "confloat",
-    ("pydantic", "StrictInt"): "conint",
-    ("pydantic", "StrictStr"): "constr",
+_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]]] = {
+    (None, "bytes"): ("conbytes", None),
+    ("decimal", "Decimal"): ("condecimal", None),
+    (None, "float"): ("confloat", None),
+    (None, "int"): ("conint", None),
+    (None, "str"): ("constr", None),
+    ("pydantic", "StrictFloat"): ("confloat", BuiltinType("float")),
+    ("pydantic", "StrictInt"): ("conint", BuiltinType("int")),
+    ("pydantic", "StrictStr"): ("constr", BuiltinType("str")),
 }
 _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
-CONSTRAINED: Final = frozenset({
-    ("pydantic", "conbytes"),
-    ("pydantic", "condecimal"),
-    ("pydantic", "confloat"),
-    ("pydantic", "conint"),
-    ("pydantic", "constr"),
-})
+_CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
+_WRAPPERS: Final = frozenset({"root", "alias"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
 _FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
@@ -464,14 +457,19 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
+        types: TypeNames,
     ) -> None:
-        """Index the batch, and resolve the per-operation settings to operation keys."""
+        """Index the batch, and resolve the per-operation settings to operation keys.
+
+        `types` says which types a generated module can import.
+        """
         self.request = request
         self.config = config
         self.wire = wire
+        self.types = types
+        self.unspelled: set[TypeUseId] = set()
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
-        self.imports = symbol_imports(request.batch)
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         for member in request.batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
@@ -682,8 +680,25 @@ class Planner:  # noqa: PLR0904
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
-        """Return the first type use of a declaration."""
-        return next((self.uses[use] for use in uses if use in self.uses), None)
+        """Return the first type use of a declaration, reporting a type no generated module can import."""
+        use = next((self.uses[use] for use in uses if use in self.uses), None)
+        if (
+            use is not None
+            and use.type is not None
+            and use.id not in self.unspelled
+            and self.types.unspellable(use.type)
+        ):
+            self.unspelled.add(use.id)
+            self.problems.append(
+                Diagnostic(
+                    code="BND_TYPE_EXPRESSION_UNSUPPORTED",
+                    severity="error",
+                    stage="binding",
+                    message="The use's final type has no expression a generated module can import",
+                    source_pointer=use.id.use_site.pointer,
+                )
+            )
+        return use
 
     def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
         """Return a request use, reporting a schema the model generator gave no type."""
@@ -813,14 +828,17 @@ class Planner:  # noqa: PLR0904
         if (
             any(setting.present for setting in settings)
             or any(name not in _PLAIN_KEYWORDS for name, _ in keywords)
-            or type_reason(facts.type, self.imports) is not None
+            or self.types.unspellable(facts.type)
         ):
             return None
         value = self.nested(facts.type, seen | {symbol})
         return _constrained(value, constraints) if constraints else value
 
     def nested(self, value: TypeView, seen: frozenset[SymbolId]) -> TypeView:
-        """Return a type with each alias among its members and arguments replaced by the type it validates as."""
+        """Return a type with each alias among its members and arguments replaced by the type it validates as.
+
+        A tuple keeps its members, as FastAPI reads none natively.
+        """
         match value:
             case GeneratedSymbolType() if (
                 value.symbol not in seen
@@ -830,9 +848,12 @@ class Planner:  # noqa: PLR0904
             ):
                 return plain
             case GenericType():
-                return replace(value, arguments=tuple(self.nested(item, seen) for item in value.arguments))
+                fixed = value.tuple_form == "fixed"
+                arguments = value.arguments if fixed else tuple(self.nested(item, seen) for item in value.arguments)
+                return value if arguments == value.arguments else replace(value, arguments=arguments, hint=None)
             case UnionType():
-                return replace(value, members=tuple(self.nested(item, seen) for item in value.members))
+                members = tuple(self.nested(item, seen) for item in value.members)
+                return value if members == value.members else replace(value, members=members, hint=None)
             case _:
                 pass
         return value
@@ -870,7 +891,9 @@ class Planner:  # noqa: PLR0904
                 return any(self.strict_bytes(item, seen) for item in value.arguments)
             case ImportedType():
                 return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
-            case GeneratedSymbolType() if value.symbol not in seen and value.symbol in self.facts:
+            case GeneratedSymbolType() if (
+                value.symbol not in seen and self.symbols[value.symbol].kind in _WRAPPERS and value.symbol in self.facts
+            ):
                 return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
             case _:
                 pass
@@ -886,7 +909,7 @@ class Planner:  # noqa: PLR0904
             case BuiltinType():
                 return value.name in _SCALAR_BUILTINS
             case ConstructorType():
-                return (value.callable.import_.from_, value.callable.import_.import_) in CONSTRAINED
+                return value.callable.import_.import_ in _CONSTRAINED
             case ImportedType():
                 return value.import_.from_ in _SCALAR_MODULES and value.import_.import_ not in _MODEL_IMPORTS
             case GeneratedSymbolType():
@@ -1228,15 +1251,6 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
     return Decision(transport="fastapi_native" if native else "adapter")
 
 
-def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
-    """Return the `module:Name` import location of every emitted model symbol."""
-    return {
-        symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
-        for symbol in batch.symbols
-        if symbol.artifact is not None
-    }
-
-
 def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool) -> bool:
     """Return whether FastAPI reads a parameter's style and type natively, so no adapter reads it."""
     return (
@@ -1254,22 +1268,25 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
 
     A union of one scalar and None constrains the scalar; any other type returns None.
     """
-    base: tuple[str | None, str] | None = None
+    scalar: BuiltinType | ImportedType | None = None
+    identity: tuple[str | None, str] = (None, "")
     match value:
         case UnionType() if len(scalars := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
-            if (scalar := _constrained(scalars[0], constraints)) is None:
+            if (constrained := _constrained(scalars[0], constraints)) is None:
                 return None
-            return replace(value, members=tuple(scalar if item is scalars[0] else item for item in value.members))
+            members = tuple(constrained if item is scalars[0] else item for item in value.members)
+            return replace(value, members=members, hint=None)
         case BuiltinType():
-            base = (None, value.name)
+            scalar, identity = value, (None, value.name)
         case ImportedType():
-            base = (value.import_.from_, value.import_.import_)
+            scalar, identity = value, (value.import_.from_, value.import_.import_)
         case _:
             pass
-    if base is None or (constructor := _CONSTRUCTORS.get(base)) is None:
+    if scalar is None or (found := _CONSTRUCTORS.get(identity)) is None:
         return None
-    keywords = (*constraints, _STRICT_KEYWORD) if base[0] == "pydantic" else constraints
-    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords)
+    constructor, strict = found
+    keywords = constraints if strict is None else (*constraints, _STRICT_KEYWORD)
+    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords, base=strict or scalar)
 
 
 def _strict(value: TypeView) -> bool:

@@ -9,10 +9,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Annotated, Final, TypedDict
 
-import pydantic
 import strict_basemodel_models
 from fastapi import params
-from pydantic import Field, TypeAdapter
+from pydantic import Field, StrictBool, StrictFloat, StrictInt, TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
@@ -43,17 +42,17 @@ class GetValues:
     class Parameters:
         """The adapter parameters of get_values."""
 
-        id: pydantic.StrictInt
-        count: pydantic.StrictInt | None
+        id: StrictInt
+        count: StrictInt | None
         bounded: int | None
-        score: pydantic.StrictFloat | None
-        flag: pydantic.StrictBool | None
-        counts: list[pydantic.StrictInt] | None
-        page: pydantic.StrictInt
+        score: StrictFloat | None
+        flag: StrictBool | None
+        counts: list[StrictInt] | None
+        page: StrictInt
         size: int
-        maybe: pydantic.StrictInt | None
-        x_trace: pydantic.StrictInt | None
-        visits: pydantic.StrictInt | None
+        maybe: StrictInt | None
+        x_trace: StrictInt | None
+        visits: StrictInt | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -66,7 +65,7 @@ class GetValues:
                     required=True,
                     kind='integer',
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt),
+                adapter=TypeAdapter(StrictInt),
             ),
             ParameterArgument(
                 name='count',
@@ -78,7 +77,7 @@ class GetValues:
                     kind='integer',
                     reserved_names=('blob', 'bounded', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt),
+                adapter=TypeAdapter(StrictInt),
             ),
             ParameterArgument(
                 name='bounded',
@@ -102,7 +101,7 @@ class GetValues:
                     kind='number',
                     reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'size'),
                 ),
-                adapter=TypeAdapter(pydantic.StrictFloat),
+                adapter=TypeAdapter(StrictFloat),
             ),
             ParameterArgument(
                 name='flag',
@@ -114,7 +113,7 @@ class GetValues:
                     kind='boolean',
                     reserved_names=('blob', 'bounded', 'count', 'counts', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
                 ),
-                adapter=TypeAdapter(pydantic.StrictBool),
+                adapter=TypeAdapter(StrictBool),
             ),
             ParameterArgument(
                 name='counts',
@@ -127,7 +126,7 @@ class GetValues:
                     kind='integer',
                     reserved_names=('blob', 'bounded', 'count', 'flag', 'label', 'maybe', 'name', 'names', 'page', 'score', 'size'),
                 ),
-                adapter=TypeAdapter(list[pydantic.StrictInt]),
+                adapter=TypeAdapter(list[StrictInt]),
             ),
             ParameterArgument(
                 name='page',
@@ -139,7 +138,7 @@ class GetValues:
                     kind='integer',
                     reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'maybe', 'name', 'names', 'score', 'size'),
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt),
+                adapter=TypeAdapter(StrictInt),
                 default=1,
             ),
             ParameterArgument(
@@ -165,7 +164,7 @@ class GetValues:
                     kind='integer',
                     reserved_names=('blob', 'bounded', 'count', 'counts', 'flag', 'label', 'name', 'names', 'page', 'score', 'size'),
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt | None),
+                adapter=TypeAdapter(StrictInt | None),
             ),
             ParameterArgument(
                 name='x_trace',
@@ -176,7 +175,7 @@ class GetValues:
                     kind='integer',
                     reserved_names=('X-Tag',),
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt),
+                adapter=TypeAdapter(StrictInt),
             ),
             ParameterArgument(
                 name='visits',
@@ -187,7 +186,7 @@ class GetValues:
                     explode=True,
                     kind='integer',
                 ),
-                adapter=TypeAdapter(pydantic.StrictInt),
+                adapter=TypeAdapter(StrictInt),
             ),
         ),
         record=Parameters,
