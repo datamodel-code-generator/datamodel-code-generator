@@ -3326,7 +3326,7 @@ given as a multipart file part is read into memory for its attempt, since HTTPX2
 | Input | Calls | How it is read | Framing | Sent again |
 | --- | --- | --- | --- | --- |
 | `bytes` | sync, async | Sent as given. | `Content-Length` | Yes |
-| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
+| Binary file object with a synchronous `read` | sync, async | `read` in chunks of at most 64 KiB from its position at call entry, up to the length measured there when it can seek, else until it returns no bytes. | `Content-Length` when it can `tell` and `seek`, else chunked | Yes after seeking back; no when it cannot seek |
 | `os.PathLike` path such as `Path` | sync, async | Opened in binary mode when the body is first sent, read like a file, closed when the call ends. | `Content-Length`; chunked when its file cannot seek, such as a FIFO | Yes; no when its file cannot seek |
 | Iterable of `bytes` | sync, async | Iterated once; each item is sent as it is yielded. | Chunked | No |
 | Async file object whose `read` is a coroutine function, such as an `anyio` or `aiofiles` file | async | `await read(65536)` from its current position until it returns no bytes, never line by line. | Chunked | No |
@@ -3338,9 +3338,10 @@ before anything is sent; the underlying `OSError` or `ValueError` is the `cause`
 binary mode. An async file object is not inspected before it is read: one opened in text mode or already closed fails
 while the request is being sent, as `APIConnectionError` with that failure as `cause`.
 
-A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. The call sends
-the bytes between the position and the end it measured at call entry, also when the file grows afterwards. A path
-the call opened is closed when the call ends; if that close fails, the failure is attached to an error already
+A file object stays open and belongs to the caller: the call leaves it wherever the last read ended. From a seekable
+file the call sends the bytes between the position and the end it measured at call entry, also when the file grows
+afterward; an async file or a file that cannot seek is read until it returns no bytes. A path the call opened is
+closed when the call ends; if that close fails, the failure is attached to an error already
 propagating, and otherwise raises `SDKError` with the reason `cleanup_failed`.
 
 Sync calls do all file I/O on the calling thread. In async calls, where the file I/O runs depends on who opened the
@@ -3412,7 +3413,7 @@ file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as
 `Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
 same-host `http` to `https` upgrade, and keeps every other header. Every hop
 consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
-sent again.
+sent again, as is a failure an injected client's response event hook raises.
 
 A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
 never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to

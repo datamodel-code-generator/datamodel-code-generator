@@ -14,7 +14,7 @@ copied runtime
   client/auth_policy.py: 660
   client/bodies.py: 230
   client/body_sources.py: 168
-  client/client.py: 2856
+  client/client.py: 2887
   client/codecs.py: 95
   client/compression.py: 104
   client/errors.py: 725
@@ -76,7 +76,7 @@ copied runtime
   protocols/websocket_native.py: 507
   protocols/websocket_types.py: 220
   protocols/writes.py: 288
-total 69 modules, 26952 lines
+total 69 modules, 26983 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

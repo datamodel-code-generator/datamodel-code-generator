@@ -6,14 +6,14 @@ import importlib
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
+import httpx2
+
 from tests.data.python.client_pagination import item_id
 from tests.data.python.client_runtime import Exchange, argument, describe, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
     from types import ModuleType
-
-    import httpx2
 
 _PAST: Final = "Sun, 06 Nov 1994 08:49:37 GMT"
 _FUTURE: Final = "Fri, 01 Jan 2100 00:00:00 GMT"
@@ -190,8 +190,36 @@ def caching(package: ModuleType, lines: list[str]) -> None:
         _unstored(cache, api, exchange, lines)
         _directives(cache, api, exchange, lines)
         _validators(cache, api, exchange, lines)
+    _challenged(cache, lines)
     run(lambda: _async_caching(cache, lines))
     _clocked(cache, lines)
+
+
+class _ChallengeAuth(httpx2.Auth):
+    """A challenge-response Auth, as digest is, that answers a 401 with a fixed credential."""
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Send the request again with the answer when the server challenges it."""
+        if (yield request).status_code == 401:
+            request.headers["Authorization"] = "Challenge answered"
+            yield request
+
+
+def _challenged(cache: Caching, lines: list[str]) -> None:
+    """Store and revalidate an entry an injected client's challenge Auth answered after a 401, without a redirect."""
+    exchange = Exchange(lines)
+    challenge = raw_response(401, **{"www-authenticate": 'Challenge realm="api"'})
+    store = cache.protocols.MemoryCacheStore()
+    with (
+        exchange.client(auth=_ChallengeAuth()) as native,
+        cache.package.Client(http_client=native, options=cache.stores(users__profile=store)) as api,
+    ):
+        helper, thirty = api.protocols.users.profile, cache.user_id(30)
+        exchange.respond(
+            challenge, user(30, etag='"h"', **{"cache-control": "max-age=0"}), challenge, not_modified(etag='"h"')
+        )
+        fetched(lines, "stored after an auth challenge", lambda: helper.fetch(user_id=thirty))
+        fetched(lines, "304 after an auth challenge", lambda: helper.fetch(user_id=thirty))
 
 
 class _Clock:

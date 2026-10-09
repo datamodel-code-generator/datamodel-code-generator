@@ -196,8 +196,20 @@ def _refused_hook(request: httpx2.Request) -> None:
     raise httpx2.ConnectError(msg)
 
 
+def _failed_hook(response: httpx2.Response) -> None:
+    msg = "failed in the response hook"
+    raise (
+        httpx2.ConnectError(msg, request=response.request) if response.status_code == 201 else httpx2.ConnectError(msg)
+    )
+
+
+class _AsyncFailedHook:
+    async def __call__(self, response: httpx2.Response) -> None:
+        _failed_hook(response)
+
+
 def _hooked(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Classify a failure an injected client's own request hook raises, before anything was sent."""
+    """Classify a failure an injected client's own hook raises: before anything was sent, or after an answer."""
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
@@ -207,6 +219,21 @@ def _hooked(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         ) as api,
     ):
         record(lines, "native request hook failure", lambda: outcome(api.retry.with_response.get_safe))
+    with (
+        exchange.client(event_hooks={"response": [_failed_hook]}) as native,
+        package.Client(
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
+        for label, status in (("without a request", 200), ("of the answered request", 201)):
+            exchange.respond(_response(status), _response(status))
+            record(
+                lines,
+                f"native response hook failure {label}",
+                lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=b"once")),
+            )
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
 
 
 def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -292,6 +319,21 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         await arecord(lines, "async seekable POST307", lambda: api.retry.with_response.post_unsafe(body=file))
         lines.append(f"    unused={len(exchange.responders)}")
         exchange.responders.clear()
+    async with (
+        exchange.async_client(event_hooks={"response": [_AsyncFailedHook()]}) as native,
+        package.AsyncClient(
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
+        for label, status in (("without a request", 200), ("of the answered request", 201)):
+            exchange.respond(_response(status), _response(status))
+            try:
+                await api.retry.with_response.post_unsafe(body=b"once")
+            except Exception as error:  # noqa: BLE001
+                state = getattr(error, "delivery_state", None)
+                lines.append(f"  async native response hook failure {label} ! {type(error).__name__} {state}")
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
 
 
 def redirects(package: ModuleType, lines: list[str]) -> None:

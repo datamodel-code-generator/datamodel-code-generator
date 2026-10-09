@@ -139,6 +139,14 @@
   refused redirect after an answered idempotent POST = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
     unused=1
   native request hook failure = ('APIConnectionError', <DeliveryState.NOT_SENT: 'NOT_SENT'>, None, None, 1, 'ConnectError')
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
+  native response hook failure without a request = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+    unused=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
+  native response hook failure of the answered request = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1, x-client: kept] b''
   > GET https://other.example.com/next
@@ -174,3 +182,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 13] b'seekable body'
   async seekable POST307 = Response(FieldUnsafePostResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
     unused=0
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
+  async native response hook failure without a request ! APIConnectionError DeliveryState.RESPONSE_STARTED
+    unused=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 4] b'once'
+  async native response hook failure of the answered request ! APIConnectionError DeliveryState.RESPONSE_STARTED
+    unused=1

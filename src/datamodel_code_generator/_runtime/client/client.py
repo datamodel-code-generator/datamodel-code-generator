@@ -663,18 +663,41 @@ class _AsyncReplayed:
             yield chunk
 
 
-def _answered(error: Exception, outgoing: httpx2.Request) -> bool:
+def _hook_code(hook: Callable[..., object]) -> object:
+    """Return the code a hook runs, a partial's or a callable object's `__call__` included."""
+    target = hook.func if isinstance(hook, partial) else hook
+    return getattr(target, "__code__", None) or getattr(type(target).__call__, "__code__", None)
+
+
+def _in_hook(error: Exception, hooks: list[Callable[..., object]]) -> bool:
+    """Return whether a failure was raised while one of the hooks ran."""
+    codes = {_hook_code(hook) for hook in hooks}
+    trace = error.__traceback__
+    while trace is not None:
+        if trace.tb_frame.f_code in codes:
+            return True
+        trace = trace.tb_next
+    return False
+
+
+def _answered(error: Exception, outgoing: httpx2.Request, hooks: list[Callable[..., object]]) -> bool:
     """Return whether a native failure came from a later request, a redirect or an Auth flow's, so one was answered.
 
-    A one-shot body asked for again can only follow a redirect, so its StreamConsumed also means one was answered.
+    A one-shot body asked for again can only follow a redirect, so its StreamConsumed also means one was answered, as
+    does a failure the HTTP client's own response hooks raise, which run only once a response arrived.
     """
-    if isinstance(error, httpx2.StreamConsumed):
+    if isinstance(error, httpx2.StreamConsumed) or (hooks and _in_hook(error, hooks)):
         return True
     try:
         failed = error.request if isinstance(error, httpx2.RequestError) else outgoing
     except RuntimeError:
         return False
     return failed is not outgoing
+
+
+def _redirects(response: httpx2.Response) -> int:
+    """Count the redirects HTTPX2 followed, leaving out the responses an Auth flow answered, such as a challenge."""
+    return sum(hop.has_redirect_location for hop in response.history)
 
 
 def _token_unreceived(response: httpx2.Response) -> bool:
@@ -2040,7 +2063,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 native_failure = (
                     error
                     if opener is not None and isinstance(error, SDKError)
-                    else native_error(error, send_started=True, response_started=_answered(error, outgoing))
+                    else native_error(
+                        error,
+                        send_started=True,
+                        response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
+                    )
                 )
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
@@ -2062,7 +2089,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             response = client.send(outgoing, stream=True)
         else:
             response = client.send(outgoing, stream=True, follow_redirects=follow)
-        call.redirects_followed = len(response.history)
+        call.redirects_followed = _redirects(response)
         call.token_unreceived = _token_unreceived(response)
         return response
 
@@ -2732,7 +2759,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 native_failure = (
                     error
                     if opener is not None and isinstance(error, SDKError)
-                    else native_error(error, send_started=True, response_started=_answered(error, outgoing))
+                    else native_error(
+                        error,
+                        send_started=True,
+                        response_started=_answered(error, outgoing, self._shared.http_client.event_hooks["response"]),
+                    )
                 )
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
@@ -2754,7 +2785,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             response = await client.send(outgoing, stream=True)
         else:
             response = await client.send(outgoing, stream=True, follow_redirects=follow)
-        call.redirects_followed = len(response.history)
+        call.redirects_followed = _redirects(response)
         call.token_unreceived = _token_unreceived(response)
         return response
 
