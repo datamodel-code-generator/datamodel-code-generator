@@ -3641,47 +3641,36 @@ active streams; each stream releases its own response and limiter permit.
         return f"""
 ## WebSocket sessions
 
-A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's `APIStatusError`. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
+A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, sent
+through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's transport,
+proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response raises the
+operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
 
-- `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
-  `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
-  `WebSocketConnection`, `AsyncWebSocketConnection`, `WebSocketOpenRequest`, and `WSFrame`
+- `{package}.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
 - `{package}.options`: `SessionOptions` and `ProtocolClientOptions`
 
 | Limit | Effective default |
 |---|---|
-| open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
+| open timeout | 5 seconds, also capped by the connect, read, write, and pool timeouts and the deadline; None removes it |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB, decompressed |
-| received frames buffered before reading pauses | 16 |
-| send timeout | 30 seconds, waiting for earlier sends included; None removes it |
+| message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| close timeout | 5 seconds |
 | session total timeout | None |
 
-The connection and the handshake's limiter permit belong to the session until it closes or fails; closing the client
-leaves an open session to its owner. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`;
-sends go one at a time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a
-cancelled send or ping fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind
-the helper declares; one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one
-over the size limit raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than
-the idle timeout raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError`
-with its code and reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises
-`APITimeoutError` and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`,
-closes the session, and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is
-checked before the write starts, and a started write runs until it completes or the connection fails. Sessions never
-reconnect. `WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
-Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
-by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
-policy.
-
-`ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
-opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
-context, an HTTP or HTTPS proxy, and whether environment proxies apply; both reach a borrowed connector too. Closing a
-session sends the code and reason given, 1000 by default, and drops the connection when the closing handshake fails.
+The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
+client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
+and a second one raises `ConcurrentReceiveError`; HTTPX2 writes sends one at a time beside it. Cancelling an asyncio
+`receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON coded by the helper's schema,
+UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode raises `StreamDecodeError` and
+closes the connection with 1002, and one over the size limit raises `ProtocolSizeError` after HTTPX2 closed the
+connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` and closes with 1001.
+A closure by the server raises `WebSocketClosedError` with its code and reason, is answered with the same code, and
+ends iteration when it was normal. A send or ping on a connection that is already closing raises `WebSocketClosedError`
+without a code; a send that may have reached the server raises `DeliveryUnknownError`, closes the session, and is never
+sent again. Sessions never reconnect. Received handshake refusals are terminal, including redirects and 401s;
+credentials are never refreshed or invalidated by a refused upgrade. Only a transport failure proven `NOT_SENT` before
+handover may use the call's existing retry policy. Closing a session sends the code and reason given, 1000 by default.
 """
 
     @staticmethod

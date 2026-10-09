@@ -938,5 +938,5 @@ async def aconnect_socket(  # noqa: PLR0913
         accept=partial(_negotiated, plan.subprotocols),
     )
     opened = AsyncWebSocketSession(plan, limits, session, response, call, upgraded)
-    await opened._start()  # noqa: SLF001 - The connect owns the session it starts.
+    await opened._start()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return opened

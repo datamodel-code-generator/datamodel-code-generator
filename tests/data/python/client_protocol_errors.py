@@ -29,8 +29,6 @@ _CLASSES: Final = (
     "ConcurrentReceiveError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
-    "WebSocketProxyError",
-    "HandshakeResponse",
     "DeliveryUnknownError",
 )
 
@@ -90,16 +88,6 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
         ("ConcurrentReceiveError", {}),
         ("WebSocketClosedError", {"code": 4001, "reason": secret, "clean": False}),
         ("WebSocketHandshakeError", {"condition": "negotiation", "delivery_state": errors.DeliveryState.RESPONSE_STARTED}),
-        ("WebSocketProxyError", {"proxy_status_code": 407}),
-        (
-            "HandshakeResponse",
-            {
-                "status_code": 503,
-                "headers": responses.HeadersView((("retry-after", secret),)),
-                "body_prefix": secret.encode(),
-                "truncated": False,
-            },
-        ),
         (
             "DeliveryUnknownError",
             {"delivery_state": errors.DeliveryState.MAYBE_SENT, "resume_state": resume, "message_id": secret},
@@ -357,14 +345,7 @@ def _rejections(
             condition="tls", delivery_state=errors.DeliveryState.RESPONSE_STARTED
         )),
         ("handshake operation pointer", lambda: errors.WebSocketHandshakeError(
-            condition="upgrade", delivery_state=errors.DeliveryState.RESPONSE_STARTED, operation=f"/{secret}"
-        )),
-        ("proxy status", lambda: errors.WebSocketProxyError(proxy_status_code=99)),
-        ("handshake response headers", lambda: errors.HandshakeResponse(
-            status_code=503, headers={}, body_prefix=b"", truncated=False
-        )),
-        ("handshake response prefix", lambda: errors.HandshakeResponse(
-            status_code=503, headers=responses.HeadersView(()), body_prefix=b"x" * 65537, truncated=False
+            condition="negotiation", delivery_state=errors.DeliveryState.RESPONSE_STARTED, operation=f"/{secret}"
         )),
         ("delivery unknown not sent", lambda: errors.DeliveryUnknownError(delivery_state=errors.DeliveryState.NOT_SENT)),
         ("context helper", lambda: errors.ProtocolStateError(state="s", action="a", helper_id=1)),

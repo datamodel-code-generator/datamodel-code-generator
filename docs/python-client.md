@@ -375,10 +375,8 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
-| `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
-| | `close_timeout` | `5` seconds | Positive duration |
-| | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
-| | `compression` | `None` | `"deflate"` or `None` |
+| `WSOptions` | `open_timeout`, `idle_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
+| | `max_message_bytes` | `1048576` | Positive integer |
 
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
@@ -418,8 +416,6 @@ client = Client(options=options)
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
 | `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions`, default `UNSET` | Kind-specific options of that helper |
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
-| `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
-| `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -451,9 +447,7 @@ Invalid field values raise `ValueError`.
 | `CacheValidatorConflictError` | `ConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `reason` is always `binding_mismatch` |
 | `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
 | `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
-| `WebSocketHandshakeError` | `APIConnectionError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
-| `WebSocketProxyError` | `APIConnectionError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
-| `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
+| `WebSocketHandshakeError` | `APIConnectionError` | `condition: Literal['negotiation']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 | `NonResumableSourceError` | `ConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `reason` `wrong_capability` |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` or `resume_state` |
@@ -2116,30 +2110,32 @@ is sent as compact UTF-8 JSON and received through the schema's codec, `codec: u
 `codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
 bytes, and only JSON messages may choose. `S` is the send schema's argument type, its model type `T`, or `str` or
 `bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
-subprotocols in order (`[]` by default), and `compression` (`false` by default) permits
-`WSOptions(compression="deflate")`.
+subprotocols in order (`[]` by default). `compression` is still accepted and has no effect: HTTPX2 WebSockets do not
+negotiate `permessage-deflate`.
 
-`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, `WSOptions`, and `WebSocketTransportOptions` are
-imported from `pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. A package without WebSocket helpers
-never imports the WebSocket library.
+`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, and `WSOptions` are imported from
+`pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. Sessions run on `httpx2.websockets`, so generation
+prints `httpx2[ws]` among the packages to add for a package with WebSocket helpers; other packages never import it.
 
 ### Handshakes
 
-The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline. Only a
-101 response whose headers validate opens the session: any other response is read up to `max_error_body_bytes` and
-raises the `APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an
-undeclared status, so 101 need not be declared. Received refusals are terminal, including redirects and 401s; a refused
-upgrade never invalidates or refreshes credentials. Only an initial transport failure proven `NOT_SENT` before session
-handover may use the call's existing retry policy. A handshake that may have reached the server is never sent again.
+The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline, sent as
+a GET with the upgrade headers through the client's HTTP client: its transport, proxy, TLS, and `event_hooks` apply
+as to any call. Only a 101 response whose subprotocol the helper offered opens the session; HTTPX2 checks nothing else
+of it, as its own WebSocket client does. Any other response is read up to `max_error_body_bytes` and raises the
+`APIStatusError` subclass of its status, or `APIStatusError` with the reason `unexpected_status` for an undeclared
+status, so 101 need not be declared. Received refusals are terminal, including redirects, which a handshake never
+follows, and 401s; a refused upgrade never invalidates or refreshes credentials. Only an initial transport failure
+proven `NOT_SENT` before session handover may use the call's existing retry policy. A handshake that may have reached
+the server is never sent again.
 
-The handshake's limiter permit is held for the whole session and released when it closes or fails. URLs keep their
-`https` or `http` server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one
-of them, or `connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the
-selected one and `session.response` the 101 response. Credentials are sent as the operation's security declares,
-only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
-`Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError`
-with the reason `managed` before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and
-the session's end emits `stream_end`.
+The handshake's limiter permit is held for the whole session and released when it closes or fails. When the helper
+offers subprotocols, the server must select one of them, or `connect` raises `WebSocketHandshakeError` with the
+condition `negotiation`; `session.subprotocol` is the selected one and `session.response` the 101 response.
+Credentials are sent as the operation's security declares, only to the server's origin or the security context's
+allowed origins. Headers the handshake manages, such as `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through
+request options or parameters raise `ConfigurationError` with the reason `managed` before anything is sent. The
+handshake's hooks end with the call outcome `handed_off`, and the session's end emits `stream_end`.
 
 ### Sessions
 
@@ -2148,67 +2144,49 @@ the session's end emits `stream_end`.
 | `send(value)` | Encodes one message and sends it as one message of the declared frame |
 | `receive()` | Returns the next `Message[R]`: `data`, `frame` (`text` or `binary`), `sequence` from 1, and `raw` bytes |
 | Iteration | Yields messages until the server closes normally |
-| `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
+| `ping(payload=b"")` | Sends a ping of at most 125 bytes, a random one when empty, and returns a `PingReceipt` with the pong's `latency` in seconds |
 | `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
 | `with`, `async with` | Closes the session on exit |
 | `progress` | The session's `messages_sent` and `messages_received` |
 
-The session owns the connection until it closes or fails; closing the client leaves an open session to its owner.
-One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
-sends go one at a time in arrival order. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves
-the session usable, since whole messages are read; a cancelled `send` or `ping` fails the session, since a message may
-be half written. A received message of another frame kind, or one that does not decode, raises
-`StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's closure
-raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for a normal closure that alone
-ends iteration; after it, `receive`, `send`, and `ping` raise it again. After any other failure, every step raises
-`ProtocolStateError`, as it does after `close()`. Representations
-never show messages, URLs, headers, or close reasons.
+An HTTPX2 `WebSocketSession` or `AsyncWebSocketSession` carries the connection: it reads in the background, answers
+pings, and sends keepalive pings. The session owns it until it closes or fails, but the connection belongs to the HTTP
+client's pool: closing the client also closes the connections of its open sessions, whose next step then fails. One
+`receive` waits at a time: another raises `ConcurrentReceiveError`, while sends, which HTTPX2 writes one at a time, may
+run beside it. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves the session usable,
+since HTTPX2 queues whole messages; a cancelled `send` or `ping` fails the session, since a message may be half
+written. An `AsyncWebSocketSession` runs the HTTPX2 session in a task of its own, so any task may use and close it. A
+received message of another frame kind, or one that does not decode, raises `StreamDecodeError` with at most 64 KiB of
+it as `raw_prefix` and closes the connection with 1002. A server's closure raises `WebSocketClosedError` with its
+`code`, `reason`, and `clean`, which is true for 1000 and 1001, the closures that alone end iteration; the session
+answers it with the same code and reason, and after it `receive`, `send`, and `ping` raise it again. A `send` or `ping`
+on a connection that is already closing, before `receive` reported why, raises `WebSocketClosedError` without a code.
+After any other failure, every step raises `ProtocolStateError`, as it does after `close()`. Representations never
+show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 
 Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below. The session's optional total budget uses the client's `Clock`; native socket operations
-receive the remaining duration as their timeout:
+then the default below. The session's optional total budget uses the client's `Clock`; native waits receive the
+remaining duration as their timeout:
 
 | Limit | Default | None |
 |---|---|---|
-| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
+| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, write, and pool timeouts and the deadline | No open limit |
 | `WSOptions.idle_timeout` | The native read timeout | No idle limit |
-| `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
-| `WSOptions.max_queue` | 16 frames: the high-water mark of received frames, above which reading pauses | Not allowed |
-| `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
-| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
-| `WSOptions.close_timeout` | 5 seconds | Not allowed |
+| `WSOptions.max_message_bytes` | 1 MiB per message, HTTPX2's `max_message_size_bytes` | Not allowed |
+| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each, HTTPX2's keepalive settings; `pong_timeout` also bounds `ping()` | No keepalive pings |
 | `SessionOptions.total_timeout` | None | No session budget |
 
-A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
-1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason `phase_timeout` and the
-phase `read` and closes with 1001, and a missed pong closes with 1011 and raises `WebSocketClosedError` with `clean`
-false. The session deadline bounds every wait and raises `APITimeoutError` with the reason `deadline_exceeded`. A send
-that sent nothing before its timeout raises `APITimeoutError` with the reason `phase_timeout` and the phase `write` and
-keeps the session open; one that may have reached the server raises
-`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A message is
-written whole: in both sessions, the send timeout bounds the wait for earlier sends and is checked before the write
-starts, and a write that started runs until it completes or the connection fails; in an `AsyncWebSocketSession` the
-session deadline also bounds the write, and a write it cuts short raises `DeliveryUnknownError`. A send to a connection
-the server closed raises `WebSocketClosedError`. Sessions never reconnect.
-`WSOptions(compression="deflate")` for a helper that does not permit it raises `ConfigurationError` with the reason
-`invalid_value`. Options of another type raise `ConfigurationError`.
-
-### Connectors and transports
-
-Without a connector, the client opens its connections with the `websockets` library, which a package with WebSocket
-helpers depends on, so generation prints it among the packages to add. `ProtocolClientOptions(websocket_connector=...)`
-borrows a `WebSocketConnector`, or an `AsyncWebSocketConnector` for `AsyncClient`, which is never closed: its `open`
-receives a `WebSocketOpenRequest` with the `ws` or `wss` URL, the headers, and the offered subprotocols, the attempt's
-context, the resolved `WSOptions`, and the resolved transport settings, and opens one connection or raises
-`HandshakeResponse` with a response other than 101, which the client turns into the call's result. A connector of the
-other kind raises `ConfigurationError` with the reason `wrong_capability` when the client is constructed.
-
-`websocket_transport=WebSocketTransportOptions(...)` sets the `ssl_context` of the server connection, an HTTP or HTTPS
-`proxy` URL, which the representation hides, the `proxy_ssl_context` of an HTTPS proxy, and `trust_env`, which lets
-environment proxies apply. A proxy that refuses or breaks the tunnel raises `WebSocketProxyError`; SOCKS proxies are
-not supported.
+A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after HTTPX2 closed the
+connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
+`phase_timeout` and the phase `read` and closes with 1001, as does a ping whose pong does not arrive within the pong
+timeout; another failure closes with 1011. A missed keepalive pong makes HTTPX2 close with 1011, and the next `receive` raises
+`APIConnectionError` with the phase `read`. The session deadline bounds every wait and raises `APITimeoutError` with
+the reason `deadline_exceeded`. Messages are written whole by HTTPX2, without a timeout of their own; a send that may
+have reached the server raises `DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is
+never sent again. Received messages wait in HTTPX2's queue until they are read. Sessions never reconnect. Options of
+another type raise `ConfigurationError`.
 
 ### WebSocket generation checks
 

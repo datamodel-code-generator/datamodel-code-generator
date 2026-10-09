@@ -126,20 +126,6 @@
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=WebSocketHandshakeError(operation_id='protocol', call_id='call-1', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') repr=WebSocketHandshakeError() secret=False progress shown=False
-  WebSocketProxyError: base=APIConnectionError sdk=True reason=web_socket_proxy_error
-    chain=['WebSocketProxyError', 'APIConnectionError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,phase,proxy_status_code,reason,retry_stop_reason,secondary_errors
-    context=True/True/True/True/True call=protocol/call-1/session-1
-    measurements=(1, 0.25, None)
-    hints=True/True/True retained=True progress copied=True
-    str=WebSocketProxyError(operation_id='protocol', call_id='call-1', delivery_state='NOT_SENT', phase='connect', proxy_status_code=407) repr=WebSocketProxyError() secret=False progress shown=False
-  HandshakeResponse: base=ProtocolError sdk=True reason=handshake_response
-    chain=['HandshakeResponse', 'ProtocolError', 'SDKError']
-    fields=attempt_count,body_prefix,call_id,cause,completed_result,delivery_state,elapsed,headers,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors,status_code,truncated
-    context=True/True/True/True/True call=protocol/call-1/session-1
-    measurements=(1, 0.25, None)
-    hints=True/True/True retained=True progress copied=True
-    str=HandshakeResponse(operation_id='protocol', call_id='call-1', status_code=503) repr=HandshakeResponse() secret=False progress shown=False
   DeliveryUnknownError: base=ProtocolError sdk=True reason=delivery_unknown_error
     chain=['DeliveryUnknownError', 'ProtocolError', 'SDKError']
     fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,message_id,operation,operation_id,parent_session_id,reason,resume_state,secondary_errors
@@ -236,9 +222,6 @@
   closed clean integer ! ValueError: clean must be a bool []
   handshake condition unknown ! ValueError: condition must be one of its declared values []
   handshake operation pointer ! ValueError: operation must be an OperationRef or None []
-  proxy status ! ValueError: proxy_status_code must be an HTTP status []
-  handshake response headers ! ValueError: headers must be a HeadersView []
-  handshake response prefix ! ValueError: body_prefix must be at most 65536 bytes []
   delivery unknown not sent ! ValueError: delivery_state must be MAYBE_SENT or RESPONSE_STARTED []
   context helper ! ValueError: helper_id must be a string or None []
   context measurements ! TypeError: ProtocolStateError.__init__() got an unexpected keyword argument 'attempt_count' []

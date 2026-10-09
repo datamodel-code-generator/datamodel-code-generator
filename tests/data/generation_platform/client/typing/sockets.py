@@ -12,8 +12,8 @@ from pets.protocols import (
     AsyncWebSocketSession,
     Message,
     PingReceipt,
+    ProtocolDefaults,
     WebSocketSession,
-    WebSocketTransportOptions,
     WSOptions,
 )
 from pets_models import (
@@ -37,7 +37,7 @@ def sockets(
     session = client.protocols.rooms.chat.connect(
         room=room,
         since=since,
-        ws_options=WSOptions(open_timeout=1, idle_timeout=None, compression="deflate"),
+        ws_options=WSOptions(open_timeout=1, idle_timeout=None, max_message_bytes=65536),
         options=RequestOptions(),
         session_options=SessionOptions(total_timeout=30),
     )
@@ -76,9 +76,11 @@ def failures(error: WebSocketClosedError, unknown: DeliveryUnknownError, busy: C
 
 
 def options() -> ClientOptions:
-    """Give a client WebSocket transport settings."""
+    """Give a client WebSocket helper defaults; transport settings are the HTTP client's."""
     return ClientOptions(
-        protocols=ProtocolClientOptions(websocket_transport=WebSocketTransportOptions(trust_env=True)),
+        protocols=ProtocolClientOptions(
+            defaults={"rooms.chat": ProtocolDefaults(options=WSOptions(ping_interval=None))}
+        ),
     )
 
 
