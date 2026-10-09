@@ -1,0 +1,95 @@
+# discriminator-copies typing.TypedDict
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet c = {'pet': {'kind': 'c', 'mane': True}, 'pets_by_name': {'a': {'kind': 'd'}}}
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet d = {'pet': {'kind': 'd'}, 'pets_by_name': {'b': {'kind': 'c', 'mane': False}}}
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Fish = {'pet': {'kind': 'Fish', 'fins': 2}}
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Bird = {'pet': {'kind': 'Bird'}}
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held null = {'pet': None}
+  > GET https://api.example.com/pets/list
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  listed pets = [{'kind': 'Cat'}, {'kind': 'Dog', 'bark': True}]
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 16] b'{"kind":"kitty"}'
+  pet kitty = {'kind': 'kitty'}
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 29] b'{"kind":"doggo","bark":false}'
+  pet doggo = {'kind': 'doggo', 'bark': False}
+  item without its count ! TypeError: create_item() missing required field arguments for application/json: 'count' []
+  > POST https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
+  item with its count = None
+# discriminator-copies dataclasses.dataclass
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet c = Child(pet=Lion(kind='c', mane=True), pets_by_name={'a': Wolf(kind='d')}, note=None)
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet d = Child(pet=Wolf(kind='d'), pets_by_name={'b': Lion(kind='c', mane=False)}, note=None)
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Fish = Holder(pet=Fish(kind='Fish', fins=2))
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Bird = Holder(pet=Bird(kind='Bird'))
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held null = Holder(pet=None)
+  > GET https://api.example.com/pets/list
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  listed pets = [Cat(kind='Cat', lives=None), Dog(kind='Dog', bark=True)]
+  pet kitty ! KeyError: 'kitty' []
+  pet doggo ! KeyError: 'doggo' []
+  item without its count ! TypeError: create_item() missing required field arguments for application/json: 'count' []
+  > POST https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
+  item with its count = None
+# discriminator-copies pydantic_v2.BaseModel
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet c = Child(pet=Lion(kind='c', mane=True), pets_by_name={'a': Wolf(kind='d')}, note=None)
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet d = Child(pet=Wolf(kind='d'), pets_by_name={'b': Lion(kind='c', mane=False)}, note=None)
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=1 validation error for Child
+pet
+  Input tag 'Lion' found using 'kind' does not match any of the expected tags: 'c', 'd' [type=union_tag_invalid, input_value={'kind': 'Lion'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Fish = Holder(pet=Fish(kind='Fish', fins=2))
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Bird = Holder(pet=Bird(kind='Bird'))
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held null = Holder(pet=None)
+  > GET https://api.example.com/pets/list
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  listed pets = FieldPetsListGetResponse(root=[FieldPetsListGetResponse1(root=Cat(kind='Cat', lives=None)), FieldPetsListGetResponse1(root=Dog(kind='Dog', bark=True))])
+  pet kitty ! ValidationError: 1 validation error for Pet
+  Input tag 'kitty' found using 'kind' does not match any of the expected tags: 'Cat', 'Dog' [type=union_tag_invalid, input_value={'kind': 'kitty'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid []
+  pet doggo ! ValidationError: 1 validation error for Pet
+  Input tag 'doggo' found using 'kind' does not match any of the expected tags: 'Cat', 'Dog' [type=union_tag_invalid, input_value={'kind': 'doggo', 'bark': False}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid []
+  item without its count ! TypeError: create_item() missing required field arguments for application/json: 'count' []
+  > POST https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
+  item with its count = None

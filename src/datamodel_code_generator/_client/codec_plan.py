@@ -217,11 +217,14 @@ class _Planner:
     def unsupported(self, value: FinalPythonType, schema: SourceLocation | None) -> None:
         self.report(f"The {self.backend} converter has no conversion for the {self.label(value)} type", schema)
 
-    def shape(self, value: FinalPythonType, schema: SourceLocation | None) -> Shape:  # ruff: ignore[too-many-return-statements, too-many-branches]
+    def shape(  # ruff: ignore[too-many-return-statements, too-many-branches]
+        self, value: FinalPythonType, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
+    ) -> Shape:
+        """Return a type's conversion; an alias passes the discriminator it declares to the union it stands for."""
         if isinstance(value, NoneType):
             return None
         if isinstance(value, UnionType):
-            return self.union(value, schema)
+            return self.union(value, schema, declared or value.discriminator)
         if isinstance(value, GeneratedSymbolType):
             symbol = self.symbols[value.symbol]
             if symbol.kind in {"alias", "root"}:
@@ -230,7 +233,7 @@ class _Planner:
                 root = self.root(symbol.id)
                 self.aliases.add(value.symbol)
                 try:
-                    return self.shape(root, schema)
+                    return self.shape(root, schema, declared or symbol.discriminator)
                 finally:
                     self.aliases.remove(value.symbol)
             if symbol.kind == "enum":
@@ -312,7 +315,7 @@ class _Planner:
             return _ALL_KINDS
         return _JSON_KINDS.get(name, ("string",))
 
-    def union(self, value: UnionType, schema: SourceLocation | None) -> Shape:
+    def union(self, value: UnionType, schema: SourceLocation | None, declared: UnionDiscriminator | None) -> Shape:
         members = tuple(dict.fromkeys(self.flattened(value.members)))
         shapes = [(member, self.shape(member, schema)) for member in members]
         if not any(shape is not None for _, shape in shapes):
@@ -341,7 +344,7 @@ class _Planner:
                 kinds[kind] = shape
         tag, tags = None, ()
         if len(models) > 1:
-            tag, tags = self.discriminator(models, value.discriminator)
+            tag, tags = self.discriminator(models, declared)
             kinds.pop("object", None)
         return Choice(tuple(kinds.items()), tag, tags)
 
@@ -351,7 +354,7 @@ class _Planner:
         """Return a union's discriminator property and the model of each of its values.
 
         A model takes the values of its literal field of that property, else the values mapped to it, else the last
-        segment of its schema's name.
+        segment of the path of the schema it is generated from.
         """
         if declared is None:
             self.report(
@@ -360,7 +363,7 @@ class _Planner:
             )
             return None, ()
         tag = declared.property_name
-        mapped: dict[SymbolId, list[str]] = {}
+        mapped: dict[str, list[str]] = {}
         for name, target in declared.mapping:
             mapped.setdefault(target, []).append(name)
         tags: dict[str, SymbolId] = {}
@@ -372,7 +375,8 @@ class _Planner:
                 if isinstance(type_, LiteralType)
                 else []
             )
-            values = values or mapped.get(symbol, []) or [self.symbols[symbol].schema_name]
+            source = self.symbols[symbol].source
+            values = values or mapped.get(source, []) or [source.rsplit("/", 1)[-1]]
             for name in values:
                 if name in tags and tags[name] != symbol:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
