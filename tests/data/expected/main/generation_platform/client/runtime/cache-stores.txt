@@ -105,12 +105,12 @@
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
     delete
-  refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
   > GET https://api.example.com/users/21
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
     delete
-  refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
   lookup failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('disk')] store_failed
     get key=32
@@ -249,12 +249,12 @@
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
     delete
-  async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
     delete
-  async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''

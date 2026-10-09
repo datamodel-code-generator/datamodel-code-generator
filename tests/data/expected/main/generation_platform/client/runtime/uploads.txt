@@ -131,7 +131,7 @@ a probe that never answers
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u10
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! APIConnectionError: APIConnectionError(operation_id='appendFile', reason='delivery_unknown') [operation_id='appendFile', cause=APIConnectionError()] delivery_unknown note='Secondary cleanup failure: APIConnectionError'
+  advance ! APIConnectionError: APIConnectionError(operation_id='appendFile', reason='delivery_unknown', cause='APIConnectionError') [operation_id='appendFile', cause=APIConnectionError()] delivery_unknown note='Secondary failure: APIConnectionError'
   > HEAD https://api.example.com/files/u10
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u10
@@ -267,7 +267,7 @@ a completion of unknown outcome
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u24/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown') [operation_id='completeFile', cause=APIConnectionError()] delivery_unknown
+  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown', cause='APIConnectionError') [operation_id='completeFile', cause=APIConnectionError()] delivery_unknown
   run again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   advance again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   resume ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
@@ -293,7 +293,7 @@ a completion a gateway answered with 502
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u26/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown') [operation_id='completeFile', cause=InternalServerError()] delivery_unknown
+  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown', cause='InternalServerError') [operation_id='completeFile', cause=InternalServerError()] delivery_unknown
   run again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   advance again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   resume ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
@@ -306,7 +306,7 @@ a completion a gateway answered with 504
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u27/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown') [operation_id='completeFile', cause=InternalServerError()] delivery_unknown
+  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown', cause='InternalServerError') [operation_id='completeFile', cause=InternalServerError()] delivery_unknown
   run again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   advance again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   resume ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
@@ -319,7 +319,7 @@ a completion the server answered with a body that does not decode
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u28/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown') [operation_id='completeFile', cause=DecodeError()] delivery_unknown
+  run ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown', cause='DecodeError') [operation_id='completeFile', cause=DecodeError()] delivery_unknown
   run again ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   resume ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
 a completion whose deadline passes while the server answers it, keeping its answer
@@ -611,7 +611,7 @@ async resume and refusals
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u53/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run with a completion of unknown outcome ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown') [operation_id='completeFile', cause=APIConnectionError()] delivery_unknown
+  run with a completion of unknown outcome ! APIConnectionError: APIConnectionError(operation_id='completeFile', reason='delivery_unknown', cause='APIConnectionError') [operation_id='completeFile', cause=APIConnectionError()] delivery_unknown
   resume it ! APIConnectionError: APIConnectionError(reason='delivery_unknown') [] delivery_unknown
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -619,7 +619,7 @@ async resume and refusals
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u54
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a probe that never answers ! APIConnectionError: APIConnectionError(operation_id='appendFile', reason='delivery_unknown') [operation_id='appendFile', cause=APIConnectionError()] delivery_unknown note='Secondary cleanup failure: APIConnectionError'
+  advance with a probe that never answers ! APIConnectionError: APIConnectionError(operation_id='appendFile', reason='delivery_unknown', cause='APIConnectionError') [operation_id='appendFile', cause=APIConnectionError()] delivery_unknown note='Secondary failure: APIConnectionError'
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u55

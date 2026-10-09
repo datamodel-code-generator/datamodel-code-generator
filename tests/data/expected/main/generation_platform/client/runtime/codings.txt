@@ -44,7 +44,7 @@
   coding bomb past the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=1048576, observed=2097152] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   coding chunked = 4000
@@ -79,7 +79,7 @@
   async coding truncated = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  async coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async coding corrupt ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] malformed_coding

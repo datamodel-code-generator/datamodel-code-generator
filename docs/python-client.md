@@ -3020,7 +3020,7 @@ a borrowed native client and borrowed providers retain the caller's lifetime. Bu
 and callers close their streaming responses with `with` or `async with`.
 
 Responses and files opened from paths are released in `finally`. A later release failure is named in
-the notes of the primary error (`Secondary cleanup failure: <ClassName>`); with no primary error, the release failure
+the notes of the primary error (`Secondary failure: <ClassName>`); with no primary error, the release failure
 propagates.
 
 ## Errors

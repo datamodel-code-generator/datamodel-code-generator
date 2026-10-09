@@ -48,10 +48,10 @@
   saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
+  saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
   saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -95,7 +95,7 @@
   capped gzip coded read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     passed [b'{"id":3,']
   capped broken read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
   > GET https://api.example.com/v1/pets/3
@@ -107,7 +107,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
+  streaming connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
   streaming options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -123,7 +123,7 @@
   streaming broken coding read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.closed') [operation_id='getPet', field_path=('response', 'read', 'closed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming broken read status ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  streaming broken read status ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   streaming broken read read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -219,10 +219,10 @@
   async saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
+  async saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
   async saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -242,7 +242,7 @@
   async capped identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streaming error status ! NotFoundError: Error code: 404 - missing [operation_id='getPet', status_code=404, body=b'missing', body_bytes=b'missing', truncated=False, cause=DecodeError()]
@@ -254,7 +254,7 @@
   async streaming broken coding status ! InternalServerError: Error code: 500 [operation_id='getPet', status_code=500, body=b'', body_bytes=b'', truncated=True, cause=DecodeError()]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async streaming broken read status ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async streaming broken read status ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async partly read status ! NotFoundError: Error code: 404 [operation_id='getPet', status_code=404, body=b'', body_bytes=b'', truncated=True]

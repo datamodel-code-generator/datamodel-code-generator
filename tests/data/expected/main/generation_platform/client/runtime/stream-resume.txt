@@ -124,13 +124,13 @@ failures that never reconnect
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events last-event-id='1'
-    ! APIConnectionError: APIConnectionError(operation_id='streamEvents') [operation_id='streamEvents', cause=IndexError('pop from empty list')]
+    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', cause='IndexError') [operation_id='streamEvents', cause=IndexError('pop from empty list')]
   > GET https://api.example.com/events last-event-id=None
   read timeout tied with the idle limit
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   > GET https://api.example.com/events last-event-id='1'
-    ! APIConnectionError: APIConnectionError(operation_id='streamEvents') [operation_id='streamEvents', cause=IndexError('pop from empty list')]
+    ! APIConnectionError: APIConnectionError(operation_id='streamEvents', cause='IndexError') [operation_id='streamEvents', cause=IndexError('pop from empty list')]
   > GET https://api.example.com/events last-event-id=None
   read failure classified as not retryable
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'

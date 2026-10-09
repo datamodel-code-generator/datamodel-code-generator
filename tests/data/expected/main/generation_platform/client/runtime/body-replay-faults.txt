@@ -3,17 +3,17 @@
     caller positionless file open=True
   rewind failure before send ! DecodeError: DecodeError(reason='body_not_replayable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=OSError('rewind failed')] body_not_replayable
     rewind failure caller file open=True
-  native file read failure ! APIConnectionError: APIConnectionError() [cause=OSError('read failed')]
+  native file read failure ! APIConnectionError: APIConnectionError(cause='OSError') [cause=OSError('read failed')]
     read failure caller file open=True
   invalid raw binary input ! DecodeError: DecodeError(reason='unencodable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   close failure after a typed result ! SDKError: SDKError(operation_id='replaceFile', reason='cleanup_failed') [operation_id='replaceFile', cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
   close failure after a raw result ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary cleanup failure: OSError'
-    secondary=['Secondary cleanup failure: OSError'] closed=[True]
-  close failures of two parts ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed note='Secondary cleanup failure: OSError'
-    secondary=['Secondary cleanup failure: OSError'] closed=[True, True]
+  close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary failure: OSError'
+    secondary=['Secondary failure: OSError'] closed=[True]
+  close failures of two parts ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed note='Secondary failure: OSError'
+    secondary=['Secondary failure: OSError'] closed=[True, True]
   close failure entering a stream ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
   async positionless file = b'ok'
@@ -24,12 +24,12 @@
     secondary=[] closed=[True]
   async close failure after a raw result ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
-  async close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary cleanup failure: OSError'
-    secondary=['Secondary cleanup failure: OSError'] closed=[True]
+  async close failure after a failed call ! InternalServerError: Error code: 500 - down [operation_id='replaceFile', status_code=500, body=b'down', body_bytes=b'down', truncated=False] note='Secondary failure: OSError'
+    secondary=['Secondary failure: OSError'] closed=[True]
   async close failure entering a stream ! SDKError: SDKError(reason='cleanup_failed') [cause=OSError('close failed')] cleanup_failed
     secondary=[] closed=[True]
   cancelled while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
   cancelled twice while a path is read: CancelledError notes [] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
-  cancelled while a path read fails: CancelledError notes ['Secondary cleanup failure: OSError'] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
+  cancelled while a path read fails: CancelledError notes ['Secondary failure: OSError'] events=['read entered', 'cancelled done=False closed=False', 'read left', 'closed']
   every task cancelled while a path is opened: CancelledError notes [] events=['open entered', 'cancelled done=False closed=False', 'open left', 'closed']
   cancelled while two paths are closed: CancelledError closed=[True, True] events=['close entered', 'cancelled done=False closed=[False, False]', 'closed', 'closed']

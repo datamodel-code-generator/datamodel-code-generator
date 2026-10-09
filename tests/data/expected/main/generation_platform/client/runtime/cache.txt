@@ -153,7 +153,7 @@ message
   bob key = network 43:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/43
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
-  alice key again ! APIConnectionError: APIConnectionError(operation_id='getUser') [operation_id='getUser', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  alice key again ! APIConnectionError: APIConnectionError(operation_id='getUser', cause='RemoteProtocolError') [operation_id='getUser', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   bob key again = fresh_cache 43:bob status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   > GET https://api.example.com/users/40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
