@@ -1,0 +1,82 @@
+# nested-models
+render
+  target=fastapi schema_version=1
+  write model server/models.py
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/pets.py
+  write target server/routers/store.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
+  13 runtime modules ['write']
+generate
+  returned None
+tree
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/models.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  13 runtime modules ['present']
+render
+  target=fastapi schema_version=1
+  unchanged model server/models.py
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  unchanged target server/routers/pets.py
+  unchanged target server/routers/store.py
+  unchanged target server/routers/untagged.py
+  unchanged target server/_generated/__init__.py
+  unchanged target server/_generated/contract.py
+  unchanged target server/errors.py
+  unchanged target server/services.py
+  unchanged target server/README.md
+  unchanged target server/py.typed
+  13 runtime modules ['unchanged']
+generate
+  returned None
+tree
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/models.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  13 runtime modules ['present']
+render
+  target=fastapi schema_version=1
+  unchanged model server/models.py
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  unchanged target server/routers/pets.py
+  unchanged target server/routers/untagged.py
+  unchanged target server/_generated/__init__.py
+  unchanged target server/_generated/contract.py
+  unchanged target server/errors.py
+  unchanged target server/services.py
+  unchanged target server/README.md
+  unchanged target server/py.typed
+  13 runtime modules ['unchanged']

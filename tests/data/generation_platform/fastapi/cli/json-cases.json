@@ -7,9 +7,34 @@
   "modular": {"source": "modular.yaml", "model": "models", "payload": "modular", "remove": ["models", "server/README.md", "server/services.py"], "check": "modular"},
   "absolute": {"source": "modular.yaml", "model": "models", "absolute": ["model", "server"], "payload": "modular"},
   "mixed-paths": {"source": "modular.yaml", "model": "models", "absolute": ["server"], "payload": "modular"},
-  "warning": {"source": "modular.yaml", "model": "models", "unowned": true, "payload": "modular"},
+  "leftover-manifest": {
+    "source": "modular.yaml",
+    "model": "models",
+    "write": {"server/.dcg-target-manifest.json": "{\"format\": 1}\n"},
+    "payload": "modular"
+  },
+  "foreign": {"package": true, "write": {"server/routers/__init__.py": "# Someone else's module.\n"}},
+  "warning": {"input": "callbacks.yaml", "warnings": "documentation-warning.txt"},
   "metadata-lock": {"source": "modular.yaml", "model": "models", "publish": ["--emit-model-metadata", "metadata.json", "--lockfile", "api.lock", "--update-lock"], "payload": "modular", "published": ["metadata.json", "api.lock"]},
   "latin-1": {"source": "inline.yaml", "encoding": "latin-1", "templates": true, "options": ["--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"], "payload": "latin-1"},
   "carriage-return-header": {"source": "inline.yaml", "options": ["--custom-file-header", "# first\r# second"], "payload": "carriage-return-header"},
-  "stale-owned": {"repeat": true, "options": ["--openapi-include-paths", "/pets"]}
+  "stale": {"repeat": true, "options": ["--openapi-include-paths", "/pets"], "stale": "stale"},
+  "models-in-package": {
+    "model": "server/models.py",
+    "options": ["--server-model-package", "server.models"],
+    "payload": "models-in-package",
+    "remove": ["server/models.py", "server/README.md", "server/services.py"],
+    "check": "models-in-package"
+  },
+  "package-in-models": {
+    "source": "modular.yaml",
+    "model": "models",
+    "server": "models/server",
+    "options": ["--server-package", "models.server", "--server-model-package", "models"],
+    "notice": "dependencies-models-server.txt",
+    "unvalidated": true,
+    "payload": "package-in-models",
+    "remove": ["models/pets.py", "models/server/README.md", "models/server/services.py"],
+    "check": "package-in-models"
+  }
 }

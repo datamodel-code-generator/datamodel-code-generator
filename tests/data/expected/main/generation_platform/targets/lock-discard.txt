@@ -1,7 +1,0 @@
-# publish-lock
-generate
-  OSError: No space left on device
-tree
-generate
-  OSError: No space left on device
-staged lock updates discarded: 2
