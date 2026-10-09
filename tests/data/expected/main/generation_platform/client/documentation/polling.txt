@@ -3,7 +3,6 @@
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/auth.py
@@ -300,7 +299,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
 - `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `client_options.py`, `errors.py`, `links.py`, `names.py`, `options.py`, `origins.py`, `pagination.py`, `polling.py`, `records.py`, `references.py`, `resume.py`, `values.py`, `writes.py`
 
@@ -358,7 +357,7 @@ Status errors retain the final available response. Buffered and streaming raw AP
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
 failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
+set an optional session total timeout. Close an abandoned stream to release its response.
 
 ## Idempotency and replayable input
 
@@ -390,6 +389,9 @@ call running in a thread before it closes the file.
 ## Redirects and transport construction
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
+Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
+attempt and followed redirect, its response hooks every response, and an exception they raise propagates as
+HTTPX2 raises it.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
@@ -456,11 +458,11 @@ retry counts and the original deadline still apply. Zero retries prevents recove
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
 Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive the final method/URL/raw query/headers after credential and body framing, before attempt hooks and
-sending. Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
+They receive the final method/URL/raw query/headers after credential and body framing, before sending.
+Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
 `signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
-Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
+Credential/signature values do not appear in repr. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
 their potentially sensitive messages.
 
@@ -479,10 +481,9 @@ start of the body. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
 key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
-finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
-cancellation propagates unchanged, and user callbacks are not shielded.
+Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
+new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
+caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## Polling sessions
 
