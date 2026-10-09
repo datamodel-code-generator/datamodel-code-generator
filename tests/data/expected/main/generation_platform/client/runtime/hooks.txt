@@ -46,20 +46,20 @@
     response hook: GET /v1/pets/3 200
   streamed get = b'{"id":3,"name":"fox"}'
     request hook: GET /v1/pets/3
-  get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
+  get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /items
-  raw request whose request hook fails ! APIConnectionError: APIConnectionError() [cause=RuntimeError('request hook failed')] attempts=1
+  raw request whose request hook fails ! APIConnectionError: APIConnectionError(cause='RuntimeError') [cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 503
-  get whose response hook fails on a 503 ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
+  get whose response hook fails on a 503 ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
     unanswered after it: 1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 200
-  stream whose response hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
+  stream whose response hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
   list of a trace its codec refuses ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
@@ -70,7 +70,7 @@
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')] attempts=3
+  get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')] attempts=3
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -85,6 +85,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 200
   raw get whose response close fails ! SDKError: SDKError(operation_id='getPet', reason='cleanup_failed') [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_failed
+    request hook: GET /v1/pets/3
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook: GET /v1/pets/3 200
+  get whose read breaks off and close fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('body broke off')] note='Secondary failure: SDKError'
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -109,7 +114,7 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 200
-  stream failing on reading it ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  stream failing on reading it ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -127,7 +132,9 @@
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')]
+  raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')]
+  stream closed unread whose close fails ! SDKError: SDKError(operation_id='getPet', reason='cleanup_failed') [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_failed
+  its block left after it = False
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -161,18 +168,18 @@
     response hook: GET /items 200
   async raw request = b'ok'
     request hook: GET /v1/pets/3
-  async get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
+  async get whose request hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('request hook failed')] attempts=1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 503
-  async get whose response hook fails on a 503 ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
+  async get whose response hook fails on a 503 ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
     unanswered after it: 1
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 200
-  async stream whose response hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
+  async stream whose response hook fails ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RuntimeError') [operation_id='getPet', cause=RuntimeError('response hook failed')] attempts=1
   async raw get of a pet its codec refuses ! DecodeError: DecodeError(operation_id='getPet', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
   async raw list of a trace its codec refuses ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
   async raw request to no URL ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='url') [field_path=('url',), cause=InvalidURL('Expected an absolute HTTP URL without user information')] invalid_url
@@ -185,7 +192,7 @@
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')]
+  async raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')]
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -214,7 +221,7 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
     response hook: GET /v1/pets/3 200
-  async stream failing on reading it ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async stream failing on reading it ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     request hook: GET /v1/pets/3
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

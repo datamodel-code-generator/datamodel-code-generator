@@ -180,7 +180,7 @@
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
@@ -544,7 +544,7 @@
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
@@ -908,7 +908,7 @@
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
@@ -1272,7 +1272,7 @@
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
@@ -1636,7 +1636,7 @@
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
   canonical cyclic ! ValueError: Circular reference detected []
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
-  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []

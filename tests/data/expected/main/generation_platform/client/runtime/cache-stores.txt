@@ -150,7 +150,7 @@
     get key=32
   > GET https://api.example.com/users/23
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response hook failure stores nothing ! APIConnectionError: APIConnectionError(operation_id='getUser') [operation_id='getUser', cause=RuntimeError('response hook failed')]
+  response hook failure stores nothing ! APIConnectionError: APIConnectionError(operation_id='getUser', cause='RuntimeError') [operation_id='getUser', cause=RuntimeError('response hook failed')]
     get key=32
   > GET https://api.example.com/users/23
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

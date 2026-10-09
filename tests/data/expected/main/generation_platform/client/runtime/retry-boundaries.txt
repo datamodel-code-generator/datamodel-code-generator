@@ -11,8 +11,8 @@
     queued=1
   terminal native interruption response hook = ('KeyboardInterrupt', True, ('first native terminal interruption',), ())
   terminal native interruption body = ('KeyboardInterrupt', True, ('first native terminal interruption',), ())
-  stream close interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary cleanup failure: APIConnectionError'], ['Secondary cleanup failure: APIConnectionError'])
-  stream close interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary cleanup failure: ValueError'], ['Secondary cleanup failure: ValueError'])
+  stream close interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary failure: APIConnectionError'], ['Secondary failure: APIConnectionError'])
+  stream close interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary failure: ValueError'], ['Secondary failure: ValueError'])
   async request hook failure first send = (('APIConnectionError', None, 1, ()), True, 1)
     events=[] queued=2
   async request hook failure retried send = (('APIConnectionError', None, 2, ()), True, 2)
@@ -21,7 +21,7 @@
   cancelled native sends = 1
   async terminal native interruption response hook = ('CancelledError', True, ('first native terminal interruption',), ())
   async terminal native interruption body = ('CancelledError', True, ('first native terminal interruption',), ())
-  async stream close interruption after a failed body = ('_Stop', True, ['Secondary cleanup failure: APIConnectionError'], ['Secondary cleanup failure: APIConnectionError'])
-  async stream close interruption after a failed block = ('_Stop', True, ['Secondary cleanup failure: ValueError'], ['Secondary cleanup failure: ValueError'])
+  async stream close interruption after a failed body = ('_Stop', True, ['Secondary failure: APIConnectionError'], ['Secondary failure: APIConnectionError'])
+  async stream close interruption after a failed block = ('_Stop', True, ['Secondary failure: ValueError'], ['Secondary failure: ValueError'])
   stream reuses its deadline through EOF = b'bounded stream'
   async missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(reason='unavailable', field_path='transport.http2') [field_path=('transport', 'http2'), cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] unavailable

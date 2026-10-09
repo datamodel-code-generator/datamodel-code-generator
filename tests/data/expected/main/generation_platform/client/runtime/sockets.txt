@@ -143,29 +143,29 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   borrowed client closed WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
     socketless 1 binary bytesb'hi' raw=b'hi'
-  socketless end ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=WebSocketNetworkError]
-  open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket', cause=ReadTimeout] phase_timeout
-  closed before a response ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=RemoteProtocolError]
-  malformed response ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=RemoteProtocolError]
+  socketless end ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='WebSocketNetworkError') [operation_id='feedSocket', cause=WebSocketNetworkError]
+  open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout', cause='ReadTimeout') [operation_id='feedSocket', cause=ReadTimeout] phase_timeout
+  closed before a response ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='RemoteProtocolError') [operation_id='feedSocket', cause=RemoteProtocolError]
+  malformed response ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='RemoteProtocolError') [operation_id='feedSocket', cause=RemoteProtocolError]
   missing upgrade = WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   wrong accept = WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   subprotocol not offered ! APIConnectionError: APIConnectionError(operation_id='feedSocket', reason='negotiation_failed') [operation_id='feedSocket'] negotiation_failed
   header line too long = WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   deadline during the open ! APITimeoutError reason=deadline_exceeded
-  refused connection retry=1 ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
-  refused connection retry=0 ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
-  untrusted certificate ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
+  refused connection retry=1 ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ConnectError') [operation_id='feedSocket', cause=ConnectError]
+  refused connection retry=0 ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ConnectError') [operation_id='feedSocket', cause=ConnectError]
+  untrusted certificate ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ConnectError') [operation_id='feedSocket', cause=ConnectError]
   peer hanging up during a ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket'] phase_timeout
-  peer hanging up during a whole send ! APIConnectionError: APIConnectionError(operation_id='feedSocket', reason='delivery_unknown') [operation_id='feedSocket', cause=WebSocketNetworkError] delivery_unknown
+  peer hanging up during a whole send ! APIConnectionError: APIConnectionError(operation_id='feedSocket', reason='delivery_unknown', cause='WebSocketNetworkError') [operation_id='feedSocket', cause=WebSocketNetworkError] delivery_unknown
   unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket'] phase_timeout
   after the unanswered ping ! ConfigurationError: ConfigurationError(operation_id='feedSocket', reason='invalid_state', field_path='receive.failed') [operation_id='feedSocket', field_path=('receive', 'failed')] invalid_state
-  unanswered keepalive ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=WebSocketNetworkError]
+  unanswered keepalive ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='WebSocketNetworkError') [operation_id='feedSocket', cause=WebSocketNetworkError]
   proxy 1 binary bytesb'\x00\x01' raw=b'\x00\x01'
     server GET /feed/socket [] | closed 1000 ''
   proxy requests ['CONNECT localhost:<port> HTTP/1.1']
-  refusing proxy ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ProxyError]
+  refusing proxy ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ProxyError') [operation_id='feedSocket', cause=ProxyError]
   refusing proxy requests ['CONNECT localhost:<port> HTTP/1.1']
-  garbled proxy ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=RemoteProtocolError]
+  garbled proxy ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='RemoteProtocolError') [operation_id='feedSocket', cause=RemoteProtocolError]
   garbled proxy requests ['CONNECT localhost:<port> HTTP/1.1']
   async connected 101 'chat.v2'
     1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
@@ -224,15 +224,15 @@
     server GET /feed/socket [] | closed 1000 ''
   async received before the client closed 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
   async client close with a session open = None
-  async receive after the client closed ! APIConnectionError: APIConnectionError(operation_id='roomSocket') [operation_id='roomSocket', cause=WebSocketNetworkError]
+  async receive after the client closed ! APIConnectionError: APIConnectionError(operation_id='roomSocket', cause='WebSocketNetworkError') [operation_id='roomSocket', cause=WebSocketNetworkError]
   async unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket'] phase_timeout
   async record failing HTTPX2's reader = AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
-  async record failing HTTPX2's reader ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ExceptionGroup]
+  async record failing HTTPX2's reader ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ExceptionGroup') [operation_id='feedSocket', cause=ExceptionGroup]
   async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async send cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async send after the cancelled send ! ConfigurationError: ConfigurationError(operation_id='feedSocket', reason='invalid_state', field_path='send.failed') [operation_id='feedSocket', field_path=('send', 'failed')] invalid_state
-  async open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket', cause=ReadTimeout] phase_timeout
-  async refused connection ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
+  async open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout', cause='ReadTimeout') [operation_id='feedSocket', cause=ReadTimeout] phase_timeout
+  async refused connection ! APIConnectionError: APIConnectionError(operation_id='feedSocket', cause='ConnectError') [operation_id='feedSocket', cause=ConnectError]
   async hooked normal end
     request hook GET /rooms/r1/socket
     response hook 101

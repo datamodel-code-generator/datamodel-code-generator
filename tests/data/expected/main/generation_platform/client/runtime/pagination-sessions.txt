@@ -89,7 +89,7 @@
   failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response hook failure ! APIConnectionError: APIConnectionError(operation_id='listUsers') [operation_id='listUsers', cause=RuntimeError('response hook failed on 200')]
+  response hook failure ! APIConnectionError: APIConnectionError(operation_id='listUsers', cause='RuntimeError') [operation_id='listUsers', cause=RuntimeError('response hook failed on 200')]
   after the hook failure ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

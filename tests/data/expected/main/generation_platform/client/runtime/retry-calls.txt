@@ -19,16 +19,16 @@
     events=[('request', 'GET', '/safe'), ('response', 503), ('request', 'GET', '/safe'), ('response', 503), ('request', 'GET', '/safe'), ('response', 503)] queued=0
   stop response hook = ('APIConnectionError', None, 1, ())
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  failed cleanup stops status retry = ('InternalServerError', None, 1, ('Secondary cleanup failure: SDKError',))
+  failed cleanup stops status retry = ('InternalServerError', None, 1, ('Secondary failure: SDKError',))
   failed cleanup count = 1
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   pre-send failure before call = (('APITimeoutError', 'phase_timeout', 0, ()), True, False, 1)
     events=[] queued=2
@@ -295,15 +295,15 @@
     events=[('request', 'GET', '/safe'), ('response', 503), ('request', 'GET', '/safe'), ('response', 503), ('request', 'GET', '/safe'), ('response', 503)] queued=0
   async stop response hook = ('APIConnectionError', None, 1, ())
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  async failed cleanup stops retry = ('InternalServerError', None, 1, ('Secondary cleanup failure: SDKError',))
+  async failed cleanup stops retry = ('InternalServerError', None, 1, ('Secondary failure: SDKError',))
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  async native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  async native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  async native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  async native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  async native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  async native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  async native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], ['original close note', 'Secondary cleanup failure: InternalServerError']), 1)
+  async native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   async wait native = ('CancelledError', ('retry wait interrupted',))
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
