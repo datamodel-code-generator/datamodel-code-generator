@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, NoReturn, cast
 
 from typing_extensions import TypeVar
@@ -88,11 +88,11 @@ class ResponseHeaders(Generic[T_co, M_co]):
         codec = branch.codec
         errors: tuple[type[Exception], ...] = (*codec.errors, *PARSE_ERRORS)
         try:
-            native_json = media_kind(branch.plan.content_media_type or "") == "json"
-            plan = replace(branch.plan, content_media_type="text/plain") if native_json else branch.plan
-            wire = decode_parameter(plan, RawParameter(location="header", fragments=fragments))
+            wire = decode_parameter(branch.plan, RawParameter(location="header", fragments=fragments))
             if wire is UNSET:
                 return branch.missing(info, self._operation_id, name)
-            return codec.decode(cast("str", wire).encode()) if native_json else codec.text(wire)
+            if media_kind(branch.plan.content_media_type or "") == "json":
+                return codec.decode(cast("str", wire).encode())
+            return codec.text(wire)
         except errors as error:
             raise _header_failure(info, self._operation_id, name, error) from None

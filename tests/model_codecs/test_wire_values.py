@@ -1,4 +1,4 @@
-"""Compare wire snapshots and JSON media against handwritten expectations."""
+"""Compare parameter styles, media types, and the runtime's imports against handwritten expectations."""
 
 from __future__ import annotations
 
@@ -7,28 +7,16 @@ from pathlib import Path
 from tests.conftest import assert_output
 from tests.data.python.model_codec_reports import (
     alias_hint_report,
-    json_media_report,
     media_report,
     parameter_decoding_report,
     parameter_encoding_report,
     runtime_import_report,
-    wire_value_report,
 )
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs"
 EXPECTED = DATA / "expected/main/generation_platform/codecs"
 RUNTIME = Path(__file__).parents[2] / "src/datamodel_code_generator/_runtime"
-
-
-def test_json_media_round_trips() -> None:
-    """Keep exact numbers, member order, and presence while rejecting ambiguous JSON bodies."""
-    assert_output(json_media_report(CODECS / "json-media.json"), EXPECTED / "json-media.txt")
-
-
-def test_wire_value_copies() -> None:
-    """Copy JSON-domain values independently and reject objects outside the wire domain."""
-    assert_output(wire_value_report(), EXPECTED / "wire-values.txt")
 
 
 def test_parameter_style_encoding() -> None:
@@ -42,12 +30,12 @@ def test_parameter_raw_decoding() -> None:
 
 
 def test_media_types_and_error_records() -> None:
-    """Normalize media identities and keep issue records finite, value-free, and identifier-coded."""
+    """Normalize media identities, classify their builtin forms, and refuse text outside its charset."""
     assert_output(media_report(CODECS / "media-types.json"), EXPECTED / "media-types.txt")
 
 
 def test_wire_alias_hints() -> None:
-    """Resolve the recursive JSON and wire aliases from another module through private import aliases."""
+    """Resolve the recursive JSON aliases from another module through private import aliases."""
     assert_output(alias_hint_report(), EXPECTED / "alias-hints.txt")
 
 

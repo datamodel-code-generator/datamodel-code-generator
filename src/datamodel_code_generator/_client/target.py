@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 from functools import partial
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from typing_extensions import TypeIs
 
@@ -46,7 +46,6 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
-from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
 from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -70,7 +69,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelFieldFacts,
@@ -432,4 +431,4 @@ def _projection(value: object) -> JSONValue:
         return [_projection(item) for item in value]
     if _is_mapping(value):
         return {str(key): _projection(item) for key, item in value.items()}
-    return checked_scalar(value)
+    return cast("JSONValue", value)

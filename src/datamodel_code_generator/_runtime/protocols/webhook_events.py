@@ -18,11 +18,6 @@ from ..client.errors import (
     ConfigurationError,
     is_sequence,
 )
-from ..model_codecs.errors import (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .records import BodySelector
@@ -65,11 +60,6 @@ _DEFAULTS: Final = ResolvedWebhookOptions(
     future_tolerance=30.0,
 )
 _OPTIONS: Final = tuple(item.name for item in fields(WebhookOptions))
-_DATA_ERRORS: Final = (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
 
 
 class _Failed(Enum):

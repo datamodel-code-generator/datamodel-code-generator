@@ -233,6 +233,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     unset = importlib.import_module(f"{package.__name__}.options").UNSET
     record(lines, "list missing", lambda: api.pets.list_pets(x_trace=unset))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
+    record(lines, "list lone surrogate", lambda: api.pets.list_pets(x_trace="x\ud800"))
 
 
 def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:

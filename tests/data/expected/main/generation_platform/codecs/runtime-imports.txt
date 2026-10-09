@@ -24,13 +24,12 @@ client/security.py: .urls, __future__, collections.abc, dataclasses, functools, 
 client/timing.py: .errors, __future__, anyio, collections.abc, dataclasses, math, secrets, time, typing
 client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
 model_codecs/__init__.py: -
-model_codecs/errors.py: __future__, dataclasses, typing
-model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses, decimal, json, json.encoder, re, typing, typing_extensions, urllib.parse
+model_codecs/errors.py: __future__
+model_codecs/media.py: .errors, __future__, collections.abc, dataclasses, decimal, json, re, typing, typing_extensions, urllib.parse
 model_codecs/native.py: .media, __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
-model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
+model_codecs/parameters.py: .errors, .media, .unset, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
 model_codecs/stdlib.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
 model_codecs/unset.py: __future__, typing_extensions
-model_codecs/wire.py: __future__, collections.abc, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions
 protocols/cache.py: ..client.errors, ..client.media, ..client.native, ..client.operations, ..client.options, ..client.responses, ..client.retry, .cache_stores, .caches, .client, .errors, .options, .records, .references, __future__, collections.abc, dataclasses, datetime, hashlib, httpx2, re, typing, typing_extensions
@@ -53,15 +52,15 @@ protocols/streams.py: ..client.errors, ..client.logical, ..client.native, ..clie
 protocols/uploads.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.timing, ..model_codecs.media, ..model_codecs.unset, .client, .errors, .options, .pagination, .records, .references, .resume, .sources, .values, .writes, __future__, base64, collections.abc, dataclasses, datetime, enum, hashlib, io, threading, types, typing, typing_extensions
 protocols/values.py: ..client.responses, ..client.retry, ..model_codecs.media, ..model_codecs.unset, .records, __future__, collections.abc, dataclasses, datetime, re, typing, typing_extensions
 protocols/verification.py: .signatures, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, re, typing, typing_extensions
-protocols/webhook_events.py: ..client.errors, ..client.operations, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .errors, .records, .values, .webhooks, __future__, collections.abc, dataclasses, datetime, enum, json, typing, typing_extensions
+protocols/webhook_events.py: ..client.errors, ..client.operations, ..model_codecs.media, ..model_codecs.unset, .errors, .records, .values, .webhooks, __future__, collections.abc, dataclasses, datetime, enum, json, typing, typing_extensions
 protocols/webhook_keys.py: ..client.errors, .records, __future__, re, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
 protocols/websocket.py: ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.timing, ..model_codecs.unset, .client, .errors, .options, .records, .references, __future__, anyio, base64, collections.abc, contextlib, dataclasses, enum, functools, httpcore2, httpx2, httpx2.websockets, os, socket, threading, time, types, typing, typing_extensions, wsproto.connection, wsproto.events, wsproto.utilities
 protocols/writes.py: ..client.operations, ..client.paths, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
 server/application.py: __future__, collections.abc, dataclasses, fastapi, fastapi.encoders, fastapi.exceptions, fastapi.params, inspect, starlette.concurrency, starlette.requests, starlette.responses, typing, typing_extensions
-server/errors.py: ..model_codecs.errors, ..model_codecs.wire, __future__, fastapi.exceptions, pydantic, typing
+server/errors.py: __future__, fastapi.exceptions, pydantic, typing
 server/openapi.py: __future__, collections.abc, fastapi, typing
-server/requests.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, __future__, collections.abc, copy, dataclasses, fastapi.exceptions, pydantic, re, starlette.datastructures, starlette.requests, typing, urllib.parse
+server/requests.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, __future__, collections.abc, copy, dataclasses, fastapi.exceptions, pydantic, re, starlette.datastructures, starlette.requests, typing, urllib.parse
 server/responses.py: __future__, collections.abc, dataclasses, fastapi.encoders, fastapi.exceptions, inspect, json, pydantic, starlette.responses, typing, typing_extensions
 server/security.py: __future__, collections.abc, fastapi, typing, typing_extensions

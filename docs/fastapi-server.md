@@ -411,6 +411,11 @@ spellings than FastAPI does for a parameter it reads itself: integers and number
 `2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
 `--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
 FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A parameter with JSON `content` is parsed by its model's `TypeAdapter.validate_json`, as a JSON body is, so pydantic's
+JSON rules apply: a number is read as a float first, so a `Decimal` field gets the float's value
+(`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and `Infinity` reach a `float` field; an object
+that repeats a member keeps the last value; and text that is not JSON, or JSON past pydantic's limits such as an
+integer of thousands of digits or deep nesting, answers `422` with `json_invalid`.
 A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 

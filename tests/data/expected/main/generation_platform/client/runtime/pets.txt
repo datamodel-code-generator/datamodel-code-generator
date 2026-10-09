@@ -103,6 +103,7 @@
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
   list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = Pet(id=2, name='dog', tag=None)
@@ -362,6 +363,7 @@
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
   list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = {'id': 2, 'name': 'dog'}

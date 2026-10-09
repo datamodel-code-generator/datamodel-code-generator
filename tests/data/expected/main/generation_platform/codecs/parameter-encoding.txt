@@ -50,7 +50,7 @@ cookie cookie cookie* object/string: Cookie: greeting=Hello%2C%20world!; code=42
 query q form* scalar/string: ?q=a/b?c%23d%26e%3Df%2Bg%5Bh%5D%41%25zz%2Ci => "a/b?c#d&e=f+g[h]A%zz,i"
 query q form array/string: ?q=a%2Cb,c/d => ["a,b","c/d"]
 path p simple scalar/string: /a%2Fb%2Cc%3Bd%3De:f@g!%2F => "a/b,c;d=e:f@g!/"
-query n form* array/number: ValueError A wire number must be finite
+query n form* array/number: ValueError Out of range float values are not JSON compliant
 query i form* array/integer: ?i=10&i=10&i=-3 => [10,10,-3]
 query b form* array/boolean: ?b=true&b=false => [true,false]
 query e form* array/string: ?e= => [""]
@@ -59,20 +59,23 @@ path m matrix scalar/string: /;m => ""
 path m matrix* object/string: /;a => {"a":""}
 path m label array/string: /.a.b,c => ["a.b","c"]
 query d deepObject* object/string: ?d%5Ba%5Db%5D=1&d%5B%5D=2 => {"a]b":"1","":"2"}
-path c application/json scalar/string: /%7B%22a%22%3A%5B1%2C%22x%20y%22%5D%7D => {"a":[1,"x y"]}
+path c application/json scalar/string: /%7B%22a%22%3A%5B1%2C%22x%20y%22%5D%7D => "{\"a\":[1,\"x y\"]}"
 query c text/plain scalar/string: ?c=a%20b%2Bc => "a b+c"
-header X-C application/vnd.api+json scalar/string: X-C: {"a":"\u00e9"} => {"a":"é"}
+header X-C application/vnd.api+json scalar/string: X-C: {"a":"\u00e9"} => "{\"a\":\"\\u00e9\"}"
 querystring qs application/x-www-form-urlencoded scalar/string: ?q=a+b%2Bc%7E*&tags=x&tags=y&n=3 => {"q":"a b+c~*","tags":["x","y"],"n":3}
-querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => {"a":[1,"x&y"]}
+querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => "{\"a\":[1,\"x&y\"]}"
 querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
+header X-C simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X-C application/json scalar/string: UnicodeEncodeError 'utf-8' codec can't encode character '\ud800' in position 6
+query c application/json scalar/string: UnicodeEncodeError 'utf-8' codec can't encode character '\ud800' in position 6
 query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
-query q form* array/string: TypeError sentinel is not a JSON value
-query q form* object/string: TypeError sentinel is not a JSON value
+query q form* array/string: ? => UNSET
+query q form* object/string: ? => UNSET
 path p simple array/string: ParameterEncodingError An empty array or object cannot fill a path segment
 path p label* object/string: ParameterEncodingError An empty array or object cannot fill a path segment
 query q form* array/string: ParameterEncodingError The value does not have the parameter's declared shape
-query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
-query q form* object/string: TypeError sentinel is not a JSON value
+query q form* array/string: ParameterEncodingError The list value does not have the string lexical kind
+query q form* object/string: ?b=1 => UNSET
 query q form* scalar/string: ?q=1 => "1"
 query q form* scalar/integer: ?q=1.5 => "1.5"
 query q form* scalar/boolean: ?q=1 => "1"
@@ -118,6 +121,4 @@ path text path p matrix array/string: ParameterEncodingError An empty array or o
 python query i form* scalar/integer: ?i=2 => 2
 python query n form* scalar/number: ?n=1.5 => 1.5
 python query n form* scalar/number: ?n=1e-07 => 1e-07
-python query i form* scalar/integer: CodecResourceLimitError An integer exceeds the interpreter's decimal conversion limit
-operation-present: ?q=a
-operation-missing: ParameterEncodingError The required query parameter 'q' has no value
+python query i form* scalar/integer: ParameterEncodingError An integer exceeds the interpreter's decimal conversion limit

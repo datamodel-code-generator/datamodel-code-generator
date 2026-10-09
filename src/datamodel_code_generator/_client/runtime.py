@@ -44,7 +44,6 @@ _CORE: Final = (
     "model_codecs/media.py",
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
-    "model_codecs/wire.py",
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",

@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Final, Generic, cast
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import issue, json_value, typed
+from ..model_codecs.errors import CodecError, MalformedError
+from ..model_codecs.media import json_value, typed
 from .media import charset
 from .operations import BodyFramingError, BodyValueError, Branch, InvalidBodyError, read_branch
 from .responses import HeadersView
@@ -217,7 +217,8 @@ def decode_parts(
     result: dict[str, JSONValue] = {}
     for part in parts:
         if part.name is None:
-            raise issue(code="multipart.undeclared", message="A form-data part has no name")
+            msg = "A form-data part has no name"
+            raise MalformedError(msg)
         plan = declared.get(part.name, additional)
         value = _part_value(part, "string" if plan is None else plan.kind)
         if part.name not in result:
@@ -227,7 +228,8 @@ def decode_parts(
         elif part.name not in declared:
             result[part.name] = value
         else:
-            raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
+            msg = "A form-data body repeats a single-valued member"
+            raise MalformedError(msg)
     return result
 
 
@@ -369,15 +371,11 @@ class PartsReader(Generic[T]):
         seen: set[str] = set()
         for part in _parts(body, info):
             if (name := part.name) is None or (plan := self._declared.get(name, self._additional)) is None:
-                raise InvalidBodyError(issue(code="multipart.undeclared", message="A form-data part is not declared"))
+                raise InvalidBodyError(MalformedError("A form-data part is not declared"))
             if plan.excluded:
-                raise BodyValueError(
-                    issue(code="multipart.excluded", message="A form-data part carries a member its direction excludes")
-                )
+                raise BodyValueError(MalformedError("A form-data part carries a member its direction excludes"))
             if name in seen and not plan.repeated:
-                raise InvalidBodyError(
-                    issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
-                )
+                raise InvalidBodyError(MalformedError("A form-data body repeats a single-valued member"))
             seen.add(name)
             try:
                 value = plan.read(part)
@@ -388,7 +386,7 @@ class PartsReader(Generic[T]):
             parts.append(DecodedPart(name, value, part.filename, part.content_type, part.headers))
         for plan in self._declared.values():
             if plan.required and plan.name not in seen:
-                raise BodyValueError(issue(code="multipart.missing", message="A required form-data member has no part"))
+                raise BodyValueError(MalformedError("A required form-data member has no part"))
         return MultipartData(tuple(parts))
 
 

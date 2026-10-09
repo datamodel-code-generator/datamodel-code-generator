@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._runtime.model_codecs.wire import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

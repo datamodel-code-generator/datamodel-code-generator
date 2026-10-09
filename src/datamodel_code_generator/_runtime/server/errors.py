@@ -1,4 +1,4 @@
-"""Turn wire syntax and model validation failures into the HTTP errors that generated adapters raise."""
+"""The HTTP errors and validation records that generated adapters raise for requests they cannot read or accept."""
 
 from __future__ import annotations
 
@@ -6,24 +6,9 @@ from typing import TYPE_CHECKING, Final
 
 from fastapi.exceptions import HTTPException
 
-from ..model_codecs.errors import CodecResourceLimitError, WireValidationError
-from ..model_codecs.wire import pointer_tokens
-
 if TYPE_CHECKING:
     from pydantic import ValidationError
 
-_MALFORMED: Final = frozenset({
-    "parameter.empty",
-    "parameter.encoding",
-    "parameter.object",
-    "parameter.percent",
-    "parameter.syntax",
-})
-_REASONS: Final = {
-    "text.encoding": ("media_invalid", "Invalid request body"),
-}
-REQUEST_ERRORS: Final = (WireValidationError, CodecResourceLimitError)
-_JSON: Final = ("json_invalid", "Invalid JSON body")
 _VALUE: Final = ("value_error", "Invalid value")
 
 Record = dict[str, object]
@@ -50,20 +35,9 @@ def invalid(location: tuple[str, ...]) -> Record:
     return {"type": kind, "loc": location, "msg": message}
 
 
-def _record(code: str, location: tuple[str | int, ...]) -> Record:
-    kind, message = _JSON if code.startswith("json.") else _REASONS.get(code, _VALUE)
-    return {"type": kind, "loc": location, "msg": message}
-
-
-def _located(pointer: str) -> tuple[str | int, ...]:
-    return tuple(int(token) if token.isascii() and token.isdecimal() else token for token in pointer_tokens(pointer))
-
-
-def wire_records(error: WireValidationError | CodecResourceLimitError, location: tuple[str, ...]) -> list[Record]:
-    """Return the 422 records of request data its wire syntax rejects, or raise the 400 of malformed data."""
-    if isinstance(error, WireValidationError) and not any(issue.code in _MALFORMED for issue in error.issues):
-        return [_record(issue.code, (*location, *_located(issue.instance_pointer))) for issue in error.issues]
-    raise malformed_request() from error
+def media_invalid(location: tuple[str, ...]) -> Record:
+    """Return the record of a body that is not text in its declared charset."""
+    return {"type": "media_invalid", "loc": location, "msg": "Invalid request body"}
 
 
 def model_records(error: ValidationError, location: tuple[str, ...]) -> list[Record]:
