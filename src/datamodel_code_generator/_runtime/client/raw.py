@@ -535,7 +535,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             self._end("failed", error)
             raise
@@ -567,7 +567,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             if not isinstance(error, GeneratorExit):
                 self._end("failed", error)
@@ -789,7 +789,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             await self._end("failed", error)
             raise
@@ -827,7 +827,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
-            raise failure from None
+            raise failure from failure.__cause__
         except BaseException as error:
             if not isinstance(error, GeneratorExit):
                 await self._end("failed", error)

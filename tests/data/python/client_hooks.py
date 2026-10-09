@@ -313,6 +313,8 @@ async def _async_calls(api: Any, exchange: Exchange, lines: list[str], pet: obje
     await _aobserved(
         lines, "async get retried after a refused connection", lambda: api.pets.with_response.get_pet(pet_id=pet)
     )
+    exchange.respond(raw_response(503), json_response(200, _PET))
+    await _aobserved(lines, "async get retried after a 503", lambda: api.pets.with_response.get_pet(pet_id=pet))
     exchange.respond(raw_response(302, Location="/v1/pets/3"), json_response(200, _PET))
     await _aobserved(lines, "async get following a redirect", lambda: api.pets.with_response.get_pet(pet_id=pet))
     exchange.respond(json_response(200, _PET), raw_response(200, b"ok", "text/plain"))
@@ -331,6 +333,7 @@ async def _async_calls(api: Any, exchange: Exchange, lines: list[str], pet: obje
 async def _async_failing_hooks(api: Any, exchange: Exchange, lines: list[str], observer: _Hooks, pet: object) -> None:
     observer.failing = "request"
     await _aobserved(lines, "async get whose request hook fails", lambda: api.pets.get_pet(pet_id=pet))
+    await _aobserved(lines, "async raw request whose request hook fails", lambda: api.request_raw("GET", _RAW))
     observer.failing = "response"
     exchange.respond(raw_response(503), json_response(200, _PET))
     await _aobserved(lines, "async get whose response hook fails on a 503", lambda: api.pets.get_pet(pet_id=pet))

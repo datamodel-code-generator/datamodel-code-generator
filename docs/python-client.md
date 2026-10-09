@@ -2985,9 +2985,9 @@ Each retry of this client starts at once, unless the server asks for a delay, wh
 The SDK adds no hook or limiter layer of its own. Instrument calls on the HTTP client: pass an `httpx2.Client` or
 `httpx2.AsyncClient` with `event_hooks`, or one whose transport wraps another, as `http_client`. A request hook runs
 before every attempt the SDK sends and before every redirect HTTPX2 follows, with the request's final method, URL and
-headers, credentials included; a response hook runs for every response once its headers arrived. An exception a hook
-raises propagates as HTTPX2 raises it: an ordinary one becomes `APIConnectionError` with it as `cause`, and since a
-response hook runs only once a response arrived, a call whose response hook failed is never sent again. Limit
+headers, credentials included; a response hook runs for every response once its headers arrived. An ordinary exception
+a hook raises ends the call as `APIConnectionError` with that exception as `cause`, and the call is not sent again,
+since the request may already have reached the server; an interruption propagates unchanged. Limit
 concurrency the same way, with the HTTP client's connection pool limits or an application semaphore around calls.
 
 ```python

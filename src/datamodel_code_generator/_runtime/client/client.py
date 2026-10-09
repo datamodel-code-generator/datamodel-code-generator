@@ -757,7 +757,8 @@ def _auth_work(call: Call) -> Generator[None, None, None]:
     try:
         yield
     except BaseException as error:  # noqa: BLE001
-        raise call.failure(error) from None
+        failure = call.failure(error)
+        raise failure from failure.__cause__
 
 
 @asynccontextmanager
@@ -765,7 +766,8 @@ async def _aauth_work(call: Call) -> AsyncGenerator[None, None]:
     try:
         yield
     except BaseException as error:  # noqa: BLE001
-        raise call.failure(error) from None
+        failure = call.failure(error)
+        raise failure from failure.__cause__
 
 
 def _credential_context(binding: BoundCredential | AsyncBoundCredential, call: Call) -> CredentialContext:
@@ -1412,7 +1414,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1474,7 +1476,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1540,7 +1542,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -1587,7 +1589,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             _close_body(source or entry, call, failure)
-            raise failure from None
+            raise failure from failure.__cause__
         try:
             _close_body(source or entry, call)
         except SDKError as error:
@@ -1627,10 +1629,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             except BaseException as error:  # noqa: BLE001
                 failure = self._exchange_failure(error, response, call, info)
                 if not is_transport(failure) or call.sends == sends_before:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
             self._wait_retry(planned, cast("BaseException", failure), call)
             call.restart()
 
@@ -1825,7 +1829,8 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             call.delivery_state = Delivery.RESPONSE_STARTED
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
-            raise self._failure(error, call) from None
+            failure = self._failure(error, call)
+            raise failure from failure.__cause__
 
     def _native_send(self, outgoing: httpx2.Request, call: Call) -> httpx2.Response:
         """Send through the HTTP client with its own auth, following redirects only as the call allows."""
@@ -2008,7 +2013,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -2070,7 +2075,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -2136,7 +2141,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -2183,7 +2188,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
-            raise failure from None
+            raise failure from failure.__cause__
         try:
             await _aclose_body(source or entry, call)
         except BaseException as error:
@@ -2223,10 +2228,12 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except BaseException as error:  # noqa: BLE001
                 failure = await self._exchange_failure(error, response, call, info)
                 if not is_transport(failure) or call.sends == sends_before:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
-                    raise call.stopped(failure) from None
+                    failure = call.stopped(failure)
+                    raise failure from failure.__cause__
             await self._wait_retry(planned, cast("BaseException", failure), call)
             call.restart()
 
@@ -2426,7 +2433,8 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.delivery_state = Delivery.RESPONSE_STARTED
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
-            raise self._failure(error, call) from None
+            failure = self._failure(error, call)
+            raise failure from failure.__cause__
 
     async def _native_send(self, outgoing: httpx2.Request, call: Call) -> httpx2.Response:
         """Send through the asyncio HTTP client with its own auth, following redirects only as the call allows."""

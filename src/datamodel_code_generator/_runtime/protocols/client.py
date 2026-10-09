@@ -525,7 +525,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, delivery_state(call))
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -566,7 +566,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -625,7 +625,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result, call, opened[-1]
 
@@ -682,7 +682,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, delivery_state(call))
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -723,7 +723,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
 
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result
 
@@ -777,6 +777,6 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
-            raise failure from None
+            raise failure from failure.__cause__
         else:
             return result, call, opened[-1]
