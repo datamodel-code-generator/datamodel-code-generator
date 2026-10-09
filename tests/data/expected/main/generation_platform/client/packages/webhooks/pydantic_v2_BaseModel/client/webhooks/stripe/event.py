@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Final
 
-from models import Message as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.signatures import HMAC_SHA256
@@ -28,7 +28,7 @@ from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptio
 __all__ = ["verify", "verify_async"]
 
 
-_PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
+_PLAN: Final[WebhookPlan[models.Message, HmacKey]] = WebhookPlan(
     helper_id='stripe.event',
     kind='stripe_style',
     algorithm=HMAC_SHA256,
@@ -46,7 +46,7 @@ def verify(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0]:
+) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
     Deliveries outside the timestamp window are rejected. Verification retains no
@@ -62,7 +62,7 @@ async def verify_async(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0]:
+) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
     Deliveries outside the timestamp window are rejected. Verification retains no

@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Address as _dcg_type_0
-from models import Draft as _dcg_type_1
+import models
 
 from ._generated import model_bindings
 from ._runtime.client.multipart import PartPlan
@@ -252,7 +251,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse]] = OperationPlan(
             parts_branch(
                 '200',
                 'multipart/form-data',
-                PartsReader[str | int | _dcg_type_0 | _dcg_type_1 | bytes](
+                PartsReader[str | int | models.Address | models.Draft | bytes](
                     (
                         value_part(
                             'title',

@@ -28,11 +28,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import CodecReason, WirePlan
     from datamodel_code_generator._target_contract import (
-        FinalPythonType,
         GeneratedTypeContractBatch,
         SourceLocation,
         SymbolId,
         TypeUseId,
+        TypeView,
         UnionDiscriminator,
     )
 
@@ -95,7 +95,7 @@ _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
 class Class:
     """An acquired model, enum or supported leaf type."""
 
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,7 +154,7 @@ class CodecUse:
 
     use: TypeUseId
     kind: CodecKind
-    type: FinalPythonType
+    type: TypeView
     shape: Shape = None
 
 
@@ -173,7 +173,7 @@ class ClientCodecs:
         return any(item.use == use for item in self.uses)
 
 
-def _name(value: FinalPythonType) -> str | None:
+def _name(value: TypeView) -> str | None:
     name = None
     if isinstance(value, BuiltinType):
         name = value.name
@@ -207,18 +207,18 @@ class _Planner:
     ) -> None:
         self.diagnostics[CodecDiagnostic(code, source or self.source, message)] = None
 
-    def label(self, value: FinalPythonType) -> str:
+    def label(self, value: TypeView) -> str:
         if isinstance(value, GeneratedSymbolType):
             return self.symbols[value.symbol].name
         if isinstance(value, BoundType):
             return render_python_type_expr(value.binding.expression)
         return _name(value) or type(value).__name__
 
-    def unsupported(self, value: FinalPythonType, schema: SourceLocation | None) -> None:
+    def unsupported(self, value: TypeView, schema: SourceLocation | None) -> None:
         self.report(f"The {self.backend} converter has no conversion for the {self.label(value)} type", schema)
 
     def shape(  # ruff: ignore[too-many-return-statements, too-many-branches]
-        self, value: FinalPythonType, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
+        self, value: TypeView, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
     ) -> Shape:
         """Return a type's conversion; an alias passes the discriminator it declares to the union it stands for."""
         if isinstance(value, NoneType):
@@ -280,12 +280,10 @@ class _Planner:
         self.unsupported(value, schema)
         return None
 
-    def root(self, symbol: SymbolId) -> FinalPythonType:
+    def root(self, symbol: SymbolId) -> TypeView:
         return next(member.model_facts.type for member in self.members[symbol] if member.model_facts is not None)
 
-    def flattened(
-        self, members: tuple[FinalPythonType, ...], seen: frozenset[SymbolId] = frozenset()
-    ) -> Iterator[FinalPythonType]:
+    def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
             if (
                 isinstance(member, GeneratedSymbolType)
@@ -299,7 +297,7 @@ class _Planner:
             elif not isinstance(member, NoneType):
                 yield member
 
-    def kinds(self, value: FinalPythonType) -> tuple[JSONKind, ...]:
+    def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
         if isinstance(value, GeneratedSymbolType):
             if (symbol := self.symbols[value.symbol]).kind == "enum":
                 kinds = {item.kind for item in symbol.values if item is not None}

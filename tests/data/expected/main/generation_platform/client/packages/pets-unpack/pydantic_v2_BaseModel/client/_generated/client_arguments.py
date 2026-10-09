@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from models import FieldPetsPostRequest as _dcg_type_1
-from models import NewPet as _dcg_type_0
+import models
 from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
@@ -30,7 +29,7 @@ class Operation0Arguments(TypedDict):
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_0
+    body: models.NewPet
     media_type: Literal['application/json']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -39,7 +38,7 @@ class Operation1Arguments(TypedDict):
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_1
+    body: models.FieldPetsPostRequest
     media_type: Literal['text/plain']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -48,7 +47,7 @@ class Operation1Arguments1(TypedDict):
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_0 | _dcg_type_1
+    body: models.NewPet | models.FieldPetsPostRequest
     media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]

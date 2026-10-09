@@ -60,10 +60,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
-        FinalPythonType,
         GeneratedEnumMember,
         GeneratedTypeContractBatch,
         TypeArgument,
+        TypeView,
     )
     from datamodel_code_generator._target_templates import Role, TemplateOverlay
 
@@ -179,7 +179,7 @@ class _Annotations(TypeSource):
 
     __slots__ = ()
 
-    def parts(self, value: FinalPythonType) -> tuple[str, tuple[str, ...]]:
+    def parts(self, value: TypeView) -> tuple[str, tuple[str, ...]]:
         """Return a type's runtime base and the Annotated metadata that constrains a constrained scalar."""
         if (
             not isinstance(value, ConstructorType)
@@ -195,7 +195,7 @@ class _Annotations(TypeSource):
         """Return the Python literal of a scalar value."""
         return self._spell(value, static=False)
 
-    def _spell(self, value: FinalPythonType | TypeArgument | GeneratedEnumMember, *, static: bool) -> str:
+    def _spell(self, value: TypeView | TypeArgument | GeneratedEnumMember, *, static: bool) -> str:
         if static or not isinstance(value, ConstructorType):
             return super()._spell(value, static=static)
         base, metadata = self.parts(value)
@@ -219,11 +219,11 @@ class Module:
         """Return the local alias of a name imported from a module of the generated package."""
         return self.namespace.name(f"{'.' * self.level}{module}", name)
 
-    def static(self, value: FinalPythonType) -> str:
+    def static(self, value: TypeView) -> str:
         """Return the static spelling of a final type."""
         return self.types.static(value)
 
-    def annotation(self, value: FinalPythonType, *metadata: str) -> str:
+    def annotation(self, value: TypeView, *metadata: str) -> str:
         """Return the spelling FastAPI validates with: the model's runtime type, readable by type checkers.
 
         Extra metadata, such as a FastAPI parameter declaration, joins the type's own Annotated metadata.
@@ -785,17 +785,17 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
     return Group(f"{name}: {module.name('typing', 'Annotated')}[{head}", _items(keywords), f")]{default}")
 
 
-def _payload(media: MediaSpec) -> FinalPythonType | None:
+def _payload(media: MediaSpec) -> TypeView | None:
     """Return the model type of a media's payload, or None for binary media and media without a schema."""
     return None if media.kind == "binary" or media.use is None else media.use.type
 
 
-def _nullable(value: FinalPythonType | None) -> bool:
+def _nullable(value: TypeView | None) -> bool:
     """Return whether a type already takes None, so an optional input of it needs no None member."""
     return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
 
 
-def _none(text: str, value: FinalPythonType | None) -> str:
+def _none(text: str, value: TypeView | None) -> str:
     """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
     return text if _nullable(value) else f"{text} | None"
 
@@ -806,7 +806,7 @@ def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
     return text if required else _none(text, value)
 
 
-def _adapter(module: Module, value: FinalPythonType) -> str:
+def _adapter(module: Module, value: TypeView) -> str:
     return f"{module.name('pydantic', 'TypeAdapter')}({module.annotation(value)})"
 
 

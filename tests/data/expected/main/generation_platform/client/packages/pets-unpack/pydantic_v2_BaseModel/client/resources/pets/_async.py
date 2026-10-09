@@ -9,8 +9,7 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import overload
 
-from models import FieldPetsPetIdGetResponse as _dcg_type_1
-from models import Pet as _dcg_type_0
+import models
 from typing_extensions import Unpack
 
 from ... import _operations
@@ -124,17 +123,17 @@ class AsyncPetsResource:
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments],
-    ) -> _dcg_type_0: ...
+    ) -> models.Pet: ...
     @overload
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments1],
-    ) -> _dcg_type_0: ...
+    ) -> models.Pet: ...
     @overload
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> _dcg_type_1: ...
+    ) -> models.FieldPetsPetIdGetResponse: ...
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],
@@ -254,17 +253,17 @@ class AsyncPetsWithResponse:
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments],
-    ) -> Response[_dcg_type_0]: ...
+    ) -> Response[models.Pet]: ...
     @overload
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments1],
-    ) -> Response[_dcg_type_0]: ...
+    ) -> Response[models.Pet]: ...
     @overload
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> Response[_dcg_type_1]: ...
+    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],

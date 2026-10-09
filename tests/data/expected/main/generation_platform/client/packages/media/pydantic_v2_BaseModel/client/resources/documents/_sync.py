@@ -9,8 +9,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import Draft as _dcg_type_0
-from models import FieldDocumentsIdGetPathIdParameter as _dcg_type_1
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -64,7 +63,7 @@ class DocumentsResource:
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     def store_document(
         self,
@@ -91,7 +90,7 @@ class DocumentsResource:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     def store_document(
         self,
@@ -105,7 +104,7 @@ class DocumentsResource:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -114,16 +113,16 @@ class DocumentsResource:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -131,7 +130,7 @@ class DocumentsResource:
     def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -149,7 +148,7 @@ class DocumentsResource:
     def read_document(
         self,
         *,
-        id: _dcg_type_1,
+        id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -244,7 +243,7 @@ class DocumentsWithResponse:
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     def store_document(
         self,
@@ -271,7 +270,7 @@ class DocumentsWithResponse:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     def store_document(
         self,
@@ -285,7 +284,7 @@ class DocumentsWithResponse:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -294,16 +293,16 @@ class DocumentsWithResponse:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -311,7 +310,7 @@ class DocumentsWithResponse:
     def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -329,7 +328,7 @@ class DocumentsWithResponse:
     def read_document(
         self,
         *,
-        id: _dcg_type_1,
+        id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -429,7 +428,7 @@ class DocumentsWithRawResponse:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -437,7 +436,7 @@ class DocumentsWithRawResponse:
     def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -455,7 +454,7 @@ class DocumentsWithRawResponse:
     def read_document(
         self,
         *,
-        id: _dcg_type_1,
+        id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -555,7 +554,7 @@ class DocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -563,7 +562,7 @@ class DocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -581,7 +580,7 @@ class DocumentsWithStreamingResponse:
     def read_document(
         self,
         *,
-        id: _dcg_type_1,
+        id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,

@@ -131,7 +131,15 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
+    "case",
+    [
+        "pagination-targets",
+        "pagination-querystring",
+        "pagination-counts",
+        "pagination-links",
+        "streams-mixed",
+        "type-spellings-legacy",
+    ],
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
     """Check packages whose helpers write each kind of request target, bindings, positions, and followed URLs."""

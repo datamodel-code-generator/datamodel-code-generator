@@ -57,7 +57,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
-        FinalPythonType,
         FrozenLiteral,
         GeneratedTypeContractBatch,
         ModelFieldFacts,
@@ -66,6 +65,7 @@ if TYPE_CHECKING:
         TypeArgument,
         TypeUseBinding,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
 
@@ -168,7 +168,7 @@ class Default(Enum):
 class RootDefault:
     """The default of a parameter whose type stays a root model: the model of a literal, or the model's own default."""
 
-    type: FinalPythonType
+    type: TypeView
     literal: LiteralScalar | LiteralSequence | None = None
 
 
@@ -176,7 +176,7 @@ class RootDefault:
 class MemberDefault:
     """The default of an enum parameter: the members of its enum type that a literal, or each item of one, names."""
 
-    type: FinalPythonType
+    type: TypeView
     literal: LiteralScalar | LiteralSequence
 
 
@@ -196,7 +196,7 @@ class NativeField:
 
     api: NativeApi
     alias: str
-    type: FinalPythonType
+    type: TypeView
     keywords: tuple[tuple[str, object], ...] = ()
     default: ParameterDefault = Default.REQUIRED
 
@@ -221,7 +221,7 @@ class ParameterSpec:
     use: TypeUseBinding | None
     plan: ParameterPlan | None
     decision: Decision
-    type: FinalPythonType | None = None
+    type: TypeView | None = None
     native: NativeField | None = None
     default: ParameterDefault = Default.ABSENT
 
@@ -743,7 +743,7 @@ class Planner:  # noqa: PLR0904
         )
         return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
 
-    def parameter_type(self, use: TypeUseBinding | None) -> tuple[FinalPythonType | None, ParameterDefault]:
+    def parameter_type(self, use: TypeUseBinding | None) -> tuple[TypeView | None, ParameterDefault]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
         The parameter schema's own default comes first when it is a boolean, number, or string, or a list of them,
@@ -758,7 +758,7 @@ class Planner:  # noqa: PLR0904
             return None, default
         value = use.type
         seen: set[SymbolId] = set()
-        factory: FinalPythonType | None = None
+        factory: TypeView | None = None
         while (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
@@ -788,7 +788,7 @@ class Planner:  # noqa: PLR0904
             return value, MemberDefault(member, default)
         return value, default
 
-    def member(self, value: FinalPythonType) -> GeneratedSymbolType | None:
+    def member(self, value: TypeView) -> GeneratedSymbolType | None:
         """Return the enum type whose members a default names: the type, its one member besides None, or its item."""
         match value:
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
@@ -801,7 +801,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return None
 
-    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
+    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> TypeView | None:
         """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
 
         A scalar that may be None is constrained the same way, so each spelling of the model gives one type. Its
@@ -820,7 +820,7 @@ class Planner:  # noqa: PLR0904
         value = self.nested(facts.type, seen | {symbol})
         return _constrained(value, constraints) if constraints else value
 
-    def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
+    def nested(self, value: TypeView, seen: frozenset[SymbolId]) -> TypeView:
         """Return a type with each alias among its members and arguments replaced by the type it validates as."""
         match value:
             case GeneratedSymbolType() if (
@@ -838,7 +838,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return value
 
-    def kind(self, value: FinalPythonType) -> ValueKind | None:
+    def kind(self, value: TypeView) -> ValueKind | None:
         """Return whether FastAPI reads a parameter type as a scalar, as a sequence of scalars, or as neither."""
         kind: ValueKind | None = None
         match value:
@@ -853,7 +853,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return kind
 
-    def literal(self, value: FinalPythonType) -> bool:
+    def literal(self, value: TypeView) -> bool:
         """Return whether a type accepts only enum members or literals, which FastAPI matches against query text."""
         if isinstance(value, UnionType | GenericType):
             members = value.members if isinstance(value, UnionType) else value.arguments
@@ -862,7 +862,7 @@ class Planner:  # noqa: PLR0904
             return self.symbols[value.symbol].kind == "enum"
         return isinstance(value, LiteralType)
 
-    def strict_bytes(self, value: FinalPythonType | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
+    def strict_bytes(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
         """Return whether a type holds pydantic's StrictBytes, also inside its root models and aliases."""
         match value:
             case UnionType():
@@ -877,11 +877,11 @@ class Planner:  # noqa: PLR0904
                 pass
         return False
 
-    def textless(self, value: FinalPythonType) -> bool:
+    def textless(self, value: TypeView) -> bool:
         """Return whether a type takes values FastAPI's text is not: enum members, literals, or strict scalars."""
         return self.literal(value) or _strict(value)
 
-    def scalar(self, value: FinalPythonType) -> bool:
+    def scalar(self, value: TypeView) -> bool:
         """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
         match value:
             case BuiltinType():
@@ -975,7 +975,7 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=Decision(transport="fastapi_native"))
         return replace(spec, form_fields=self.form_plans(use.type))
 
-    def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
+    def form_plans(self, value: TypeView | None) -> tuple[FieldPlan, ...]:
         """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
         members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
         return tuple(
@@ -984,7 +984,7 @@ class Planner:  # noqa: PLR0904
             if member.wire_name is not None and (facts := member.model_facts) is not None
         )
 
-    def form_model(self, value: FinalPythonType | None) -> bool:
+    def form_model(self, value: TypeView | None) -> bool:
         """Return whether FastAPI reads a type as a form model: a BaseModel of scalar and repeated scalar fields."""
         return (
             self.backend == DataModelType.PydanticV2BaseModel.value
@@ -1238,7 +1238,7 @@ def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | 
     )
 
 
-def _constrained(value: FinalPythonType, constraints: tuple[tuple[str, TypeArgument], ...]) -> FinalPythonType | None:
+def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], ...]) -> TypeView | None:
     """Return a scalar with its constraints as a constrained scalar, a pydantic Strict one as a strict constrained one.
 
     A union of one scalar and None constrains the scalar; any other type returns None.
@@ -1261,7 +1261,7 @@ def _constrained(value: FinalPythonType, constraints: tuple[tuple[str, TypeArgum
     return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords)
 
 
-def _strict(value: FinalPythonType) -> bool:
+def _strict(value: TypeView) -> bool:
     """Return whether a type holds a strict int, float, or bool: a pydantic Strict type or strict constrained one."""
     match value:
         case UnionType():

@@ -46,7 +46,6 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
-from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
 from datamodel_code_generator._target_contract import (
@@ -55,6 +54,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
 )
+from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -64,7 +64,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
-    from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
+    from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.sockets import SocketSpec
@@ -72,11 +72,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
-        FinalPythonType,
         GeneratedTypeContractBatch,
         ModelFieldFacts,
         SymbolId,
         TypeUseBinding,
+        TypeView,
     )
 
 HTTPX2: Final = "httpx2>=2.13.0"
@@ -172,7 +172,12 @@ class ClientTarget:
                 ),
                 option_prefix=OPTION_PREFIX,
             )
-        data = _HelperDigests(request, codecs, facts)
+        types = TypeNames(
+            batch,
+            exact=bool(request.model_config.use_exact_imports),
+            overrides=request.model_config.import_overrides,
+        )
+        data = _HelperDigests(request, types, facts)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
@@ -195,9 +200,10 @@ class ClientTarget:
             streams=streams,
             sockets=sockets,
             fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
+            webhooks=partial(webhook_files, webhooks, types),
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
             backend=backend,
+            types=types,
             dependencies=dependencies,
             templates=ClientTemplates.custom(request.model_config, request.target_id, request.cwd),
         )
@@ -233,11 +239,11 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 class _HelperDigests:
     """Digest each rendered helper's contract closure."""
 
-    def __init__(self, request: TargetRequest, codecs: ClientCodecs, facts: ModelFacts) -> None:
-        """Index the import locations of the generated symbols."""
+    def __init__(self, request: TargetRequest, types: TypeNames, facts: ModelFacts) -> None:
+        """Spell types by the full paths of their names."""
         self.request = request
         self.facts = facts
-        self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
+        self.spelling = TargetModule(types, qualified=True)
 
     def fingerprint(self, spec: PaginationSpec, settings: JSONValue) -> str:
         """Return the digest of a helper's contract closure: its signature and settings, operation, schema, and page.
@@ -252,7 +258,7 @@ class _HelperDigests:
             "body": None
             if body is None
             else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "item": self.spelling.static(spec.item),
+            "item": self.spelling.hint(spec.item),
             "page": self.type(spec.page),
             "settings": settings,
         }
@@ -338,7 +344,7 @@ class _HelperDigests:
 
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
-        return None if use is None or use.type is None else self.spelling.static(use.type)
+        return None if use is None or use.type is None else self.spelling.hint(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
         """Return a retained helper use's contract: its type, and the values or fields of every model type it reaches.
@@ -351,7 +357,7 @@ class _HelperDigests:
         models: dict[str, object] = {}
         while pending:
             symbol = pending.pop()
-            if (name := self.spelling.static(GeneratedSymbolType(symbol))) in models:
+            if (name := self.spelling.symbol(symbol)) in models:
                 continue
             found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
             models[name] = {
@@ -377,16 +383,16 @@ class _HelperDigests:
                 facts.nullable,
                 facts.read_only,
                 facts.write_only,
-                self.spelling.static(facts.type),
+                self.spelling.hint(facts.type),
                 facts.backend.emitted.emitted_default_kind,
                 repr(facts.backend.emitted.emitted_default_value),
             )
         )
 
 
-def _named(value: FinalPythonType) -> tuple[SymbolId, ...]:
+def _named(value: TypeView) -> tuple[SymbolId, ...]:
     """Return the generated symbols a type names, through its members, arguments, metadata base and enum literals."""
-    nested: tuple[FinalPythonType, ...] = (
+    nested: tuple[TypeView, ...] = (
         *getattr(value, "members", ()),
         *getattr(value, "arguments", ()),
         *((value.base,) if isinstance(value, AnnotatedType | GenericType) else ()),

@@ -7,6 +7,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import LoosePage as _dcg_type_0
+import models
 
-ListLooseResponse: TypeAlias = _dcg_type_0
+ListLooseResponse: TypeAlias = models.LoosePage

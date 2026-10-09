@@ -35,8 +35,8 @@ render pydantic_v2.BaseModel default
   codec_1 models.Request
   codec_2 models.RequestVersionEnum
   codec_3 models.RequestVersionEnum
-  codec_4 pydantic.SerializeAsAny[models.RequestBase]
-  codec_5 pydantic.SerializeAsAny[models.RequestBase]
+  codec_4 SerializeAsAny[models.RequestBase]
+  codec_5 SerializeAsAny[models.RequestBase]
   codec_6 models.RequestV1
   codec_7 models.RequestV1
   codec_8 models.RequestV2
@@ -85,8 +85,8 @@ render pydantic_v2.dataclass default
   codec_1 models.Request
   codec_2 models.RequestVersionEnum
   codec_3 models.RequestVersionEnum
-  codec_4 pydantic.SerializeAsAny[models.RequestBase]
-  codec_5 pydantic.SerializeAsAny[models.RequestBase]
+  codec_4 SerializeAsAny[models.RequestBase]
+  codec_5 SerializeAsAny[models.RequestBase]
   codec_6 models.RequestV1
   codec_7 models.RequestV1
   codec_8 models.RequestV2
