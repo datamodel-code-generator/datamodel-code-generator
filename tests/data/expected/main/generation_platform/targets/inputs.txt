@@ -29,13 +29,9 @@ render
   11 runtime modules ['write']
 render
   Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
 render
   Error: input: Target generation reads one root document, not a list
-  E_INPUT_ROOT error input input: Target generation reads one root document, not a list
 render
   Error: input: Target generation reads one root document, not a directory
-  E_INPUT_ROOT error input input: Target generation reads one root document, not a directory
 render
   Error: --input-file-type: Target generation reads an OpenAPI document
-  E_INPUT_ROOT error input model_config.input_file_type: Target generation reads an OpenAPI document
