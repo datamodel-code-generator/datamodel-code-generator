@@ -10,7 +10,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 generate
   returned None
 tree
@@ -23,7 +23,7 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 tree
   server/README.md
   server/__init__.py
@@ -34,4 +34,4 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']

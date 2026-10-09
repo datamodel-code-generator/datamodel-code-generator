@@ -47,10 +47,10 @@
      )
 --- server/application.py (baseline input)
 +++ server/application.py (current input)
-@@ -16,14 +16,14 @@
-     Credentials,
-     RequirementSets,
- )
+@@ -10,14 +10,14 @@
+ 
+ from ._generated.contract import OperationDependencies
+ from ._runtime.server.application import build, error_handlers, validation_error_handler
 -from .routers import owners, pets
 -from .services import OwnersService, PetsService
 +from .routers import pets, store
@@ -66,7 +66,7 @@
  )
  INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
  
-@@ -31,7 +31,7 @@
+@@ -25,7 +25,7 @@
  def build_router(
      *,
      pets: PetsService,
@@ -75,7 +75,7 @@
      dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
-@@ -39,7 +39,7 @@
+@@ -33,7 +33,7 @@
      """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
@@ -84,7 +84,7 @@
          dependencies=dependencies,
          operation_dependencies=operation_dependencies,
          prefix=prefix,
-@@ -49,7 +49,7 @@
+@@ -43,7 +43,7 @@
  def create_app(
      *,
      pets: PetsService,
@@ -93,7 +93,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      **fastapi_kwargs: Any,
-@@ -63,7 +63,7 @@
+@@ -57,7 +57,7 @@
      app.include_router(
          build_router(
              pets=pets,
