@@ -1,9 +1,9 @@
 # retries pydantic_v2.BaseModel
   declared key header stays managed ! ConfigurationError: ConfigurationError(operation_id='postKeyed', reason='managed', field_path='headers.Idempotency-Key') [operation_id='postKeyed', field_path=('headers', 'Idempotency-Key')] managed
   missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(reason='unavailable', field_path='transport.http2') [field_path=('transport', 'http2'), cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] unavailable
-  request hook failure first send = (('APIConnectionError', None, 1, ()), True, 1)
+  request hook failure first send = (('APITimeoutError', 'phase_timeout', 1, ()), False, 1)
     events=[] queued=2
-  request hook failure retried send = (('APIConnectionError', None, 2, ()), True, 2)
+  request hook failure retried send = (('APITimeoutError', 'phase_timeout', 2, ()), False, 2)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   uncapped native ReadTimeout = ('APITimeoutError', 'phase_timeout', 1, ())
     queued=1
@@ -13,9 +13,9 @@
   terminal native interruption body = ('KeyboardInterrupt', True, ('first native terminal interruption',), ())
   stream close interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary failure: APIConnectionError'], ['Secondary failure: APIConnectionError'])
   stream close interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary failure: ValueError'], ['Secondary failure: ValueError'])
-  async request hook failure first send = (('APIConnectionError', None, 1, ()), True, 1)
+  async request hook failure first send = (('APITimeoutError', 'phase_timeout', 1, ()), False, 1)
     events=[] queued=2
-  async request hook failure retried send = (('APIConnectionError', None, 2, ()), True, 2)
+  async request hook failure retried send = (('APITimeoutError', 'phase_timeout', 2, ()), False, 2)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   native send cancellation = ('CancelledError', ('original caller interruption',), ())
   cancelled native sends = 1

@@ -8,20 +8,18 @@ copied runtime
   client/__init__.py: 4
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2371
+  client/client.py: 2137
   client/codecs.py: 95
-  client/errors.py: 366
-  client/events.py: 480
-  client/hooks.py: 144
-  client/logical.py: 198
+  client/errors.py: 361
+  client/logical.py: 190
   client/media.py: 77
   client/multipart.py: 546
-  client/native.py: 192
+  client/native.py: 175
   client/operations.py: 835
-  client/options.py: 605
+  client/options.py: 532
   client/paths.py: 40
-  client/raw.py: 913
-  client/responses.py: 88
+  client/raw.py: 874
+  client/responses.py: 87
   client/retry.py: 338
   client/security.py: 135
   client/timing.py: 121
@@ -34,12 +32,11 @@ copied runtime
   model_codecs/stdlib.py: 256
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
-total 30 modules, 9742 lines
+total 28 modules, 8741 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py
   publication_client/errors.py
-  publication_client/hooks.py
   publication_client/model_codecs.py
   publication_client/options.py
   publication_client/protocols/__init__.py
