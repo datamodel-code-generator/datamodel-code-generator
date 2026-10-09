@@ -615,6 +615,11 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
         return core.helper_view(cls)
 
+    @property
+    def sockets(self) -> set[Callable[[], None]]:
+        """Return the closes of the WebSocket sessions open on the HTTP client, which closing its creator runs first."""
+        return self._shared.sockets
+
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[T],

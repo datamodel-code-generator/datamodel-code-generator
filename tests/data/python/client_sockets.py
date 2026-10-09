@@ -15,6 +15,9 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+import httpcore2
+import httpx2
+
 from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import argument, describe, run
@@ -667,23 +670,43 @@ def _logged(harness: _Harness) -> None:
 
 
 def _client_close(harness: _Harness) -> None:
-    """Close a client with a session open: the HTTP client's pool closes the session's connection with its own.
-
-    The server never learns of it before it stops, so its play is not reported. The send fails either at the closed
-    socket or, once HTTPX2's reader saw the socket close first, at the closing connection; both are ProtocolErrors.
-    """
+    """Close a client with a session open: the session closes first, as its own close does, then the HTTP client."""
     lines, server = harness.lines, harness.server
-    server.play(Play(talk=_sending(_JOINED)))
+    (play,) = server.play(Play(talk=_sending(_JOINED)))
     api = harness.package.Client(options=harness.client())
     session = api.protocols.rooms.chat.connect(room=harness.room())
     lines.append(f"  received before the client closed {_message(session.receive())}")
     record(lines, "client close with a session open", api.close)
     record(lines, "client close again", api.close)
-    try:
-        session.send(harness.text("late"))
-    except (harness.errors.DeliveryUnknownError, harness.errors.WebSocketClosedError) as refused:
-        lines.append(f"  send after the client closed refused {type(refused).__bases__[0].__name__}")
-    session.close()
+    record(lines, "send after the client closed", lambda: session.send(harness.text("late")))
+    harness.report(play)
+    _borrowed(harness)
+
+
+class _Socketless(httpx2.HTTPTransport):
+    """An HTTP transport whose one connection replays a 101 and a binary message from memory, without a socket."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._pool = httpcore2.ConnectionPool(
+            network_backend=httpcore2.MockBackend([_UPGRADE.replace(b"{accept}", b"unchecked"), b"\x82\x02hi"])
+        )
+
+
+def _borrowed(harness: _Harness) -> None:
+    """Leave a session open past closing a client that borrowed its HTTP client, over a connection without a socket.
+
+    The caller closes the session before the HTTP client; the connection's end after its message fails the session.
+    """
+    lines, options = harness.lines, harness.options
+    with httpx2.Client(transport=_Socketless()) as native:
+        api = harness.package.Client(http_client=native, options=options.ClientOptions(base_url=harness.server.url))
+        session = api.protocols.feed.text.connect()
+        api.close()
+        lines.append(f"  borrowed client closed {session!r}")
+        lines.append(f"    socketless {_message(session.receive())}")
+        record(lines, "socketless end", session.receive)
+        session.close()
 
 
 def _handshakes(harness: _Harness) -> None:
@@ -899,13 +922,14 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
             lines.append(_decode_failure(f"{label} left the block", failure))
         lines.append(f"    {label} after the block {session!r}")
         await harness.areport(play)
-    (play,) = server.play(Play())
-    try:
-        async with chat.connect(room=harness.room()) as session:
-            raise LookupError
-    except LookupError as failure:
-        lines.append(f"  async block's own failure left the block {type(failure).__name__} {session!r}")
-    await harness.areport(play)
+    for raised in (LookupError, SystemExit):
+        (play,) = server.play(Play())
+        try:
+            async with chat.connect(room=harness.room()) as session:
+                raise raised
+        except raised as failure:
+            lines.append(f"  async block's own failure left the block {type(failure).__name__} {session!r}")
+        await harness.areport(play)
     (play,) = server.play(Play())
     entered = asyncio.Event()
 
@@ -953,7 +977,9 @@ async def _async_steps(harness: _Harness, api: Any) -> None:
 
 
 async def _async_peers(harness: _Harness) -> None:
-    """Close a client under an open asyncio session, and fail pings and sends a raw peer never answers."""
+    """Close a client under an open asyncio session, fail a session at a record that fails HTTPX2's reader, and fail
+    pings and sends a raw peer never answers.
+    """
     lines, options = harness.lines, harness.options
     harness.server.play(Play(talk=_sending(_JOINED)))
     api = harness.package.AsyncClient(options=harness.client())
@@ -970,6 +996,17 @@ async def _async_peers(harness: _Harness) -> None:
             await arecord(lines, "async unanswered ping", session.ping)
     finally:
         peer.stop()
+    garbled = RawPeer(_UPGRADE, garbled=b"\x17\x03\x03\x00\x10" + bytes(16))
+    try:
+        async with harness.package.AsyncClient(options=harness.client(garbled.url)) as api:
+            await aconnected(
+                lines,
+                "async record failing HTTPX2's reader",
+                lambda: api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None)),
+                lambda session: session.receive(),
+            )
+    finally:
+        garbled.stop()
     silent_pongs = RawPeer(_UPGRADE)
     try:
         async with harness.package.AsyncClient(options=harness.client(silent_pongs.url)) as api:

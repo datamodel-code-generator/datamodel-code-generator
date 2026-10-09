@@ -1090,6 +1090,7 @@ class _Shared(Generic[AdapterT]):
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.options: ClientOptions | None = None
         self.root_auth: AuthConfig | None = None
+        self.sockets: set[Callable[[], None]] = set()
 
 
 class Core(Generic[AdapterT, HandleT]):
@@ -2159,13 +2160,18 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         return received
 
     def close(self) -> None:
-        """Close only the native client this root created, at most once even if close fails."""
+        """Close only the native client this root created, at most once even if close fails.
+
+        The WebSocket sessions open on it close first, so that none of their readers outlives its connection.
+        """
         shared = self._shared
         if shared.closed:
             return
         shared.closed = True
         if shared.created:
             try:
+                for close in tuple(shared.sockets):
+                    close()
                 shared.http_client.close()
             except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None

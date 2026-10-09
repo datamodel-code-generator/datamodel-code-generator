@@ -154,7 +154,11 @@
   received before the client closed 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
   client close with a session open = None
   client close again = None
-  send after the client closed refused ProtocolError
+  send after the client closed ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='closed', action='send') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+  borrowed client closed WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+    socketless 1 binary bytesb'hi' raw=b'hi'
+  socketless end ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=WebSocketNetworkError] api_connection_error
   open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout] phase_timeout
   closed before a response ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError] api_connection_error
   malformed response ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError] api_connection_error
@@ -219,6 +223,8 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   async block's own failure left the block LookupError AsyncWebSocketSession(helper_id='rooms.chat', state='closed', subprotocol='chat.v2')
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+  async block's own failure left the block SystemExit AsyncWebSocketSession(helper_id='rooms.chat', state='closed', subprotocol='chat.v2')
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   async block cancelled by its task CancelledError
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
     server GET /feed/socket [] | closed 1009 'Message too big'
@@ -237,6 +243,8 @@
   async client close with a session open = None
   async receive after the client closed ! APIConnectionError: APIConnectionError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=WebSocketNetworkError] api_connection_error
   async unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
+  async record failing HTTPX2's reader = AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+  async record failing HTTPX2's reader ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ExceptionGroup] api_connection_error
   async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async send cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async send after the cancelled send ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error

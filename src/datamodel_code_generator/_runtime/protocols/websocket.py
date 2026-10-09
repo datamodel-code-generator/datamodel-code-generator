@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import base64
 import os
+import socket
 import threading
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import partial
@@ -59,10 +60,11 @@ from .errors import (
 from .options import WSOptions
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Mapping
+    from collections.abc import AsyncGenerator, Callable, Mapping
     from types import TracebackType
 
     import httpx2
+    from httpcore2 import NetworkStream
     from wsproto.events import BytesMessage, Event
 
     from ..client.logical import LogicalCallContext, OperationSession
@@ -553,16 +555,61 @@ class _Sockets(Generic[SendT, RecvT]):
 
 
 @final
+class _Stream:
+    """A handed-over connection that HTTPX2's synchronous session releases only once no read of it is in progress.
+
+    HTTPX2 closes the connection while its reader may still wait in a read on another thread, which closing a socket
+    does not wake on Linux, so the read would take the bytes of the connection that reuses its descriptor. Closing
+    shuts the socket down instead, which ends the read, waits for it, and only then closes; a later read ends at once.
+    """
+
+    __slots__ = ("_closed", "_idle", "_reads", "_stream")
+
+    def __init__(self, stream: NetworkStream) -> None:
+        self._stream = stream
+        self._idle = threading.Condition()
+        self._reads = 0
+        self._closed = False
+
+    def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
+        with self._idle:
+            reading = not self._closed
+            self._reads += reading
+        try:
+            return self._stream.read(max_bytes, timeout) if reading else b""
+        finally:
+            with self._idle:
+                self._reads -= reading
+                self._idle.notify_all()
+
+    def write(self, buffer: bytes, timeout: float | None = None) -> None:
+        self._stream.write(buffer, timeout)
+
+    def close(self) -> None:
+        with self._idle:
+            if self._closed:
+                return
+            self._closed = True
+        if isinstance(connection := self._stream.get_extra_info("socket"), socket.socket):
+            with suppress(OSError):
+                socket.socket.shutdown(connection, socket.SHUT_RDWR)
+            with self._idle:
+                self._idle.wait_for(lambda: not self._reads)
+        self._stream.close()
+
+
+@final
 class WebSocketSession(_Sockets[SendT, RecvT]):
     """A synchronous WebSocket session: send typed messages, and receive them or iterate over them.
 
     The session owns its connection until it closes or fails; the connection belongs to the HTTP client's pool, which
     closes it with the client. One receive runs at a time, beside sends, which HTTPX2 writes one at a time. A closure by
     the server ends iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or
-    `close()` every step raises ProtocolStateError, and iteration after `close()` stops.
+    `close()` every step raises ProtocolStateError, and iteration after `close()` stops. Closing a client that created
+    its HTTP client closes its open sessions first.
     """
 
-    __slots__ = ("_native", "_response")
+    __slots__ = ("_held", "_native", "_response")
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -572,21 +619,25 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         response: RawResponse,
         call: LogicalCallContext,
         upgraded: httpx2.Response,
+        held: set[Callable[[], None]],
     ) -> None:
-        """Take the handed-over handshake and run an HTTPX2 session on its connection."""
+        """Take the handed-over handshake and run an HTTPX2 session on its connection, held open by the client."""
         super().__init__(plan, limits, session, response.info, call)
         self._response = response
+        self._held = held
         self._native = _Native(
-            upgraded.extensions["network_stream"],
+            cast("NetworkStream", _Stream(upgraded.extensions["network_stream"])),
             max_message_size_bytes=limits.max_message_bytes,
             queue_size=0,
             keepalive_ping_interval_seconds=limits.ping_interval,
             keepalive_ping_timeout_seconds=limits.pong_timeout,
             response=upgraded,
         ).__enter__()
+        held.add(self.close)
 
     def _shut(self, code: int, reason: str = "") -> None:
         """Close the HTTPX2 session with a code and a reason and wait for its threads."""
+        self._held.discard(self.close)
         native = self._native
         native.close(code, reason)
         native.__exit__(None, None, None)
@@ -730,8 +781,9 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     async def _opened(self) -> AsyncGenerator[Self, None]:
         """Run the HTTPX2 session for one block in the caller's task, then close the session.
 
-        The block's own failure leaves it as raised, not in the group HTTPX2's task group wraps it in; a failure of
-        HTTPX2's background tasks, which cancels the block, leaves it as the session's lost connection.
+        The block's own failure, an exit such as SystemExit too, leaves it as raised, not in the group HTTPX2's task
+        group wraps it in; a failure of HTTPX2's background tasks, which cancels the block, leaves it as the session's
+        lost connection, and any other exit, such as the task's cancellation, leaves as it came.
         """
         escaped: BaseException | None = None
         try:
@@ -741,8 +793,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
                 except BaseException as error:
                     escaped = error
                     raise
-        except Exception as exited:  # noqa: BLE001
-            escaped = escaped if getattr(exited, "exceptions", None) == (escaped,) else self._lost(exited)
+        except BaseException as exited:
+            if getattr(exited, "exceptions", None) != (escaped,):
+                if not isinstance(exited, Exception):
+                    raise
+                escaped = self._lost(exited)
         finally:
             with anyio.CancelScope(shield=True):
                 await self.aclose()
@@ -873,7 +928,7 @@ def connect_socket(  # noqa: PLR0913
         check=_checked_headers,
         accept=partial(_negotiated, plan.subprotocols),
     )
-    return WebSocketSession(plan, limits, session, response, call, upgraded)
+    return WebSocketSession(plan, limits, session, response, call, upgraded, core.sockets)
 
 
 @asynccontextmanager

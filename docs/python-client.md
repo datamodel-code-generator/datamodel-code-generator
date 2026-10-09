@@ -2157,20 +2157,23 @@ handshake's hooks end with the call outcome `handed_off`, and the session's end 
 
 An HTTPX2 `WebSocketSession` or `AsyncWebSocketSession` carries the connection: it reads in the background, answers
 pings, and sends keepalive pings. The session owns it until it closes or fails, but the connection belongs to the HTTP
-client's pool: closing the client also closes the connections of its open sessions, whose next step then fails. One
-`receive` waits at a time: another raises `ConcurrentReceiveError`, while sends, which HTTPX2 writes one at a time, may
-run beside it. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves the session usable, since
-HTTPX2 queues whole messages; a cancelled `send` or `ping` fails the session, since a message may be half written. An
-`AsyncWebSocketSession` runs the HTTPX2 session in the task that entered its `connect` block, as HTTPX2's task group
-must end in the task that started it, and closes it when the block ends; tasks the block starts may use and close it
-meanwhile. A failure the block raises leaves it unwrapped; a failure of HTTPX2's background tasks cancels the block and
-leaves it as `APIConnectionError` with the phase `read`. A received message of another frame kind, or one that does not
-decode, raises `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A
-server's closure raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for 1000 and 1001,
-the closures that alone end iteration; the session answers it with the same code and reason, and after it `receive`,
-`send`, and `ping` raise it again. A `send` or `ping` on a connection that is already closing, before `receive` reported
-why, raises `WebSocketClosedError` without a code. After any other failure, every step raises `ProtocolStateError`, as
-it does after `close()`. Representations never show messages, URLs, headers, or close reasons.
+client's pool. Closing a `Client` that created its HTTP client closes its open sessions first, as their `close()` does,
+after which every step raises `ProtocolStateError`; close sessions before closing a borrowed HTTP client, since closing
+a socket does not wake the session's reader on every platform. Closing an `AsyncClient` closes the connections of its
+open sessions, whose next step then fails. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while
+sends, which HTTPX2 writes one at a time, may run beside it. Cancelling the task of an asyncio `receive`, as
+`asyncio.wait_for` does, leaves the session usable, since HTTPX2 queues whole messages; a cancelled `send` or `ping`
+fails the session, since a message may be half written. An `AsyncWebSocketSession` runs the HTTPX2 session in the task
+that entered its `connect` block, as HTTPX2's task group must end in the task that started it, and closes it when the
+block ends; tasks the block starts may use and close it meanwhile. A failure the block raises, even an exit such as
+`SystemExit`, leaves it unwrapped; a failure of HTTPX2's background tasks cancels the block and leaves it as
+`APIConnectionError` with the phase `read`. A received message of another frame kind, or one that does not decode,
+raises `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's
+closure raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for 1000 and 1001, the
+closures that alone end iteration; the session answers it with the same code and reason, and after it `receive`, `send`,
+and `ping` raise it again. A `send` or `ping` on a connection that is already closing, before `receive` reported why,
+raises `WebSocketClosedError` without a code. After any other failure, every step raises `ProtocolStateError`, as it
+does after `close()`. Representations never show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 
