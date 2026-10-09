@@ -39,7 +39,6 @@ EventName: TypeAlias = Literal[
     "transport_failure",
     "attempt_end",
     "retry_scheduled",
-    "redirect",
     "call_end",
     "stream_end",
 ]

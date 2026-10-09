@@ -46,6 +46,17 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
+    post:
+      operationId: createUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserRef'}
+      responses:
+        '204':
+          description: Created.
   /searches:
     post:
       operationId: search
@@ -103,6 +114,26 @@ components:
         next_cursor: {type: string}
         more_alias: {$ref: '#/components/schemas/MaybeInt'}
         more_uri: {$ref: '#/components/schemas/StrictName'}
+        cursor_model: {$ref: '#/components/schemas/NullableCursor'}
+        positive: {type: integer, exclusiveMinimum: 0}
+        floor: {type: number, minimum: 0}
+        base_cursor: {$ref: '#/components/schemas/Cursor'}
+    UserRef: {$ref: '#/components/schemas/User'}
+    CursorRef: {$ref: '#/components/schemas/Cursor'}
+    Cursor:
+      type: object
+      properties:
+        after: {type: string}
+    CursorChild:
+      allOf:
+        - $ref: '#/components/schemas/Cursor'
+        - type: object
+          properties:
+            before: {type: string}
+    NullableCursor:
+      type: [object, 'null']
+      properties:
+        after: {type: string}
     MaybeInt: {type: [integer, 'null']}
     StrictName: {type: string, format: uri}
     SearchQuery:

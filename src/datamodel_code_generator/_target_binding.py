@@ -598,23 +598,19 @@ def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
     return frozenset()
 
 
-def _json_type(value: object) -> str:  # noqa: PLR0911
+def _json_type(value: object) -> str:
     """Return the JSON type of an enum member's value."""
-    match value:
-        case None:
-            return "null"
-        case bool():
-            return "boolean"
-        case int():
-            return "integer"
-        case float() | Decimal():
-            return "number"
-        case str():
-            return "string"
-        case dict():
-            return "object"
-        case _:
-            return "array"
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float | Decimal):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    return "object" if isinstance(value, dict) else "array"
 
 
 def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911

@@ -18,3 +18,7 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols['total.string_header'].continuation.total /paths/~1users/get: The total of 'total.string_header' reads string values, where only integer values fit
   E_CONFIG_VALUE config protocols['total.undeclared'].continuation.total /paths/~1users/get: The total of 'total.undeclared' reads the header 'X-Missing', which GET /users does not declare
   E_CONFIG_VALUE config protocols['total.status'].continuation.total /paths/~1users/get: The total of 'total.status' reads the response status, which counts no items
+  E_CONFIG_VALUE config protocols['has_more.nullable_model'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.nullable_model' reads null or object values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['has_more.positive'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.positive' reads integer values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['has_more.floor'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.floor' reads number values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['items.foreign_alias'].item_schema /paths/~1users/get: The item_schema '/components/schemas/CursorRef' of 'items.foreign_alias' is not the item schema of the array its items pointer selects

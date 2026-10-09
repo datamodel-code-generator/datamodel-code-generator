@@ -324,16 +324,15 @@ def _file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None,
         sends = sum(line.startswith("  > ") for line in lines)
         source.truncate(3)
         step(lines, "first advance", handle.advance)
-        state = handle.checkpoint().export()
-        saved_state = json.loads(state)["state"]
-        lines.append(f"  checkpoint confirmed={saved_state['confirmed']} phase={saved_state['phase']}")
+        state = handle.checkpoint()
+        lines.append(f"  checkpoint confirmed={state['confirmed']} phase={state['phase']}")
         source.seek(0)
         source.write(_CONTENT)
         step(lines, "advance after restore", handle.advance)
         step(lines, "run after restore", handle.run)
         handle.close()
         lines.extend((
-            f"  checkpoint unchanged after close: {handle.checkpoint().export() == state}",
+            f"  checkpoint unchanged after close: {handle.checkpoint() == state}",
             f"  borrowed source left open: {not source.closed}",
             f"  later resource sends={sum(line.startswith('  > ') for line in lines) - sends}",
         ))
@@ -358,16 +357,15 @@ async def _async_file_terminal(harness: _Uploads, lines: list[str], *, settings:
         sends = sum(line.startswith("  > ") for line in lines)
         source.truncate(3)
         await astep(lines, "first advance", handle.advance)
-        state = handle.checkpoint().export()
-        saved_state = json.loads(state)["state"]
-        lines.append(f"  checkpoint confirmed={saved_state['confirmed']} phase={saved_state['phase']}")
+        state = handle.checkpoint()
+        lines.append(f"  checkpoint confirmed={state['confirmed']} phase={state['phase']}")
         source.seek(0)
         source.write(_CONTENT)
         await astep(lines, "advance after restore", handle.advance)
         await astep(lines, "run after restore", handle.run)
         await handle.aclose()
         lines.extend((
-            f"  checkpoint unchanged after close: {handle.checkpoint().export() == state}",
+            f"  checkpoint unchanged after close: {handle.checkpoint() == state}",
             f"  borrowed source left open: {not source.closed}",
             f"  later resource sends={sum(line.startswith('  > ') for line in lines) - sends}",
         ))
@@ -407,7 +405,7 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         ("UploadSourceChangedError", {"expected_size": 10, "actual_size": 4}),
         (
             "UploadOffsetError",
-            {"confirmed_offset": 4, "expected_offset": 8, "remote_offset": 2, "size": 10, "resume_state": state},
+            {"confirmed_offset": 4, "expected_offset": 8, "remote_offset": 2, "size": 10},
         ),
         ("UploadExpiredError", {"expires_at": _EXPIRED}),
         ("NonResumableSourceError", {"source_kind": "reader"}),
@@ -442,7 +440,7 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         (
             "offset state",
             lambda: errors.UploadOffsetError(
-                confirmed_offset=0, expected_offset=0, remote_offset=0, size=0, resume_state={}
+                confirmed_offset=0, expected_offset=0, remote_offset=0, size=0, resume_state=None
             ),
         ),
         ("expired naive", lambda: errors.UploadExpiredError(expires_at=_EXPIRED.replace(tzinfo=None))),
@@ -525,15 +523,10 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "probes that never answer"))
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "a probe that never answers"))
     unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
-    exchange.respond(server, server.lost(), failing(httpx2.ConnectError), failing(httpx2.ConnectError))
-    handle = helper.start(
-        harness.source(),
-        tus_resumable=harness.tus,
-        upload_options=harness.uploads(max_uncertain_probes=2),
-        options=unretried,
-    )
+    exchange.respond(server, server.lost(), failing(httpx2.ConnectError))
+    handle = helper.start(harness.source(), tus_resumable=harness.tus, options=unretried)
     step(lines, "advance", handle.advance)
     exchange.respond(server, server, server)
     step(lines, "run probes first", handle.run)
@@ -544,12 +537,6 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     step(lines, "advance", handle.advance)
     step(lines, "advance", handle.advance)
     step(lines, "advance probes first", handle.advance)
-    lines.append("no probe for an unknown append")
-    exchange.respond(server, failing(httpx2.ReadError))
-    handle = helper.start(
-        harness.source(), tus_resumable=harness.tus, upload_options=harness.uploads(max_uncertain_probes=0)
-    )
-    step(lines, "advance", handle.advance)
 
 
 def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
@@ -698,13 +685,14 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
-    lines.append("checkpoint, export, import, and resume")
+    lines.append("checkpoint, store as JSON text, and resume")
     exchange.respond(server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
-    exported = handle.checkpoint().export()
+    exported = json.dumps(handle.checkpoint())
     handle.close()
-    state = protocols.import_state(exported)
+    lines.append(f"  checkpoint {exported}")
+    state = json.loads(exported)
     exchange.respond(server, server, server)
     resumed = step(lines, "resume", lambda: helper.resume(harness.source(), state))
     step(lines, "run", resumed.run)
@@ -726,7 +714,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     record(lines, "checkpoint", finished.checkpoint)
     lines.append("resume a checkpoint whose remote offset regressed")
     exchange.respond(server.offered(0))
-    record(lines, "resume", lambda: helper.resume(harness.source(), protocols.import_state(exported)))
+    record(lines, "resume", lambda: helper.resume(harness.source(), json.loads(exported)))
     lines.append("refused checkpoints and sources")
     for label, call in (
         ("a shorter source", lambda: helper.resume(harness.source(b"98765"), state)),
@@ -738,15 +726,10 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
             "a smaller chunk size",
             lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2)),
         ),
-        (
-            "fewer chunks allowed",
-            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2)),
-        ),
+        ("a value that is not JSON", lambda: helper.resume(harness.source(), {**state, "bound": [[object()]]})),
     ):
         record(lines, f"resume with {label}", call)
-    envelope = json.loads(exported)
-    fingerprints = {"helper": envelope["helper"]}
-    saved = envelope["state"]
+    saved = json.loads(exported)
     upload = saved["bound"][1][0]
     for label, change in (
         ("an unknown member", {"other": 1}),
@@ -763,10 +746,9 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("a naive expiry", {"expires_at": "2999-01-01T00:00:00"}),
         ("an expiry with a Z suffix instead of an offset", {"expires_at": "2999-01-01T00:00:00Z"}),
     ):
-        broken = protocols.ResumeState(**fingerprints, state={**saved, **change})
+        broken = {**saved, **change}
         record(lines, f"resume with {label}", lambda broken=broken: helper.resume(harness.source(), broken))
-    dots = {**saved, "bound": [["..", "1.0.0"], [upload, "1.0.0"], []]}
-    dotted = protocols.ResumeState(**fingerprints, state=dots)
+    dotted = {**saved, "bound": [["..", "1.0.0"], [upload, "1.0.0"], []]}
     record(
         lines, "resume with a path value of dots and an iterator for a source", lambda: helper.resume(iter(()), dotted)
     )
@@ -783,7 +765,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
     """Keep the server's expiry in checkpoints, refuse expired ones, and refuse expiry values that are no dates."""
-    helper, protocols = api.protocols.files.upload, harness.protocols
+    helper = api.protocols.files.upload
     lines.append("server expiries")
     for label, value, probes in (("an HTTP date in the past", _PAST, 0), ("an RFC 3339 date-time to come", _FUTURE, 1)):
         server.expires = value
@@ -791,7 +773,7 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
         handle = helper.start(harness.source(), tus_resumable=harness.tus)
         state = handle.checkpoint()
         record(lines, f"resume a checkpoint with {label}", lambda state=state: helper.resume(harness.source(), state))
-        record(lines, "import its export", lambda state=state: protocols.import_state(state.export()))
+        record(lines, "its JSON round trip", lambda state=state: json.loads(json.dumps(state)) == state)
     for label, value in (
         ("no date", "tomorrow"),
         ("no day", "2999-02-30T00:00:00Z"),
@@ -855,12 +837,6 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     lines.append("refused options")
     for label, call in (
         (
-            "too many chunks",
-            lambda: helper.start(
-                harness.source(), tus_resumable=harness.tus, upload_options=harness.uploads(max_parts=2)
-            ),
-        ),
-        (
             "options of another type",
             lambda: helper.start(harness.source(), tus_resumable=harness.tus, upload_options=harness.session()),
         ),
@@ -900,7 +876,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             options=options.RequestOptions(query=(("offset", "1"),)),
         ),
     )
-    for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("negative probes", {"max_uncertain_probes": -1})):
+    for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("a removed chunk count", {"max_parts": 2})):
         record(lines, f"upload options with {label}", lambda value=value: harness.uploads(**value))
     lines.append("defaults from the client")
     defaults = options.ProtocolClientOptions(
@@ -987,13 +963,8 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         await astep(lines, "resume it", lambda: finish.resume(content, unknown.checkpoint()))
         exchange.respond(server, failing(httpx2.ReadError), failing(httpx2.ConnectError))
         unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
-        lost = await helper.start(
-            content,
-            tus_resumable=harness.tus,
-            upload_options=harness.uploads(max_uncertain_probes=1),
-            options=unretried,
-        )
-        await astep(lines, "advance with probes that never answer", lost.advance)
+        lost = await helper.start(content, tus_resumable=harness.tus, options=unretried)
+        await astep(lines, "advance with a probe that never answers", lost.advance)
         exchange.respond(server, server, failing(httpx2.ReadError), server.offered(0))
         regressed = await helper.start(content, tus_resumable=harness.tus)
         await astep(lines, "advance", regressed.advance)

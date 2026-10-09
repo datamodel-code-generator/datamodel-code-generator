@@ -304,7 +304,21 @@ class _Pages:
 
     def same(self, value: FinalPythonType | None, expected: FinalPythonType | None) -> bool:
         """Return whether a type is the type an item schema is read as, through None and aliases."""
-        return value is not None and expected is not None and self.present(value) == self.present(expected)
+        return value is not None and expected is not None and self.present(value) in self.read_as(expected)
+
+    def read_as(self, expected: FinalPythonType) -> tuple[FinalPythonType, ...]:
+        """Return the types an item schema's type is read as, without None and through aliases.
+
+        A root model also reads as its root, as the model of a schema that only refers to another one does.
+        """
+        read = self.present(expected)
+        if (
+            isinstance(read, GeneratedSymbolType)
+            and self.facts.symbols[read.symbol].kind == "root"
+            and (root := self.facts.root(read.symbol)) is not None
+        ):
+            return read, self.present(root)
+        return (read,)
 
     def present(self, value: FinalPythonType) -> FinalPythonType:
         """Return a type without None, through its aliases."""

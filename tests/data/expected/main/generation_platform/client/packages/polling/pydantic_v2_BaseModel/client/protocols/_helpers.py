@@ -12,10 +12,10 @@ from models import JobRequest as _dcg_type_0
 from models import Report as _dcg_type_1
 
 from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.polling import LroHandle, resume_operation, start_operation
 from .._runtime.protocols.records import CancelReceipt
-from .._runtime.protocols.resume import ResumeState
 from ..options import RequestOptions, SessionOptions
 from ..types.exports import CancelExportsResponse, ExportStatusResponse
 from ..types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
@@ -117,7 +117,7 @@ class JobsRunPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -164,7 +164,7 @@ class JobsInlinePolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -211,7 +211,7 @@ class JobsReportPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -255,7 +255,7 @@ class ExportsRunPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -309,7 +309,7 @@ class ExportsLatestPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -357,7 +357,7 @@ class JobsTrackedPolling:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,

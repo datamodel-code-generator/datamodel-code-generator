@@ -45,6 +45,7 @@ __all__ = ("ALIASES", "WRAPPERS", "ItemStep", "JSONTypes", "ModelFacts", "ModelF
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 JSONTypes: TypeAlias = frozenset[str] | None
 _NULL: Final = frozenset({"null"})
+_NULLABLE_ORIGINS: Final = frozenset({"schema", "preexisting_type"})
 _SCALARS: Final = MappingProxyType({
     "none": "null",
     "bool": "boolean",
@@ -77,9 +78,21 @@ _NAMED: Final = MappingProxyType({
     "pydantic.condecimal": "number",
     "pydantic.constr": "string",
     "pydantic.conbytes": "string",
+    "pydantic.PositiveInt": "integer",
+    "pydantic.NegativeInt": "integer",
+    "pydantic.NonPositiveInt": "integer",
+    "pydantic.NonNegativeInt": "integer",
+    "pydantic.StrictInt": "integer",
+    "pydantic.PositiveFloat": "number",
+    "pydantic.NegativeFloat": "number",
+    "pydantic.NonPositiveFloat": "number",
+    "pydantic.NonNegativeFloat": "number",
+    "pydantic.StrictFloat": "number",
+    "pydantic.StrictBool": "boolean",
 })
 _MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping", "typing.Dict"})
 _EXTRAS: Final = "__pydantic_extra__"
+_WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
 WRAPPERS: Final = frozenset({"alias", "root"})
@@ -299,6 +312,8 @@ class ModelFacts:
                 types = self.json_types(root, seen | {value.symbol})
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "model":
                 types = frozenset({"object"})
+            case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
+                types = self.json_types(value.arguments[0], seen)
             case GenericType():
                 types = frozenset({"object" if _name(value.base) in _MAPPINGS else "array"})
             case NoneType():
@@ -308,9 +323,16 @@ class ModelFacts:
         return types
 
     def field_types(self, field: ModelFieldFacts) -> JSONTypes:
-        """Return the JSON types of a field's wire values: those of its type, null only when its schema admits it."""
+        """Return the JSON types of a field's wire values: those of its type, null only when its schema admits it.
+
+        A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
+        annotation that only makes an omitted field optional does not.
+        """
         present = self.json_types(_without_none(field.type))
-        return present if present is None or not (field.nullable or field.type_has_null) else present | _NULL
+        accepts_null = field.nullable or field.type_has_null
+        if field.nullable is None:
+            accepts_null = accepts_null or field.none_default_provenance.annotation_null_origin in _NULLABLE_ORIGINS
+        return present if present is None or not accepts_null else present | _NULL
 
     def nullable(self, value: FinalPythonType) -> bool:
         """Return whether a type admits None, through its aliases."""

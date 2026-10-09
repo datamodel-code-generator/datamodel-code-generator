@@ -55,12 +55,11 @@
     location hint=True identity=True
   PollWaitLimitError: base=ProtocolError sdk=True reason=poll_wait_limit_error
     chain=['PollWaitLimitError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,reason,required_wait,resume_state,secondary_errors
+    fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,kind,limit,operation,operation_id,parent_session_id,reason,required_wait,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=PollWaitLimitError(operation_id='protocol', call_id='call-1', kind='wait', required_wait=120.0, limit=60.5) repr=PollWaitLimitError() secret=False progress shown=False
-    resume hint=True identity=True
   OperationFailedError: base=ProtocolError sdk=True reason=operation_failed_error
     chain=['OperationFailedError', 'ProtocolError', 'SDKError']
     fields=_snapshot,attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
@@ -168,7 +167,7 @@
   resume defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ResumeStateError(condition='malformed')
   cycle defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
   polling defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PollingStateError(condition='value')
-  wait defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
+  wait defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
   failed defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) OperationFailedError()
   cancelled defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) OperationCancelledError()
   decode defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) StreamDecodeError(condition='malformed', sequence=0, truncated=False)

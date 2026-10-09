@@ -412,9 +412,7 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
 
 def _environment(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     provider = auth.EnvironmentCredentialProvider("DCG_AUTH_FLOWS_TOKEN", kind="bearer")
-    context = auth.CredentialContext(
-        scheme="bearer", required_scopes=(), audience=None, origin=_ORIGIN, deadline=None
-    )
+    context = auth.CredentialContext(scheme="bearer", required_scopes=(), audience=None, origin=_ORIGIN, deadline=None)
     os.environ["DCG_AUTH_FLOWS_TOKEN"] = "first"
     try:
         first, again = provider.get(context), provider.get(context)
@@ -824,7 +822,7 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
             "bearer",
             _Renewing(_bearer(auth), refreshed=lapsed),
             raw_response(503, b"busy", "application/octet-stream"),
-            options.RedirectOptions(),
+            False,
         ),
         (
             "redirect hop token already expired",
@@ -832,7 +830,7 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
             "bearer",
             _Renewing(_bearer(auth), refreshed=lapsed),
             _moved(f"{_ORIGIN}/bearer?hop=1"),
-            options.RedirectOptions(enabled=True),
+            True,
         ),
         (
             "refresh grants known empty scopes",
@@ -840,7 +838,7 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
             "oauth_read",
             _Provider(_bearer(auth), refreshed=_bearer(auth, "narrowed", scopes=())),
             _rejected(),
-            options.RedirectOptions(),
+            False,
         ),
     ):
         first_line = len(lines)
@@ -861,7 +859,7 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
             package.Client(
                 http_client=native,
                 options=options.ClientOptions(
-                    auth=auth.AuthConfig({scheme: provider}), retry=retry, redirects=redirects
+                    auth=auth.AuthConfig({scheme: provider}), retry=retry, follow_redirects=redirects
                 ),
             ) as api,
         ):
@@ -1147,51 +1145,198 @@ def _moved(location: str) -> Callable[[Any], Any]:
     return lambda _: httpx2.Response(307, headers={"Location": location, "Content-Length": "0"})
 
 
-def _redirects(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    token = auth.StaticTokenProvider(auth.AccessToken("token"))
-    key = auth.StaticCredentialProvider(auth.ApiKeyCredential("query-secret"))
-    both = (_ORIGIN, _OTHER)
-    for label, config, method, location in (
-        ("credentials kept to their origin", auth.AuthConfig({"bearer": token}), "bearer", f"{_OTHER}/bearer"),
+class _CallerKey(httpx2.Auth):
+    """A caller's own native Auth on the HTTP client, which places its key on every request HTTPX2 sends."""
+
+    def auth_flow(self, request: httpx2.Request) -> Any:
+        request.headers["X-Caller-Key"] = "caller-secret"
+        yield request
+
+
+_REJECTED_ELSEWHERE: Final = "bearer rejected by another origin"
+
+
+def _answer(label: str) -> Callable[[Any], Any]:
+    """Return the reply after the redirect: the other origin rejects the token it never received on one row."""
+    return _rejected() if label == _REJECTED_ELSEWHERE else _ok()
+
+
+def _redirect(status: int, location: str) -> Callable[[Any], Any]:
+    return lambda _: httpx2.Response(status, headers={"Location": location, "Content-Length": "0"})
+
+
+def _redirect_cases(
+    auth: ModuleType, options: ModuleType, *, asynchronous: bool
+) -> tuple[tuple[str, dict[str, Any], object, str, int, str], ...]:
+    """Return the redirect rows: label, native client settings, client options, operation, status, and Location.
+
+    The HTTP client follows redirects unless a row says otherwise; a request carrying a key at a declared scheme
+    position other than Authorization, or a signature, is never redirected, whatever the setting.
+    """
+    prefix = "Async" if asynchronous else ""
+    token = getattr(auth, f"{prefix}StaticTokenProvider")(auth.AccessToken("token-secret"))
+    key = getattr(auth, f"{prefix}StaticCredentialProvider")(auth.ApiKeyCredential("key-secret"))
+    refreshable = (_AsyncProvider if asynchronous else _Provider)(
+        _bearer(auth, "token-secret"), refreshed=_bearer(auth, "fresh-secret")
+    )
+    signer = (_AsyncSigner if asynchronous else _Signer)(auth)
+    follows = {"follow_redirects": True}
+    keyed = options.ClientOptions(auth=auth.AuthConfig({"header_key": key}))
+    return (
+        ("header key not redirected", follows, keyed, "api_key_header", 302, f"{_OTHER}/api-key/header"),
         (
-            "signer kept to its origin",
-            auth.AuthConfig({"bearer": token}, allowed_origins=both, signers=(_Signer(auth, origins=(_ORIGIN,)),)),
+            "query key not redirected",
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"query_key": key})),
+            "api_key_query",
+            307,
+            f"{_OTHER}/api-key/query",
+        ),
+        (
+            "cookie key not redirected",
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"cookie_key": key})),
+            "api_key_cookie",
+            308,
+            f"{_OTHER}/api-key/cookie",
+        ),
+        (
+            "patched scheme header not redirected",
+            follows,
+            options.ClientOptions(headers=(("X-API-Key", "patched-secret"),)),
+            "anonymous",
+            302,
+            f"{_OTHER}/anonymous",
+        ),
+        (
+            "signed request not redirected",
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"bearer": token}, signers=(signer,))),
             "bearer",
+            302,
+            f"{_OTHER}/bearer",
+        ),
+        ("header key at its own origin not redirected", follows, keyed, "api_key_header", 302, f"{_ORIGIN}/moved"),
+        (
+            "SDK choice cannot redirect a header key",
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"header_key": key}), follow_redirects=True),
+            "api_key_header",
+            307,
+            f"{_OTHER}/api-key/header",
+        ),
+        (
+            "bearer redirected without Authorization",
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"bearer": token})),
+            "bearer",
+            302,
             f"{_OTHER}/bearer",
         ),
         (
-            "query key placed again after a redirect",
-            auth.AuthConfig({"query_key": key}, allowed_origins=both),
-            "api_key_query",
-            f"{_OTHER}/api-key/query?api_key=planted&page=1",
+            _REJECTED_ELSEWHERE,
+            follows,
+            options.ClientOptions(auth=auth.AuthConfig({"bearer": refreshable})),
+            "bearer",
+            302,
+            f"{_OTHER}/bearer",
         ),
         (
-            "self redirect planting the query key",
-            auth.AuthConfig({"query_key": key}),
-            "api_key_query",
-            f"{_ORIGIN}/api-key/query?api_key=planted",
-        ),
-        (
-            "form-encoded planted query key",
-            auth.AuthConfig(
-                {"spaced_query": key}, send_on_anonymous=True, anonymous_schemes=("spaced_query",), allowed_origins=both
-            ),
+            "plain request inherits the client's redirects",
+            follows,
+            options.ClientOptions(),
             "anonymous",
-            f"{_OTHER}/anonymous?api+key=planted",
+            303,
+            f"{_OTHER}/anonymous",
         ),
+        (
+            "plain request on a client that follows none",
+            {},
+            options.ClientOptions(),
+            "anonymous",
+            302,
+            f"{_OTHER}/anonymous",
+        ),
+        (
+            "plain request the SDK redirects",
+            {},
+            options.ClientOptions(follow_redirects=True),
+            "anonymous",
+            307,
+            f"{_OTHER}/anonymous",
+        ),
+        (
+            "plain request the SDK keeps",
+            follows,
+            options.ClientOptions(follow_redirects=False),
+            "anonymous",
+            302,
+            f"{_OTHER}/anonymous",
+        ),
+        (
+            "caller's own Auth applied and redirected",
+            {**follows, "auth": _CallerKey()},
+            options.ClientOptions(),
+            "anonymous",
+            302,
+            f"{_OTHER}/anonymous",
+        ),
+    )
+
+
+_REDIRECT_MODES: Final = ("typed", "raw", "stream")
+
+
+def _redirected(response: Any) -> tuple[object, ...]:
+    info = response.info
+    return ("returned", info.status_code, info.headers.get("location"))
+
+
+def _redirects(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Send keyed, signed, bearer, and plain calls to a redirect across origins through a following HTTP client."""
+    for label, native_settings, settings, method, status, location in _redirect_cases(
+        auth, options, asynchronous=False
     ):
-        exchange = Exchange(lines)
-        exchange.respond(_moved(location), _ok())
-        with (
-            exchange.client() as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    auth=config, redirects=options.RedirectOptions(enabled=True, allowed_origins=(_OTHER,))
-                ),
-            ) as api,
-        ):
-            record(lines, label, lambda api=api, method=method: _outcome(getattr(api.auth.with_response, method)))
+        for mode in _REDIRECT_MODES if label.startswith(("header key not", "plain request inherits")) else ("typed",):
+            exchange = Exchange(lines)
+            exchange.respond(_redirect(status, location), _answer(label))
+            with (
+                exchange.client(**native_settings) as native,
+                package.Client(http_client=native, options=settings) as api,
+            ):
+
+                def streamed(api: Any = api, method: str = method) -> tuple[object, ...]:
+                    with getattr(api.auth.with_streaming_response, method)() as response:
+                        return _redirected(response)
+
+                calls = {
+                    "typed": lambda api=api, method=method: _outcome(getattr(api.auth.with_response, method)),
+                    "raw": lambda api=api, method=method: _redirected(getattr(api.auth.with_raw_response, method)()),
+                    "stream": streamed,
+                }
+                record(lines, f"{label} {mode}", calls[mode])
+            lines.append(f"    unused={len(exchange.responders)}")
+
+
+async def _aredirects(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Send the redirect rows with asyncio."""
+    for label, native_settings, settings, method, status, location in _redirect_cases(auth, options, asynchronous=True):
+        for mode in _REDIRECT_MODES if label.startswith(("header key not", "plain request inherits")) else ("typed",):
+            exchange = Exchange(lines)
+            exchange.respond(_redirect(status, location), _answer(label))
+            async with (
+                exchange.async_client(**native_settings) as native,
+                package.AsyncClient(http_client=native, options=settings) as api,
+            ):
+                if mode == "typed":
+                    outcome = await _aoutcome(getattr(api.auth.with_response, method))
+                elif mode == "raw":
+                    outcome = _redirected(await getattr(api.auth.with_raw_response, method)())
+                else:
+                    async with getattr(api.auth.with_streaming_response, method)() as response:
+                        outcome = _redirected(response)
+            lines.append(f"  async {label} {mode} = {outcome}")
+            lines.append(f"    unused={len(exchange.responders)}")
 
 
 def _signatures(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -1210,6 +1355,7 @@ def _signatures(package: ModuleType, auth: ModuleType, options: ModuleType, line
         ("signature query lone surrogate", _Signer(auth, fields((), (("sig", "\ud800"),)))),
         ("signer returns a mapping", _Signer(auth, {"X-Sig": "v"})),
         ("signer returns a coroutine", _Signer(auth, _later(None))),
+        ("signer of another origin", _Signer(auth, origins=(_OTHER,))),
     ):
         exchange = Exchange(lines)
         exchange.respond(_ok())
@@ -1261,4 +1407,5 @@ def auth_flows(package: ModuleType, lines: list[str]) -> None:
     _ownership(package, auth, options, lines)
     run(lambda: _aownership(package, auth, options, lines))
     _redirects(package, auth, options, lines)
+    run(lambda: _aredirects(package, auth, options, lines))
     _signatures(package, auth, options, lines)
