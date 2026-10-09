@@ -469,8 +469,8 @@ call running in a thread before it closes the file.
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
 Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
-attempt and followed redirect, its response hooks every response, and an exception they raise propagates as
-HTTPX2 raises it.
+attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
+as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
