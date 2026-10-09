@@ -9666,6 +9666,54 @@ class Model(BaseModel):
 
 ---
 
+### Generating a Server or Client Package
+
+!!! warning "Experimental"
+    Server and client generation is experimental; its options and generated packages may change.
+
+`generate()` also generates the [FastAPI server](fastapi-server.md) or the [HTTPX2 client](python-client.md) package
+of an OpenAPI document together with its models. `generate_server` or `generate_client` selects the package, and
+the `server_*` or `client_*` options configure it. They are the options of `--generate-server`, `--generate-client`,
+and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
+`ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import InputFileType, OpenAPIScope, ServerHandlerMode, ServerType, generate
+
+generate(
+    Path("openapi.yaml"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    target_python_version="3.11",
+    output=Path("models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("server"),
+    server_package="server",
+    server_model_package="models",
+    server_handler_mode=ServerHandlerMode.Async,
+    server_body_modes={"/paths/~1upload/post": "request"},
+)
+```
+
+With an `output`, `generate()` writes the models and the package together and returns `None`. Without one, it writes
+nothing but the model metadata and a remote lock update, and returns `GeneratedModules` with every model and package
+file, each under the path its import path implies: `server_model_package="models"` gives `("models.py",)`, or
+`("models", "__init__.py")` and the other modules of modular models, and `server_package="server"` gives
+`("server", "application.py")`, `("server", "README.md")`, and so on. These are the files a run with `output` and
+`server_output` in the working directory writes; `server_output` is not used. The run renders the files in a private
+directory of the working directory, which it removes afterwards, so the working directory must be writable. `load_pyproject_config()` takes the
+server and client keys of `pyproject.toml` too, so a config it loads with `overrides={"output": None}` returns the
+files of the configured run.
+
+The selector requires `server_package` and `server_model_package` (or the client ones), and `server_output` with an
+`output`. A missing option, an option the target cannot use, and a failure of the package raise
+`datamodel_code_generator.Error` with the message the command line prints. The `server_*` and `client_*` options have
+no effect without their selector, as their `pyproject.toml` keys do.
+
+---
+
 ## 🔧 Using the Parser Directly
 
 You can also call the parser directly for more control. Parser classes also support the `config` parameter similar to `generate()`.
@@ -9779,6 +9827,9 @@ class Model(BaseModel):
 | `Path` (directory)| `None`        | `None` |
 
 📌 **Note:** When `output` is a file path and multiple modules would be generated, `generate()` raises a `datamodel_code_generator.Error` exception. Use a directory path instead.
+
+With `generate_server` or `generate_client`, `generate()` returns `None` with an `output` and `GeneratedModules` with
+every model and package file without one (see [Generating a Server or Client Package](#generating-a-server-or-client-package)).
 
 ---
 
@@ -11289,7 +11340,39 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
 
 ## Python API
 
-`datamodel_code_generator.fastapi` has the same entry points:
+`generate()` takes the server options under their Python names, with the model options; the choices are enums of
+`datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
+options take mappings keyed by the same operation references:
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import DataModelType, InputFileType, OpenAPIScope, ServerType, generate
+
+generate(
+    Path("openapi.yaml"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="standard-py312-20260909",
+    output=Path("models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("server"),
+    server_package="server",
+    server_model_package="models",
+    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
+)
+```
+
+It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
+returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
+`("models.py",)` and `("server", "application.py")`, and writes nothing but the model metadata and a remote lock
+update; see [Generating a Server or Client Package](using_as_module.md#generating-a-server-or-client-package).
+`load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
+against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
+the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
+
+The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
 
 <!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
@@ -11313,13 +11396,6 @@ generate_fastapi(
 <!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
-`generate_fastapi` publishes the files and returns `None`, like model generation.
-The rendered project lists the package's runtime requirement specifiers in `dependencies`, which the command line
-prints as a `uv add` command. Neither public result contains diagnostic records.
-Invalid settings and bindings raise `APIGenerationError`, a subclass of
-`datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
-model generation errors keep their own types and messages. The records, errors, warnings, and codec
-registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
 
@@ -11490,8 +11566,8 @@ Run the same command again after the OpenAPI document changes. The service Proto
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
 lacks a new method; modules outside the package are never touched. `--check` renders everything without writing it
 and exits with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or
-deleted or a file that is no longer generated, and 2 for an error; `render_fastapi` returns the same artifacts, each
-with its action.
+deleted or a file that is no longer generated, and 2 for an error. In Python, compare the files `generate()` returns
+without an `output`.
 
 `--check` uses the model output comparison: it prints unified diffs and missing or extra file messages to stdout.
 It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
@@ -11622,7 +11698,7 @@ The command line prints failures to stderr as `Error: message` and exits with 2.
 messages in order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
-Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `DocumentationAnnotationWarning` reports
+Python `UserWarning` subclasses from `datamodel_code_generator`: `DocumentationAnnotationWarning` reports
 a documentation value the served document cannot carry. Each message starts with the output path, spelled relative
 to the working directory when it lies inside it, so every generated package reports its own files. They respect
 `--disable-warnings` and Python warning filters, and are not returned as diagnostic records.
@@ -48276,9 +48352,9 @@ This page lists features that are available but still experimental.
 |----|------|--------|-------|----------|
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
-| `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)` | 0.84.0 | - |
+| `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
-| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)` | 0.84.0 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -48319,12 +48395,12 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 ### `cli-option.generate-client`
 
 - **Kind:** cli-option
-- **Target:** `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)`
+- **Target:** `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)`
 - **Since:** 0.84.0
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
---generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.generate-schema-validators`
 
@@ -48339,12 +48415,12 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 ### `cli-option.generate-server`
 
 - **Kind:** cli-option
-- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)`
+- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)`
 - **Since:** 0.84.0
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -49049,8 +49125,8 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 151 | Shared generation options. |
-| `GenerateConfig` | 166 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 176 | Shared generation options. |
+| `GenerateConfig` | 191 | Public `generate()` configuration. |
 | `ParserConfig` | 142 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 144 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 150 | OpenAPI-specific parser options. |

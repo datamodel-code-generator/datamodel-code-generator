@@ -223,6 +223,54 @@ class Model(BaseModel):
 
 ---
 
+### Generating a Server or Client Package
+
+!!! warning "Experimental"
+    Server and client generation is experimental; its options and generated packages may change.
+
+`generate()` also generates the [FastAPI server](fastapi-server.md) or the [HTTPX2 client](python-client.md) package
+of an OpenAPI document together with its models. `generate_server` or `generate_client` selects the package, and
+the `server_*` or `client_*` options configure it. They are the options of `--generate-server`, `--generate-client`,
+and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
+`ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import InputFileType, OpenAPIScope, ServerHandlerMode, ServerType, generate
+
+generate(
+    Path("openapi.yaml"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    target_python_version="3.11",
+    output=Path("models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("server"),
+    server_package="server",
+    server_model_package="models",
+    server_handler_mode=ServerHandlerMode.Async,
+    server_body_modes={"/paths/~1upload/post": "request"},
+)
+```
+
+With an `output`, `generate()` writes the models and the package together and returns `None`. Without one, it writes
+nothing but the model metadata and a remote lock update, and returns `GeneratedModules` with every model and package
+file, each under the path its import path implies: `server_model_package="models"` gives `("models.py",)`, or
+`("models", "__init__.py")` and the other modules of modular models, and `server_package="server"` gives
+`("server", "application.py")`, `("server", "README.md")`, and so on. These are the files a run with `output` and
+`server_output` in the working directory writes; `server_output` is not used. The run renders the files in a private
+directory of the working directory, which it removes afterwards, so the working directory must be writable. `load_pyproject_config()` takes the
+server and client keys of `pyproject.toml` too, so a config it loads with `overrides={"output": None}` returns the
+files of the configured run.
+
+The selector requires `server_package` and `server_model_package` (or the client ones), and `server_output` with an
+`output`. A missing option, an option the target cannot use, and a failure of the package raise
+`datamodel_code_generator.Error` with the message the command line prints. The `server_*` and `client_*` options have
+no effect without their selector, as their `pyproject.toml` keys do.
+
+---
+
 ## 🔧 Using the Parser Directly
 
 You can also call the parser directly for more control. Parser classes also support the `config` parameter similar to `generate()`.
@@ -336,6 +384,9 @@ class Model(BaseModel):
 | `Path` (directory)| `None`        | `None` |
 
 📌 **Note:** When `output` is a file path and multiple modules would be generated, `generate()` raises a `datamodel_code_generator.Error` exception. Use a directory path instead.
+
+With `generate_server` or `generate_client`, `generate()` returns `None` with an `output` and `GeneratedModules` with
+every model and package file without one (see [Generating a Server or Client Package](#generating-a-server-or-client-package)).
 
 ---
 
