@@ -96,6 +96,7 @@ class FieldItemsLevelGetQueryModeParameter(IntEnum):
 class FieldItemsLevelGetQueryRatioParameter(Enum):
     number_0_5 = 0.5
     number_1_5 = 1.5
+    number_2_2 = 2.2
 
 
 FieldItemsLevelGetHeaderXFlagParameter = TypeAliasType("FieldItemsLevelGetHeaderXFlagParameter", Literal[True])

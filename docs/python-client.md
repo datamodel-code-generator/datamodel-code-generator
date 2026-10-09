@@ -168,6 +168,18 @@ formatted, and encoded like the model files, by the same model settings: `format
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
+## Model conversion
+
+The generated models determine validation and conversion. Text in parameters, response headers, forms and text parts
+is decoded before the selected backend handles it: a declared integer, number or boolean becomes that builtin when the
+text is its canonical JSON literal. Pydantic and msgspec receive any other text unchanged and decide by their native
+conversion rules, as they do for unknown object members. Dataclass and TypedDict codecs validate nothing, so for them
+such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
+still constructed without added schema validation. Repeated undeclared members keep their last value.
+
+The generated `model_codecs` module exports `UNSET`, `Unset` and `JSONValue`. Parameter parsing records and wire
+validation errors are implementation details.
+
 ## Webhook contracts
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
