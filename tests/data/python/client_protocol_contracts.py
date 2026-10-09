@@ -368,7 +368,6 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     info = responses.ResponseInfo(
         status_code=200,
         headers=responses.HeadersView((("x-state", "secret-header"),)),
-        call_id="call-1",
         elapsed=0.25,
         content_type="application/json",
     )

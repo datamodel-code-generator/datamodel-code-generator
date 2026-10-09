@@ -1,34 +1,48 @@
 # modular
 render
-  target=fastapi schema_version=1
-  write model models/__init__.py
-  write model models/pets.py
-  write model models/store.py
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/store.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/_generated/openapi.py
-  write target server/services.py
-  write target server/README.md
-  write target server/py.typed
-  5 runtime modules ['write']
-publish
+  new models/__init__.py
+  new models/pets.py
+  new models/store.py
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/store.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/_generated/openapi.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  5 runtime modules ['new']
+generate
+  returned None
+tree
+  models/__init__.py
+  models/pets.py
+  models/store.py
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.py
+  server/application.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/store.py
+  server/services.py
+  5 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  unchanged model models/__init__.py
-  unchanged model models/pets.py
-  unchanged model models/store.py
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/store.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/_generated/openapi.py
-  unchanged target server/services.py
-  unchanged target server/README.md
-  unchanged target server/py.typed
+  unchanged models/__init__.py
+  unchanged models/pets.py
+  unchanged models/store.py
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/store.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
+  unchanged server/services.py
+  unchanged server/README.md
+  unchanged server/py.typed
   5 runtime modules ['unchanged']

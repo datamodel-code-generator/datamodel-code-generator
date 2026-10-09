@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Final
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
@@ -55,6 +54,7 @@ from datamodel_code_generator._target_contract import (
     GenericType,
     UnionType,
 )
+from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
@@ -123,10 +123,7 @@ class ClientTarget:
         try:
             plan = Planner(request, config, wire, facts).plan()
         except PlanError as error:
-            raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
-                option_prefix=OPTION_PREFIX,
-            ) from None
+            raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
         streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
@@ -138,7 +135,7 @@ class ClientTarget:
         codecs = plan_client_codecs(batch, wire, backend, uses, facts)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+            raise APIGenerationError(tuple(map(_diagnostic, problems)))
         coded = frozenset(item.use for item in codecs.uses)
         plan, named = plan_fields(plan, facts, coded)
         pages, checked = plan_pagination(protocols, plan, facts, coded, request)
@@ -166,13 +163,7 @@ class ClientTarget:
                 },
             ),
         ):
-            raise APIGenerationError(
-                tuple(
-                    replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
-                    for item in refused
-                ),
-                option_prefix=OPTION_PREFIX,
-            )
+            raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
         types = TypeNames(
             batch,
             exact=bool(request.model_config.use_exact_imports),
@@ -206,7 +197,7 @@ class ClientTarget:
             backend=backend,
             types=types,
             dependencies=dependencies,
-            templates=ClientTemplates.custom(request.model_config, request.target_id, request.cwd),
+            templates=ClientTemplates.custom(request.model_config, request.cwd),
         )
         return TargetRender(files=renderer.files(), dependencies=dependencies)
 
@@ -225,15 +216,13 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
     )
 
 
-def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
+def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
     return Diagnostic(
         code=item.code,
         severity="error",
         stage="binding",
         message=item.message,
-        source_uri=request.documents.root_uri,
         source_pointer=item.source.pointer,
-        target_id=request.target_id,
     )
 
 

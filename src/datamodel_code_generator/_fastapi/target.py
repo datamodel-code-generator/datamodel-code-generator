@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import warnings
-from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_manifest import shown
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, DocumentationAnnotationWarning
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
@@ -16,6 +14,7 @@ from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.source_document import SourceDocument
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -55,12 +54,12 @@ class FastAPITarget:
             plan = Planner(request, config, wire).plan()
         except PlanError as error:
             raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
+                error.diagnostics,
                 option_prefix=FastAPIConfig._option_prefix,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
             ) from None
         selected = {operation.contract.id for operation in plan.operations}
         if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+            raise APIGenerationError(tuple(map(_diagnostic, problems)))
         _check_links(plan, request)
         source = SourceDocument(request.lease)
         document = source.text(spec.contract for spec in plan.operations)
@@ -70,12 +69,12 @@ class FastAPITarget:
             plan=plan,
             batch=request.batch,
             wire=wire,
-            templates=FastAPITemplates.custom(request.model_config, request.target_id, request.cwd),
+            templates=FastAPITemplates.custom(request.model_config, request.cwd),
             document=document,
         )
         files = renderer.files()
         for problem in source.problems:
-            output = shown(config.output, request.cwd).as_posix()
+            output = shown(config.output, request.shown_root).as_posix()
             warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
         return TargetRender(files=files, dependencies=_dependencies(plan, request.model_imports))
 
@@ -91,18 +90,16 @@ def _check_links(plan: ServerPlan, request: TargetRequest) -> None:
         }.values()
     )
     if links := invalid_links((*(spec.contract for spec in plan.operations), *callbacks)):
-        raise APIGenerationError(tuple(replace(item, target_id=request.target_id) for item in links))
+        raise APIGenerationError(links)
 
 
-def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
+def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
     return Diagnostic(
         code=item.code,
         severity="error",
         stage="binding",
         message=item.message,
-        source_uri=request.documents.root_uri,
         source_pointer=item.source.pointer,
-        target_id=request.target_id,
     )
 
 

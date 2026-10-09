@@ -42,19 +42,17 @@ tree
   5 runtime modules ['present']
 leftovers []
 render
-  target=fastapi schema_version=1
-  unchanged model models/__init__.py
-  unchanged model models/pets.py
-  unchanged model models/store.py
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/store.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/_generated/openapi.py
-  unchanged target server/services.py
-  unchanged target server/README.md
-  unchanged target server/py.typed
-  unchanged remote_lock remote.lock
+  unchanged models/__init__.py
+  unchanged models/pets.py
+  unchanged models/store.py
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/store.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
+  unchanged server/services.py
+  unchanged server/README.md
+  unchanged server/py.typed
   5 runtime modules ['unchanged']

@@ -14,6 +14,7 @@ import httpx2
 from typing_extensions import Self
 
 from ._generated import security
+from ._runtime.client.auth import SchemeCredentials, Secret
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET, Unset
@@ -73,11 +74,27 @@ class Client(ClientView):
     def __init__(
         self,
         *,
+        auth: Secret | None = None,
+        remote_query: Secret | None = None,
+        actual_header: Secret | None = None,
+        remote_header: Secret | None = None,
         options: ClientOptions | None = None,
         http_client: httpx2.Client | Unset | None = UNSET,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = ClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = ClientCore.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            credentials=SchemeCredentials(
+                {
+                    "auth": auth,
+                    "remoteQuery": remote_query,
+                    "actualHeader": actual_header,
+                    "remoteHeader": remote_header,
+                },
+            ),
+        )
 
     def close(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""

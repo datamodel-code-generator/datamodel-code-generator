@@ -1,7 +1,7 @@
 import importlib
 
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator._api_manifest import canonical_bytes
+from datamodel_code_generator._target_documents import canonical_bytes
 from datamodel_code_generator import parser as parser_package
 
 import datamodel_code_generator.parser

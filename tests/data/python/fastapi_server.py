@@ -15,11 +15,10 @@ from fastapi import FastAPI
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, GenerateConfig
+from datamodel_code_generator import DataModelType, generate
 from datamodel_code_generator.enums import OpenAPIScope
-from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
-from tests.data.python.fastapi_generation import SOURCE, fastapi_config
+from tests.data.python.fastapi_generation import SOURCE, server_options
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -42,9 +41,9 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
     if isinstance(directory := model.get("custom_template_dir"), str):
         model = {**model, "custom_template_dir": SOURCE / directory}
     models = _models(case, package)
-    generate_fastapi(
+    generate(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(**{
+        **{
             "output": root / f"{models.replace('.', '/')}{'' if case.get('modular') else '.py'}",
             "input_file_type": "openapi",
             "target_python_version": "3.11",
@@ -53,11 +52,9 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             "disable_timestamp": True,
             "formatters": [Formatter.BUILTIN],
             **model,
-        }),
-        config=fastapi_config(
-            {"output": package, "package": package, "model_package": models, **case.get("config", {})},
-            root,
-        ),
+        },
+        **server_options(case, package, models),
+        server_output=root / package,
     )
 
 

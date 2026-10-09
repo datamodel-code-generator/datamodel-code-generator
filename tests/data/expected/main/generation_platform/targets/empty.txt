@@ -1,16 +1,15 @@
 # empty
 render
-  target=fastapi schema_version=1
-  write target server/__init__.py
-  write target server/application.py
-  write target server/routers/__init__.py
-  write target server/routers/untagged.py
-  write target server/_generated/__init__.py
-  write target server/_generated/contract.py
-  write target server/_generated/openapi.py
-  write target server/services.py
-  write target server/README.md
-  write target server/py.typed
-  5 runtime modules ['write']
+  new server/__init__.py
+  new server/application.py
+  new server/routers/__init__.py
+  new server/routers/untagged.py
+  new server/_generated/__init__.py
+  new server/_generated/contract.py
+  new server/_generated/openapi.py
+  new server/services.py
+  new server/README.md
+  new server/py.typed
+  5 runtime modules ['new']
 render
   Error: --generate-server requires --openapi-scopes to include api

@@ -14,28 +14,19 @@ from pathlib import Path
 import httpx2
 import publication_client
 import publication_client_models as models
-from publication_client import AsyncClient, Client, auth, options
+from publication_client import AsyncClient, Client, options
 
 
-def _options(profile: str, url: str, native: httpx2.Client | httpx2.AsyncClient) -> options.ClientOptions:
-    credentials = None
-    static = auth.AsyncStaticCredentialProvider if isinstance(native, httpx2.AsyncClient) else auth.StaticCredentialProvider
+def _credentials(profile: str, url: str) -> dict[str, object]:
     if profile == "api-key":
-        credentials = auth.AuthConfig({"credential": static(auth.ApiKeyCredential("install-key"))})
-    elif profile == "oauth2-client-credentials":
-        provider = (
-            auth.AsyncClientCredentialsProvider if isinstance(native, httpx2.AsyncClient) else auth.ClientCredentialsProvider
+        return {"credential": "install-key"}
+    if profile == "oauth2-client-credentials":
+        auth = importlib.import_module("publication_client.auth")
+        provider = auth.CredentialClientCredentials(
+            client_id="installed-client", client_secret="install-secret", scopes=("read",), token_url=f"{url}/token"
         )
-        credentials = auth.AuthConfig({
-            "credential": provider(
-                f"{url}/token",
-                client_id="installed-client",
-                client_secret=static(auth.ApiKeyCredential("install-secret")),
-                scopes=("read",),
-                http_client=native,
-            )
-        })
-    return options.ClientOptions(base_url=url, auth=credentials)
+        return {"credential": provider}
+    return {}
 
 
 def _body(backend: str, profile: str) -> object:
@@ -55,7 +46,7 @@ def _result(value: object) -> str:
 
 async def _async(profile: str, backend: str, url: str, context: ssl.SSLContext) -> None:
     async with httpx2.AsyncClient(verify=context, trust_env=False) as native:
-        async with AsyncClient(options=_options(profile, url, native), http_client=native) as client:
+        async with AsyncClient(options=options.ClientOptions(base_url=url), http_client=native, **_credentials(profile, url)) as client:
             print("async", _result(await client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
 
 
@@ -70,7 +61,7 @@ def main() -> None:
     print("optional distributions", [name for name in names if name in installed])
     context = ssl.create_default_context(cafile=authority)
     with httpx2.Client(verify=context, trust_env=False) as native:
-        with Client(options=_options(profile, url, native), http_client=native) as client:
+        with Client(options=options.ClientOptions(base_url=url), http_client=native, **_credentials(profile, url)) as client:
             print("sync", _result(client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
     asyncio.run(_async(profile, backend, url, context))
 

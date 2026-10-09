@@ -50,6 +50,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "auth-errors",
         "auth-context",
         "auth-wire-conflicts",
+        "credential-name-errors",
         "pets-unpack",
         "retries",
         "retry-headers",
@@ -126,6 +127,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "templates-invalid",
         "templates-not-found",
         "api-scope-required",
+        "output-required",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -403,5 +405,5 @@ def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Pat
 
 
 def test_client_api(tmp_path: Path) -> None:
-    """Resolve the public annotations, render and generate twice, then rewrite an edited owned file."""
+    """Return the files without an output, generate twice, then rewrite an edited owned file."""
     assert_output(client_api_report(tmp_path), EXPECTED / "api.txt")

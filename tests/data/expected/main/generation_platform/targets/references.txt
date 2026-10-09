@@ -2,6 +2,6 @@
 render
   Error: The --server-primary-responses entry '/paths/~1nope/get' selects no root path operation
 render
-  Error: The --server-primary-responses entry '/paths/~1pets/get' in 'spec/other.yaml' selects no root path operation
+  Error: The --server-primary-responses entry '/paths/~1pets/get' in '<root>/spec/other.yaml' selects no root path operation
 render
   Error: Several operation names become 'CreatePet'

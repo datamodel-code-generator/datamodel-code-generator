@@ -12,7 +12,7 @@
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   first item = '1'
-  after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
   closed after one page {'pages': 1, 'items': 1}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -22,12 +22,12 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   retried items ['1', '2']
   retried progress {'pages': 2, 'items': 2}
-  after block ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  after block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
   > GET https://api.example.com/users?cursor=start
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   started items ['9']
-  pages then items ! ProtocolStateError: ProtocolStateError(state='pages', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  pages then iter ! ProtocolStateError: ProtocolStateError(state='pages', action='iter') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  pages then items ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.pages') [field_path=('next', 'pages')] invalid_state
+  pages then iter ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter.pages') [field_path=('iter', 'pages')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -36,8 +36,8 @@
   pages again []
   pages iter_pages again = []
   iterable = True
-  items then pages ! ProtocolStateError: ProtocolStateError(state='items', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  items of closed pages ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  items then pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.items') [field_path=('iter_pages', 'items')] invalid_state
+  items of closed pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page = [1] continuation='a' status=200 attempts=1
@@ -51,9 +51,9 @@
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   same page again = [1] continuation='a' status=200 attempts=1
-  page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  page a caller made ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  not a page ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
+  page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  page a caller made ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  not a page ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
   page repr = 'Page(items=0'
   page items ! TypeError: items must be a tuple []
   page response ! TypeError: response must be a ResponseInfo []
@@ -84,39 +84,39 @@
   missing header end ['1']
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing loose cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  missing loose cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  null nested cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', call_id='<call>', condition='null') [operation_id='listNested', condition='null', location=BodySelector(pointer='/result/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  null nested cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='null') [operation_id='listNested', location=BodySelector(pointer='/result/next')] null
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/data'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  missing items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/data')] missing
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  null items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='null') [operation_id='listLoose', condition='null', location=BodySelector(pointer='/data'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  null items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='null') [operation_id='listLoose', location=BodySelector(pointer='/data')] null
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  items of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":{"id":"1"},"next":null}', truncated=False, cause=1 validation error for LoosePage
+  items of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":{"id":"1"},"next":null}', truncated=False, cause=1 validation error for LoosePage
 data
   Input should be a valid array [type=list_type, input_value={'id': '1'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing nested result [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', call_id='<call>', condition='missing') [operation_id='listNested', condition='missing', location=BodySelector(pointer='/result/items'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  missing nested result [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='missing') [operation_id='listNested', location=BodySelector(pointer='/result/items')] missing
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  null nested items [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', call_id='<call>', condition='null') [operation_id='listNested', condition='null', location=BodySelector(pointer='/result/items'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  null nested items [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='null') [operation_id='listNested', location=BodySelector(pointer='/result/items')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  duplicate cursor header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='x-next', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  duplicate cursor header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='malformed') [operation_id='listUsers', location=HeaderSelector(name='x-next', occurrence='single')] malformed
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  invalid page [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_syntax') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=1 validation error for LoosePage
+  invalid page [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_syntax') [operation_id='listLoose', body_bytes=b'{', truncated=False, cause=1 validation error for LoosePage
   Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page its model refuses [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":[{"name":"x"}]}', truncated=False, cause=1 validation error for LoosePage
+  page its model refuses [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":[{"name":"x"}]}', truncated=False, cause=1 validation error for LoosePage
 data.0.id
   Field required [type=missing, input_value={'name': 'x'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
@@ -132,34 +132,34 @@ data.0.id
   nested items ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='response_too_large') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
+  response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='response_too_large') [operation_id='listUsers', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   response limit removed ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  broken coding [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: unknown compression method')] protocol_data_error
+  broken coding [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='malformed_coding') [operation_id='listUsers', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: unknown compression method')] malformed_coding
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=b
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cycle pages ['[1]', '[2]', '[3]'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle pages ['[1]', '[2]', '[3]'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle progress {'pages': 3, 'items': 3}
-  after the cycle ! ProtocolStateError: ProtocolStateError(state='failed', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  after the cycle ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.failed') [field_path=('iter_pages', 'failed')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   cycle page = [1] continuation='a' status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   repeating page = [2] continuation='a' status=200 attempts=1
-  after the repeating page ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  after the repeating page ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/loose?cursor=5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cycle of integer cursors [] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  cycle of integer cursors [] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -170,7 +170,7 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(kind='pages', limit=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=2] session_limit_error
+  page limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages
     progress {'pages': 2, 'items': 2}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -184,11 +184,11 @@ data.0.id
     progress {'pages': 1, 'items': 2}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit with items left ['1', '2'] ! SessionLimitError: SessionLimitError(kind='items', limit=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=2] session_limit_error
+  item limit with items left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='items', limit=2) [limit=2] items
     progress {'pages': 1, 'items': 2}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(kind='items', limit=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=2] session_limit_error
+  item limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='items', limit=2) [limit=2] items
     progress {'pages': 1, 'items': 2}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -198,7 +198,7 @@ data.0.id
     progress {'pages': 2, 'items': 3}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit of pages ['[1,2]'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit of pages ['[1,2]'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
     progress {'pages': 1, 'items': 2}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -208,12 +208,12 @@ data.0.id
     progress {'pages': 0, 'items': 0}
   zero items of pages []
     progress {'pages': 0, 'items': 0}
-  zero items page ! SessionLimitError: SessionLimitError(kind='items', limit=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=0] session_limit_error
+  zero items page ! SessionLimitError: SessionLimitError(reason='items', limit=0) [limit=0] items
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page for limits = [1] continuation='a' status=200 attempts=1
-  next page past its page limit ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
-  next page past its item limit ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  next page past its page limit ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
+  next page past its item limit ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   > GET https://api.example.com/archive/a1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/archive/b2
@@ -236,7 +236,7 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/loose?cursor=t1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='listLoose', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
+  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', cause='RemoteProtocolError') [operation_id='listLoose', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/labels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/labels?after=n1
@@ -263,14 +263,14 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=b
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async cycle pages ['[1]', '[2]', '[3]'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
-  async after the cycle ! ProtocolStateError: ProtocolStateError(state='failed', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  async after block ! ProtocolStateError: ProtocolStateError(state='closed', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  async items then pages ! ProtocolStateError: ProtocolStateError(state='items', action='iter_pages') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  async pages then aiter ! ProtocolStateError: ProtocolStateError(state='pages', action='aiter') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async cycle pages ['[1]', '[2]', '[3]'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
+  async after the cycle ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.failed') [field_path=('iter_pages', 'failed')] invalid_state
+  async after block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.closed') [field_path=('iter_pages', 'closed')] invalid_state
+  async items then pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.items') [field_path=('iter_pages', 'items')] invalid_state
+  async pages then aiter ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.pages') [field_path=('aiter', 'pages')] invalid_state
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async item limit ['[1]'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  async item limit ['[1]'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   async zero items []
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -279,9 +279,9 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async next page = [2] continuation=None status=200 attempts=1
   async after the last page = None
-  async page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  async zero items page ! SessionLimitError: SessionLimitError(kind='items', limit=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=0] session_limit_error
+  async page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  async zero items page ! SessionLimitError: SessionLimitError(reason='items', limit=0) [limit=0] items
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='response_too_large') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
-  async after close [] ! ProtocolStateError: ProtocolStateError(state='closed', action='aiter') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='response_too_large') [operation_id='listUsers', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
+  async after close [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.closed') [field_path=('aiter', 'closed')] invalid_state

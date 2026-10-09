@@ -6,9 +6,19 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 Size = TypeAliasType("Size", Annotated[int, Field(ge=1, strict=True)])
+
+
+@dataclass
+class Form:
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    name: StrictStr | None = None
+    counts: list[StrictInt] | None = None
 
 
 FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", StrictInt)
@@ -59,3 +69,13 @@ FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobPar
 
 
 FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)
+
+
+@dataclass
+class FieldUploadsPostRequest:
+    file: bytes
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    note: StrictStr | None = None
+    counts: list[StrictInt] | None = None

@@ -16,10 +16,8 @@ import httpx2
 
 from datamodel_code_generator import Error
 from tests.data.python.client_allowreserved import reserved_paths
-from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
-from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_replay import body_replay, multipart_replay
@@ -34,11 +32,8 @@ from tests.data.python.client_evolution import evolution
 from tests.data.python.client_fields import fields, optional_models
 from tests.data.python.client_headers import headers, native_boundaries
 from tests.data.python.client_hooks import hooks
-from tests.data.python.client_limiter_faults import limiter_faults
-from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_codec_backends, native_faults, native_wire
-from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_client_credentials import oauth_client_credentials
 from tests.data.python.client_oauth_refresh import oauth_refresh
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
@@ -160,10 +155,7 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     (errors,) = _modules(package, "errors")
     record(lines, "error condition", lambda: errors.ConfigurationError(reason="invalid_value"))
     error = errors.SDKError()
-    lines.append(
-        f"  error bare {error} {error.reason_code} "
-        f"{errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT)}"
-    )
+    lines.append(f"  error bare {error} {error.reason} {errors.APIConnectionError()}")
 
 
 def _lifecycle(package: ModuleType, lines: list[str]) -> None:
@@ -212,6 +204,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         ("error syntax", raw_response(500, b"{", "application/json"), 3),
         ("error media", raw_response(503, b"down", "text/plain"), 3),
         ("error bare", raw_response(502, b"down"), 3),
+        ("error long", raw_response(500, b"y" * 600, "text/plain"), 3),
         ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com"), 1),
         ("success default", json_response(201, {"code": 1}), 1),
         ("success media", raw_response(200, b"[]"), 1),
@@ -234,7 +227,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             except errors.InternalServerError as failure:
                 lines.append(
                     f"  error info {failure.status_code} {failure.headers!r} {failure.request_id} "
-                    f"{failure.reason_code} {failure.body!r}"
+                    f"{failure.reason} {failure.body!r}"
                 )
                 record(
                     lines,
@@ -832,10 +825,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), auth_errors),
-    "auth-values": ("auth", BACKENDS, auth_values),
-    "auth-challenges": ("auth", ("pydantic_v2.BaseModel",), auth_challenges),
+    "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
-    "auth-options": ("auth", ("pydantic_v2.BaseModel",), auth_options),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
@@ -850,7 +841,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "native-codec-backends": ("pets", BACKENDS, native_codec_backends),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
-    "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
     "oauth-client-credentials": ("auth", ("pydantic_v2.BaseModel",), oauth_client_credentials),
     "oauth-refresh": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),
@@ -878,8 +868,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
-    "limiters": ("pets", ("pydantic_v2.BaseModel",), limiters),
-    "limiter-faults": ("pets", ("pydantic_v2.BaseModel",), limiter_faults),
     "webhook-contracts": ("pets-protocols", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), webhook_errors),
     "protocol-contracts": ("pets-protocols", BACKENDS, protocol_contracts),

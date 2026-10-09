@@ -1,21 +1,21 @@
 # unbound
 render pydantic_v2.BaseModel
-  write models.py
-  write server/__init__.py
-  write server/application.py
-  write server/routers/__init__.py
-  write server/routers/untagged.py
-  write server/_generated/__init__.py
-  write server/_generated/contract.py
-  write server/_generated/openapi.py
-  write server/services.py
-  write server/README.md
-  write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/server/__init__.py (copied runtime)
-  write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
-  write server/_runtime/server/responses.py (copied runtime)
-  write server/py.typed
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/openapi.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed
   file server/README.md
     | # Unbound parameter types
     |
@@ -79,7 +79,7 @@ render pydantic_v2.BaseModel
     | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
     | Parameter styles, parameter types, and media types that FastAPI cannot read, such as deepObject parameters or cookie arrays, strict integers, numbers, and booleans, text and binary bodies, and multipart forms, pass through generated adapters.
     | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
+    | A repeated single value is taken as FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
     | A cookie parameter with a single value arrives as the request sent it, without percent-decoding.
     | Adapters accept integers and numbers as JSON writes them and booleans as `true` or `false`, which is fewer spellings than FastAPI accepts for the parameters it reads.
     |
@@ -96,7 +96,7 @@ render pydantic_v2.BaseModel
     |
     | ## Regenerating
     |
-    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
     | Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;

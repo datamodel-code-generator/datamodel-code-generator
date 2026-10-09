@@ -13,7 +13,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  error record None {'type': 'failed', 'message': 'nope'}
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   search
     1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
@@ -34,7 +34,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  error record None {'type': 'failed', 'message': 'nope'}
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   search
     1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
@@ -55,7 +55,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  error record None {'type': 'failed', 'message': 'nope'}
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   search
     1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
@@ -76,7 +76,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  error record None {'type': 'failed', 'message': 'nope'}
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   search
     1  id=None retry=None data=dict{'text': 'b'} raw='{"text": "b"}'
@@ -97,7 +97,7 @@
     end
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  error record None {'type': 'failed', 'message': 'nope'}
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   search
     1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'

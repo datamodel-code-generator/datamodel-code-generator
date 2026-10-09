@@ -17,18 +17,17 @@ tree
   models/store.py
   5 runtime modules ['present']
 render
-  target=fastapi schema_version=1
-  unchanged model models/__init__.py
-  unchanged model models/pets.py
-  unchanged model models/store.py
-  unchanged target models/server/__init__.py
-  unchanged target models/server/application.py
-  unchanged target models/server/routers/__init__.py
-  unchanged target models/server/routers/store.py
-  unchanged target models/server/_generated/__init__.py
-  unchanged target models/server/_generated/contract.py
-  unchanged target models/server/_generated/openapi.py
-  unchanged target models/server/services.py
-  unchanged target models/server/README.md
-  unchanged target models/server/py.typed
+  unchanged models/__init__.py
+  unchanged models/pets.py
+  unchanged models/store.py
+  unchanged models/server/__init__.py
+  unchanged models/server/application.py
+  unchanged models/server/routers/__init__.py
+  unchanged models/server/routers/store.py
+  unchanged models/server/_generated/__init__.py
+  unchanged models/server/_generated/contract.py
+  unchanged models/server/_generated/openapi.py
+  unchanged models/server/services.py
+  unchanged models/server/README.md
+  unchanged models/server/py.typed
   5 runtime modules ['unchanged']
