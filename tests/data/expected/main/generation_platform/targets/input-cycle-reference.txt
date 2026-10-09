@@ -11,7 +11,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 tree
 generate
   returned None
@@ -26,7 +26,7 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 tree
   models.py
   server/README.md
@@ -38,7 +38,7 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 render
   target=fastapi schema_version=1
   write model models.py
@@ -51,7 +51,7 @@ render
   unchanged target server/services.py
   write target server/README.md
   unchanged target server/py.typed
-  11 runtime modules ['unchanged']
+  4 runtime modules ['unchanged']
 tree
   models.py
   server/README.md
@@ -63,7 +63,7 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 generate
   returned None
 tree
@@ -77,7 +77,7 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 tree
   models.py
   server/README.md
@@ -89,4 +89,4 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
