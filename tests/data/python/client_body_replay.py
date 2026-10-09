@@ -127,7 +127,7 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
     replies = _Replies(exchange)
     config = options.ClientOptions(
         retry=options.RetryOptions(initial_delay=0),
-        redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True),
+        follow_redirects=True,
     )
     with (
         exchange.client() as native,
@@ -187,7 +187,7 @@ async def _async_replay(package: ModuleType, options: ModuleType, data: dict[str
     exchange = Exchange([])
     replies = _Replies(exchange)
     config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0), redirects=options.RedirectOptions(enabled=True)
+        retry=options.RetryOptions(initial_delay=0), follow_redirects=True
     )
     with tempfile.TemporaryDirectory() as directory:
         async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:

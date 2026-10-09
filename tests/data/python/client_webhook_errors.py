@@ -41,11 +41,6 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         ("ProtocolDataError", {"condition": "malformed"}),
         ("ProtocolSizeError", {"kind": "keys", "limit": 8, "observed": 9, "unit": "items"}),
         ("WebhookVerificationError", {"condition": "invalid_signature"}),
-        ("UnsupportedContentCodingError", {"coding": secret}),
-        (
-            "DecompressionLimitError",
-            {"layer": 1, "encoded_bytes": 2, "max_ratio": 100.0, "limit": 1_048_576, "observed": 1_048_577},
-        ),
     )
     for name, fields in cases:
         secondary = [cleanup]

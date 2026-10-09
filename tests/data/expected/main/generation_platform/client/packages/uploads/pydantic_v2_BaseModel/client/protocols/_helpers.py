@@ -8,8 +8,8 @@ from __future__ import annotations
 from functools import cached_property
 
 from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
 from .._runtime.protocols.client import ClientCore
-from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.uploads import UploadHandle, resume_upload, start_upload
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.files import CompleteFileResponse
@@ -83,7 +83,7 @@ class FilesUploadResumableUpload:
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
@@ -132,7 +132,7 @@ class FilesFinishResumableUpload:
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
@@ -182,7 +182,7 @@ class FilesPutResumableUpload:
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,

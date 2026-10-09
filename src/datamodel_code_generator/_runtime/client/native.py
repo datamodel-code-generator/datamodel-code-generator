@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from .errors import IOPhase
     from .options import ResolvedTransportOptions
+    from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
 
 _PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
@@ -104,8 +105,69 @@ def cloned(
     )
 
 
+def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> SDKError:
+    from ..protocols.errors import ProtocolDataError  # noqa: PLC0415 - Load protocol errors only on this failure.
+
+    return ProtocolDataError(
+        condition="malformed", operation_id=operation_id, call_id=info.call_id, info=info, cause=error
+    )
+
+
+class _Held(httpx2.SyncByteStream):
+    """Raw chunks of a response that HTTPX2 decodes, leaving the response's close to the SDK."""
+
+    def __init__(self, chunks: Iterator[bytes]) -> None:
+        self._chunks = chunks
+
+    def __iter__(self) -> Iterator[bytes]:
+        return self._chunks
+
+
+class _AsyncHeld(httpx2.AsyncByteStream):
+    """Raw asynchronous chunks of a response that HTTPX2 decodes, leaving the response's close to the SDK."""
+
+    def __init__(self, chunks: AsyncIterator[bytes]) -> None:
+        self._chunks = chunks
+
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return self._chunks
+
+
+def decoded_bytes(response: httpx2.Response, info: ResponseInfo, operation_id: str | None) -> Iterator[bytes]:
+    """Read the body once with HTTPX2 removing its content codings; a coding that does not decode is malformed.
+
+    The raw chunks pass through a response of their own, so decoding never closes the one the SDK releases.
+    """
+    if "content-encoding" not in response.headers:
+        yield from response_bytes(response)
+        return
+    decoding = httpx2.Response(response.status_code, headers=response.headers, stream=_Held(response_bytes(response)))
+    try:
+        yield from decoding.iter_bytes()
+    except httpx2.DecodingError as error:
+        raise _malformed(error, info, operation_id) from None
+
+
+async def async_decoded_bytes(
+    response: httpx2.Response, info: ResponseInfo, operation_id: str | None
+) -> AsyncIterator[bytes]:
+    """Read the asynchronous body once with HTTPX2 removing its content codings, as `decoded_bytes` does."""
+    if "content-encoding" not in response.headers:
+        async for chunk in async_response_bytes(response):
+            yield chunk
+        return
+    decoding = httpx2.Response(
+        response.status_code, headers=response.headers, stream=_AsyncHeld(async_response_bytes(response))
+    )
+    try:
+        async for chunk in decoding.aiter_bytes():
+            yield chunk
+    except httpx2.DecodingError as error:
+        raise _malformed(error, info, operation_id) from None
+
+
 def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
-    """Read raw stream bytes once, leaving the first native close to the SDK's finally."""
+    """Read the raw stream bytes, content codings included, once, leaving the native close to the SDK's finally."""
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True
@@ -113,7 +175,7 @@ def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
 
 
 async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes]:
-    """Read native asynchronous bytes without awaited EOF auto-close or native decompression."""
+    """Read the raw asynchronous bytes, content codings included, once, without awaited EOF auto-close."""
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True

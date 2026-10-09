@@ -329,8 +329,8 @@ upload reads; see [upload helpers](#upload-helpers). The handles are loaded only
 ### Resume state
 
 `ResumeState(*, helper: str, state: JSONValue)` is a small, opaque token: the identity of the helper it belongs to and
-the state that helper continues from, such as an operation's poll values or a Last-Event-ID. Pagination has no token
-of its own: a pager resumes from the server's continuation value, as [checkpoints and resume](#checkpoints-and-resume)
+the state that helper continues from, such as a Last-Event-ID. Pagination, polling, and uploads have no token of their
+own: their checkpoints are plain JSON of the server's values, as [checkpoints and resume](#checkpoints-and-resume)
 describes. The helper's identity must be a string without lone surrogates. The representation is
 `ResumeState(version=1)`, each instance equals only itself, and nothing is written to disk automatically: the caller
 saves the token where it likes. `copy.copy` and `copy.deepcopy` return the same instance, which cannot change, and
@@ -377,8 +377,6 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
-| | `max_parts` | `10000` | Positive integer or `None` |
-| | `max_uncertain_probes` | `3` | Nonnegative integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
@@ -445,7 +443,7 @@ Invalid field values raise `ValueError`.
 | `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'expired', 'malformed']` |
 | `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`; `condition` is always `inconsistent` |
 | `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
-| `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float`, `resume_state: ResumeState \| None = None` |
+| `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float` |
 | `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
 | `OperationCancelledError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
 | `StreamDecodeError` | `ProtocolDataError` | `sequence: int`, `raw_prefix: bytes` of at most 65536 bytes, `truncated: bool`; `condition` defaults to `malformed` |
@@ -462,9 +460,9 @@ Invalid field values raise `ValueError`.
 | `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 | `NonResumableSourceError` | `ConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `reason` `wrong_capability` |
-| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
+| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` or `resume_state` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
-| `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
+| `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is copied into
@@ -1169,8 +1167,8 @@ than `max_wait`, or not shorter than the remaining budget derived from the sessi
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays as it was. Async waits propagate native task cancellation unchanged. Once the client is
 closed, every later `status` or `wait` that needs a poll or a result fetch raises `ConfigurationError` with the reason
-`client_closed`. `PollWaitLimitError.resume_state` holds a [checkpoint](#checkpoints-and-resume-of-operations) of the
-handle as it stood.
+`client_closed`. The handle's [checkpoint](#checkpoints-and-resume-of-operations) continues it after
+`PollWaitLimitError`.
 
 ### Limits and sessions
 
@@ -1186,69 +1184,69 @@ earlier of its own and the session's. Each limit comes from the call's options, 
 | `PollOptions.max_wait` | 60 seconds | Removes the limit |
 | `SessionOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
 
-A poll past a limit raises `SessionLimitError` with the kind `polls` and the progress so far, before sending, keeping
-a checkpoint of the handle as `resume_state`. The options of `start` apply to
+A poll past a limit raises `SessionLimitError` with the kind `polls` and the progress so far, before sending; the
+handle's `checkpoint()` continues the operation. The options of `start` apply to
 every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
 must not patch a header or a query parameter a binding writes; `start` raises `ConfigurationError` before
 sending, as it does for options of another type.
 
 ### Checkpoints and resume of operations
 
-`handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
-`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll that settled left
-it, never waiting for a step. A settled operation, one that failed, was cancelled, or holds its result, including
-one that completed at once, has nothing left to continue: its `checkpoint()` raises `ProtocolStateError` with the
-phase as `state`. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not
-awaited, even on `AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending:
-it never creates the operation again. A pending handle's `status` or `wait` sends its first poll at once; a handle
-whose result fetch is due fetches it once in `wait`, and its `status` raises `ProtocolStateError`, since it holds no
-poll. A checkpoint does not keep a server's delay,
-so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
+`handle.checkpoint()` returns plain JSON without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
+`close`: the server's values the next request writes, never an SDK envelope. While another thread or task runs
+`status` or `wait`, it returns the handle as the last poll that settled left it, never waiting for a step. A settled
+operation, one that failed, was cancelled, or holds its result, including one that completed at once, has nothing left
+to continue: its `checkpoint()` raises `ProtocolStateError` with the phase as `state`. The helper's
+`resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`, and
+returns the handle type `start` returns, in a session of its own, without sending: it never creates the operation
+again. A pending handle's `status` or `wait` sends its first poll at once; a handle whose result fetch is due fetches it
+once in `wait`, and its `status` raises `ProtocolStateError`, since it holds no poll. A checkpoint does not keep a
+server's delay, so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
 
 ```python
+import json
 import time
 
 from pkg.errors import PollWaitLimitError
-from pkg.protocols import import_state
 
 with Client() as client:
     helper = client.protocols.jobs.run
     handle = helper.start(body=job)
-    saved = handle.checkpoint().export()
-    report = helper.resume(import_state(saved)).wait()
+    saved = json.dumps(handle.checkpoint())
+    report = helper.resume(json.loads(saved)).wait()
+    handle = helper.start(body=job)
     try:
-        helper.start(body=job).wait()
+        handle.wait()
     except PollWaitLimitError as error:
-        if error.resume_state is not None:
-            time.sleep(error.required_wait)
-            later = helper.resume(error.resume_state)
+        time.sleep(error.required_wait)
+        later = helper.resume(handle.checkpoint())
 ```
 
-| Saved | Never saved |
+| Member | Value |
 |---|---|
-| Whether the operation is pending or its result fetch is due | The create request, its body, and its idempotency key, since resume never sends it |
-| While pending, the values the next poll and a remote cancel write, read from the create response or the last pending poll, and those the create response gave the result fetch's `initial` bindings; while the fetch is due, the values it writes | Polls, results, their bodies, and model objects |
-| The server's expiry an `expires_at` helper read | The session, its deadline, the call's `options`, and anything its auth adds |
+| `phase` | `"pending"`, or `"fetch"` when the result fetch is due |
+| `bound` | While pending, the values the next poll writes, read from the create response or the last pending poll; while the fetch is due, the values it writes |
+| `cancel` | While pending, the values a remote cancel writes |
+| `seed` | While pending, the values the create response gave the result fetch's `initial` bindings |
+| `expires_at` | The server's expiry an `expires_at` helper read, as `datetime.isoformat()` text, or null |
 
-A resumed pending handle polls with the saved values, and one whose fetch is due fetches the result with them. Polls
-count afresh against the resumed call's
-`max_polls`, and the session's timeout and deadline start afresh. A literal binding sends the plan's value,
-never a saved one.
+The create request, its body and idempotency key, polls, results, model objects, the session, its deadline, the
+call's `options`, and anything its auth adds are never part of it. A resumed pending handle polls with the saved
+values, and one whose fetch is due fetches the result with them. Polls count afresh against the resumed call's
+`max_polls`, and the session's timeout and deadline start afresh. A literal binding sends the plan's value, never a
+saved one.
 
 `resume` checks the resumed call's options as `start` does, then the state, before returning:
 
 | Rejected state | Exception |
 |---|---|
-| Not a `ResumeState` | `ConfigurationError(field_path=("state",), reason="invalid_value")` |
-| Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| A state that does not fit the helper: an unknown or missing member, an unknown phase, a due fetch of a helper without one, values of another count than the bindings, an expiry `datetime.isoformat()` would spell differently, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A value that is not JSON, or one that does not fit the helper: an unknown or missing member, an unknown phase, a due fetch of a helper without one, values of another count than the bindings, or an expiry `datetime.isoformat()` would spell differently | `ConfigurationError(field_path=("state",), reason="invalid_value")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
+| A dot segment (`.` or `..`) a saved value of the next poll or remote cancel would write to a path parameter | `ProtocolDataError`, as for a server's value |
 
-A checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes each
-one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is checked
-only when the fetch request is built, which refuses a value it cannot send before sending. As for pagers, a token holds
-no credential and binds to no auth; store exported tokens as the call's own data.
+Any other saved value, a result fetch's included, is checked and encoded when the request that writes it is built, as a server's value is, so a value that
+cannot be sent, such as one with CR, LF, or NUL in a header, raises the call's encoding error from `status` or `wait`
+before sending. A checkpoint holds no credential and binds to no auth; store it as the call's own data.
 
 ### Remote cancellation and expiry
 
@@ -1450,7 +1448,7 @@ keywords, never field arguments, without the parameter the helper writes the con
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
@@ -1484,8 +1482,8 @@ with Client() as client, open("video.mp4", "rb") as video:
 upload completed by length and the completion operation's response type otherwise. `advance()` appends one chunk, or
 completes the upload once the server holds every byte, and returns an `UploadProgress`; `run()` appends every
 remaining chunk, completes the upload, and returns its result. Both are coroutines on `AsyncUploadHandle`. Once
-complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns a
-`ResumeState` at any time before the upload completes, even while another thread or task steps the handle, and sends
+complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns plain JSON
+at any time before the upload completes, even while another thread or task steps the handle, and sends
 nothing; a complete upload has nothing to resume, so its `checkpoint()` raises `ProtocolStateError` with
 `state='complete'`.
 
@@ -1509,9 +1507,8 @@ change that keeps its size is not found: keep it unchanged while it is uploaded.
 
 ### Chunks, offsets, and recovery
 
-A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of more
-chunks than `UploadOptions.max_parts`, 10000 by default, raises `ConfigurationError` before anything is sent.
-The offset profile sends one chunk at a time.
+A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. The offset
+profile sends one chunk at a time.
 
 `start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
 `size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
@@ -1525,14 +1522,14 @@ again by shared retries once it may have reached the server, even for an operati
 | Append outcome | What follows |
 |---|---|
 | A success response | The chunk is confirmed |
-| A transport error after it may have been sent | Up to `UploadOptions.max_uncertain_probes` probes, 3 by default: an unchanged offset sends the range again as a new call, the chunk's end confirms it, and an offset inside it confirms its bytes before it only with `partial_commit: allowed`, the rest being sent next |
-| Probes that never answer | `UploadDeliveryUnknownError(phase='append')` with the delivery state, the progress, and `resume_state` |
+| A transport error after it may have been sent | One probe, retried only as shared retries allow: an unchanged offset sends the range again as a new call, the chunk's end confirms it, and an offset inside it confirms its bytes before it only with `partial_commit: allowed`, the rest being sent next |
+| A probe that fails with a transport error or an error status | `UploadDeliveryUnknownError(phase='append')` with the delivery state and the progress; the handle's `checkpoint()` resumes it |
 | Any other failure, a cancellation included | Raised; the next step probes the server's offset before it appends |
 
 A probe's offset is a JSON integer, or a header of ASCII digits; a missing one raises `ProtocolDataError` with the
 condition `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset
 below the confirmed one, past the content, past the chunk sent, or inside a chunk with `partial_commit: forbidden`
-raises `UploadOffsetError` with the confirmed, expected, and remote offsets, the size, and `resume_state`. A handle
+raises `UploadOffsetError` with the confirmed, expected, and remote offsets and the size. A handle
 `start` returned also refuses an offset past every byte it has sent; a handle `resume` returned cannot know what an
 earlier session sent, so it accepts any offset up to the size.
 
@@ -1549,22 +1546,22 @@ stays, and every later step raises `ProtocolStateError` with `state='closed'`. C
 
 ### Checkpoints and resume
 
-`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values the probe, the append, and
-the completion write, a completion of unknown outcome, and the server's expiry; it saves no content, digest, or
-result, credential, or security binding: a resumed upload sends with the resuming client's own auth, as pagination
-checkpoints do.
+`checkpoint()` returns plain JSON: an object with the content's `size`, the `chunk` size, the `confirmed` offset, the
+values the probe, the append, and the completion write (`bound`, three arrays), a completion of unknown outcome
+(`phase` `unknown` with its `delivery` state, otherwise `uploading` and null), and the server's `expires_at`. It holds
+no content, digest, result, credential, or security binding: a resumed upload sends with the resuming client's own
+auth, as pagination checkpoints do. Errors carry no checkpoint; call the handle's `checkpoint()`.
 
 `resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
-checkpoint: not a `ResumeState` raises `ConfigurationError`; another helper's raises
-`ResumeStateError(condition='fingerprint')`, one whose state does not fit the helper
-`ResumeStateError(condition='malformed')`, and one past the server's expiry `UploadExpiredError`. A checkpoint keeps its chunk size, which must not exceed the call's
-`UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed `max_parts`;
-either raises `ConfigurationError` with the option's `field_path`. Then the saved values each call writes: a
-value that makes a path segment `.` or `..` raises `ProtocolDataError`, as if a server gave it, and one that cannot be
-sent `ResumeStateError(condition='malformed')`. Then the source: a one-shot input raises `NonResumableSourceError`, and
-a size other than the checkpoint's raises `UploadSourceChangedError`; the source is not read. A completion of unknown
-outcome raises `UploadDeliveryUnknownError` again without sending. Otherwise it probes the server's offset once, which
-must not be below the saved one, and returns the handle.
+checkpoint: a value that is not JSON or does not fit the helper raises `ConfigurationError(field_path=("state",))`, and
+one past the server's expiry `UploadExpiredError`. A checkpoint keeps its chunk size, which must not exceed the call's
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory; it raises `ConfigurationError` with the
+option's `field_path`. Then the saved values each call writes: a value that makes a path segment `.` or `..` raises
+`ProtocolDataError`, as if a server gave it; any other saved value is encoded when its request is built. Then the
+source: a one-shot input raises `NonResumableSourceError`, and a size other than the checkpoint's raises
+`UploadSourceChangedError`; the source is not read. A completion of unknown outcome raises `UploadDeliveryUnknownError`
+again without sending. Otherwise it probes the server's offset once, which must not be below the saved one, and returns
+the handle.
 
 A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
 an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
@@ -1581,8 +1578,6 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | Limit | Default | None |
 |---|---|---|
 | `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
-| `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
-| `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
@@ -3129,7 +3124,7 @@ Every exception a client raises derives from `SDKError`, and all of them are imp
 
 | Exception | Raised for | Fields beside the shared ones |
 |---|---|---|
-| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed`, `response_consumed`, and `redirect_refused` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id`, `operation` |
+| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed` and `response_consumed` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id`, `operation` |
 | `APIConnectionError` | A classified I/O failure of the transport | `phase`, `retry_stop_reason`; `delivery_state` tells how far the request got |
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's deadline, with the reason `deadline_exceeded` | `effective_timeout` of a phase timeout, or `deadline_at`, the absolute monotonic deadline |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated`, `retry_stop_reason` |
@@ -3178,8 +3173,8 @@ cancellation, and logical deadlines never restart a request.
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
 `retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError` (TLS and DNS failures
 included), `ConnectTimeout`, or `PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods,
-unless an earlier attempt or redirect hop of the call reached the server; every other failure after the send started
-is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
+unless an earlier attempt of the call, or a response HTTPX2 followed a redirect from, reached the server; every other
+failure after the send started is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
 Configuration errors and unclassified failures are not candidates.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
@@ -3189,13 +3184,13 @@ policy override, disclosed in every generated README; it is never silently embed
 
 ```python
 from pets import Client
-from pets.options import RedirectOptions, RequestOptions, RetryOptions
+from pets.options import RequestOptions, RetryOptions
 
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
         retry=RetryOptions(max_retries=2, max_retry_after=20),
-        redirects=RedirectOptions(enabled=True, max_redirects=2),
+        follow_redirects=True,
         total_timeout=30,
     )
     return client.request_raw("GET", url, options=options).read()
@@ -3296,7 +3291,7 @@ when the SDK compresses the body. The gzip encoder uses level 6 and a zero modif
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3350,8 +3345,8 @@ is named in a note on the cancellation. To keep a slow caller-opened file off th
 object such as `await anyio.open_file(path, "rb")`, or an async iterable that yields chunks of bounded size; an async
 file is read in 64 KiB chunks even though iterating it would yield lines.
 
-A retry or a redirect that keeps the body sends bytes again as they are and seeks a seekable file back to its entry
-position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
+A retry, or a 307 or 308 redirect HTTPX2 follows, sends bytes again as they are and seeks a seekable file back to its
+entry position first; a seek that fails raises a request `DecodeError` with the reason `body_not_replayable` instead of
 sending. An iterable, an async file, an async iterable or a file that cannot seek is read once: after it was read, the
 call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
 part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
@@ -3374,24 +3369,55 @@ file, path or iterable itself. Callers manage the lifetime and concurrent use of
 
 ## Redirects and transport construction
 
-Redirects are disabled by default. `RedirectOptions` merges per field, with `enabled=False`, `max_redirects=5`,
-`allow_303_to_get=False`, `allowed_origins=()`, and `allow_https_downgrade=False`. An empty origin allowlist permits
-only the original origin. An allowed destination and permission to downgrade HTTPS are separate conditions.
+Calls are sent through the native client with `send(request, stream=True)`: its `auth`, event hooks, redirect
+setting, and framing are effective. `follow_redirects` on `ClientOptions`, a view's, or a call's `RequestOptions` is
+the native boolean for that call; unset, an SDK-created client follows no redirect, as HTTPX2's default is, and an
+injected client keeps its own `follow_redirects`. HTTPX2 follows a redirect itself: 301 and 302 change POST to GET,
+303 changes any method but HEAD to GET, 307 and 308 keep the method and send the body again, and `max_redirects` of
+the native client is its limit, past which `TooManyRedirects` raises `APIConnectionError`. A bytes body, a seekable
+file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as `APIConnectionError`. HTTPX2 drops
+`Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
+same-host `http` to `https` upgrade, and keeps every other header. Every hop
+consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
+sent again, as is a failure an injected client's response event hook raises.
 
-301/302 follow only GET/HEAD. 303 changes to GET for GET/HEAD or explicit `allow_303_to_get=True`; it removes the body
-and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability and
-operation safety. Every hop consumes the same call deadline. Credentials and cookies from the original
-request are stripped across origins, and so are the headers and query fields the package's security schemes name,
-however the request came to carry them. Repeated method/URL loops, invalid or multiple Location values, forbidden
-destinations, exhausted redirect limits, or unsafe replay raise `ConfigurationError` with the reason
-`redirect_refused` and the `field_path` `("redirects",)`. Its `delivery_state` is `RESPONSE_STARTED`, it exposes
-available response metadata, and it keeps no redirect body. Native failure while constructing a redirect also raises
-this error if no response handle can be returned.
+A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
+never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
+carry it, and every signed request. HTTPX2 would forward such a value to another origin. Its 3xx is the final
+response: the typed call raises `APIStatusError`, and `with_raw_response` returns it with its `Location`. To follow it
+anyway, place the credential with an `httpx2.Auth` of your own on the injected client, which HTTPX2 runs on every
+request it sends, or read the `Location` and send a call of your own.
+The request event hooks of an injected client and an `httpx2.Auth` of your own are caller code that runs after the
+follow decision, so they can still add headers, such as an `X-API-Key`, to a request sent to another origin.
 
-A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
-bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise
-`DecodeError` with the reason `forbidden_body` if the GET returns content. Use `with_raw_response` or
-`with_streaming_response` to access that final GET body without typed decoding.
+```python
+import httpx2
+
+from pets import Client
+from pets.options import ClientOptions
+
+
+class ApiKey(httpx2.Auth):
+    def __init__(self, key: str) -> None:
+        self.key = key
+
+    def auth_flow(self, request: httpx2.Request):
+        request.headers["X-API-Key"] = self.key
+        yield request
+
+
+def following_client(key: str) -> Client:
+    native = httpx2.Client(auth=ApiKey(key), follow_redirects=True)
+    return Client(http_client=native, options=ClientOptions())
+```
+
+The native client removes response content codings: its `Accept-Encoding`, gzip and deflate plus brotli and zstd
+where their decoders are installed, is sent, a body that does not decode raises `ProtocolDataError`, and a coding it
+does not know passes the body through. A streaming raw response's `iter_raw_bytes()` yields the body as it arrived; a
+buffered one keeps only its decoded body, so its `iter_raw_bytes()` raises `ConfigurationError` with the reason
+`response_consumed`. A HEAD operation's typed return contract remains bodyless after a redirect: ordinary and
+`with_response` calls return `None` data for an empty final body and raise `DecodeError` with the reason
+`forbidden_body` if the final response has content. Use `with_raw_response` or `with_streaming_response` to access it.
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
 `verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
@@ -3424,9 +3450,9 @@ effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
 
 An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
 rejected. The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
-Views share their root's core and its ownership. A borrowed client's auth, cookies, headers and query defaults are
-not merged into SDK requests. Its native event hooks retain HTTPX2 semantics. SDK sends explicitly disable native
-auth and redirect following; the SDK's bounded retry and origin policies govern its calls.
+Views share their root's core and its ownership. A borrowed client's cookies, headers, and query defaults are not
+merged into SDK requests; its `Accept-Encoding` is. Its native auth, event hooks, and redirect setting retain HTTPX2
+semantics, and the SDK's bounded retries resend from the original request.
 
 ## Explicit authentication and request signing
 
@@ -3537,9 +3563,8 @@ is invalid. Ordered mixed anonymous/authenticated alternatives retain their decl
 
 An empty authentication `allowed_origins` permits only the selected server's origin. An origin includes scheme, host,
 and effective port. Arbitrary `request_raw` destinations require explicit allowed origins as well as anonymous opt-in.
-Authentication and redirect allowlists are independent: permitting a redirect does not permit sending credentials
-there. Each hop rebuilds credentials and signatures for its current destination; managed fields from an earlier hop
-are never carried across origins. Generic header/query patches cannot override or delete credential/signature owners.
+Each attempt places credentials and signatures for its destination; a request carrying a key or a signature is never
+redirected, so they never reach another origin. Generic header/query patches cannot override or delete credential/signature owners.
 
 A static provider does not refresh. A custom refresh provider explicitly implements `get`, `invalidate(version)`, and
 `refresh(context)`; the async Protocol makes all three methods async. At most one eligible 401 recovery invalidates the
@@ -3562,7 +3587,7 @@ It is not a client option or an inferred response behavior.
 
 Signers declare their allowed origins and managed header/query names.
 They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
-hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe that hop's
+hook and send. `SigningInput.query` is the exact raw query bytes; its headers describe the attempt's
 unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
 callbacks or sends; arbitrary signer exceptions raise `AuthError` with the reason `signing_failed` and do not retry.
 
@@ -3600,7 +3625,7 @@ def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> by
 ```
 
 This example signs its method and URL; the service's signature protocol must define the same bytes. Signatures
-are rebuilt for every attempt and redirect hop. Unsigned calls do not invoke signer/provider callbacks.
+are rebuilt for every attempt. Unsigned calls do not invoke signer/provider callbacks.
 A signer does not receive the body or a digest of it: the SDK never pre-reads or hashes a body for signing.
 
 Credential values, signing inputs, and returned signature values are omitted from their representations and from

@@ -21,7 +21,6 @@ from ..client.client import (
     build_request,
     decode_response,
     delivery_state,
-    encode_argument,
     encode_parameter_value,
     request_body,
     request_decode_error,
@@ -176,7 +175,8 @@ def _grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | No
 class _SessionCall(Call):
     """A child call of a protocol helper session, which also bounds the call's deadline and send admissions.
 
-    It keeps the URL of the hop it sends, credentials excluded, against which a page's relative URLs resolve.
+    It keeps the URL it sends, credentials excluded, against which a page's relative URLs resolve, unless HTTPX2
+    followed a redirect elsewhere.
     """
 
     __slots__ = ("session", "url")
@@ -213,25 +213,10 @@ class _SessionCall(Call):
         query = secret_names(schemes)[1]
         return query if (auth := self.auth) is None else query | auth.bound.managed_query
 
-    def restart(self, original: httpx2.Request) -> frozenset[tuple[str, str]]:
+    def restart(self, original: httpx2.Request) -> None:
         """Begin the next resource candidate at the original URL."""
         self.url = str(original.url)
-        return super().restart(original)
-
-    def redirected(
-        self,
-        request: httpx2.Request,
-        info: ResponseInfo,
-        visited: frozenset[tuple[str, str]],
-        *,
-        replayable: bool,
-        schemes: tuple[SecuritySchemeEntry, ...],
-    ) -> httpx2.Request | None:
-        """Resolve a redirect as an ordinary call does, keeping the URL of the hop it allows."""
-        hop = super().redirected(request, info, visited, replayable=replayable, schemes=schemes)
-        if hop is not None:
-            self.url = str(hop.url)
-        return hop
+        super().restart(original)
 
 
 class _SocketCall(_SessionCall):
@@ -286,18 +271,6 @@ class _SocketCall(_SessionCall):
             if info is not None
             else "transport_not_retryable"
         )
-        return None
-
-    def redirected(  # ruff: ignore[no-self-use] - Overrides the shared redirect policy.
-        self,
-        request: httpx2.Request,  # ruff: ignore[unused-method-argument]
-        info: ResponseInfo,  # ruff: ignore[unused-method-argument]
-        visited: frozenset[tuple[str, str]],  # ruff: ignore[unused-method-argument]
-        *,
-        replayable: bool,  # ruff: ignore[unused-method-argument]
-        schemes: tuple[SecuritySchemeEntry, ...],  # ruff: ignore[unused-method-argument]
-    ) -> httpx2.Request | None:
-        """Keep every received handshake refusal terminal."""
         return None
 
 
@@ -586,22 +559,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         )[0]
         return str(prepared.url), HeadersView(request_fields(prepared))
 
-    def checked_arguments(
-        self,
-        operation: OperationPlan[object],
-        given: Mapping[int, JSONValue],
-        options: RequestOptions | None,
-    ) -> None:
-        """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
-
-        Arguments a later response gives are left out, even required ones; one that does not fit raises
-        a request DecodeError.
-        """
-        self._call_settings(options, operation.operation_id)
-        for position, value in given.items():
-            spec = operation.parameters[position]
-            encode_parameter_value(operation, spec, partial(encode_argument, spec, value))
-
     def _page_request(
         self,
         call: _SessionCall,
@@ -683,7 +640,8 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
             received = self._read(response, info, decoder, call)
 
             data, wire, content = _page(decoder, info, received, call)
-            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
+            url = str(response.url) if response.history else call.url
+            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
 
             return Response(data=data, info=info), result
 
@@ -848,7 +806,8 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             received = await self._read(response, info, decoder, call)
 
             data, wire, content = _page(decoder, info, received, call)
-            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
+            url = str(response.url) if response.history else call.url
+            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
 
             return Response(data=data, info=info), result
 

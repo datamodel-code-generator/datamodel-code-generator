@@ -285,7 +285,7 @@ def _protocol_context(helper_id: object, operation: object) -> None:
 
 
 class ConfigurationError(SDKError):
-    """A setting, argument, or call the client refused: invalid options, a closed client, or a forbidden redirect."""
+    """A setting, argument, or call the client refused: invalid options, a closed client, or a consumed response."""
 
     def __init__(  # noqa: PLR0913
         self,
@@ -387,7 +387,7 @@ def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
 
 
-_CALL_STATES: Final = frozenset({"client_closed", "redirect_refused", "response_consumed"})
+_CALL_STATES: Final = frozenset({"client_closed", "response_consumed"})
 
 
 def is_auth_classified(error: object) -> bool:
@@ -401,12 +401,6 @@ def is_auth_classified(error: object) -> bool:
 def is_hook_failure(error: object) -> TypeGuard[SDKError]:
     """Return whether an error is a hook's failure, which stops the call."""
     return type(error) is SDKError and error.reason == "hook_failed"
-
-
-def redirect_refused(**metadata: Unpack[ErrorMetadata]) -> ConfigurationError:
-    """Return the failure of a redirect that cannot be followed safely; no redirect body is retained."""
-    _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
-    return ConfigurationError(field_path=("redirects",), reason="redirect_refused", **metadata)
 
 
 class APIStatusError(SDKError):
@@ -662,8 +656,6 @@ class ProtocolSizeError(ProtocolError):
             "keys",
             "signatures",
             "ack_buffer",
-            "content_layers",
-            "expanded_content",
         ],
         limit: int,
         observed: int,
@@ -728,49 +720,3 @@ class ProtocolStoreError(ProtocolError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("action", self.action))
-
-
-class UnsupportedContentCodingError(ProtocolError):
-    """A response content coding that no decoder handles; its name stays out of the message."""
-
-    def __init__(
-        self,
-        *,
-        coding: str,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the coding the response named."""
-        super().__init__(helper_id=helper_id, operation=operation, **metadata)
-        self.coding = coding
-
-
-class DecompressionLimitError(ProtocolSizeError):
-    """A content coding that expands beyond max(1 MiB, its encoded bytes times the ratio); the response is closed."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        layer: int,
-        encoded_bytes: int,
-        max_ratio: float,
-        limit: int,
-        observed: int,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the decoding layer, its encoded bytes so far, and the ratio its limit came from."""
-        super().__init__(
-            kind="expanded_content",
-            limit=limit,
-            observed=observed,
-            unit="bytes",
-            helper_id=helper_id,
-            operation=operation,
-            **metadata,
-        )
-        self.layer = layer
-        self.encoded_bytes = encoded_bytes
-        self.max_ratio = max_ratio

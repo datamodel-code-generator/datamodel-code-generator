@@ -312,6 +312,7 @@ class _Harness:
         options = self.options
         return options.ClientOptions(
             base_url="https://api.example.com",
+            headers=(("Accept-Encoding", "gzip, deflate"),),
             retry=options.RetryOptions(initial_delay=0, jitter="none"),
             protocols=options.ProtocolClientOptions(
                 websocket_connector=connector,
@@ -404,7 +405,9 @@ def _default_transport(harness: _Harness, connector: _Connector) -> None:
     options = harness.options
     protocols = options.ProtocolClientOptions(websocket_connector=connector)
     with harness.package.Client(
-        options=options.ClientOptions(base_url="https://api.example.com", protocols=protocols)
+        options=options.ClientOptions(
+            base_url="https://api.example.com", headers=(("Accept-Encoding", "gzip, deflate"),), protocols=protocols
+        )
     ) as api:
         connector.verbose = True
         connector.queue.append(_Connection(harness))

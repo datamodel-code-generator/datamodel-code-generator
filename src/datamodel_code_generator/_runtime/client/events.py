@@ -248,16 +248,15 @@ class CallEvents:
             }),
         )
 
-    def prepare(self, url: str, index: int | None) -> None:
-        """Record a destination, beginning its resource candidate only when an index is supplied."""
+    def prepare(self, url: str, index: int) -> None:
+        """Record the destination of a resource candidate and begin it."""
         parts = urlsplit(url)
         self.origin = f"{parts.scheme}://{parts.netloc}"
         self.info = None
         self.delivery = DeliveryState.NOT_SENT
-        if index is not None:
-            self.attempts = index + 1
-            self.attempt = self.monotonic()
-            self.attempt_sent = False
+        self.attempts = index + 1
+        self.attempt = self.monotonic()
+        self.attempt_sent = False
 
     def attempting(self) -> CallEvent:
         """Report the prepared candidate immediately before its first send admission."""

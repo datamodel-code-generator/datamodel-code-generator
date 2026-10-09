@@ -138,7 +138,7 @@ data.0.id
   response limit removed ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  broken coding [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=error('Error -3 while decompressing data: unknown compression method')] protocol_data_error
+  broken coding [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=DecodingError('Error -3 while decompressing data: unknown compression method')] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
