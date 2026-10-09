@@ -264,13 +264,6 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
         default='application/json',
         required=True,
     ),
-    fields=FieldArguments(
-        method='put_labels',
-        names=('size',),
-        media=(
-            BodyFields(media_type='application/json', fields=((0, 'size', False),)),
-        ),
-    ),
 )
 
 OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(

@@ -10,15 +10,18 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import RESERVED_ARGUMENTS, identifier, snake
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
+from datamodel_code_generator._target_contract import SourceLocation
 
 if TYPE_CHECKING:
     from collections.abc import Container, Mapping
 
     from datamodel_code_generator._client.model_facts import ModelFacts, ModelField
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseId
 
 _KINDS: Final = frozenset({"json", "form"})
+_MEMBERS: Final = ("allOf", "anyOf", "oneOf")
 
 
 def _problem(code: str, message: str, operation: OperationSpec, option_path: str | None = None) -> Diagnostic:
@@ -36,16 +39,40 @@ def _label(operation: OperationSpec) -> str:
     return f"{operation.contract.method.upper()} {operation.contract.path}"
 
 
+def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -> set[str]:
+    """Return the names an object schema requires, following references and its members.
+
+    A body bound to one model requires what its allOf members require, and what its object alternative to null does;
+    a schema its own members reach again adds nothing more.
+    """
+    location, schema = wire.schema(site)
+    if location in seen:
+        return set()
+    seen.add(location)
+    required = schema.get("required")
+    names: set[str] = {name for name in required if isinstance(name, str)} if isinstance(required, tuple) else set()
+    for keyword in _MEMBERS:
+        members = schema.get(keyword)
+        for index in range(len(members) if isinstance(members, tuple) else 0):
+            member = SourceLocation(location.document, f"{location.pointer}/{keyword}/{index}", "schema")
+            names |= _required(wire, member, seen)
+    return names
+
+
 class _Fields:
     """Plan the field branches of every operation whose body arguments are 'both'."""
 
-    def __init__(self, facts: ModelFacts, codecs: Container[TypeUseId]) -> None:
+    def __init__(self, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan) -> None:
         self.facts = facts
         self.codecs = codecs
+        self.wire = wire
         self.problems: list[Diagnostic] = []
 
     def model(self, media: MediaSpec) -> tuple[ModelField, ...] | str:
-        """Return the fields of the object model a body with a codec stands for, or why it has no field arguments."""
+        """Return the fields of the object model a body with a codec stands for, or why it has no field arguments.
+
+        A body whose schema requires a name that only extra properties could hold has none.
+        """
         use = media.use
         if media.kind not in _KINDS or media.members is not None:
             return "only JSON and URL-encoded form bodies have field arguments"
@@ -54,9 +81,13 @@ class _Fields:
             or (value := use.type) is None
             or use.id not in self.codecs
             or (model := self.facts.model(value)) is None
+            or use.schema is None
         ):
             return "its schema is not an object model"
-        return self.facts.fields(model.id)
+        fields = self.facts.fields(model.id)
+        if not _required(self.wire, use.schema, set()) <= {field.wire_name for field in fields}:
+            return "its schema requires a property that no field of the model holds"
+        return fields
 
     def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | str:
         """Return the field branch of one media type, or why its body cannot be given as fields.
@@ -137,10 +168,10 @@ def _taken(spec: OperationSpec, branch: FieldBranch) -> list[str]:
 
 
 def plan_fields(
-    plan: ClientPlan, facts: ModelFacts, codecs: Container[TypeUseId]
+    plan: ClientPlan, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan
 ) -> tuple[ClientPlan, tuple[Diagnostic, ...]]:
     """Return the plan with each operation's field branches, and the problems of naming them."""
-    fields = _Fields(facts, codecs)
+    fields = _Fields(facts, codecs, wire)
     operations = tuple(fields.operation(spec) for spec in plan.operations)
     resources = tuple(
         replace(resource, operations=tuple(operations[spec.index] for spec in resource.operations))

@@ -2696,7 +2696,7 @@ A JSON or form body takes fields when its schema is one object whose model its b
 object that may be null included: Pydantic models and dataclasses, stdlib dataclasses, TypedDicts, and msgspec
 Structs alike. Other bodies keep only `body`: unions of objects, arrays and scalars, bodies without a schema, binary
 bodies and form-data sent as parts, bodies whose model cannot hold a request, such as one with a required read-only
-member. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
+member, and objects whose schema requires a key only their extra properties can hold. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
 
 Each field argument is named by the snake case of its wire property, and a read-only member has none.
 `body_field_names` names one field of one media type instead, without changing the model or the wire property. Fields
