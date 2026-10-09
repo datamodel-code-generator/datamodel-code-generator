@@ -3395,7 +3395,7 @@ file, and a path are sent again; a one-shot iterable raises `StreamConsumed`, as
 `Cookie` on every redirect and `Authorization` on a redirect to another origin, keeps `Authorization` on a
 same-host `http` to `https` upgrade, and keeps every other header. Every hop
 consumes the same call deadline, and a failure after a redirect was answered is `RESPONSE_STARTED`, so it is never
-sent again.
+sent again, as is a failure an injected client's response event hook raises.
 
 A request that carries a credential at a position a declared security scheme names, other than `Authorization`, is
 never redirected, whatever the setting: an API key in a header, query field, or cookie, however the request came to
