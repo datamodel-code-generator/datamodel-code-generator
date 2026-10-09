@@ -12,7 +12,6 @@ from datamodel_code_generator._fastapi._compiled_templates import application as
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
-from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.plan import (
     CONSTRAINED,
@@ -22,6 +21,7 @@ from datamodel_code_generator._fastapi.plan import (
     RootDefault,
     default_media,
     fact,
+    json_value,
     symbol_imports,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
@@ -956,7 +956,8 @@ def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[s
     for status, response in documented.items():
         items: list[tuple[str, Doc]] = []
         content = response.get("content")
-        if (model := models.get(status)) is not None and isinstance(content, dict) and content.pop(model[0]):
+        if (model := models.get(status)) is not None and isinstance(content, dict) and model[0] in content:
+            del content[model[0]]
             items.append(("'model': ", module.annotation(model[1])))
             if not content:
                 del response["content"]
@@ -1092,7 +1093,7 @@ def _scheme_dependency(module: Module, scheme: SchemeSpec, name: str) -> str:
     keywords.extend(
         (f"{keyword}=", _json_literal(value))
         for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
-        if (fact_value := facts.get(keyword)) is not None and (value := documentation(fact_value)) is not None
+        if (fact_value := facts.get(keyword)) is not None and (value := json_value(fact_value)) is not None
     )
     keywords.extend((("scheme_name=", repr(scheme.name)), ("auto_error=", "False")))
     return (

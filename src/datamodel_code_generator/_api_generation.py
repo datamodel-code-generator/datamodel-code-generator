@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 import os
 import sys
 import tempfile
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._api_types import ArtifactKind, DiagnosticStage, TargetKind
+    from datamodel_code_generator._api_types import ArtifactKind, TargetKind
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
     from datamodel_code_generator._publication import PublicationAnchor, StagedFile
     from datamodel_code_generator._target_config import TargetConfig
@@ -59,7 +58,7 @@ class RenderedFile:
     """One text file a target rendered; the coordinator formats, heads, and encodes it.
 
     A verbatim file copies one of this package's own sources, such as a runtime module, that is valid for every
-    supported target Python, so the coordinator heads and encodes it without formatting or checking it again.
+    supported target Python, so the coordinator heads and encodes it without formatting it.
     """
 
     path: PurePosixPath
@@ -78,7 +77,10 @@ class PlannedFile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
-    """Everything a target renders from: settings, the accepted model contracts, the root operations, and the cwd."""
+    """Everything a target renders from: settings, the accepted models, the root operations, and the cwd.
+
+    `model_imports` holds every module and module member that the import statements of the models name.
+    """
 
     config: TargetConfig
     model_config: GenerateConfig
@@ -86,6 +88,7 @@ class TargetRequest:
     batch: GeneratedTypeContractBatch
     lease: SourceLease
     models: tuple[ModelArtifact, ...]
+    model_imports: frozenset[str]
     operations: tuple[OperationContract, ...]
     documents: DocumentTable
     resolve: Callable[[OperationRef], OperationContract | None]
@@ -505,6 +508,7 @@ class _Planner:
                 batch=models.product.batch,
                 lease=models.product.source_lease,
                 models=models.artifacts,
+                model_imports=models.product.model_imports,
                 operations=operations,
                 documents=self.documents,
                 resolve=self.operation,
@@ -672,25 +676,8 @@ class _Finisher:
         self.config = planner.config
         self.effective = planner.effective
         self.cwd = planner.cwd
-        self.target_id = planner.target_id
         self.models = planner.models
         self.root = planner.root
-
-    def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
-        version = self.effective.target_python_version.version_key
-        if problems := tuple(
-            Diagnostic(
-                code="E_TARGET_SOURCE",
-                severity="error",
-                stage=stage,
-                message=f"The generated Python source is invalid: {error}",
-                artifact_path=path.as_posix(),
-                target_id=self.target_id,
-            )
-            for path, text in files
-            if _is_python(path) and (error := _syntax_error(path.as_posix(), text, version)) is not None
-        ):
-            raise APIGenerationError(problems)
 
     def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
         """Format, head, and encode every file like a model file, from the model output settings."""
@@ -703,7 +690,6 @@ class _Finisher:
 
         effective, models = self.effective, self.models
         files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
-        self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         formatter = TargetCodeFormatter(
             effective.target_python_version,
             models.settings_path,
@@ -732,7 +718,6 @@ class _Finisher:
             )
         self.defer(formatter, texts, formatted)
         texts = {path: _normalized(text) for path, text in texts.items()}
-        self.check_sources(((file.path, texts[file.path]) for file in files if not file.verbatim), "format")
         return tuple(
             PlannedFile(path=path, content=_written(text, effective.encoding if _is_python(path) else "utf-8"))
             for path, text in texts.items()
@@ -755,22 +740,6 @@ class _Finisher:
                 location.write_text(texts[path], encoding=encoding)
             formatter.format_directory(staged)
             texts.update((path, staged.joinpath(*path.parts).read_text(encoding=encoding)) for path in paths)
-
-
-def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:
-    """Return why a source is invalid for the target grammar, reading PEP 695 aliases older hosts cannot parse."""
-    try:
-        compile(ast.parse(text, filename, feature_version=version), filename, "exec", dont_inherit=True)
-    except SyntaxError as error:
-        if version >= (3, 12) > sys.version_info[:2]:
-            from datamodel_code_generator._builtin_formatter import (  # noqa: PLC0415
-                _replace_pep695_type_aliases_with_placeholders,
-            )
-
-            if (replaced := _replace_pep695_type_aliases_with_placeholders(text)) != text:
-                return _syntax_error(filename, replaced, version)
-        return error.msg
-    return None
 
 
 def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:

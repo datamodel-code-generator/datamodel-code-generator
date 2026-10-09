@@ -91,72 +91,13 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         responses={'204': {'description': 'Done.'}},
         openapi_extra={
             'parameters': [
-                {
-                    'name': 'tags',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'array',
-                        'minItems': 1,
-                        'items': {'type': 'string'},
-                        'default': ['a'],
-                    },
-                },
-                {
-                    'name': 'labels',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'array',
-                        'minItems': 1,
-                        'items': {'type': 'string'},
-                        'default': ['x'],
-                    },
-                },
-                {
-                    'name': 'rows',
-                    'in': 'query',
-                    'schema': {
-                        'type': ['array', 'null'],
-                        'minItems': 1,
-                        'items': {'type': 'integer'},
-                    },
-                },
-                {
-                    'name': 'marks',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'array',
-                        'minItems': 1,
-                        'items': {'type': 'string'},
-                        'default': ['b'],
-                    },
-                },
-                {
-                    'name': 'notes',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'array',
-                        'items': {'type': 'string'},
-                        'default_factory': 'list',
-                    },
-                },
-                {
-                    'name': 'extras',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'array',
-                        'items': {'type': 'string'},
-                        'default_factory': 'list',
-                    },
-                },
-                {
-                    'name': 'X-Colors',
-                    'in': 'header',
-                    'schema': {
-                        'type': 'array',
-                        'items': {'type': 'string', 'enum': ['red', 'blue']},
-                        'default': ['blue'],
-                    },
-                },
+                {'name': 'tags', 'in': 'query'},
+                {'name': 'labels', 'in': 'query'},
+                {'name': 'rows', 'in': 'query'},
+                {'name': 'marks', 'in': 'query'},
+                {'name': 'notes', 'in': 'query'},
+                {'name': 'extras', 'in': 'query'},
+                {'name': 'X-Colors', 'in': 'header'},
             ],
         },
         dependencies=wiring.dependencies.get('get_values'),

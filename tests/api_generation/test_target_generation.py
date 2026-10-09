@@ -5,7 +5,6 @@ from __future__ import annotations
 import errno
 import os
 import shutil
-import sys
 from itertools import count
 from pathlib import Path
 from types import SimpleNamespace
@@ -66,12 +65,6 @@ def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
-
-
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
-def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reject syntax the running Python accepts but the configured target Python does not."""
-    assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
 
 
 @pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")

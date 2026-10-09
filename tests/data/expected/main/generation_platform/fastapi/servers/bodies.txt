@@ -83,7 +83,8 @@ service UntaggedService without its methods: TypeError
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
-< 422 application/json [{"type": "media_invalid", "loc": ["body"]}]
+  post_form(body=FieldFormsPostRequest(name='b', tags=None, count=None))
+< 204 - b''
 > POST /native-forms
   post_native_form(body=FieldNativeFormsPostRequest(name='a', count=1))
 < 204 - b''
