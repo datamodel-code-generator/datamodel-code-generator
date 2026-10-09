@@ -2878,6 +2878,12 @@ response = patient.request_raw(
 )
 ```
 
+`default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`, give
+each name they list their value over the generated headers and query, the client's first, then the views', the call's
+parameters', and the call's extra ones last; None removes that name. Header names compare case-insensitively, query
+names exactly. A body's media type ranks above every layer but the call's `extra_headers`: only a call's Content-Type
+relabels its body, or with None sends it unlabelled, and a multipart one without `boundary=` keeps the body's boundary.
+
 | Setting | Effective default | Meaning |
 |---|---|---|
 | `timeout` | Owned client: connect 5, read/write/pool 600 seconds; injected client: its native timeouts | Native I/O phase limits |
@@ -3192,7 +3198,8 @@ supply the caller's own as `RequestOptions(idempotency_key="saved-value")`.
 Unset, the client creates one UUID4 key per logical call for an operation with a declared header.
 `idempotency_key=None` disables that automatic key. A caller key on an undeclared operation or `request_raw` fails
 before sending with `ConfigurationError` and the reason `not_declared`. A header of the declared name among the call's
-`extra_headers` is sent as it is and is the call's key instead. The same key is sent unchanged on every eligible
+`extra_headers` or the client's or a view's `default_headers` is sent as it is and is the call's key instead, the same
+on every call it reaches; a protocol helper, which needs a key per request, refuses it. The same key is sent unchanged on every eligible
 retry. A declaration without an active key does not authorize unsafe retries. The contract does not guarantee
 exactly-once business execution. HTTPX2 refuses a key that is not a valid header value when it sends the request.
 
@@ -3489,7 +3496,6 @@ from collections.abc import Generator
 import httpx2
 
 from pets import Client
-from pets.options import RequestOptions
 
 
 class BodySigner(httpx2.Auth):
@@ -3505,7 +3511,7 @@ class BodySigner(httpx2.Auth):
 
 
 def signed_upload(client: Client, key: bytes, payload: bytes) -> bytes:
-    view = client.with_options(RequestOptions(auth=BodySigner(key)))
+    view = client.with_options(auth=BodySigner(key))
     return view.auth.signed_body(body=payload)
 ```
 

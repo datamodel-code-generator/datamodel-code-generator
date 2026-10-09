@@ -221,13 +221,17 @@ class RequestOptions:
     auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
 
     def __post_init__(self) -> None:
-        """Refuse a server beside a base URL, a negative retry count, and negative or nonfinite durations."""
+        """Refuse a server beside a base URL, a negative retry count, and negative or nonfinite durations or phases."""
         if self.base_url is not None and self.server is not None:
             raise ConfigurationError(field_path=("base_url",), reason="conflicts_with_server")
         if self.max_retries is not None:
             checked_count(self.max_retries, ("max_retries",))
         if isinstance(timeout := self.timeout, int | float):
             object.__setattr__(self, "timeout", seconds(timeout, ("timeout",)))
+        elif timeout is not None and not isinstance(timeout, Unset):
+            for phase in ("connect", "read", "write", "pool"):
+                if (value := getattr(timeout, phase)) is not None:
+                    seconds(value, ("timeout", phase))
         if (total := self.total_timeout) is not None and not isinstance(total, Unset):
             object.__setattr__(self, "total_timeout", seconds(total, ("total_timeout",)))
         object.__setattr__(self, "extra_headers", _frozen(self.extra_headers))

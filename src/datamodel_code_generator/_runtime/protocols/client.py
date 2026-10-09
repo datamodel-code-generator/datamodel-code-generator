@@ -28,7 +28,6 @@ from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
 from ..client.logical import Delivery, LogicalCallContext
 from ..client.native import request_fields
-from ..client.options import Pairs, RequestOptions, Settings, merged
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
@@ -37,11 +36,12 @@ from ..client.urls import absolute_target, request_origin, strip_query
 from ..model_codecs.unset import UNSET, Unset
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from ..client.errors import APIConnectionError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
+    from ..client.options import RequestOptions, Settings
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
     from ..client.security import SecuritySchemeEntry
@@ -246,20 +246,34 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         """Bind a stream's child call to its helper session before native execution."""
         return _SessionCall(self._call_settings(options, operation.operation_id), operation, session)
 
-    @staticmethod
-    def fixes_key(options: RequestOptions | None) -> bool:
-        """Return whether a call's options fix an idempotency key."""
-        return options is not None and isinstance(options.idempotency_key, str)
+    def fixed_key(
+        self, options: RequestOptions | None, operations: Iterable[OperationPlan[object] | None]
+    ) -> tuple[str, ...] | None:
+        """Return where a call fixes an idempotency key of the operations, or None.
 
-    def patches(self, options: RequestOptions | None) -> tuple[Pairs, Pairs]:
-        """Return the header and query names a call's layers replace: the client's, a view's, and its own."""
-        settings = self._settings
-        if options is None:
-            return settings.headers, settings.query
-        return (
-            merged(settings.headers, options.extra_headers, fold=True),
-            merged(settings.query, options.extra_query, fold=False),
-        )
+        It is the call's own key, or a header of a declared key's name that the call's extra headers or the client's
+        or a view's default headers send.
+        """
+        if options is not None and isinstance(options.idempotency_key, str):
+            return ("options", "idempotency_key")
+        names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
+        return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
+
+    def named(
+        self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
+    ) -> tuple[str, ...] | None:
+        """Return the field path of the first header, or query name, of a call's layers that matches, or None.
+
+        The call's own extra ones come first, then the default ones the client and its views merged.
+        """
+        call = None if options is None else options.extra_query if query else options.extra_headers
+        for name, value in () if call is None else call.items():
+            if matches(name, value):
+                return ("options", "extra_query" if query else "extra_headers", name)
+        for name, value in self._settings.query if query else self._settings.headers:
+            if matches(name, value):
+                return ("default_query" if query else "default_headers", name)
+        return None
 
     @staticmethod
     def reconnects_after(error: APIConnectionError) -> bool:
