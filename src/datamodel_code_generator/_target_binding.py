@@ -1769,13 +1769,13 @@ class _Schemas:
         return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
 
     def part(self, declaration: _Declaration) -> PartSchema:
-        """Return how a multipart member's schema encodes its parts, reading an array's items at its own `items`.
+        """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
 
         A string is binary by its binary format, or by a content media type without a content encoding.
         """
-        raw = self.whole(declaration)[1]
+        location, raw = self.whole(declaration)
         if repeated := _json_types(raw) - _NULL == _ARRAY:
-            raw = self.whole(_child(declaration, "items"))[1]
+            raw = self.whole(_child(location, "items"))[1]
         types = _json_types(raw) - _NULL
         binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
         return PartSchema(
