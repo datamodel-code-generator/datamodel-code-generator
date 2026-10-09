@@ -71,22 +71,6 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getValues',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'id', 'in': 'path', 'required': True},
-                {'name': 'count', 'in': 'query'},
-                {'name': 'bounded', 'in': 'query'},
-                {'name': 'score', 'in': 'query'},
-                {'name': 'flag', 'in': 'query'},
-                {'name': 'counts', 'in': 'query'},
-                {'name': 'page', 'in': 'query'},
-                {'name': 'size', 'in': 'query'},
-                {'name': 'maybe', 'in': 'query'},
-                {'name': 'X-Trace', 'in': 'header'},
-                {'name': 'visits', 'in': 'cookie'},
-            ],
-        },
         dependencies=wiring.dependencies.get('get_values'),
     )
 
@@ -113,13 +97,6 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postForm',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'requestBody': {
-                'required': True,
-                'content': {'application/x-www-form-urlencoded': {}},
-            },
-        },
         dependencies=wiring.dependencies.get('post_form'),
     )
 
@@ -146,10 +123,6 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='upload',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'requestBody': {'required': True, 'content': {'multipart/form-data': {}}},
-        },
         dependencies=wiring.dependencies.get('upload'),
     )
 

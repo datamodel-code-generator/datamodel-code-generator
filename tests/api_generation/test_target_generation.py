@@ -221,6 +221,7 @@ def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         os.umask(mask)
 
 
+@pytest.mark.filterwarnings("ignore::datamodel_code_generator.DocumentationAnnotationWarning")
 def test_target_pyproject_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

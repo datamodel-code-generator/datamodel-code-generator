@@ -404,7 +404,9 @@ class _NativeServerCases:
         route = self.routes[path, method]
         if role == "response_body":
             status = parts[0]
-            native_type = route.response_model if int(status) == route.status_code else route.responses[status]["model"]
+            native_type = (
+                route.response_model if int(status) == route.status_code else self.declared(route.name, status)
+            )
         else:
             name = "body" if role == "request_body" else parts[-1]
             hints = get_type_hints(route.endpoint, include_extras=True)
@@ -415,6 +417,14 @@ class _NativeServerCases:
                 service = next(service for service in self.services.values() if hasattr(service, route.name))
                 native_type = get_type_hints(getattr(service, route.name), include_extras=True)[name]
         return route, native_type
+
+    def declared(self, name: str, status: str) -> object:
+        """Return the model the generated contract declares for one response of an operation."""
+        contract = importlib.import_module(f"{self.package}._generated.contract")
+        plans = next(
+            item for item in vars(contract).values() if getattr(item, "__doc__", None) == f"Plans of the {name} operation."
+        )
+        return plans.RESPONSES.responses[status].model
 
     def request(self, route: Any, value: object) -> object:
         from fastapi.testclient import TestClient

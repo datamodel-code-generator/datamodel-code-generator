@@ -1,6 +1,7 @@
 # publish-failure
 generate
   OSError: No space left on device
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 tree
 generate
   returned None
@@ -12,6 +13,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -19,7 +21,8 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
   OSError: No space left on device
 tree
@@ -30,6 +33,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -37,7 +41,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
 leftovers []
 render
   unchanged models.py
@@ -49,8 +53,10 @@ render
   unchanged server/routers/untagged.py
   unchanged server/_generated/__init__.py
   unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
   unchanged server/services.py
   unchanged server/README.md
   unchanged server/py.typed
-  4 runtime modules ['unchanged']
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: example/server: /x-limit: The served document leaves out x-limit, which has no JSON form
 staged lock updates discarded: 1

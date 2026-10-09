@@ -21,7 +21,8 @@ def build_router(*, pets: Pets, authorize: Authorize):
 def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
@@ -32,6 +33,8 @@ def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
             dependencies=dependencies,
         )
     )
+    if source_openapi:
+        (app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 
@@ -61,7 +64,8 @@ def build_router(*, pets: Pets, authorize: Authorize):
 def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
@@ -69,6 +73,8 @@ def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
         build_router(
         )
     )
+    if source_openapi:
+        (app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 
@@ -152,9 +158,9 @@ The package never contacts a token endpoint.
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare.
-An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
-Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
+`create_app` serves the part of the source document the selected operations use, which generation writes into `_generated/openapi.py`; the application reads it on the first request for it.
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the models they declare, in which an optional parameter or request body is `anyOf` of its type and `null`.
+An application of your own that includes `build_router(...)` serves FastAPI's document unless it calls `serve_source_openapi(app)`, imported from `server`.
 
 ## Validation
 
@@ -234,9 +240,9 @@ app.include_router(build_router())
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare.
-An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
-Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
+`create_app` serves the part of the source document the selected operations use, which generation writes into `_generated/openapi.py`; the application reads it on the first request for it.
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the models they declare, in which an optional parameter or request body is `anyOf` of its type and `null`.
+An application of your own that includes `build_router(...)` serves FastAPI's document unless it calls `serve_source_openapi(app)`, imported from `server`.
 
 ## Validation
 

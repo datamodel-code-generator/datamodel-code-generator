@@ -3,8 +3,15 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field, RootModel
 from typing_extensions import TypeAliasType
+
+
+class Tag(RootModel[str]):
+    root: str
+
 
 FieldUsersIdGetPathIdParameter = TypeAliasType("FieldUsersIdGetPathIdParameter", int)
 
@@ -18,7 +25,10 @@ FieldUsersIdGetQueryBodyParameter = TypeAliasType("FieldUsersIdGetQueryBodyParam
 FieldUsersIdGetHeaderMediaTypeParameter = TypeAliasType("FieldUsersIdGetHeaderMediaTypeParameter", str)
 
 
-FieldUsersIdGetQueryDcgP0Parameter = TypeAliasType("FieldUsersIdGetQueryDcgP0Parameter", str)
+FieldUsersIdGetQueryDcgP0Parameter = TypeAliasType(
+    "FieldUsersIdGetQueryDcgP0Parameter",
+    Annotated[str, Field(..., examples=['a', float('inf')])],
+)
 
 
 FieldUsersIdGetQueryParametersParameter = TypeAliasType("FieldUsersIdGetQueryParametersParameter", str)

@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
-    from datamodel_code_generator._fastapi.documentation import Documentation
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -80,6 +79,7 @@ _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
     ("_runtime.server.application", "validation_error_handler"),
+    ("_generated.openapi", "serve_source_openapi"),
 )
 _SECURITY_NAMES: Final = ("AsyncAuthorize", "Authorize", "Credentials", "RequirementSets")
 _SECURITY_EXPORTS: Final = tuple(("_runtime.server.security", name) for name in _SECURITY_NAMES)
@@ -114,7 +114,7 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 }
 
 
-_SERVER_RUNTIME: Final = ("server/application.py", "server/responses.py")
+_SERVER_RUNTIME: Final = ("server/application.py", "server/openapi.py", "server/responses.py")
 _SECURITY_RUNTIME: Final = ("server/security.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/errors.py",
@@ -238,10 +238,10 @@ class Module:
         return "\n".join(self.namespace.imports())
 
 
-class ServerRenderer:  # noqa: PLR0904
+class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     """Render every module of one server package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         *,
         config: FastAPIConfig,
@@ -250,18 +250,18 @@ class ServerRenderer:  # noqa: PLR0904
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         templates: TemplateOverlay | None = None,
-        docs: Documentation | None = None,
+        document: str = "{}",
     ) -> None:
         """Keep the plans.
 
-        The overrides of a custom template directory replace builtin roles. The documentation adds what FastAPI cannot
-        derive from the routes to its own document.
+        The overrides of a custom template directory replace builtin roles. `document` is the JSON text of the source
+        document the application serves.
         """
         self.config = config
         self.backend = backend
         self.plan = plan
         self.role: Role = builtin_role if templates is None else templates.role
-        self.docs = docs
+        self.document = document
         self.batch = batch
         self.wire = wire
         self.symbols = symbol_imports(batch)
@@ -285,6 +285,7 @@ class ServerRenderer:  # noqa: PLR0904
             *self.routers(),
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
+            self.file(generated / "openapi.py", "openapi", _openapi_module(self.document)),
             *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             self.file(PurePosixPath("README.md"), "readme", self.readme()),
@@ -375,6 +376,7 @@ class ServerRenderer:  # noqa: PLR0904
                 "create_app",
                 fastapi,
                 groups,
+                ("source_openapi", "bool", " = True"),
                 ("**fastapi_kwargs", module.name("typing", "Any"), ""),
                 secured=secured,
                 dependencies=False,
@@ -382,6 +384,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
             error_handlers=module.local("_runtime.server.application", "error_handlers"),
+            serve_source_openapi=module.local("_generated.openapi", "serve_source_openapi"),
             exports=exports,
             imports=module.imports(),
         )
@@ -693,10 +696,10 @@ class ServerRenderer:  # noqa: PLR0904
         definitions = f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
-    def registration(self, module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
-        """Return the route registration of one operation, with what FastAPI cannot derive from the route documented."""
-        assert self.docs is not None
-        return _registration(module, spec, self.docs, names)
+    @staticmethod
+    def registration(module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
+        """Return the route registration of one operation."""
+        return _registration(module, spec, names)
 
     @staticmethod
     def operation_plan(module: Module, spec: OperationSpec) -> str:
@@ -903,7 +906,7 @@ def _body_adapter(module: Module, body: BodySpec) -> Group:
     return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
-def _registration(module: Module, spec: OperationSpec, docs: Documentation, names: dict[str, str]) -> Group:
+def _registration(module: Module, spec: OperationSpec, names: dict[str, str]) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     items: list[tuple[str, Doc]] = [
@@ -936,45 +939,41 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation, name
         items.append(("deprecated=", "True"))
     if isinstance(description := _response_description(spec), str):
         items.append(("response_description=", repr(description)))
-    if responses := docs.responses(spec):
-        items.append(("responses=", _responses(module, spec, responses)))
-    if extra := docs.openapi_extra(spec):
-        items.append(("openapi_extra=", _json_literal(extra)))
     items.append(("dependencies=", f"{names['wiring']}.dependencies.get({spec.python_name!r})"))
     return Group(f"{names['router']}.add_api_route(", tuple(items), ")")
 
 
-def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
-    """Return the responses a route documents; FastAPI documents a JSON body of a model from the model itself."""
-    models = {
-        response.status: (str(media.declaration.name), media.use.type)
-        for response in spec.responses
-        for media in response.media
-        if media.media_type == "application/json" and media.use is not None and media.use.type is not None
-    }
-    entries: list[tuple[str, Doc]] = []
-    for status, response in documented.items():
-        items: list[tuple[str, Doc]] = []
-        content = response.get("content")
-        if (model := models.get(status)) is not None and isinstance(content, dict) and model[0] in content:
-            del content[model[0]]
-            items.append(("'model': ", module.annotation(model[1])))
-            if not content:
-                del response["content"]
-        items.extend((f"{key!r}: ", _json_literal(item)) for key, item in response.items())
-        entries.append((f"{status!r}: ", Group("{", tuple(items), "}")))
-    return Group("{", tuple(entries), "}")
+def _openapi_module(document: str) -> str:
+    """Return the module of the served document: its JSON text, one string literal per line, read on first use."""
+    lines = "".join(f"    {line!r}\n" for line in document.splitlines(keepends=True))
+    return (
+        '"""The source OpenAPI document of the selected operations, which the application serves; regenerate it."""\n\n'
+        "from __future__ import annotations\n\n"
+        "import json\n"
+        "from typing import TYPE_CHECKING, Any\n\n"
+        "from .._runtime.server.openapi import serve_openapi\n\n"
+        "if TYPE_CHECKING:\n"
+        "    from collections.abc import Mapping\n\n"
+        "    from fastapi import FastAPI\n\n"
+        f"_TEXT = (\n{lines})\n\n\n"
+        "def document() -> dict[str, Any]:\n"
+        '    """Return a new copy of the source document."""\n'
+        "    loaded: dict[str, Any] = json.loads(_TEXT)\n"
+        "    return loaded\n\n\n"
+        "def serve_source_openapi(\n"
+        '    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None\n'
+        ") -> None:\n"
+        '    """Serve the source document instead of FastAPI\'s, read on its first request.\n\n'
+        "    Its paths take `prefix`, and the FastAPI settings in `metadata`, such as `title`, replace its own.\n"
+        '    """\n'
+        "    serve_openapi(app, document, prefix=prefix, metadata=metadata)\n"
+    )
 
 
 def _json_literal(value: JSONValue) -> Doc:
     """Return the Python literal of a JSON value, laid out like the rest of the module."""
-    match value:
-        case dict():
-            return Group("{", tuple((f"{key!r}: ", _json_literal(item)) for key, item in value.items()), "}")
-        case list():
-            return Group("[", _items(_json_literal(item) for item in value), "]")
-        case _:
-            pass
+    if isinstance(value, dict):
+        return Group("{", tuple((f"{key!r}: ", _json_literal(item)) for key, item in value.items()), "}")
     return repr(value)
 
 
@@ -1018,7 +1017,7 @@ def _services(services: list[str]) -> str:
     )
 
 
-def _builder(  # noqa: PLR0913
+def _builder(  # ruff: ignore[too-many-arguments]
     module: Module,
     name: str,
     returns: str,
@@ -1120,7 +1119,14 @@ def _request_kind(media: MediaSpec) -> str:
 def _package(*, secured: bool) -> str:
     """Return the package initializer, which exports the security aliases only when a scheme is used."""
     security = _SECURITY_NAMES if secured else ()
-    names = sorted(("OperationDependencies", "build_router", "create_app", "validation_error_handler", *security))
+    names = sorted((
+        "OperationDependencies",
+        "build_router",
+        "create_app",
+        "serve_source_openapi",
+        "validation_error_handler",
+        *security,
+    ))
     imported = "".join(f"    {name},\n" for name in names)
     exported = "".join(f'    "{name}",\n' for name in sorted((*names, "HTTPResult")))
     return (

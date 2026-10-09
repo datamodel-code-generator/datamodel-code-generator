@@ -88,18 +88,6 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getValues',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'tags', 'in': 'query'},
-                {'name': 'labels', 'in': 'query'},
-                {'name': 'rows', 'in': 'query'},
-                {'name': 'marks', 'in': 'query'},
-                {'name': 'notes', 'in': 'query'},
-                {'name': 'extras', 'in': 'query'},
-                {'name': 'X-Colors', 'in': 'header'},
-            ],
-        },
         dependencies=wiring.dependencies.get('get_values'),
     )
 
