@@ -15,6 +15,9 @@
   view timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   root total_timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
   view total_timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  option timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  root timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  view timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
   public deadline exported=False
   public timeout options exported=False
   removed option deadline ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'deadline' []
