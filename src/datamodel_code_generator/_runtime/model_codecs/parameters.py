@@ -513,8 +513,9 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> WireVa
 
 
 def _decode_header(plan: ParameterPlan, values: list[bytes]) -> WireValue | Unset:
+    """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
     try:
-        texts = [value.decode().strip(_OWS) for value in values]
+        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     except UnicodeDecodeError:
         raise issue(code="parameter.encoding", message="A header value must be UTF-8") from None
     if not texts:
