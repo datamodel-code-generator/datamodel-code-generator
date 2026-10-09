@@ -1,7 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.retry_safety: retry_safety must be 'method_default', 'idempotent', or 'never'
-  E_CONFIG_VALUE config operations[1].runtime.retry_safety: retry_safety must be 'method_default', 'idempotent', or 'never'
-  E_CONFIG_VALUE config operations[2].runtime.idempotency: idempotency must be an IdempotencyMetadata record
-  E_CONFIG_VALUE config operations[3].runtime.retry_after_ms_header: retry_after_ms_header must be a header name
-  E_CONFIG_VALUE config operations[4].runtime.should_retry_header: should_retry_header must be a header name
-  E_CONFIG_VALUE config operations[5].runtime.idempotency.header_name: header_name must be a header name
+Error: --client-operations[0].runtime.retry_safety: retry_safety must be 'method_default', 'idempotent', or 'never'; --client-operations[1].runtime.retry_safety: retry_safety must be 'method_default', 'idempotent', or 'never'; --client-operations[2].runtime.idempotency: idempotency must be an IdempotencyMetadata record; --client-operations[3].runtime.retry_after_ms_header: retry_after_ms_header must be a header name; --client-operations[4].runtime.should_retry_header: should_retry_header must be a header name; --client-operations[5].runtime.idempotency.header_name: header_name must be a header name

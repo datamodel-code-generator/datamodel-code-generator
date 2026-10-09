@@ -1,11 +1,1 @@
 Error: --server-layout must be 'routers' or 'single'; --server-handler-mode must be 'sync' or 'async'; --server-handler-modes has an invalid entry; --server-include-request must be a boolean; --server-body-mode must be 'typed' or 'request'; --server-body-modes has an invalid entry; --server-primary-responses has an invalid entry; --server-operation-names has an invalid entry; --server-parameter-names has an invalid entry; --server-router-names must map group keys to identifiers
-E_CONFIG_VALUE config layout: layout must be 'routers' or 'single'
-E_CONFIG_VALUE config handler_mode: handler_mode must be 'sync' or 'async'
-E_CONFIG_VALUE config handler_modes: handler_modes has an invalid entry
-E_CONFIG_VALUE config include_request: include_request must be a boolean
-E_CONFIG_VALUE config body_mode: body_mode must be 'typed' or 'request'
-E_CONFIG_VALUE config body_modes: body_modes has an invalid entry
-E_CONFIG_VALUE config primary_responses: primary_responses has an invalid entry
-E_CONFIG_VALUE config operation_names: operation_names has an invalid entry
-E_CONFIG_VALUE config parameter_names: parameter_names has an invalid entry
-E_CONFIG_VALUE config router_names: router_names must map group keys to identifiers

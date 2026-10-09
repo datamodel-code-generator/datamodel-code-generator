@@ -7,23 +7,21 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas31_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1pets~1{petId}/get']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pets~1{petId}/get': Sequence[Dependency]
+        'get__pets_pet_id': Sequence[params.Depends]
     },
     total=False,
 )
@@ -32,31 +30,13 @@ OperationDependencies = TypedDict(
 class GetPetsPetId:
     """Plans of the get__pets_pet_id operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__pets_pet_id',
-        key='/paths/~1pets~1{petId}/get',
-        service='untagged',
-        keywords=(
-            'principal',
-            'pet_id',
-            'tags',
-            'filter',
-            'x_trace',
-            'session',
-            'coords',
-            'ids',
-            'when',
-        ),
-        secured=True,
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__pets_pet_id."""
 
-        filter: plan_oas31_models.Filter | Unset
-        session: str | Unset
-        coords: plan_oas31_models.Coords | Unset
-        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | Unset
+        filter: plan_oas31_models.Filter | None
+        coords: plan_oas31_models.Coords | None
+        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -72,16 +52,6 @@ class GetPetsPetId:
                     reserved_names=('api_key', 'coords', 'ids', 'tags', 'when'),
                 ),
                 adapter=TypeAdapter(plan_oas31_models.Filter),
-            ),
-            ParameterArgument(
-                name='session',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='session',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
             ),
             ParameterArgument(
                 name='coords',
@@ -109,9 +79,6 @@ class GetPetsPetId:
     )
     RESPONSES: Final = OperationResponses(
         responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(plan_oas31_models.Pet),
-            ),
+            '200': Declared(media_type='application/json', model=plan_oas31_models.Pet),
         },
     )

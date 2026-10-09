@@ -767,6 +767,9 @@
   "codec-errors": {
     "input": "codec-errors.yaml"
   },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {
@@ -4050,6 +4053,36 @@
     },
     "modules": false
   },
+  "protocols-pagination-wrapper-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-wrapper-checks.json"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "config": {
+      "protocols": "protocols/pagination-wrapper-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-pagination-strict-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.json"
+    ],
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/pagination-counts.json"
+    },
+    "modules": false
+  },
   "pagination-links": {
     "input": "pagination-links.yaml",
     "references": [
@@ -4966,5 +4999,93 @@
       ]
     ],
     "expected": "caching"
+  },
+  "discriminator-copies": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-variants": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-reuse": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    },
+    "model": {
+      "reuse_model": true
+    }
+  },
+  "parameter-content-defaults-30": {
+    "input": "parameter-content-defaults-30.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "parameter-content-defaults-31": {
+    "input": "parameter-content-defaults-31.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "media-item-parts": {
+    "input": "media-item-parts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }

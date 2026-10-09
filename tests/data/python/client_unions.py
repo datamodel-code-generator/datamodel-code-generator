@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, record, request_body, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    arecord,
+    json_response,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -21,6 +29,15 @@ _MEMBERS: Final = (
     ("get_holder", "holder square", {"b": 1, "shape": {"side": 2}}),
     ("get_inline", "inline circle", {"b": 1, "shape": {"radius": 1}}),
     ("get_inline", "inline square", {"b": 1, "shape": {"side": 2}}),
+)
+_COPIES: Final = (
+    ("get_child", "inherited pet c", {"pet": {"kind": "c", "mane": True}, "pets_by_name": {"a": {"kind": "d"}}}),
+    ("get_child", "inherited pet d", {"pet": {"kind": "d"}, "pets_by_name": {"b": {"kind": "c", "mane": False}}}),
+    ("get_child", "inherited pet of an unknown tag", {"pet": {"kind": "Lion"}, "pets_by_name": {}}),
+    ("get_holder", "held Fish", {"pet": {"kind": "Fish", "fins": 2}}),
+    ("get_holder", "held Bird", {"pet": {"kind": "Bird"}}),
+    ("get_holder", "held null", {"pet": None}),
+    ("list_pets", "listed pets", [{"kind": "Cat"}, {"kind": "Dog", "bark": True}]),
 )
 _SPLIT: Final = ({"radius": 1}, {"side": 2}, {"radius": 1, "id": 4}, {"side": 2, "secret": "s"})
 
@@ -58,3 +75,30 @@ async def _async_split_unions(package: ModuleType, lines: list[str]) -> None:
     async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         for payload in _SPLIT:
             await arecord(lines, f"async split {payload}", _split(exchange, api, package, payload))
+
+
+def copied_unions(package: ModuleType, lines: list[str]) -> None:
+    """Read and send the unions that inherited fields, request and response variants, and null members copy.
+
+    Each is told apart by the discriminator its schema declares, a mapped schema name included, and a body field
+    whose model requires it despite a schema default is a required argument. Each call's answer is dropped after it.
+    """
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        calls = [
+            (label, json_response(200, payload), getattr(api.default, operation)) for operation, label, payload in _COPIES
+        ]
+        calls.extend(
+            (
+                f"pet {payload['kind']}",
+                json_response(200, payload),
+                lambda payload=payload: api.default.create_pet(body=request_body(package, "createPet", None, payload)),
+            )
+            for payload in ({"kind": "kitty"}, {"kind": "doggo", "bark": False})
+        )
+        calls.append(("item without its count", raw_response(204), lambda: api.default.create_item(name="n")))
+        calls.append(("item with its count", raw_response(204), lambda: api.default.create_item(name="n", count=1)))
+        for label, answer, call in calls:
+            exchange.respond(answer)
+            record(lines, label, call)
+            exchange.responders.clear()

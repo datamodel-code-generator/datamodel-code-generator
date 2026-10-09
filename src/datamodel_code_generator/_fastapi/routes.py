@@ -68,6 +68,7 @@ BUILDER_NAMES: Final = frozenset({
     "version",
     "webhooks",
 })
+_EXPORTED_NAMES: Final = frozenset({"validation_error_handler"})
 
 
 class RouteError(ValueError):
@@ -187,10 +188,11 @@ def group_stem(key: str) -> str:
 
 
 def stem_conflicts(stems: Iterable[str]) -> set[str]:
-    """Return group names that repeat under casefolding, name reserved files, or take a name the builders define.
+    """Return group names that repeat under casefolding, name reserved files, or take a name the package defines.
 
     Each name is a router file stem and the keyword that passes the group's service to a builder.
     """
     names = list(stems)
     folded = Counter(name.casefold() for name in names)
-    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in BUILDER_NAMES}
+    reserved = BUILDER_NAMES | _EXPORTED_NAMES
+    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in reserved}

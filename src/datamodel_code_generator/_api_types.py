@@ -1,6 +1,7 @@
 """Shared records, diagnostics, and errors of the single-target API generators.
 
-The target entry points expose these records through `datamodel_code_generator.api_types`.
+The target entry points expose the artifact, selector, and warning records through
+`datamodel_code_generator.api_types`; failures reach callers as ordinary `datamodel_code_generator.Error`s.
 """
 
 from __future__ import annotations
@@ -9,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from typing import Literal, TypeAlias
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import DocumentationAnnotationWarning, Error
 
 __all__ = [
     "APIGenerationError",
@@ -53,10 +54,6 @@ class SchemaRef:
 
 
 OperationSelector: TypeAlias = OperationRef | str
-
-
-class DocumentationAnnotationWarning(UserWarning):
-    """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

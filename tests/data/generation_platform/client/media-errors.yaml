@@ -124,3 +124,12 @@ paths:
       responses:
         '204':
           description: An invalid media type.
+  /item-text-parts:
+    get:
+      operationId: readItemTextParts
+      responses:
+        '200':
+          description: A form-data item stream that is no object.
+          content:
+            multipart/form-data:
+              itemSchema: {type: string}

@@ -13,7 +13,6 @@ import models
 import pydantic
 from fastapi.responses import Response
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 
@@ -25,11 +24,11 @@ class PetsService(Protocol):
         self,
         *,
         limit: int,
-        tags: list[str] | Unset,
-        kind: models.FieldPetsGetQueryKindParameter | Unset,
-        x_request_id: uuid.UUID | Unset,
-        since: pydantic.AwareDatetime | Unset,
-        session: str | Unset,
+        tags: list[str] | None,
+        kind: models.FieldPetsGetQueryKindParameter | None,
+        x_request_id: uuid.UUID | None,
+        since: pydantic.AwareDatetime | None,
+        session: str | None,
     ) -> (
         models.FieldPetsGetResponse
         | HTTPResult[models.FieldPetsGetResponse | models.Error]

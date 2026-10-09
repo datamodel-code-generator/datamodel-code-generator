@@ -1,22 +1,15 @@
 # collision
 render
   Error: server/__INIT__.py: Two generated files resolve to the same path
-  E_PATH_COLLISION error ownership server/__INIT__.py: Two generated files resolve to the same path
 render
   Error: server/__init__.py: Two generated files resolve to the same path
-  E_PATH_COLLISION error ownership server/__init__.py: Two generated files resolve to the same path
 render
   Error: server/routers: Two generated files resolve to the same path
-  E_PATH_COLLISION error ownership server/routers: Two generated files resolve to the same path
 render
   Error: server/services.py: Two generated files resolve to the same path
-  E_PATH_COLLISION error ownership server/services.py: Two generated files resolve to the same path
 render
   Error: server/routers.py: The module has the name of a generated package directory beside it
-  E_PATH_COLLISION error ownership server/routers.py: The module has the name of a generated package directory beside it
 render
   Error: server/services.py: The module has the name of a generated package directory beside it
-  E_PATH_COLLISION error ownership server/services.py: The module has the name of a generated package directory beside it
 render
   Error: server.py: The module has the name of a generated package directory beside it
-  E_PATH_COLLISION error ownership server.py: The module has the name of a generated package directory beside it

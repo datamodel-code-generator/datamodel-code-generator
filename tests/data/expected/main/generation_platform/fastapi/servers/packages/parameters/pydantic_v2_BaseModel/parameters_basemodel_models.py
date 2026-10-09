@@ -66,6 +66,12 @@ FieldSizesGetQueryOneParameter = TypeAliasType("FieldSizesGetQueryOneParameter",
 FieldSizesGetQueryLeastParameter = TypeAliasType("FieldSizesGetQueryLeastParameter", Size)
 
 
+FieldSizesGetQueryCapParameter = TypeAliasType("FieldSizesGetQueryCapParameter", int | None)
+
+
+FieldCodesGetHeaderXCodesParameter = TypeAliasType("FieldCodesGetHeaderXCodesParameter", list[int])
+
+
 FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
 
 

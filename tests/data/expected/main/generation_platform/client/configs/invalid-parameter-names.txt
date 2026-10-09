@@ -1,2 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].parameter_names: parameter_names must be a tuple of ParameterName records
+Error: --client-operations[0].parameter_names: parameter_names must be a tuple of ParameterName records

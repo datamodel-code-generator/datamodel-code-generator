@@ -11,9 +11,15 @@ from typing import Any
 
 import pytest
 
+from datamodel_code_generator import generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
-from tests.data.python.client_generation import client_cli_arguments, client_cli_modules, prepare_client_case
+from tests.data.python.client_generation import (
+    client_cli_arguments,
+    client_cli_modules,
+    client_generate_options,
+    prepare_client_case,
+)
 from tests.main.conftest import run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
@@ -131,21 +137,34 @@ def test_client_cli_nested_models(
     )
 
 
-@pytest.mark.parametrize("form", ["pyproject", "options"])
+@pytest.mark.parametrize("form", ["pyproject", "options", "python", "loaded"])
 @pytest.mark.parametrize("case", ["pets-unpack", "retries", "compression", "auth", "media", "fields"])
 def test_client_cli_equivalence(
     case: str, form: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the package the Python settings of a case render, from its pyproject.toml keys or the same options.
+    """Write the package the Python settings of a case render, from its pyproject.toml keys, options, or generate().
 
-    Tables of pyproject.toml are inline JSON on the command line.
+    Tables of pyproject.toml are inline JSON on the command line and mappings in generate(), which also loads the
+    keys from another directory.
     """
     monkeypatch.chdir(tmp_path)
     prepare_client_case(case, tmp_path)
     pyproject = CLI / f"pyproject-{case}.toml"
-    if form == "pyproject":
-        shutil.copy2(pyproject, tmp_path / "pyproject.toml")
-    run_main_with_args([] if form == "pyproject" else client_cli_arguments(pyproject), capsys=capsys)
+    match form:
+        case "pyproject":
+            shutil.copy2(pyproject, tmp_path / "pyproject.toml")
+            run_main_with_args([], capsys=capsys)
+        case "options":
+            run_main_with_args(client_cli_arguments(pyproject), capsys=capsys)
+        case "python":
+            source, options = client_generate_options(pyproject, tmp_path)
+            generate(source, **options)
+        case _:
+            shutil.copy2(pyproject, tmp_path / "pyproject.toml")
+            source, _ = client_generate_options(pyproject, tmp_path)
+            (elsewhere := tmp_path / "elsewhere").mkdir()
+            monkeypatch.chdir(elsewhere)
+            generate(tmp_path / source, config=load_pyproject_config(tmp_path))
     expected, modules = client_cli_modules(case, tmp_path)
     assert_generated_modules_output(modules, EXPECTED / "packages" / expected / "pydantic_v2_BaseModel")
 
