@@ -12,6 +12,9 @@ paths:
             missing: {$ref: "#/components/links/Absent"}
             nonlink: {$ref: "#"}
             unnamed: {description: Names no operation.}
+            both: {operationRef: "#/paths/~1pets/post", operationId: createPet}
+            numeric: {operationId: 0}
+            undecodable: {$ref: "link-errors-latin1.yaml#/components/links/Pets"}
       callbacks:
         created:
           "{$request.body#/url}":

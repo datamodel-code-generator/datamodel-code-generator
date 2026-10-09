@@ -1,0 +1,2 @@
+Add the runtime dependencies of models.server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.13.5"
