@@ -19,7 +19,7 @@ copied runtime
   client/native.py: 175
   client/oauth.py: 504
   client/operations.py: 835
-  client/options.py: 530
+  client/options.py: 532
   client/paths.py: 40
   client/raw.py: 876
   client/responses.py: 87
@@ -48,7 +48,7 @@ copied runtime
   protocols/references.py: 16
   protocols/values.py: 158
   protocols/writes.py: 288
-total 43 modules, 13052 lines
+total 43 modules, 13054 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
