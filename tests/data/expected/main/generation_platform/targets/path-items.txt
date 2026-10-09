@@ -60,13 +60,13 @@ show server/routers/pets.py
   | 
   | """Endpoints of the pets operations; regenerate them instead of editing."""
   | 
-  | import example.models as example_models
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
   | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | from collections.abc import Sequence
+  | from example import models
   | from fastapi import APIRouter, params
   | from typing import Final
   | 
@@ -79,14 +79,17 @@ show server/routers/pets.py
   |     )
   | 
   |     def list_pets() -> object:
-  |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
+  |         return dispatch(
+  |             list_pets_handler(),
+  |             contract.ListPets.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',
   |         list_pets,
   |         methods=['GET'],
   |         status_code=200,
-  |         response_model=example_models.FieldPetsGetResponse,
+  |         response_model=models.FieldPetsGetResponse,
   |         response_model_by_alias=True,
   |         response_model_exclude_unset=True,
   |         operation_id='listPets',
@@ -96,7 +99,9 @@ show server/routers/pets.py
   |     )
   | 
   | 
-  | LITERAL_ROUTES: Final = (('list_pets', _add_list_pets),)
+  | LITERAL_ROUTES: Final = (
+  |     ('list_pets', _add_list_pets),
+  | )
   | TEMPLATED_ROUTES: Final = ()
   | 
   | 

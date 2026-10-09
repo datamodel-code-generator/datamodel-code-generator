@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Final
 
 PYTHON_VERSION = "3.11"
-MYPY: Final = ("uvx", "--quiet", "mypy@2.3.1")
+MYPY: Final = ("uvx", "--quiet", "mypy@2.4.0")
 PYRIGHT: Final = ("uvx", "--quiet", "pyright@1.1.414")
 TIMEOUT: Final = 600
 BIN = Path(sys.executable).parent

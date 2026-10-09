@@ -7,10 +7,10 @@
 -# changed
 --- models/server/services.py
 +++ models/server/services.py (expected)
-@@ -25,4 +25,3 @@
-         | HTTPResult[models.FieldOrdersGetResponse]
-         | Response
-     ): ...
+@@ -24,4 +24,3 @@
+         """
+         Handle GET /orders.
+         """
 -# changed
 EXTRA: models/extra.py (no longer generated)
 EXTRA: models/server/extensions.py (no longer generated)

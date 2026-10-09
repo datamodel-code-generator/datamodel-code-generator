@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.secure import ListSecureUsersResponse
 
@@ -41,7 +41,7 @@ class SecureResource:
     def list_secure_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListSecureUsersResponse:
@@ -64,7 +64,7 @@ class SecureWithResponse:
     def list_secure_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListSecureUsersResponse]:
@@ -87,7 +87,7 @@ class SecureWithRawResponse:
     def list_secure_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -110,7 +110,7 @@ class SecureWithStreamingResponse:
     def list_secure_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

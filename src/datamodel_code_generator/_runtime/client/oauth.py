@@ -26,8 +26,8 @@ from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
-    import asyncio
     from collections.abc import AsyncGenerator, Callable, Generator, Sequence
+    from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
     from .client import AsyncSend, Send
@@ -204,7 +204,9 @@ class _Provider(TokenSource):
         self._held: _Held | None = None
         self._callback: Callable[[TokenSet], object] | None = None
         self._lock = threading.Lock()
-        self._alocks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = weakref.WeakKeyDictionary()
+        self._alocks: weakref.WeakKeyDictionary[object, AbstractAsyncContextManager[object]] = (
+            weakref.WeakKeyDictionary()
+        )
 
     def _form(self) -> list[tuple[str, str]]:
         raise NotImplementedError
@@ -482,12 +484,18 @@ class RefreshToken(_Provider):
     def _adopt(self, fields: dict[str, object], received: float) -> TokenSet:
         expires_at = _expiry(fields, received)
         issued = fields.get("refresh_token")
+        try:
+            expiry = (
+                None
+                if expires_at is None
+                else datetime.fromtimestamp(self._clock.time(), timezone.utc) + timedelta(seconds=expires_at - received)
+            )
+        except OverflowError:
+            raise AuthError(reason="invalid_expiry") from None
         tokens = self._tokens = TokenSet(
             str(fields["access_token"]),
             issued if isinstance(issued, str) and issued else self._tokens.refresh_token,
-            None
-            if expires_at is None
-            else datetime.fromtimestamp(self._clock.time(), timezone.utc) + timedelta(seconds=expires_at - received),
+            expiry,
         )
         self._hold(tokens, received, expires_at)
         return tokens

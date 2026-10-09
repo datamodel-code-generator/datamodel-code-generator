@@ -15,6 +15,15 @@ class {{ protocol.name }}({{ protocol.base }}):
 {%- for method in protocol.methods %}
 
     @{{ abstract }}
-    {{ method }}
+    {% if method.asynchronous %}async {% endif %}def {{ method.name }}(
+        self,
+{%- if method.parameters %}
+        *,
+{%- for parameter in method.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+{%- endif %}
+    ) -> {{ method.returns }}:
+        {{ method.docstring }}
 {%- endfor %}
 {%- endfor %}

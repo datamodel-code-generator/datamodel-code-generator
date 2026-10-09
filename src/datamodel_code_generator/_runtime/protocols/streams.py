@@ -32,17 +32,17 @@ from ..client.errors import (
     is_transport,
 )
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
-from ..client.options import RequestOptions, TimeoutOptions
+from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from .options import StreamOptions, layered
 from .records import plain_copy
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, server_expiry, written
+from .values import MISSING, Patch, RepeatedValueError, resolve, selected, server_expiry, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
@@ -269,7 +269,7 @@ class _Lines:
 class _Limits:
     """The effective limits of one stream, each from the first layer that sets it; None removes a limit."""
 
-    idle_timeout: float | Unset | None = UNSET
+    idle_timeout: float | UNSET | None = UNSET
     reconnect: bool = False
     max_reconnects: int | None = 5
     max_reconnect_wait: float | None = 60.0
@@ -292,25 +292,21 @@ def _limits(
     plan: EventPlan[T],
     stream_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     An idle timeout either layer sets replaces the call's merged stream idle timeout. Reconnecting needs resume
-    metadata, so a stream of a helper without it that would reconnect is refused. A helper with it refuses effective
-    options fixing an idempotency key, since each reopen is a child call of its own, and header or query patches of a
-    parameter a reopen writes.
+    metadata, so a stream of a helper without it that would reconnect is refused. A helper with it refuses a call's
+    idempotency key, since each reopen is a child call of its own, and extra headers or query names of a parameter a
+    reopen writes.
     """
     for name, value, kind in (
         ("stream_options", stream_options, StreamOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,), "invalid_value")
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (stream_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+    kinds = (stream_options, core.helper_defaults(plan.helper_id))
     reconnect = layered(kinds, "reconnect", _DEFAULTS.reconnect)
     request = options if isinstance(options, RequestOptions) else None
     if (resume := plan.resume) is None:
@@ -318,17 +314,16 @@ def _limits(
             raise _invalid(plan, ("stream_options", "reconnect"), "missing_metadata")
     else:
         _unpatched(core, plan, resume, request)
-    if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
-        request = request or RequestOptions()
-        timeout = request.timeout
-        if not isinstance(timeout, TimeoutOptions):
-            timeout = TimeoutOptions(connect=None, write=None, pool=None) if timeout is None else TimeoutOptions()
-        request = replace(request, timeout=replace(timeout, read=idle))
+    idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
+    if idle is not UNSET:
+        phases = core.call_settings(request, plan.call).timeout
+        timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
+        request = replace(request or RequestOptions(), timeout=timeout)
     return _Limits(
         reconnect=reconnect,
         max_reconnects=layered(kinds, "max_reconnects", _DEFAULTS.max_reconnects),
         max_reconnect_wait=layered(kinds, "max_reconnect_wait", _DEFAULTS.max_reconnect_wait),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -337,23 +332,20 @@ def _limits(
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
-    """Refuse effective options fixing an idempotency key or patching a header or query parameter a reopen writes.
+    """Refuse a fixed idempotency key, and headers or query names of a parameter a reopen writes.
 
-    The effective options are the client's, a view's, and the call's own, each of which patches every reopen.
+    The names are the call's own extra ones and the client's and its views' default ones, each of which every reopen
+    sends; the refusal names the layer that gave one.
     """
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"), "invalid_value")
-    headers, queries = core.patches(request)
-    for patch in headers:
-        for name, _ in patch:
-            if name.lower() in resume.headers:
-                raise _invalid(plan, ("options", "headers", name), "invalid_value")
-    for patch in queries:
-        for name, _ in patch:
-            if query_written(resume.call, resume.writes, name):
-                raise _invalid(plan, ("options", "query", name), "invalid_value")
+    written = (
+        core.fixed_key(request, (plan.call, resume.call))
+        or core.named(request, lambda name, _: name.lower() in resume.headers)
+        or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
+    )
+    if written is not None:
+        raise _invalid(plan, written, "invalid_value")
 
 
 def _progress(reconnects: int = 0) -> ProtocolProgress:
@@ -467,7 +459,7 @@ def _bound(  # noqa: PLR0913, PLR0917
     return bound
 
 
-def _json(frame: _Frame) -> JSONValue | Missing:
+def _json(frame: _Frame) -> JSONValue | MISSING:
     """Return an event's data parsed as JSON, or MISSING when it is not JSON.
 
     `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
@@ -478,7 +470,7 @@ def _json(frame: _Frame) -> JSONValue | Missing:
         return MISSING
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -555,9 +547,9 @@ def _wire(value: object) -> JSONValue:
     return value.applied(plain_copy) if isinstance(value, Patch) else cast("JSONValue", value)
 
 
-def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | Unset, ...]:
+def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | UNSET, ...]:
     """Return arguments written by wire value with their writes applied."""
-    return cast("tuple[JSONValue | Unset, ...]", tuple(map(_wire, arguments)))
+    return cast("tuple[JSONValue | UNSET, ...]", tuple(map(_wire, arguments)))
 
 
 class _State(Enum):
@@ -1410,13 +1402,12 @@ def open_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> EventStream[T]:
     """Open a helper's stream in a session of its own, returning once its response is a declared success.
 
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     session = _session(limits)
     given = (arguments, body, media_type)
     response = _sent(core, plan.call, given, limits, session, plan.media)
@@ -1437,10 +1428,9 @@ async def aopen_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     session = _session(limits)
     given = (arguments, body, media_type)
     response = await _asent(core, plan.call, given, limits, session, plan.media)
@@ -1462,7 +1452,6 @@ def resume_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> EventStream[T]:
     """Reopen a helper's stream after a checkpoint's cursor in a session of its own, checking the checkpoint first.
 
@@ -1470,7 +1459,7 @@ def resume_events(  # noqa: PLR0913
     sequences and reconnections count afresh. A reopen of the helper's own operation sends the caller's arguments and
     body again.
     """
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)
@@ -1489,10 +1478,9 @@ async def aresume_events(  # noqa: PLR0913
     media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncEventStream[T]:
     """Reopen a helper's asyncio stream after a checkpoint's cursor, as `resume_events` does."""
-    limits = _limits(core, plan, stream_options, options, session_options)
+    limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)

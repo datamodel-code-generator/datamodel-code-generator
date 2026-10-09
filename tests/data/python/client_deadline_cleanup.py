@@ -106,12 +106,12 @@ async def _async_stream_error(package: ModuleType, errors: ModuleType, lines: li
         record(lines, "async stream close resources", lambda: (transport.sends, transport.body.closed))
 
 
-async def _borrowed(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _borrowed(package: ModuleType, lines: list[str]) -> None:
     """Close a client twice without closing the borrowed native client, which its views share and cannot close."""
     transport = _Transport()
     async with httpx2.AsyncClient(transport=transport) as native:
         api = package.AsyncClient(http_client=native)
-        view = api.with_options(options.RequestOptions())
+        view = api.with_options()
         raw = await view.request_raw("GET", "https://close.example/")
         record(lines, "view call", lambda: (raw.info.status_code, hasattr(view, "aclose"), hasattr(view, "close")))
         await api.aclose()
@@ -165,9 +165,7 @@ async def _interrupted(package: ModuleType, options: ModuleType, errors: ModuleT
     ):
         transport = _Transport(body, status)
         async with httpx2.AsyncClient(transport=transport) as client:
-            api = package.AsyncClient(
-                http_client=client, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-            )
+            api = package.AsyncClient(http_client=client, retry=options.RetryOptions(initial_delay=0))
             try:
                 await api.request_raw("GET", "https://close.example/")
             except (asyncio.CancelledError, errors.SDKError) as error:
@@ -199,9 +197,7 @@ def _sync_interrupted(package: ModuleType, options: ModuleType, lines: list[str]
     ):
         transport = _Transport(_Body(close_failure=failure), 503)
         with httpx2.Client(transport=transport) as client:
-            api = package.Client(
-                http_client=client, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-            )
+            api = package.Client(http_client=client, retry=options.RetryOptions(initial_delay=0))
             try:
                 api.request_raw("GET", "https://close.example/")
             except KeyboardInterrupt as error:
@@ -218,11 +214,11 @@ def _sync_interrupted(package: ModuleType, options: ModuleType, lines: list[str]
         record(lines, f"{label} resources", lambda transport=transport: (transport.sends, transport.body.closed))
 
 
-async def _expired(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+async def _expired(package: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     """Stop a call whose deadline expired at its first boundary before anything is sent."""
     transport = _Transport()
     async with httpx2.AsyncClient(transport=transport) as native:
-        api = package.AsyncClient(http_client=native, options=options.ClientOptions(total_timeout=0.0))
+        api = package.AsyncClient(http_client=native, total_timeout=0.0)
         try:
             await api.request_raw("GET", "https://close.example/")
         except errors.SDKError as error:
@@ -266,12 +262,12 @@ async def _stream_cancel(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    await _borrowed(package, options, lines)
+    await _borrowed(package, lines)
     await _buffered_cancel(package, lines)
     await _buffered_cancel(package, lines, failure=True)
     await _async_stream_error(package, errors, lines)
     await _interrupted(package, options, errors, lines)
-    await _expired(package, options, errors, lines)
+    await _expired(package, errors, lines)
     await _stream_cancel(package, lines)
 
 

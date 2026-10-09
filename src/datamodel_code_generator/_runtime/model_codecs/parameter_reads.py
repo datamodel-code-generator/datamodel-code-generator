@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final
 
 from .errors import MalformedError
 from .media import decode_form, media_kind, percent_decode, split_form, typed
-from .unset import UNSET, Unset
+from .unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -126,12 +126,12 @@ def _decode_matrix(plan: ParameterPlan, parts: list[bytes]) -> JSONValue:
     return _collection(plan, _split(members[-1][1], _COMMA, plus=False), exploded_pairs=False)
 
 
-def _last(values: list[bytes]) -> bytes | Unset:
+def _last(values: list[bytes]) -> bytes | UNSET:
     """Return the last of a repeated single value, as FastAPI reads query parameters, or UNSET when absent."""
     return values[-1] if values else UNSET
 
 
-def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | Unset:
+def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | UNSET:
     declared = {item.name for item in plan.fields}
     members = [
         (name, text)
@@ -141,7 +141,7 @@ def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONV
     return _object(plan, members) if members else UNSET
 
 
-def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONValue | Unset:
+def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONValue | UNSET:
     match plan.style, plan.shape, plan.explode:
         case "form", "array", True:
             return [
@@ -167,9 +167,10 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONVa
     return _collection(plan, _split(value, delimiter, plus=True), exploded_pairs=False)
 
 
-def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | Unset:
+def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | UNSET:
+    """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
     try:
-        texts = [value.decode().strip(_OWS) for value in values]
+        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     except UnicodeDecodeError:
         msg = "A header value must be UTF-8"
         raise MalformedError(msg) from None
@@ -183,7 +184,7 @@ def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | Unse
     return _collection(plan, [part.strip(_OWS) for part in combined.split(",")], exploded_pairs=plan.explode)
 
 
-def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | Unset:
+def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | UNSET:
     if plan.shape == "object":
         return _exploded_object(plan, pairs)
     matching = [text for name, text in pairs if name == plan.name]
@@ -200,7 +201,7 @@ def _utf8(raw: bytes) -> str:
         raise MalformedError(msg) from None
 
 
-def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> JSONValue | Unset:
+def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> JSONValue | UNSET:
     if not raw:
         return UNSET
     if media_kind(plan.content_media_type or "") == "form":
@@ -208,7 +209,7 @@ def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> JSONValue | U
     return percent_decode(raw, plus=False)
 
 
-def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | Unset:
+def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
     if not fragments:
         return UNSET
     if plan.content_media_type is not None:
@@ -216,7 +217,7 @@ def _decode_path_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, 
     return _decode_path(plan, fragments[0].value)
 
 
-def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | Unset:
+def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
     pairs = [(percent_decode(item.name or b"", plus=True), item.value) for item in fragments]
     if plan.content_media_type is None:
         return _decode_query(plan, pairs)
@@ -225,7 +226,7 @@ def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment,
     return percent_decode(value, plus=True)
 
 
-def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | Unset:
+def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
     key = plan.name.lower().encode("latin-1")
     values = [item.value for item in fragments if (item.name or b"").lower() == key]
     if plan.content_media_type is None:
@@ -235,7 +236,7 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
     return _utf8(values[0]).strip(_OWS)
 
 
-def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | Unset:
+def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
     if plan.style == "form" and plan.shape != "scalar":
         pairs = [
             (percent_decode(item.name or b"", plus=False), percent_decode(item.value, plus=False)) for item in fragments
@@ -245,7 +246,7 @@ def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
     return _decode_cookie(plan, pairs)
 
 
-def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> JSONValue | Unset:
+def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> JSONValue | UNSET:
     """Decode one parameter from its location's ordered raw occurrences, or UNSET when absent.
 
     A style value becomes builtins; content is returned as its text, which the model's backend reads as its media.

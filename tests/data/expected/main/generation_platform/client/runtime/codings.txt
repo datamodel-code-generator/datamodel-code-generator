@@ -41,7 +41,7 @@
   coding gzip trailing = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding bomb past the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=1048576, observed=2097152] response_too_large
+  coding expanding to 2 MiB, decoded uncapped = 2097152
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]

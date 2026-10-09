@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from . import StreamOptions, _plans
 
 
@@ -81,11 +81,10 @@ class EventsMessagesSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -94,7 +93,6 @@ class EventsMessagesSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -108,11 +106,10 @@ class EventsTypedSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -121,7 +118,6 @@ class EventsTypedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -135,11 +131,10 @@ class EventsTaggedSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Created | models.Deleted]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -148,7 +143,6 @@ class EventsTaggedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -166,7 +160,6 @@ class FeedAllSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Message]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
@@ -177,5 +170,4 @@ class FeedAllSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

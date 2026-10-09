@@ -17,6 +17,7 @@ from decimal import Decimal
 from functools import cached_property
 from keyword import iskeyword
 from math import isfinite
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
@@ -24,7 +25,6 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     BackendFieldFacts,
     BackendModelFacts,
     BackendSetting,
@@ -53,7 +53,6 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     LiteralType,
     MemberShape,
-    MetadataCall,
     ModelArtifactAddress,
     ModelFieldFacts,
     ModelHint,
@@ -141,6 +140,11 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
+_HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
+    "response_header",
+    "request_encoding_header",
+    "response_encoding_header",
+})
 _SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 _DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
 _DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
@@ -204,6 +208,7 @@ _PYDANTIC_CONFIGURATION: Final = (
     "validate_by_alias",
     "frozen",
     "alias_generator",
+    "regex_engine",
 )
 _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
     list: "list",
@@ -352,7 +357,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.schema_records: dict[_Declaration, _SchemaRecord] = {}
         self.schema_locations: dict[_Declaration, _SchemaNode] = {}
         self.free_schemas: dict[_Declaration, JsonSchemaObject] = {}
-        self.nullable_fields: set[int] = set()
+        self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
@@ -542,7 +547,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
         field = super().get_object_field(**options)
         if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
-            self.nullable_fields.add(id(field))
+            self.nullable_fields[id(field)] = field
         return field
 
     def nullable(self, field: DataModelFieldBase) -> bool:
@@ -745,7 +750,8 @@ def _value_kind(value: object) -> str:
         case str():
             return "string"
         case _:
-            return "object"
+            pass
+    return "object"
 
 
 def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumentId]) -> object:
@@ -761,7 +767,8 @@ def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumen
                 **{field.name: _relocated(getattr(value, field.name), documents) for field in dataclass_fields(value)},
             )
         case _:
-            return value
+            pass
+    return value
 
 
 _UNRECORDED: Final = _SchemaRecord(None, (), None, None)
@@ -938,10 +945,11 @@ def _ordered_union(
     hint: Callable[[tuple[TypeView, ...]], ModelHint],
     discriminator: UnionDiscriminator | None = None,
 ) -> TypeView:
-    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself."""
-    flattened = tuple(
-        member for value in members for member in (value.members if isinstance(value, UnionType) else (value,))
-    )
+    """Return the union of types without repeats, spelled by a hint of its members, or the one type itself.
+
+    A union the model's annotation discriminates stays one member, as its annotation wraps it.
+    """
+    flattened = tuple(member for value in members for member in _members(value))
     unique = tuple(dict.fromkeys(flattened))
     discriminator = discriminator or next(
         (value.discriminator for value in members if isinstance(value, UnionType) and value.discriminator is not None),
@@ -950,6 +958,19 @@ def _ordered_union(
     if len(unique) == 1:
         return unique[0]
     return UnionType(unique, preserve_order, discriminator, hint(unique))
+
+
+def _constrained_base(data_type: DataType) -> BuiltinType | ImportedType | None:
+    """Return the scalar a constrained scalar constrains, as the model generator reads it, or None for any other."""
+    if getattr(data_type, "annotated_string", False):
+        return BuiltinType("str")
+    base = None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+    return ImportedType(IMPORT_DECIMAL) if base == "Decimal" else None if base is None else _BUILTINS[base]
+
+
+def _members(value: TypeView) -> tuple[TypeView, ...]:
+    """Return the members a union merges into an enclosing one: its own, or the type itself."""
+    return value.members if isinstance(value, UnionType) and value.tag is None else (value,)
 
 
 def _has_null(value: TypeView) -> bool:
@@ -1255,6 +1276,8 @@ class _Hints:
         Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
         type and a constrained string is str.
         """
+        if (python_type := data_type.python_type) is not None:
+            return self.hint(self.bound(python_type))
         update: dict[str, object] = {**_ALONE, "data_types": [], "children": []}
         slotted: set[tuple[str | None, str]] = set()
         if (import_ := data_type.import_) is not None and import_.from_ is not None:
@@ -1282,6 +1305,44 @@ class _Hints:
             )
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
         return self.hint(annotation, static)
+
+    def bound(self, binding: BoundPythonType) -> tuple[str, tuple[Import, ...]]:
+        """Render a bound Python type with each name it imports, and each module it names, as a slot.
+
+        The model generator's own aliases of those names stay out of the text, so a target module names them itself.
+        """
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeBoundName,
+            PythonTypeRuntimeSymbol,
+            render_python_type_expr,
+            rewrite_python_type_expr,
+        )
+
+        slots: dict[str, str] = {}
+
+        def placeholder(import_: Import) -> str:
+            slot = self.slot(import_)
+            name = f"__dcg_slot_{slot.strip(_SLOT)}__"
+            slots[name] = slot
+            return name
+
+        def leaf(expression: PythonTypeExpr) -> PythonTypeExpr:
+            match expression:
+                case PythonTypeBoundName():
+                    name = placeholder(Import(import_=expression.import_name, from_=expression.import_from))
+                    return PythonTypeBoundName(name, expression.import_from, expression.import_name)
+                case PythonTypeRuntimeSymbol() if expression.module:
+                    return PythonTypeRuntimeSymbol(
+                        placeholder(Import(import_=expression.module)), expression.qualname_parts
+                    )
+                case _:
+                    pass
+            return expression
+
+        text = render_python_type_expr(rewrite_python_type_expr(binding.expression, leaf))
+        for name, slot in slots.items():
+            text = text.replace(name, slot)
+        return text, ()
 
     def expression(self, value: object, slotted: set[tuple[str | None, str]]) -> object:
         if not isinstance(value, PythonRuntimeExpression):
@@ -1389,12 +1450,7 @@ class _Projector:
             imported = ImportedType(import_)
             if data_type.is_func and data_type.kwargs:
                 keywords = tuple((name, _freeze_argument(value)) for name, value in data_type.kwargs.items())
-                hint = self.hints.leaf(data_type)
-                return (
-                    AnnotatedType(BuiltinType("str"), (MetadataCall(import_, keywords),), hint)
-                    if getattr(data_type, "annotated_string", False)
-                    else ConstructorType(imported, keywords, hint)
-                )
+                return ConstructorType(imported, keywords, self.hints.leaf(data_type), _constrained_base(data_type))
             return imported
         if data_type.type is None:
             return None
@@ -1468,14 +1524,8 @@ class _Projector:
             annotation = wrapped.annotation
             hint = ModelHint(HintText(annotation.parts, (*annotation.imports, _PYDANTIC_FIELD)), hints.of(union).static)
             hints.fixed[_PYDANTIC_FIELD] = None
-            return (
-                AnnotatedType(
-                    union,
-                    (MetadataCall(_PYDANTIC_FIELD, (("discriminator", LiteralScalar("str", discriminator)),)),),
-                    hint,
-                ),
-                inferred_optional,
-            )
+            schema = union.discriminator if isinstance(union, UnionType) else None
+            return UnionType(parts, preserve_order, schema, hint, discriminator), inferred_optional
         return union, inferred_optional
 
     def selector(self, data_type: DataType) -> UnionDiscriminator | None:
@@ -1590,18 +1640,9 @@ class _Projector:
                     value,
                     callable=ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
                     keywords=tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
-                )
-            case AnnotatedType():
-                return replace(
-                    value,
-                    base=self._imports(value.base),
-                    metadata=tuple(
-                        MetadataCall(
-                            resolve(call.import_),
-                            tuple((name, _argument_import(item, resolve)) for name, item in call.keywords),
-                        )
-                        for call in value.metadata
-                    ),
+                    base=ImportedType(resolve(value.base.import_))
+                    if isinstance(value.base, ImportedType)
+                    else value.base,
                 )
             case _:
                 pass
@@ -1640,7 +1681,11 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
             actual := names.get((expression.import_from, expression.import_name, expression.value))
         ):
             return PythonTypeBoundName(actual.binding_name, actual.from_, actual.import_)
-        if isinstance(expression, PythonTypeRuntimeSymbol) and (actual := modules.get(expression.module)):
+        if (
+            isinstance(expression, PythonTypeRuntimeSymbol)
+            and (actual := modules.get(expression.module))
+            and not (actual.from_ or "").startswith(".")
+        ):
             return PythonTypeRuntimeSymbol(
                 f"{actual.from_}.{actual.import_}" if actual.from_ else actual.import_, expression.qualname_parts
             )
@@ -1751,7 +1796,8 @@ def _model_settings(model: DataModel, backend: BackendName) -> dict[str, Backend
             arguments = cast("dict[str, str]", internal.get("typed_dict_kwargs", {}))
             return {name: _syntax_value(value) for name, value in arguments.items()}
         case _:
-            return {}
+            pass
+    return {}
 
 
 def _settings(names: tuple[str, ...], values: dict[str, BackendValue] | None) -> tuple[BackendSetting, ...]:
@@ -2223,6 +2269,7 @@ class _Reader(_SchemaLocations):
         media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
         kind = None if media is None else _media_kind(media)
         parameter = role == "parameter"
+        text = parameter or role in _HEADER_ROLES
         whole = self.whole(declaration)[1] if parameter else {}
         return _SchemaRecord(
             _default(whole.get("default")),
@@ -2231,7 +2278,7 @@ class _Reader(_SchemaLocations):
             if media is not None and media.strip().lower().startswith("multipart/")
             else None,
             self.encoding(declaration, locate, members=kind in _FORMS)
-            if parameter or media is None or kind in _FORMS
+            if text or media is None or kind in _FORMS
             else None,
         )
 
@@ -2292,9 +2339,15 @@ class _Reader(_SchemaLocations):
         location = self.resolve(declaration)[0]
         return _mapping(self.borrow(location)), location
 
-    def kinds(self, declaration: _Declaration) -> frozenset[str] | None:
-        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches."""
+    def kinds(self, declaration: _Declaration, active: frozenset[_Declaration] = frozenset()) -> frozenset[str] | None:
+        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
+
+        A branch that leads back to a schema being read says nothing of its values.
+        """
         value, declaration = self.resolved(declaration)
+        if declaration in active:
+            return None
+        active |= {declaration}
         kinds: frozenset[str] | None = None
         match value.get("type"):
             case str() as single:
@@ -2311,7 +2364,9 @@ class _Reader(_SchemaLocations):
             branches = value.get(keyword)
             if not isinstance(branches, list) or not branches:
                 continue
-            found_kinds = [self.kinds(_child(declaration, keyword, str(index))) for index in range(len(branches))]
+            found_kinds = [
+                self.kinds(_child(declaration, keyword, str(index)), active) for index in range(len(branches))
+            ]
             if keyword == "allOf":
                 for found in found_kinds:
                     kinds = found if kinds is None else kinds if found is None else kinds & found
@@ -2708,7 +2763,7 @@ class _Models:
                     pending.extend(item.members)
                 case GeneratedSymbolType() if self.binder.models[item.symbol].IS_ALIAS:
                     references.append(item.symbol)
-                case AnnotatedType() | BoundType():
+                case BoundType():
                     unknown = True
                 case _:
                     pass
@@ -3564,15 +3619,22 @@ def _pristine(
     walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
     """
     cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    located = {id(prepared): (location, raw) for location, (raw, prepared) in cache.items()}
-    walked = [located.get(id(document), (uri, document)) for uri, document in documents.items()]
+    located = {id(prepared): (location or _unnamed(parser), raw) for location, (raw, prepared) in cache.items()}
+    walked = [located.get(id(document), (uri or _unnamed(parser), document)) for uri, document in documents.items()]
     seen = {id(document) for _, document in walked}
-    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen))
+    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen and location))
+
+
+def _unnamed(parser: TargetApiOpenAPIParser) -> str:
+    """Return the location of a document read as text, such as the input when its type is detected.
+
+    Its references resolve against the parser's base path, as the models' do.
+    """
+    return f"{Path(parser.base_path).resolve().as_uri()}/"
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping
-    from pathlib import Path
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr

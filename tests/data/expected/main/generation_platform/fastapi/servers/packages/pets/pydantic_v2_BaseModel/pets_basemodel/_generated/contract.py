@@ -31,16 +31,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.FieldPetsGetResponse,
-            ),
-            'default': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.Error,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldPetsGetResponse), 'default': Declared(media_type='application/json', model=pets_basemodel_models.Error)},
     )
 
 
@@ -48,12 +39,7 @@ class CreatePet:
     """Plans of the create_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '201': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.Pet,
-            ),
-        },
+        responses={'201': Declared(media_type='application/json', model=pets_basemodel_models.Pet)},
     )
 
 
@@ -61,12 +47,7 @@ class ListMyPets:
     """Plans of the list_my_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.FieldPetsMineGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldPetsMineGetResponse)},
     )
 
 
@@ -74,33 +55,22 @@ class GetPet:
     """Plans of the get_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.Pet,
-            ),
-            '404': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.Error,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.Pet), '404': Declared(media_type='application/json', model=pets_basemodel_models.Error)},
     )
 
 
 class DeletePet:
     """Plans of the delete_pet operation."""
 
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class GetInventory:
     """Plans of the get_inventory operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=pets_basemodel_models.FieldStoreInventoryGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldStoreInventoryGetResponse)},
     )

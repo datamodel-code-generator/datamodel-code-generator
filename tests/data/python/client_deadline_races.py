@@ -200,16 +200,10 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
             ("none", None, 1.0),
             ("unlimited", None, None),
         ):
-            timeout = options.TimeoutOptions(**{phase: configured})
+            timeout = httpx2.Timeout(5.0, **{phase: configured})
             with httpx2.Client(transport=httpx2.MockTransport(failed)) as native:
                 with package.Client(
-                    http_client=native,
-                    options=options.ClientOptions(
-                        timeout=timeout,
-                        retry=options.RetryOptions(max_retries=0),
-                        total_timeout=total,
-                        clock=clock,
-                    ),
+                    http_client=native, timeout=timeout, max_retries=0, total_timeout=total, clock=clock
                 ) as api:
                     record(
                         lines,
@@ -221,7 +215,7 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
         raise httpx2.TimeoutException("unclassified timeout", request=request)
 
     with httpx2.Client(transport=httpx2.MockTransport(unknown)) as native:
-        with package.Client(http_client=native, options=options.ClientOptions(clock=clock)) as api:
+        with package.Client(http_client=native, clock=clock) as api:
             record(
                 lines,
                 "native timeout unknown phase",
@@ -233,7 +227,9 @@ def _expired_snapshot(error: BaseException) -> tuple[object, ...]:
     return (*_snapshot(error)[:4], getattr(error, "reason", None))
 
 
-def _expiring(options: ModuleType, failure: type[httpx2.TimeoutException]) -> tuple[httpx2.MockTransport, object]:
+def _expiring(
+    options: ModuleType, failure: type[httpx2.TimeoutException]
+) -> tuple[httpx2.MockTransport, dict[str, object]]:
     clock = _Clock()
 
     def capped(request: httpx2.Request) -> httpx2.Response:
@@ -241,11 +237,12 @@ def _expiring(options: ModuleType, failure: type[httpx2.TimeoutException]) -> tu
         msg = "capped timeout"
         raise failure(msg, request=request)
 
-    settings = options.ClientOptions(
-        retry=options.RetryOptions(max_retries=2, initial_delay=0),
-        total_timeout=1.0,
-        clock=options.Clock(monotonic=clock),
-    )
+    settings = {
+        "max_retries": 2,
+        "retry": options.RetryOptions(initial_delay=0),
+        "total_timeout": 1.0,
+        "clock": options.Clock(monotonic=clock),
+    }
     return httpx2.MockTransport(capped), settings
 
 
@@ -254,7 +251,7 @@ def _expired_sources(package: ModuleType, options: ModuleType, lines: list[str])
         transport, settings = _expiring(options, failure)
         with (
             httpx2.Client(transport=transport) as native,
-            package.Client(http_client=native, options=settings) as api,
+            package.Client(http_client=native, **settings) as api,
         ):
             record(
                 lines,
@@ -268,7 +265,7 @@ async def _aexpired_sources(package: ModuleType, options: ModuleType, lines: lis
         transport, settings = _expiring(options, failure)
         async with (
             httpx2.AsyncClient(transport=transport) as native,
-            package.AsyncClient(http_client=native, options=settings) as api,
+            package.AsyncClient(http_client=native, **settings) as api,
         ):
             await arecord(
                 lines,
@@ -291,7 +288,7 @@ def _admission_race(package: ModuleType, options: ModuleType, lines: list[str]) 
 
     transport = _Fault(lambda: None)
     with httpx2.Client(transport=transport) as native:
-        api = package.Client(http_client=native, options=options.ClientOptions(clock=options.Clock(monotonic=at)))
+        api = package.Client(http_client=native, clock=options.Clock(monotonic=at))
         record(
             lines,
             "closing during admission",
@@ -319,10 +316,7 @@ def _sync_races(package: ModuleType, options: ModuleType, lines: list[str]) -> N
         transport = _Fault(action, None if failure is None else _FailedClose(failure))
         with (
             httpx2.Client(transport=transport) as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(total_timeout=1.0, clock=options.Clock(monotonic=clock)),
-            ) as api,
+            package.Client(http_client=native, total_timeout=1.0, clock=options.Clock(monotonic=clock)) as api,
         ):
             record(
                 lines,
@@ -356,10 +350,7 @@ async def _async_races(package: ModuleType, options: ModuleType, lines: list[str
 
         transport = _AsyncFault(action)
         async with httpx2.AsyncClient(transport=transport) as native:
-            api = package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(total_timeout=1.0, clock=options.Clock(monotonic=clock)),
-            )
+            api = package.AsyncClient(http_client=native, total_timeout=1.0, clock=options.Clock(monotonic=clock))
             caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
             await arecord(lines, f"async {label}", lambda: caller)
             for closer in closers:
@@ -377,10 +368,7 @@ async def _expired_read(package: ModuleType, options: ModuleType, lines: list[st
     transport = _AsyncFault(sent, _ExpiringClose(clock))
     async with (
         httpx2.AsyncClient(transport=transport) as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(total_timeout=60.0, clock=options.Clock(monotonic=clock)),
-        ) as api,
+        package.AsyncClient(http_client=native, total_timeout=60.0, clock=options.Clock(monotonic=clock)) as api,
     ):
         await arecord(
             lines,
@@ -401,9 +389,7 @@ async def _nested_wait(package: ModuleType, options: ModuleType, lines: list[str
 
     transport = _AsyncFault(_unexpected_send)
     async with httpx2.AsyncClient(transport=transport, event_hooks={"request": [waiting]}) as native:
-        api = package.AsyncClient(
-            http_client=native, options=options.ClientOptions(clock=options.Clock(monotonic=_Clock()))
-        )
+        api = package.AsyncClient(http_client=native, clock=options.Clock(monotonic=_Clock()))
         caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
         await entered.wait()
         caller.cancel()
@@ -412,7 +398,7 @@ async def _nested_wait(package: ModuleType, options: ModuleType, lines: list[str
     record(lines, "nested request hook native sends", lambda: transport.sent)
 
 
-async def _released_responses(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _released_responses(package: ModuleType, lines: list[str]) -> None:
     """Cancel the caller's task while its response closes: the cancellation reaches the close and propagates."""
     for cancelled, failure in ((False, False), (False, True), (True, False), (True, True)):
 
@@ -424,7 +410,7 @@ async def _released_responses(package: ModuleType, options: ModuleType, lines: l
         errors: list[BaseException] = []
         label = f"released response cancelled={cancelled} failure={failure}"
         async with httpx2.AsyncClient(transport=transport) as native:
-            api = package.AsyncClient(http_client=native, options=options.ClientOptions(total_timeout=None))
+            api = package.AsyncClient(http_client=native, total_timeout=None)
             caller = asyncio.create_task(
                 _acaptured(lambda api=api: api.request_raw("GET", "https://race.example/cleanup"), errors)
             )
@@ -454,7 +440,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
     await _async_races(package, options, lines)
     await _expired_read(package, options, lines)
     await _nested_wait(package, options, lines)
-    await _released_responses(package, options, lines)
+    await _released_responses(package, lines)
 
 
 def deadline_races(package: ModuleType, lines: list[str]) -> None:
@@ -468,11 +454,11 @@ def deadline_races(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async(package, options, lines))
 
 
-def _completed_input(options: ModuleType) -> tuple[_CompletedBody, object]:
+def _completed_input(options: ModuleType) -> tuple[_CompletedBody, dict[str, object]]:
     vector = json.loads((Path(__file__).parents[1] / "generation_platform/client/deadline-completed.json").read_text())
     clock = _Clock()
     clock.value = vector["started"]
-    settings = options.ClientOptions(total_timeout=vector["total_timeout"], clock=options.Clock(monotonic=clock))
+    settings = {"total_timeout": vector["total_timeout"], "clock": options.Clock(monotonic=clock)}
     return _CompletedBody(clock, vector), settings
 
 
@@ -482,7 +468,7 @@ def _completed_response(package: ModuleType, options: ModuleType, lines: list[st
     with httpx2.Client(transport=transport) as native:
         with package.Client(
             http_client=native,
-            options=settings,
+            **settings,
         ) as api:
             record(
                 lines,
@@ -507,7 +493,7 @@ async def _acompleted_response(package: ModuleType, options: ModuleType, lines: 
     async with httpx2.AsyncClient(transport=transport) as native:
         async with package.AsyncClient(
             http_client=native,
-            options=settings,
+            **settings,
         ) as api:
 
             async def completed() -> object:

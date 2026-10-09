@@ -12,7 +12,7 @@ from typing import Literal
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.retry import (
     GetKeyedSafeResponse,
@@ -66,7 +66,7 @@ class AsyncRetryResource:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -84,7 +84,7 @@ class AsyncRetryResource:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -102,7 +102,7 @@ class AsyncRetryResource:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -120,7 +120,7 @@ class AsyncRetryResource:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -152,7 +152,7 @@ class AsyncRetryResource:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -220,7 +220,7 @@ class AsyncRetryWithResponse:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -238,7 +238,7 @@ class AsyncRetryWithResponse:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -256,7 +256,7 @@ class AsyncRetryWithResponse:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -274,7 +274,7 @@ class AsyncRetryWithResponse:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -306,7 +306,7 @@ class AsyncRetryWithResponse:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -374,7 +374,7 @@ class AsyncRetryWithRawResponse:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -392,7 +392,7 @@ class AsyncRetryWithRawResponse:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -410,7 +410,7 @@ class AsyncRetryWithRawResponse:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -428,7 +428,7 @@ class AsyncRetryWithRawResponse:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -460,7 +460,7 @@ class AsyncRetryWithRawResponse:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -528,7 +528,7 @@ class AsyncRetryWithStreamingResponse:
     def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -546,7 +546,7 @@ class AsyncRetryWithStreamingResponse:
     def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -564,7 +564,7 @@ class AsyncRetryWithStreamingResponse:
     def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -582,7 +582,7 @@ class AsyncRetryWithStreamingResponse:
     def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -614,7 +614,7 @@ class AsyncRetryWithStreamingResponse:
     def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,

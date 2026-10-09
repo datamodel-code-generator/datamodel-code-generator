@@ -36,6 +36,11 @@ def layout(doc: Doc, indent: int, used: int, width: int) -> str:
     return _Layout(width).doc(doc, indent, used)
 
 
+def flat(doc: Doc) -> str:
+    """Return a document on one line."""
+    return _Layout(0).flat(doc)
+
+
 class _Layout:
     """Lay out one document, flattening each node once."""
 

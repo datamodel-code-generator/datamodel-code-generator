@@ -1,15 +1,15 @@
-"""Budget, cancellation, and session-limit values and the option checks shared by options and protocol helpers."""
+"""Budget, cancellation, and clock values and the option checks shared by options and protocol helpers."""
 
 from __future__ import annotations
 
 import math
 import time as _time
-from collections.abc import Callable  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from sys import float_info
 from typing import Final, final
 
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
@@ -67,7 +67,7 @@ def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> No
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
     """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
     for name, duration, nullable, allow_zero in rules:
-        if isinstance(value := getattr(options, name), Unset) or (nullable and value is None):
+        if (value := getattr(options, name)) is UNSET or (nullable and value is None):
             continue
         (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
 
@@ -79,23 +79,34 @@ def _random() -> float:
     return randbits(53) / (1 << 53)
 
 
+async def _asleep(duration: float) -> None:
+    """Wait on the running event loop, loading the async library only once an asyncio client waits."""
+    import anyio  # noqa: PLC0415
+
+    await anyio.sleep(duration)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Clock:
-    """The time and jitter sources of a client, an OAuth provider or flow, the system's by default.
+    """The time, jitter, and wait sources of a client, an OAuth provider or flow, the system's by default.
 
     monotonic returns seconds on one never-decreasing scale, which measures every elapsed time, expiry, and wait. time
     returns POSIX wall-clock seconds, read only to place a wall-clock instant on that scale. random returns a float in
-    [0, 1) for full-jitter backoff. Hashing ignores the sources.
+    [0, 1) for full-jitter backoff. sleep waits the seconds given in a synchronous client, and asleep returns the
+    awaitable an asyncio client waits on, through which every retry, poll, and reconnection wait passes. Hashing ignores
+    the sources.
     """
 
     monotonic: Callable[[], float] = field(default=_time.monotonic, hash=False)
     time: Callable[[], float] = field(default=_time.time, hash=False)
     random: Callable[[], float] = field(default=_random, hash=False)
+    sleep: Callable[[float], None] = field(default=_time.sleep, hash=False)
+    asleep: Callable[[float], Awaitable[None]] = field(default=_asleep, hash=False)
 
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
-        for name in ("monotonic", "time", "random"):
+        for name in ("monotonic", "time", "random", "sleep", "asleep"):
             if not callable(getattr(self, name)):
                 raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
 
@@ -128,18 +139,3 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SessionOptions:
-    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
-
-    The total timeout is counted from the start of the session.
-    """
-
-    total_timeout: float | Unset | None = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse booleans, negative or nonfinite durations."""
-        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
-            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))

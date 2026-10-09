@@ -35,6 +35,8 @@ from datamodel_code_generator._target_contract import (
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator
 
+    from typing_extensions import TypeIs
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
     from datamodel_code_generator._client.model_facts import ModelFacts, StepKind
@@ -200,7 +202,7 @@ def _branches(value: TypeView) -> bool:
     )
 
 
-def _sequence(value: TypeView) -> bool:
+def _sequence(value: TypeView) -> TypeIs[GenericType]:
     """Return whether a type is a list or a tuple of one item type, as a JSON array decodes to."""
     return (
         isinstance(value, GenericType)
@@ -261,19 +263,6 @@ class _Pages:
             member, value = field.member, field.type
         value = facts.unwrapped(value, steps)
         return _Reached(tuple(steps), member, value)
-
-    def element(self, value: TypeView | None) -> TypeView:
-        """Return the element type of a list or tuple type an array node binds, through None and generated roots."""
-        assert value is not None
-        while not isinstance(value, GenericType):
-            if isinstance(value, UnionType):
-                value = next(member for member in value.members if not isinstance(member, NoneType))
-            else:
-                assert isinstance(value, GeneratedSymbolType)
-                root = self.facts.root(value.symbol)
-                assert root is not None
-                value = root
-        return value.arguments[0]
 
     def declared(self, value: TypeView | None, pointer: str) -> _Types | Literal["absent"]:
         """Return the JSON types of the property a pointer names through the fields of a value's models.
@@ -388,8 +377,7 @@ class _Pages:
             message = f"The items pointer {pointer!r} of {name!r} selects no JSON array of the {label} response"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
-        member = reached.member
-        item = self.element(page.type if member is None or member.model_facts is None else member.model_facts.type)
+        item = reached.value.arguments[0]
         reference = helper.tree["item_schema"]
         if (expected := self.item_type(reference, page.id.direction)) == "missing":
             message = f"The item_schema {reference.pointer!r} of {name!r} does not exist in its document"

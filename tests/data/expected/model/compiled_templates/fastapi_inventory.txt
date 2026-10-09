@@ -1,17 +1,21 @@
-template count: 4
+template count: 8
 application.jinja2
+contract.jinja2
+facade.jinja2
+openapi.jinja2
 readme.jinja2
 router.jinja2
+security.jinja2
 services.jinja2
 
-nodes: For, Getattr, If, Name, Output, Template, TemplateData
+nodes: Call, For, Getattr, If, Macro, Name, Output, Template, TemplateData
 filters:
 tests:
 globals:
 loop_attributes:
 assignments:
 for_targets: Name
-macros:
+macros: build_signature(builder); defaults=0; caller=False; kwargs=False; varargs=False, signature(builder); defaults=0; caller=False; kwargs=False; varargs=False
 includes:
 imports_and_inheritance:
 undefined_usage:

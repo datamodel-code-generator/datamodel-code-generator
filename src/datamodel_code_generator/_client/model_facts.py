@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     BuiltinType,
     ConstructorType,
     GeneratedEnumMember,
@@ -72,11 +71,6 @@ _NAMED: Final = MappingProxyType({
     "datetime.timedelta": "string",
     "uuid.UUID": "string",
     "decimal.Decimal": "number",
-    "pydantic.conint": "integer",
-    "pydantic.confloat": "number",
-    "pydantic.condecimal": "number",
-    "pydantic.constr": "string",
-    "pydantic.conbytes": "string",
     "pydantic.PositiveInt": "integer",
     "pydantic.NegativeInt": "integer",
     "pydantic.NonPositiveInt": "integer",
@@ -286,8 +280,8 @@ class ModelFacts:
         An enum's values give its types, an alias or root model those of the type it stands for, and an object model
         is an object.
         """
-        value = value.base if isinstance(value, AnnotatedType) else value
-        name = _name(value.callable if isinstance(value, ConstructorType) else value)
+        leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
+        name = _name(leaf)
         named = _NAMED.get(name or "")
         if named is None and isinstance(value, ImportedType | ConstructorType) and name != "typing.Any":
             named = "string"

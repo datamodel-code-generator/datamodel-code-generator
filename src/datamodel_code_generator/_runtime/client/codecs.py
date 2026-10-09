@@ -9,7 +9,7 @@ from typing_extensions import TypeVar
 
 from ..model_codecs.media import media_kind
 from ..model_codecs.parameter_reads import ParameterFragment, RawParameter, decode_parameter
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import response_failure
 from .operations import PARSE_ERRORS, status_key
 
@@ -41,7 +41,7 @@ def required_header(info: ResponseInfo, operation_id: str | None, name: str) -> 
     raise _header_failure(info, operation_id, name)
 
 
-def optional_header(_info: ResponseInfo, _operation_id: str | None, _name: str) -> Unset:
+def optional_header(_info: ResponseInfo, _operation_id: str | None, _name: str) -> UNSET:
     """Return UNSET for an optional header the response lacks."""
     return UNSET
 
@@ -72,9 +72,15 @@ class ResponseHeaders(Generic[T_co, M_co]):
         self._headers = {name.lower(): dict(branches) for name, branches in headers}
 
     def decode(self, info: ResponseInfo, name: str) -> T_co | M_co:
-        """Return a header's value or what its absence yields, or raise the response's DecodeError."""
+        """Return a header's value or what its absence yields, or raise the response's DecodeError.
+
+        A single-valued header that the response repeats is invalid; arrays and objects combine every occurrence.
+        """
         key = status_key(info.status_code, self._keys)
         if (branch := self._headers.get(name.lower(), {}).get(key or "")) is None:
+            raise _header_failure(info, self._operation_id, name)
+        single = branch.plan.content_media_type is not None or branch.plan.shape == "scalar"
+        if single and len(info.headers.get_all(name)) > 1:
             raise _header_failure(info, self._operation_id, name)
         fragments = tuple(
             ParameterFragment(header.encode("latin-1"), value.encode()) for header, value in info.headers.items()
@@ -83,7 +89,7 @@ class ResponseHeaders(Generic[T_co, M_co]):
         errors: tuple[type[Exception], ...] = (*codec.errors, *PARSE_ERRORS)
         try:
             wire = decode_parameter(branch.plan, RawParameter(location="header", fragments=fragments))
-            if isinstance(wire, Unset):
+            if wire is UNSET:
                 return branch.missing(info, self._operation_id, name)
             if media_kind(branch.plan.content_media_type or "") == "json":
                 return codec.decode(cast("str", wire).encode())

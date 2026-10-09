@@ -21,12 +21,11 @@ from ._runtime.server.security import (
 )
 from .services import Service
 
-ROUTES: Final = (*routes_1.LITERAL_ROUTES, *routes_1.TEMPLATED_ROUTES)
-INFO: Final[dict[str, Any]] = {
-    'title': 'References',
-    'version': '1.0',
-    'servers': [{'url': 'https://api.example.com'}],
-}
+ROUTES: Final = (
+    *routes_1.LITERAL_ROUTES,
+    *routes_1.TEMPLATED_ROUTES,
+)
+INFO: Final[dict[str, Any]] = {'title': 'References', 'version': '1.0', 'servers': [{'url': 'https://api.example.com'}]}
 
 
 def build_router(

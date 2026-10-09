@@ -29,7 +29,7 @@ from ..client.errors import (
 from ..client.logical import Delivery
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
-from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
+from ..client.timing import SYSTEM_CLOCK, Clock
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .options import UploadOptions, layered
@@ -207,36 +207,33 @@ def _limits(
     plan: UploadPlan[T, C],
     upload_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    Effective options fixing an idempotency key are refused, since the create call and each append need keys of their
-    own, and so are header or query patches of a parameter the helper writes.
+    A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is refused,
+    since the create call and each append need keys of their own, and so are the call's extra headers or query names
+    of a parameter the helper writes.
     """
     for name, value, kind in (
         ("upload_options", upload_options, UploadOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
-        for name, _ in request.headers:
+        for name in request.extra_headers or ():
             if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "headers", name))
-        for name, _ in request.query:
+                raise _invalid(plan, ("options", "extra_headers", name))
+        for name in request.extra_query or ():
             if name in plan.queries:
-                raise _invalid(plan, ("options", "query", name))
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (upload_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+                raise _invalid(plan, ("options", "extra_query", name))
+    kinds = (upload_options, core.helper_defaults(plan.helper_id))
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -1044,10 +1041,9 @@ def start_upload(  # noqa: PLR0913
     media_type: str | None = None,
     upload_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> UploadHandle[T]:
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
-    limits = _limits(core, plan, upload_options, options, session_options)
+    limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
@@ -1065,10 +1061,9 @@ async def astart_upload(  # noqa: PLR0913
     media_type: str | None = None,
     upload_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncUploadHandle[T]:
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
-    limits = _limits(core, plan, upload_options, options, session_options)
+    limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
     chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
@@ -1184,13 +1179,12 @@ def resume_upload(  # noqa: PLR0913
     *,
     upload_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> UploadHandle[T]:
     """Continue a checkpoint in a new session: check the source's size against it, then probe the server's offset once.
 
     A completion of unknown outcome raises again, without reading or sending.
     """
-    limits = _limits(core, plan, upload_options, options, session_options)
+    limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
     handle = UploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
     _resumed(handle, saved)
@@ -1206,13 +1200,12 @@ async def aresume_upload(  # noqa: PLR0913
     *,
     upload_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncUploadHandle[T]:
     """Continue a checkpoint with asyncio in a new session: check the source's size against it, then probe once.
 
     A completion of unknown outcome raises again, without reading or sending.
     """
-    limits = _limits(core, plan, upload_options, options, session_options)
+    limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
     _resumed(handle, saved)

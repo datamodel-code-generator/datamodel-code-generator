@@ -9,7 +9,7 @@ from typing import Final, Generic, Protocol
 from typing_extensions import TypeVar
 
 from ..client.timing import check_limits
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 
 K = TypeVar("K")
 T_co = TypeVar("T_co", covariant=True)
@@ -64,12 +64,12 @@ class VerifiedWebhook(Generic[T_co]):
 class WebhookOptions:
     """Standalone verification limits; every UNSET field takes its webhook default."""
 
-    max_body_bytes: int | Unset = UNSET
-    max_header_bytes: int | Unset = UNSET
-    max_keys: int | Unset = UNSET
-    max_signatures: int | Unset = UNSET
-    past_tolerance: float | Unset = UNSET
-    future_tolerance: float | Unset = UNSET
+    max_body_bytes: int | UNSET = UNSET
+    max_header_bytes: int | UNSET = UNSET
+    max_keys: int | UNSET = UNSET
+    max_signatures: int | UNSET = UNSET
+    past_tolerance: float | UNSET = UNSET
+    future_tolerance: float | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Reject invalid counts and durations without accepting bool or disabled limits."""

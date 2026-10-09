@@ -1,18 +1,18 @@
-"""Reject payload narrowing, record mutation, undeclared literals, invalid options, and request-level protocols."""
+"""Reject payload narrowing, record mutation, undeclared literals, invalid options, and helper settings per call."""
 
 from __future__ import annotations
 
+from pets import Client
 from pets.errors import ProtocolDataError, SessionLimitError, StreamInterruptedError
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
+from pets.options import RequestOptions, RetryOptions
 from pets.protocols import (
     HeaderSelector,
+    MemoryCacheStore,
     Origin,
     PaginationOptions,
     ParameterTarget,
     PollOptions,
     PollSnapshot,
-    ProtocolDefaults,
-    ProtocolSecurityContext,
     RequestTarget,
     Selector,
     StatusSelector,
@@ -36,17 +36,18 @@ def wrong_records(snapshot: PollSnapshot[Pet], origin: Origin, pet: Pet) -> None
     del other, selector, target
 
 
-def wrong_options(security: ProtocolSecurityContext) -> None:
-    """Reject None or other types where a limit cannot be disabled, and protocol settings outside a client."""
+def wrong_options(retry: RetryOptions) -> None:
+    """Reject None or other types where a limit cannot be disabled, and helper settings outside a client."""
     PaginationOptions(max_pages="2")  # error
     PaginationOptions(interval=1)  # error
     PollOptions(interval=None)  # error
     StreamOptions(reconnect=1)  # error
-    ProtocolSecurityContext()  # error
-    ProtocolDefaults(options=WebhookOptions())  # error
-    ProtocolClientOptions(defaults={"users": PaginationOptions()})  # error
-    ClientOptions(protocols=security)  # error
-    RequestOptions(protocols=ProtocolClientOptions())  # error
+    PollOptions(total_timeout="30")  # error
+    Client(helper_defaults={"jobs.run": WebhookOptions()})  # error
+    Client(cache_stores={"jobs.cached": object()})  # error
+    Client(protocols=retry)  # error
+    Client().with_options(cache_stores={"jobs.cached": MemoryCacheStore()})  # error
+    RequestOptions(helper_defaults={"jobs.run": PollOptions()})  # error
 
 
 def wrong_errors(failure: ProtocolDataError) -> None:

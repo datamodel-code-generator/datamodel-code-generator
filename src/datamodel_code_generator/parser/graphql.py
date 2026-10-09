@@ -58,6 +58,16 @@ except AttributeError:
     graphql_resolver_kind = graphql.type.introspection.TypeFields.kind
 
 
+def _input_field_default(field: graphql.GraphQLInputField) -> Any:
+    """Return the coerced schema default of an input field, or ``Undefined`` when it has none.
+
+    graphql-core 3.3 keeps SDL defaults as literals in ``default`` and leaves ``default_value`` unset.
+    """
+    if (default := getattr(field, "default", None)) is None:
+        return field.default_value
+    return graphql.coerce_input_literal(default.literal, field.type)  # ty: ignore[unresolved-attribute]
+
+
 def build_graphql_schema(schema_str: str, *, source: str | None = None) -> graphql.GraphQLSchema:
     """Build a graphql schema from a string."""
     try:
@@ -184,18 +194,21 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         *,
         required: bool,  # noqa: ARG002
     ) -> Any:
-        if isinstance(field, graphql.GraphQLInputField):
-            if field.default_value == graphql.pyutils.Undefined:
-                return None
-            return field.default_value
-
+        if (
+            isinstance(field, graphql.GraphQLInputField)
+            and (default := _input_field_default(field)) is not graphql.pyutils.Undefined
+        ):
+            return default
         return None
 
     def _has_schema_default(  # noqa: PLR6301
         self, field: graphql.GraphQLField | graphql.GraphQLInputField
     ) -> bool:
         """Return whether a GraphQL input field defines a schema default."""
-        return isinstance(field, graphql.GraphQLInputField) and field.default_value != graphql.pyutils.Undefined
+        return (
+            isinstance(field, graphql.GraphQLInputField)
+            and _input_field_default(field) is not graphql.pyutils.Undefined
+        )
 
     def parse_scalar(self, scalar_graphql_object: graphql.GraphQLScalarType) -> None:
         """Parse a GraphQL scalar type and add it to results."""

@@ -1,4 +1,4 @@
-"""Patch the headers of generated clients' calls: the client's, a view's, and a call's, over the generated ones."""
+"""Merge the headers of generated clients' calls: the client's, a view's, and a call's, over the generated ones."""
 
 from __future__ import annotations
 
@@ -39,34 +39,37 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
 
 
 def headers(package: ModuleType, lines: list[str]) -> None:
-    """Patch headers in layers, and refuse patches that relabel a body or a narrowed response, or are malformed."""
-    options, bodies, types = _modules(package)
+    """Merge headers in layers, sending explicit ones over a body's media type or a narrowed Accept, as given."""
+    options, bodies, _ = _modules(package)
     exchange = Exchange(lines)
     http = exchange.client()
-    patch = (("User-Agent", "custom/1"), ("X-Client", "c"), ("Accept-Encoding", "gzip;q=0.5, identity"))
-    with package.Client(http_client=http, options=options.ClientOptions(headers=patch)) as api:
+    defaults = {"User-Agent": "custom/1", "X-Client": "c", "Accept-Encoding": "gzip;q=0.5, identity"}
+    with package.Client(http_client=http, default_headers=defaults) as api:
         _layers(api, exchange, lines, options, package)
         _framing(api, exchange, lines, options, bodies, package)
+        with package.Client(http_client=http, default_headers={"Content-Type": "application/json"}) as labeled:
+            _parts(labeled, api, exchange, lines, options, bodies)
     http.close()
-    _malformed(lines, options)
+    _unsendable(package, lines, options)
     run(lambda: _async_headers(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
 
 
 def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, package: ModuleType) -> None:
-    """Replace each name's values where they first came, remove them with None, and append new names in order."""
+    """Replace each name's value where it first came, case-insensitively, remove it with None, and append new names."""
     trace = argument(package, "listPets", "header", "X-Trace", "t1")
     session = argument(package, "listPets", "cookie", "session", "s1")
     pets = json_response(200, [], **{"X-Rate": "1"})
     exchange.respond(pets)
     record(lines, "client headers", lambda: api.pets.list_pets(x_trace=trace))
-    view = api.with_options(
-        options.RequestOptions(headers=(("x-client", None), ("X-View", "v1"), ("X-View", "v2"), ("X-Trace", "view")))
-    )
+    view = api.with_options(default_headers={"x-client": None, "X-View": "v1", "X-Trace": "view"})
     exchange.respond(pets)
     record(lines, "view headers under the parameters", lambda: view.pets.list_pets(x_trace=trace, session=session))
+    nested = view.with_options(default_headers={"x-view": "v2", "USER-AGENT": "nested/1"})
+    exchange.respond(pets)
+    record(lines, "nested view headers", lambda: nested.pets.list_pets(x_trace=trace))
     call = options.RequestOptions(
-        headers=(("x-trace", "call"), ("Cookie", None), ("X-View", None), ("Accept", "application/json"))
+        extra_headers={"x-trace": "call", "Cookie": None, "X-View": None, "Accept": "application/json"}
     )
     exchange.respond(pets)
     record(
@@ -79,84 +82,139 @@ def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType,
 def _framing(  # noqa: PLR0913, PLR0917
     api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType, package: ModuleType
 ) -> None:
-    """Keep the body's media type and a narrowed Accept, which a patch may only repeat, and label raw bytes freely."""
+    """Send an explicit Content-Type or Accept over the body's media type and a narrowed Accept, or remove them."""
     fox = request_body(package, "createPet", "application/json", {"name": "fox"})
     pet = argument(package, "getPet", "path", "petId", 3)
-    exchange.respond(json_response(201, {"id": 1, "name": "fox"}))
-    record(
-        lines,
-        "body media type repeated",
-        lambda: api.pets.create_pet(body=fox, media_type="application/json", options=options.RequestOptions(headers=(("Content-Type", "Application/JSON"),))),
-    )
+    created, found = json_response(201, {"id": 1, "name": "fox"}), json_response(200, {"id": 3, "name": "fox"})
+    exchange.respond(created, created, found, found, found)
     for label, call in (
-        ("body relabeled", lambda: api.pets.create_pet(body=fox, media_type="application/json", options=options.RequestOptions(headers=(("Content-Type", "text/plain"),)))),
-        ("body media type removed", lambda: api.pets.create_pet(body=fox, media_type="application/json", options=options.RequestOptions(headers=(("content-type", None),)))),
-        ("media type of no body", lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(headers=(("Content-Type", "text/plain"),)))),
+        (
+            "body relabeled",
+            lambda: api.pets.create_pet(
+                body=fox,
+                media_type="application/json",
+                options=options.RequestOptions(extra_headers={"Content-Type": "text/plain"}),
+            ),
+        ),
+        (
+            "body media type removed",
+            lambda: api.pets.create_pet(
+                body=fox,
+                media_type="application/json",
+                options=options.RequestOptions(extra_headers={"content-type": None}),
+            ),
+        ),
+        (
+            "media type of no body",
+            lambda: api.pets.get_pet(
+                pet_id=pet, options=options.RequestOptions(extra_headers={"Content-Type": "text/plain"})
+            ),
+        ),
         (
             "narrowed Accept replaced",
-            lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json", options=options.RequestOptions(headers=(("Accept", "*/*"),))),
+            lambda: api.pets.get_pet(
+                pet_id=pet,
+                response_media_type="application/json",
+                options=options.RequestOptions(extra_headers={"Accept": "*/*"}),
+            ),
         ),
         (
             "narrowed Accept removed",
-            lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json", options=options.RequestOptions(headers=(("Accept", None),))),
-        ),
-        (
-            "raw parts relabeled",
-            lambda: api.request_raw("POST", _RAW, body=bodies.MultipartBody((bodies.FieldPart("a", "1"),)), options=options.RequestOptions(headers=(("Content-Type", "multipart/form-data"),))),
+            lambda: api.pets.get_pet(
+                pet_id=pet,
+                response_media_type="application/json",
+                options=options.RequestOptions(extra_headers={"Accept": None}),
+            ),
         ),
     ):
         record(lines, label, call)
-    exchange.respond(json_response(200, {"id": 3, "name": "fox"}))
+    exchange.respond(created)
     record(
         lines,
-        "no body without a media type, narrowed Accept repeated",
-        lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json", options=options.RequestOptions(headers=(("Content-Type", None), ("Accept", "Application/JSON")))),
+        "view Content-Type under the body's media type",
+        lambda: api.with_options(default_headers={"Content-Type": "text/plain"}).pets.create_pet(
+            body=fox, media_type="application/json"
+        ),
     )
     exchange.respond(raw_response(200, b"ok", "text/plain"), raw_response(200, b"ok", "text/plain"))
     record(
         lines,
         "raw bytes labeled",
-        lambda: api.request_raw("POST", _RAW, body=b"<a/>", options=options.RequestOptions(headers=(("Content-Type", "application/xml"),))).body_bytes,
+        lambda: (
+            api.request_raw(
+                "POST",
+                _RAW,
+                body=b"<a/>",
+                options=options.RequestOptions(extra_headers={"Content-Type": "application/xml"}),
+            ).body_bytes
+        ),
     )
     record(
         lines,
-        "raw parts with their media type repeated",
-        lambda: api.request_raw("POST", _RAW, body=bodies.MultipartBody(()), options=options.RequestOptions(headers=(("X-Raw", "1"),))).body_bytes,
+        "raw parts relabeled",
+        lambda: (
+            api.request_raw(
+                "POST",
+                _RAW,
+                body=bodies.MultipartBody((bodies.FieldPart("a", "1"),)),
+                options=options.RequestOptions(extra_headers={"Content-Type": "multipart/mixed"}),
+            ).body_bytes
+        ),
     )
 
 
-def _malformed(lines: list[str], options: ModuleType) -> None:
-    """Refuse reserved, malformed, and contradictory header patches when the options are made."""
-    for label, patch in (
-        ("reserved header", (("Host", "a"),)),
-        ("header name that is no token", (("Bad Name", "v"),)),
-        ("header value on two lines", (("X-A", "a\r\nb"),)),
-        ("header set and removed", (("X-A", "a"), ("x-a", None))),
-        ("header that is no pair", (("X-A",),)),
-        ("header value that is no text", (("X-A", 1),)),
-        ("headers that are no sequence", "X-A: a"),
-        ("a coding left to the native client", (("Accept-Encoding", "br"),)),
+def _parts(  # noqa: PLR0913, PLR0917
+    labeled: Any, api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType
+) -> None:
+    """Keep the parts' media type and boundary over a client's or a view's Content-Type, which only a call replaces."""
+    parts = bodies.MultipartBody((bodies.FieldPart("a", "1"),))
+    for label, layer, call in (
+        ("raw parts under a client Content-Type", labeled, None),
+        ("raw parts under a view Content-Type", api.with_options(default_headers={"Content-Type": "text/plain"}), None),
+        ("raw parts under a view without Content-Type", api.with_options(default_headers={"Content-Type": None}), None),
+        (
+            "raw parts relabeled without a boundary",
+            labeled,
+            options.RequestOptions(extra_headers={"Content-Type": "multipart/mixed"}),
+        ),
+        ("raw parts unlabeled by the call", labeled, options.RequestOptions(extra_headers={"Content-Type": None})),
     ):
-        record(lines, label, lambda patch=patch: options.RequestOptions(headers=patch))
-    record(lines, "headers listed", lambda: options.ClientOptions(headers=[["X-A", "a"], ("X-B", None)]).headers)
+        exchange.respond(raw_response(200, b"ok", "text/plain"))
+        record(
+            lines,
+            label,
+            lambda layer=layer, call=call: layer.request_raw("POST", _RAW, body=parts, options=call).body_bytes,
+        )
+
+
+def _unsendable(package: ModuleType, lines: list[str], options: ModuleType) -> None:
+    """Fail natively when HTTPX2 cannot send a header value, without waiting to retry the call."""
+    pet = argument(package, "getPet", "path", "petId", 3)
+    exchange, waits = Exchange(lines), []
+    split = options.RequestOptions(extra_headers={"X-A": "a\r\nb"})
+    with exchange.client() as http, package.Client(http_client=http, clock=options.Clock(sleep=waits.append)) as api:
+        record(lines, "header value on two lines", lambda: api.pets.get_pet(pet_id=pet, options=split))
+    lines.append(f"  header value on two lines retry waits {waits}")
 
 
 async def _async_headers(package: ModuleType, lines: list[str]) -> None:
-    options, _, types = _modules(package)
+    options, _, _ = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
     pet = argument(package, "getPet", "path", "petId", 3)
-    async with package.AsyncClient(http_client=http, options=options.ClientOptions(headers=(("X-Client", "c"),))) as api:
+    async with package.AsyncClient(http_client=http, default_headers={"X-Client": "c"}) as api:
         exchange.respond(json_response(200, {"id": 3, "name": "fox"}))
         await arecord(
             lines,
             "async call headers",
-            lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(headers=(("X-Call", "1"),))),
+            lambda: api.pets.get_pet(
+                pet_id=pet, options=options.RequestOptions(extra_headers={"X-Call": "1", "x-client": None})
+            ),
         )
         exchange.respond(raw_response(200, b"ok", "text/plain"))
 
         async def raw_call() -> bytes:
-            response = await api.request_raw("GET", _RAW, options=options.RequestOptions(headers=(("X-Raw", "1"),)))
+            response = await api.request_raw("GET", _RAW, options=options.RequestOptions(extra_headers={"X-Raw": "1"}))
             return response.body_bytes
 
         await arecord(lines, "async raw headers", raw_call)
@@ -188,13 +246,15 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
     with exchange.client() as http, package.Client(http_client=http) as api:
         for label, header in (
             ("duplicate JSON keys", '{"value":"first","value":"last"}'),
-            ("malformed JSON", '{broken'),
+            ("malformed JSON", "{broken"),
             ("missing required header", None),
         ):
             exchange.respond(raw_response(204, **({} if header is None else {"X-Value": header})))
             info = api.native_headers.with_raw_response.get_values().info
             record(lines, label, lambda: types.decode_get_values_header(info, name="X-Value"))
-            record(lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional"))
+            record(
+                lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional")
+            )
         for name, value in (
             ("X-Count", "05"),
             ("X-Count", "+1"),

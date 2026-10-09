@@ -14,7 +14,7 @@ import models
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.pets import (
     AttachFilesResponse,
@@ -58,10 +58,10 @@ class AsyncPetsResource:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -217,10 +217,10 @@ class AsyncPetsWithResponse:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -376,10 +376,10 @@ class AsyncPetsWithRawResponse:
     async def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -511,10 +511,10 @@ class AsyncPetsWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        labels: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        labels: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

@@ -73,13 +73,20 @@ def signatures(package: ModuleType, lines: list[str]) -> None:
         _introspection(api, lines, "")
         exchange.respond(json_response(200, []), json_response(200, []), json_response(200, {"id": 3, "name": "fox"}))
         record(lines, "list", lambda: api.pets.list_pets(x_trace=trace))
-        known = {"x_trace": trace, "options": options.RequestOptions(headers=(("X-Call", "1"),))}
+        known = {"x_trace": trace, "options": options.RequestOptions(extra_headers={"X-Call": "1"})}
         record(lines, "list forwarding a mapping of known keys", lambda: api.pets.list_pets(**known))
-        record(lines, "get with its narrowed response media", lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json"))
+        record(
+            lines,
+            "get with its narrowed response media",
+            lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json"),
+        )
         for label, call in (
             ("list with an unknown keyword", lambda: api.pets.list_pets(x_trace=trace, color="red")),
             ("list without its required keyword", lambda: api.pets.list_pets()),
-            ("raw list with an unknown keyword", lambda: api.pets.with_raw_response.list_pets(x_trace=trace, color="red")),
+            (
+                "raw list with an unknown keyword",
+                lambda: api.pets.with_raw_response.list_pets(x_trace=trace, color="red"),
+            ),
             ("streaming list without its required keyword", lambda: api.pets.with_streaming_response.list_pets()),
         ):
             _refused(lines, label, call, exchange)
@@ -106,7 +113,12 @@ async def _async_signatures(package: ModuleType, lines: list[str], trace: object
                 await pending
             except TypeError:
                 lines.append(f"  async list with {label} ! TypeError when awaited, sent {len(exchange.lines) > sent}")
-        _refused(lines, "async streaming list with an unknown keyword", lambda: api.pets.with_streaming_response.list_pets(color="red"), exchange)
+        _refused(
+            lines,
+            "async streaming list with an unknown keyword",
+            lambda: api.pets.with_streaming_response.list_pets(color="red"),
+            exchange,
+        )
     await http.aclose()
 
 

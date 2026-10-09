@@ -392,7 +392,7 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   saturated none = (FieldVendorGetResponse(root='server payload'), 5)
-    draws=0/0 unused=0
+    delays=(0.25, 0.5, 0.5, 0.5) expected=(0.25, 0.5, 0.5, 0.5) match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
@@ -400,25 +400,25 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full jitter = (FieldVendorGetResponse(root='server payload'), 3)
-    draws=2/2 unused=0
+    delays=(1.0, 2.0) expected=(1.0, 2.0) match=True draws=2/2 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full lower bound = (FieldVendorGetResponse(root='server payload'), 2)
-    draws=1/1 unused=0
+    delays=() expected=() match=True draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   full upper edge = (FieldVendorGetResponse(root='server payload'), 2)
-    draws=1/1 unused=0
+    delays=(1.0,) expected=(1.0,) match=True draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   subnormal upper edge = (FieldVendorGetResponse(root='server payload'), 2)
-    draws=1/1 unused=0
+    delays=() expected=() match=True draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
@@ -426,47 +426,63 @@
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   zero remains zero = (FieldVendorGetResponse(root='server payload'), 3)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server exact cap = (FieldVendorGetResponse(root='server payload'), 2)
-    draws=0/0 unused=0
+    delays=(60.0,) expected=(60.0,) match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server over cap no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server unlimited cap = (FieldVendorGetResponse(root='server payload'), 2)
-    draws=0/0 unused=0
+    delays=(61.0,) expected=(61.0,) match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server deadline equality no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   backoff deadline equality = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   jitter deadline rejection = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    draws=1/1 unused=0
+    delays=() expected=() match=True draws=1/1 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   success no RNG = (FieldVendorGetResponse(root='server payload'), 1)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   excluded status no RNG = ('NotFoundError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 404)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   server forbids no RNG = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
-    draws=0/0 unused=0
+    delays=() expected=() match=True draws=0/0 unused=0
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  receipt target survives response close = (FieldVendorGetResponse(root='server payload'), 2)
+    delays=(0.5,) expected=(0.5,) match=True
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  chosen target survives response close = (FieldVendorGetResponse(root='server payload'), 2)
+    delays=(0.25,) expected=(0.25,) match=True
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  original server cap survives headers hook = ('InternalServerError', 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
+    delays=() expected=() match=True
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe

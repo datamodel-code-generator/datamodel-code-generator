@@ -9,7 +9,7 @@ import httpx2
 from pets import AsyncClient, Client
 from pets.auth import ClientCredentials, OauthClientCredentials, OauthRefreshToken, RefreshToken, TokenSet
 from pets.errors import AuthError, AuthReason
-from pets.options import ClientOptions, RequestOptions
+from pets.options import RequestOptions
 from typing_extensions import assert_type
 
 
@@ -35,6 +35,6 @@ def errors() -> None:
 
 def native(client: Client) -> None:
     """Replace the credentials with a native Auth, or send none."""
-    Client(options=ClientOptions(auth=httpx2.BasicAuth("user", "password")))
-    client.with_options(RequestOptions(auth=None)).auth.anonymous()
+    Client(auth=httpx2.BasicAuth("user", "password"))
+    client.with_options(auth=None).auth.anonymous()
     client.auth.bearer(options=RequestOptions(auth=OauthClientCredentials(client_id="c", client_secret="s")))

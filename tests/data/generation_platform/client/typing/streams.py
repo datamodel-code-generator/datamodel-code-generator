@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
 from pets.errors import ProtocolDataError
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncEventStream,
     EventStream,
@@ -23,9 +23,8 @@ from typing_extensions import assert_type
 def events(client: Client, query: FeedQuery) -> None:
     """Yield typed events and their data, keep unknown events in the union, and read error events as object."""
     stream = client.protocols.events.messages.open(
-        stream_options=StreamOptions(idle_timeout=5),
+        stream_options=StreamOptions(idle_timeout=5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(stream, EventStream[Message])
     events: Iterator[StreamEvent[Message]] = stream

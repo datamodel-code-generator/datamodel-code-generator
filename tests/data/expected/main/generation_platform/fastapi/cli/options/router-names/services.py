@@ -22,18 +22,20 @@ class AnimalsService(Protocol):
         self,
         *,
         limit: int,
-    ) -> (
-        models.FieldPetsGetResponse
-        | HTTPResult[models.FieldPetsGetResponse]
-        | Response
-    ): ...
+    ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: models.Pet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def replace_pet(
@@ -41,4 +43,7 @@ class AnimalsService(Protocol):
         *,
         name: str,
         body: models.Pet,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle PUT /pets/{name}.
+        """

@@ -22,7 +22,7 @@ from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .body_sources import BinaryBodies, BodyBindings, BoundBody
 from .errors import DecodeError
@@ -80,13 +80,13 @@ class FieldPart(Generic[PartT_co]):
     def __init__(
         self,
         name: str,
-        value: PartT_co | Unset,
+        value: PartT_co | UNSET,
         content_type: str | None = None,
         headers: tuple[tuple[str, str], ...] = (),
     ) -> None:
         """Keep the part's name, value, media type, and extra headers in their order."""
         self._name = name
-        self._value = value
+        self._value: PartT_co | UNSET = value
         self._content_type = content_type
         self._headers = headers
 
@@ -96,7 +96,7 @@ class FieldPart(Generic[PartT_co]):
         return self._name
 
     @property
-    def value(self) -> PartT_co | Unset:
+    def value(self) -> PartT_co | UNSET:
         """Return the part's value, or UNSET for a part left out."""
         return self._value
 
@@ -393,7 +393,7 @@ def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
     A styled member writes a part for each name and value its style gives, without percent-encoding, in the charset of
     the media type its part names, UTF-8 without one.
     """
-    if isinstance(value := part.value, Unset):
+    if (value := part.value) is UNSET:
         return []
     try:
         wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))
