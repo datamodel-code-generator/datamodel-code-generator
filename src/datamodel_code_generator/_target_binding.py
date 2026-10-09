@@ -1428,6 +1428,7 @@ class _Schemas:
         roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         self.documents: dict[str, dict[str, YamlValue]] = {}
         self.ids: dict[str, SourceDocumentId] = {}
+        self.unloadable: set[str] = set()
         for document in (*roots, *loaded):
             if document not in self.ids:
                 self.ids[document] = SourceDocumentId(len(self.ids))
@@ -2239,10 +2240,14 @@ class _Contracts(_SchemaUses):
     """Bind every type use of the operations the target parser walked."""
 
     def observed(self, document: str) -> bool:
-        """Return whether a document is loaded, loading one that nothing but a link or security scheme references."""
+        """Return whether a document is loaded, loading one that nothing but a link or security scheme references.
+
+        A document that fails to load is tried once.
+        """
         if document in self.schemas.documents:
             return True
-        if (raw := self.parser.load_document(document)) is None:
+        if document in self.schemas.unloadable or (raw := self.parser.load_document(document)) is None:
+            self.schemas.unloadable.add(document)
             return False
         self.schemas.ids[document] = SourceDocumentId(len(self.schemas.ids))
         self.schemas.documents[document] = raw
