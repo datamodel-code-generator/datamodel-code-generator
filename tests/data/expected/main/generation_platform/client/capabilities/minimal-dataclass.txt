@@ -11,7 +11,7 @@ copied runtime
   client/auth_policy.py: 647
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2526
+  client/client.py: 2529
   client/codecs.py: 95
   client/errors.py: 382
   client/logical.py: 191
@@ -36,7 +36,7 @@ copied runtime
   model_codecs/stdlib.py: 256
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
-total 32 modules, 10457 lines
+total 32 modules, 10460 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
