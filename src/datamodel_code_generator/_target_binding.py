@@ -1793,7 +1793,7 @@ class _Reader:
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
-        """Return how a multipart member's schema encodes its parts, reading an array's items at its own `items`.
+        """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
 
         A string is binary by its binary format, or by a content media type without a content encoding. The member's
         values are read where its schema is, or where its items' is when it repeats.
@@ -1803,7 +1803,7 @@ class _Reader:
         items: SchemaSite | None = None
         if repeated := _json_types(raw) - _NULL == _ARRAY:
             items = SchemaSite(locate(found := _child(target, "items")), locate(self.whole(found)[0]))
-            raw = self.whole(_child(declaration, "items"))[1]
+            raw = self.whole(found)[1]
         types = _json_types(raw) - _NULL
         binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
         return PartSchema(
