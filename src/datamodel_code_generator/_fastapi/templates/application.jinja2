@@ -7,7 +7,7 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 
 
 {{ build_signature }}
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return {{ build }}(
         ROUTES,
         services={{ services }},
@@ -18,7 +18,11 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 
 
 {{ app_signature }}
-    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    """Create the application with every operation, passing the other keyword arguments to FastAPI.
+
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    """
+    fastapi_kwargs["exception_handlers"] = {{ error_handlers }}(fastapi_kwargs.get("exception_handlers"))
     app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(

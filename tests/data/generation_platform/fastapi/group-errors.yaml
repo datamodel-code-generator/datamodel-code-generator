@@ -25,3 +25,9 @@ paths:
       tags: [four]
       responses:
         "204": {description: Done.}
+  /five:
+    get:
+      operationId: five
+      tags: [validation error handler]
+      responses:
+        "204": {description: Done.}

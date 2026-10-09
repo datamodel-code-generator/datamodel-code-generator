@@ -71,6 +71,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parameter-content-defaults-31",
         "server-errors",
         "codec-errors",
+        "cookie-names",
         "reference-errors",
         "setting-errors",
         "empty",

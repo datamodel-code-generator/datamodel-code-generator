@@ -1,5 +1,5 @@
 create-server-decode: native Ticket(id=ULID(01ARZ3NDEKTSV4RRFFQ69G5FAV), parent=None) set=['id'] json={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}
-create-server-decode-invalid: HTTP 422 {"detail":[{"type":"ulid_format","loc":["body","id"],"msg":"Unrecognized format","input":"not-a-ulid"}]}
+create-server-decode-invalid: HTTP 422 {"detail":[{"type":"ulid_format","loc":["body","id"],"msg":"Unrecognized format"}]}
 created-server-encode-echo: native Ticket(id=ULID(01ARZ3NDEKTSV4RRFFQ69G5FAV), parent=None) set=['id'] json={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}
 created-server-encode-native: native Ticket(id=ULID(01ARZ3NDEKTSV4RRFFQ69G5FAV), parent=ULID(01BX5ZZKBKACTAV9WEVGEMMVRZ)) set=['id', 'parent'] json={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV","parent":"01BX5ZZKBKACTAV9WEVGEMMVRZ"}
 created-server-snapshot: native Ticket(id=ULID(01BX5ZZKBKACTAV9WEVGEMMVRZ), parent=None) set=['id'] json={"id":"01BX5ZZKBKACTAV9WEVGEMMVRZ"}

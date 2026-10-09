@@ -2884,6 +2884,13 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
+- **Cookies.** A cookie parameter with a single value is sent as it is, without percent-encoding, which is how HTTP
+  clients send cookies and how the generated server reads them. A cookie cannot carry `;`, `,`, `"`, `\`,
+  whitespace, control characters, or non-ASCII text (RFC 6265), so such a value fails with a request `DecodeError`
+  of the reason `unencodable`, with a `ParameterEncodingError` cause, before anything is sent, instead of arriving
+  cut short. Encode a value that needs those characters yourself, for example as Base64, and decode it in the
+  service. Such a parameter whose name is not a token stops generation with an error. Array and object cookie
+  parameters send one cookie for each item or property, percent-encoded in the `form` style.
 - **Headers.** Header values are converted through their native types. Read a body without any model with
   `with_raw_response` or `with_streaming_response` instead.
 

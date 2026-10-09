@@ -10,8 +10,7 @@ the same run, a FastAPI server package for its operations: routers, a service Pr
 adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
 document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
-service Protocols, and type checkers, Python, and the package at startup check that every operation has a
-matching method.
+service Protocols, and type checkers and Python check that every operation has a matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
@@ -57,8 +56,11 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 <!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
-`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. For a
-document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
+parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so the served document shows its
+schema as `anyOf` of the type and `null`.
+For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 
 ```python
@@ -92,10 +94,19 @@ uv run uvicorn app:app
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
-`middleware`, to `FastAPI`, and checks every method when the application starts; any
-object with the right methods works, and type checkers check it where you pass it. The generated
+`middleware`, to `FastAPI`, and looks every method up when it registers the routes; any object with the right
+methods works, and type checkers check it where you pass it. Registration stops with an error for what would
+otherwise go wrong without one: a missing method (`AttributeError`), a coroutine function for an operation in the
+`sync` handler mode or a plain method for one in the `async` mode, a secured operation without a callable
+`authorize`, and an `operation_dependencies` entry that is not a sequence of `Depends(...)` (`TypeError`) or that
+names no method of the router (`ValueError`). The package does not check the arguments of a method: one whose
+signature a type checker would reject fails with Python's own error when its operation is requested. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
+
+`create_app` and `build_router` also take `prefix` and `operation_dependencies`, FastAPI dependencies of single
+operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`; `build_router` takes
+`dependencies` for all of its routes, which `create_app` passes to `FastAPI`.
 
 ## Requirements
 
@@ -232,6 +243,8 @@ an error before generation.
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
 `pets.yaml#/paths/~1pets/get`. The README of the generated package lists the reference of every operation.
+These settings decide the generated code, including each method name, so they name an operation as the input
+document does; `operation_dependencies`, an argument of the generated package, names it by its method.
 
 ```toml
 [tool.datamodel-codegen.server-handler-modes]
@@ -303,7 +316,7 @@ server run to the batch document, with file paths relative to that job's model o
 | `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
 | `services.py` | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | Route registrations |
-| `errors.py`, `security.py` | Errors, and one FastAPI security dependency for each scheme |
+| `security.py` | One FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | Documentation and typing marker |
 
@@ -387,15 +400,33 @@ The generated models are the runtime contract. Routes declare the model types di
 `Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
 `response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
 parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
-validates the same, so the method receives the value; the default is the one the model declares. How strictly a
-value follows the OpenAPI document is decided by the model generation options, not by the server.
+validates the same, so the method receives the value. A default that the parameter's schema declares reaches the
+method whenever the request omits the parameter, however the model options spell the type, such as with
+`--use-annotated` or `--field-constraints`; a parameter whose type stays a root model receives that model with its
+own default. How strictly a value follows the OpenAPI document is decided by the model generation options, not by
+the server.
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
-form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
-placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
-`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
-`bytes`.
+cookie arrays, header and path arrays, objects, enums and literals of non-string values, strict integers,
+numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
+and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
+the method as its model, with uploads read to `bytes`.
+
+A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
+as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
+quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
+values as they are, too, and generation stops with an error for such a cookie whose name is not a token. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
+percent-decode it either; cookie arrays and objects, one cookie for each item or property, keep the `form` style's
+percent-encoding.
+
+An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
+spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
+or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
+query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
+parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
@@ -431,6 +462,32 @@ model when the body is JSON, and `openapi_extra` documents the parameters, reque
 adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
 reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
 own placeholder names.
+
+## Production settings
+
+The application keeps FastAPI's defaults for its documentation endpoints and for the shape of its error
+responses, with one difference: a request that fails validation answers `422` with FastAPI's `{"detail": [...]}`
+records without their `input` and `ctx`, and without pydantic's `url`, which FastAPI already leaves out: the
+response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc`
+and `msg` are still pydantic's and can hold text the client chose: a key of a mapping or an unexpected field in
+`loc`, a discriminator tag in `msg`, and whatever a validator of your own puts in its error message. Parameters and
+bodies that adapters read answer with the same three keys.
+
+- `create_app` registers the handler, `validation_error_handler`, through FastAPI's `exception_handlers`. Pass
+  your own `exception_handlers` to send other error bodies, for example ones without `loc` and `msg`; an entry
+  for `RequestValidationError` replaces the package's.
+- An application of your own that includes `build_router(...)` keeps FastAPI's default records, with `input` and
+  `ctx`, unless you register the handler: `app.add_exception_handler(RequestValidationError,
+  validation_error_handler)`, imported from the generated package.
+- Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
+  result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
+  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
+- The served document describes validation errors with FastAPI's own `ValidationError` schema, in which `loc`,
+  `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies conform to it.
+- `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and
+  `/openapi.json`.
+- The `server` response header is the ASGI server's, not the application's; uvicorn leaves it out with
+  `--no-server-header`.
 
 ## Templates
 
@@ -472,6 +529,12 @@ datamodel-codegen \
   --server-package server \
   --server-model-package models
 ```
+
+The values a role receives can change while server generation is experimental, and a value that an older copy of a
+builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
+compare an override with the current builtin template after an upgrade. `router.jinja2` receives one `route` for
+each operation: `adder`, `router`, `wiring`, `service`, `protocol`, `group`, `handler`, `lookup`, `principal`,
+`signature`, `body`, and `registration`.
 
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
