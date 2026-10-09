@@ -3,7 +3,6 @@ generate
   returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py

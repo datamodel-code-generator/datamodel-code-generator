@@ -14,7 +14,7 @@ from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
-from datamodel_code_generator._client.config import ClientGenerationConfig
+from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
@@ -53,6 +53,8 @@ from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
@@ -78,7 +80,7 @@ PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
     "pydantic_v2.dataclass": (PYDANTIC,),
-    "msgspec.Struct": ("msgspec>=0.18",),
+    "msgspec.Struct": ("msgspec>=0.21.1",),
 }
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
@@ -97,19 +99,27 @@ class ClientTarget:
     unsupported_backend: str = "E_CONFIG_VALUE"
     selector: str = "--generate-client"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals]
+    def __init__(self, protocol_base: Path | None = None) -> None:
+        """Resolve the documents that helper records or a helper JSON object name against protocol_base.
+
+        Without it, they resolve against the working directory.
+        """
+        self.protocol_base = protocol_base
+
+    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[too-many-locals]
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
-        protocols = plan_protocols(request, config.protocols)
+        protocols = plan_protocols(request, config.protocols, self.protocol_base or request.cwd)
         wire = _wire(request, request.batch)
         facts = ModelFacts(request.batch)
         try:
             plan = Planner(request, config, wire, facts).plan()
         except PlanError as error:
             raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
+                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
+                option_prefix=OPTION_PREFIX,
             ) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
@@ -156,7 +166,8 @@ class ClientTarget:
                 tuple(
                     replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
                     for item in refused
-                )
+                ),
+                option_prefix=OPTION_PREFIX,
             )
         data = _HelperDigests(request, codecs, wire)
         metadata = helper_metadata(protocols, request)

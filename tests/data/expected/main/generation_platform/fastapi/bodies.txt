@@ -25,13 +25,12 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
-  write server/.dcg-target-manifest.json
   file server/README.md
     | # Bodies
     |
     | The `server` package serves the Bodies API with FastAPI.
     | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
-    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    | Generation overwrites every file of the package, as it does the models: keep your code in modules outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
     |
     | FastAPI server generation is experimental.
     | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
@@ -130,7 +129,7 @@ render pydantic_v2.BaseModel
     | ## Regenerating
     |
     | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
-    | Generation rewrites every file it owns, restoring any you edited or deleted, and never touches your own modules.
+    | Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed operations yourself, which `--check` lists as extra files.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
     | run it again when a new version of datamodel-code-generator changes them.

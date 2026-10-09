@@ -1,42 +1,15 @@
 # empty
 render
   target=fastapi schema_version=1
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:ff550d74e57a1cc4d20b299e4f23c6f8f774eeb527c8e2d6349107dc5b139220",
-    "__init__.py": "sha256:263aeae25cd6931d93496ecd43db9290450e4e6dd6f2f331174cae35ec33867b",
-    "_generated/__init__.py": "sha256:d22165340f71942f0e29783a9c49bd0810bdc252b0459e25962b3e5a4595b5ef",
-    "_generated/contract.py": "sha256:0391566268d8e0d5bae96328778f9ac39976a906b953fb9ff58012ed64af84d5",
-    "application.py": "sha256:7f7d260697a3f03b18a25a83584d72fd3af9faf4229e00f6b1545c900e496988",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:dce1f16f231205d5985ed48d469e0210921cfa08918bea6c8cc2660fc693f0b8",
-    "routers/untagged.py": "sha256:4b7b9222761eb231f5591f648e0062381fd5a09c25d8f58912e8d25d9f34b90d",
-    "services.py": "sha256:c232ceccdbeb233e31b88a82deb02fd5b841b6f0ce73a0ba61977b1717944361"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
 render
   Error: --generate-server requires --openapi-scopes to include api

@@ -50,6 +50,9 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "argument-errors",
         "security",
         "security-errors",
+        "references",
+        "reference-errors",
+        "link-errors",
         "info",
         "callbacks",
         "scheme-names",
@@ -76,6 +79,7 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
         ("empty", True),
         ("single", True),
         ("security", True),
+        ("self-references", False),
         ("template-missing", False),
     ],
 )

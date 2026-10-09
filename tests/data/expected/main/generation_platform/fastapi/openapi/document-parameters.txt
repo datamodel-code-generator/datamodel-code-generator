@@ -65,22 +65,6 @@
             }
           },
           {
-            "name": "none",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FieldAdaptersGetQueryNoneParameter"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "None"
-            }
-          },
-          {
             "name": "count",
             "in": "query",
             "required": false,
@@ -483,12 +467,6 @@
   },
   "components": {
     "schemas": {
-      "FieldAdaptersGetQueryNoneParameter": {
-        "enum": [
-          null
-        ],
-        "title": "FieldAdaptersGetQueryNoneParameter"
-      },
       "FieldItemsItemIdPartsPartGetQueryModeParameter": {
         "type": "string",
         "enum": [
