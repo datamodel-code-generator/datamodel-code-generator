@@ -227,8 +227,7 @@ class TargetModule:
         self.qualified = qualified
         self.taken: dict[str, object] = dict.fromkeys((*reserved, *_BUILTINS), _LOCAL)
         for identity in names.fixed:
-            if identity[0] is not None:
-                self.taken.setdefault(identity[1], identity)
+            self.taken.setdefault(identity[1], identity)
         self.bound: dict[_Identity, str] = {}
         self.spelled: dict[object, str] = {}
 
