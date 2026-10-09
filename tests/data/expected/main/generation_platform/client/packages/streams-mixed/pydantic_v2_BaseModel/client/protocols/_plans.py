@@ -36,7 +36,7 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, ListNotesResponse]] = PaginationPlan(
         end_null=True,
         empty_string_ends=True,
     ),
-    fingerprint='10420b57894a63d8bc0a3f5922f44738474fa03d57ea4bb96b8347ddb6f93a64',
+    fingerprint='a673b831b58197e611289322390e209809c6bfe8d0e0df49453722c5958011a0',
 )
 
 
@@ -45,6 +45,5 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1notes~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='177256c7a354a21695f5c4618c3bee87acc85072ed18c469bf95fb351d245bce',
     event=model_bindings.codec_3,
 )

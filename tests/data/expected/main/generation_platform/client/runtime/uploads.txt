@@ -19,7 +19,6 @@ upload errors
   refuse changed size ! ValueError: expected_size must be a nonnegative integer []
   refuse changed negative size ! ValueError: actual_size must be a nonnegative integer []
   refuse offset negative ! ValueError: confirmed_offset must be a nonnegative integer []
-  refuse offset state ! TypeError: UploadOffsetError.__init__() got an unexpected keyword argument 'resume_state' []
   refuse expired naive ! ValueError: expires_at must be a timezone-aware datetime []
   refuse expired condition ! TypeError: UploadExpiredError.__init__() got an unexpected keyword argument 'condition' []
   refuse source kind ! ValueError: source_kind must be one of its declared values []
@@ -149,7 +148,7 @@ a probe that never answers
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u10
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='append') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='append', cause=APIConnectionError()] upload_delivery_unknown_error [phase='append'] resume_state=False
+  advance ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='append') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='append', cause=APIConnectionError()] upload_delivery_unknown_error [phase='append']
   > HEAD https://api.example.com/files/u10
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u10
@@ -285,10 +284,10 @@ a completion of unknown outcome
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u24/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=APIConnectionError()] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=APIConnectionError()] upload_delivery_unknown_error [phase='complete']
+  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 a completion an error answered
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -311,10 +310,10 @@ a completion a gateway answered with 502
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u26/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete']
+  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 a completion a gateway answered with 504
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -324,10 +323,10 @@ a completion a gateway answered with 504
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u27/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete']
+  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 a completion the server answered with a body that does not decode
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -337,9 +336,9 @@ a completion the server answered with a body that does not decode
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u28/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=DecodeError()] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=DecodeError()] upload_delivery_unknown_error [phase='complete']
+  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 a completion whose deadline passes while the server answers it, keeping its answer
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -361,7 +360,7 @@ a checkpoint taken while the completion is in flight
   > POST https://api.example.com/files/u30/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   run = Stored(id='u30', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
-  resume the checkpoint taken in flight ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  resume the checkpoint taken in flight ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 sources that cannot resume or are invalid
   start with an iterator ! NonResumableSourceError: NonResumableSourceError(reason='wrong_capability', field_path='source', source_kind='iterator') [field_path=('source',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
   start with an iterable ! NonResumableSourceError: NonResumableSourceError(reason='wrong_capability', field_path='source', source_kind='iterable') [field_path=('source',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
@@ -515,6 +514,10 @@ the client's clock
   > PATCH https://api.example.com/files/u45
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-length: 2] b'89'
   default upload completes = None
+refused size
+  start ! DecodeError: DecodeError(operation_id='createFile', reason='unencodable', location='header.Upload-Length') [operation_id='createFile', location=('header', 'Upload-Length'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=1 validation error for constrained-int
+  Input should be less than or equal to 10 [type=less_than_equal, input_value=11, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/less_than_equal] unencodable
 refused options
   start with options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='upload_options') [field_path=('upload_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   start with a fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
@@ -625,15 +628,15 @@ async resume and refusals
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u53/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run with a completion of unknown outcome ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=APIConnectionError()] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume it ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run with a completion of unknown outcome ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=APIConnectionError()] upload_delivery_unknown_error [phase='complete']
+  resume it ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u54
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u54
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a probe that never answers ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='append') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='append', cause=APIConnectionError()] upload_delivery_unknown_error [phase='append'] resume_state=False
+  advance with a probe that never answers ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='append') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='append', cause=APIConnectionError()] upload_delivery_unknown_error [phase='append']
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u55
@@ -682,8 +685,8 @@ async completion cancelled in flight
   > POST https://api.example.com/files/u59/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   run cancelled
-  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
-  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=False
+  run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete']
 async file source
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''

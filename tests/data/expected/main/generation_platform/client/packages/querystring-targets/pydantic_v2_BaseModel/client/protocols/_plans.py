@@ -48,7 +48,7 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
         end_missing=True,
         empty_string_ends=True,
     ),
-    fingerprint='a0acd218466759856a94521d2278e2d59d342cb05df7334b61fb599357716fec',
+    fingerprint='c0a57019230119a63e9086806414b02ccc06a7a1a1edb4225036ce089e6deb79',
 )
 
 
@@ -69,7 +69,7 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
         end_missing=True,
         empty_string_ends=True,
     ),
-    fingerprint='bb42e633e58e724849d88dfe66f6bf603eb661438e246f9c35ed4c5b448bb613',
+    fingerprint='74dd5fefa916441953448a5ed523bc5b3af0005f6e973cb0a812bd9b20afbc6c',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='scope'),
@@ -151,7 +151,6 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='6ab3d5e3595cea06cda4e5e78ebda2754e6746e65cd818eaf72cce056e4cfe46',
     event=model_bindings.codec_23,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1events/get'),

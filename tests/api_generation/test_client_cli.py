@@ -36,7 +36,6 @@ CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/client/cli/options"
-CONFLICT = "Error: --generate-client cannot be used with"
 SYNC = "client/resources/pets/_sync.py"
 
 assert_file_content = create_assert_file_content(EXPECTED)
@@ -573,7 +572,7 @@ def test_client_cli_generation_json(
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
-        (["--watch"], f"{CONFLICT} --watch\n"),
+        (["--watch", "--check"], "Error: --watch and --check cannot be used together\n"),
         (
             ["--update-lock", "--lockfile", "client/api.lock"],
             "Remote lock for 'command' ({lock}) overlaps client output for 'command': {client}\n",
@@ -588,7 +587,7 @@ def test_client_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the client cannot honor, and a remote lock inside the client output, as for the server."""
+    """Refuse the model mode conflicts, and a remote lock inside the client output, as for the server."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path.resolve()
     run_main_and_assert(
@@ -667,7 +666,11 @@ def test_client_cli_shared_models_jobs(
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], f"{CONFLICT} --watch\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--watch", "--check"],
+            "Error: --watch and --check cannot be used together\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--client-body-arguments", "both"],

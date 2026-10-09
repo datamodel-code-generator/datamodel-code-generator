@@ -98,13 +98,16 @@ _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PartSpec:
-    """One member of a form-data body with file parts: its plan and its values' type use.
+    """One member of a form-data body with file parts: its plan, its values' type use, and its kind of part.
 
-    A file member has no type use of its values.
+    A file member has no type use of its values. A received member may be required, or excluded by its direction.
     """
 
     plan: PartPlan
     use: TypeUseBinding | None = None
+    file: bool = False
+    required: bool = False
+    excluded: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -731,7 +734,7 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
-            additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated, file=True))
+            additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
         elif (
             isinstance(declared_extra, PartSchema)
             and (typed := self._extra_use(use, extra := _site(declared_extra, site))) is not None
@@ -741,7 +744,7 @@ class Planner:
             )
         declared = dict(parts.members)
         members = _members(use)
-        if not any(declared[name].file for name, _, _ in members) and (additional is None or not additional.plan.file):
+        if not any(declared[name].file for name, _, _ in members) and (additional is None or not additional.file):
             return None, None
         specs: list[PartSpec] = []
         for name, member, facts in members:
@@ -751,15 +754,13 @@ class Planner:
                     plan=PartPlan(
                         name,
                         repeated=name not in styles_of and part.repeated,
-                        file=part.file,
-                        required=facts.required and not facts.read_only,
-                        excluded=facts.read_only,
                         content_types=media_of.get(name, ()),
                         style=styles_of.get(name),
                     ),
                     use=None
                     if part.file
                     else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
+                    file=part.file,
                 )
             )
         return tuple(specs), additional
@@ -780,7 +781,7 @@ class Planner:
             isinstance(declared_extra, PartSchema) and declared_extra.file
         ):
             return None, None
-        additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True, file=True))
+        additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True), file=True)
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema):
@@ -810,14 +811,16 @@ class Planner:
         """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use."""
         if part.file:
             return PartSpec(
-                plan=PartPlan(name, repeated=part.repeated, file=True, required=required, excluded=excluded)
+                plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
             )
-        plan = self._part_plan(name, location, part, required=required, excluded=excluded)
+        plan = self._part_plan(name, location, part)
         read = _site(part, location, items=plan.repeated)
         bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
             body.id, "not_generated", None, None
         )
-        return PartSpec(plan=plan, use=_part_use(body, read.location, name or None, bound))
+        return PartSpec(
+            plan=plan, use=_part_use(body, read.location, name or None, bound), required=required, excluded=excluded
+        )
 
     def _part_plans(self, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
         """Return how the parts of a multipart response are read: each member's kind, then any other part's."""
@@ -836,13 +839,11 @@ class Planner:
             return plans, self._part_plan("", _site(declared_extra, use.schema).location, declared_extra)
         return plans, PartPlan("")
 
-    def _part_plan(
-        self, name: str, location: SourceLocation, part: PartSchema, *, required: bool = False, excluded: bool = False
-    ) -> PartPlan:
+    def _part_plan(self, name: str, location: SourceLocation, part: PartSchema) -> PartPlan:
         """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
         steps = ("items",) if part.repeated else ()
         kind: PartKind = (self.wire.kinds.at((location, steps)) if part.text else None) or "json"
-        return PartPlan(name, kind, repeated=part.repeated, required=required, excluded=excluded)
+        return PartPlan(name, kind, repeated=part.repeated)
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None

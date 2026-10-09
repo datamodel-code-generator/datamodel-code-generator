@@ -22,7 +22,6 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='dbd4b9cbc9d936cdd27223c5ce9860452edaa4e3112a55666993942530b4e9e6',
     event=model_bindings.codec_7,
 )
 
@@ -32,7 +31,6 @@ STREAM_1: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='b83379333380839c055edcbc337262c773a61f41b4fc464cb320d86a09b4abd3',
     routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     unknown=unknown_event,
     errors=(('error', model_bindings.codec_10),),
@@ -46,7 +44,6 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='5996efbbd6ad59b8a1ce1e8b0f40d7d7d58ca253f63c8d8a113c8b296a4ee688',
     routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     discriminator=BodySelector(pointer='/type'),
     errors=(('failed', model_bindings.codec_11),),
@@ -60,7 +57,6 @@ STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='9dd4eab4a8368da08bcd516a837dd6e55a78e27b3c352827cb619b5e418ab07a',
     event=model_bindings.codec_12,
     completion='sentinel',
     terminal='[DONE]',

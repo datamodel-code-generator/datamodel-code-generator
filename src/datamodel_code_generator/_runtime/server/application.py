@@ -2,24 +2,44 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeGuard, TypeVar, cast
 
 from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse
 from typing_extensions import TypeIs
-
-from .security import awaitable, coroutine_function
 
 if TYPE_CHECKING:
     from starlette.requests import Request
 
 MethodT = TypeVar("MethodT")
 _REQUEST_VALUES: Final = frozenset({"input", "ctx", "url"})
+
+
+def _coroutine_function(value: object) -> TypeGuard[Callable[..., Awaitable[object]]]:
+    """Return whether calling a value, a function or an object with an async __call__, returns a coroutine."""
+    return inspect.iscoroutinefunction(value) or inspect.iscoroutinefunction(getattr(value, "__call__", None))  # noqa: B004
+
+
+def _awaitable(authorize: Callable[..., object]) -> Callable[..., Awaitable[object]]:
+    """Return an authorize callback to await: a coroutine function as it is, any other run in the threadpool.
+
+    An awaitable that the other returns is awaited too, so its result or its rejection is the callback's.
+    """
+    if _coroutine_function(authorize):
+        return authorize
+
+    async def threaded(requirements: object, credentials: object) -> object:
+        result = await run_in_threadpool(authorize, requirements, credentials)
+        return await result if inspect.isawaitable(result) else result
+
+    return threaded
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -35,7 +55,7 @@ class Wiring:
         if not callable(authorize := self.authorize):
             msg = "An authorize callback is required because the selected operations use security"
             raise TypeError(msg)
-        return awaitable(authorize)
+        return _awaitable(authorize)
 
 
 Route: TypeAlias = tuple[str, Callable[[APIRouter, Wiring], None]]
@@ -63,7 +83,7 @@ def checked(method: MethodT, label: str, *, asynchronous: bool = False) -> Metho
 
     A mismatch would skip the method body or fail after it ran, so it stops the registration.
     """
-    if coroutine_function(method) is asynchronous:
+    if _coroutine_function(method) is asynchronous:
         return method
     kinds = ("a coroutine function", "a plain method")
     found, needed = reversed(kinds) if asynchronous else kinds
