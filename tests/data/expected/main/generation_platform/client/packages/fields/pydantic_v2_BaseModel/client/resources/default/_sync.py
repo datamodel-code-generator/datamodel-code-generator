@@ -323,32 +323,11 @@ class DefaultResource:
             options=options,
         ).data
 
-    @overload
     def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
-        size: Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> PutLabelsResponse: ...
-    @overload
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> PutLabelsResponse: ...
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
@@ -357,7 +336,6 @@ class DefaultResource:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
-            fields=(size,),
             media_type=media_type,
             options=options,
         ).data
@@ -692,32 +670,11 @@ class DefaultWithResponse:
             options=options,
         )
 
-    @overload
     def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
-        size: Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[PutLabelsResponse]: ...
-    @overload
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[PutLabelsResponse]: ...
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
@@ -726,7 +683,6 @@ class DefaultWithResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
-            fields=(size,),
             media_type=media_type,
             options=options,
         )
@@ -1061,32 +1017,11 @@ class DefaultWithRawResponse:
             options=options,
         )
 
-    @overload
     def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
-        size: Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    @overload
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1095,7 +1030,6 @@ class DefaultWithRawResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
-            fields=(size,),
             media_type=media_type,
             options=options,
         )
@@ -1430,32 +1364,11 @@ class DefaultWithStreamingResponse:
             options=options,
         )
 
-    @overload
     def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
-        size: Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    @overload
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    def put_labels(
-        self,
-        *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1464,7 +1377,6 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
-            fields=(size,),
             media_type=media_type,
             options=options,
         )

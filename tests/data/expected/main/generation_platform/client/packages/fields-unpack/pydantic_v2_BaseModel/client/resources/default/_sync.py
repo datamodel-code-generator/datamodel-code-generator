@@ -40,8 +40,6 @@ from ..._generated.client_arguments import (
     Operation4Arguments1,
     Operation4Arguments2,
     Operation5Arguments,
-    Operation5Arguments1,
-    Operation5Arguments2,
     Operation6Arguments,
     Operation7Arguments,
     Operation7Arguments1,
@@ -228,27 +226,16 @@ class DefaultResource:
             options=kwargs.get('options'),
         ).data
 
-    @overload
     def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> PutLabelsResponse: ...
-    @overload
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> PutLabelsResponse: ...
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> PutLabelsResponse:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         ).data
@@ -444,27 +431,16 @@ class DefaultWithResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
     def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> Response[PutLabelsResponse]: ...
-    @overload
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> Response[PutLabelsResponse]: ...
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> Response[PutLabelsResponse]:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -633,21 +609,13 @@ class DefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
-    def put_labels(self, **kwargs: Unpack[Operation5Arguments]) -> RawResponse: ...
-    @overload
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> RawResponse: ...
-    def put_labels(self, **kwargs: Unpack[Operation5Arguments2]) -> RawResponse:
+    def put_labels(self, **kwargs: Unpack[Operation5Arguments]) -> RawResponse:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -840,27 +808,16 @@ class DefaultWithStreamingResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
     def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> AbstractContextManager[RawResponse]: ...
-    @overload
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> AbstractContextManager[RawResponse]: ...
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )

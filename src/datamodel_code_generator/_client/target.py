@@ -136,7 +136,7 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         coded = frozenset(item.use for item in codecs.uses)
-        plan, named = plan_fields(plan, facts, coded)
+        plan, named = plan_fields(plan, facts, coded, wire)
         pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
         polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
         caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)

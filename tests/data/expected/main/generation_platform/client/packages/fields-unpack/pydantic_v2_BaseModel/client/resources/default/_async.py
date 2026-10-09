@@ -40,8 +40,6 @@ from ..._generated.client_arguments import (
     Operation4Arguments1,
     Operation4Arguments2,
     Operation5Arguments,
-    Operation5Arguments1,
-    Operation5Arguments2,
     Operation6Arguments1,
     Operation7Arguments,
     Operation7Arguments1,
@@ -231,27 +229,16 @@ class AsyncDefaultResource:
             options=kwargs.get('options'),
         )).data
 
-    @overload
     async def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> PutLabelsResponse: ...
-    @overload
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> PutLabelsResponse: ...
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> PutLabelsResponse:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )).data
@@ -450,27 +437,16 @@ class AsyncDefaultWithResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
     async def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> Response[PutLabelsResponse]: ...
-    @overload
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> Response[PutLabelsResponse]: ...
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> Response[PutLabelsResponse]:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -669,27 +645,16 @@ class AsyncDefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
     async def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> AsyncRawResponse: ...
-    @overload
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> AsyncRawResponse: ...
-    async def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> AsyncRawResponse:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -888,27 +853,16 @@ class AsyncDefaultWithStreamingResponse:
             options=kwargs.get('options'),
         )
 
-    @overload
     def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments],
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
-    @overload
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments1],
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
-    def put_labels(
-        self,
-        **kwargs: Unpack[Operation5Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /pets/{petId}/labels."""
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
             (kwargs['pet_id'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
+            body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
