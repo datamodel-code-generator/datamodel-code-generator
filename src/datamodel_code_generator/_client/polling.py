@@ -38,7 +38,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import FinalPythonType, OperationId, TypeUseBinding, TypeUseId
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
@@ -391,7 +390,7 @@ class _Polls:
         ):
             message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {_label(spec)} response"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
-        if (expected := self.pages.item_types(reference, "response")) == "missing":
+        if (expected := self.pages.item_type(reference, "response")) == "missing":
             message = f"The {what} schema {reference.pointer!r} of {name!r} does not exist in its document"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.schema", message, spec)
         if not self.pages.same(member.model_facts.type, expected):
@@ -475,19 +474,18 @@ class _Polls:
         return reached.steps, reached.schema
 
 
-def plan_polling(  # noqa: PLR0913, PLR0917
+def plan_polling(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled polling helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    polls = _Polls(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols)
+    polls = _Polls(_Pages(protocols, plan, facts, codecs, request), operations, protocols)
     specs: list[PollingSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

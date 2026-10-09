@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, HeaderSpec, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         Direction,
@@ -215,13 +214,12 @@ def _sequence(value: FinalPythonType) -> bool:
 class _Pages:
     """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(
         self,
         protocols: Protocols,
         plan: ClientPlan,
         facts: ModelFacts,
         codecs: Container[TypeUseId],
-        wire: WirePlan,
         request: TargetRequest,
     ) -> None:
         """Keep the model facts and the uses with codecs, and index the documents by pointer.
@@ -232,7 +230,6 @@ class _Pages:
         self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
         self.facts = facts
         self.codecs = codecs
-        self.wire = wire
         self.request = request
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
         self.schemas = schema_uses(request.batch.type_uses)
@@ -293,29 +290,35 @@ class _Pages:
             else self.facts.field_types(member.model_facts)
         )
 
-    def item_types(
-        self, reference: SchemaRef, direction: Direction
-    ) -> tuple[FinalPythonType, ...] | Literal["missing"]:
-        """Return the types a helper's item schema is read as in a direction, or say its document lacks the pointer.
+    def item_type(self, reference: SchemaRef, direction: Direction) -> FinalPythonType | Literal["missing"] | None:
+        """Return the type a helper's item schema is read as in a direction, or say its document has no such pointer.
 
-        A whole-schema reference is read as its own model and as the schema it resolves to, where the uses of a split
-        model are recorded. None is returned for a schema no model stands for.
+        None is a schema no model stands for.
         """
         location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
         try:
             self.request.lease.borrow(location)
         except BindingCaptureError:
             return "missing"
-        resolved = self.wire.schema(location)[0]
-        uses = (
-            schema_use(self.schemas, location, direction, resolved),
-            schema_use(self.schemas, resolved, direction),
-        )
-        return tuple(dict.fromkeys(use.type for use in uses if use is not None and use.type is not None))
+        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
 
-    def same(self, value: FinalPythonType | None, expected: tuple[FinalPythonType, ...]) -> bool:
-        """Return whether a type is a type an item schema is read as, through None and aliases."""
-        return value is not None and any(self.present(value) == self.present(item) for item in expected)
+    def same(self, value: FinalPythonType | None, expected: FinalPythonType | None) -> bool:
+        """Return whether a type is the type an item schema is read as, through None and aliases."""
+        return value is not None and expected is not None and self.present(value) in self.read_as(expected)
+
+    def read_as(self, expected: FinalPythonType) -> tuple[FinalPythonType, ...]:
+        """Return the types an item schema's type is read as, without None and through aliases.
+
+        A root model also reads as its root, as the model of a schema that only refers to another one does.
+        """
+        read = self.present(expected)
+        if (
+            isinstance(read, GeneratedSymbolType)
+            and self.facts.symbols[read.symbol].kind == "root"
+            and (root := self.facts.root(read.symbol)) is not None
+        ):
+            return read, self.present(root)
+        return (read,)
 
     def present(self, value: FinalPythonType) -> FinalPythonType:
         """Return a type without None, through its aliases."""
@@ -391,7 +394,7 @@ class _Pages:
         member = reached.member
         item = self.element(page.type if member is None or member.model_facts is None else member.model_facts.type)
         reference = helper.tree["item_schema"]
-        if (expected := self.item_types(reference, page.id.direction)) == "missing":
+        if (expected := self.item_type(reference, page.id.direction)) == "missing":
             message = f"The item_schema {reference.pointer!r} of {name!r} does not exist in its document"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.item_schema", message, spec))
             return None
@@ -753,12 +756,11 @@ def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     return media[0].use if media[0].kind == "json" else None
 
 
-def plan_pagination(  # noqa: PLR0913, PLR0917
+def plan_pagination(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
@@ -767,7 +769,7 @@ def plan_pagination(  # noqa: PLR0913, PLR0917
     """
     if protocols is None:
         return (), {}
-    pages = _Pages(protocols, plan, facts, codecs, wire, request)
+    pages = _Pages(protocols, plan, facts, codecs, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

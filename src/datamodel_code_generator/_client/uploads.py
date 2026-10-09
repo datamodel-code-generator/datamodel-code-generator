@@ -31,7 +31,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
@@ -330,7 +329,7 @@ class _Uploads:
             return None
         reference = completion["result_schema"]
         pages = self.pages
-        if (expected := pages.item_types(reference, use.id.direction)) == "missing":
+        if (expected := pages.item_type(reference, use.id.direction)) == "missing":
             message = f"The result schema {reference.pointer!r} of {name!r} does not exist in its document"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result_schema", message, spec))
             return None
@@ -346,19 +345,18 @@ class _Uploads:
         return spec, use, schema
 
 
-def plan_uploads(  # noqa: PLR0913, PLR0917
+def plan_uploads(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols))
+    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, request), operations, protocols))
     specs: list[UploadSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:
