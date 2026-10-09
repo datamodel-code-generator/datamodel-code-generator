@@ -5,12 +5,28 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field, RootModel, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import (
+    BaseModel,
+    Field,
+    RootModel,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
+)
 from typing_extensions import TypeAliasType
 
 
 class Size(RootModel[StrictInt]):
     root: Annotated[StrictInt, Field(ge=1)] = 10
+
+
+class Form(BaseModel):
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    name: StrictStr | None = None
+    counts: list[StrictInt] | None = None
 
 
 FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", StrictInt)
@@ -60,3 +76,12 @@ FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobPar
 
 
 FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)
+
+
+class FieldUploadsPostRequest(BaseModel):
+    file: bytes
+    count: StrictInt
+    score: StrictFloat | None = None
+    flag: StrictBool | None = None
+    note: StrictStr | None = None
+    counts: list[StrictInt] | None = None

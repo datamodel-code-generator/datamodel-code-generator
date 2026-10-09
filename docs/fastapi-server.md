@@ -429,10 +429,10 @@ percent-encoding.
 
 An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
 spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
-`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
-or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
-query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
-parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
+`--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
+FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
