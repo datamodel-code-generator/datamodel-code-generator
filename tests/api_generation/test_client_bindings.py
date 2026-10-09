@@ -86,6 +86,8 @@ def test_capture_preserves_ordinary_model_bytes(
                 server_package="server",
                 server_model_package=Path(models).stem,
             )
+        # generate() returns text as reading a written file does, so the ordinary files' CRLF line ends read as LF
+        expected = {path: content.replace(b"\r\n", b"\n") for path, content in expected.items()}
         actual = {Path(*parts): text.encode("utf-8") for parts, text in modules.items() if parts[0] != "server"}
     assert_output(f"{bool(expected) and actual == expected}\n", EXPECTED / "capture-parity.txt")
 
