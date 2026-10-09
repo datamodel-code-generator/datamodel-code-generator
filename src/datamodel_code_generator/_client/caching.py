@@ -56,9 +56,8 @@ class _Caches:
     """Check and plan every enabled cache helper of a client target."""
 
     def __init__(self, pages: _Pages) -> None:
-        """Keep response codec uses and the headers credentials travel in."""
+        """Keep the pagination checks' response codec uses."""
         self.pages = pages
-        self.credential_headers = self.pages.secret_headers
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[CacheSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operation, and plan it when every check passes."""
@@ -79,13 +78,6 @@ class _Caches:
         if not tree["authenticated"] and security is not None and security.alternatives and all(security.alternatives):
             message = f"The cache helper {name!r} is declared anonymous, but {label} requires credentials"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.authenticated", message, spec))
-        for index, header in enumerate(tree["vary_allowlist"]):
-            if header.lower() in self.credential_headers:
-                message = (
-                    f"The cache helper {name!r} allows a Vary on {header!r}, which credentials travel in; the auth "
-                    "adds it after the cache looks a request up"
-                )
-                problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.vary_allowlist[{index}]", message, spec))
         if response is None or problems:
             return None, problems
         return CacheSpec(helper=helper, operation=spec, response=response), problems

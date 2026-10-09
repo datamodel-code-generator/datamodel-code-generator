@@ -2202,7 +2202,7 @@ store keeps no cache state. The helper is generated at `client.protocols.<name>`
 | `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
 | `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
-| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) needs no entry, since the key covers it, and fails generation. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) needs no entry, since the key covers it, though listing it is allowed. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
 
 `fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
 With asyncio, `fetch` is a coroutine:
@@ -2319,10 +2319,12 @@ Concurrent custom-store writes use last-completing replacement.
     The key covers what the call's Auth places on the request before the lookup: its own `auth`, a view's, the
     client's credentials, or a borrowed HTTP client's Auth. A credential callable is called, and an OAuth provider may
     request a token, for the lookup as well as for the send, and a response is stored only when the send placed the
-    same credentials, so a credential that changes between the two is never stored. Credentials the SDK never sees,
-    such as a client certificate, a borrowed HTTP client's own headers or event hooks, or an authenticating transport,
-    are not in the key: give each such identity a client of its own, whose default store no other client shares, or a
-    store of its own.
+    same credentials, so a credential that changes between the two is never stored. A header a request hook or the
+    transport adds to each request also makes the response unstorable, since the request it answered differs from the
+    one looked up: a per-request trace or request ID header therefore disables caching. An identity that never shows
+    in the request, such as a client certificate or other transport-level authentication, is not in the key and is
+    covered only by the store: give each such identity a client of its own, whose default store no other client
+    shares, or a store of its own.
 
 ### Stores
 
@@ -2363,8 +2365,6 @@ declared anonymous cannot fetch an operation that requires credentials:
 --client-protocols['users.statuses'].statuses[0]: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 --client-protocols['users.statuses'].statuses[1]: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 --client-protocols['secure.anonymous'].authenticated: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
---client-protocols['secure.varying'].vary_allowlist[1]: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
---client-protocols['secure.varying'].vary_allowlist[2]: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
 ```
 
 <!-- fmt: on -->
