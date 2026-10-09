@@ -163,25 +163,9 @@ def is_transport(error: object) -> TypeGuard[APIConnectionError]:
     return isinstance(error, APIConnectionError) and not is_deadline(error)
 
 
-def is_http_error(error: object) -> TypeGuard[APIStatusError]:
-    """Return whether an error is a final 4xx or 5xx response rather than an unexpected status."""
-    return isinstance(error, APIStatusError) and error.reason != "unexpected_status"
-
-
 def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     """Return whether an error refused a call because its client or view is closing or closed."""
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
-
-
-_CALL_STATES: Final = frozenset({"client_closed", "response_consumed"})
-
-
-def is_auth_classified(error: object) -> bool:
-    """Return whether a credential or signing callback's failure is already classified.
-
-    It is when the callback raised an auth failure, or a refused setting rather than the state of a call it made.
-    """
-    return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
 
 
 def is_hook_failure(error: object) -> TypeGuard[SDKError]:

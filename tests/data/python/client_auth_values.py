@@ -164,6 +164,7 @@ def _refusals(package: ModuleType, exchange: Exchange, lines: list[str]) -> None
             ("callable failure", {"bearer": _failing}, "bearer"),
             ("callable of another type", {"bearer": lambda: 7}, "bearer"),
             ("basic of another shape", {"basic": "user:pass word"}, "basic"),
+            ("basic of a pair of another size", {"basic": ("user", "pass", "word")}, "basic"),
             ("header line break", {"header_key": "key-secret\r\nX-Injected: 1"}, "api_key_header"),
             ("cookie separator", {"cookie_key": "cookie-secret; admin=1"}, "api_key_cookie"),
             ("non-ascii header", {"header_key": "key-secreté"}, "api_key_header"),

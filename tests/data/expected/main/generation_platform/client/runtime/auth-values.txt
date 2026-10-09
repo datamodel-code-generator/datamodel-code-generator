@@ -97,6 +97,7 @@ refusals
   callable failure ! AuthError reason=provider_failed field_path=None cause=OSError leaked=[]
   callable of another type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
   basic of another shape ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]
+  basic of a pair of another size ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]
   header line break ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
   cookie separator ! ConfigurationError reason=invalid_value field_path=('cookie_key',) cause=NoneType leaked=[]
   non-ascii header ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]

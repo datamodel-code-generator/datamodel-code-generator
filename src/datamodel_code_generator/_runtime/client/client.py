@@ -106,7 +106,7 @@ if TYPE_CHECKING:
     )
 
     from ..model_codecs.media import JSONValue
-    from ..model_codecs.parameters import ParameterFragment, ParameterPlan
+    from ..model_codecs.parameters import ParameterFragment
     from .bodies import AsyncContent, SyncContent
     from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
@@ -340,11 +340,6 @@ def request_decode_error(
     return DecodeError(
         reason="unencodable", direction="request", location=location, operation_id=operation.operation_id, cause=error
     )
-
-
-def exploded_object(plan: ParameterPlan) -> bool:
-    """Return whether a parameter sends each property of its object value as a field of its own."""
-    return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
