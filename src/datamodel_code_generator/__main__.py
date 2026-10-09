@@ -428,6 +428,24 @@ def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLoc
     return _RemoteLockPlan(canonical_path, canonical_path, literal_path, policy)
 
 
+def _watch_remote_lock_setup(
+    config: Config,
+    pyproject_path: Path | None,
+    watch_dependencies: WatchDependencies | None,
+    bound_plan: _RemoteLockPlan | None,
+) -> tuple[_RemoteLockPlan, set[Path] | None]:
+    """Resolve the lock plan of a run and register its lock with the watcher, returning the lock intent to settle."""
+    lock_plan = bound_plan or _remote_lock_plan(config, pyproject_path)
+    intent: set[Path] | None = None
+    if config.watch and watch_dependencies is not None:
+        if bound_plan is None:
+            (lock_plan,), intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+        watch_dependencies.add_file(lock_plan.canonical_path)
+        if lock_plan.policy == "update":
+            watch_dependencies.exclude_file(lock_plan.canonical_path)
+    return lock_plan, intent
+
+
 def _paths_alias_or_overlap(first: Path, second: Path) -> bool:
     """Treat hard links and parent/child artifacts as one unsafe publication target."""
     return _paths_overlap_or_samefile(first, second)
@@ -2411,6 +2429,30 @@ def _diff_against_validation_error(config: Config, namespace: Namespace) -> str 
     return next((message for is_incompatible, message in incompatible_options if is_incompatible), None)
 
 
+def _watch_and_regenerate(
+    args: Sequence[str],
+    config: Config,
+    dependencies: WatchDependencies | None,
+    *,
+    watch_path: Path | None = None,
+    watch_delay: float | None = None,
+) -> Exit:
+    """Watch what a generation read, regenerating it through the command after each change until interrupted."""
+    try:
+        from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
+
+        return watch_and_regenerate(
+            config,
+            dependencies=dependencies,
+            regenerate=lambda: _main(args, start_watch=False, dependencies=dependencies),
+            watch_path=watch_path,
+            watch_delay=watch_delay,
+        )
+    except Exception as e:  # noqa: BLE001
+        print(str(e), file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+
+
 def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     args: Sequence[str] | None = None,
     *,
@@ -2516,11 +2558,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
-        from datamodel_code_generator.base_config import _flag, _selected_target  # noqa: PLC0415
-
-        if selected := next(filter(None, (_selected_target(plan.config) for plan in batch_plan.jobs)), None):
-            print(f"Error: {_flag(selected[0])} cannot be used with --watch", file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
         if namespace.output_format == "json":
             print("Error: --output-format json cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
@@ -2531,23 +2568,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         result = _run_watched_jobs(args, batch_plan, watch_dependencies)
         if result is not Exit.OK or not start_watch:
             return result
-        try:
-            from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-            return watch_and_regenerate(
-                batch_plan.jobs[0].config,
-                dependencies=watch_dependencies,
-                regenerate=lambda: _main(
-                    args,
-                    start_watch=False,
-                    dependencies=watch_dependencies,
-                ),
-                watch_path=batch_plan.pyproject_path,
-                watch_delay=batch_plan.watch_delay,
-            )
-        except Exception as e:  # noqa: BLE001
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
+        return _watch_and_regenerate(
+            args,
+            batch_plan.jobs[0].config,
+            watch_dependencies,
+            watch_path=batch_plan.pyproject_path,
+            watch_delay=batch_plan.watch_delay,
+        )
 
     # Handle --ignore-pyproject and --profile options
     if _batch_config is not None:
@@ -2694,24 +2721,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         for error in target_usage:
             print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
-    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
-
-    if _selected_target(config) is not None:
-        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
-            return refusal
-        lock = None
-        if _batch_targets is None:
-            try:
-                _validate_remote_lock_preflight(
-                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
-                )
-            except Error as e:
-                print(str(e), file=sys.stderr)  # noqa: T201
-                return Exit.ERROR
-        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
-            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
-        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
-
     if config.watch and config.check:
         print(  # noqa: T201
             "Error: --watch and --check cannot be used together",
@@ -2740,15 +2749,41 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    lock_plan = _bound_remote_lock_plan or _remote_lock_plan(config, pyproject_path)
-    remote_lock_intent: set[Path] | None = None
-    if config.watch and watch_dependencies is not None and _bound_remote_lock_plan is None:
-        (lock_plan,), remote_lock_intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
+    if _selected_target(config) is not None:
+        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+            return refusal
+        lock = None
+        if _batch_targets is None:
+            try:
+                _validate_remote_lock_preflight(
+                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
+                )
+            except Error as e:
+                print(str(e), file=sys.stderr)  # noqa: T201
+                return Exit.ERROR
+        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
+            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
+        if not config.watch or watch_dependencies is None:
+            return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+        # A batch job never watches (watch is an outer setting), so this run owns its lock plan and its intent.
+        _, remote_lock_intent = _watch_remote_lock_setup(config, pyproject_path, watch_dependencies, None)
+        with watch_dependencies.generation() as generation:
+            result = _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+            generation.failed = result is not Exit.OK
+        if result is Exit.OK:
+            watch_dependencies._commit_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
+        else:
+            watch_dependencies._merge_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
+        if result is not Exit.OK or not start_watch:
+            return result
+        return _watch_and_regenerate(args, config, watch_dependencies)
+
+    lock_plan, remote_lock_intent = _watch_remote_lock_setup(
+        config, pyproject_path, watch_dependencies, _bound_remote_lock_plan
+    )
     active_lockfile = lock_plan.canonical_path if lock_plan.active else None
-    if config.watch and watch_dependencies is not None:
-        watch_dependencies.add_file(lock_plan.canonical_path)
-        if lock_plan.policy == "update":
-            watch_dependencies.exclude_file(lock_plan.canonical_path)
     remote_transaction_owner = False
     if _remote_locks is _UNRESOLVED_REMOTE_LOCKS:
         try:
@@ -2800,17 +2835,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             if result is not Exit.OK:
                 return finish_watch_remote_lock_intent(result)
             finish_watch_remote_lock_intent(result)
-            try:
-                from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-                return watch_and_regenerate(
-                    config,
-                    dependencies=watch_dependencies,
-                    regenerate=lambda: _main(args, start_watch=False, dependencies=watch_dependencies),
-                )
-            except Exception as e:  # noqa: BLE001
-                print(str(e), file=sys.stderr)  # noqa: T201
-                return Exit.ERROR
+            return _watch_and_regenerate(args, config, watch_dependencies)
         result = _run_single_remote_transaction(
             args,
             config,
@@ -3053,23 +3078,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 
     if config.watch and start_watch:
-        try:
-            from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-            return cleanup_and_return(
-                watch_and_regenerate(
-                    config,
-                    dependencies=watch_dependencies,
-                    regenerate=lambda: _main(
-                        args,
-                        start_watch=False,
-                        dependencies=watch_dependencies,
-                    ),
-                )
-            )
-        except Exception as e:  # noqa: BLE001
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return cleanup_and_return(Exit.ERROR)
+        return cleanup_and_return(_watch_and_regenerate(args, config, watch_dependencies))
 
     return cleanup_and_return(Exit.OK)
 
