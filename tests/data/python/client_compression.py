@@ -31,25 +31,25 @@ class _Harness:
         self.protocols = importlib.import_module(f"{package.__name__}.protocols")
         self.models = importlib.import_module(f"{package.__name__}_models")
 
-    def settings(self, *compression: object, **options: Any) -> Any:
-        options.setdefault("retry", self.options.RetryOptions(max_retries=1, initial_delay=0))
-        return self.options.ClientOptions(**dict(zip(("compression",), compression, strict=False)), **options)
+    def settings(self, **options: Any) -> dict[str, Any]:
+        """Return the client keywords of a scenario: one retry without delay unless the scenario says otherwise."""
+        return {"max_retries": 1, "retry": self.options.RetryOptions(initial_delay=0), **options}
 
     @contextmanager
-    def client(self, *compression: object, **options: Any) -> Iterator[Any]:
+    def client(self, **options: Any) -> Iterator[Any]:
         """Yield a client that borrows a native client of the exchange, closing both afterwards."""
         with (
             self.exchange.client() as native,
-            self.package.Client(http_client=native, options=self.settings(*compression, **options)) as api,
+            self.package.Client(http_client=native, **self.settings(**options)) as api,
         ):
             yield api
 
     @asynccontextmanager
-    async def async_client(self, *compression: object, **options: Any) -> AsyncIterator[Any]:
+    async def async_client(self, **options: Any) -> AsyncIterator[Any]:
         """Yield an async client that borrows a native client of the exchange, closing both afterwards."""
         async with (
             self.exchange.async_client() as native,
-            self.package.AsyncClient(http_client=native, options=self.settings(*compression, **options)) as api,
+            self.package.AsyncClient(http_client=native, **self.settings(**options)) as api,
         ):
             yield api
 
@@ -74,20 +74,6 @@ def _created() -> Any:
 
 def _stored() -> Any:
     return raw_response(204)
-
-
-def _values(harness: _Harness, lines: list[str]) -> None:
-    options = harness.options
-    for label, value in (
-        ("gzip", "gzip"),
-        ("upper", "GZIP"),
-        ("none", None),
-        ("brotli", "br"),
-        ("identity", "identity"),
-        ("not a token", "g zip"),
-        ("type", 5),
-    ):
-        record(lines, f"client {label}", lambda value=value: options.ClientOptions(compression=value).compression)
 
 
 def _inherited(harness: _Harness, lines: list[str]) -> None:
@@ -119,7 +105,7 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         record(lines, "stream once", lambda: api.items.put_blob(body=iter((b"one", b"shot"))))
         exchange.respond(_created())
         record(lines, "raw view", lambda: api.items.with_raw_response.create_item(body=harness.item()).info.status_code)
-        conflict = harness.call(headers=(("Content-Encoding", "br"),))
+        conflict = harness.call(extra_headers={"Content-Encoding": "br"})
         record(lines, "header conflict", lambda: api.items.put_blob(body=b"x", options=conflict))
         exchange.respond(_stored())
         record(lines, "header without coding", lambda: api.items.create_note(body=harness.item(), options=conflict))
@@ -132,11 +118,18 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         )
         exchange.respond(raw_response(307, Location="https://api.example.com/blobs?moved=1"), _stored())
         record(lines, "redirect keeps the body", lambda: api.items.put_blob(body=b"kept" * 50, options=moved))
-    with harness.client(headers=(("Content-Encoding", "br"),)) as api:
+    with harness.client(default_headers={"Content-Encoding": "br"}) as api:
         record(lines, "client header conflict", lambda: api.items.create_item(body=harness.item()))
-    with harness.client(None) as api:
-        exchange.respond(_stored())
+    with harness.client(compression=None) as api:
+        exchange.respond(_stored(), _stored(), _stored())
         record(lines, "client disabled", lambda: api.items.put_blob(body=b"disabled"))
+        view = api.with_options(max_retries=0)
+        record(lines, "view of a disabled client", lambda: view.items.put_blob(body=b"view disabled"))
+        record(
+            lines,
+            "call of a disabled view",
+            lambda: view.items.put_blob(body=b"call disabled", options=harness.call(max_retries=1)),
+        )
 
 
 class _HeaderSigner(httpx2.Auth):
@@ -155,7 +148,7 @@ def _signed(harness: _Harness, lines: list[str]) -> None:
         lines.append(f"    signed framing correct {lengths == [str(len(request.content))]}")
         return httpx2.Response(204)
 
-    with harness.client("gzip", auth=_HeaderSigner()) as api:
+    with harness.client(auth=_HeaderSigner()) as api:
         exchange.respond(digested)
         record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", content_length=harness.length(6)))
         file = io.BytesIO(b"file")
@@ -182,7 +175,7 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
         return httpx2.Response(204)
 
     length = harness.length(6)
-    with harness.client("gzip") as api:
+    with harness.client() as api:
         exchange.respond(sized, chunked)
         record(lines, "typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length))
         record(
@@ -192,7 +185,7 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
         )
 
     async def asynchronous() -> None:
-        async with harness.async_client("gzip") as api:
+        async with harness.async_client() as api:
             exchange.respond(sized, chunked)
             await arecord(
                 lines, "async typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length)
@@ -255,7 +248,7 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(raw_response(200, b'data: {"text":"a"}\n\n', "text/event-stream"))
         with api.protocols.events.watch.open(body=harness.query()) as stream:
             lines.append(f"  events {[event.data for event in stream]}")
-    with harness.client(None) as api:
+    with harness.client(compression=None) as api:
         exchange.respond(*_results((["a"], None)))
         record(lines, "disabled helper body", lambda: api.protocols.items.search_all.page(body=harness.query()).items)
 
@@ -320,10 +313,10 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
             lines,
             "async helper header conflict",
             lambda: api.protocols.jobs.run.start(
-                body=harness.query(), options=harness.call(headers=(("Content-Encoding", "br"),))
+                body=harness.query(), options=harness.call(extra_headers={"Content-Encoding": "br"})
             ),
         )
-    async with harness.async_client(None) as api:
+    async with harness.async_client(compression=None) as api:
         exchange.respond(_stored())
         await arecord(lines, "async disabled", lambda: api.items.put_blob(body=b"disabled"))
     event = raw_response(200, b'id: c1\ndata: {"text":"a"}\n\n', "text/event-stream")
@@ -349,28 +342,33 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
 
 
 def _native(harness: _Harness, lines: list[str]) -> None:
-    """Observe default gzip and client disable over the SDK's native sync and async transports."""
-    options = harness.options
+    """Observe default gzip and client disable over real sync and async TLS connections."""
     for mode in ("sync", "async"):
         for label, selection in (("default", {}), ("disabled", {"compression": None})):
             server = NativeFixture()
             server.status, server.body = 204, b""
-            settings = options.ClientOptions(
-                base_url=server.url,
-                transport=options.TransportOptions(ssl_context=server.verify),
-                retry=options.RetryOptions(max_retries=0),
-                **selection,
-            )
+            settings = {"base_url": server.url, "max_retries": 0, **selection}
             try:
                 if mode == "sync":
-                    with harness.package.Client(options=settings) as api:
+                    with (
+                        httpx2.Client(verify=server.verify, trust_env=False) as native,
+                        harness.package.Client(http_client=native, **settings) as api,
+                    ):
                         record(
                             lines, f"native {mode} {label}", lambda: api.items.put_blob(body=b"native declared body")
                         )
                 else:
 
-                    async def send(settings: Any = settings, label: str = label, mode: str = mode) -> None:
-                        async with harness.package.AsyncClient(options=settings) as api:
+                    async def send(
+                        settings: dict[str, Any] = settings,
+                        label: str = label,
+                        mode: str = mode,
+                        server: NativeFixture = server,
+                    ) -> None:
+                        async with (
+                            httpx2.AsyncClient(verify=server.verify, trust_env=False) as native,
+                            harness.package.AsyncClient(http_client=native, **settings) as api,
+                        ):
                             await arecord(
                                 lines,
                                 f"native {mode} {label}",
@@ -396,7 +394,7 @@ def compression(package: ModuleType, lines: list[str]) -> None:
     """Report declared gzip and client disable on ordinary calls, helpers, retries, and native transports."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _signed, _framing, _helpers, _stream_resume, _native):
+    for step in (_inherited, _signed, _framing, _helpers, _stream_resume, _native):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

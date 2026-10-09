@@ -225,13 +225,16 @@ class UnionDiscriminator:
 class UnionType:
     """Retain the final engine's ordered member types and ordering policy, and the discriminator its schema declares.
 
-    The discriminator is metadata of this occurrence, so it takes no part in comparing types.
+    The discriminator is metadata of this occurrence, so it takes no part in comparing types. `tag` is the property
+    the model's own annotation discriminates the members by, as Pydantic's `Field(discriminator=...)` does; such a
+    union validates differently, so it is a type of its own and is never merged into an enclosing union.
     """
 
     members: tuple[TypeView, ...]
     preserve_order: bool
     discriminator: UnionDiscriminator | None = dataclasses.field(default=None, compare=False)
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
+    tag: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,31 +256,19 @@ class LiteralType:
 
 @dataclass(frozen=True, slots=True)
 class ConstructorType:
-    """Preserve a constrained type constructor and its actual ordered arguments."""
+    """Preserve a constrained scalar: its constructor or metadata class, its actual ordered arguments, and its base.
+
+    `base` is the scalar type the constraints apply to, as the model generator reads it for a constrained scalar:
+    `int` for `conint`, `str` for `constr` and for a string annotated with `StringConstraints`.
+    """
 
     callable: ImportedType
     keywords: tuple[tuple[str, TypeArgument], ...]
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
+    base: BuiltinType | ImportedType | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class MetadataCall:
-    """Keep a type metadata constructor without invoking it or normalizing its values."""
-
-    import_: Import
-    keywords: tuple[tuple[str, TypeArgument], ...]
-
-
-@dataclass(frozen=True, slots=True)
-class AnnotatedType:
-    """Retain metadata layer placement around an already projected Python type."""
-
-    base: TypeView
-    metadata: tuple[MetadataCall, ...]
-    hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
-
-
-UnannotatedPythonType: TypeAlias = (
+TypeView: TypeAlias = (
     GeneratedSymbolType
     | BuiltinType
     | NoneType
@@ -288,8 +279,6 @@ UnannotatedPythonType: TypeAlias = (
     | LiteralType
     | ConstructorType
 )
-
-TypeView: TypeAlias = UnannotatedPythonType | AnnotatedType
 
 
 TypeProjectionReason: TypeAlias = Literal[
@@ -679,12 +668,3 @@ class ModelArtifact:
     path: tuple[str, ...]
     content: bytes
     encoding: str = "utf-8"
-
-
-class UnsupportedBindingValueError(Exception):
-    """Report a finite unsupported literal without executing or coercing it."""
-
-    def __init__(self, reason: TypeProjectionReason) -> None:
-        """Keep the same diagnostic identity through projection and emitted facts."""
-        self.reason: TypeProjectionReason = reason
-        super().__init__(reason)

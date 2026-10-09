@@ -168,7 +168,7 @@ def render_model_codecs() -> str:
     return '''"""JSON values and omitted arguments used by the generated client."""
 
 from ._runtime.model_codecs.media import JSONValue
-from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.model_codecs.unset import UNSET
 
-__all__ = ["JSONValue", "UNSET", "Unset"]
+__all__ = ["JSONValue", "UNSET"]
 '''

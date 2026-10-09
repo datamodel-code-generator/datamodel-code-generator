@@ -24,4 +24,7 @@ OperationDependencies = TypedDict(
 class GetKeys:
     """Plans of the get_keys operation."""
 
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )

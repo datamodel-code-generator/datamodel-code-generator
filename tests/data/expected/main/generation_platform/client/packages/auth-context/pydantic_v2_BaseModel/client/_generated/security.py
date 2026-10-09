@@ -15,7 +15,7 @@ from .._runtime.client.security import (
 )
 
 _SCHEME_0: Final = SecurityScheme(
-    name='auth',
+    name='apiToken',
     kind='api_key',
     location='query',
     wire_name='access_token',

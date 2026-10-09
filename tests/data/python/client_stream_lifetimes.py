@@ -236,8 +236,8 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
 
     def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
-        retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
-        return outcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
+        call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
+        return outcome(lambda: api.pets.get_pet(pet_id=pet, options=call))
 
     def read_timeout() -> str:
         gate = threading.Event()
@@ -248,23 +248,17 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
         finally:
             gate.set()
 
-    def limit() -> str:
-        exchange.respond(_body())
-        with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as response:
-            return outcome(lambda: list(response.iter_bytes()))
-
     return {
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
         "read timeout": read_timeout,
-        "stream limit": limit,
     }
 
 
 def _read_timeout(options: ModuleType) -> object:
     """Return options whose native read timeout ends a stalled body."""
-    return options.RequestOptions(timeout=options.TimeoutOptions(read=0.5))
+    return options.RequestOptions(timeout=httpx2.Timeout(5.0, read=0.5))
 
 
 def _borrowed(package: ModuleType, lines: list[str]) -> None:
@@ -298,7 +292,6 @@ def _owned(package: ModuleType, lines: list[str]) -> None:
 
 
 def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
-    options = _modules(package)[0]
     exchange = Exchange([])
     http = exchange.client(1)
     target = directory / "full.bin"
@@ -341,9 +334,6 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
         with streaming.request_raw("GET", _URL) as response:
             failed = outcome(lambda: response.stream_to(_Sink()))
             lines.append(f"  sync file object write {failed} then {api.request_raw('GET', _URL).read()!r}")
-        exchange.respond(_body())
-        with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as response:
-            lines.append(f"  sync limit to path {outcome(lambda: response.stream_to(target))} {_files(directory)}")
     http.close()
 
 
@@ -380,8 +370,8 @@ def _async_cases(
 
     async def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
-        retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
-        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
+        call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
+        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet, options=call))
 
     async def cancelled() -> str:
         gate, started = threading.Event(), asyncio.Event()
@@ -414,18 +404,12 @@ def _async_cases(
         finally:
             gate.set()
 
-    async def limit() -> str:
-        exchange.respond(_body())
-        async with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as raw:
-            return await aoutcome(lambda: _drained(raw.iter_bytes()))
-
     return {
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
         "cancelled": cancelled,
         "read timeout": read_timeout,
-        "stream limit": limit,
     }
 
 
@@ -476,7 +460,6 @@ async def _async_owned(package: ModuleType, lines: list[str]) -> None:
 
 async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
     """Download whole bodies on the handle's disk thread, then show the thread gone."""
-    options = _modules(package)[0]
     exchange = Exchange([])
     http = exchange.async_client(1)
     async with package.AsyncClient(http_client=http) as api:
@@ -501,14 +484,6 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         lines.append(
             f"  async download identity {identity.read_bytes() == _DATA} gzip {coded.read_bytes() == _DATA} again {again}"
         )
-        exchange.respond(_gzipped())
-        limit = options.RequestOptions(max_stream_bytes=len(_DATA) // 2)
-        async with streaming.request_raw("GET", _URL, options=limit) as response:
-            try:
-                await response.stream_to(directory / "limited.bin")
-            except Exception as error:  # noqa: BLE001
-                limited = f"{type(error).__name__} {error.reason} {error.limit}"
-        lines.append(f"  async download gzip past its decoded limit {limited} {_files(directory)}")
         exchange.respond(raw_response(200))
         async with streaming.request_raw("GET", _URL) as response:
             await response.stream_to(directory / "empty.bin")
@@ -627,8 +602,7 @@ async def _late_download(
 ) -> None:
     """Refuse a download to a path whose stream's total time passed on the client's clock, before any disk work."""
     options, now = _modules(package)[0], [0.0]
-    settings = options.ClientOptions(clock=options.Clock(monotonic=lambda: now[0]))
-    async with package.AsyncClient(http_client=http, options=settings) as api:
+    async with package.AsyncClient(http_client=http, clock=options.Clock(monotonic=lambda: now[0])) as api:
         exchange.respond(_body())
         limit = options.RequestOptions(total_timeout=5)
         async with api.with_streaming_response.request_raw("GET", _URL, options=limit) as response:

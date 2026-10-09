@@ -30,7 +30,10 @@ class WiringService(Protocol[PrincipalT_contra]):
         router_authorize: str | None,
         api_key: str | None,
         parameters: str | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /router.
+        """
 
 
 class RouterService(Protocol):
@@ -45,7 +48,10 @@ class RouterService(Protocol):
         dispatch: str | None,
         checked: str | None,
         wiring_handler: str | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /wiring.
+        """
 
 
 class SecurityService(Protocol[PrincipalT_contra]):
@@ -58,4 +64,7 @@ class SecurityService(Protocol[PrincipalT_contra]):
         principal: PrincipalT_contra,
         security: str | None,
         authenticate_handler: str | None,
-    ) -> None | HTTPResult[None] | Response: ...
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /security.
+        """

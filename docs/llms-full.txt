@@ -11262,7 +11262,10 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 <!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
-`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. A method's
+docstring names its route, such as `Handle GET /pets/{petId}.`, or, with `--use-schema-description`, the
+operation's summary and description, formatted as model docstrings are, on one line with
+`--use-single-line-docstring`. An optional
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
 The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
 its schema as `anyOf` of the type and `null`.
@@ -11708,8 +11711,10 @@ bodies that adapters read answer with the same three keys.
 ## Templates
 
 The server templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
-as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name,
-`application.jinja2`, `router.jinja2`, `services.jinja2`, and `readme.jinja2`. A role the directory does not hold,
+as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name:
+`facade.jinja2` (the package initializers), `application.jinja2`, `router.jinja2` (the routes module or each router
+module), `services.jinja2`, `contract.jinja2` (`_generated/contract.py`), `security.jinja2`, `openapi.jinja2`
+(`_generated/openapi.py`), and `readme.jinja2`. A role the directory does not hold,
 or a custom template directory without a `fastapi` directory, keeps its builtin template. The builtin templates are
 in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
 or import the other builtin templates.
@@ -11748,9 +11753,14 @@ datamodel-codegen \
 
 The values a role receives can change while server generation is experimental, and a value that an older copy of a
 builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. `router.jinja2` receives one `route` for
-each operation: `adder`, `router`, `wiring`, `service`, `protocol`, `group`, `handler`, `lookup`, `principal`,
-`signature`, `body`, and `registration`.
+compare an override with the current builtin template after an upgrade. The templates write every module, class,
+function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+`router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
+`service`, `handler`), its `lookup` of the service method, its `principal` dependency or none, its `endpoint` with
+the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and
+its `registration`, whose `keywords` hold the optional `add_api_route` arguments. A builtin template writes each
+parameter, argument, and route entry on its own line, and leaves the type annotations and plan values on one line for
+the formatter.
 
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
@@ -44242,18 +44252,20 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44261,7 +44273,10 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44378,18 +44393,20 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             request: Request,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44397,7 +44414,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44515,18 +44535,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44534,7 +44556,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44650,18 +44675,20 @@ methods. `--server-handler-modes` overrides it for single operations.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         async def replace_pet(
@@ -44669,7 +44696,10 @@ methods. `--server-handler-modes` overrides it for single operations.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44789,18 +44819,20 @@ table.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44808,7 +44840,10 @@ table.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44926,11 +44961,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
@@ -44938,7 +44972,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44947,7 +44984,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             request: Request,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45065,8 +45105,16 @@ Choose how the server package lays out its routes (experimental).
             'The service.list_pets method of GET /pets',
         )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45094,7 +45142,12 @@ Choose how the server package lays out its routes (experimental).
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45107,7 +45160,6 @@ Choose how the server package lays out its routes (experimental).
             operation_id='createPet',
             tags=['pets'],
             response_description='Already there.',
-            responses={'201': {'model': models.Pet, 'description': 'Created.'}},
             dependencies=wiring.dependencies.get('create_pet'),
         )
 
@@ -45125,7 +45177,10 @@ Choose how the server package lays out its routes (experimental).
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -45139,7 +45194,6 @@ Choose how the server package lays out its routes (experimental).
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
             dependencies=wiring.dependencies.get('replace_pet'),
         )
 
@@ -45148,7 +45202,9 @@ Choose how the server package lays out its routes (experimental).
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
@@ -45281,18 +45337,20 @@ generates.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45300,7 +45358,10 @@ generates.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45417,18 +45478,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45436,7 +45499,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45553,18 +45619,20 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45572,7 +45640,10 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45688,18 +45759,20 @@ generation prints name the package by it; the package imports its own modules re
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45707,7 +45780,10 @@ generation prints name the package by it; the package imports its own modules re
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45824,18 +45900,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             page_size: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45843,7 +45921,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45963,8 +46044,16 @@ without a file against the working directory, and against the pyproject.toml dir
             'The pets.list_pets method of GET /pets',
         )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45992,7 +46081,12 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -46005,7 +46099,6 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='createPet',
             tags=['pets'],
             response_description='Created.',
-            responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
             dependencies=wiring.dependencies.get('create_pet'),
         )
 
@@ -46023,7 +46116,10 @@ without a file against the working directory, and against the pyproject.toml dir
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -46037,7 +46133,6 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
             dependencies=wiring.dependencies.get('replace_pet'),
         )
 
@@ -46046,7 +46141,9 @@ without a file against the working directory, and against the pyproject.toml dir
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
@@ -46179,18 +46276,20 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -46198,7 +46297,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -48073,6 +48175,7 @@ This page lists deprecations and scheduled breaking changes.
 | `python-api.python-version-has-type-alias` | active | python-api | `PythonVersion.has_type_alias` | 0.52.1 | TBD | - |
 | `schema.jsonschema-items-array` | active | schema | `JSON Schema Draft 2020-12 items array tuple validation` | 0.53.0 | TBD | Use prefixItems. |
 | `schema.openapi-nullable` | active | schema | `OpenAPI 3.1 nullable keyword` | 0.53.0 | TBD | Use type arrays such as type: ["string", "null"]. |
+| `dependency.python-310-runtime` | active | dependency | `Running datamodel-code-generator on Python 3.10` | 0.84.0 | 0.85.0 | Run datamodel-code-generator on Python 3.11 or newer. |
 
 ## Details
 
@@ -48281,6 +48384,20 @@ items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems 
 
 nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] instead.
 
+### `dependency.python-310-runtime`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Running datamodel-code-generator on Python 3.10`
+- **Since:** 0.84.0
+- **Planned removal:** 0.85.0
+- **Warning category:** `FutureWarning`
+- **Replacement:** Run datamodel-code-generator on Python 3.11 or newer.
+
+Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.
+
+Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.
+
 ---
 
 # Dependency migration notices
@@ -48329,9 +48446,11 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
+| Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
 Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the new notices are recorded for the planned 0.78.0 release. The registry contains the
+original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
+and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
 [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
@@ -48417,6 +48536,13 @@ Future work should distinguish a minimum **producer** test running DCG from **co
 saved output in another Pydantic environment. First preserve alias, metadata, regex, recursive RootModel,
 discriminator/Union, additional-properties and payload behavior; then identify which internal-only branches can
 actually be removed. Changing target-version semantics would require a separate, explicit decision.
+
+## Running on Python 3.10
+
+Running datamodel-code-generator on Python 3.10 is deprecated in 0.84.0 and will be removed in 0.85.0, because
+Python 3.10 reached end of life in October 2026. Generation on Python 3.10 emits a `FutureWarning`; run DCG on
+Python 3.11 or newer to prepare. This concerns only the interpreter running DCG: generating code for Python 3.10
+with `--target-python-version 3.10` is unchanged.
 
 ## Follow-up changes remain separate
 

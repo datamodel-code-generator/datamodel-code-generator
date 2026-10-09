@@ -25,7 +25,7 @@ from ..model_codecs.media import (
     typed,
 )
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import invalid, malformed_request, media_invalid, missing, model_records, unsupported_media
 
 if TYPE_CHECKING:
@@ -127,7 +127,7 @@ class ParameterAdapter:
                 wire = decode_parameter(plan, view)
             except MalformedError as error:
                 raise malformed_request() from error
-            if isinstance(wire, Unset):
+            if wire is UNSET:
                 if plan.required:
                     records.append(missing(location))
                 else:

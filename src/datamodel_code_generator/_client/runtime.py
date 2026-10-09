@@ -47,9 +47,7 @@ _CORE: Final = (
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
-    "protocols/client_options.py",
     "protocols/caches.py",
-    "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
 )
@@ -114,7 +112,7 @@ class Capabilities:
 
     @property
     def protocols(self) -> bool:
-        """Whether a helper that `ProtocolClientOptions` configures is declared."""
+        """Whether a helper that the client's helper settings configure is declared."""
         return bool(self.helpers - {"webhooks", "compression"})
 
     def modules(self) -> tuple[str, ...]:

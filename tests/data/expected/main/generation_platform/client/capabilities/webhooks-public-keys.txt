@@ -10,43 +10,44 @@ copied runtime
   client/__init__.py: 4
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2119
+  client/client.py: 2015
   client/codecs.py: 95
-  client/errors.py: 361
-  client/logical.py: 190
+  client/errors.py: 350
+  client/logical.py: 189
   client/media.py: 77
   client/multipart.py: 546
-  client/native.py: 175
+  client/native.py: 146
   client/operations.py: 835
-  client/options.py: 532
+  client/options.py: 300
   client/paths.py: 40
-  client/raw.py: 876
+  client/raw.py: 836
   client/responses.py: 87
   client/retry.py: 338
   client/security.py: 135
-  client/timing.py: 121
+  client/timing.py: 132
   client/urls.py: 80
   model_codecs/__init__.py: 2
-  model_codecs/errors.py: 18
-  model_codecs/media.py: 280
+  model_codecs/errors.py: 55
+  model_codecs/media.py: 402
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 596
-  model_codecs/unset.py: 26
+  model_codecs/parameters.py: 670
+  model_codecs/unset.py: 11
+  model_codecs/wire.py: 144
   protocols/__init__.py: 4
   protocols/caches.py: 139
   protocols/errors.py: 163
-  protocols/options.py: 339
+  protocols/options.py: 342
   protocols/origins.py: 45
   protocols/public_keys.py: 142
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/signatures.py: 99
-  protocols/values.py: 158
+  protocols/values.py: 154
   protocols/verification.py: 203
-  protocols/webhook_events.py: 280
+  protocols/webhook_events.py: 287
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-total 40 modules, 10076 lines
+total 41 modules, 10038 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

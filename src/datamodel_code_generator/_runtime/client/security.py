@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
     from .urls import Origin
 
+    Send: TypeAlias = Callable[[httpx2.Request], httpx2.Response]
+    AsyncSend: TypeAlias = Callable[[httpx2.Request], Awaitable[httpx2.Response]]
+
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
@@ -53,8 +56,6 @@ class SecurityBinding:
 
 
 Placement: TypeAlias = tuple[SecurityScheme, object]
-Send: TypeAlias = "Callable[[httpx2.Request], httpx2.Response]"
-AsyncSend: TypeAlias = "Callable[[httpx2.Request], Awaitable[httpx2.Response]]"
 
 
 class Credentials:

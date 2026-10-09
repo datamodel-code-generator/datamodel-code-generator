@@ -28,7 +28,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
     """Restart pages using server values in a fresh session without capturing operation arguments."""
     harness = Harness(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _cursors(harness, api, exchange, lines)
         _counts(api, exchange, lines)
         _urls(harness, api, exchange, lines)
@@ -178,7 +178,9 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     drained(lines, "literal binding on resumed first page", api.protocols.users.limited.resume("a", limit=9))
     since = harness.argument("listUsers", "query", "since", "2026-01-02")
     exchange.respond(user_page("5", next_cursor="b", since="2026-01-03"), user_page("6"))
-    drained(lines, "typed binding target keeps the caller's argument", api.protocols.users.since.resume("a", since=since))
+    drained(
+        lines, "typed binding target keeps the caller's argument", api.protocols.users.since.resume("a", since=since)
+    )
 
 
 def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

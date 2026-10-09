@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pets import AsyncClient, Client
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncUploadHandle,
     UploadHandle,
@@ -25,9 +25,8 @@ def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, 
     handle = client.protocols.files.upload.start(
         source,
         tus_resumable=version,
-        upload_options=UploadOptions(chunk_bytes=4),
+        upload_options=UploadOptions(chunk_bytes=4, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(handle, UploadHandle[None])
     progress = handle.advance()

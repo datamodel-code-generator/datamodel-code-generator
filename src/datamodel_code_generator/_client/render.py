@@ -16,7 +16,7 @@ from datamodel_code_generator._client._compiled_templates import resource as res
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.codec_render import render_model_bindings, render_model_codecs
-from datamodel_code_generator._client.naming import helper_classes, pascal
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, VIEW_KEYWORDS, helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
@@ -99,40 +99,7 @@ def __getattr__(name: str) -> object:
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
-_OPTION_NAMES: Final = (
-    "ClientOptions",
-    "Clock",
-    "HeaderPatch",
-    "IdempotencyKey",
-    "QueryPatch",
-    "RequestOptions",
-    "RetryOptions",
-    "ServerSelection",
-    "TimeoutOptions",
-    "TransportOptions",
-)
-_PROTOCOL_OPTIONS: Final = """
-
-if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
-"""
-_PROTOCOL_OPTIONS_LOADER: Final = '''
-
-def __getattr__(name: str) -> object:
-    """Load the protocol helper settings only when their class is requested."""
-    if name == "ProtocolClientOptions":
-        from ._runtime.protocols.options import ProtocolClientOptions
-
-        globals()[name] = ProtocolClientOptions
-        return ProtocolClientOptions
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-
-
-def __dir__() -> list[str]:
-    """List the module's names, including those loaded on first use."""
-    return sorted({*globals(), *__all__})
-'''
+_OPTION_NAMES: Final = ("Clock", "RequestOptions", "RetryOptions", "ServerSelection")
 
 
 def _paragraph(*sentences: str) -> str:
@@ -140,24 +107,17 @@ def _paragraph(*sentences: str) -> str:
     return fill(" ".join(sentences), 120)
 
 
-def _options(capabilities: Capabilities) -> str:
-    """Return the options module: the client and call settings, and the helper settings a helper declares."""
-    protocols = capabilities.protocols
-    names = (*_OPTION_NAMES, *(("SessionOptions",) if protocols else ()))
-    exported = sorted((*names, "UNSET", "Unset", *(("ProtocolClientOptions",) if protocols else ())))
+def _options() -> str:
+    """Return the options module: the settings of a client, of its views, of each call, and of retries."""
     return "".join((
-        '"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""\n\n',
+        '"""Settings of each call and of retries: None inherits, and UNSET marks a field whose None removes."""\n\n',
         "from __future__ import annotations\n\n",
-        "from typing import TYPE_CHECKING\n\n" if protocols else "",
         "from ._runtime.client.options import (\n",
-        *(f"    {name},\n" for name in sorted(names) if not protocols or name != "ClientOptions"),
-        ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
-        "from ._runtime.protocols.client_options import ClientOptions\n" if protocols else "",
-        _PROTOCOL_OPTIONS if protocols else "",
+        *(f"    {name},\n" for name in sorted(_OPTION_NAMES)),
+        ")\nfrom ._runtime.model_codecs.unset import UNSET\n",
         "\n__all__ = [\n",
-        *(f'    "{name}",\n' for name in exported),
+        *(f'    "{name}",\n' for name in sorted((*_OPTION_NAMES, "UNSET"))),
         "]\n",
-        _PROTOCOL_OPTIONS_LOADER if protocols else "",
     ))
 
 
@@ -175,11 +135,11 @@ _CREDENTIALS: Final = (
     "sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none. "
     "A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` "
     "before sending, unless the HTTP client has an Auth of its own. A callable's failure raises `AuthError` with the "
-    "reason `provider_failed`. Credentials beside an Auth of the client's options or of an injected HTTP client raise "
+    "reason `provider_failed`. Credentials beside the client's `auth` or an Auth of an injected HTTP client raise "
     "`ConfigurationError` with the reason `conflicting_auth`."
 )
 _NATIVE_AUTH: Final = (
-    "`auth` on `ClientOptions`, a view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the "
+    "`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the "
     "credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP "
     "client's own Auth. Sign requests with an `httpx2.Auth` of your own, which reads the body natively. Credential "
     "values do not appear in repr; a query credential is part of the request URL, which the `httpx2` "
@@ -310,7 +270,6 @@ __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "Respon
 '''
 _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
     "protocols": {
-        "options": ("ProtocolDefaults", "ProtocolSecurityContext"),
         "origins": ("Origin",),
         "records": (
             "BodySelector",
@@ -896,7 +855,7 @@ class _Typing:
         return _union(module, (_Typing.spell(module, value) for value in key.values))
 
     def argument(self, module: TargetModule, parameter: ParameterSpec) -> str:
-        """Return the type of one parameter's keyword argument, with Unset when it is optional without a default.
+        """Return the type of one parameter's keyword argument, with UNSET when it is optional without a default.
 
         A model type is spelled as the type its argument takes, through its aliases and root models.
         """
@@ -909,7 +868,7 @@ class _Typing:
         )
         if parameter.required or parameter.default is not None:
             return surface
-        return module.union(surface, module.local("options", "Unset"))
+        return module.union(surface, module.local("options", "UNSET"))
 
     def surface(self, module: TargetModule, kind: str, use: TypeUseBinding | None) -> str:
         """Return the payload type of one media or parameter: its model type, or schema-less surface."""
@@ -1007,18 +966,100 @@ class _Resources(_Typing):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
-    def _create(self, module: TargetModule, core: str) -> str:
-        """Return the root's core creation, passing the credential arguments by scheme name when there are any."""
-        if not (credentials := self.plan.credentials):
-            return f"{core}.create(_DEFAULTS, options=options, http_client=http_client)"
-        schemes = Group("{", tuple((f"{json.dumps(item.scheme.name)}: ", item.name) for item in credentials), "}")
-        entries = (
+    def _create(self, module: TargetModule, core: str, keywords: list[dict[str, str]]) -> str:
+        """Return the root's core creation with its settings keywords, and its credential arguments by scheme name.
+
+        The helper keywords are given to the core as the root's `HelperSettings`.
+        """
+        entries: list[tuple[str, Doc]] = [
             ("", "_DEFAULTS"),
-            ("options=", "options"),
-            ("http_client=", "http_client"),
-            ("credentials=", _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))),
-        )
+            *((f"{item['name']}=", item["name"]) for item in keywords if item["name"] not in _HELPER_SETTINGS),
+        ]
+        if helpers := [
+            (f"{_HELPER_SETTINGS[item['name']]}=", item["name"])
+            for item in keywords
+            if item["name"] in _HELPER_SETTINGS
+        ]:
+            entries.append(("protocols=", _call("HelperSettings", helpers)))
+        if credentials := self.plan.credentials:
+            schemes = Group("{", tuple((f"{json.dumps(item.scheme.name)}: ", item.name) for item in credentials), "}")
+            credentials_call = _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))
+            entries.append(("credentials=", credentials_call))
         return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
+
+    @cached_property
+    def _follows(self) -> bool:
+        """Whether a pagination helper follows the URLs a server gives: a next-URL or Link continuation."""
+        return any(
+            spec.continuation["kind"] in {"next_url", "link"}
+            for spec in self.helpers
+            if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)
+        )
+
+    def _settings(self, *, asynchronous: bool) -> tuple[tuple[str, str], ...]:
+        """Return the helper settings record and the types the helper keywords name, with the modules they come from.
+
+        The record comes first; the client module imports it where the root creates its core, and the types only for
+        type checking.
+        """
+        options = "._runtime.protocols.options"
+        names = [("HelperSettings", options), ("HelperOptions", options)]
+        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+            names.append((f"{'Async' if asynchronous else ''}CacheStore", "._runtime.protocols.caches"))
+        if self._follows:
+            names.append(("Origin", "._runtime.protocols.origins"))
+        return tuple(names)
+
+    def _keywords(
+        self, module: TargetModule, *, asynchronous: bool, protocols: bool
+    ) -> tuple[list[dict[str, str]], ...]:
+        """Return the settings keywords of a root's constructor and of `with_options`: name, annotation, default.
+
+        A root takes `compression` only when an operation declares gzip, `helper_defaults` only beside declared
+        helpers, `cache_stores` only beside a cache helper, and `allowed_origins` only beside a helper following a
+        server's URLs.
+        """
+        unset = module.local("_runtime.model_codecs.unset", "UNSET")
+        native = module.module("httpx2")
+        pairs = f"{module.name('collections.abc', 'Mapping')}[str, str | None] | None"
+        given = {
+            "base_url": ("str | None", "None"),
+            "server": (f"{module.local('options', 'ServerSelection')} | None", "None"),
+            "timeout": (f"float | {native}.Timeout | {unset} | None", unset),
+            "total_timeout": (f"float | {unset} | None", unset),
+            "max_retries": ("int | None", "None"),
+            "retry": (f"{module.local('options', 'RetryOptions')} | None", "None"),
+            "default_headers": (pairs, "None"),
+            "default_query": (pairs, "None"),
+            "follow_redirects": ("bool | None", "None"),
+            "auth": (f"{native}.Auth | {unset} | None", unset),
+        }
+        view = [{"name": name, "annotation": given[name][0], "default": given[name][1]} for name in VIEW_KEYWORDS]
+        root = {
+            **given,
+            "total_timeout": ("float | None", "None"),
+            "max_retries": ("int", "2"),
+            "clock": (f"{module.local('options', 'Clock')} | None", "None"),
+            "http_client": (f"{native}.{'Async' if asynchronous else ''}Client | None", "None"),
+        }
+        if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
+            root["compression"] = (f'{module.name("typing", "Literal")}["gzip"] | None', '"gzip"')
+        if protocols:
+            root["helper_defaults"] = (
+                f"{module.name('collections.abc', 'Mapping')}[str, HelperOptions] | None",
+                "None",
+            )
+        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+            store = f"{'Async' if asynchronous else ''}CacheStore"
+            root["cache_stores"] = (f"{module.name('collections.abc', 'Mapping')}[str, {store}] | None", "None")
+        if self._follows:
+            root["allowed_origins"] = (f"{module.name('collections.abc', 'Sequence')}[Origin] | None", "None")
+        client = [
+            {"name": name, "annotation": root[name][0], "default": root[name][1]}
+            for name in CLIENT_KEYWORDS
+            if name in root
+        ]
+        return client, view
 
     @staticmethod
     def _credential_annotation(module: TargetModule, kind: str) -> str:
@@ -1032,9 +1073,12 @@ class _Resources(_Typing):
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
         prefix = "Async" if asynchronous else ""
-        mode = _mode(asynchronous=asynchronous)
         roots = [
-            (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
+            (
+                resource,
+                f"{prefix}{resource.pascal}Resource",
+                f".resources.{resource.namespace}._{_mode(asynchronous=asynchronous)}",
+            )
             for resource in self.plan.roots
         ]
         names = {
@@ -1044,23 +1088,32 @@ class _Resources(_Typing):
             f"{prefix}ProtocolHelpers",
             "_DEFAULTS",
         }
+        protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
+        settings = self._settings(asynchronous=asynchronous) if protocols is not None else ()
+        names.update(name for name, _ in settings)
         module = TargetModule(self.types, {*names, *(name for _, name, _ in roots)}, level=1)
         lazy = [(name, path) for _, name, path in roots]
-        protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
-            lazy.append((protocols, helpers_module))
+            lazy.extend(((protocols, helpers_module), *settings[1:]))
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
+        client_keywords, view_keywords = self._keywords(module, asynchronous=asynchronous, protocols=bool(protocols))
         values = {
             "credentials": [
                 {"name": item.name, "annotation": self._credential_annotation(module, item.scheme.kind)}
                 for item in self.plan.credentials
             ],
-            "create": self._create(module, core),
+            "create": self._create(module, core, client_keywords),
+            "client_keywords": client_keywords,
+            "view_keywords": view_keywords,
+            "view": layout(
+                _call("self._core.view", ((f"{item['name']}=", item["name"]) for item in view_keywords)),
+                8,
+                len("core = "),
+                WIDTH,
+            ),
             "defaults": self.defaults(module),
-            "options": module.local("_runtime.client.options" if protocols else "options", "ClientOptions"),
-            "http_client": f"{module.module('httpx2')}.{prefix}Client",
-            "unset": module.local("_runtime.model_codecs.unset", "Unset"),
+            "unset": module.local("_runtime.model_codecs.unset", "UNSET"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
             "core": core,
             "request_options": module.local("options", "RequestOptions"),
@@ -1092,6 +1145,7 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
+            helper_settings=settings[0][1] if settings else None,
             **values,
         )
 
@@ -1165,13 +1219,13 @@ class _Resources(_Typing):
         if (body := spec.body) is None:
             return [_Variant(())], ()
         literal = module.name("typing", "Literal")
-        unset = "" if body.required else module.local("options", "Unset")
+        unset = "" if body.required else module.local("options", "UNSET")
         groups: dict[str, list[str]] = {}
         for media in body.media:
             groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(media.media_type)
         if not groups:
             nothing = (
-                _Argument("body", module.local("options", "Unset"), "unset"),
+                _Argument("body", module.local("options", "UNSET"), "unset"),
                 _Argument("media_type", "None", "none"),
             )
             return [_Variant(nothing)], nothing
@@ -1219,7 +1273,7 @@ class _Resources(_Typing):
         """
         body = spec.body
         assert body is not None
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         omitted = tuple(_Argument(name, unset, "unset") for name in spec.field_names)
         variants = [
             _Variant((_Argument("body", surface), *omitted, selecting(media))) for surface, media in groups.items()
@@ -1250,7 +1304,7 @@ class _Resources(_Typing):
 
         A field of another media takes only UNSET.
         """
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         present = {field.python_name: field for field in branch.fields}
 
         def argument(name: str) -> _Argument:
@@ -1502,7 +1556,7 @@ class _Types(_Typing):
 
     def header_accessor(self, module: TargetModule, spec: OperationSpec, headers: _Headers) -> str:
         """Return one operation's header decoders and its typed accessor function."""
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         results, every, entries = self.header_entries(module, headers)
         missing = any(not header.required for _, branches in headers.values() for _, header in branches)
         decoders = module.local(_CODECS, "ResponseHeaders")
@@ -1521,7 +1575,7 @@ class _Types(_Typing):
 
     def header_entries(self, module: TargetModule, headers: _Headers) -> tuple[dict[str, str], list[str], list[Doc]]:
         """Return each header's result type, every value type, and each header's declarations by status."""
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         results: dict[str, str] = {}
         every: list[str] = []
         entries: list[Doc] = []
@@ -1903,18 +1957,20 @@ continuation.
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
 _STREAM_OPTIONS: Final = (
     ("stream_options", ".", "StreamOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
 _SOCKET_OPTIONS: Final = (
     ("ws_options", ".", "WSOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
+_HELPER_SETTINGS: Final = {
+    "helper_defaults": "defaults",
+    "cache_stores": "cache_stores",
+    "allowed_origins": "allowed_origins",
+}
 _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
@@ -1947,12 +2003,12 @@ ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in
 cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
 reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
 caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
-`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. No options,
-the client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. Neither the
+headers and query of the client, a view, or the call may name a parameter a reopen writes, nor the call fix a key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
-`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+`timeout` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
 `SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
 wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
@@ -3080,12 +3136,19 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 
 ## Layered options and budgets
 
-`RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
-`UNSET` inherits. `TimeoutOptions` and `RetryOptions` merge their fields independently; sets and tuples replace the
-inherited collection. `retry=None` is invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
-removes the optional budget across attempts.
-The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
@@ -3098,13 +3161,14 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | follow redirects | the native client's: False for an SDK-created client |
-| maximum response / error prefix / stream bytes | None / 64 KiB / None |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
 
 Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
 retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
 cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
 Native cancellation remains the original exception.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
+sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 {clock}
 
 ## Retry decisions and delays
@@ -3113,13 +3177,13 @@ GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PA
 declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
 from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt of the
 call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
-resend. All candidates still need replayable input. Pool timeouts need explicit `retry_on_pool_timeout=True`.
+resend. All candidates still need replayable input. Pool timeouts need `RetryOptions(retry_on_pool_timeout=True)`.
 Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
 
 Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
 is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
 explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
-an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
+a `RetryOptions` value cannot invent that declaration, and explicit None disables an inherited vendor control.
 
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
@@ -3129,10 +3193,12 @@ set an optional session total timeout. Close an abandoned stream to release its 
 
 ## Idempotency and replayable input
 
-`IdempotencyKey(value)` supplies a caller's stable key; `IdempotencyKey.new()` creates a UUID4 value.
-`idempotency_key=None` disables automatic creation; `UNSET` permits it for an operation with a declared key header.
-The key is created once per logical call and reused across eligible retries. Caller keys are sent unchanged.
-An effective caller key on an operation without a declared header fails before sending, including inherited keys.
+A call's `RequestOptions(idempotency_key="...")` supplies a caller's stable key, sent unchanged, and
+`idempotency_key=None` disables the automatic one; unset, an operation with a declared key header gets a UUID4 key.
+A header of that name among the call's extra headers or the client's or a view's default headers is the call's key
+instead; a protocol helper refuses one, as it refuses a call's key.
+The key is created once per logical call and reused across eligible retries.
+A caller key on an operation without a declared header fails before sending.
 One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
 
 
@@ -3160,7 +3226,7 @@ Requests are sent through the native client, with its own `auth`, event hooks, r
 Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
 attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
 as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
-`follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
+`follow_redirects` of the client, a view, or a call overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
 that carries a credential at a position a declared security scheme names other than `Authorization` is never
@@ -3170,20 +3236,13 @@ cookie never reaches another origin. Response content codings are removed by HTT
 does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
 yields the body as it arrived; a buffered one keeps only its decoded body.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
-http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
-SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
-trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
-preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
-ownership.
-Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
-Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
-view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
-`raise_for_status()` applies the error-prefix cap.
-An SSLContext supplies TLS settings and conflicts with any explicit verify override.
-HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
-incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
-closes only the native client the SDK created. Request views share that root and have no close method.
+An SDK-created HTTP client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect. Configure proxies,
+TLS, connection pools, HTTP/2, and environment settings on the `httpx2.Client` or `httpx2.AsyncClient` passed as
+`http_client`, which keeps them, its timeout unless `timeout` is given, and its owner.
+Typed errors and exception bodies keep at most a 64 KiB prefix of an error body; buffered raw responses and streams
+are not capped, and of a buffered raw response only `raise_for_status()` applies the error prefix.
+Borrowed clients stay caller owned. Root close is idempotent and closes only the native client the SDK created.
+Request views share that root and have no close method.
 
 ## Authentication
 
@@ -3217,8 +3276,8 @@ No operation of this package declares request compression, so every request is s
         return """
 ## Request compression
 
-`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
-`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+`Client(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`Client(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
@@ -3243,18 +3302,16 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
 and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
-session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
-
-- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`
-- `{self.config.package}.options`: `SessionOptions`
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
 
 | Limit | Effective default |
 |---|---|
 | polls per session | 1000; None removes it |
 | poll interval | the helper's declared interval, 1 second unless declared |
 | allowed wait before a poll | 60 seconds; None removes it |
-| session total timeout | 600 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
@@ -3274,7 +3331,7 @@ as a transport error, a deadline, a cancellation, or a limit, leaves the handle 
 or `wait` polls again without creating the operation again, or succeeded with its result fetch still due, which a later
 `wait` retries alone. `status` and `wait` at once raise `ConfigurationError` with the reason `invalid_state`, and so
 does every step after `close()` or `aclose()`, which stops only local polling. A call's options must not fix an
-idempotency key or patch a header or query parameter the helper writes.
+idempotency key or give extra headers or query names of a parameter the helper writes.
 
 `checkpoint()` returns plain JSON without sending, also after closing and while another thread or task polls: an object
 whose `phase` is `pending`, with the values the next poll (`bound`) and a remote cancel (`cancel`) write and those the
@@ -3306,17 +3363,15 @@ polls again; closing sends nothing.
 
 An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
 call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
-and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
-
-- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
-  `AsyncUploadHandle`
-- `{self.config.package}.options`: `SessionOptions`
+and idempotency key; the session bounds all of them. Each limit comes from the call's `upload_options`, then the
+client's `helper_defaults` for the helper, then the default below. The session types are imported from
+`{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+`AsyncUploadHandle`.
 
 | Limit | Effective default |
 |---|---|
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
@@ -3343,7 +3398,8 @@ offset once; it never creates the upload again, and a completion of unknown outc
 JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises `ConfigurationError`, with the reason
 `expired` for a checkpoint past the server's declared expiry. `advance` and `run` at once raise `ConfigurationError`
 with the reason `invalid_state`, and so does every step after `close()` or `aclose()`, which stops only local uploading.
-A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
+A call's options must not fix an idempotency key or give extra headers or query names of a parameter the helper
+writes.
 """
 
     def pagination_runtime(self) -> str:
@@ -3364,31 +3420,28 @@ binding reads, is sent as it came, without its target's schema checks; a dot seg
 cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
 the session ends it with `ProtocolDataError` with the reason `pagination_cycle` after the repeating page. A limit
 reached while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A
-call's options must not patch a
-header or a query parameter the helper writes."""
+call's options must not give extra headers or query names of a parameter the helper writes."""
             if cursors
             else """\
 A page's items must be a JSON array. Each value a binding reads is sent as it came, without its target's schema
 checks; a dot segment for a path parameter, and a missing binding value, raise `ProtocolDataError`. A limit reached
 while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's
-options must not patch a header or a query parameter the helper writes."""
+options must not give extra headers or query names of a parameter the helper writes."""
         )
         return f"""
 ## Pagination sessions
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
-total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
-another kind's options, fail construction. The session types are imported from:
-
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
-- `{self.config.package}.options`: `SessionOptions`
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
@@ -3400,10 +3453,10 @@ another kind's options, fail construction. The session types are imported from:
         return f"""
 ## Cache helpers
 
-A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
-`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch` with
-`ConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+A cache helper keeps entries in the store the client's `cache_stores` lends it under its name, a `MemoryCacheStore` or
+`AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the client's mode. Without
+one, the client's root creates a memory store of 128 entries for the helper at its first fetch, which the root's views
+share and no other client does. The client never closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
 
@@ -3414,12 +3467,17 @@ stores.
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
-declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
-declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
-`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
-permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
@@ -3441,8 +3499,8 @@ A next-URL or Link helper sends the first request as the caller gives it and eac
 gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
-and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
-else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+and name an HTTP or HTTPS URL at the server's origin or at one the client's `allowed_origins` lists; anything else
+raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
 headers or query fields the package's security schemes name, and the client's credentials are placed only at the
 server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
@@ -3477,17 +3535,14 @@ the last record. A record has the empty string as its event type and no event ID
 An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
-options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
-from:
-
-- `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
-  `UnknownEvent`
-- `{self.config.package}.options`: `SessionOptions`
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
 
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 {_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
@@ -3516,11 +3571,9 @@ A WebSocket helper's `connect` is one session. On `Client` it returns the sessio
 task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
 sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
 transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
-raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
-for the helper, then the default below. The session types are imported from:
-
-- `{package}.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
-- `{package}.options`: `SessionOptions` and `ProtocolClientOptions`
+raises the operation's `APIStatusError`. Each limit comes from the call's `ws_options`, then the client's
+`helper_defaults` for the helper, then the default below. The session types are imported from `{package}.protocols`:
+`WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`.
 
 | Limit | Effective default |
 |---|---|
@@ -3528,7 +3581,7 @@ for the helper, then the default below. The session types are imported from:
 | idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 
 The connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
@@ -3613,7 +3666,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
-            self.file(PurePosixPath("options.py"), "options", _options(capabilities)),
+            self.file(PurePosixPath("options.py"), "options", _options()),
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             *(

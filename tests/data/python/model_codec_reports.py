@@ -25,7 +25,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     querystring,
     raw_parameter,
 )
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     import ast
@@ -177,7 +177,7 @@ def media_report(path: Path) -> str:
         f"text {item['hex']}: {attempt(lambda item=item: json.dumps(decode_text(bytes.fromhex(item['hex']))))}"
         for item in fixture["text"]
     )
-    lines.append(f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}")
+    lines.append(f"unset: {UNSET!r} {bool(UNSET)}")
     return "\n".join(lines) + "\n"
 
 

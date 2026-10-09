@@ -18,7 +18,7 @@
   saved error status again ! APIStatusError: Error code: 418 - {"code":7,"message":"boom"} [operation_id='listPets', status_code=418, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved truncated status ! InternalServerError: Error code: 500 - 0123... [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True]
+  saved truncated status ! InternalServerError 500 kept 65536 b'0123' truncated=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved redirect status ! APIStatusError: Error code: 302 [operation_id='getPet', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
@@ -39,20 +39,10 @@
   saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=8, observed=21] response_too_large
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=8, observed=100] response_too_large
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
-  saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   streamed [b'{"id":3,', b'"name":"fox"}'] status None
@@ -80,24 +70,9 @@
   streamed 100 MiB 104857600
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capped identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
+  streamed broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     passed [b'{"id":3,']
-  capped identity read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capped gzip decoded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=10, observed=13] response_too_large
-    passed [b'{"id"']
-  capped gzip decoded read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capped gzip coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=10, observed=16] response_too_large
-    passed [b'\x1f\x8b\x08\x00\x00\x00\x00\x00']
-  capped gzip coded read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
-    passed [b'{"id":3,']
-  capped broken read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
+  streamed broken read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.failed') [operation_id='getPet', field_path=('response', 'read', 'failed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   stopped block read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.closed') [operation_id='getPet', field_path=('response', 'read', 'closed')] response_consumed
@@ -108,15 +83,14 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   streaming connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
-  streaming options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming truncated status ! InternalServerError 500 kept 65536 b'0123' truncated=True
+  streaming truncated read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.closed') [operation_id='getPet', field_path=('response', 'read', 'closed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   streaming error status ! NotFoundError: Error code: 404 - missing [operation_id='getPet', status_code=404, body=b'missing', body_bytes=b'missing', truncated=False, cause=DecodeError()]
   streaming error read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.closed') [operation_id='getPet', field_path=('response', 'read', 'closed')] response_consumed
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming truncated status ! InternalServerError: Error code: 500 - 0123... [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True]
-  streaming truncated read ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='response_consumed', field_path='response.read.closed') [operation_id='getPet', field_path=('response', 'read', 'closed')] response_consumed
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   streaming broken coding status ! InternalServerError: Error code: 500 [operation_id='getPet', status_code=500, body=b'', body_bytes=b'', truncated=True, cause=DecodeError()]
@@ -177,18 +151,12 @@
   request url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='url') [field_path=('url',), cause=InvalidURL('Invalid origin port')] invalid_url
   request url type ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='url') [field_path=('url',)] invalid_url
   request body type ! DecodeError: DecodeError(reason='unencodable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
-  request options type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
   > GET https://x.example.com/
     [host: x.example.com, accept-encoding: gzip, deflate] b''
   request url fragment = "200 'text/plain' b'fragment omitted'"
   > GET https://x.example.com/?a=1
     [host: x.example.com, accept-encoding: gzip, deflate] b''
   request query fragment = "200 'text/plain' b'fragment omitted'"
-  > GET https://hooks.example.com/stream
-    [host: hooks.example.com, accept-encoding: gzip, deflate] b''
-  request capped ! DecodeError: DecodeError(status_code=200, reason='response_too_large') [body_bytes=b'', truncated=False, limit=3, observed=6] response_too_large
-  request streaming options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
-  streaming view options ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_stream_bytes') [field_path=('max_stream_bytes',)] out_of_range
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
@@ -207,23 +175,16 @@
   async saved gzip 200 'application/json' b'{"id":3,"name":"fox"}'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved status ! InternalServerError: Error code: 500 - 0123... [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True]
+  async saved status ! InternalServerError 500 kept 65536 b'0123' truncated=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet'
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=8, observed=100] response_too_large
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved expanded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=50, observed=100] response_too_large
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
-  async saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streamed [b'{"id":3,', b'"name":"fox"}']
@@ -239,16 +200,13 @@
   async streamed coded [b'\x1f\x8b\x08\x00\x00\x00\x00', b'\x00\x02\xff\xabV\xcaL', b'Q\xb22\xd6Q\xcaK', b'\xccMU\xb2RJ\xcb', b'\xafP\xaa\x05\x00\xc4\x1a', b'\xc5\x91\x15\x00\x00\x00']
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async capped identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='response_too_large') [operation_id='getPet', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
+  async streamed broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async capped broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
+  async streaming truncated status ! InternalServerError 500 kept 65536 b'0123' truncated=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streaming error status ! NotFoundError: Error code: 404 - missing [operation_id='getPet', status_code=404, body=b'missing', body_bytes=b'missing', truncated=False, cause=DecodeError()]
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async streaming truncated status ! InternalServerError: Error code: 500 - 0123... [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streaming broken coding status ! InternalServerError: Error code: 500 [operation_id='getPet', status_code=500, body=b'', body_bytes=b'', truncated=True, cause=DecodeError()]
@@ -288,7 +246,6 @@
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   async request streamed [b'str', b'eam']
   async request url ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='url') [field_path=('url',), cause=InvalidURL('Expected an absolute HTTP URL without user information')] invalid_url
-  async request streaming options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3

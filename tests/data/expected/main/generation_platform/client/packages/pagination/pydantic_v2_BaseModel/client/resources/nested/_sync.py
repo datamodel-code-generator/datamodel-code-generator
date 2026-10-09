@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.nested import ListNestedResponse
 
@@ -41,7 +41,7 @@ class NestedResource:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
@@ -64,7 +64,7 @@ class NestedWithResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
@@ -87,7 +87,7 @@ class NestedWithRawResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -110,7 +110,7 @@ class NestedWithStreamingResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

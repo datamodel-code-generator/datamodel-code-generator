@@ -6,9 +6,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from {{ package }} import Client
-from {{ package }}.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -16,8 +15,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference]({{ reference }}) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -107,9 +106,9 @@ operation again, and a helper that declares a remote cancellation returns a hand
 the runtime reference for their limits and checkpoints.
 {%- endif %}
 {%- if "cache" in kinds %}
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 {%- endif %}
 {%- if "resumable_upload" in kinds %}
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
@@ -129,7 +128,7 @@ See the runtime reference for their limits.
 ## Request compression
 
 These operations declare request compression. Their bodies are gzipped by default;
-`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+`Client(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {{ compression }}

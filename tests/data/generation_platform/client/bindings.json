@@ -5221,5 +5221,23 @@
     "model": {
       "read_only_write_only_model_type": "request-response"
     }
+  },
+  "relative-override": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "model": {
+      "import_overrides": {
+        "argparse": ".local"
+      }
+    }
+  },
+  "relative-override-modular": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "models": "models",
+    "model": {
+      "import_overrides": {
+        "argparse": ".local"
+      },
+      "module_split_mode": "single"
+    }
   }
 }

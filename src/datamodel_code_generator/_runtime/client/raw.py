@@ -25,7 +25,6 @@ from .errors import (
     SDKError,
     add_secondary,
     response_failure,
-    too_large,
 )
 from .logical import in_thread
 from .media import charset
@@ -39,9 +38,9 @@ if TYPE_CHECKING:
     from ..model_codecs.media import JSONValue
     from .logical import LogicalCallContext
     from .operations import ResponseDecoder
-    from .options import Settings
     from .responses import ResponseInfo
 
+MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _BINARY: Final[int] = getattr(os, "O_BINARY", 0)
 _UMASK: Final = threading.Lock()
 Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"]
@@ -108,23 +107,6 @@ def _commit(temporary: Path, path: Path, *, overwrite: bool) -> None:
         return
     os.link(temporary, path)
     temporary.unlink()
-
-
-class _Budget:
-    """Count the bytes of one representation against its limit, refusing the chunk that passes it."""
-
-    __slots__ = ("info", "limit", "operation_id", "size")
-
-    def __init__(self, limit: int | None, info: ResponseInfo, operation_id: str | None) -> None:
-        self.limit = limit
-        self.info = info
-        self.operation_id = operation_id
-        self.size = 0
-
-    def spend(self, amount: int) -> None:
-        self.size += amount
-        if self.limit is not None and self.size > self.limit:
-            raise too_large(self.info, self.limit, self.size, self.operation_id)
 
 
 def _refuse_existing(path: Path, *, overwrite: bool) -> None:
@@ -196,7 +178,6 @@ class _Raw(Generic[SourceT, HandleT]):
         "_classify",
         "_decoder",
         "_info",
-        "_limits",
         "_native",
         "_operation_id",
         "_raw_source",
@@ -208,7 +189,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
-        limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], SDKError],
         *,
@@ -217,11 +197,10 @@ class _Raw(Generic[SourceT, HandleT]):
         native: httpx2.Response,
         call: LogicalCallContext,
     ) -> None:
-        """Keep response metadata, status classification, limits, the decoded and raw body sources, and release."""
+        """Keep response metadata, status classification, the decoded and raw body sources, and release."""
         self._call = call
         self._info = info
         self._decoder = decoder
-        self._limits = limits
         self._operation_id = operation_id
         self._classify = failure
         self._source = source
@@ -272,9 +251,6 @@ class _Raw(Generic[SourceT, HandleT]):
         if self._state not in {"open", "buffered"}:
             raise self._consumed(action="stream_to")
 
-    def _budget(self, limit: int | None) -> _Budget:
-        return _Budget(limit, self._info, self._operation_id)
-
     def _check(self) -> None:
         """Check an optional helper session before its next read."""
         if self._call.session is None:
@@ -304,21 +280,23 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
-        limit, body = self._limits.max_error_body_bytes, self._body
-        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
+        body = self._body
+        error = self._decoder.failure(
+            self._info, body[:MAX_ERROR_BODY_BYTES], truncated=len(body) > MAX_ERROR_BODY_BYTES
+        )
         return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""
         return self._failure(self._decoder.failure(self._info, b"", truncated=True))
 
-    def _prefix(self, parts: list[bytes], chunk: bytes, size: int) -> bool:
+    @staticmethod
+    def _prefix(parts: list[bytes], chunk: bytes, size: int) -> bool:
         """Keep a chunk of an error body within its prefix limit and return whether reading continues."""
-        limit = self._limits.max_error_body_bytes
-        if size <= limit:
+        if size <= MAX_ERROR_BODY_BYTES:
             parts.append(chunk)
             return True
-        parts.append(chunk[: len(chunk) - (size - limit)])
+        parts.append(chunk[: len(chunk) - (size - MAX_ERROR_BODY_BYTES)])
         return False
 
     def _save(self, decoded: list[bytes]) -> None:
@@ -394,7 +372,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
-        limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], SDKError],
         *,
@@ -408,7 +385,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         super().__init__(
             info,
             decoder,
-            limits,
             operation_id,
             failure,
             source=source,
@@ -514,14 +490,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     def _buffer(self) -> None:
         """Read the decoded body into memory."""
-        budget = self._budget(self._limits.max_response_bytes)
-        decoded: list[bytes] = []
         try:
             self._enter()
-            for chunk in self._chunks():
-                budget.spend(len(chunk))
-                decoded.append(chunk)
-            self._save(decoded)
+            self._save(list(self._chunks()))
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
@@ -548,11 +519,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         raise self._consumed(action=action)
 
     def _stream(self, *, decoded: bool, held: bool = False) -> Generator[bytes, None, None]:
-        budget = self._budget(self._limits.max_stream_bytes)
         try:
             for chunk in self._chunks(decoded=decoded):
                 self._check()
-                budget.spend(len(chunk))
                 yield chunk
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
@@ -585,7 +554,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         except BaseException as error:
             self._end("failed", error)
             raise
-        truncated = size > self._limits.max_error_body_bytes or problem is not None
+        truncated = size > MAX_ERROR_BODY_BYTES or problem is not None
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     def _end(self, state: State, error: BaseException | None = None) -> None:
@@ -624,7 +593,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
-        limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], SDKError],
         *,
@@ -638,7 +606,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         super().__init__(
             info,
             decoder,
-            limits,
             operation_id,
             failure,
             source=source,
@@ -766,14 +733,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     async def _buffer(self) -> None:
         """Read the decoded body into memory."""
-        budget = self._budget(self._limits.max_response_bytes)
-        decoded: list[bytes] = []
         try:
             self._enter()
-            async for chunk in self._chunks():
-                budget.spend(len(chunk))
-                decoded.append(chunk)
-            self._save(decoded)
+            self._save([chunk async for chunk in self._chunks()])
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
@@ -806,11 +768,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         raise self._consumed(action=action)
 
     async def _stream(self, *, decoded: bool, held: bool = False) -> AsyncGenerator[bytes, None]:
-        budget = self._budget(self._limits.max_stream_bytes)
         try:
             async for chunk in self._chunks(decoded=decoded):
                 self._check()
-                budget.spend(len(chunk))
                 yield chunk
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
@@ -843,7 +803,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         except BaseException as error:
             await self._end("failed", error)
             raise
-        truncated = size > self._limits.max_error_body_bytes or problem is not None
+        truncated = size > MAX_ERROR_BODY_BYTES or problem is not None
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:

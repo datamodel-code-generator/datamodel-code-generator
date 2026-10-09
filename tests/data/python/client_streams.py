@@ -342,9 +342,7 @@ def _routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     try:
         next(stream)
     except harness.errors.ProtocolDataError as failure:
-        lines.append(
-            f"  error event {failure.reason} {_data(failure.data)!r} {describe(failure)}"
-        )
+        lines.append(f"  error event {failure.reason} {_data(failure.data)!r} {describe(failure)}")
     record(lines, "after the error", lambda: next(stream))
     tagged = protocols.events.tagged
     _drained(lines, "body discriminator", tagged.open())
@@ -398,7 +396,6 @@ def _limits(harness: _Harness, api: Any, feed: _Feed) -> None:
             lambda: protocols.events.messages.open(stream_options=options.RequestOptions()),
         ),
         ("options of another type", lambda: protocols.events.messages.open(options=harness.protocols.StreamOptions())),
-        ("session options of another type", lambda: protocols.events.messages.open(session_options={})),
         (
             "reconnecting",
             lambda: protocols.events.messages.open(stream_options=harness.protocols.StreamOptions(reconnect=True)),
@@ -508,22 +505,16 @@ class _Clock:
         return move
 
 
-def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any, Any, float], ...]:
+def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any, float], ...]:
     """Return native idle settings and optional helper session budgets on the client clock."""
     options, streams = harness.options, harness.protocols.StreamOptions
-    idle = options.RequestOptions(timeout=options.TimeoutOptions(read=1.0))
+    idle = options.RequestOptions(timeout=httpx2.Timeout(None, read=1.0))
     return (
-        ("native idle while waiting for bytes", None, streams(idle_timeout=1.0), None, 2.0),
-        ("native read timeout from call options", idle, streams(), None, 2.0),
-        ("native idle overrides explicit read timeout", idle, streams(idle_timeout=2.0), None, 3.0),
-        (
-            "session total on the client clock",
-            None,
-            streams(idle_timeout=None),
-            options.SessionOptions(total_timeout=1.0),
-            2.0,
-        ),
-        ("request budget ends after acquisition", options.RequestOptions(total_timeout=10.0), None, None, 61.0),
+        ("native idle while waiting for bytes", None, streams(idle_timeout=1.0), 2.0),
+        ("native read timeout from call options", idle, streams(), 2.0),
+        ("native idle overrides explicit read timeout", idle, streams(idle_timeout=2.0), 3.0),
+        ("session total on the client clock", None, streams(idle_timeout=None, total_timeout=1.0), 2.0),
+        ("request budget ends after acquisition", options.RequestOptions(total_timeout=10.0), None, 61.0),
     )
 
 
@@ -550,11 +541,11 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
             record(lines, "borrowed pool after the client closed", again.status.get_status)
     clock, feed, options = _Clock(), _Feed(lines), harness.options
     with feed.client() as http:
-        api = package.Client(http_client=http, options=options.ClientOptions(clock=options.Clock(monotonic=clock)))
+        api = package.Client(http_client=http, clock=options.Clock(monotonic=clock))
         helper = api.protocols.events.messages
-        for label, request, limits, session, seconds in _clocked_limits(harness):
+        for label, request, limits, seconds in _clocked_limits(harness):
             feed.replies.append(harness.reply((message, clock.advance(seconds), message)))
-            _drained(lines, label, helper.open(options=request, stream_options=limits, session_options=session))
+            _drained(lines, label, helper.open(options=request, stream_options=limits))
         feed.replies.extend((
             harness.reply((message, message)),
             harness.reply((message + message,)),
@@ -564,7 +555,7 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"  paused first {_event(next(stream))}")
         clock.advance(2.0)()
         _drained(lines, "after a pause longer than the idle limit", stream)
-        stream = helper.open(session_options=options.SessionOptions(total_timeout=1.0))
+        stream = helper.open(stream_options=harness.protocols.StreamOptions(total_timeout=1.0))
         lines.append(f"  buffered first {_event(next(stream))}")
         clock.advance(2.0)()
         record(lines, "buffered event after the session total", lambda: next(stream))
@@ -583,11 +574,11 @@ async def _async_lifetimes(harness: _Harness) -> None:
     clock, feed = _Clock(), _Feed(lines)
     never, reached = asyncio.Event(), asyncio.Event()
     async with feed.async_client() as http:
-        api = package.AsyncClient(http_client=http, options=options.ClientOptions(clock=options.Clock(monotonic=clock)))
+        api = package.AsyncClient(http_client=http, clock=options.Clock(monotonic=clock))
         helper = api.protocols.events.messages
-        for label, request, limits, session, seconds in _clocked_limits(harness):
+        for label, request, limits, seconds in _clocked_limits(harness):
             feed.replies.append(harness.reply((message, clock.advance(seconds), message)))
-            stream = await helper.open(options=request, stream_options=limits, session_options=session)
+            stream = await helper.open(options=request, stream_options=limits)
             await _adrained(lines, f"async {label}", stream)
         feed.replies.extend((
             harness.reply((message, message)),
@@ -599,7 +590,7 @@ async def _async_lifetimes(harness: _Harness) -> None:
         lines.append(f"  async paused first {_event(await anext(stream))}")
         clock.advance(2.0)()
         await _adrained(lines, "async after a pause longer than the idle limit", stream)
-        stream = await helper.open(session_options=options.SessionOptions(total_timeout=1.0))
+        stream = await helper.open(stream_options=harness.protocols.StreamOptions(total_timeout=1.0))
         lines.append(f"  async buffered first {_event(await anext(stream))}")
         clock.advance(2.0)()
         await arecord(lines, "async buffered event after the session total", lambda: anext(stream))

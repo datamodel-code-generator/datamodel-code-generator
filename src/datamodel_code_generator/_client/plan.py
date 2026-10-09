@@ -24,13 +24,13 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
-from datamodel_code_generator._codec_type_source import static_scalar
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
+    ConstructorType,
     LiteralScalar,
     LiteralSequence,
     NoneType,
@@ -1015,7 +1015,10 @@ def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralSc
         if isinstance(argument, UnionType)
         else (argument,)
     )
-    if len(present) != 1 or not isinstance(scalar := static_scalar(present[0]), BuiltinType):
+    if len(present) != 1:
+        return None
+    scalar = present[0].base if isinstance(present[0], ConstructorType) else present[0]
+    if not isinstance(scalar, BuiltinType):
         return None
     literal = use.default
     return literal if literal is not None and literal.kind in _DEFAULTS.get(scalar.name, ()) else None
