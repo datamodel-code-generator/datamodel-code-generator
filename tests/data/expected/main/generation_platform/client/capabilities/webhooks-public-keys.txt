@@ -45,7 +45,7 @@ copied runtime
   protocols/__init__.py: 4
   protocols/caches.py: 139
   protocols/errors.py: 1235
-  protocols/options.py: 491
+  protocols/options.py: 479
   protocols/origins.py: 45
   protocols/public_keys.py: 142
   protocols/records.py: 311
@@ -59,7 +59,7 @@ copied runtime
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
   protocols/websocket_types.py: 220
-total 53 modules, 18237 lines
+total 53 modules, 18225 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
