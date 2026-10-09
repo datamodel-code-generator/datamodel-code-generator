@@ -19,6 +19,9 @@ if TYPE_CHECKING:
         AllOfClassHierarchy,
         AllOfMergeMode,
         ClassNameAffixScope,
+        ClientBodyArguments,
+        ClientSignatureStyle,
+        ClientType,
         CollapseRootModelsNameStrategy,
         CustomFileHeaderMode,
         DataclassArguments,
@@ -34,6 +37,10 @@ if TYPE_CHECKING:
         ReadOnlyWriteOnlyModelType,
         ReuseScope,
         SchemaValidatorType,
+        ServerBodyMode,
+        ServerHandlerMode,
+        ServerLayout,
+        ServerType,
         StrictTypes,
         TargetPydanticVersion,
         UnionMode,
@@ -204,6 +211,31 @@ class BaseGenerateConfig(TypedDict):
     schema_version: NotRequired[str | None]
     schema_version_mode: NotRequired[VersionMode | None]
     external_ref_mapping: NotRequired[dict[str, str] | None]
+    generate_server: NotRequired[ServerType | None]
+    server_output: NotRequired[Path | None]
+    server_package: NotRequired[str | None]
+    server_model_package: NotRequired[str | None]
+    server_layout: NotRequired[ServerLayout | None]
+    server_handler_mode: NotRequired[ServerHandlerMode | None]
+    server_handler_modes: NotRequired[Mapping[str, ServerHandlerMode] | None]
+    server_include_request: NotRequired[bool | None]
+    server_body_mode: NotRequired[ServerBodyMode | None]
+    server_body_modes: NotRequired[Mapping[str, ServerBodyMode] | None]
+    server_primary_responses: NotRequired[Mapping[str, Any] | None]
+    server_operation_names: NotRequired[Mapping[str, str] | None]
+    server_router_names: NotRequired[Mapping[str, str] | None]
+    server_parameter_names: NotRequired[Mapping[str, Mapping[str, str]] | None]
+    generate_client: NotRequired[ClientType | None]
+    client_output: NotRequired[Path | None]
+    client_package: NotRequired[str | None]
+    client_model_package: NotRequired[str | None]
+    client_signature_style: NotRequired[ClientSignatureStyle | None]
+    client_body_arguments: NotRequired[ClientBodyArguments | None]
+    client_resource_names: NotRequired[Mapping[str, str] | None]
+    client_operations: NotRequired[Mapping[str, Mapping[str, Any]] | None]
+    client_default_base_url: NotRequired[str | None]
+    client_server_base_url: NotRequired[str | None]
+    client_protocols: NotRequired[Mapping[str, Any] | None]
 
 
 class GenerateConfigDict(BaseGenerateConfig, closed=True):

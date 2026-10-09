@@ -219,8 +219,6 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
-_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
-_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
 class Exit(IntEnum):
@@ -777,6 +775,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     target_jobs = {plan.name for plan in plans if _selected_target(plan.config) is not None}
     for plan in plans:
         config = plan.config
@@ -1633,23 +1633,10 @@ def _generation_config(  # noqa: PLR0913
     return generation_config
 
 
-def _option_list(flags: Sequence[str]) -> str:
-    """Name options as an English list."""
-    return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
-
-
-def _flag(field: str, *, negative: bool = False) -> str:
-    """Return the option of a Config field, or its --no- form."""
-    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
-
-
-def _selected_target(config: Config) -> tuple[str, str] | None:
-    """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
-    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
-
-
 def _target_output(config: Config) -> tuple[str, Path] | None:
     """Name the package directory of the target a config selects, such as the server output and its path."""
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     if (selected := _selected_target(config)) is None or (output := getattr(config, f"{selected[1]}output")) is None:
         return None
     return f"{selected[1].removesuffix('_')} output", output
@@ -1660,6 +1647,13 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
+    from datamodel_code_generator.base_config import (  # noqa: PLC0415
+        _TARGET_SELECTORS,
+        _flag,
+        _missing_target_options,
+        _option_list,
+    )
+
     explicit = _explicit_config_args(namespace)
     unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
@@ -1675,16 +1669,7 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         if flags
     ]:
         return errors
-    return [
-        f"{_flag(selector)} requires {_option_list(missing)}"
-        for selector, prefix in _TARGET_SELECTORS
-        if getattr(config, selector) is not None
-        and (
-            missing := [
-                _flag(field) for name in _TARGET_REQUIRED if getattr(config, field := f"{prefix}{name}") is None
-            ]
-        )
-    ]
+    return [] if (missing := _missing_target_options(config)) is None else [missing]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
@@ -1815,6 +1800,8 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     A target job stages nothing: it renders its models and package without writing them, for publication with the
     batch.
     """
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     if plan.config.check or _selected_target(plan.config) is not None:
         return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
@@ -2529,6 +2516,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
+        from datamodel_code_generator.base_config import _flag, _selected_target  # noqa: PLC0415
+
         if selected := next(filter(None, (_selected_target(plan.config) for plan in batch_plan.jobs)), None):
             print(f"Error: {_flag(selected[0])} cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
@@ -2705,6 +2694,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         for error in target_usage:
             print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     if _selected_target(config) is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
