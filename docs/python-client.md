@@ -2189,9 +2189,9 @@ keeps no cache state. The helper is generated at `client.protocols.<name>` on `C
 |---|---|
 | `operation` | The GET operation the helper fetches. It takes no request body, and each cacheable status is a declared 2xx success with one JSON body |
 | `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
-| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
+| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true`, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
-| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. The headers credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, and the declared security schemes' headers) are allowed as well, since the key covers them. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
 
 `fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
 With asyncio, `fetch` is a coroutine:
@@ -3201,8 +3201,9 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 ## Body replay and resource ownership
 
-A package accepts the request bodies its operations declare. Without a binary or multipart request body it copies no
-body runtime, and `request_raw` takes `bytes`; with a binary body `request_raw` also takes the binary inputs below, and
+A package accepts the request bodies its operations declare. A schema-less form body exposes `FormData` in `bodies.py`
+and uses the core operation runtime, without the binary or multipart body runtime. Without a binary or multipart
+request body, `request_raw` takes `bytes`; with a binary body `request_raw` also takes the binary inputs below, and
 with a `multipart/form-data` body a `MultipartBody` (`AsyncMultipartBody` for an asyncio client) as well. Encoded
 bytes, JSON included, are kept once per logical call and resent unchanged; a multipart body keeps its boundary.
 
@@ -3333,7 +3334,8 @@ into SDK requests; its `Accept-Encoding` is.
 
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
-whose operations require none takes no credentials, copies no credential runtime, and exports no `AuthError`. A
+whose operations have no credentialed security alternative takes no credentials, copies no credential runtime, and
+exports no `AuthError`. A
 scheme whose argument would be empty, `options`, `http_client`, `self`, or another scheme's, or whose OAuth
 provider classes would take another scheme's PascalCase prefix, fails generation with `E_RESERVED_NAME`.
 
