@@ -117,24 +117,7 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         openapi_extra={
             'requestBody': {
                 'required': True,
-                'content': {
-                    'application/x-www-form-urlencoded': {
-                        'schema': {
-                            'type': 'object',
-                            'required': ['count'],
-                            'properties': {
-                                'count': {'type': 'integer'},
-                                'score': {'type': 'number'},
-                                'flag': {'type': 'boolean'},
-                                'name': {'type': 'string'},
-                                'counts': {
-                                    'type': 'array',
-                                    'items': {'type': 'integer'},
-                                },
-                            },
-                        },
-                    },
-                },
+                'content': {'application/x-www-form-urlencoded': {}},
             },
         },
         dependencies=wiring.dependencies.get('post_form'),
@@ -165,28 +148,7 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         response_description='Done.',
         responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'requestBody': {
-                'required': True,
-                'content': {
-                    'multipart/form-data': {
-                        'schema': {
-                            'type': 'object',
-                            'required': ['file', 'count'],
-                            'properties': {
-                                'file': {'type': 'string', 'format': 'binary'},
-                                'count': {'type': 'integer'},
-                                'score': {'type': 'number'},
-                                'flag': {'type': 'boolean'},
-                                'note': {'type': 'string'},
-                                'counts': {
-                                    'type': 'array',
-                                    'items': {'type': 'integer'},
-                                },
-                            },
-                        },
-                    },
-                },
-            },
+            'requestBody': {'required': True, 'content': {'multipart/form-data': {}}},
         },
         dependencies=wiring.dependencies.get('upload'),
     )
