@@ -296,6 +296,7 @@ class ModelFieldFacts:
 
     required: bool
     nullable: bool | None
+    has_default: bool
     type_has_null: bool | None
     read_only: bool
     write_only: bool
@@ -462,7 +463,7 @@ class TypeUseBinding:
 
     `default` is the JSON boolean, number, or string default a parameter's schema declares, `parts` what the
     schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
-    text, and `documentation` the title, description, deprecation and examples a parameter's schema declares.
+    text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
     """
 
     id: TypeUseId
@@ -474,7 +475,7 @@ class TypeUseBinding:
     default: LiteralScalar | None = None
     parts: PartFacts | None = None
     encoding: EncodingFacts | None = None
-    documentation: tuple[tuple[str, FrozenLiteral], ...] = ()
+    keywords: tuple[tuple[str, FrozenLiteral], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

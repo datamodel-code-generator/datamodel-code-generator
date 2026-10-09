@@ -190,6 +190,10 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
+    exchange.respond(json_response(200, pets))
+    for label, value in (("cookie as given", "a%20b+c"), ("cookie delimiter", "a;b"), ("cookie non-ASCII", "caf\u00e9")):
+        cookie = argument(package, "listPets", "cookie", "session", value)
+        record(lines, label, lambda cookie=cookie: api.pets.list_pets(x_trace=trace, session=cookie))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
     response = record(lines, "list response", lambda: api.pets.with_response.list_pets(x_trace=trace))
     info = response.info

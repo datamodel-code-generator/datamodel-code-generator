@@ -1,0 +1,14 @@
+# defaults-preset
+serve pydantic_v2.BaseModel
+service UntaggedService: get_values
+service UntaggedService without its methods: TypeError
+> GET /values
+  get_values(depth=3, size=10, bounded=2, page=1, words=['a'], x_level=4, tags=['a'], labels=['x'], rows=None, marks=['b'], notes=Notes(root=[]), extras=None, color=<Color.red: 'red'>, tone=<FieldValuesGetQueryToneParameter.blue: 'blue'>, shade=<Shade.dark: 'dark'>, colors=[<Color.red: 'red'>], sized=None, x_colors=[<Color.blue: 'blue'>])
+< 204 - b''
+> GET /values?depth=5&size=3&bounded=4&page=2&words=x&words=y&tags=t&labels=l&rows=1&rows=2&marks=m&notes=n&extras=e&color=blue&tone=red&shade=light&colors=blue&colors=red&sized=4
+  get_values(depth=5, size=3, bounded=4, page=2, words=['x', 'y'], x_level=6, tags=['t'], labels=['l'], rows=[1, 2], marks=['m'], notes=Notes(root=['n']), extras=['e'], color=<Color.blue: 'blue'>, tone=<FieldValuesGetQueryToneParameter.red: 'red'>, shade=<Shade.light: 'light'>, colors=[<Color.blue: 'blue'>, <Color.red: 'red'>], sized=4, x_colors=[<Color.red: 'red'>, <Color.blue: 'blue'>])
+< 204 - b''
+> GET /values?depth=-1&size=0&bounded=-1
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "depth"]}, {"type": "greater_than_equal", "loc": ["query", "bounded"]}]
+> GET /values?words=&tags=
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "words", 0]}]

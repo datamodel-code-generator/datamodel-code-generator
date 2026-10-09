@@ -1,3 +1,3 @@
 # api-pointer-tilde
 render pydantic_v2.BaseModel default
-  diagnostic SchemaParseError: Error at schema path '#/components/schemas/a~': API_REF_NONCANONICAL_POINTER: '#/components/schemas/a~'
+  diagnostic Error: Error at schema path '#/components/schemas/a~': API_REF_NONCANONICAL_POINTER: '#/components/schemas/a~'

@@ -1,32 +1,18 @@
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -18,23 +18,12 @@
- from .._runtime.server.requests import ParameterAdapter, ParameterArgument
- from .._runtime.server.responses import Declared, OperationResponses
- 
--OperationKey: TypeAlias = Literal[
--    '/paths/~1pets/get',
--    '/paths/~1pets/post',
--    '/paths/~1pets~1mine/get',
--    '/paths/~1pets~1{petId}/get',
--    '/paths/~1pets~1{petId}/delete',
--    '/paths/~1store~1inventory/get',
--]
-+OperationKey: TypeAlias = Literal['/paths/~1pets/get', '/paths/~1pets/post']
- OperationDependencies = TypedDict(
-     'OperationDependencies',
+@@ -18,10 +18,6 @@
      {
-         '/paths/~1pets/get': Sequence[Dependency],
-         '/paths/~1pets/post': Sequence[Dependency],
--        '/paths/~1pets~1mine/get': Sequence[Dependency],
--        '/paths/~1pets~1{petId}/get': Sequence[Dependency],
--        '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
--        '/paths/~1store~1inventory/get': Sequence[Dependency],
+         'list_pets': Sequence[params.Depends],
+         'create_pet': Sequence[params.Depends],
+-        'list_my_pets': Sequence[params.Depends],
+-        'get_pet': Sequence[params.Depends],
+-        'delete_pet': Sequence[params.Depends],
+-        'get_inventory': Sequence[params.Depends],
      },
      total=False,
  )
-@@ -101,74 +90,3 @@
-             ),
+@@ -52,46 +48,3 @@
+             '201': Declared(media_type='application/json', model=server_models.Pet),
          },
      )
 -
@@ -34,16 +20,11 @@
 -class ListMyPets:
 -    """Plans of the list_my_pets operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='list_my_pets',
--        key='/paths/~1pets~1mine/get',
--        service='pets',
--    )
 -    RESPONSES: Final = OperationResponses(
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                adapter=TypeAdapter(server_models.FieldPetsMineGetResponse),
+-                model=server_models.FieldPetsMineGetResponse,
 -            ),
 -        },
 -    )
@@ -52,22 +33,10 @@
 -class GetPet:
 -    """Plans of the get_pet operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='get_pet',
--        key='/paths/~1pets~1{petId}/get',
--        service='pets',
--        keywords=('pet_id',),
--    )
 -    RESPONSES: Final = OperationResponses(
 -        responses={
--            '200': Declared(
--                media_type='application/json',
--                adapter=TypeAdapter(server_models.Pet),
--            ),
--            '404': Declared(
--                media_type='application/json',
--                adapter=TypeAdapter(server_models.Error),
--            ),
+-            '200': Declared(media_type='application/json', model=server_models.Pet),
+-            '404': Declared(media_type='application/json', model=server_models.Error),
 -        },
 -    )
 -
@@ -75,28 +44,17 @@
 -class DeletePet:
 -    """Plans of the delete_pet operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='delete_pet',
--        key='/paths/~1pets~1{petId}/delete',
--        service='pets',
--        keywords=('pet_id',),
--    )
 -    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 -
 -
 -class GetInventory:
 -    """Plans of the get_inventory operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='get_inventory',
--        key='/paths/~1store~1inventory/get',
--        service='store',
--    )
 -    RESPONSES: Final = OperationResponses(
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                adapter=TypeAdapter(server_models.FieldStoreInventoryGetResponse),
+-                model=server_models.FieldStoreInventoryGetResponse,
 -            ),
 -        },
 -    )
@@ -125,11 +83,11 @@
      *,
      pets: PetsService,
 -    store: StoreService,
-     dependencies: Sequence[Dependency] = (),
+     dependencies: Sequence[params.Depends] = (),
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
 @@ -39,7 +33,7 @@
-     """Check the services and settings, then register every operation, literal paths first."""
+     """Register every operation on a new router, literal paths first."""
      return build(
          ROUTES,
 -        services={'pets': pets, 'store': store},
@@ -145,7 +103,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      **fastapi_kwargs: Any,
-@@ -59,7 +52,6 @@
+@@ -63,7 +56,6 @@
      app.include_router(
          build_router(
              pets=pets,
@@ -183,18 +141,22 @@
  
  import pydantic
  import server.models as server_models
--from fastapi import APIRouter, Body, Depends, Header, Path, Query
+-from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 -from fastapi.responses import Response
-+from fastapi import APIRouter, Body, Depends, Header, Query
++from fastapi import APIRouter, Body, Cookie, Header, Query, params
  from pydantic import Field
  
  from .._generated import contract
-@@ -101,85 +100,11 @@
+@@ -102,94 +101,11 @@
      )
  
  
 -def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
--    list_my_pets_handler = wiring.handlers['list_my_pets']
+-    pets: PetsService = wiring.services['pets']
+-    list_my_pets_handler = checked(
+-        pets.list_my_pets,
+-        'The pets.list_my_pets method of GET /pets/mine',
+-    )
 -
 -    def list_my_pets() -> object:
 -        return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
@@ -210,12 +172,16 @@
 -        operation_id='listMyPets',
 -        tags=['pets'],
 -        response_description="The caller's pets.",
--        dependencies=wiring.dependencies.get('/paths/~1pets~1mine/get'),
+-        dependencies=wiring.dependencies.get('list_my_pets'),
 -    )
 -
 -
 -def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
--    get_pet_handler = wiring.handlers['get_pet']
+-    pets: PetsService = wiring.services['pets']
+-    get_pet_handler = checked(
+-        pets.get_pet,
+-        'The pets.get_pet method of GET /pets/{petId}',
+-    )
 -
 -    def get_pet(*, pet_id: Annotated[int, Field(ge=1), Path(alias='petId')]) -> object:
 -        return dispatch(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
@@ -232,12 +198,16 @@
 -        tags=['pets'],
 -        response_description='The pet.',
 -        responses={'404': {'model': server_models.Error, 'description': 'Missing.'}},
--        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
+-        dependencies=wiring.dependencies.get('get_pet'),
 -    )
 -
 -
 -def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
--    delete_pet_handler = wiring.handlers['delete_pet']
+-    pets: PetsService = wiring.services['pets']
+-    delete_pet_handler = checked(
+-        pets.delete_pet,
+-        'The pets.delete_pet method of DELETE /pets/{petId}',
+-    )
 -
 -    def delete_pet(
 -        *,
@@ -259,26 +229,23 @@
 -        tags=['pets'],
 -        response_description='Deleted.',
 -        responses={'204': {'description': 'Deleted.'}},
--        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
+-        dependencies=wiring.dependencies.get('delete_pet'),
 -    )
 -
 -
  LITERAL_ROUTES: Final = (
-     (contract.ListPets.OPERATION, _add_list_pets),
-     (contract.CreatePet.OPERATION, _add_create_pet),
--    (contract.ListMyPets.OPERATION, _add_list_my_pets),
+     ('list_pets', _add_list_pets),
+     ('create_pet', _add_create_pet),
+-    ('list_my_pets', _add_list_my_pets),
  )
--TEMPLATED_ROUTES: Final = (
--    (contract.GetPet.OPERATION, _add_get_pet),
--    (contract.DeletePet.OPERATION, _add_delete_pet),
--)
+-TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet), ('delete_pet', _add_delete_pet))
 +TEMPLATED_ROUTES: Final = ()
  
  
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -42,39 +42,3 @@
+@@ -41,39 +41,3 @@
          *,
          body: server_models.NewPet,
      ) -> server_models.Pet | HTTPResult[server_models.Pet] | Response: ...
@@ -330,9 +297,9 @@ EXTRA: server/routers/store.py (no longer generated)
 -| `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
 -| `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
  
- `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+ `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
  
-@@ -30,18 +26,14 @@
+@@ -31,18 +27,14 @@
  
  ```python
  from server import create_app
@@ -354,7 +321,7 @@ EXTRA: server/routers/store.py (no longer generated)
  ```
  
  Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-@@ -54,7 +46,7 @@
+@@ -55,7 +47,7 @@
  from server import build_router
  
  app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)

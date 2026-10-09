@@ -136,7 +136,7 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
-_SCHEMA_DOCUMENTATION: Final = ("title", "description", "deprecated", "examples")
+_SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 _DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
 _DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
     bool: "bool",
@@ -488,7 +488,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
         """Record the declaration's engine key, even when it was already generated, and what its schema says.
 
-        Once the schema is generated, its default, documentation, parts and text encoding are recorded as the
+        Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
         documents spell them, since its model types do not say them.
         """
         declaration = _declaration(self._declaration_id(path))
@@ -607,7 +607,7 @@ class _SchemaRecord:
     """What the walk recorded of an acquired schema that its model types do not say."""
 
     default: LiteralScalar | None
-    documentation: tuple[tuple[str, FrozenLiteral], ...]
+    keywords: tuple[tuple[str, FrozenLiteral], ...]
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
 
@@ -625,10 +625,10 @@ def _default(value: YamlValue) -> LiteralScalar | None:
     return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
 
 
-def _documentation(raw: dict[str, YamlValue]) -> tuple[tuple[str, FrozenLiteral], ...]:
-    """Return the title, description, deprecation and examples a schema declares, leaving out values with no literal."""
+def _keywords(raw: dict[str, YamlValue]) -> tuple[tuple[str, FrozenLiteral], ...]:
+    """Return the title, description, deprecation, examples and default a schema declares, each with a literal."""
     found: list[tuple[str, FrozenLiteral]] = []
-    for key in _SCHEMA_DOCUMENTATION:
+    for key in _SCHEMA_KEYWORDS:
         if key in raw:
             with suppress(_UnsupportedError):
                 found.append((key, _freeze_literal(raw[key], set())))
@@ -1487,6 +1487,7 @@ def _field_facts(
     return ModelFieldFacts(
         field.required,
         field.nullable,
+        field.has_default,
         field.type_has_null,
         field.read_only,
         field.write_only,
@@ -1773,7 +1774,7 @@ class _Reader:
     def record(self, declaration: _Declaration, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
 
-        A parameter's schema gives its default and documentation; a multipart schema how its members encode parts;
+        A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
         and any schema read as parameter or form text how its values are written.
         """
         media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
@@ -1782,7 +1783,7 @@ class _Reader:
         whole = self.whole(declaration)[1] if parameter else {}
         return _SchemaRecord(
             _default(whole.get("default")),
-            _documentation(whole) if parameter else (),
+            _keywords(whole) if parameter else (),
             self.parts(declaration, locate)
             if media is not None and media.strip().lower().startswith("multipart/")
             else None,
@@ -2718,7 +2719,28 @@ class _Contracts(_SchemaUses):
             references=tuple(references),
         )
 
-    def media(  # noqa: PLR0913  # ruff: ignore[too-many-locals]
+    def media_facts(
+        self, uses: tuple[TypeUseId, ...], schema: _Declaration, role: TypeUseRole, media: str
+    ) -> tuple[TypeUseId, ...]:
+        """Record what the walk recorded of the media's own schema keyword on its uses.
+
+        A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
+        text encoding of its schema.
+        """
+        multipart = media.strip().lower().startswith("multipart/")
+        record = self.record(schema)
+        for use in uses:
+            binding = self.uses[use]
+            self.uses[use] = replace(
+                binding,
+                parts=self.parts(schema, binding.members) if multipart else None,
+                default=record.default if role == "parameter" else None,
+                keywords=record.keywords,
+                encoding=record.encoding,
+            )
+        return uses
+
+    def media(  # noqa: PLR0913
         self,
         raw: YamlValue,
         declaration: _Declaration,
@@ -2736,7 +2758,6 @@ class _Contracts(_SchemaUses):
             medium = _mapping(value)
             media_declaration, media_use = _child(declaration, "content", name), _child(use_site, "content", name)
             uses: list[TypeUseId] = []
-            declaration_of: dict[TypeUseId, _Declaration] = {}
             for keyword in ("schema", "itemSchema"):
                 schema = _child(media_declaration, keyword)
                 if keyword not in medium or (schema, "value") not in self.parser.acquisitions:
@@ -2746,29 +2767,28 @@ class _Contracts(_SchemaUses):
                     if (schema, "item_stream_array") in self.parser.acquisitions
                     else ("value",)
                 )
-                for projection in projections:
-                    use = self.use(
-                        owner,
-                        role,
-                        declaration,
-                        use_site,
+                uses.extend(
+                    self.media_facts(
+                        tuple(
+                            self.use(
+                                owner,
+                                role,
+                                declaration,
+                                use_site,
+                                schema,
+                                _child(media_use, keyword),
+                                projection=projection,
+                                name=parameter_name,
+                                location=parameter_location,
+                                status=status,
+                                media=name,
+                            )
+                            for projection in projections
+                        ),
                         schema,
-                        _child(media_use, keyword),
-                        projection=projection,
-                        name=parameter_name,
-                        location=parameter_location,
-                        status=status,
-                        media=name,
+                        role,
+                        name,
                     )
-                    uses.append(use)
-                    declaration_of[use] = schema
-            multipart = name.strip().lower().startswith("multipart/")
-            for use in uses:
-                binding = self.uses[use]
-                self.uses[use] = replace(
-                    binding,
-                    parts=self.parts(_child(media_declaration, "schema"), binding.members) if multipart else None,
-                    encoding=self.record(declaration_of[use]).encoding,
                 )
             encodings: list[WireDeclaration] = []
             encoding_declaration = _child(media_declaration, "encoding")
@@ -2844,7 +2864,7 @@ class _Contracts(_SchemaUses):
             self.uses[use] = replace(
                 self.uses[use],
                 default=record.default if role == "parameter" else None,
-                documentation=record.documentation,
+                keywords=record.keywords,
                 encoding=record.encoding,
             )
             schemas = (use,)

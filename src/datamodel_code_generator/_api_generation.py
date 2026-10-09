@@ -319,19 +319,17 @@ def _generate_models(
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._api_manifest import persistent_uri  # noqa: PLC0415
+            from datamodel_code_generator._api_manifest import named_document, persistent_uri  # noqa: PLC0415
 
+            identity = document_identity(error.document, source.base)
+            named = "" if identity == source.identity else named_document(identity, identity)
             raise APIGenerationError((
                 Diagnostic(
                     code="E_INPUT_CYCLE",
                     severity="error",
                     stage="input",
-                    message=str(error),
-                    source_uri=persistent_uri(
-                        document_identity(error.document, source.base),
-                        (cwd / target.output.expanduser()).resolve(),
-                        "input",
-                    ),
+                    message=f"{error}{named}",
+                    source_uri=persistent_uri(identity, (cwd / target.output.expanduser()).resolve(), "input"),
                     source_pointer=error.pointer,
                 ),
             )) from error
