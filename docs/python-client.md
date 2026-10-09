@@ -3485,8 +3485,8 @@ A call sends the credentials of its operation's first security alternative they 
 needs all its schemes, and an OR list is tried in declared order. Each credential goes to the header, query field, or
 cookie its scheme declares, replacing a value a header patch or a parameter put there, and only to the server's
 origin: a page a server links at another origin, and `request_raw`, carry none of them. Absent security, explicit
-`[]`, and an empty alternative are anonymous choices, so an operation whose first satisfied alternative is anonymous
-sends none. A required operation that no credential satisfies raises `ConfigurationError` with the reason
+`[]`, and an empty alternative are anonymous choices that apply only when no other alternative is satisfied, so an
+optional operation sends a credential given for a listed scheme and, with none, sends nothing. A required operation that no credential satisfies raises `ConfigurationError` with the reason
 `missing_credentials` before sending, unless the HTTP client has an Auth of its own, which it then uses. The client
 authorizes no scopes: the resource server decides, and a 403 is terminal.
 

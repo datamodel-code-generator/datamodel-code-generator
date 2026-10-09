@@ -315,7 +315,8 @@ def authenticated_client(token: str) -> Client:
 A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called for
 each request; a bearer argument also takes an OAuth provider. A call sends the credentials of its operation's first
 security alternative they all satisfy, at the positions its schemes declare, and only to its server's origin. An
-anonymous alternative, an operation declaring empty security, and `request_raw` send none. A required operation no
+anonymous alternative applies only when no other alternative is satisfied, so an optional operation sends a credential
+given for a listed scheme; an operation declaring empty security and `request_raw` send none. A required operation no
 credential satisfies raises `ConfigurationError` with the reason `missing_credentials` before sending, unless the HTTP
 client has an Auth of its own. A callable's failure raises `AuthError` with the reason `provider_failed`. Credentials
 beside an Auth of the client's options or of an injected HTTP client raise `ConfigurationError` with the reason

@@ -65,15 +65,19 @@ class Credentials:
         self.values = {name: value for name, value in values.items() if value is not None}
 
     def selected(self, binding: SecurityBinding) -> tuple[Placement, ...] | None:
-        """Return the placements of an operation's first alternative the credentials satisfy, or None for none.
+        """Return the placements of an operation's first credentialed alternative the credentials satisfy, or None.
 
-        An anonymous alternative needs no credentials, and an operation declaring empty security takes none.
+        An anonymous alternative, and an operation declaring empty security, take none, and an anonymous alternative
+        applies only when no other alternative is satisfied.
         """
         values = self.values
+        anonymous = not binding.alternatives
         for alternative in binding.alternatives:
-            if all(item.scheme.name in values for item in alternative):
+            if not alternative:
+                anonymous = True
+            elif all(item.scheme.name in values for item in alternative):
                 return tuple((item.scheme, values[item.scheme.name]) for item in alternative)
-        return () if not binding.alternatives else None
+        return () if anonymous else None
 
     def auth(  # noqa: PLR0913
         self,

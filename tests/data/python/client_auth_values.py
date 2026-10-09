@@ -115,11 +115,12 @@ def _selection(package: ModuleType, exchange: Exchange, lines: list[str]) -> Non
         record(lines, "or falls to bearer", api.auth.or_auth)
         record(lines, "alias needs its own credential", api.auth.alias_auth)
         record(lines, "and missing key", api.auth.and_auth)
-        record(lines, "optional sends none", api.auth.optional_auth)
+        record(lines, "optional sends the credential", api.auth.optional_auth)
     with exchange.client() as http, package.Client(http_client=http) as api:
-        exchange.respond(_OK)
+        exchange.respond(_OK, _OK)
         record(lines, "required without credentials", api.auth.bearer)
         record(lines, "anonymous without credentials", api.auth.anonymous)
+        record(lines, "optional without credentials", api.auth.optional_auth)
 
 
 def _native(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:

@@ -41,7 +41,7 @@ credentials
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   empty security = b'ok'
   > GET https://api.example.com/optional
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
   anonymous first = b'ok'
   > GET https://api.example.com/optional-token-first
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
@@ -60,12 +60,15 @@ selection
   alias needs its own credential ! ConfigurationError: ConfigurationError(operation_id='alias_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='alias_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
   and missing key ! ConfigurationError: ConfigurationError(operation_id='and_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='and_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
   > GET https://api.example.com/optional
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  optional sends none = b'ok'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  optional sends the credential = b'ok'
   required without credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   anonymous without credentials = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  optional without credentials = b'ok'
 native auth
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: view] b''
