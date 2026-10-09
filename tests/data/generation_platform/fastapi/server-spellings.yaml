@@ -55,6 +55,14 @@ paths:
         - {name: listed, in: query, schema: {$ref: "#/components/schemas/Listed"}}
       responses:
         "204": {description: Done.}
+  /literal-model:
+    get:
+      operationId: literalModel
+      tags: [pets]
+      parameters:
+        - {name: modes, in: query, explode: false, schema: {type: array, items: {const: b}}}
+      responses:
+        "204": {description: Done.}
   /things:
     post:
       operationId: postThing

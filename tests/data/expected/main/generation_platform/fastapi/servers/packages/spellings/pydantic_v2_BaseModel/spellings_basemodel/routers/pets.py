@@ -127,7 +127,7 @@ def _add_literal(router: APIRouter, wiring: Wiring) -> None:
 
     def literal(
         *,
-        parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
+        parameters: Annotated[contract.LiteralModel1.Parameters, Depends(contract.LiteralModel1.PARAMETERS)],
     ) -> object:
         return dispatch(
             literal_handler(
@@ -135,7 +135,7 @@ def _add_literal(router: APIRouter, wiring: Wiring) -> None:
                 named=parameters.named,
                 listed=parameters.listed,
             ),
-            contract.LiteralModel.RESPONSES,
+            contract.LiteralModel1.RESPONSES,
         )
 
     router.add_api_route(
@@ -149,6 +149,38 @@ def _add_literal(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Done.',
         dependencies=wiring.dependencies.get('literal'),
+    )
+
+
+def _add_literal_model(router: APIRouter, wiring: Wiring) -> None:
+    pets: PetsService = wiring.services['pets']
+    literal_model_handler = checked(
+        pets.literal_model,
+        'The pets.literal_model method of GET /literal-model',
+    )
+
+    def literal_model(
+        *,
+        parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
+    ) -> object:
+        return dispatch(
+            literal_model_handler(
+                modes=parameters.modes,
+            ),
+            contract.LiteralModel.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/literal-model',
+        literal_model,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='literalModel',
+        tags=['pets'],
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('literal_model'),
     )
 
 
@@ -207,6 +239,7 @@ LITERAL_ROUTES: Final = (
     ('list_counts', _add_list_counts),
     ('get_code', _add_get_code),
     ('literal', _add_literal),
+    ('literal_model', _add_literal_model),
 )
 TEMPLATED_ROUTES: Final = (
     ('get_pet', _add_get_pet),

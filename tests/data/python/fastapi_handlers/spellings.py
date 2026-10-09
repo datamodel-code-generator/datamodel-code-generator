@@ -34,6 +34,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def literal(self, *, modes: object, named: object, listed: object) -> None:
             calls.append(f"literal(modes={modes!r}, named={named!r}, listed={listed!r})")
 
+        def literal_model(self, *, modes: object) -> None:
+            calls.append(f"literal_model(modes={modes!r})")
+
         def list_counts(self, *, invalid: bool | None) -> object:
             calls.append(f"list_counts(invalid={invalid!r})")
             return [1, -1 if invalid else 2]

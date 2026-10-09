@@ -29,6 +29,7 @@ OperationDependencies = TypedDict(
         'list_counts': Sequence[params.Depends],
         'get_code': Sequence[params.Depends],
         'literal': Sequence[params.Depends],
+        'literal_model': Sequence[params.Depends],
         'post_thing': Sequence[params.Depends],
         'get_pet': Sequence[params.Depends],
         'post_field': Sequence[params.Depends],
@@ -62,7 +63,7 @@ class GetCode:
     )
 
 
-class LiteralModel:
+class LiteralModel1:
     """Plans of the literal operation."""
 
     @dataclass(frozen=True, slots=True, kw_only=True)
@@ -75,6 +76,25 @@ class LiteralModel:
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array', reserved_names=('listed', 'named')), adapter=TypeAdapter(list[Literal['a']])), ParameterArgument(name='named', plan=ParameterPlan(location='query', name='named', style='form', explode=True, reserved_names=('listed', 'modes')), adapter=TypeAdapter(Annotated)), ParameterArgument(name='listed', plan=ParameterPlan(location='query', name='listed', style='form', explode=True, reserved_names=('modes', 'named')), adapter=TypeAdapter(List))),
+        record=Parameters,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class LiteralModel:
+    """Plans of the literal_model operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of literal_model."""
+
+        modes: list[Literal['b']] | None
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array'), adapter=TypeAdapter(list[Literal['b']])),),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

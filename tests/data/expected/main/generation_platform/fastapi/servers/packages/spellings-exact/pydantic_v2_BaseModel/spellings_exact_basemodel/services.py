@@ -79,6 +79,16 @@ class PetsService(Protocol):
         """
 
     @abstractmethod
+    def literal_model(
+        self,
+        *,
+        modes: Optional[List[Literal['b']]],
+    ) -> Union[None, HTTPResult[None], Response]:
+        """
+        Handle GET /literal-model.
+        """
+
+    @abstractmethod
     def get_pet(
         self,
         *,

@@ -4,7 +4,7 @@ service DaysService: post_day
 service DaysService without its methods: TypeError
 service FieldsService: post_field, post_thing
 service FieldsService without its methods: TypeError
-service PetsService: get_code, get_pet, list_counts, list_pets, literal
+service PetsService: get_code, get_pet, list_counts, list_pets, literal, literal_model
 service PetsService without its methods: TypeError
 > GET /code
   get_code(invalid=None)
@@ -78,3 +78,6 @@ service PetsService without its methods: TypeError
 < 200 application/json {"w":2}
 > POST /things
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "w"]}]
+> GET /literal-model?modes=b,b
+  literal_model(modes=['b', 'b'])
+< 204 - b''

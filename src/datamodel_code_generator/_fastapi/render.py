@@ -161,6 +161,32 @@ def _constrained(value: TypeView) -> bool:
     return False
 
 
+def _plan_classes(plan: ServerPlan, written: set[str]) -> dict[str, str]:
+    """Name each operation's plan class by its PascalCase name, unique among the module's classes.
+
+    A name the model types write takes a `Model` suffix, then a number, as the model generator renames such a class.
+    """
+    taken = {spec.pascal for spec in plan.operations if spec.pascal not in written}
+    classes: dict[str, str] = {}
+    for spec in plan.operations:
+        name = spec.pascal
+        if name in written:
+            base, count = f"{name}Model", 0
+            name = base
+            while name in taken:
+                count += 1
+                name = f"{base}{count}"
+            taken.add(name)
+        classes[spec.key] = name
+    return classes
+
+
+def _chain(module: Module, members: Iterable[str]) -> str:
+    """Return a union of support types as the model generator writes it, each member once in the order first seen."""
+    parts = tuple(dict.fromkeys(members))
+    return " | ".join(parts) if module.union("T", "U") == "T | U" else module.union(*parts)
+
+
 def _reads_inputs(spec: OperationSpec) -> bool:
     """Return whether an operation reads an input through an adapter."""
     return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
@@ -491,10 +517,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.types = types
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
-        written = {name for module, name in types.fixed if module is not None}
-        self.classes = {
-            spec.key: f"{spec.pascal}Model" if spec.pascal in written else spec.pascal for spec in plan.operations
-        }
+        self.classes = _plan_classes(plan, {name for module, name in types.fixed if module is not None})
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:
@@ -861,7 +884,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             name=spec.python_name,
             asynchronous=spec.mode == "async",
             parameters=tuple(self.parameters(module, spec, "PrincipalT_contra")),
-            returns=module.union(*dict.fromkeys(self.results(module, spec))),
+            returns=_chain(module, self.results(module, spec)),
             docstring=format_docstring(
                 self.docstring(spec), 8, use_single_line_docstring=self.use_single_line_docstring
             ),
@@ -1228,7 +1251,7 @@ def _security(module: Module) -> Parameter:
         module.local("_runtime.server.security", "Authorize"),
         module.local("_runtime.server.security", "AsyncAuthorize"),
     )
-    return Parameter("authorize", module.union(*(f"{item}[{principal}]" for item in authorizers)))
+    return Parameter("authorize", _chain(module, [f"{item}[{principal}]" for item in authorizers]))
 
 
 def _dependency_sequence(module: Module) -> str:

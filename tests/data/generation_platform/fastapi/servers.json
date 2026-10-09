@@ -3262,6 +3262,10 @@
         "json": {
           "w": "no"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/literal-model?modes=b,b"
       }
     ],
     "package_snapshots": [
@@ -3409,6 +3413,10 @@
         "json": {
           "w": "no"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/literal-model?modes=b,b"
       }
     ],
     "package_snapshots": [

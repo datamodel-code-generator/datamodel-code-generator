@@ -92,6 +92,9 @@ FieldCodeGetQueryInvalidParameter = TypeAliasType("FieldCodeGetQueryInvalidParam
 FieldLiteralGetQueryModesParameter = TypeAliasType("FieldLiteralGetQueryModesParameter", list[Literal['a']])
 
 
+FieldLiteralModelGetQueryModesParameter = TypeAliasType("FieldLiteralModelGetQueryModesParameter", list[Literal['b']])
+
+
 FieldPetsPetIdGetQueryLimitParameter = TypeAliasType(
     "FieldPetsPetIdGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
 )
