@@ -27,7 +27,7 @@ CATEGORY_DESCRIPTIONS = {
     OptionCategory.OPENAPI: "OpenAPI-specific generation behavior.",
     OptionCategory.GRAPHQL: "GraphQL-specific generation behavior.",
     OptionCategory.GENERAL: "General utility, HTTP, checking, and project integration options.",
-    OptionCategory.TARGET: "Server generation alongside the models (experimental).",
+    OptionCategory.TARGET: "Server and client generation alongside the models (experimental).",
 }
 OPTION_CATEGORIES = (
     OptionCategory.BASE,

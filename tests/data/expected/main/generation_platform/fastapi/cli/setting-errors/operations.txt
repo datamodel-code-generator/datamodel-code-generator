@@ -1,1 +1,1 @@
-Error: The --server-body-modes entry '/paths/~1pets/post' selects no root path operation; The --server-handler-modes entry '/paths/~1cats/get' selects no root path operation
+Error: The --server-body-modes entry '/paths/~1pets/post' in '<root>/other.yaml' selects no root path operation; The --server-handler-modes entry '/paths/~1cats/get' selects no root path operation

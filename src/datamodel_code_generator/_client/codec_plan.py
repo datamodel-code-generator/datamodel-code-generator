@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import unquote, urldefrag, urljoin
 
@@ -317,8 +316,8 @@ class _Planner:
 
     def kinds(self, value: FinalPythonType) -> tuple[JSONKind, ...]:
         if isinstance(value, GeneratedSymbolType):
-            if self.symbols[value.symbol].kind == "enum":
-                kinds = self.enums.get(value.symbol, frozenset())
+            if (symbol := self.symbols[value.symbol]).kind == "enum":
+                kinds = {item.kind for item in symbol.values if item is not None}
                 return tuple(kind for kind, native in (("string", "str"), ("number", "int")) if native in kinds)
             return ("object",)
         if isinstance(value, GenericType):
@@ -398,28 +397,6 @@ class _Planner:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
                 tags[name] = symbol
         return tag, tuple(tags.items())
-
-    @cached_property
-    def enums(self) -> dict[int, frozenset[str]]:
-        """The JSON kinds of each enum's values, read from the first schema it was generated from the wire holds.
-
-        An enum is generated from every schema it replaces, and a schema the wire never reaches is not held.
-        """
-        kinds: dict[int, frozenset[str]] = {}
-        for use in self.batch.type_uses:
-            if (
-                use.id.role == "schema"
-                and isinstance(value := use.type, GeneratedSymbolType)
-                and value.symbol not in kinds
-                and self.symbols[value.symbol].kind == "enum"
-                and isinstance(values := self.wire.schema(use.schema or use.id.schema_site)[1].get("enum"), tuple)
-            ):
-                kinds[value.symbol] = frozenset(
-                    "int" if type(item) is int else "str" if type(item) is str else "other"
-                    for item in values
-                    if item is not None
-                )
-        return kinds
 
 
 def plan_client_codecs(
