@@ -1510,21 +1510,21 @@ def _structured_output_json_schema() -> str:
 
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
-    if is_directory_output:
-        generated_files = sorted(generated_output.rglob("*"))
-        for generated_file in generated_files:
-            if not generated_file.is_file():
-                continue
-            target = actual_output / generated_file.relative_to(generated_output)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(generated_file, target)
-        if generated_files or not generated_output.is_file():
-            return
+    from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
-    if not generated_output.exists():
-        return
-    actual_output.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(generated_output, actual_output)
+    targets: dict[Path, Path] = {}
+    if is_directory_output:
+        targets = {
+            generated_file: actual_output / generated_file.relative_to(generated_output)
+            for generated_file in sorted(generated_output.rglob("*"))
+            if generated_file.is_file()
+        }
+    if not targets and generated_output.is_file():
+        targets = {generated_output: actual_output}
+    warn_shadowed_modules(targets.values())
+    for generated_file, target in targets.items():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(generated_file, target)
 
 
 def _write_generated_result(

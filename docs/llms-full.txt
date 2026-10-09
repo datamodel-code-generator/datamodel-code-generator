@@ -48673,6 +48673,20 @@ datamodel-codegen --check --input schema.yaml --output models.py
 
 This exits with code 1 if the output would differ, without modifying files.
 
+### 🧹 Files from earlier runs remain in the output directory
+
+Generation overwrites the files it writes and never deletes a file an earlier run wrote. Remove files that are no
+longer generated yourself; `--check` of a directory output lists them as `EXTRA`.
+
+A stale package can hide a new module. When a schema change turns a package of a directory output into a module, for
+example `models/pets/` into `models/pets.py`, or a directory output `models/` gives way to a single-file output
+`models.py`, the old directory stays, and Python imports a directory that holds an `__init__.py` in preference to the
+module of the same name. Generation still writes the module and warns that the existing package directory shadows it,
+naming both paths; remove the stale directory. A directory whose only `__init__` is a compiled `__init__.pyc` or an
+extension module hides the module in the same way but is not reported. `--check` and `--diff-against` write nothing
+and do not warn. `--disable-warnings` and Python warning filters silence the warning; a filter that turns it into an
+error, such as `-W error::UserWarning`, stops the run before it writes anything.
+
 ---
 
 ## ⚡ Performance

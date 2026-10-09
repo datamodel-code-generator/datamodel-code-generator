@@ -1147,6 +1147,50 @@ def test_fastapi_cli_mixed_jobs(
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
 
 
+@pytest.mark.parametrize(
+    ("case", "pyproject", "arguments", "packages", "check"),
+    [
+        ("target-module", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["server/services"], Exit.DIFF),
+        ("models", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["models"], Exit.OK),
+        ("mixed-jobs", ["pyproject-mixed-jobs.toml"], ["--all-jobs"], ["schemas", "models"], Exit.OK),
+    ],
+    ids=["target-module", "models", "mixed-jobs"],
+)
+def test_fastapi_cli_shadowed_modules(
+    case: str,
+    pyproject: list[str],
+    arguments: list[str],
+    packages: list[str],
+    check: Exit,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Report each planned module beside a package of its name, on the run that writes it and on an unchanged one.
+
+    The models of a server run, its target modules, and the model-only jobs of its batch are reported alike, and
+    --check, which writes nothing, reports none.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *pyproject)
+    for package in packages:
+        (tmp_path / package).mkdir(parents=True)
+        (tmp_path / package / "__init__.py").touch()
+    lines = []
+    for run, options, expected_exit in (
+        ("first", [], Exit.OK),
+        ("unchanged", [], Exit.OK),
+        ("check", ["--check"], check),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            run_main_with_args([*arguments, *options], expected_exit=expected_exit)
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-modules" / f"{case}.txt")
+
+
 def test_fastapi_cli_jobs_json(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
