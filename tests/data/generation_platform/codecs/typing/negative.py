@@ -5,7 +5,8 @@ from __future__ import annotations
 from types import MappingProxyType
 
 from datamodel_code_generator._runtime.model_codecs.media import JSONValue, json_value
-from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan, RawParameter, decode_parameter
+from datamodel_code_generator._runtime.model_codecs.parameter_reads import RawParameter, decode_parameter
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 from datamodel_code_generator._runtime.model_codecs.unset import Unset
 
 unknown: JSONValue = object()  # error

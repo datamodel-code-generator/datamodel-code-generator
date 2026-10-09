@@ -226,6 +226,8 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
             ("obsolete RFC850", ("Sunday, 06-Nov-94 08:49:37 GMT",)),
             ("RFC850 future window", ("Sunday, 06-Nov-74 08:49:37 GMT",)),
             ("unknown date timezone", ("Sun, 06 Nov 2094 08:49:37 BOGUS",)),
+            ("unknown local timezone", ("Sun, 06 Nov 2094 08:49:37 -0000",)),
+            ("offset timezone", ("Sun, 06 Nov 2094 08:49:37 +0900",)),
             ("date trailing junk", ("Sun, 06 Nov 2094 08:49:37 GMT ignored",)),
             ("date wrong case", ("sun, 06 Nov 2094 08:49:37 GMT",)),
             ("leap second", ("Sat, 31 Dec 2016 23:59:60 GMT",)),

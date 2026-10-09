@@ -27,8 +27,6 @@ from pets.errors import (
     APIConnectionError,
     APIStatusError,
     APITimeoutError,
-    AuthError,
-    AuthReason,
     ConfigurationError,
     DecodeError,
     NotFoundError,
@@ -292,9 +290,6 @@ def error_measurements(error: SDKError, info: ResponseInfo) -> None:
     connection: APIConnectionError = deadline
     assert_type(connection.reason, str | None)
     assert_type(connection.cause, BaseException | None)
-    auth = AuthError(reason="oauth_error", status_code=400, oauth_error="invalid_grant")
-    assert_type(auth.reason, AuthReason)
-    assert_type(auth.status_code, int | None)
     decoded = DecodeError(reason="unencodable", direction="request", location=("body", 0))
     assert_type(decoded.location, tuple[str | int, ...])
     redirect = ConfigurationError(field_path=("redirects",), reason="redirect_refused", info=info)

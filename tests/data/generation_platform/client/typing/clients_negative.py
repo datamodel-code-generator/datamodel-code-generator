@@ -9,7 +9,6 @@ from pets import AsyncClient, Client
 from pets.errors import (
     APIStatusError,
     APITimeoutError,
-    AuthError,
     ConfigurationError,
     DecodeError,
     SDKError,
@@ -132,7 +131,6 @@ def misuse_timing(phase: TimeoutOptions) -> None:
 
 def misuse_deadline_errors(error: SDKError) -> None:
     APITimeoutError(reason=1)  # error
-    AuthError(reason="expired")  # error
     DecodeError(direction="request")  # error
     APIStatusError(body=b"")  # error
     SDKError(attempt_count="one")  # error

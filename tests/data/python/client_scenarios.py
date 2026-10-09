@@ -182,7 +182,11 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
     exchange.respond(json_response(200, pets))
-    for label, value in (("cookie as given", "a%20b+c"), ("cookie delimiter", "a;b"), ("cookie non-ASCII", "caf\u00e9")):
+    for label, value in (
+        ("cookie as given", "a%20b+c"),
+        ("cookie delimiter", "a;b"),
+        ("cookie non-ASCII", "caf\u00e9"),
+    ):
         cookie = argument(package, "listPets", "cookie", "session", value)
         record(lines, label, lambda cookie=cookie: api.pets.list_pets(x_trace=trace, session=cookie))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
@@ -381,7 +385,9 @@ def pets(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with (
         exchange.client() as http,
-        package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api,
+        package.Client(
+            http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
     ):
         for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
             step(package, api, exchange, lines)
@@ -451,7 +457,9 @@ def media(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "form", lambda: api.forms.submit_form(body=form))
         record(lines, "form invalid", lambda: api.forms.submit_form(body=form))
-        exchange.respond(raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded"))
+        exchange.respond(
+            raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded")
+        )
         record(lines, "form repeated undeclared member", lambda: api.forms.submit_form(body=form))
         exchange.respond(
             raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
@@ -655,11 +663,16 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 
 
 def default_server(package: ModuleType, lines: list[str]) -> None:
-    """Send a request to the default base URL."""
+    """Send a request to the default base URL, and refuse a raw body a package without binary bodies cannot send."""
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(raw_response(204))
         record(lines, "status", api.default.get_status)
+        record(
+            lines,
+            "raw body other than bytes",
+            lambda: api.request_raw("POST", "https://default.example.com/raw", body=iter([b"x"])),
+        )
 
 
 _DOTS: Final = (".", "..", "...", ".a", "%2e", "")

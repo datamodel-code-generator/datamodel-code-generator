@@ -16,15 +16,12 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalize_media_type,
     plain,
 )
-from datamodel_code_generator._runtime.model_codecs.parameters import (
-    ParameterPlan,
+from datamodel_code_generator._runtime.model_codecs.parameter_reads import (
     RawParameters,
     decode_parameter,
-    pairs,
-    path_text,
-    querystring,
     raw_parameter,
 )
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan, pairs, path_text, querystring
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -124,6 +121,11 @@ def parameter_encoding_report(path: Path) -> str:
         ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, 1.5),
         ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, 1e-07),
         ({"location": "query", "name": "i", "style": "form", "explode": True, "kind": "integer"}, 10**5000),
+        ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, float("inf")),
+        ({"location": "query", "name": "i", "style": "form", "explode": True, "kind": "integer"}, float("-inf")),
+        ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, float("nan")),
+        ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, Decimal("Infinity")),
+        ({"location": "query", "name": "i", "style": "form", "explode": True, "kind": "integer"}, Decimal("NaN")),
     ]
     lines.extend(
         f"python {_label(parameter_plan(data))}: {attempt(lambda data=data, value=value: _round_trip(parameter_plan(data), value))}"

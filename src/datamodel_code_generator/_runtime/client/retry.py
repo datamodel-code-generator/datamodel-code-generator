@@ -213,10 +213,7 @@ def http_date(value: str) -> datetime | None:
 def http_timestamp(value: str) -> float | None:
     """Return the POSIX time of an HTTP date within ASCII whitespace, or None for no date or an impossible one."""
     date = http_date(value.strip(_ASCII_WHITESPACE))
-    try:
-        return None if date is None else date.timestamp()
-    except (OverflowError, OSError):
-        return None
+    return None if date is None else date.timestamp()
 
 
 def _seconds(value: str, received_wall_time: float) -> float | None:
