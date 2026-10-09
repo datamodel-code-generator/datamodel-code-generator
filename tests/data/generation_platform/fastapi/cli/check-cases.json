@@ -12,6 +12,7 @@
   "ignore-unrendered-text": {"write": {"server/notes.txt": "User notes\n"}},
   "ignore-bytecode-python": {"write": {"server/__pycache__/extra.py": "# cache\n"}},
   "crlf": {"crlf": ["models.py", "server/services.py", "server/README.md"]},
+  "lf": {"lf": ["models.py", "server/services.py", "server/README.md"]},
   "non-text-python": {"binary": ["server/services.py"], "error": "server: Output is not text in encoding 'utf-8'"},
   "non-text-readme": {"binary": ["server/README.md"], "error": "server/README.md: Output is not text in encoding 'utf-8'"},
   "latin-1": {"encoding": "latin-1", "append": {"server/services.py": "# Café\n"}, "templates": true},
@@ -19,5 +20,52 @@
   "modular": {"modular": true},
   "modular-extra": {"modular": true, "write": {"models/extra.py": "# stale model\n"}},
   "modular-missing": {"modular": true, "remove": ["models"]},
-  "stale-owned": {"options": ["--openapi-include-paths", "/pets"], "changed": true}
+  "stale": {"options": ["--openapi-include-paths", "/pets"], "changed": true},
+  "stale-regenerated": {"options": ["--openapi-include-paths", "/pets"], "regenerate": true, "changed": true},
+  "edited-regenerated": {"append": {"server/services.py": "# changed\n"}, "regenerate": true, "changed": false},
+  "leftover-manifest": {"write": {"server/.dcg-target-manifest.json": "{\"format\": 1}\n"}},
+  "foreign": {"fresh": true, "write": {"server/routers/__init__.py": "# Someone else's module.\n"}},
+  "models-in-package": {"model": "server/models.py", "arguments": ["--server-model-package", "server.models"]},
+  "suffixless-models-in-package": {
+    "model": "server/models",
+    "encoding": "latin-1",
+    "arguments": [
+      "--server-model-package", "server.models", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"
+    ]
+  },
+  "models-in-package-changed": {
+    "model": "server/models.py",
+    "arguments": ["--server-model-package", "server.models"],
+    "append": {"server/models.py": "# changed\n", "server/services.py": "# changed\n"},
+    "remove": ["server/README.md"],
+    "write": {"server/extensions.py": "# User extension\n"}
+  },
+  "models-in-package-stale": {
+    "model": "server/models.py",
+    "arguments": ["--server-model-package", "server.models"],
+    "options": ["--openapi-include-paths", "/pets"],
+    "changed": true
+  },
+  "modular-models-in-package": {
+    "modular": true,
+    "model": "server/models",
+    "arguments": ["--server-model-package", "server.models"],
+    "remove": ["server/models/pets.py"],
+    "write": {"server/models/extra.py": "# stale model\n"}
+  },
+  "package-in-models": {
+    "modular": true,
+    "server": "models/server",
+    "notice": "dependencies-models-server.txt",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"]
+  },
+  "package-in-models-changed": {
+    "modular": true,
+    "server": "models/server",
+    "notice": "dependencies-models-server.txt",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"],
+    "append": {"models/pets.py": "# changed\n", "models/server/services.py": "# changed\n"},
+    "remove": ["models/server/py.typed"],
+    "write": {"models/extra.py": "# stale model\n", "models/server/extensions.py": "# User extension\n"}
+  }
 }
