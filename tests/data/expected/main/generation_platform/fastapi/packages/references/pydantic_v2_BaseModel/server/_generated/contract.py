@@ -9,17 +9,17 @@ from collections.abc import Sequence
 from typing import Final, TypedDict
 
 import models
+from fastapi import params
 from pydantic import TypeAdapter
 
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'list_pets': Sequence[Dependency],
-        'create_pet': Sequence[Dependency],
-        'list_owners': Sequence[Dependency],
+        'list_pets': Sequence[params.Depends],
+        'create_pet': Sequence[params.Depends],
+        'list_owners': Sequence[params.Depends],
     },
     total=False,
 )
@@ -28,12 +28,6 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_pets',
-        service='service',
-        keywords=('principal', 'limit', 'page', 'x_trace'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
@@ -47,12 +41,6 @@ class ListPets:
 class CreatePet:
     """Plans of the create_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='create_pet',
-        service='service',
-        keywords=('principal', 'x_trace', 'body'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '201': Declared(
@@ -66,12 +54,6 @@ class CreatePet:
 class ListOwners:
     """Plans of the list_owners operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_owners',
-        service='service',
-        keywords=('principal', 'limit'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(

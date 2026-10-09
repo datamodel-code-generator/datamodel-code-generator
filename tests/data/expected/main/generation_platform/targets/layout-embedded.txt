@@ -8,7 +8,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -25,17 +24,21 @@ show server/routers/pets.py
   | import example.models as example_models
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
-  | from .._runtime.server.application import Dependency, Wiring, build
+  | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
   | from collections.abc import Sequence
-  | from fastapi import APIRouter, Body
+  | from fastapi import APIRouter, Body, params
   | from fastapi.responses import Response
   | from typing import Annotated, Final
   | 
   | 
   | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-  |     list_pets_handler = wiring.handlers['list_pets']
+  |     pets: PetsService = wiring.services['pets']
+  |     list_pets_handler = checked(
+  |         pets.list_pets,
+  |         'The pets.list_pets method of GET /pets',
+  |     )
   | 
   |     def list_pets() -> object:
   |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
@@ -56,7 +59,11 @@ show server/routers/pets.py
   | 
   | 
   | def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-  |     create_pet_handler = wiring.handlers['create_pet']
+  |     pets: PetsService = wiring.services['pets']
+  |     create_pet_handler = checked(
+  |         pets.create_pet,
+  |         'The pets.create_pet method of POST /pets',
+  |     )
   | 
   |     def create_pet(
   |         *,
@@ -82,8 +89,8 @@ show server/routers/pets.py
   | 
   | 
   | LITERAL_ROUTES: Final = (
-  |     (contract.ListPets.OPERATION, _add_list_pets),
-  |     (contract.CreatePet.OPERATION, _add_create_pet),
+  |     ('list_pets', _add_list_pets),
+  |     ('create_pet', _add_create_pet),
   | )
   | TEMPLATED_ROUTES: Final = ()
   | 
@@ -91,11 +98,11 @@ show server/routers/pets.py
   | def build_router(
   |     *,
   |     pets: PetsService,
-  |     dependencies: Sequence[Dependency] = (),
+  |     dependencies: Sequence[params.Depends] = (),
   |     operation_dependencies: OperationDependencies | None = None,
   |     prefix: str = "",
   | ) -> APIRouter:
-  |     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+  |     """Register the pets operations on a new router, literal paths first."""
   |     return build(
   |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
   |         services={'pets': pets},

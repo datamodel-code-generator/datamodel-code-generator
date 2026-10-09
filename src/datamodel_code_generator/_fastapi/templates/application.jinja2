@@ -7,7 +7,7 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 
 
 {{ build_signature }}
-    """Check the services and settings, then register every operation, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return {{ build }}(
         ROUTES,
         services={{ services }},

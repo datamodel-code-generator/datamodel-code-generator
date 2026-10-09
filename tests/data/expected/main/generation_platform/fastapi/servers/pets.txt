@@ -4,11 +4,7 @@ service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
 service PetsService without its methods: TypeError
 service StoreService: get_inventory
 service StoreService without its methods: TypeError
-build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
-build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
-build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets
   list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
@@ -83,11 +79,7 @@ service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
 service PetsService without its methods: TypeError
 service StoreService: get_inventory
 service StoreService without its methods: TypeError
-build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
-build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
-build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets
   list_pets(limit=20, tags=None, kind=None, x_request_id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]

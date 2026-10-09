@@ -7,8 +7,9 @@
 {%- for route in routes %}
 
 
-def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
-    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+def {{ route.adder }}({{ route.router }}: {{ api_router }}, {{ route.wiring }}: {{ wiring }}) -> None:
+    {{ route.service }}: {{ route.protocol }} = {{ route.wiring }}.services[{{ route.group }}]
+    {{ route.handler }} = {{ route.lookup }}
 {%- if route.principal %}
 
     {{ route.principal }}

@@ -13,7 +13,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -32,7 +31,6 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
@@ -52,7 +50,6 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
-  unchanged target server/errors.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed

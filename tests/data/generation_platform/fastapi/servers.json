@@ -7,11 +7,7 @@
       "pydantic_v2.dataclass"
     ],
     "builds": [
-      "missing",
-      "not-callable",
-      "async",
-      "async-object",
-      "signature"
+      "missing"
     ],
     "requests": [
       {
@@ -1351,6 +1347,22 @@
         "requests": [
           {
             "method": "GET",
+            "url": "/public"
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "Bearer tok"
+            }
+          }
+        ]
+      },
+      {
+        "set": "authorize-lambda",
+        "requests": [
+          {
+            "method": "GET",
             "url": "/pets",
             "headers": {
               "X-API-Key": "abc"
@@ -1358,7 +1370,48 @@
           },
           {
             "method": "GET",
-            "url": "/public"
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "denied"
+            }
+          }
+        ]
+      },
+      {
+        "set": "authorize-wrapped",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "denied"
+            }
+          }
+        ]
+      },
+      {
+        "set": "authorize-partial",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "denied"
+            }
           }
         ]
       }
@@ -2148,6 +2201,55 @@
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "locals": {
+    "input": "server-locals.yaml",
+    "services": "locals",
+    "apps": [
+      {
+        "set": "default",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/router?wiring=w&router_handler=h&router_principal=p&router_authorize=a&api_key=k",
+            "headers": {
+              "X-API-Key": "abc",
+              "Cookie": "parameters=c"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/router"
+          },
+          {
+            "method": "GET",
+            "url": "/wiring?router=r&contract=c&dispatch=d&checked=k",
+            "headers": {
+              "Cookie": "wiring_handler=h"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/security?security=s&authenticate_handler=h",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          }
+        ]
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "unauthorized": {
+    "input": "server-security.yaml",
+    "services": "unauthorized",
+    "model": {
+      "custom_template_dir": "templates/unauthorized"
+    },
+    "apps": [],
+    "package_snapshots": []
   },
   "nested-models": {
     "input": "unbound.yaml",

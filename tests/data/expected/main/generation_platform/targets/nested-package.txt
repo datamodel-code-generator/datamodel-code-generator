@@ -9,7 +9,6 @@ tree
   models/server/_generated/__init__.py
   models/server/_generated/contract.py
   models/server/application.py
-  models/server/errors.py
   models/server/py.typed
   models/server/routers/__init__.py
   models/server/routers/store.py
@@ -27,7 +26,6 @@ render
   unchanged target models/server/routers/store.py
   unchanged target models/server/_generated/__init__.py
   unchanged target models/server/_generated/contract.py
-  unchanged target models/server/errors.py
   unchanged target models/server/services.py
   unchanged target models/server/README.md
   unchanged target models/server/py.typed

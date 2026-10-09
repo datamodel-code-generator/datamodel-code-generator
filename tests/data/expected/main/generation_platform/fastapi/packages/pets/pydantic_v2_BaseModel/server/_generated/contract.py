@@ -10,22 +10,22 @@ from dataclasses import dataclass
 from typing import Final, TypedDict
 
 import models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'list_pets': Sequence[Dependency],
-        'create_pet': Sequence[Dependency],
-        'list_my_pets': Sequence[Dependency],
-        'get_pet': Sequence[Dependency],
-        'delete_pet': Sequence[Dependency],
-        'get_inventory': Sequence[Dependency],
+        'list_pets': Sequence[params.Depends],
+        'create_pet': Sequence[params.Depends],
+        'list_my_pets': Sequence[params.Depends],
+        'get_pet': Sequence[params.Depends],
+        'delete_pet': Sequence[params.Depends],
+        'get_inventory': Sequence[params.Depends],
     },
     total=False,
 )
@@ -34,11 +34,6 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_pets',
-        service='pets',
-        keywords=('limit', 'tags', 'kind', 'x_request_id', 'since', 'session'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of list_pets."""
@@ -77,11 +72,6 @@ class ListPets:
 class CreatePet:
     """Plans of the create_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='create_pet',
-        service='pets',
-        keywords=('body',),
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '201': Declared(
@@ -95,7 +85,6 @@ class CreatePet:
 class ListMyPets:
     """Plans of the list_my_pets operation."""
 
-    OPERATION: Final = OperationPlan(name='list_my_pets', service='pets')
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
@@ -109,11 +98,6 @@ class ListMyPets:
 class GetPet:
     """Plans of the get_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_pet',
-        service='pets',
-        keywords=('pet_id',),
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
@@ -131,18 +115,12 @@ class GetPet:
 class DeletePet:
     """Plans of the delete_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='delete_pet',
-        service='pets',
-        keywords=('pet_id',),
-    )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetInventory:
     """Plans of the get_inventory operation."""
 
-    OPERATION: Final = OperationPlan(name='get_inventory', service='store')
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(

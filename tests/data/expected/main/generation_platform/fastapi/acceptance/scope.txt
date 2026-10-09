@@ -15,8 +15,8 @@ empty generate() memory: Error: --output-model-type: The fastapi target does not
 unselected generate() output: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 unselected generate() memory: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 empty sentinel: Error: `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`
-primitive generate() memory: 21 files
-empty generate() memory: 20 files
-unselected generate() memory: 20 files
+primitive generate() memory: 20 files
+empty generate() memory: 19 files
+unselected generate() memory: 19 files
 imported []
 written []
