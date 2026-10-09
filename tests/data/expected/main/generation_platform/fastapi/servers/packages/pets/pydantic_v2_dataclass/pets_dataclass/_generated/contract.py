@@ -10,7 +10,6 @@ from typing import Final, TypedDict
 
 import pets_dataclass_models
 from fastapi import params
-from pydantic import TypeAdapter
 
 from .._runtime.server.responses import Declared, OperationResponses
 
@@ -35,11 +34,11 @@ class ListPets:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.FieldPetsGetResponse),
+                model=pets_dataclass_models.FieldPetsGetResponse,
             ),
             'default': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.Error),
+                model=pets_dataclass_models.Error,
             ),
         },
     )
@@ -52,7 +51,7 @@ class CreatePet:
         responses={
             '201': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.Pet),
+                model=pets_dataclass_models.Pet,
             ),
         },
     )
@@ -65,7 +64,7 @@ class ListMyPets:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.FieldPetsMineGetResponse),
+                model=pets_dataclass_models.FieldPetsMineGetResponse,
             ),
         },
     )
@@ -78,11 +77,11 @@ class GetPet:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.Pet),
+                model=pets_dataclass_models.Pet,
             ),
             '404': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.Error),
+                model=pets_dataclass_models.Error,
             ),
         },
     )
@@ -101,7 +100,7 @@ class GetInventory:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(pets_dataclass_models.FieldStoreInventoryGetResponse),
+                model=pets_dataclass_models.FieldStoreInventoryGetResponse,
             ),
         },
     )

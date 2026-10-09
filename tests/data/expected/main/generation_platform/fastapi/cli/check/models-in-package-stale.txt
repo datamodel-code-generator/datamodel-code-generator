@@ -1,6 +1,6 @@
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -19,10 +19,6 @@
+@@ -18,10 +18,6 @@
      {
          'list_pets': Sequence[params.Depends],
          'create_pet': Sequence[params.Depends],
@@ -11,8 +11,8 @@
      },
      total=False,
  )
-@@ -56,52 +52,3 @@
-             ),
+@@ -52,46 +48,3 @@
+             '201': Declared(media_type='application/json', model=server_models.Pet),
          },
      )
 -
@@ -24,7 +24,7 @@
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                adapter=TypeAdapter(server_models.FieldPetsMineGetResponse),
+-                model=server_models.FieldPetsMineGetResponse,
 -            ),
 -        },
 -    )
@@ -35,14 +35,8 @@
 -
 -    RESPONSES: Final = OperationResponses(
 -        responses={
--            '200': Declared(
--                media_type='application/json',
--                adapter=TypeAdapter(server_models.Pet),
--            ),
--            '404': Declared(
--                media_type='application/json',
--                adapter=TypeAdapter(server_models.Error),
--            ),
+-            '200': Declared(media_type='application/json', model=server_models.Pet),
+-            '404': Declared(media_type='application/json', model=server_models.Error),
 -        },
 -    )
 -
@@ -60,7 +54,7 @@
 -        responses={
 -            '200': Declared(
 -                media_type='application/json',
--                adapter=TypeAdapter(server_models.FieldStoreInventoryGetResponse),
+-                model=server_models.FieldStoreInventoryGetResponse,
 -            ),
 -        },
 -    )

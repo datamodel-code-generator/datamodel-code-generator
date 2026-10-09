@@ -10,7 +10,6 @@ from typing import Final, TypedDict
 
 import models
 from fastapi import params
-from pydantic import TypeAdapter
 
 from .._runtime.server.responses import Declared, OperationResponses
 
@@ -35,12 +34,9 @@ class ListPets:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(models.FieldPetsGetResponse),
+                model=models.FieldPetsGetResponse,
             ),
-            'default': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Error),
-            ),
+            'default': Declared(media_type='application/json', model=models.Error),
         },
     )
 
@@ -49,12 +45,7 @@ class CreatePet:
     """Plans of the create_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={
-            '201': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Pet),
-            ),
-        },
+        responses={'201': Declared(media_type='application/json', model=models.Pet)},
     )
 
 
@@ -65,7 +56,7 @@ class ListMyPets:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(models.FieldPetsMineGetResponse),
+                model=models.FieldPetsMineGetResponse,
             ),
         },
     )
@@ -76,14 +67,8 @@ class GetPet:
 
     RESPONSES: Final = OperationResponses(
         responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Pet),
-            ),
-            '404': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Error),
-            ),
+            '200': Declared(media_type='application/json', model=models.Pet),
+            '404': Declared(media_type='application/json', model=models.Error),
         },
     )
 
@@ -101,7 +86,7 @@ class GetInventory:
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(models.FieldStoreInventoryGetResponse),
+                model=models.FieldStoreInventoryGetResponse,
             ),
         },
     )

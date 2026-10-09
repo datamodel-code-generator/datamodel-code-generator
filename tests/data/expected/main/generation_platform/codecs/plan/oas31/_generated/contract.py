@@ -79,9 +79,6 @@ class GetPetsPetId:
     )
     RESPONSES: Final = OperationResponses(
         responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(plan_oas31_models.Pet),
-            ),
+            '200': Declared(media_type='application/json', model=plan_oas31_models.Pet),
         },
     )
