@@ -188,7 +188,7 @@ conversion rules, as they do for unknown object members. Dataclass and TypedDict
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
-The generated `model_codecs` module exports `UNSET`, `Unset` and `JSONValue`. Parameter parsing records and wire
+The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details.
 
 ## Webhook contracts
@@ -229,18 +229,18 @@ a generated helper calls a verifier and checks its result.
 
 `WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
 the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
-`Unset` removed and every argument required. Both types are exported from `pkg.protocols`.
+`UNSET` removed and every argument required. Both types are exported from `pkg.protocols`.
 `ResolvedWebhookOptions` records limits already validated and resolved by the consuming helper. Helpers must
 validate `WebhookOptions` before constructing this record and passing it to an application verifier.
 
 | Field | Type | Effective default | Valid values |
 |---|---|---|---|
-| `max_body_bytes` | `int \| Unset` | `8388608` | Positive integer |
-| `max_header_bytes` | `int \| Unset` | `16384` | Positive integer |
-| `max_keys` | `int \| Unset` | `8` | Positive integer |
-| `max_signatures` | `int \| Unset` | `8` | Positive integer |
-| `past_tolerance` | `float \| Unset` | `300` seconds | Finite, nonnegative number |
-| `future_tolerance` | `float \| Unset` | `30` seconds | Finite, nonnegative number |
+| `max_body_bytes` | `int \| UNSET` | `8388608` | Positive integer |
+| `max_header_bytes` | `int \| UNSET` | `16384` | Positive integer |
+| `max_keys` | `int \| UNSET` | `8` | Positive integer |
+| `max_signatures` | `int \| UNSET` | `8` | Positive integer |
+| `past_tolerance` | `float \| UNSET` | `300` seconds | Finite, nonnegative number |
+| `future_tolerance` | `float \| UNSET` | `30` seconds | Finite, nonnegative number |
 
 Options reject `None`, booleans, negative values, nonfinite durations, and zero count limits with
 `ConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
@@ -703,9 +703,9 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
     def page(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1387,7 +1387,7 @@ keywords, never field arguments, without the parameter the helper writes the con
         source: UploadSource,
         *,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1618,8 +1618,8 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1785,7 +1785,7 @@ one is awaited once and returns the stream:
         self,
         state: JSONValue,
         *,
-        criteria: dict[str, str] | Unset = UNSET,
+        criteria: dict[str, str] | UNSET = UNSET,
         body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
@@ -1936,7 +1936,7 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -2031,7 +2031,7 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
         self,
         *,
         room: str,
-        since: int | Unset = UNSET,
+        since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -2232,8 +2232,8 @@ With asyncio, `fetch` is a coroutine:
     def fetch(
         self,
         *,
-        fields: str | Unset = UNSET,
-        accept_language: str | Unset = UNSET,
+        fields: str | UNSET = UNSET,
+        accept_language: str | UNSET = UNSET,
         user_id: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
@@ -2675,8 +2675,8 @@ identifier, and when a body field name names no field argument or its operation 
 
 ### Signatures
 
-The body and each media type's fields are separate overloads. The body's takes every field as `Unset`; a field
-overload takes the body as `Unset`, the fields its model's constructor requires without a default, and its other
+The body and each media type's fields are separate overloads. The body's takes every field as `UNSET`; a field
+overload takes the body as `UNSET`, the fields its model's constructor requires without a default, and its other
 fields with `UNSET`, and a field takes `None` only when its property is nullable. A field is required exactly when the
 generated model requires it, so `--force-optional` and defaults make it optional. An optional body whose fields are all optional has one
 overload for each field, which that overload requires, and one that takes nothing and sends nothing:
@@ -2691,8 +2691,8 @@ overload for each field, which that overload requires, and one that takes nothin
         *,
         pet_id: int,
         body: models.PetPatch,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
@@ -2701,9 +2701,9 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         name: str,
-        tag: str | None | Unset = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
@@ -2712,8 +2712,8 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
         tag: str | None,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -2723,9 +2723,9 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: Unset = UNSET,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        body: UNSET = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
@@ -2733,9 +2733,9 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: models.PetPatch | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        body: models.PetPatch | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:

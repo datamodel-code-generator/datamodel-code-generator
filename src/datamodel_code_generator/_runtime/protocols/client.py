@@ -33,7 +33,7 @@ from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -316,7 +316,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""
-        if (protocols := self.protocol_options()) is None or isinstance(defaults := protocols.defaults, Unset):
+        if (protocols := self.protocol_options()) is None or (defaults := protocols.defaults) is UNSET:
             return None
         return defaults.get(name)
 
@@ -326,7 +326,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
     def cache_store(self, name: str) -> object:
         """Return the cache store the client's protocol settings lend a helper, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(stores := protocols.cache_stores, Unset):
+        if (protocols := self.protocol_options()) is None or (stores := protocols.cache_stores) is UNSET:
             return None
         return stores.get(name)
 
@@ -359,7 +359,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         explicit = settings.auth
         placements = (
             credentials.selected(operation.security) or ()
-            if isinstance(explicit, Unset)
+            if explicit is UNSET
             and operation.security is not None
             and (credentials := self._shared.credentials) is not None
             else ()
@@ -378,7 +378,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
     def _security_context(self) -> ProtocolSecurityContext | None:
         """Return the client's protocol security context, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(security := protocols.security, Unset):
+        if (protocols := self.protocol_options()) is None or (security := protocols.security) is UNSET:
             return None
         return security
 
@@ -400,7 +400,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         return secret_names(self._shared.security_schemes)
 
     def credential_argument(
-        self, operation: OperationPlan[object], written: Sequence[JSONValue | Unset]
+        self, operation: OperationPlan[object], written: Sequence[JSONValue | UNSET]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first written argument that carries credentials, or None.
 
@@ -413,7 +413,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             (
                 (spec.plan.location, spec.plan.name)
                 for spec, value in zip(operation.parameters, written, strict=True)
-                if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
+                if value is not UNSET and _secret(spec, value, headers, queries)
             ),
             None,
         )

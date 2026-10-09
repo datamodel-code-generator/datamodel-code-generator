@@ -10,13 +10,12 @@ from functools import cached_property
 from typing import Literal
 from uuid import UUID
 
-from models import Field, Response
-from models import Unset as Unset_1
+from models import Field, Response, Unset
 from models.pets import Pet
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse
 from ...responses import Response as Response_1
 from ...types.default import (
@@ -53,8 +52,8 @@ class DefaultResource:
     def list_pets(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -105,7 +104,7 @@ class DefaultResource:
     def post_reason(
         self,
         *,
-        body: Unset_1 | Unset = UNSET,
+        body: Unset | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostReasonResponse:
@@ -145,8 +144,8 @@ class DefaultWithResponse:
     def list_pets(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[ListPetsResponse]:
@@ -197,7 +196,7 @@ class DefaultWithResponse:
     def post_reason(
         self,
         *,
-        body: Unset_1 | Unset = UNSET,
+        body: Unset | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[PostReasonResponse]:
@@ -237,8 +236,8 @@ class DefaultWithRawResponse:
     def list_pets(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -289,7 +288,7 @@ class DefaultWithRawResponse:
     def post_reason(
         self,
         *,
-        body: Unset_1 | Unset = UNSET,
+        body: Unset | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -329,8 +328,8 @@ class DefaultWithStreamingResponse:
     def list_pets(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        id: UUID | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        id: UUID | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -381,7 +380,7 @@ class DefaultWithStreamingResponse:
     def post_reason(
         self,
         *,
-        body: Unset_1 | Unset = UNSET,
+        body: Unset | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

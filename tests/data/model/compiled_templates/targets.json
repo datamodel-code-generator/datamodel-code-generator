@@ -12,7 +12,7 @@
           "request_options": "RequestOptions",
           "coroutine": "",
           "binary": "BinaryBody",
-          "unset": "Unset",
+          "unset": "UNSET",
           "unset_value": "UNSET",
           "raw": "RawResponse",
           "wait": "",
@@ -55,7 +55,7 @@
             },
             {
               "name": "timeout",
-              "annotation": "float | Unset | None",
+              "annotation": "float | UNSET | None",
               "default": "UNSET"
             }
           ],
@@ -68,7 +68,7 @@
             },
             {
               "name": "timeout",
-              "annotation": "float | Unset | None",
+              "annotation": "float | UNSET | None",
               "default": "UNSET"
             },
             {
@@ -90,7 +90,7 @@
           "request_options": "RequestOptions",
           "coroutine": "",
           "binary": "BinaryBody",
-          "unset": "Unset",
+          "unset": "UNSET",
           "unset_value": "UNSET",
           "raw": "RawResponse",
           "wait": "",
@@ -125,7 +125,7 @@
           "request_options": "RequestOptions",
           "coroutine": "async ",
           "binary": "BinaryBody",
-          "unset": "Unset",
+          "unset": "UNSET",
           "unset_value": "UNSET",
           "raw": "RawResponse",
           "wait": "await ",
@@ -164,7 +164,7 @@
             },
             {
               "name": "timeout",
-              "annotation": "float | Unset | None",
+              "annotation": "float | UNSET | None",
               "default": "UNSET"
             }
           ],
@@ -177,7 +177,7 @@
             },
             {
               "name": "timeout",
-              "annotation": "float | Unset | None",
+              "annotation": "float | UNSET | None",
               "default": "UNSET"
             },
             {

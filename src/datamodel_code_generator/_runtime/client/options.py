@@ -10,7 +10,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
 
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, SessionOptions, checked_count, seconds
 
@@ -26,7 +26,6 @@ __all__ = (
     "RetryOptions",
     "ServerSelection",
     "SessionOptions",
-    "Unset",
 )
 
 Pairs: TypeAlias = tuple[tuple[str, str | None], ...]
@@ -98,8 +97,8 @@ def _statuses(value: AbstractSet[int]) -> frozenset[int]:
     return frozenset(value)
 
 
-def _ordered_delays(initial: float | Unset, maximum: float | Unset, operation_id: str | None = None) -> None:
-    if not isinstance(initial, Unset) and not isinstance(maximum, Unset) and maximum < initial:
+def _ordered_delays(initial: float | UNSET, maximum: float | UNSET, operation_id: str | None = None) -> None:
+    if initial is not UNSET and maximum is not UNSET and maximum < initial:
         raise ConfigurationError(field_path=("retry", "max_delay"), reason="out_of_range", operation_id=operation_id)
 
 
@@ -107,25 +106,25 @@ def _ordered_delays(initial: float | Unset, maximum: float | Unset, operation_id
 class RetryOptions:
     """Override which failures retry and how long each wait is; omitted fields inherit independently."""
 
-    initial_delay: float | Unset = UNSET
-    max_delay: float | Unset = UNSET
-    jitter: Literal["full", "none"] | Unset = UNSET
-    statuses: AbstractSet[int] | Unset = UNSET
-    max_retry_after: float | Unset | None = UNSET
-    respect_retry_after: bool | Unset = UNSET
-    retry_after_ms_header: str | Unset | None = UNSET
-    should_retry_header: str | Unset | None = UNSET
-    retry_on_pool_timeout: bool | Unset = UNSET
+    initial_delay: float | UNSET = UNSET
+    max_delay: float | UNSET = UNSET
+    jitter: Literal["full", "none"] | UNSET = UNSET
+    statuses: AbstractSet[int] | UNSET = UNSET
+    max_retry_after: float | UNSET | None = UNSET
+    respect_retry_after: bool | UNSET = UNSET
+    retry_after_ms_header: str | UNSET | None = UNSET
+    should_retry_header: str | UNSET | None = UNSET
+    retry_on_pool_timeout: bool | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Refuse negative or nonfinite delays, a maximum below the initial delay, and statuses no retry may select."""
         for name, value in (("initial_delay", self.initial_delay), ("max_delay", self.max_delay)):
-            if not isinstance(value, Unset):
+            if value is not UNSET:
                 object.__setattr__(self, name, seconds(value, ("retry", name)))
         _ordered_delays(self.initial_delay, self.max_delay)
-        if not isinstance(self.statuses, Unset):
+        if self.statuses is not UNSET:
             object.__setattr__(self, "statuses", _statuses(self.statuses))
-        if self.max_retry_after is not None and not isinstance(self.max_retry_after, Unset):
+        if self.max_retry_after is not None and self.max_retry_after is not UNSET:
             path = ("retry", "max_retry_after")
             if not 0 < (duration := seconds(self.max_retry_after, path)) < math.inf:
                 raise ConfigurationError(field_path=path, reason="out_of_range")
@@ -143,16 +142,16 @@ class ResolvedRetryOptions:
     statuses: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
     max_retry_after: float | None = 60.0
     respect_retry_after: bool = True
-    retry_after_ms_header: str | Unset | None = UNSET
-    should_retry_header: str | Unset | None = UNSET
+    retry_after_ms_header: str | UNSET | None = UNSET
+    should_retry_header: str | UNSET | None = UNSET
     retry_on_pool_timeout: bool = False
 
 
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
 
 
-def _inherited(current: _OptionT, layer: _OptionT | Unset) -> _OptionT:
-    return current if isinstance(layer, Unset) else layer
+def _inherited(current: _OptionT, layer: _OptionT | UNSET) -> _OptionT:
+    return current if layer is UNSET else layer
 
 
 def layered_retry(
@@ -180,14 +179,14 @@ def layered_retry(
     )
 
 
-def phases(value: float | NativeTimeout | Unset | None, current: ResolvedTimeoutOptions) -> ResolvedTimeoutOptions:
+def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeoutOptions) -> ResolvedTimeoutOptions:
     """Return the phase timeouts a timeout gives: UNSET keeps the current ones and None lifts every limit.
 
     A number limits every phase; an `httpx2.Timeout` gives each phase its own.
     """
+    if value is UNSET:
+        return current
     match value:
-        case Unset():
-            return current
         case None:
             return _UNLIMITED
         case int() | float():
@@ -211,15 +210,15 @@ class RequestOptions:
 
     base_url: str | None = None
     server: ServerSelection | None = None
-    timeout: float | NativeTimeout | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
+    timeout: float | NativeTimeout | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
     max_retries: int | None = None
     retry: RetryOptions | None = None
     extra_headers: Mapping[str, str | None] | None = None
     extra_query: Mapping[str, str | None] | None = None
     follow_redirects: bool | None = None
-    idempotency_key: str | Unset | None = UNSET
-    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
+    idempotency_key: str | UNSET | None = UNSET
+    auth: NativeAuth | UNSET | None = field(default=UNSET, repr=False)
 
     def __post_init__(self) -> None:
         """Refuse a server beside a base URL, a negative retry count, and negative or nonfinite durations or phases."""
@@ -229,11 +228,11 @@ class RequestOptions:
             checked_count(self.max_retries, ("max_retries",))
         if isinstance(timeout := self.timeout, int | float):
             object.__setattr__(self, "timeout", seconds(timeout, ("timeout",)))
-        elif timeout is not None and not isinstance(timeout, Unset):
+        elif timeout is not None and timeout is not UNSET:
             for phase in ("connect", "read", "write", "pool"):
                 if (value := getattr(timeout, phase)) is not None:
                     seconds(value, ("timeout", phase))
-        if (total := self.total_timeout) is not None and not isinstance(total, Unset):
+        if (total := self.total_timeout) is not None and total is not UNSET:
             object.__setattr__(self, "total_timeout", seconds(total, ("total_timeout",)))
         object.__setattr__(self, "extra_headers", _frozen(self.extra_headers))
         object.__setattr__(self, "extra_query", _frozen(self.extra_query))
@@ -254,8 +253,8 @@ class Settings:
     total_timeout: float | None = None
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     follow_redirects: bool | None = None
-    idempotency_key: str | Unset | None = UNSET
-    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
+    idempotency_key: str | UNSET | None = UNSET
+    auth: NativeAuth | UNSET | None = field(default=UNSET, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
     compression: str | None = "gzip"
 
@@ -289,11 +288,11 @@ def layered(settings: Settings, layer: RequestOptions, *, view: bool, operation_
         merged(settings.headers, layer.extra_headers, fold=True) if view else settings.headers,
         merged(settings.query, layer.extra_query, fold=False) if view else settings.query,
         timeout=phases(layer.timeout, settings.timeout),
-        total_timeout=settings.total_timeout if isinstance(layer.total_timeout, Unset) else layer.total_timeout,
+        total_timeout=settings.total_timeout if layer.total_timeout is UNSET else layer.total_timeout,
         retry=layered_retry(settings.retry, layer.retry, layer.max_retries, operation_id),
         follow_redirects=settings.follow_redirects if layer.follow_redirects is None else layer.follow_redirects,
         idempotency_key=layer.idempotency_key,
-        auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
+        auth=settings.auth if layer.auth is UNSET else layer.auth,
         clock=settings.clock,
         compression=settings.compression,
     )

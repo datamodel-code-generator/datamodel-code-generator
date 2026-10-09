@@ -16,7 +16,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import FormData, MultipartBody, MultipartData
 from ...model_codecs import JSONValue
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.forms import (
     ReadPartsResponse,
@@ -129,7 +129,7 @@ class FormsResource:
     def submit_parts(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPartsResponse:
@@ -180,7 +180,7 @@ class FormsResource:
     def submit_pairs(
         self,
         *,
-        body: FormData | Unset = UNSET,
+        body: FormData | UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -245,14 +245,14 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | UNSET = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
@@ -268,7 +268,7 @@ class FormsResource:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitScansResponse:
@@ -468,7 +468,7 @@ class FormsWithResponse:
     def submit_parts(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPartsResponse]:
@@ -519,7 +519,7 @@ class FormsWithResponse:
     def submit_pairs(
         self,
         *,
-        body: FormData | Unset = UNSET,
+        body: FormData | UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -584,14 +584,14 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | UNSET = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
@@ -607,7 +607,7 @@ class FormsWithResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitScansResponse]:
@@ -807,7 +807,7 @@ class FormsWithRawResponse:
     def submit_parts(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -837,7 +837,7 @@ class FormsWithRawResponse:
     def submit_pairs(
         self,
         *,
-        body: FormData | Unset = UNSET,
+        body: FormData | UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -902,14 +902,14 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | UNSET = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -925,7 +925,7 @@ class FormsWithRawResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1125,7 +1125,7 @@ class FormsWithStreamingResponse:
     def submit_parts(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1155,7 +1155,7 @@ class FormsWithStreamingResponse:
     def submit_pairs(
         self,
         *,
-        body: FormData | Unset = UNSET,
+        body: FormData | UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -1220,14 +1220,14 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | JSONValue] | models.Address | Unset = UNSET,
+        body: MultipartBody[str | JSONValue] | models.Address | UNSET = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1243,7 +1243,7 @@ class FormsWithStreamingResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str] | Unset = UNSET,
+        body: MultipartBody[str] | UNSET = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

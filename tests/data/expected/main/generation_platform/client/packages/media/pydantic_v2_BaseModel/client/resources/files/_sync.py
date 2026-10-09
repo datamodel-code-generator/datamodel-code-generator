@@ -14,7 +14,7 @@ import models
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
 
@@ -179,14 +179,14 @@ class FilesResource:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse: ...
     def replace_file(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
@@ -345,14 +345,14 @@ class FilesWithResponse:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]: ...
     def replace_file(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
@@ -430,14 +430,14 @@ class FilesWithRawResponse:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def replace_file(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -515,14 +515,14 @@ class FilesWithStreamingResponse:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def replace_file(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

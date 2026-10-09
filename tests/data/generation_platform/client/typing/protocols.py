@@ -8,7 +8,7 @@ from typing import Literal
 from pets import AsyncClient, Client
 from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.model_codecs import JSONValue
-from pets.options import UNSET, ProtocolClientOptions, SessionOptions, Unset
+from pets.options import UNSET, ProtocolClientOptions, SessionOptions
 from pets.protocols import (
     AsyncCacheStore,
     BodySelector,
@@ -70,25 +70,25 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
 def options(origin: Origin) -> Client:
     """Expose each option field type and construct client-level protocol settings."""
     pagination = PaginationOptions(max_pages=None, max_items=0)
-    assert_type(pagination.max_items, int | Unset | None)
-    assert_type(pagination.max_pages, int | Unset | None)
+    assert_type(pagination.max_items, int | UNSET | None)
+    assert_type(pagination.max_pages, int | UNSET | None)
     polling = PollOptions(interval=0.5, max_wait=None)
-    assert_type(polling.interval, float | Unset)
-    assert_type(polling.max_wait, float | Unset | None)
+    assert_type(polling.interval, float | UNSET)
+    assert_type(polling.max_wait, float | UNSET | None)
     stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET)
-    assert_type(stream.reconnect, bool | Unset)
-    assert_type(stream.max_reconnect_wait, float | Unset | None)
+    assert_type(stream.reconnect, bool | UNSET)
+    assert_type(stream.max_reconnect_wait, float | UNSET | None)
     security = ProtocolSecurityContext(credential_partition="tenant", allowed_origins=(origin,))
     assert_type(security.allowed_origins, tuple[Origin, ...])
     defaults = ProtocolDefaults(session=SessionOptions(total_timeout=30), options=pagination)
     assert_type(
         defaults.options,
-        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset,
+        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | UNSET,
     )
     protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
-    assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
-    assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | Unset)
-    assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | Unset)
+    assert_type(protocols.security, ProtocolSecurityContext | UNSET | None)
+    assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | UNSET)
+    assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | UNSET)
     AsyncClient(protocols=None)
     return Client(protocols=protocols)
 

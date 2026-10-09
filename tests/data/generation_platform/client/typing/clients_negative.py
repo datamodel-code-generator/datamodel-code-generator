@@ -165,3 +165,7 @@ def misuse_retry_options(client: Client, info: ResponseInfo, error: Configuratio
     info.attempt_count = 1  # error
     ConfigurationError(field_path=("redirects",), reason="redirect_refused", body_available=False)  # error
     error.field_path = "redirects"  # error
+
+
+def unnarrowed_delay(retry: RetryOptions) -> float:
+    return retry.max_delay  # error

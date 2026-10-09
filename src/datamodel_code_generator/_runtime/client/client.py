@@ -25,7 +25,7 @@ from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .bodies import EncodedAttempt, is_file_input
 from .body_sources import RequestCoding, bind_body, capture_body
 from .errors import (
@@ -137,14 +137,14 @@ def _root_settings(  # noqa: PLR0913
     *,
     base_url: str | None = None,
     server: ServerSelection | None = None,
-    timeout: float | httpx2.Timeout | Unset | None = UNSET,
+    timeout: float | httpx2.Timeout | UNSET | None = UNSET,
     total_timeout: float | None = None,
     max_retries: int = 2,
     retry: RetryOptions | None = None,
     default_headers: Mapping[str, str | None] | None = None,
     default_query: Mapping[str, str | None] | None = None,
     follow_redirects: bool | None = None,
-    auth: httpx2.Auth | Unset | None = UNSET,
+    auth: httpx2.Auth | UNSET | None = UNSET,
     compression: str | None = "gzip",
     clock: Clock | None = None,
 ) -> Settings:
@@ -292,7 +292,7 @@ def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...])
     request = _Request()
     for spec, value in zip(operation.parameters, arguments, strict=True):
         plan = spec.plan
-        if isinstance(value, Unset):
+        if value is UNSET:
             if plan.required:
                 raise request_decode_error(operation, (plan.location, plan.name))
             continue
@@ -437,7 +437,7 @@ def _compressed(
     if coding is None or call.settings.compression is None or (operation := call.operation) is None:
         return request, None
     if coding.token not in operation.accepted_content_encodings or (
-        request_body(request) is None and isinstance(deferred, Unset)
+        request_body(request) is None and deferred is UNSET
     ):
         return request, None
     if request.headers.get_list("content-encoding"):
@@ -655,7 +655,7 @@ class Call(LogicalCallContext):
         )
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
-        self.key = str(uuid4()) if self.idempotency is not None and isinstance(key, Unset) else key
+        self.key = str(uuid4()) if self.idempotency is not None and key is UNSET else key
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
         self.raw_response = False
@@ -816,13 +816,13 @@ class Call(LogicalCallContext):
         source: BodySource | None,
         send: Send | None = None,
         async_send: AsyncSend | None = None,
-    ) -> NativeAuth | Unset | None:
+    ) -> NativeAuth | UNSET | None:
         """Return the Auth a send uses: the call's explicit one, its credentials' one, or UNSET for the HTTP client's.
 
         A rejected request is sent again only when its body still replays, and never as a WebSocket handshake. The
         credentials' token requests go through `send` or `async_send`.
         """
-        if not isinstance(explicit := self.settings.auth, Unset) or not self.placements:
+        if (explicit := self.settings.auth) is not UNSET or not self.placements:
             return explicit
         assert credentials is not None
         return credentials.auth(
@@ -847,7 +847,7 @@ class _Shared(Generic[AdapterT]):
         coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.protocols: object = None
-        self.root_auth: NativeAuth | Unset | None = UNSET
+        self.root_auth: NativeAuth | UNSET | None = UNSET
         self.credentials: Credentials | None = None
         self.sockets: set[Callable[[], None]] = set()
 
@@ -1070,7 +1070,7 @@ def _credentials(credentials: Credentials | None, settings: Settings, http_clien
     """Return the credentials given, refusing them beside an Auth of the client's options or of its HTTP client."""
     if credentials is None or not credentials.values:
         return None
-    if not isinstance(settings.auth, Unset) or getattr(http_client, "auth", None) is not None:
+    if settings.auth is not UNSET or getattr(http_client, "auth", None) is not None:
         raise ConfigurationError(field_path=("auth",), reason="conflicting_auth")
     return credentials
 
@@ -1274,7 +1274,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -1303,7 +1303,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -1330,7 +1330,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             request = call.prepared(request)
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
-            if not isinstance(deferred, Unset):
+            if deferred is not UNSET:
                 source = bind_body(deferred, entry=entry)
                 if coding is not None:
                     source = coding.source(source)
@@ -1469,7 +1469,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         response = client.send(
             outgoing,
             stream=True,
-            auth=httpx2.USE_CLIENT_DEFAULT if isinstance(auth, Unset) else cast("httpx2.Auth | None", auth),
+            auth=httpx2.USE_CLIENT_DEFAULT if auth is UNSET else cast("httpx2.Auth | None", auth),
             follow_redirects=httpx2.USE_CLIENT_DEFAULT if follow is None else follow,
         )
         call.redirects_followed = _redirects(response)
@@ -1736,7 +1736,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -1765,7 +1765,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -1792,7 +1792,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = call.prepared(request)
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 
-            if not isinstance(deferred, Unset):
+            if deferred is not UNSET:
                 source = bind_body(deferred, entry=entry, asynchronous=True)
                 if coding is not None:
                     source = coding.source(source)
@@ -1930,7 +1930,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         response = await client.send(
             outgoing,
             stream=True,
-            auth=httpx2.USE_CLIENT_DEFAULT if isinstance(auth, Unset) else cast("httpx2.Auth | None", auth),
+            auth=httpx2.USE_CLIENT_DEFAULT if auth is UNSET else cast("httpx2.Auth | None", auth),
             follow_redirects=httpx2.USE_CLIENT_DEFAULT if follow is None else follow,
         )
         call.redirects_followed = _redirects(response)

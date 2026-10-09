@@ -14,7 +14,7 @@ import models
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
 
@@ -179,14 +179,14 @@ class AsyncFilesResource:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
@@ -345,14 +345,14 @@ class AsyncFilesWithResponse:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
@@ -430,14 +430,14 @@ class AsyncFilesWithRawResponse:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -515,14 +515,14 @@ class AsyncFilesWithStreamingResponse:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

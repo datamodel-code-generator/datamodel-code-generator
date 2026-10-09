@@ -16,7 +16,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     decode_parameters,
     encode_parameters,
 )
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 from datamodel_code_generator._runtime.model_codecs.wire import (
     JSONValue,
     WireValue,
@@ -32,6 +32,6 @@ assert_type(decode_json(b'{"a": 1}'), WireValue)
 assert_type(encode_json(value, ascii_only=True), bytes)
 plans = (ParameterPlan(location="query", name="limit", style="form", kind="integer"),)
 decoded = decode_parameters(plans, RawParameters(query=b"limit=1"))
-assert_type(decoded, dict[tuple[ParameterLocation, str], WireValue | Unset])
-missing: WireValue | Unset = UNSET
+assert_type(decoded, dict[tuple[ParameterLocation, str], WireValue | UNSET])
+missing: WireValue | UNSET = UNSET
 assert_type(encode_parameters(plans, {("query", "limit"): missing}), tuple[EncodedParameterContribution, ...])

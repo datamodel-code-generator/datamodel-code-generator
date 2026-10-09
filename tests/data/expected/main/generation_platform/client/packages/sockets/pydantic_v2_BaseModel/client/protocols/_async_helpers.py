@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.websocket import AsyncWebSocketSession, aconnect_socket
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from . import WSOptions, _plans
 
 
@@ -90,7 +90,7 @@ class AsyncRoomsChatWebsocket:
         self,
         *,
         room: str,
-        since: int | Unset = UNSET,
+        since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -141,7 +141,7 @@ class AsyncSecureChatWebsocket:
     def connect(
         self,
         *,
-        x_trace: str | Unset = UNSET,
+        x_trace: str | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

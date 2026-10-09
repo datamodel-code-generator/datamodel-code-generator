@@ -133,14 +133,14 @@ def _options(capabilities: Capabilities) -> str:
     """Return the options module: the client and call settings, and the helper settings a helper declares."""
     protocols = capabilities.protocols
     names = (*_OPTION_NAMES, *(("SessionOptions",) if protocols else ()))
-    exported = sorted((*names, "UNSET", "Unset", *(("ProtocolClientOptions",) if protocols else ())))
+    exported = sorted((*names, "UNSET", *(("ProtocolClientOptions",) if protocols else ())))
     return "".join((
         '"""Settings of each call and of retries: None inherits, and UNSET marks a field whose None removes."""\n\n',
         "from __future__ import annotations\n\n",
         "from typing import TYPE_CHECKING\n\n" if protocols else "",
         "from ._runtime.client.options import (\n",
         *(f"    {name},\n" for name in sorted(names)),
-        ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
+        ")\nfrom ._runtime.model_codecs.unset import UNSET\n",
         _PROTOCOL_OPTIONS if protocols else "",
         "\n__all__ = [\n",
         *(f'    "{name}",\n' for name in exported),
@@ -884,7 +884,7 @@ class _Typing:
         return _union(module, (_Typing.spell(module, value) for value in key.values))
 
     def argument(self, module: TargetModule, parameter: ParameterSpec) -> str:
-        """Return the type of one parameter's keyword argument, with Unset when it is optional without a default.
+        """Return the type of one parameter's keyword argument, with UNSET when it is optional without a default.
 
         A model type is spelled as the type its argument takes, through its aliases and root models.
         """
@@ -897,7 +897,7 @@ class _Typing:
         )
         if parameter.required or parameter.default is not None:
             return surface
-        return module.union(surface, module.local("options", "Unset"))
+        return module.union(surface, module.local("options", "UNSET"))
 
     def surface(self, module: TargetModule, kind: str, use: TypeUseBinding | None) -> str:
         """Return the payload type of one media or parameter: its model type, or schema-less surface."""
@@ -1011,20 +1011,20 @@ class _Resources(_Typing):
 
         A root takes `compression` only when an operation declares gzip, and `protocols` only beside declared helpers.
         """
-        unset, unset_value = (module.local("_runtime.model_codecs.unset", name) for name in ("Unset", "UNSET"))
+        unset = module.local("_runtime.model_codecs.unset", "UNSET")
         native = module.module("httpx2")
         pairs = f"{module.name('collections.abc', 'Mapping')}[str, str | None] | None"
         given = {
             "base_url": ("str | None", "None"),
             "server": (f"{module.local('options', 'ServerSelection')} | None", "None"),
-            "timeout": (f"float | {native}.Timeout | {unset} | None", unset_value),
-            "total_timeout": (f"float | {unset} | None", unset_value),
+            "timeout": (f"float | {native}.Timeout | {unset} | None", unset),
+            "total_timeout": (f"float | {unset} | None", unset),
             "max_retries": ("int | None", "None"),
             "retry": (f"{module.local('options', 'RetryOptions')} | None", "None"),
             "default_headers": (pairs, "None"),
             "default_query": (pairs, "None"),
             "follow_redirects": ("bool | None", "None"),
-            "auth": (f"{native}.Auth | {unset} | None", unset_value),
+            "auth": (f"{native}.Auth | {unset} | None", unset),
         }
         view = [{"name": name, "annotation": given[name][0], "default": given[name][1]} for name in VIEW_KEYWORDS]
         root = {
@@ -1094,7 +1094,7 @@ class _Resources(_Typing):
                 WIDTH,
             ),
             "defaults": self.defaults(module),
-            "unset": module.local("_runtime.model_codecs.unset", "Unset"),
+            "unset": module.local("_runtime.model_codecs.unset", "UNSET"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
             "core": core,
             "request_options": module.local("options", "RequestOptions"),
@@ -1199,13 +1199,13 @@ class _Resources(_Typing):
         if (body := spec.body) is None:
             return [_Variant(())], ()
         literal = module.name("typing", "Literal")
-        unset = "" if body.required else module.local("options", "Unset")
+        unset = "" if body.required else module.local("options", "UNSET")
         groups: dict[str, list[str]] = {}
         for media in body.media:
             groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(media.media_type)
         if not groups:
             nothing = (
-                _Argument("body", module.local("options", "Unset"), "unset"),
+                _Argument("body", module.local("options", "UNSET"), "unset"),
                 _Argument("media_type", "None", "none"),
             )
             return [_Variant(nothing)], nothing
@@ -1253,7 +1253,7 @@ class _Resources(_Typing):
         """
         body = spec.body
         assert body is not None
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         omitted = tuple(_Argument(name, unset, "unset") for name in spec.field_names)
         variants = [
             _Variant((_Argument("body", surface), *omitted, selecting(media))) for surface, media in groups.items()
@@ -1284,7 +1284,7 @@ class _Resources(_Typing):
 
         A field of another media takes only UNSET.
         """
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         present = {field.python_name: field for field in branch.fields}
 
         def argument(name: str) -> _Argument:
@@ -1536,7 +1536,7 @@ class _Types(_Typing):
 
     def header_accessor(self, module: TargetModule, spec: OperationSpec, headers: _Headers) -> str:
         """Return one operation's header decoders and its typed accessor function."""
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         results, every, entries = self.header_entries(module, headers)
         missing = any(not header.required for _, branches in headers.values() for _, header in branches)
         decoders = module.local(_CODECS, "ResponseHeaders")
@@ -1555,7 +1555,7 @@ class _Types(_Typing):
 
     def header_entries(self, module: TargetModule, headers: _Headers) -> tuple[dict[str, str], list[str], list[Doc]]:
         """Return each header's result type, every value type, and each header's declarations by status."""
-        unset = module.local("options", "Unset")
+        unset = module.local("options", "UNSET")
         results: dict[str, str] = {}
         every: list[str] = []
         entries: list[Doc] = []

@@ -10,7 +10,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import (
     ActualHeaderResponse,
@@ -49,7 +49,7 @@ class DefaultResource:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
         """Call POST /inherited."""
@@ -62,7 +62,7 @@ class DefaultResource:
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
         """Call POST /explicit."""
@@ -131,7 +131,7 @@ class DefaultWithResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
         """Call POST /inherited."""
@@ -144,7 +144,7 @@ class DefaultWithResponse:
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
         """Call POST /explicit."""
@@ -213,7 +213,7 @@ class DefaultWithRawResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /inherited."""
@@ -226,7 +226,7 @@ class DefaultWithRawResponse:
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /explicit."""
@@ -295,7 +295,7 @@ class DefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /inherited."""
@@ -308,7 +308,7 @@ class DefaultWithStreamingResponse:
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        x_idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /explicit."""
