@@ -1169,7 +1169,11 @@ class AsyncEventStream(_Events[T]):
         self._frames = self._sse(response, chunks) if self._plan.kind == "sse" else self._ndjson(chunks)
 
     async def _sse(self, response: AsyncRawResponse, chunks: AsyncIterator[bytes]) -> AsyncGenerator[_Frame, None]:
-        async with aclosing(aiter(httpx2.EventSource(_view(response, _AsyncHeld(chunks))))) as events:
+        events = cast(
+            "AsyncGenerator[httpx2.ServerSentEvent, None]",
+            aiter(httpx2.EventSource(_view(response, _AsyncHeld(chunks)))),
+        )
+        async with aclosing(events):
             async for event in events:
                 if (frame := self._dispatched(event)) is not None:
                     yield frame  # ruff: ignore[yield-in-context-manager-in-async-generator] - aclose() of the generator closes the events.
