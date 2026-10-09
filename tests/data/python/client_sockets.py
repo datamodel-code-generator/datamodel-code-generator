@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Final
 import httpcore2
 import httpx2
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import argument, describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
@@ -498,25 +497,39 @@ def _closed_meanwhile(harness: _Harness, api: Any) -> None:
     harness.report(play)
 
 
-class _Ends:
-    """A hook reporting each event name and outcome of the calls it observes."""
+class _Seen:
+    """Native event hooks reporting each handshake request and response the HTTP client sends and receives."""
 
     def __init__(self, lines: list[str]) -> None:
         self.lines = lines
 
-    def on_event(self, event: Any) -> None:
-        self.lines.append(f"    hook {event.name} outcome={event.outcome} status={event.status}")
+    def request(self, request: httpx2.Request) -> None:
+        self.lines.append(f"    request hook {request.method} {request.url.path}")
+
+    def response(self, response: httpx2.Response) -> None:
+        self.lines.append(f"    response hook {response.status_code}")
+
+    def hooks(self) -> dict[str, list[Any]]:
+        """Return the hooks an HTTPX2 client runs."""
+        return {"request": [self.request], "response": [self.response]}
 
 
-class _AsyncEnds(_Ends):
-    async def on_event(self, event: Any) -> None:
-        super().on_event(event)
+class _AsyncSeen(_Seen):
+    async def request(self, request: httpx2.Request) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.request(self, request)
+
+    async def response(self, response: httpx2.Response) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.response(self, response)
 
 
 def _hooked(harness: _Harness) -> None:
-    """Report a session's handshake events and its end: normal, closed early, or failed."""
+    """Run the injected HTTP client's hooks for a handshake, then end its session normally, early, or failing."""
     lines, server = harness.lines, harness.server
-    with harness.package.Client(options=harness.client(hooks=(_Ends(lines),))) as api:
+    settings = harness.client(transport=harness.options.TransportOptions())
+    with (
+        httpx2.Client(verify=client_context(), event_hooks=_Seen(lines).hooks()) as native,
+        harness.package.Client(http_client=native, options=settings) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("hooked normal end", Play(talk=_sending(code=1000))),
@@ -535,9 +548,13 @@ def _hooked(harness: _Harness) -> None:
 
 
 async def _async_hooked(harness: _Harness) -> None:
-    """Report an asyncio session's handshake events and its end, and a refused handshake's."""
+    """Run the injected asyncio HTTP client's hooks for an accepted handshake and a refused one."""
     lines, server = harness.lines, harness.server
-    async with harness.package.AsyncClient(options=harness.client(hooks=(_AsyncEnds(lines),))) as api:
+    settings = harness.client(transport=harness.options.TransportOptions())
+    async with (
+        httpx2.AsyncClient(verify=client_context(), event_hooks=_AsyncSeen(lines).hooks()) as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("async hooked normal end", Play(talk=_sending(code=1000))),
@@ -753,13 +770,6 @@ def _handshakes(harness: _Harness) -> None:
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
                     ),
                 )
-        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            with harness.package.Client(options=harness.client(url, **settings)) as api:
-                record(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    refused permit cleanup {limiter.usage.report}")
     with harness.package.Client(options=harness.client(transport=harness.options.TransportOptions())) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
@@ -837,19 +847,13 @@ async def _messages(session: Any) -> list[object]:
 
 
 async def _async_refused(harness: _Harness) -> None:
-    """Retry an asyncio handshake refused before sending, within its session budget and permit cleanup."""
+    """Retry an asyncio handshake refused before sending, within its session budget."""
     lines = harness.lines
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         url = f"https://127.0.0.1:{probe.getsockname()[1]}"
-        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("async refused connection", {}, {}),
-            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            async with harness.package.AsyncClient(options=harness.client(url, **settings)) as api:
-                await aconnected(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
+        async with harness.package.AsyncClient(options=harness.client(url)) as api:
+            await aconnected(lines, "async refused connection", api.protocols.feed.text.connect)
 
 
 async def _async_sockets(harness: _Harness) -> None:

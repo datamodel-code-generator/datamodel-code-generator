@@ -557,28 +557,11 @@ async def _async_caching(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async uncacheable fetched again", lambda: helper.fetch(user_id=twenty_one))
 
 
-class Events:
-    """A hook that reports each event's name and status, and raises at the end of a call when told to."""
-
-    def __init__(self, lines: list[str], *, failing: bool = False) -> None:
-        """Keep the report and whether the hook fails at the end of each call."""
-        self.lines = lines
-        self.failing = failing
-
-    def on_event(self, event: Any) -> None:
-        """Report the event, then raise at a call's end when told to."""
-        self.lines.append(f"    event {event.name} status={event.status}")
-        if self.failing and event.name == "call_end":
-            msg = "hook failed"
-            raise RuntimeError(msg)
-
-
-class AsyncEvents(Events):
-    """The asynchronous hook of the same reports."""
-
-    async def on_event(self, event: Any) -> None:  # ty: ignore[invalid-method-override]
-        """Report the event."""
-        Events.on_event(self, event)
+def _refused(response: httpx2.Response) -> None:
+    """Fail a native response hook once the server answered."""
+    del response
+    msg = "response hook failed"
+    raise RuntimeError(msg)
 
 
 class _Signer:
@@ -791,9 +774,7 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     """Call a custom store in contract order, map its failures, and replace entries without a transaction."""
     package, protocols, errors = cache.package, cache.protocols, cache.errors
     store = Recording(protocols.MemoryCacheStore(), lines)
-    hooks = Events(lines)
     settings = cache.options.ClientOptions(
-        hooks=(hooks,),
         protocols=cache.options.ProtocolClientOptions(cache_stores={"users.profile": store, "users.listing": store}),
     )
     with package.Client(http_client=native, options=settings) as api:
@@ -845,15 +826,20 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         fetched(lines, "deletable stored again", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = OSError("gone")
         fetched(lines, "delete failure", lambda: helper.fetch(user_id=twenty))
-    hooks.failing = True
-    with package.Client(http_client=native, options=settings) as api:
-        exchange.respond(user(23, **{"cache-control": "max-age=60"}), user(23, **{"cache-control": "max-age=60"}))
+    exchange.respond(user(23, **{"cache-control": "max-age=60"}), user(23, **{"cache-control": "max-age=60"}))
+    with (
+        exchange.client(event_hooks={"response": [_refused]}) as hooked,
+        package.Client(http_client=hooked, options=settings) as api,
+    ):
         fetched(
-            lines, "hook failure stores nothing", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23))
+            lines,
+            "response hook failure stores nothing",
+            lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)),
         )
-        hooks.failing = False
-        fetched(lines, "after a hook failure", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
-        fetched(lines, "hit without events", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
+    with package.Client(http_client=native, options=settings) as api:
+        helper = api.protocols.users.profile
+        fetched(lines, "after a response hook failure", lambda: helper.fetch(user_id=cache.user_id(23)))
+        fetched(lines, "hit without a request", lambda: helper.fetch(user_id=cache.user_id(23)))
 
 
 def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -959,9 +945,7 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     package, protocols, options, auth = cache.package, cache.protocols, cache.options, cache.auth
     exchange = Exchange(lines)
     store = AsyncRecording(protocols.MemoryCacheStore(), lines)
-    settings = options.ClientOptions(
-        hooks=(AsyncEvents(lines),), protocols=options.ProtocolClientOptions(cache_stores={"users.profile": store})
-    )
+    settings = options.ClientOptions(protocols=options.ProtocolClientOptions(cache_stores={"users.profile": store}))
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=settings) as api:
         helper, twenty = api.protocols.users.profile, cache.user_id(24)
         exchange.respond(

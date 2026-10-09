@@ -167,23 +167,20 @@ id
   < closed
     end
   > GET https://api.example.com/records accept=application/x-ndjson
-  hooked end at EOF
+  response end at EOF
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=success
     end
   > GET https://api.example.com/records accept=application/x-ndjson
-  hooked undecodable record
+  response undecodable record
   < closed
-    hook stream_end outcome=error
     ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='value', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{}', truncated=False, cause=1 validation error for Record
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] value
   > GET https://api.example.com/records accept=application/x-ndjson
-  hooked early close after 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  response early close after 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    hook stream_end outcome=cancel
   > GET https://api.example.com/records accept=application/x-ndjson
   async one byte at a time
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'

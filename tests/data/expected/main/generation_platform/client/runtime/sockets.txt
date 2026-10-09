@@ -106,40 +106,25 @@
   whole 1 text str'100000' raw=b'100000'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
   hooked normal end
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=101
-    hook attempt_end outcome=None status=101
-    hook call_end outcome=handed_off status=101
+    request hook GET /rooms/r1/socket
+    response hook 101
   connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    hook stream_end outcome=success status=101
   receive ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', code=1000, clean=True) [operation_id='roomSocket'] 
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   hooked early close
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=101
-    hook attempt_end outcome=None status=101
-    hook call_end outcome=handed_off status=101
+    request hook GET /rooms/r1/socket
+    response hook 101
   connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    hook stream_end outcome=cancel status=101
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   hooked failure
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=101
-    hook attempt_end outcome=None status=101
-    hook call_end outcome=handed_off status=101
+    request hook GET /rooms/r1/socket
+    response hook 101
   connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    hook stream_end outcome=error status=101
   receive ! DecodeError: DecodeError(status_code=101, operation_id='roomSocket', reason='malformed', location='message.1') [operation_id='roomSocket', location=('message', 1), body_bytes=b'{broken', truncated=False, cause=ValidationError] malformed
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   hooked refusal
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=404
-    hook attempt_end outcome=None status=404
-    hook call_end outcome=error status=404
+    request hook GET /rooms/r1/socket
+    response hook 404
   connect ! NotFoundError: Error code: 404 - {"detail":"no room"} [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False]
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   rejected token not refreshed ! AuthenticationError: Error code: 401 [operation_id='secureSocket', status_code=401, body=b'', body_bytes=b'', truncated=False]
@@ -169,8 +154,6 @@
   deadline during the open ! APITimeoutError reason=deadline_exceeded
   refused connection retry=1 ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
   refused connection retry=0 ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
-  refused retry with failed permit release ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError] note='Secondary cleanup failure: SDKError'
-    refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   untrusted certificate ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
   peer hanging up during a ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket'] phase_timeout
   peer hanging up during a whole send ! APIConnectionError: APIConnectionError(operation_id='feedSocket', reason='delivery_unknown') [operation_id='feedSocket', cause=WebSocketNetworkError] delivery_unknown
@@ -250,23 +233,14 @@
   async send after the cancelled send ! ConfigurationError: ConfigurationError(operation_id='feedSocket', reason='invalid_state', field_path='send.failed') [operation_id='feedSocket', field_path=('send', 'failed')] invalid_state
   async open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', reason='phase_timeout') [operation_id='feedSocket', cause=ReadTimeout] phase_timeout
   async refused connection ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError]
-  async refused retry with failed permit release ! APIConnectionError: APIConnectionError(operation_id='feedSocket') [operation_id='feedSocket', cause=ConnectError] note='Secondary cleanup failure: SDKError'
-    async refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async hooked normal end
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=101
-    hook attempt_end outcome=None status=101
-    hook call_end outcome=handed_off status=101
+    request hook GET /rooms/r1/socket
+    response hook 101
   connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    hook stream_end outcome=success status=101
   receive ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', code=1000, clean=True) [operation_id='roomSocket'] 
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   async hooked refusal
-    hook call_start outcome=None status=None
-    hook attempt_start outcome=None status=None
-    hook response_headers outcome=None status=404
-    hook attempt_end outcome=None status=404
-    hook call_end outcome=error status=404
+    request hook GET /rooms/r1/socket
+    response hook 404
   connect ! NotFoundError: Error code: 404 - {"detail":"no room"} [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False]
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused

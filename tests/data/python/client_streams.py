@@ -224,27 +224,9 @@ def streams(package: ModuleType, lines: list[str]) -> None:
         _limits(harness, api, feed)
         _opens(harness, api, feed)
         _states(harness, api, feed)
-        _hooked(harness, api, feed)
+        _ends(harness, api, feed)
     run(lambda: _async_streams(package, lines))
-    run(lambda: _async_hooked(harness))
-
-
-class _Ends:
-    """A hook reporting the outcome of each handed-over stream's end."""
-
-    def __init__(self, lines: list[str]) -> None:
-        self.lines = lines
-
-    def on_event(self, event: Any) -> None:
-        if event.name == "stream_end":
-            self.lines.append(f"    hook {event.name} outcome={event.outcome}")
-
-
-class _AsyncEnds(_Ends):
-    """The asyncio form of the stream end hook."""
-
-    async def on_event(self, event: Any) -> None:
-        super().on_event(event)
+    run(lambda: _async_ends(harness))
 
 
 _ENDINGS: Final = (
@@ -256,42 +238,40 @@ _ENDINGS: Final = (
 )
 
 
-def _hooked(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Report a stream's end to the hooks as it ended: at its completion, failing, or closed early."""
-    lines = harness.lines
-    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),)))
+def _ends(harness: _Harness, api: Any, feed: _Feed) -> None:
+    """Release a stream's response as it ended: at its completion, failing, or closed early."""
+    lines, protocols = harness.lines, api.protocols
     feed.replies.extend(harness.reply(chunks) for _, _, chunks in _ENDINGS)
     feed.replies.append(harness.reply((b'data: {"text": "a"}\n\n',) * 2))
     for label, helper, _ in _ENDINGS:
         stream = (
-            hooked.protocols.events.messages.open()
+            protocols.events.messages.open()
             if helper == "messages"
-            else hooked.protocols.feed.all.open(body=harness.models.FeedQuery())
+            else protocols.feed.all.open(body=harness.models.FeedQuery())
         )
-        _drained(lines, f"hooked {label}", stream)
-    stream = hooked.protocols.events.messages.open()
-    lines.append(f"  hooked early close after {_event(next(stream))}")
+        _drained(lines, f"response {label}", stream)
+    stream = protocols.events.messages.open()
+    lines.append(f"  response early close after {_event(next(stream))}")
     stream.close()
 
 
-async def _async_hooked(harness: _Harness) -> None:
-    """Report an asyncio stream's end to the hooks as it ended."""
+async def _async_ends(harness: _Harness) -> None:
+    """Release an asyncio stream's response as it ended."""
     lines, package = harness.lines, harness.package
     feed = _Feed(lines)
     feed.replies.extend(harness.reply(chunks) for _, _, chunks in _ENDINGS)
     feed.replies.append(harness.reply((b'data: {"text": "a"}\n\n',) * 2))
-    options = harness.options.RequestOptions(hooks=(_AsyncEnds(lines),))
     async with feed.async_client() as http, package.AsyncClient(http_client=http) as api:
-        hooked = api.with_options(options)
+        protocols = api.protocols
         for label, helper, _ in _ENDINGS:
             stream = await (
-                hooked.protocols.events.messages.open()
+                protocols.events.messages.open()
                 if helper == "messages"
-                else hooked.protocols.feed.all.open(body=harness.models.FeedQuery())
+                else protocols.feed.all.open(body=harness.models.FeedQuery())
             )
-            await _adrained(lines, f"async hooked {label}", stream)
-        stream = await hooked.protocols.events.messages.open()
-        lines.append(f"  async hooked early close after {_event(await anext(stream))}")
+            await _adrained(lines, f"async response {label}", stream)
+        stream = await protocols.events.messages.open()
+        lines.append(f"  async response early close after {_event(await anext(stream))}")
         await stream.aclose()
 
 
@@ -790,7 +770,7 @@ def _ndjson_routing(harness: _Harness, api: Any, feed: _Feed) -> None:
 
 
 def _ndjson_states(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Close streams early, report their ends to hooks, interrupt one, and check the response before returning."""
+    """Close streams early, interrupt one, check the response before returning, and release responses as they end."""
     lines, helper = harness.lines, api.protocols.records.all
     record_line = b'{"text": "a"}\n'
     feed.replies.extend((
@@ -809,16 +789,15 @@ def _ndjson_states(harness: _Harness, api: Any, feed: _Feed) -> None:
     for label in ("declared error status", "event stream media type"):
         record(lines, label, helper.open)
     _drained(lines, "media type with parameters", helper.open())
-    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),)))
     feed.replies.extend((
         _lines(harness, (record_line,)),
         _lines(harness, (b"{}\n",)),
         _lines(harness, (record_line, record_line)),
     ))
-    _drained(lines, "hooked end at EOF", hooked.protocols.records.all.open())
-    _drained(lines, "hooked undecodable record", hooked.protocols.records.all.open())
-    stream = hooked.protocols.records.all.open()
-    lines.append(f"  hooked early close after {_event(next(stream))}")
+    _drained(lines, "response end at EOF", helper.open())
+    _drained(lines, "response undecodable record", helper.open())
+    stream = helper.open()
+    lines.append(f"  response early close after {_event(next(stream))}")
     stream.close()
 
 

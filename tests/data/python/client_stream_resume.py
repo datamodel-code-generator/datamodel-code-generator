@@ -15,7 +15,7 @@ import httpx2
 
 from tests.data.python.client_caching import _Signer
 from tests.data.python.client_runtime import arecord, argument, describe, record, run
-from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Feed, _Harness
+from tests.data.python.client_streams import _event, _Feed, _Harness
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
@@ -306,14 +306,13 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
 
 
 def _reconnects(resumes: _Resumes, api: Any) -> None:
-    """Reconnect after interruptions once a cursor was delivered, reporting each response's end to the hooks."""
+    """Reconnect after interruptions once a cursor was delivered, releasing each response as it ends."""
     lines, harness, helper = resumes.lines, resumes.harness, api.protocols.events.live
     lines.append("reconnections")
-    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),))).protocols.events.live
     cut = harness.interrupted()
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n', 'id: 2\ndata: {"text": "b"}\n\n'))
-    stream = hooked.open(topic=resumes.argument("query", "topic", "news"), stream_options=resumes.reconnect)
+    stream = helper.open(topic=resumes.argument("query", "topic", "news"), stream_options=resumes.reconnect)
     _drained(lines, "interrupted and reopened with a duplicate", stream)
     lines.append(f"    progress {dict(stream.progress)} response {stream.response.status_code}")
     resumes.reply(b'data: {"text": "no ID"}\n\n', cut)
@@ -445,7 +444,6 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
     record(lines, "resume an expired state", lambda: helper.resume(expired))
     dotted = _replaced(state, bound=["..", "t1", "resume"])
     record(lines, "resume a dot segment", lambda: helper.resume(dotted))
-    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),))).protocols.events.tracked
     for label, headers in (
         ("open without the stream ID", (("X-Resume-Token", "t1"), ("X-Stream-Expires", _EXPIRES))),
         ("open with two stream IDs", (("X-Stream-Id", "a"), ("X-Stream-Id", "b"), *_TRACKED[1:])),
@@ -455,10 +453,10 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
         ("open with an unreadable expiry", (*_TRACKED[:2], ("X-Stream-Expires", "soon"))),
     ):
         resumes.reply(b"event: done\ndata: {}\n\n", headers=headers)
-        record(lines, label, hooked.open)
+        record(lines, label, helper.open)
     resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', harness.interrupted(), headers=_TRACKED)
     resumes.reply(b"event: done\ndata: {}\n\n")
-    _drained(lines, "reopen without the token", hooked.open(stream_options=resumes.reconnect))
+    _drained(lines, "reopen without the token", helper.open(stream_options=resumes.reconnect))
 
 
 def _rooms(resumes: _Resumes, api: Any) -> None:
@@ -662,11 +660,10 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
     lines.append("asyncio")
     async with resumes.async_client(resumes.client_options()) as api:
         helper = api.protocols.events.live
-        hooked = api.with_options(harness.options.RequestOptions(hooks=(_AsyncEnds(lines),))).protocols.events.live
         cut = harness.interrupted()
         resumes.reply(b'retry: 1\nid: 1\ndata: {"text": "a"}\n\n', cut)
         resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
-        stream = await hooked.open(topic=resumes.argument("query", "topic", "news"), stream_options=resumes.reconnect)
+        stream = await helper.open(topic=resumes.argument("query", "topic", "news"), stream_options=resumes.reconnect)
         await _adrained(lines, "async reopened", stream)
         state = stream.checkpoint()
         _saved(lines, "async", state)
