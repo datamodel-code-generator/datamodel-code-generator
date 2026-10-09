@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import pydantic
+import strict_basemodel_models
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
 from pydantic import StringConstraints
@@ -115,7 +116,108 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = ()
+def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
+    untagged: UntaggedService = wiring.services['untagged']
+    post_form_handler = checked(
+        untagged.post_form,
+        'The untagged.post_form method of POST /forms',
+    )
+
+    def post_form(
+        *,
+        body: Annotated[strict_basemodel_models.Form, Depends(contract.PostForm.BODY)],
+    ) -> object:
+        return dispatch(post_form_handler(body=body), contract.PostForm.RESPONSES)
+
+    router.add_api_route(
+        '/forms',
+        post_form,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postForm',
+        response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
+        openapi_extra={
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'application/x-www-form-urlencoded': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['count'],
+                            'properties': {
+                                'count': {'type': 'integer'},
+                                'score': {'type': 'number'},
+                                'flag': {'type': 'boolean'},
+                                'name': {'type': 'string'},
+                                'counts': {
+                                    'type': 'array',
+                                    'items': {'type': 'integer'},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        dependencies=wiring.dependencies.get('post_form'),
+    )
+
+
+def _add_upload(router: APIRouter, wiring: Wiring) -> None:
+    untagged: UntaggedService = wiring.services['untagged']
+    upload_handler = checked(
+        untagged.upload,
+        'The untagged.upload method of POST /uploads',
+    )
+
+    def upload(
+        *,
+        body: Annotated[strict_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
+    ) -> object:
+        return dispatch(upload_handler(body=body), contract.Upload.RESPONSES)
+
+    router.add_api_route(
+        '/uploads',
+        upload,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='upload',
+        response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
+        openapi_extra={
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['file', 'count'],
+                            'properties': {
+                                'file': {'type': 'string', 'format': 'binary'},
+                                'count': {'type': 'integer'},
+                                'score': {'type': 'number'},
+                                'flag': {'type': 'boolean'},
+                                'note': {'type': 'string'},
+                                'counts': {
+                                    'type': 'array',
+                                    'items': {'type': 'integer'},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        dependencies=wiring.dependencies.get('upload'),
+    )
+
+
+LITERAL_ROUTES: Final = (('post_form', _add_post_form), ('upload', _add_upload))
 TEMPLATED_ROUTES: Final = (('get_values', _add_get_values),)
 
 
