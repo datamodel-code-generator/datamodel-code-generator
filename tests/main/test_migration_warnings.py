@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shlex
 import shutil
+import sys
 import warnings
 from pathlib import Path
 
@@ -70,6 +71,7 @@ def test_migration_notices_real_generation(selection: str, entry: str, tmp_path:
         ("Support for Black", "black", uses_black and Version(black.__version__) < Version("24.3.0")),
         ("Support for isort", "isort", uses_isort and Version(isort.__version__) < Version("6")),
         ("Support for DCG", "pydantic", Version(pydantic.VERSION) < Version("2.8.2")),
+        ("Running datamodel-code-generator on Python 3.10", "python310", sys.version_info < (3, 11)),
     )
     for prefix, name, expected in notices:
         assert_output(
@@ -103,7 +105,7 @@ def test_migration_notices_batch_deduplicated(selection: str, tmp_path: Path) ->
             ("black", black.__version__, "24.3.0"),
             ("isort", isort.__version__, "6"),
         )
-    )
+    ) + ("-python310" if sys.version_info < (3, 11) else "")
     assert_output("\n".join(messages), EXPECTED / f"batch-{selection}-{versions}.txt")
     assert_output((tmp_path / "output.py").read_text(encoding="utf-8"), EXPECTED / "model.py")
     assert_output((tmp_path / "second.py").read_text(encoding="utf-8"), EXPECTED / "model.py")

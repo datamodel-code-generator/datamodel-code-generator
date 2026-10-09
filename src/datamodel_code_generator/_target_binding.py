@@ -139,6 +139,11 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
+_HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
+    "response_header",
+    "request_encoding_header",
+    "response_encoding_header",
+})
 _SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 _DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
 _DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
@@ -351,7 +356,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.schema_records: dict[_Declaration, _SchemaRecord] = {}
         self.schema_locations: dict[_Declaration, _SchemaNode] = {}
         self.free_schemas: dict[_Declaration, JsonSchemaObject] = {}
-        self.nullable_fields: set[int] = set()
+        self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
@@ -541,7 +546,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
         field = super().get_object_field(**options)
         if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
-            self.nullable_fields.add(id(field))
+            self.nullable_fields[id(field)] = field
         return field
 
     def nullable(self, field: DataModelFieldBase) -> bool:
@@ -744,7 +749,8 @@ def _value_kind(value: object) -> str:
         case str():
             return "string"
         case _:
-            return "object"
+            pass
+    return "object"
 
 
 def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumentId]) -> object:
@@ -760,7 +766,8 @@ def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumen
                 **{field.name: _relocated(getattr(value, field.name), documents) for field in dataclass_fields(value)},
             )
         case _:
-            return value
+            pass
+    return value
 
 
 _UNRECORDED: Final = _SchemaRecord(None, (), None, None)
@@ -1788,7 +1795,8 @@ def _model_settings(model: DataModel, backend: BackendName) -> dict[str, Backend
             arguments = cast("dict[str, str]", internal.get("typed_dict_kwargs", {}))
             return {name: _syntax_value(value) for name, value in arguments.items()}
         case _:
-            return {}
+            pass
+    return {}
 
 
 def _settings(names: tuple[str, ...], values: dict[str, BackendValue] | None) -> tuple[BackendSetting, ...]:
@@ -2260,6 +2268,7 @@ class _Reader(_SchemaLocations):
         media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
         kind = None if media is None else _media_kind(media)
         parameter = role == "parameter"
+        text = parameter or role in _HEADER_ROLES
         whole = self.whole(declaration)[1] if parameter else {}
         return _SchemaRecord(
             _default(whole.get("default")),
@@ -2268,7 +2277,7 @@ class _Reader(_SchemaLocations):
             if media is not None and media.strip().lower().startswith("multipart/")
             else None,
             self.encoding(declaration, locate, members=kind in _FORMS)
-            if parameter or media is None or kind in _FORMS
+            if text or media is None or kind in _FORMS
             else None,
         )
 
@@ -2329,9 +2338,15 @@ class _Reader(_SchemaLocations):
         location = self.resolve(declaration)[0]
         return _mapping(self.borrow(location)), location
 
-    def kinds(self, declaration: _Declaration) -> frozenset[str] | None:
-        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches."""
+    def kinds(self, declaration: _Declaration, active: frozenset[_Declaration] = frozenset()) -> frozenset[str] | None:
+        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
+
+        A branch that leads back to a schema being read says nothing of its values.
+        """
         value, declaration = self.resolved(declaration)
+        if declaration in active:
+            return None
+        active |= {declaration}
         kinds: frozenset[str] | None = None
         match value.get("type"):
             case str() as single:
@@ -2348,7 +2363,9 @@ class _Reader(_SchemaLocations):
             branches = value.get(keyword)
             if not isinstance(branches, list) or not branches:
                 continue
-            found_kinds = [self.kinds(_child(declaration, keyword, str(index))) for index in range(len(branches))]
+            found_kinds = [
+                self.kinds(_child(declaration, keyword, str(index)), active) for index in range(len(branches))
+            ]
             if keyword == "allOf":
                 for found in found_kinds:
                     kinds = found if kinds is None else kinds if found is None else kinds & found

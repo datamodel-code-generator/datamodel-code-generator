@@ -20,6 +20,14 @@ rejection
   refresh without a new refresh token = b'ok'
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  invalid_token of a Basic challenge refreshes nothing ! AuthenticationError status_code=401 cause=DecodeError
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
+  refresh past the last date ! AuthError reason=invalid_expiry
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
   invalid grant ! AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant

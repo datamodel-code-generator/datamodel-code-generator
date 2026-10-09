@@ -3397,7 +3397,8 @@ semantics, and the SDK's bounded retries resend from the original request.
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
 whose operations require none takes no credentials. A scheme whose argument would be empty, `options`, `http_client`,
-or another scheme's fails generation with `E_RESERVED_NAME`.
+`self`, or another scheme's, or whose OAuth provider classes would take another scheme's PascalCase prefix, fails
+generation with `E_RESERVED_NAME`.
 
 These examples assume a generated API with a `bearer` scheme, a `header_key` API key scheme, and an `oauth` OAuth 2
 scheme with client credentials and authorization code flows, and an `auth` resource containing `bearer` and
@@ -3564,7 +3565,8 @@ client's HTTP client runs its event hooks on these token requests and responses,
 and tokens. Used as an `httpx2.Auth` elsewhere, a provider needs its own `http_client`. The token URL must be HTTPS, or
 HTTP to a loopback host. A rejection, an unexpected status, or a response that is not a JSON object with a Bearer
 `access_token` raises `AuthError` with the reason `oauth_error`, a rejection keeping its `status_code` and standard
-`oauth_error` code, and an `expires_in` that is not a positive number the reason `invalid_expiry`. A transport failure
+`oauth_error` code, and an `expires_in` that is not a positive number, or a refreshed one past the last date Python can
+hold, the reason `invalid_expiry`. A transport failure
 raises `AuthError` with the reason `oauth_error`, or `timeout`, and the native exception as its cause, which can hold
 the token request and its client authentication. A provider's `clock=Clock(...)` times its token expiry.
 
