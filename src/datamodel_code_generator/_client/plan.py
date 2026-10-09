@@ -83,8 +83,6 @@ _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
-_OBJECT: Final = frozenset({"object"})
-_NESTED: Final = frozenset({"array"}) | _OBJECT
 _UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
